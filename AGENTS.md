@@ -43,8 +43,8 @@ and `../rhino-moshi/firmware/`.
 
 ## Progress (hand-off from Claude Code, 2026-10-25)
 
-Work is on branch **`m1-circ`**. Tasks 1–16 of the plan are done and committed, including their hardware checks,
-with their boxes ticked in the plan. **Next: Task 17 (SSE client).**
+Work is on branch **`m1-circ`**. Tasks 1–17 of the plan are done and committed, including their hardware checks,
+with their boxes ticked in the plan. **Next: Task 18 (app messages, queues, net worker, fake source).**
 The native suite is green: 108/108
 (`pio test -e native`), and `pio run -e m9` and `-e m9_fake` both build.
 

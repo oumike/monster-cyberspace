@@ -594,10 +594,11 @@ docs/{BUILD.md,USE.md,TESTING.md}  .github/workflows/build.yml  AGENTS.md
   - `onState(true)` fires on the first byte; `onState(false)` on close.
   - It does **not** reconnect by itself. The owner decides, because reconnecting needs a fresh token and `startAfter`.
   - `stop()` closes the connection and joins the task within 2 s.
+  - It follows up to 3 redirects (RTDB may answer a stream with `307`), reads in 500 ms slices so `stop()` is prompt, and closes after 75 s with no bytes (RTDB keep-alives come every ~30 s). The URL carries the token and is never logged.
 
-- [ ] **Step 1: Implement.**
-- [ ] **Step 2: Run** `pio run -e m9`. Expected: SUCCESS.
-- [ ] **Step 3: Commit** `feat: streaming SSE client task`.
+- [x] **Step 1: Implement.**
+- [x] **Step 2: Run** `pio run -e m9`. Expected: SUCCESS.
+- [x] **Step 3: Commit** `feat: streaming SSE client task`.
 
 ### Task 18: App messages, queues, chat source, net worker, fake source
 

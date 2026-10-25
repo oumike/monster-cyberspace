@@ -230,18 +230,18 @@ docs/{BUILD.md,USE.md,TESTING.md}  .github/workflows/build.yml  AGENTS.md
 - `std::string rtdbStreamUrl(const std::string& base, const std::string& path, const std::string& idToken, const RtdbQuery& q);` Builds `base + "/" + path + ".json?auth=" + token`, then `"&orderBy=%22timestamp%22"` if set, then `"&startAfter=" + n` if ≥ 0, then `"&limitToLast=" + n` if > 0.
 - `enum class StreamResult { Changed, Unchanged, KeepAlive, Cancel, AuthRevoked, BadData };`
 - `StreamResult applyChatEvent(ChatStore& store, const SseEvent& ev);`
-  - `put` at path `/`: data is an object of id → message (replaceAll), or null (clear).
+  - `put` at path `/`: data is an object of id → message, each upserted fresh; null is a no-op. (Amended: the stream opens with `startAfter=<newest stored>`, so its window doesn't cover REST history, and replacing or clearing would wipe it.)
   - `put` at `/<id>`: an object upserts a fresh message; null removes it.
   - `patch` at `/`: an object of id → partial merges into existing messages, or upserts new ones.
   - `patch` at `/<id>`: a partial merge.
   - Event names `keep-alive`, `cancel` and `auth_revoked` map to the matching results.
 - `struct PresenceEntry { std::string userId, username; bool online=false, isChatAdmin=false; int64_t lastSeen=0, lastActivity=-1; };` `using PresenceMap = std::map<std::string, PresenceEntry>;`
-- `StreamResult applyPresenceEvent(PresenceMap& map, const SseEvent& ev);` Same path rules, keyed by userId.
+- `StreamResult applyPresenceEvent(PresenceMap& map, const SseEvent& ev);` Same path rules, keyed by userId, except a `put` at `/` replaces the map (null clears it).
 - `std::vector<PresenceEntry> visiblePresence(const PresenceMap& map, int64_t nowMs, int64_t staleAfterMs);` Online and `nowMs - lastSeen <= staleAfterMs`, sorted case-insensitively by username.
 - `bool isIdle(const PresenceEntry& e, int64_t nowMs, int64_t idleAfterMs);` False when `lastActivity == -1`.
 
-- [ ] **Step 1: Write fixtures**, using the docs' shapes: a window put of two messages, a single put, a delete patch `{"content":"[DELETED]","deleted":true}`, a null put, an art message (`style:"art"`, content `"IC9cXy9cCiggby5vICkKID4gXiA8"`), and a presence window with one stale, one idle and one active entry.
-- [ ] **Step 2: Write failing tests:**
+- [x] **Step 1: Write fixtures**, using the docs' shapes: a window put of two messages, a single put, a delete patch `{"content":"[DELETED]","deleted":true}`, a null put, an art message (`style:"art"`, content `"IC9cXy9cCiggby5vICkKID4gXiA8"`), and a presence window with one stale, one idle and one active entry.
+- [x] **Step 2: Write failing tests:**
   - `test_url_messages`: `rtdbStreamUrl("https://x.firebasedatabase.app","chat_messages/general","T",{true,123,1000})` equals `"https://x.firebasedatabase.app/chat_messages/general.json?auth=T&orderBy=%22timestamp%22&startAfter=123&limitToLast=1000"`.
   - `test_url_presence`: `{false,-1,0}` → `"…/chat_presence/general.json?auth=T"`.
   - `test_window_put`, `test_child_put`, `test_null_put_removes`.
@@ -250,10 +250,10 @@ docs/{BUILD.md,USE.md,TESTING.md}  .github/workflows/build.yml  AGENTS.md
   - `test_keepalive_cancel_revoked`.
   - `test_bad_json` → `BadData` with the store untouched.
   - `test_presence_visible_and_idle`: now = 1,000,000; staleAfter 180,000; idleAfter 600,000 → the stale entry is hidden, the idle one reports true, and the order is by name.
-- [ ] **Step 3: Run** `pio test -e native -f test_rtdb`. Expected: FAIL.
-- [ ] **Step 4: Implement** with ArduinoJson `JsonDocument` + `deserializeJson`.
-- [ ] **Step 5: Run.** Expected: PASS.
-- [ ] **Step 6: Commit** `feat(core): RTDB stream URLs, chat and presence event apply`.
+- [x] **Step 3: Run** `pio test -e native -f test_rtdb`. Expected: FAIL.
+- [x] **Step 4: Implement** with ArduinoJson `JsonDocument` + `deserializeJson`.
+- [x] **Step 5: Run.** Expected: PASS.
+- [x] **Step 6: Commit** `feat(core): RTDB stream URLs, chat and presence event apply`.
 
 ### Task 8: REST response parsers
 

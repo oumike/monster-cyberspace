@@ -161,17 +161,17 @@ docs/{BUILD.md,USE.md,TESTING.md}  .github/workflows/build.yml  AGENTS.md
 **Interfaces:**
 - `std::vector<std::u32string> wrapText(std::u32string_view text, int firstWidth, int contWidth);` Each code point is one cell. Breaks after spaces. A word longer than the width is hard-split. `\n` forces a break. Trailing spaces at a break are dropped. Empty text → one empty line. Widths < 1 are treated as 1.
 
-- [ ] **Step 1: Write failing tests:**
+- [x] **Step 1: Write failing tests:**
   - `test_fits`: `"hi there"`, widths 20/20 → `{"hi there"}`.
   - `test_wraps_at_space`: `"anyone else on the 4.0 beta yet?"` with 20/14 → `{"anyone else on the","4.0 beta yet?"}`.
   - `test_hard_split`: 2,048 × `'a'` with 47/41 → line 0 is 47 chars, the rest ≤ 41, total chars 2,048.
   - `test_newline`: `"a\nb"` → `{"a","b"}`.
   - `test_multibyte_unsplit`: `"🎲🎲🎲"` with width 2 → `{"🎲🎲","🎲"}`.
   - `test_empty`: `""` → `{""}`.
-- [ ] **Step 2: Run** `pio test -e native -f test_wrap`. Expected: FAIL.
-- [ ] **Step 3: Implement.**
-- [ ] **Step 4: Run.** Expected: PASS.
-- [ ] **Step 5: Commit** `feat(core): word wrap with hanging indent`.
+- [x] **Step 2: Run** `pio test -e native -f test_wrap`. Expected: FAIL.
+- [x] **Step 3: Implement.**
+- [x] **Step 4: Run.** Expected: PASS.
+- [x] **Step 5: Commit** `feat(core): word wrap with hanging indent`.
 
 ### Task 5: Message model, chat store, mentions
 

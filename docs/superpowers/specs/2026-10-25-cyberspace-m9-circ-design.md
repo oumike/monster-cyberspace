@@ -60,8 +60,9 @@ any LoRa feature (see §12).
 
 - PlatformIO, platform pioarduino `55.03.312` (Arduino core 3.3 / ESP-IDF 5.5),
   the same as rhino-moshi, which runs natively on Apple Silicon.
-- Display: LovyanGFX 1.2.34, with camillia-mt's `patch_lgfx_dmadesc.py`
-  carried over if the M9 needs it (verify at bring-up).
+- Display: a direct ST7789 driver with a full-frame RGB565 canvas in PSRAM,
+  pushing only the dirty row bands (ported from rhino-moshi `panel_m9.cpp`).
+  *(Amended during planning; this replaced LovyanGFX.)*
 - JSON: ArduinoJson 7, using filters to keep only the fields each screen needs.
 - HTTP(S) client: ESP-IDF `esp_http_client` with the IDF certificate bundle.
 - HTTP server: ESP-IDF `esp_http_server`. mDNS: ESP-IDF `mdns`.
@@ -76,6 +77,9 @@ Two FreeRTOS tasks communicate only through queues:
 - **UI task (core 1):** input, screens, drawing. It never blocks on I/O.
 - **Network task (core 0):** Wi-Fi, HTTPS, the SSE stream, auth, the background
   watcher, and the web config server.
+  Each open SSE stream (at most two: room messages and room presence) runs in
+  its own small reader task on core 0, and the chat store is shared under a
+  mutex. *(Amended during planning.)*
 
 Commands flow UI → net (`SendMessage`, `OpenRoom`, `LeaveRoom`,
 `LoadOlder`, `DeleteMessage`, `FlagMessage`, `MarkRead`, `Login`, …).
@@ -260,7 +264,7 @@ It is plain HTML, CSS and JS, inline, with no external requests.
 - **Cyberspace account:** shows the signed-in email. A login form takes email
   and password; the device performs the login and discards the password. There
   are also Sign out and Resend verification.
-- **Display:** text size, buzzer on/off, time zone.
+- **Display:** text size, buzzer on/off, time zone (a POSIX TZ string, picked from a list or typed).
 - **Security:** optional page password (HTTP Basic, user `admin`), and an
   optional setup-AP password (WPA2, 8–63 characters; clearing it makes the AP
   open again).

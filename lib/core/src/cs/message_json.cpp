@@ -30,8 +30,9 @@ void mergeMessageJson(CircMessage& m, JsonObjectConst o) {
   for (JsonPairConst kv : o) {
     const char* k = kv.key().c_str();
     JsonVariantConst v = kv.value();
-    if (!strcmp(k, "userId")) m.userId = str(v);
-    else if (!strcmp(k, "username")) m.username = str(v);
+    // C-Mail names the author senderId/senderUsername.
+    if (!strcmp(k, "userId") || !strcmp(k, "senderId")) m.userId = str(v);
+    else if (!strcmp(k, "username") || !strcmp(k, "senderUsername")) m.username = str(v);
     else if (!strcmp(k, "content")) m.content = str(v);
     else if (!strcmp(k, "timestamp")) m.timestamp = v.as<int64_t>();
     else if (!strcmp(k, "isChatAdmin")) m.isChatAdmin = v.as<bool>();

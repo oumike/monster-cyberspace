@@ -59,6 +59,26 @@ struct PresenceOps {
   }
 };
 
+struct TypingOps {
+  TypingMap& m;
+  static constexpr bool kWindowPutReplaces = true;
+  bool empty() const { return m.empty(); }
+  void clearAll() { m.clear(); }
+  bool remove(const std::string& id) { return m.erase(id) > 0; }
+  bool exists(const std::string& id) { return m.count(id) > 0; }
+  void putFresh(const std::string& id, JsonObjectConst o) {
+    TypingEntry e;
+    e.userId = id;
+    mergeTypingJson(e, o);
+    m[id] = std::move(e);
+  }
+  void merge(const std::string& id, JsonObjectConst o) {
+    TypingEntry& e = m[id];
+    e.userId = id;
+    mergeTypingJson(e, o);
+  }
+};
+
 std::vector<std::string> splitPath(std::string_view p) {
   std::vector<std::string> out;
   size_t i = 0;
@@ -164,6 +184,11 @@ StreamResult applyChatEvent(ChatStore& store, const SseEvent& ev) {
 
 StreamResult applyPresenceEvent(PresenceMap& map, const SseEvent& ev) {
   PresenceOps ops{map};
+  return applyEvent(ops, ev);
+}
+
+StreamResult applyTypingEvent(TypingMap& map, const SseEvent& ev) {
+  TypingOps ops{map};
   return applyEvent(ops, ev);
 }
 

@@ -11,8 +11,10 @@ struct PaletteEntry {
   bool isTextSize = false;
 };
 
+enum class PaletteKind { Circ, Cmail };
+
 // The command palette. The first entry toggles the text size; the rest
 // insert a slash command.
-const std::vector<PaletteEntry>& paletteEntries();
+const std::vector<PaletteEntry>& paletteEntries(PaletteKind kind = PaletteKind::Circ);
 
 }  // namespace rc

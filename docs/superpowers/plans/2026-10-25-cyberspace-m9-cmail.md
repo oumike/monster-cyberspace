@@ -17,7 +17,7 @@
 - `test/fixtures/{api,rtdb}_fixtures.h`
 - the matching tests
 
-- [ ] **Step 1: Write the tests.**
+- [x] **Step 1: Write the tests.**
   - `parseConversations` (unread, empty `lastMessage`, a deleted partner);
   - `parseStartConversation`;
   - `parseTypingAck`;
@@ -25,9 +25,9 @@
   - `applyTypingEvent` (put window, put child, null, patch) and `typingNames` (stale, self excluded);
   - `makeCmailSendLimiter`, `makeStartConversationLimiter`, `makeTypingLimiter`;
   - `paletteEntries(PaletteKind::Cmail)` excludes `/art` and `/muted`.
-- [ ] **Step 2: Run** `pio test -e native` and watch the new tests fail.
-- [ ] **Step 3: Implement**, then run them green.
-- [ ] **Step 4: Commit** `feat(core): C-Mail parsing, typing state, limits`.
+- [x] **Step 2: Run** `pio test -e native` and watch the new tests fail.
+- [x] **Step 3: Implement**, then run them green.
+- [x] **Step 4: Commit** `feat(core): C-Mail parsing, typing state, limits`.
 
 ### Task 2: API client, commands and shared state
 

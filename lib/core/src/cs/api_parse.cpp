@@ -182,4 +182,53 @@ bool parseMutedUsers(std::string_view body, MutedUsers& out) {
   return true;
 }
 
+namespace {
+
+// Reads conversationId and otherUser; false without an id or a username.
+bool readConversation(JsonVariantConst c, ConversationInfo& out) {
+  if (!c.is<JsonObjectConst>()) return false;
+  JsonVariantConst u = c["otherUser"];
+  out.id = str(c["conversationId"]);
+  out.partnerId = str(u["userId"]);
+  out.partner = str(u["username"]);
+  out.partnerDeleted = u["deleted"].as<bool>();
+  return !out.id.empty() && !out.partner.empty();
+}
+
+}  // namespace
+
+bool parseConversations(std::string_view body, std::vector<ConversationInfo>& out) {
+  JsonDocument doc;
+  if (!load(body, doc) || !doc["data"].is<JsonArrayConst>()) return false;
+  out.clear();
+  for (JsonVariantConst c : doc["data"].as<JsonArrayConst>()) {
+    ConversationInfo ci;
+    if (!readConversation(c, ci)) continue;
+    ci.lastMessage = str(c["lastMessage"]);
+    ci.lastMessageAt = c["lastMessageAt"].as<int64_t>();
+    ci.unread = c["unreadCount"].as<int>();
+    out.push_back(std::move(ci));
+  }
+  return true;
+}
+
+bool parseStartConversation(std::string_view body, ConversationInfo& out) {
+  JsonDocument doc;
+  if (!load(body, doc)) return false;
+  ConversationInfo ci;
+  if (!readConversation(doc["data"], ci)) return false;
+  out = std::move(ci);
+  return true;
+}
+
+bool parseTypingAck(std::string_view body, TypingCadence& out) {
+  JsonDocument doc;
+  if (!load(body, doc)) return false;
+  JsonVariantConst d = doc["data"];
+  if (!d.is<JsonObjectConst>()) return false;
+  if (d["heartbeatMs"].is<int64_t>()) out.heartbeatMs = d["heartbeatMs"].as<int64_t>();
+  if (d["staleAfterMs"].is<int64_t>()) out.staleAfterMs = d["staleAfterMs"].as<int64_t>();
+  return true;
+}
+
 }  // namespace rc

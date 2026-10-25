@@ -42,5 +42,12 @@ RateLimiter makeFlagLimiter() {
 }
 
 RateLimiter makeMarkReadLimiter() { return RateLimiter({{60, 60000}}); }
+RateLimiter makeCmailSendLimiter() {
+  return RateLimiter({{15, 60000}, {150, 3600000}, {1000, 86400000}});
+}
+RateLimiter makeStartConversationLimiter() {
+  return RateLimiter({{5, 60000}, {30, 3600000}, {50, 86400000}});
+}
+RateLimiter makeTypingLimiter() { return RateLimiter({{40, 60000}}); }
 
 }  // namespace rc

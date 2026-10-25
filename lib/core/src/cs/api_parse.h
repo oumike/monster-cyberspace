@@ -9,6 +9,7 @@
 
 #include "chat/message.h"
 #include "chat/presence.h"
+#include "chat/typing.h"
 
 namespace rc {
 
@@ -63,5 +64,19 @@ bool parseUnreadCount(std::string_view body, int& count, bool& exact);
 // usernames. Each room may hold an array of names or a {name: bool} object.
 using MutedUsers = std::map<std::string, std::set<std::string>>;
 bool parseMutedUsers(std::string_view body, MutedUsers& out);
+
+// C-Mail. A conversation with its partner and unread state.
+struct ConversationInfo {
+  std::string id, partnerId, partner, lastMessage;
+  int64_t lastMessageAt = 0;
+  int unread = 0;
+  bool partnerDeleted = false;
+};
+// GET /v1/cmail, in server order (unread first, then newest).
+bool parseConversations(std::string_view body, std::vector<ConversationInfo>& out);
+// POST /v1/cmail: sets id, partnerId and partner.
+bool parseStartConversation(std::string_view body, ConversationInfo& out);
+// POST /v1/cmail/:id/typing. `out` keeps its defaults on failure.
+bool parseTypingAck(std::string_view body, TypingCadence& out);
 
 }  // namespace rc

@@ -2,7 +2,7 @@
 
 namespace rc {
 
-const std::vector<PaletteEntry>& paletteEntries() {
+const std::vector<PaletteEntry>& paletteEntries(PaletteKind kind) {
   static const std::vector<PaletteEntry> entries = [] {
     std::vector<PaletteEntry> v;
     v.push_back({U"Text size: Comfortable/Compact", U"", true});
@@ -17,7 +17,14 @@ const std::vector<PaletteEntry>& paletteEntries() {
     }
     return v;
   }();
-  return entries;
+  // /art and /muted are cIRC-only: C-Mail answers them with a 400.
+  static const std::vector<PaletteEntry> cmail = [] {
+    std::vector<PaletteEntry> v;
+    for (const auto& e : entries)
+      if (e.insert != U"/art " && e.insert != U"/muted ") v.push_back(e);
+    return v;
+  }();
+  return kind == PaletteKind::Cmail ? cmail : entries;
 }
 
 }  // namespace rc

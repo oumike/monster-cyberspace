@@ -229,6 +229,22 @@ void test_palette_first_is_text_size() {
   TEST_ASSERT_EQUAL_STRING("/muted ", u32ToUtf8(p.back().insert).c_str());
 }
 
+void test_palette_cmail_drops_circ_only() {
+  const auto& p = paletteEntries(PaletteKind::Cmail);
+  TEST_ASSERT_TRUE(p[0].isTextSize);
+  bool art = false, muted = false, me = false;
+  for (const auto& e : p) {
+    std::string s = u32ToUtf8(e.insert);
+    art |= s == "/art ";
+    muted |= s == "/muted ";
+    me |= s == "/me ";
+  }
+  TEST_ASSERT_FALSE(art);
+  TEST_ASSERT_FALSE(muted);
+  TEST_ASSERT_TRUE(me);
+  TEST_ASSERT_EQUAL(int(paletteEntries().size()) - 2, int(p.size()));
+}
+
 void test_qr_small_url() {
   std::vector<std::u32string> rows;
   TEST_ASSERT_TRUE(qrToCells("https://tenor.com/x", rows));
@@ -259,6 +275,7 @@ int main() {
   RUN_TEST(test_status_bar_layout);
   RUN_TEST(test_banner_expires);
   RUN_TEST(test_palette_first_is_text_size);
+  RUN_TEST(test_palette_cmail_drops_circ_only);
   RUN_TEST(test_qr_small_url);
   return UNITY_END();
 }

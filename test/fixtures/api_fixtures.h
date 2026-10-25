@@ -62,4 +62,19 @@ static const char* kErrNotVerified = R"({"error":{"code":"EMAIL_NOT_VERIFIED","m
 
 static const char* kErr502Html = "<html><body><h1>502 Bad Gateway</h1></body></html>";
 
+static const char* kConversations = R"({"data":[
+  {"conversationId":"c-rain","otherUser":{"userId":"u-rain","username":"rain"},"lastMessage":"you around?","lastMessageAt":1719700050000,"unreadCount":2},
+  {"conversationId":"c-moth","otherUser":{"userId":"u-moth","username":"moth","displayName":"Moth"},"lastMessage":"[GIF]","lastMessageAt":1719690000000,"unreadCount":0},
+  {"conversationId":"c-gone","otherUser":{"userId":"u-gone","username":"ghost","deleted":true},"lastMessage":"","lastMessageAt":0,"unreadCount":0}
+]})";
+
+static const char* kStartConversation = R"({"data":{"conversationId":"c-kiwi","otherUser":{"userId":"u-kiwi","username":"kiwi"}}})";
+
+static const char* kTypingAck = R"({"data":{"conversationId":"c-rain","ok":true,"heartbeatMs":2500,"staleAfterMs":8000}})";
+
+static const char* kCmailHistory = R"({"data":[
+  {"id":"-Dm1","senderId":"u-rain","senderUsername":"rain","content":"hey","timestamp":1719700000000},
+  {"id":"-Dm2","senderId":"u-me","senderUsername":"oumike","content":"","timestamp":1719700001000,"gifUrl":"https://example.invalid/x.gif"}
+],"cursor":1719700000000})";
+
 }  // namespace fx

@@ -6,6 +6,7 @@
 #include "../fixtures/rtdb_fixtures.h"
 #include "chat/chat_store.h"
 #include "chat/presence.h"
+#include "chat/typing.h"
 #include "cs/rtdb.h"
 
 using namespace rc;
@@ -181,6 +182,32 @@ void test_presence_visible_and_idle() {
   TEST_ASSERT_EQUAL(0, p.size());
 }
 
+void test_typing_stream_and_names() {
+  TypingMap t;
+  TEST_ASSERT_EQUAL(StreamResult::Changed, applyTypingEvent(t, ev("put", fx::kTypingWindow)));
+  TEST_ASSERT_EQUAL(2, int(t.size()));
+  // Self is excluded case-insensitively; stale flags are dropped.
+  auto names = typingNames(t, "OuMike", 1719700005000LL, 9000);
+  TEST_ASSERT_EQUAL(1, int(names.size()));
+  TEST_ASSERT_EQUAL_STRING("rain", names[0].c_str());
+  TEST_ASSERT_EQUAL(0, int(typingNames(t, "oumike", 1719700009001LL, 9000).size()));
+  TEST_ASSERT_EQUAL(StreamResult::Changed, applyTypingEvent(t, ev("patch", fx::kTypingStop)));
+  TEST_ASSERT_FALSE(t["u-rain"].typing);
+  TEST_ASSERT_EQUAL_STRING("rain", t["u-rain"].username.c_str());
+  TEST_ASSERT_EQUAL(0, int(typingNames(t, "oumike", 1719700001000LL, 9000).size()));
+  TEST_ASSERT_EQUAL(StreamResult::Changed, applyTypingEvent(t, ev("put", fx::kTypingGone)));
+  TEST_ASSERT_EQUAL(1, int(t.size()));
+}
+
+void test_dm_child_put_sender_aliases() {
+  ChatStore s;
+  TEST_ASSERT_EQUAL(StreamResult::Changed, applyChatEvent(s, ev("put", fx::kDmChildPut)));
+  const CircMessage* m = s.find("-Dm9");
+  TEST_ASSERT_NOT_NULL(m);
+  TEST_ASSERT_EQUAL_STRING("rain", m->username.c_str());
+  TEST_ASSERT_EQUAL_STRING("u-rain", m->userId.c_str());
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_url_messages);
@@ -195,5 +222,7 @@ int main() {
   RUN_TEST(test_keepalive_cancel_revoked);
   RUN_TEST(test_bad_json);
   RUN_TEST(test_presence_visible_and_idle);
+  RUN_TEST(test_typing_stream_and_names);
+  RUN_TEST(test_dm_child_put_sender_aliases);
   return UNITY_END();
 }

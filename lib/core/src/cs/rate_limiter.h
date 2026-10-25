@@ -33,5 +33,8 @@ RateLimiter makePresenceLimiter();
 RateLimiter makeDeleteLimiter();
 RateLimiter makeFlagLimiter();
 RateLimiter makeMarkReadLimiter();
+RateLimiter makeCmailSendLimiter();
+RateLimiter makeStartConversationLimiter();
+RateLimiter makeTypingLimiter();
 
 }  // namespace rc

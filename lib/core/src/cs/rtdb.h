@@ -5,6 +5,7 @@
 
 #include "chat/chat_store.h"
 #include "chat/presence.h"
+#include "chat/typing.h"
 #include "net/sse_parser.h"
 
 namespace rc {
@@ -30,5 +31,8 @@ StreamResult applyChatEvent(ChatStore& store, const SseEvent& ev);
 // Same path rules, keyed by userId, except that a `put` at `/` replaces the
 // whole map (null clears it).
 StreamResult applyPresenceEvent(PresenceMap& map, const SseEvent& ev);
+
+// dm_presence/<conversationId>: the same rules as presence.
+StreamResult applyTypingEvent(TypingMap& map, const SseEvent& ev);
 
 }  // namespace rc

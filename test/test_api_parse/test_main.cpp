@@ -170,6 +170,53 @@ void test_muted_users() {
   TEST_ASSERT_FALSE(parseMutedUsers("<html>", m));
 }
 
+void test_conversations() {
+  std::vector<ConversationInfo> v;
+  TEST_ASSERT_TRUE(parseConversations(fx::kConversations, v));
+  TEST_ASSERT_EQUAL(3, int(v.size()));
+  TEST_ASSERT_EQUAL_STRING("c-rain", v[0].id.c_str());
+  TEST_ASSERT_EQUAL_STRING("rain", v[0].partner.c_str());
+  TEST_ASSERT_EQUAL_STRING("u-rain", v[0].partnerId.c_str());
+  TEST_ASSERT_EQUAL_STRING("you around?", v[0].lastMessage.c_str());
+  TEST_ASSERT_EQUAL_INT64(1719700050000LL, v[0].lastMessageAt);
+  TEST_ASSERT_EQUAL(2, v[0].unread);
+  TEST_ASSERT_FALSE(v[0].partnerDeleted);
+  TEST_ASSERT_EQUAL(0, v[1].unread);
+  TEST_ASSERT_TRUE(v[2].partnerDeleted);
+  TEST_ASSERT_EQUAL_INT64(0, v[2].lastMessageAt);
+  TEST_ASSERT_FALSE(parseConversations("{\"data\":{}}", v));
+}
+
+void test_start_conversation() {
+  ConversationInfo c;
+  TEST_ASSERT_TRUE(parseStartConversation(fx::kStartConversation, c));
+  TEST_ASSERT_EQUAL_STRING("c-kiwi", c.id.c_str());
+  TEST_ASSERT_EQUAL_STRING("kiwi", c.partner.c_str());
+  TEST_ASSERT_EQUAL_STRING("u-kiwi", c.partnerId.c_str());
+  TEST_ASSERT_FALSE(parseStartConversation("{\"data\":{\"otherUser\":{}}}", c));
+}
+
+void test_typing_ack() {
+  TypingCadence t;
+  TEST_ASSERT_TRUE(parseTypingAck(fx::kTypingAck, t));
+  TEST_ASSERT_EQUAL_INT64(2500, t.heartbeatMs);
+  TEST_ASSERT_EQUAL_INT64(8000, t.staleAfterMs);
+  TypingCadence d;
+  TEST_ASSERT_FALSE(parseTypingAck("nope", d));
+  TEST_ASSERT_EQUAL_INT64(3000, d.heartbeatMs);
+}
+
+void test_cmail_history_sender_aliases() {
+  std::vector<CircMessage> v;
+  int64_t cursor = 0;
+  TEST_ASSERT_TRUE(parseHistory(fx::kCmailHistory, v, cursor));
+  TEST_ASSERT_EQUAL(2, int(v.size()));
+  TEST_ASSERT_EQUAL_STRING("rain", v[0].username.c_str());
+  TEST_ASSERT_EQUAL_STRING("u-rain", v[0].userId.c_str());
+  TEST_ASSERT_EQUAL_STRING("oumike", v[1].username.c_str());
+  TEST_ASSERT_EQUAL_INT64(1719700000000LL, cursor);
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_error_envelope);
@@ -186,5 +233,9 @@ int main() {
   RUN_TEST(test_mentions);
   RUN_TEST(test_unread_count);
   RUN_TEST(test_muted_users);
+  RUN_TEST(test_conversations);
+  RUN_TEST(test_start_conversation);
+  RUN_TEST(test_typing_ack);
+  RUN_TEST(test_cmail_history_sender_aliases);
   return UNITY_END();
 }

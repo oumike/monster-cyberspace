@@ -36,6 +36,21 @@ void test_presence_and_delete_limits() {
   TEST_ASSERT_FALSE(d.tryAcquire(30LL * 60000));
 }
 
+void test_cmail_limits() {
+  RateLimiter m = makeCmailSendLimiter();
+  for (int i = 0; i < 15; ++i) TEST_ASSERT_TRUE(m.tryAcquire(i));
+  TEST_ASSERT_FALSE(m.tryAcquire(20));
+  RateLimiter c = makeStartConversationLimiter();
+  for (int i = 0; i < 5; ++i) TEST_ASSERT_TRUE(c.tryAcquire(i));
+  TEST_ASSERT_FALSE(c.tryAcquire(10));
+  RateLimiter h = makeStartConversationLimiter();
+  for (int i = 0; i < 30; ++i) TEST_ASSERT_TRUE(h.tryAcquire(int64_t(i) * 60000));
+  TEST_ASSERT_FALSE(h.tryAcquire(30LL * 60000));  // 30 per hour
+  RateLimiter t = makeTypingLimiter();
+  for (int i = 0; i < 40; ++i) TEST_ASSERT_TRUE(t.tryAcquire(i));
+  TEST_ASSERT_FALSE(t.tryAcquire(50));
+}
+
 static std::string jwt(const char* payload) {
   return std::string("eyJhbGciOiJSUzI1NiJ9.") + payload + ".sig";
 }
@@ -73,5 +88,6 @@ int main() {
   RUN_TEST(test_refresh_synced);
   RUN_TEST(test_refresh_unsynced);
   RUN_TEST(test_refresh_floor);
+  RUN_TEST(test_cmail_limits);
   return UNITY_END();
 }

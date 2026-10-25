@@ -43,4 +43,17 @@ static const char* kPresenceWindow = R"({"path":"/","data":{
   "u4":{"username":"ann","online":true,"lastSeen":999000}
 }})";
 
+static const char* kTypingWindow = R"({"path":"/","data":{
+  "u-rain":{"username":"rain","typing":true,"timestamp":1719700000000},
+  "u-me":{"username":"oumike","typing":true,"timestamp":1719700000000}
+}})";
+
+static const char* kTypingStop = R"({"path":"/u-rain","data":{"typing":false}})";
+
+static const char* kTypingGone = R"({"path":"/u-rain","data":null})";
+
+static const char* kDmChildPut = R"({"path":"/-Dm9","data":
+  {"senderId":"u-rain","senderUsername":"rain","content":"you there?","timestamp":1719700050000}
+})";
+
 }  // namespace fx

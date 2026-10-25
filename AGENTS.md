@@ -43,9 +43,9 @@ and `../rhino-moshi/firmware/`.
 
 ## Progress (hand-off from Claude Code, 2026-10-25)
 
-Work is on branch **`m1-circ`**. Tasks 1–13 of the plan are done and committed,
-with their boxes ticked in the plan. **Next: Task 14 (M9 HAL and renderer,
-hardware bring-up).** The native suite is green: 108/108
+Work is on branch **`m1-circ`**. Tasks 1–14 of the plan are done and committed (Task 14 Step 5, the human hardware check, is still open),
+with their boxes ticked in the plan. **Next: finish the Task 14 hardware check, then Task 15 (settings and Wi-Fi manager).**
+The native suite is green: 108/108
 (`pio test -e native`), and `pio run -e m9` and `-e m9_fake` both build.
 
 Notes for whoever continues:

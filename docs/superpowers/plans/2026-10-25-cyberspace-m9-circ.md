@@ -490,14 +490,14 @@ docs/{BUILD.md,USE.md,TESTING.md}  .github/workflows/build.yml  AGENTS.md
   - `batteryPercent`: ADC GPIO13 × 2.0, mapped linearly from 3.3 V (0%) to 4.15 V (100%).
 - `class Renderer { public: bool begin(); void draw(const Grid& g, TextSize s); };` Owns a 320×240×2 PSRAM frame. For each dirty row, it rasterises the cells with `glyphFor` from the font matching `s`, pushes that pixel band, then calls `g.clearDirty()` on the caller's grid. After a text-size change, the caller marks every row dirty with `fill`.
 
-- [ ] **Step 1: Implement the HAL**, porting from `../rhino-moshi/firmware/src/panel_m9.cpp` and `buttons.cpp` (key reading) and `../camillia/camillia-mt/src/keyboard.cpp` (`m9ReleaseUsbPads`).
-- [ ] **Step 2: Implement `Renderer`.**
-- [ ] **Step 3: Temporary bring-up `main.cpp`:**
+- [x] **Step 1: Implement the HAL**, porting from `../rhino-moshi/firmware/src/panel_m9.cpp` and `buttons.cpp` (key reading) and `../camillia/camillia-mt/src/keyboard.cpp` (`m9ReleaseUsbPads`).
+- [x] **Step 2: Implement `Renderer`.**
+- [x] **Step 3: Temporary bring-up `main.cpp`:**
   - draw a 53×20 compact grid containing the full printable ASCII set, the box glyphs and a nick-colour sample;
   - every key prints `[key] raw=0x.. action=..` (via `mapM9Key`) to serial and appears on screen;
   - Ctrl (Palette) toggles Comfortable/Compact;
   - `ScreenOff` turns the backlight off; only `Select` wakes it.
-- [ ] **Step 4: Run** `pio run -e m9`. Expected: SUCCESS.
+- [x] **Step 4: Run** `pio run -e m9`. Expected: SUCCESS.
 - [ ] **Step 5: Hardware check (human):** `scripts/build-upload-monitor.sh m9`. Expect:
   - correct orientation, with the keyboard below the screen;
   - crisp glyphs;
@@ -506,7 +506,7 @@ docs/{BUILD.md,USE.md,TESTING.md}  .github/workflows/build.yml  AGENTS.md
   - screen off and wake on centre only.
 
   Record the results in the commit message.
-- [ ] **Step 6: Commit** `feat(m9): HAL, ST7789 dirty-row renderer, STC8H keyboard`.
+- [x] **Step 6: Commit** `feat(m9): HAL, ST7789 dirty-row renderer, STC8H keyboard`.
 
 ### Task 15: Settings and Wi-Fi manager
 

@@ -95,22 +95,22 @@ docs/{BUILD.md,USE.md,TESTING.md}  .github/workflows/build.yml  AGENTS.md
 **Interfaces:**
 - Produces: `#define RC_VERSION "0.1.0"` in `core_version.h`. Envs `m9`, `m9_fake` (adds `-DRC_FAKE_API=1`) and `native`. Every later task adds sources under these paths.
 
-- [ ] **Step 1: Write `platformio.ini`**
+- [x] **Step 1: Write `platformio.ini`**
   - `[env]`: `platform = https://github.com/pioarduino/platform-espressif32/releases/download/55.03.312/platform-espressif32.zip`, `framework = arduino`, `monitor_speed = 115200`, `upload_speed = 921600`, `lib_deps = bblanchon/ArduinoJson@^7.0.0, ricmoo/QRCode@^0.0.1`.
   - `[env:m9]`: `board = esp32-s3-devkitc-1`, `board_build.arduino.memory_type = qio_opi`, `board_build.flash_mode = qio`, `board_upload.flash_size = 16MB`, `board_upload.maximum_size = 16777216`, `board_build.partitions = default_16MB.csv`, `build_flags = -DBOARD_M9 -DBOARD_HAS_PSRAM -DARDUINO_USB_MODE=1 -DARDUINO_USB_CDC_ON_BOOT=0 -std=gnu++17`, `build_unflags = -std=gnu++11`.
   - `[env:m9_fake]`: `extends = env:m9`, `build_flags = ${env:m9.build_flags} -DRC_FAKE_API=1`.
   - `[env:native]`: `platform = native`, `framework =` (empty), `test_framework = unity`, `build_flags = -std=gnu++17 -DRC_NATIVE=1`, `lib_compat_mode = off`, `lib_deps = bblanchon/ArduinoJson@^7.0.0, ricmoo/QRCode@^0.0.1`.
-- [ ] **Step 2: Write `lib/core/library.json`** as `{"name":"core","version":"0.1.0","build":{"flags":"-std=gnu++17"}}`, plus `core_version.h`.
-- [ ] **Step 3: Write the smoke test** `test/test_smoke/test_main.cpp`, asserting `TEST_ASSERT_EQUAL_STRING("0.1.0", RC_VERSION)` with a Unity `main()`.
-- [ ] **Step 4: Run** `pio test -e native`. Expected: `test_smoke … PASSED`.
-- [ ] **Step 5: Write `src/main.cpp`**: `setup()` calls `heap_caps_malloc_extmem_enable(64)`, `Serial.begin(115200)`, and prints `[boot] rhino-cyberspace <RC_VERSION> board=M9`. `loop()` does `delay(1000)`.
-- [ ] **Step 6: Run** `pio run -e m9 && pio run -e m9_fake`. Expected: both `SUCCESS`.
-- [ ] **Step 7:** Copy `../rhino-moshi/scripts/build-upload-monitor.sh` (or write an equivalent: `pio run -e "${1:-m9}" -t upload && pio device monitor -b 115200`). Write `docs/BUILD.md` covering prerequisites (PlatformIO Core ≥ 6.1), the three envs, the upload command, and the serial monitor.
-- [ ] **Step 8: Amend the spec.**
+- [x] **Step 2: Write `lib/core/library.json`** as `{"name":"core","version":"0.1.0","build":{"flags":"-std=gnu++17"}}`, plus `core_version.h`.
+- [x] **Step 3: Write the smoke test** `test/test_smoke/test_main.cpp`, asserting `TEST_ASSERT_EQUAL_STRING("0.1.0", RC_VERSION)` with a Unity `main()`.
+- [x] **Step 4: Run** `pio test -e native`. Expected: `test_smoke … PASSED`.
+- [x] **Step 5: Write `src/main.cpp`**: `setup()` calls `heap_caps_malloc_extmem_enable(64)`, `Serial.begin(115200)`, and prints `[boot] rhino-cyberspace <RC_VERSION> board=M9`. `loop()` does `delay(1000)`.
+- [x] **Step 6: Run** `pio run -e m9 && pio run -e m9_fake`. Expected: both `SUCCESS`.
+- [x] **Step 7:** Copy `../rhino-moshi/scripts/build-upload-monitor.sh` (or write an equivalent: `pio run -e "${1:-m9}" -t upload && pio device monitor -b 115200`). Write `docs/BUILD.md` covering prerequisites (PlatformIO Core ≥ 6.1), the three envs, the upload command, and the serial monitor.
+- [x] **Step 8: Amend the spec.**
   - §3: replace the LovyanGFX line with "Display: a direct ST7789 driver with a full-frame RGB565 canvas in PSRAM, pushing dirty row bands (ported from rhino-moshi `panel_m9.cpp`)".
   - §4: add that each open SSE stream (at most two: room messages, room presence) runs in its own reader task on core 0, and that the chat store is shared under a mutex.
   - §6/§8: the time zone is a POSIX TZ string.
-- [ ] **Step 9: Commit** `chore: scaffold PlatformIO project (m9, m9_fake, native)`.
+- [x] **Step 9: Commit** `chore: scaffold PlatformIO project (m9, m9_fake, native)`.
 
 ### Task 2: UTF-8 and base64 utilities
 
@@ -122,16 +122,16 @@ docs/{BUILD.md,USE.md,TESTING.md}  .github/workflows/build.yml  AGENTS.md
 - `size_t utf8Length(std::string_view s);` Counts code points.
 - `bool base64Decode(std::string_view in, std::string& out);` Standard alphabet; ignores `\n`/`\r`; false on any other invalid char.
 
-- [ ] **Step 1: Write failing tests:**
+- [x] **Step 1: Write failing tests:**
   - `test_utf8_roundtrip`: `"héllo 🎲"` → 7 code points → back equal.
   - `test_utf8_invalid`: `"a\xffb"` → `{U'a', 0xFFFD, U'b'}`.
   - `test_utf8_truncated`: `"\xe2\x94"` → one or two U+FFFD with no crash.
   - `test_base64_art`: `"IC9cXy9cCiggby5vICkKID4gXiA8"` → `" /\\_/\\\n( o.o )\n > ^ <"`.
   - `test_base64_invalid`: `"@@@"` → false.
-- [ ] **Step 2: Run** `pio test -e native -f test_util`. Expected: FAIL (link errors).
-- [ ] **Step 3: Implement.**
-- [ ] **Step 4: Run** the same. Expected: PASS.
-- [ ] **Step 5: Commit** `feat(core): utf8 and base64 utilities`.
+- [x] **Step 2: Run** `pio test -e native -f test_util`. Expected: FAIL (link errors).
+- [x] **Step 3: Implement.**
+- [x] **Step 4: Run** the same. Expected: PASS.
+- [x] **Step 5: Commit** `feat(core): utf8 and base64 utilities`.
 
 ### Task 3: Nick colours and theme
 
@@ -144,15 +144,15 @@ docs/{BUILD.md,USE.md,TESTING.md}  .github/workflows/build.yml  AGENTS.md
 - `uint16_t nickColor(std::string_view name, bool isSelf);` Self → gold `0xFE8C` (#FFD166); others → `hslToRgb565(nickHue, 0.70f, 0.68f)`.
 - `struct Theme { uint16_t bg, fg, dim, barBg, barFg, hintBg, hintFg, time, sys, mentionBg, inputBg, cursorBg, cursorFg, selectBg, selectFg, drawerBg, drawerEdge, error; };` `const Theme& defaultTheme();`. Values follow the mockups: bg black, fg #B8C0CC, dim #555555, bar #1B2A1B on #7CFC7C, time #5B9BFF, sys #6C7A89, mention #22223A, select #7CFC7C on black, error #FF5555.
 
-- [ ] **Step 1: Write failing tests:**
+- [x] **Step 1: Write failing tests:**
   - `test_fnv_values`: `fnv1a32Lower("tardibyte")==1666852401u`, `("genghis_khan")==2518148919u`, `("oumike")==727871219u`, `("A")==3826002220u`, `("")==2166136261u`.
   - `test_hue`: tardibyte 201, genghis_khan 39, oumike 179, A 340.
   - `test_hsl`: `hslToRgb565(0,1,0.5f)==0xF800`, `(120,1,0.5f)==0x07E0`, `(240,1,0.5f)==0x001F`, `(0,0,1)==0xFFFF`.
   - `test_self_gold`: `nickColor("x",true)==0xFE8C`.
-- [ ] **Step 2: Run** `pio test -e native -f test_nick_color`. Expected: FAIL.
-- [ ] **Step 3: Implement.**
-- [ ] **Step 4: Run.** Expected: PASS.
-- [ ] **Step 5: Commit** `feat(core): website nick-colour hash and default theme`.
+- [x] **Step 2: Run** `pio test -e native -f test_nick_color`. Expected: FAIL.
+- [x] **Step 3: Implement.**
+- [x] **Step 4: Run.** Expected: PASS.
+- [x] **Step 5: Commit** `feat(core): website nick-colour hash and default theme`.
 
 ### Task 4: Word wrap with hanging indent
 

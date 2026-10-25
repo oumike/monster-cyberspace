@@ -40,3 +40,22 @@ scripts/build-upload-monitor.sh m9   # flash + serial monitor (115200)
 `src/` holds the M9 HAL, networking, tasks, screens, and the web server. Hardware
 references live in the sibling projects `../camillia/camillia-mt/src/hal/hw_m9.h`
 and `../rhino-moshi/firmware/`.
+
+## Progress (hand-off from Claude Code, 2026-10-25)
+
+Work is on branch **`m1-circ`**. Tasks 1–3 of the plan are done and committed,
+with their boxes ticked in the plan. **Next: Task 4 (word wrap).** The native
+suite is green: 11/11 (`pio test -e native`), and `pio run -e m9` and
+`-e m9_fake` both build.
+
+Notes for whoever continues:
+- Each task follows test-driven development: write the plan's tests first, run
+  them and watch them fail, implement, run them green, then commit with the
+  plan's commit message.
+- **Task 13:** add `-Isrc/ui/fonts` to the `native` env's `build_flags` so the
+  header-only `cell_font.h` compiles in the glyph tests.
+- If the first `pio run` fails with
+  `FileNotFoundError: 'package-postinstall.py'` while installing
+  `esptoolpy`, run it again. It's a one-off PlatformIO install glitch.
+- The design mockups the user approved are described in spec §5–§6. The
+  original HTML lives in the git-ignored `.superpowers/brainstorm/` folder.

@@ -5,6 +5,7 @@
 #include <sys/time.h>
 
 #include <cctype>
+#include <map>
 #include <mutex>
 #include <vector>
 
@@ -16,6 +17,9 @@
 // The scripted fake API for the m9_fake build: no network, no account.
 // Fixture rooms, a scripted message every 4 s, 12 people (3 idle), sends that
 // echo after 300 ms, a 400 for "/dice x" and the real local send limit.
+// C-Mail: rain (2 unread), moth and kiwi (empty). A DM send echoes, then the
+// partner types for 2 s and replies; rain writes every 45 s; starting a
+// conversation with "nobody" fails with "User not found".
 
 namespace rc {
 
@@ -76,6 +80,27 @@ struct Echo {
   std::string slug, text;
 };
 
+enum class DmStep { Echo, TypingOn, Reply };
+
+struct DmEvent {
+  int64_t due;
+  DmStep step;
+  std::string conv, text;
+};
+
+std::string lower(std::string v) {
+  for (char& ch : v) ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
+  return v;
+}
+
+const char* kReplies[] = {
+    "ha, yes",
+    "typing this from my phone, one sec",
+    "same here honestly",
+    "that's the best thing i've read all day",
+    "ok, talk later",
+};
+
 class FakeChatSource : public ChatSource {
  public:
   void command(const Command& c) override;
@@ -86,10 +111,22 @@ class FakeChatSource : public ChatSource {
   void run();
   void scripted();
   void fillPresence(ChatState& s);
+  void seedCmail(int64_t now);
+  void sendDm(const Command& c);
+  void startConversation(const std::string& name);
+  void appendDm(const std::string& conv, CircMessage m, bool alert);
+  void setTyping(const std::string& conv, bool on);
+  void runDm(int64_t now);
 
-  std::mutex mu_;  // guards echoes_, sendL_, paused_, olderPages_
+  // Lock order: mu_, then lockedChat(); never the other way round.
+  std::mutex mu_;  // guards echoes_, sendL_, paused_, olderPages_, dms_, dmEvents_
   std::vector<Echo> echoes_;
   RateLimiter sendL_ = makeCircSendLimiter();
+  RateLimiter cmailL_ = makeCmailSendLimiter();
+  std::map<std::string, std::vector<CircMessage>> dms_;  // conversation id → messages
+  std::vector<DmEvent> dmEvents_;
+  int64_t nextRainDm_ = 0;
+  int replyN_ = 0;
   bool paused_ = false;
   int olderPages_ = 2;
   int step_ = 0, seq_ = 0;
@@ -123,9 +160,11 @@ void FakeChatSource::start() {
     s.readAt["music"] = now - 4 * 60 * kMin;  // linux shows as unread
     s.readAt["linux"] = now - 60 * kMin;
   });
+  seedCmail(now);
   postEvent(Event{EvtType::AuthState, kSelf, 1});
   postEvent(Event{EvtType::ConnState, "", 2});
   postEvent(Event{EvtType::RoomsUpdated});
+  postEvent(Event{EvtType::ConversationsUpdated});
   xTaskCreatePinnedToCore(taskMain, "fake", 8192, this, 3, nullptr, 0);
 }
 
@@ -138,6 +177,8 @@ void FakeChatSource::command(const Command& c) {
       }
       lockedChat().with([&](ChatState& s) {
         s.roomSlug = c.a;
+        s.dm = false;
+        s.typing.clear();
         s.noOlder = false;
         s.store.replaceAll(history(c.a, epochMs(), 30, 0));
         fillPresence(s);
@@ -150,12 +191,19 @@ void FakeChatSource::command(const Command& c) {
     case CmdType::CloseRoom:
       lockedChat().with([](ChatState& s) {
         s.roomSlug.clear();
+        s.dm = false;
         s.store.clear();
         s.presence.clear();
+        s.typing.clear();
       });
       postEvent(Event{EvtType::RoomChanged});
       break;
     case CmdType::Send: {
+      bool dm = lockedChat().with([&](ChatState& s) { return s.dm && s.roomSlug == c.a; });
+      if (dm) {
+        sendDm(c);
+        break;
+      }
       std::lock_guard<std::mutex> g(mu_);
       int64_t now = mono();
       if (c.b.rfind("/dice x", 0) == 0) {
@@ -212,7 +260,12 @@ void FakeChatSource::command(const Command& c) {
       postEvent(Event{EvtType::Banner, "Reported"});
       break;
     case CmdType::MarkRead:
-      lockedChat().with([&](ChatState& s) { s.readAt[c.a] = s.store.newestTimestamp(); });
+      lockedChat().with([&](ChatState& s) {
+        s.readAt[c.a] = s.store.newestTimestamp();
+        for (auto& cv : s.conversations)
+          if (cv.id == c.a) cv.unread = 0;
+      });
+      postEvent(Event{EvtType::ConversationsUpdated});
       break;
     case CmdType::OpenPresence:
     case CmdType::ClosePresence:
@@ -240,11 +293,35 @@ void FakeChatSource::command(const Command& c) {
       paused_ = false;
       break;
     }
-    case CmdType::Activity:
-    case CmdType::OpenConversation:
+    case CmdType::OpenConversation: {
+      std::vector<CircMessage> msgs;
+      {
+        std::lock_guard<std::mutex> g(mu_);
+        msgs = dms_[c.a];
+      }
+      lockedChat().with([&](ChatState& s) {
+        s.roomSlug = c.a;
+        s.dm = true;
+        s.noOlder = true;
+        s.presence.clear();
+        s.typing.clear();
+        s.store.replaceAll(std::move(msgs));
+        s.readAt[c.a] = s.store.newestTimestamp();
+        for (auto& cv : s.conversations)
+          if (cv.id == c.a) cv.unread = 0;
+      });
+      postEvent(Event{EvtType::RoomChanged});
+      postEvent(Event{EvtType::ConversationsUpdated});
+      break;
+    }
     case CmdType::StartConversation:
+      startConversation(c.a);
+      break;
     case CmdType::RefreshConversations:
-    case CmdType::Typing:
+      postEvent(Event{EvtType::ConversationsUpdated});
+      break;
+    case CmdType::Activity:
+    case CmdType::Typing:  // the fake has no one to show our typing to
       break;
   }
 }
@@ -256,7 +333,7 @@ void FakeChatSource::scripted() {
   bool mention = false;
   std::string room;
   lockedChat().with([&](ChatState& s) {
-    if (s.roomSlug.empty()) return;
+    if (s.roomSlug.empty() || s.dm) return;
     room = s.roomSlug;
     CircMessage m = msg(id, who, "", now);
     switch (step_ % 8) {
@@ -330,10 +407,170 @@ void FakeChatSource::run() {
       postEvent(Event{EvtType::SendDone});
       postEvent(Event{EvtType::RoomChanged});
     }
+    runDm(now);
     if (!paused && now >= nextScript) {
       nextScript = now + 4000;
       scripted();
     }
+  }
+}
+
+// ---- C-Mail ----
+
+void FakeChatSource::seedCmail(int64_t now) {
+  auto dm = [&](const std::string& who, const std::string& text, int64_t ts) {
+    CircMessage m = msg("dm" + std::to_string(++seq_), who, text, ts);
+    return m;
+  };
+  {
+    std::lock_guard<std::mutex> g(mu_);
+    dms_["c-rain"] = {
+        dm(kSelf, "did you get the m9 running?", now - 50 * kMin),
+        dm("rain", "yes! the keyboard took some getting used to", now - 12 * kMin),
+        dm("rain", "want to try c-mail on it?", now - 11 * kMin),
+    };
+    dms_["c-moth"] = {
+        dm("moth", "thanks for the link earlier", now - 26 * 60 * kMin),
+        dm(kSelf, "any time", now - 25 * 60 * kMin),
+    };
+    dms_["c-kiwi"] = {};
+    nextRainDm_ = mono() + 45000;
+  }
+  lockedChat().with([&](ChatState& s) {
+    s.conversations = {
+        ConversationInfo{"c-rain", "u-rain", "rain", "want to try c-mail on it?", now - 11 * kMin, 2,
+                         false},
+        ConversationInfo{"c-moth", "u-moth", "moth", "any time", now - 25 * 60 * kMin, 0, false},
+        ConversationInfo{"c-kiwi", "u-kiwi", "kiwi", "", 0, 0, false},
+    };
+  });
+}
+
+void FakeChatSource::sendDm(const Command& c) {
+  std::lock_guard<std::mutex> g(mu_);
+  int64_t now = mono();
+  if (!cmailL_.tryAcquire(now)) {
+    int64_t s = (cmailL_.retryAfterMs(now) + 999) / 1000;
+    postEvent(Event{EvtType::SendDone, "Slow down: try in " + std::to_string(s) + "s", 429, false});
+    return;
+  }
+  dmEvents_.push_back(DmEvent{now + 300, DmStep::Echo, c.a, c.b});
+  dmEvents_.push_back(DmEvent{now + 1300, DmStep::TypingOn, c.a, ""});
+  dmEvents_.push_back(
+      DmEvent{now + 3300, DmStep::Reply, c.a, kReplies[replyN_++ % 5]});
+}
+
+void FakeChatSource::startConversation(const std::string& name) {
+  std::string want = lower(name);
+  if (!want.empty() && want[0] == '@') want.erase(0, 1);
+  if (want.empty() || want == "nobody") {
+    postEvent(Event{EvtType::ConversationStarted, "User not found", 404, false});
+    return;
+  }
+  if (want == kSelf) {
+    postEvent(Event{EvtType::ConversationStarted, "You can't message yourself", 400, false});
+    return;
+  }
+  std::string id = "c-" + want;
+  {
+    std::lock_guard<std::mutex> g(mu_);
+    dms_[id];  // creates it empty if new
+  }
+  lockedChat().with([&](ChatState& s) {
+    for (const auto& cv : s.conversations)
+      if (cv.id == id) return;
+    s.conversations.insert(s.conversations.begin(),
+                           ConversationInfo{id, "u-" + want, want, "", 0, 0, false});
+  });
+  postEvent(Event{EvtType::ConversationsUpdated});
+  postEvent(Event{EvtType::ConversationStarted, id});
+}
+
+// Stores a DM and shows it if its conversation is open; otherwise counts it
+// unread and, for the partner's messages, raises an alert.
+void FakeChatSource::appendDm(const std::string& conv, CircMessage m, bool alert) {
+  {
+    std::lock_guard<std::mutex> g(mu_);
+    dms_[conv].push_back(m);
+  }
+  bool open = false;
+  std::string who = m.username, text = m.content;
+  lockedChat().with([&](ChatState& s) {
+    open = s.dm && s.roomSlug == conv;
+    for (auto& cv : s.conversations) {
+      if (cv.id != conv) continue;
+      cv.lastMessage = m.content;
+      cv.lastMessageAt = m.timestamp;
+      if (!open && m.username != kSelf) ++cv.unread;
+    }
+    if (open) {
+      s.store.upsert(std::move(m));
+      s.readAt[conv] = s.store.newestTimestamp();
+    }
+  });
+  postEvent(Event{EvtType::ConversationsUpdated});
+  if (open) postEvent(Event{EvtType::RoomChanged});
+  else if (alert) postEvent(Event{EvtType::CmailAlert, "C-Mail from @" + who + ": " + text});
+}
+
+void FakeChatSource::setTyping(const std::string& conv, bool on) {
+  bool changed = lockedChat().with([&](ChatState& s) {
+    if (!s.dm || s.roomSlug != conv) return false;
+    std::string partner;
+    for (const auto& cv : s.conversations)
+      if (cv.id == conv) partner = cv.partner;
+    if (partner.empty()) return false;
+    TypingEntry& e = s.typing["u-" + partner];
+    e.userId = "u-" + partner;
+    e.username = partner;
+    e.typing = on;
+    e.timestamp = epochMs();
+    return true;
+  });
+  if (changed) postEvent(Event{EvtType::TypingChanged});
+}
+
+void FakeChatSource::runDm(int64_t now) {
+  std::vector<DmEvent> due;
+  bool rain = false;
+  {
+    std::lock_guard<std::mutex> g(mu_);
+    for (auto it = dmEvents_.begin(); it != dmEvents_.end();) {
+      if (it->due <= now) {
+        due.push_back(*it);
+        it = dmEvents_.erase(it);
+      } else {
+        ++it;
+      }
+    }
+    if (now >= nextRainDm_) {
+      nextRainDm_ = now + 45000;
+      rain = true;
+    }
+  }
+  for (auto& e : due) {
+    std::string id = "dm" + std::to_string(++seq_);
+    switch (e.step) {
+      case DmStep::Echo:
+        appendDm(e.conv, msg(id, kSelf, e.text, epochMs()), false);
+        postEvent(Event{EvtType::SendDone});
+        break;
+      case DmStep::TypingOn:
+        setTyping(e.conv, true);
+        break;
+      case DmStep::Reply: {
+        setTyping(e.conv, false);
+        std::string partner = e.conv.substr(2);  // "c-<name>"
+        appendDm(e.conv, msg(id, partner, e.text, epochMs()), true);
+        break;
+      }
+    }
+  }
+  if (rain) {
+    static const char* lines[] = {"you around?", "look outside, it's pouring",
+                                  "sent you a link in #music", "ping"};
+    std::string id = "dm" + std::to_string(++seq_);
+    appendDm("c-rain", msg(id, "rain", lines[seq_ % 4], epochMs()), true);
   }
 }
 

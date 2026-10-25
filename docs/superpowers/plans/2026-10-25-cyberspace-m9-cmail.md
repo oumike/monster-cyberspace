@@ -70,13 +70,13 @@
 
 **Files:** `src/chat/fake_chat_source.cpp`
 
-- [ ] **Step 1:** Add fixture conversations: rain with 2 unread, moth, and
+- [x] **Step 1:** Add fixture conversations: rain with 2 unread, moth, and
   kiwi with no messages. Opening one loads its history. A send echoes; the
   partner then shows as typing for 2 s and replies.
-- [ ] **Step 2:** Every 45 s, rain sends a DM, which raises `CmailAlert`
+- [x] **Step 2:** Every 45 s, rain sends a DM, which raises `CmailAlert`
   unless that conversation is open. `StartConversation` creates or returns
   a conversation, and `"nobody"` returns a "User not found" error.
-- [ ] **Step 3: Run** `pio run -e m9_fake`, then **commit**
+- [x] **Step 3: Run** `pio run -e m9_fake`, then **commit**
   `feat(fake): scripted C-Mail`.
 
 ### Task 5: Screens

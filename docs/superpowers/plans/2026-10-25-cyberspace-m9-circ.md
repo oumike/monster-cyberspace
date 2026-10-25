@@ -206,7 +206,7 @@ docs/{BUILD.md,USE.md,TESTING.md}  .github/workflows/build.yml  AGENTS.md
 - `class SseParser { public: using Handler = std::function<void(const SseEvent&)>; void feed(const char* buf, size_t len, const Handler& onEvent); void reset(); size_t maxEventBytes = 256 * 1024; bool overflowed() const; };`
   - Per the SSE spec: lines end with `\n`, `\r\n` or `\r`. `event:` sets the name. `data:` lines are joined with `\n`. A blank line dispatches. Lines starting with `:` are comments. One optional space after the colon is stripped. Above `maxEventBytes`, the event is discarded and `overflowed()` is set until the next dispatch.
 
-- [ ] **Step 1: Write failing tests:**
+- [x] **Step 1: Write failing tests:**
   - `test_single_event`: `"event: put\ndata: {\"path\":\"/\",\"data\":null}\n\n"` → one event, name `put`, data exact.
   - `test_crlf`: the same with `\r\n`.
   - `test_multiline_data`: two `data:` lines → joined with `\n`.
@@ -214,10 +214,10 @@ docs/{BUILD.md,USE.md,TESTING.md}  .github/workflows/build.yml  AGENTS.md
   - `test_keepalive`: `"event: keep-alive\ndata: null\n\n"` → name `keep-alive`.
   - `test_comment_ignored`.
   - `test_overflow`: `maxEventBytes = 16` with 100-byte data → no event, `overflowed()` true. A following small event still parses.
-- [ ] **Step 2: Run** `pio test -e native -f test_sse`. Expected: FAIL.
-- [ ] **Step 3: Implement.**
-- [ ] **Step 4: Run.** Expected: PASS.
-- [ ] **Step 5: Commit** `feat(core): incremental SSE parser`.
+- [x] **Step 2: Run** `pio test -e native -f test_sse`. Expected: FAIL.
+- [x] **Step 3: Implement.**
+- [x] **Step 4: Run.** Expected: PASS.
+- [x] **Step 5: Commit** `feat(core): incremental SSE parser`.
 
 ### Task 7: Message JSON, RTDB URLs and stream apply, presence
 

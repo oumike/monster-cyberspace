@@ -272,15 +272,15 @@ docs/{BUILD.md,USE.md,TESTING.md}  .github/workflows/build.yml  AGENTS.md
 - `struct Mention { std::string id, roomSlug, roomName, actorUsername, messageContent; };` `bool parseMentions(std::string_view body, std::vector<Mention>& out);` Reads `metadata.roomSlug`, `metadata.roomName`, `metadata.messageContent`.
 - `bool parseUnreadCount(std::string_view body, int& count, bool& exact);`
 
-- [ ] **Step 1: Write fixtures** copied from the spec and API docs shapes: a login response, a refresh without `refreshToken`, a rooms list of three rooms, a history page with cursor `1719700000000`, a history page with `"cursor":null`, users with an idle `lastActivity`, a presence ack with `heartbeatMs 30000`, `staleAfterMs 180000` and `idleAfterMs 600000`, a send result, a `/help` reply, a `chat_mention` notification list, an unread count `{count:100,exact:false}`, and errors `RATE_LIMITED 429`, `EMAIL_NOT_VERIFIED 403` and an HTML 502 body.
-- [ ] **Step 2: Write failing tests**, one per parser, asserting every field above, plus:
+- [x] **Step 1: Write fixtures** copied from the spec and API docs shapes: a login response, a refresh without `refreshToken`, a rooms list of three rooms, a history page with cursor `1719700000000`, a history page with `"cursor":null`, users with an idle `lastActivity`, a presence ack with `heartbeatMs 30000`, `staleAfterMs 180000` and `idleAfterMs 600000`, a send result, a `/help` reply, a `chat_mention` notification list, an unread count `{count:100,exact:false}`, and errors `RATE_LIMITED 429`, `EMAIL_NOT_VERIFIED 403` and an HTML 502 body.
+- [x] **Step 2: Write failing tests**, one per parser, asserting every field above, plus:
   - `test_error_non_json`: 502 HTML → code `"HTTP_502"`.
   - `test_history_null_cursor` → `-1`.
   - `test_message_empty_content_with_image` → content `""` and `imageUrl` set.
-- [ ] **Step 3: Run** `pio test -e native -f test_api_parse`. Expected: FAIL.
-- [ ] **Step 4: Implement**, reusing `messageFromJson`.
-- [ ] **Step 5: Run.** Expected: PASS.
-- [ ] **Step 6: Commit** `feat(core): REST response parsers with fixtures`.
+- [x] **Step 3: Run** `pio test -e native -f test_api_parse`. Expected: FAIL.
+- [x] **Step 4: Implement**, reusing `messageFromJson`.
+- [x] **Step 5: Run.** Expected: PASS.
+- [x] **Step 6: Commit** `feat(core): REST response parsers with fixtures`.
 
 ### Task 9: Rate limiter and token refresh schedule
 

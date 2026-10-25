@@ -343,16 +343,16 @@ docs/{BUILD.md,USE.md,TESTING.md}  .github/workflows/build.yml  AGENTS.md
 - `bool validApPassword(std::string_view pw);` Empty → true (open AP). Otherwise 8–63 printable ASCII.
 - `bool checkBasicAuth(std::string_view authorizationHeader, std::string_view password);` Empty password → true. Otherwise requires `Basic base64("admin:" + password)`.
 
-- [ ] **Step 1: Write failing tests:**
+- [x] **Step 1: Write failing tests:**
   - Every row of the table, for both `early = true` and `false` where it matters.
   - `wakesScreen` is true only for Select.
   - `setupApSsid("M9") == "Rhino-Cyberspace-M9-Setup"`.
   - Passwords: `""` true, `"short"` false, 8 chars true, 64 chars false.
   - `checkBasicAuth("Basic YWRtaW46cGFzcw==", "pass")` true, the wrong password false, `""` password → true.
-- [ ] **Step 2: Run** `pio test -e native -f test_keymap_web`. Expected: FAIL.
-- [ ] **Step 3: Implement.**
-- [ ] **Step 4: Run.** Expected: PASS.
-- [ ] **Step 5: Commit** `feat(core): M9 keymap and web config helpers`.
+- [x] **Step 2: Run** `pio test -e native -f test_keymap_web`. Expected: FAIL.
+- [x] **Step 3: Implement.**
+- [x] **Step 4: Run.** Expected: PASS.
+- [x] **Step 5: Commit** `feat(core): M9 keymap and web config helpers`.
 
 ### Task 11: Grid, time formatting, room layout
 

@@ -43,9 +43,9 @@ and `../rhino-moshi/firmware/`.
 
 ## Progress (hand-off from Claude Code, 2026-10-25)
 
-Work is on branch **`m1-circ`**. Tasks 1–9 of the plan are done and committed,
-with their boxes ticked in the plan. **Next: Task 10 (M9 keymap, web utilities).** The native
-suite is green: 65/65 (`pio test -e native`), and `pio run -e m9` and
+Work is on branch **`m1-circ`**. Tasks 1–10 of the plan are done and committed,
+with their boxes ticked in the plan. **Next: Task 11 (grid, time formatting, room layout).** The native
+suite is green: 71/71 (`pio test -e native`), and `pio run -e m9` and
 `-e m9_fake` both build.
 
 Notes for whoever continues:

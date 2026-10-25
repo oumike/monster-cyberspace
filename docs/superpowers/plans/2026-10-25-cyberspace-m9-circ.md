@@ -459,15 +459,15 @@ docs/{BUILD.md,USE.md,TESTING.md}  .github/workflows/build.yml  AGENTS.md
 - `const uint8_t* glyphFor(const CellFont& f, char32_t cp);` Binary search. Missing glyphs fall back to `U'?'`'s glyph, or to a box when `0xFFFD` is absent.
 - `lib/core/src/ui/glyph_set.h` defines `constexpr char32_t kExtraGlyphs[]`: `─│┌┐└┘├┤┬┴┼ ● ◌ ✕ ▂ ▄ ▆ ▀ █ ▒ · … ← ↑ → ↓ • z ▶ ✓ 🎲(→'*') 🎱(→'8') 🥠(→'f') U+FFFD`. Emoji not in Terminus map to the ASCII stand-ins shown.
 
-- [ ] **Step 1: Write `scripts/bdf2cells.py <bdf> <name>`**, adapted from `../rhino-moshi/scripts/bdf2gfx.py`. It emits glyphs for 0x20–0x7E, 0xA0–0xFF and every code point in `glyph_set.h`, padded to the font bounding box, as a `CellFont` header. Source: Terminus 4.49.1 `ter-u12n.bdf` (6×12) and `ter-u16n.bdf` (8×16) from <https://sourceforge.net/projects/terminus-font/>. Download into a fresh directory outside the repo and run the script with `python3 -I`. Commit only the generated headers and the OFL text. The fonts are named `cell6x12`/`cell8x16`, not "Terminus", per the OFL Reserved Font Name.
-- [ ] **Step 2: Generate both headers.**
-- [ ] **Step 3: Write failing tests**, compiling the generated headers into the native test via `-Isrc/ui/fonts`:
+- [x] **Step 1: Write `scripts/bdf2cells.py <bdf> <name>`**, adapted from `../rhino-moshi/scripts/bdf2gfx.py`. It emits glyphs for 0x20–0x7E, 0xA0–0xFF and every code point in `glyph_set.h`, padded to the font bounding box, as a `CellFont` header. Source: Terminus 4.49.1 `ter-u12n.bdf` (6×12) and `ter-u16n.bdf` (8×16) from <https://sourceforge.net/projects/terminus-font/>. Download into a fresh directory outside the repo and run the script with `python3 -I`. Commit only the generated headers and the OFL text. The fonts are named `cell6x12`/`cell8x16`, not "Terminus", per the OFL Reserved Font Name.
+- [x] **Step 2: Generate both headers.**
+- [x] **Step 3: Write failing tests**, compiling the generated headers into the native test via `-Isrc/ui/fonts`:
   - `test_ascii_present`
   - `test_box_drawing_present`
   - `test_missing_falls_back`
   - `test_dims`: 6×12 and 8×16
-- [ ] **Step 4: Run** `pio test -e native -f test_glyphs`. Expected: PASS after implementing `glyphFor` in `cell_font.h` (header-only).
-- [ ] **Step 5: Commit** `feat: Terminus-derived 6x12 and 8x16 cell fonts`.
+- [x] **Step 4: Run** `pio test -e native -f test_glyphs`. Expected: PASS after implementing `glyphFor` in `cell_font.h` (header-only).
+- [x] **Step 5: Commit** `feat: Terminus-derived 6x12 and 8x16 cell fonts`.
 
 ### Task 14: M9 HAL and renderer (hardware bring-up)
 

@@ -780,8 +780,8 @@ docs/{BUILD.md,USE.md,TESTING.md}  .github/workflows/build.yml  AGENTS.md
 
 **Files:** Create `docs/USE.md`, `docs/TESTING.md`, `.github/workflows/build.yml`, `AGENTS.md`, `.github/copilot-instructions.md` (a two-line pointer to `AGENTS.md`), `README.md`
 
-- [ ] **Step 1: `docs/USE.md`:** first setup (open AP, the address to browse, login), the button map (spec §5 table), room controls, text sizes and drawer, alerts, the security notes, and returning to setup mode with a factory reset (Home screen or web config).
-- [ ] **Step 2: `docs/TESTING.md`:** the host test command, the `m9_fake` procedure, and the **live checklist (human only)** from spec §10.3 as checkboxes:
+- [x] **Step 1: `docs/USE.md`:** first setup (open AP, the address to browse, login), the button map (spec §5 table), room controls, text sizes and drawer, alerts, the security notes, and returning to setup mode with a factory reset (Home screen or web config).
+- [x] **Step 2: `docs/TESTING.md`:** the host test command, the `m9_fake` procedure, and the **live checklist (human only)** from spec §10.3 as checkboxes:
   - web login
   - join a room
   - send plain, `/me` and a bad `/dice`
@@ -791,15 +791,15 @@ docs/{BUILD.md,USE.md,TESTING.md}  .github/workflows/build.yml  AGENTS.md
   - delete your own message → tombstone on the website
   - Wi-Fi off/on
   - more than 70 minutes of uptime across a token refresh
-- [ ] **Step 3: `.github/workflows/build.yml`:** on push and PR. Use `actions/setup-python@v5`, `pip install platformio`, `pio test -e native`, `pio run -e m9 -e m9_fake`, with a cache of `~/.platformio`.
-- [ ] **Step 4: `AGENTS.md`:**
+- [x] **Step 3: `.github/workflows/build.yml`:** on push and PR. Use `actions/setup-python@v5`, `pip install platformio`, `pio test -e native`, `pio run -e m9 -e m9_fake`, with a cache of `~/.platformio`.
+- [x] **Step 4: `AGENTS.md`:**
   - the project summary;
   - links to the spec and this plan;
   - the Global Constraints above, especially "never call the live API from an agent", "no captive portal" and the LoRa gateway note from spec §12;
   - build and test commands;
   - "work tasks in order, tick plan checkboxes, one commit per task".
-- [ ] **Step 5: Run** `pio test -e native && pio run -e m9 -e m9_fake`. Expected: all PASS / SUCCESS.
-- [ ] **Step 6: Commit** `docs: usage, testing checklist, CI, agent instructions`.
+- [x] **Step 5: Run** `pio test -e native && pio run -e m9 -e m9_fake`. Expected: all PASS / SUCCESS.
+- [x] **Step 6: Commit** `docs: usage, testing checklist, CI, agent instructions`.
 
 ---
 

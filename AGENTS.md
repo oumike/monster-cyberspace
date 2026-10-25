@@ -6,6 +6,7 @@ web config page, on the Elecrow ThinkNode M9. More boards and Cyberspace
 features come later.
 
 - **Design spec:** `docs/superpowers/specs/2026-10-25-cyberspace-m9-circ-design.md`
+- **User guide:** `docs/USE.md`. **Testing and the live checklist:** `docs/TESTING.md`.
 - **Implementation plan:** `docs/superpowers/plans/2026-10-25-cyberspace-m9-circ.md`.
   Work its tasks in order, tick each `- [ ]` box as you finish a step, and
   commit once per task. The plan's "Global Constraints" apply to every task.
@@ -43,8 +44,9 @@ and `../rhino-moshi/firmware/`.
 
 ## Progress (hand-off from Claude Code, 2026-10-25)
 
-Work is on branch **`m1-circ`**. Tasks 1–21 of the plan are done and committed, with their boxes ticked in the plan. The hardware
-checks for Tasks 20 and 21 are still open: they were built without flashing. **Next: Task 22 (docs, live checklist, CI, agent notes).**
+Work is on branch **`m1-circ`**. All 22 tasks of the plan are done and committed, with their boxes ticked in the plan.
+**Still open: the hardware checks for Tasks 20 and 21** (built without flashing), then the human live
+checklist in `docs/TESTING.md` on the `m9` build. CI (`.github/workflows/build.yml`) runs once the repo has a remote.
 The native suite is green: 111/111
 (`pio test -e native`), and `pio run -e m9` and `-e m9_fake` both build.
 
@@ -56,8 +58,9 @@ Notes for whoever continues:
   from Terminus 4.49.1 (download outside the repo, run with `python3 -I`).
   Glyphs Terminus lacks are aliased in `lib/core/src/ui/glyph_set.h`.
 - Wake (user decision): holding centre wakes the screen. A centre tap while
-  dark shows a 10 s read-only screensaver; it is a placeholder in `src/main.cpp`
-  for now, and Task 20 builds the real one (spec §5).
+  dark shows a 10 s read-only screensaver (`src/app/ui_task.cpp`, spec §5).
+- Locking: never call `chatSource().command()` inside `lockedChat().with(...)`.
+  The fake source handles commands inline and would deadlock the UI task.
 - Setup mode (user decision): there is no boot gesture. It runs only with no
   Wi-Fi saved; a factory reset (Home screen, Task 19; web config, Task 21)
   gets back there. The M9 HAL no longer reads BOOT (GPIO0).

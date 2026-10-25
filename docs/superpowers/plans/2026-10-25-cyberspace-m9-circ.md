@@ -388,7 +388,7 @@ docs/{BUILD.md,USE.md,TESTING.md}  .github/workflows/build.yml  AGENTS.md
 - `mentionTint` is true on every line of a message that mentions `selfUsername`.
 - Every line of a message carries that message's `messageId`. Divider lines carry `divider = true` and an empty id.
 
-- [ ] **Step 1: Write failing tests** (set `TZ=UTC0` in `setUp`):
+- [x] **Step 1: Write failing tests** (set `TZ=UTC0` in `setUp`):
   - `test_grid_dims`: 40×15 and 53×20.
   - `test_grid_dirty`: the same put twice marks dirty once; after `clearDirty`, putting the same cell leaves it clean.
   - `test_time`: `formatHHMM(1761400920000) == "14:02"` and `formatDay(...) == "Sat 25 Oct"`.
@@ -403,10 +403,10 @@ docs/{BUILD.md,USE.md,TESTING.md}  .github/workflows/build.yml  AGENTS.md
   - `test_muted_skipped`.
   - `test_long_no_space_message`: 2,048 chars → a line count equal to `ceil` of the first and continuation widths, with no line longer than cols.
   - `test_emoji_body`: an emoji counts as one cell.
-- [ ] **Step 2: Run** `pio test -e native -f test_layout`. Expected: FAIL.
-- [ ] **Step 3: Implement** using `wrapText`, `nickColor` and `base64Decode`.
-- [ ] **Step 4: Run.** Expected: PASS.
-- [ ] **Step 5: Commit** `feat(core): cell grid and cIRC room layout (comfortable/compact)`.
+- [x] **Step 2: Run** `pio test -e native -f test_layout`. Expected: FAIL.
+- [x] **Step 3: Implement** using `wrapText`, `nickColor` and `base64Decode`.
+- [x] **Step 4: Run.** Expected: PASS.
+- [x] **Step 5: Commit** `feat(core): cell grid and cIRC room layout (comfortable/compact)`.
 
 ### Task 12: Widgets
 

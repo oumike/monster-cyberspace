@@ -1,0 +1,315 @@
+#include <unity.h>
+
+#include <cstdlib>
+#include <ctime>
+#include <deque>
+#include <set>
+#include <string>
+
+#include "ui/grid.h"
+#include "ui/nick_color.h"
+#include "ui/room_layout.h"
+#include "ui/theme.h"
+#include "ui/timefmt.h"
+#include "util/utf8.h"
+
+using namespace rc;
+
+static const int64_t kTs = 1761400920000LL;  // Sat 25 Oct 2025 14:02 UTC
+
+void setUp() {
+  setenv("TZ", "UTC0", 1);
+  tzset();
+}
+void tearDown() {}
+
+static CircMessage msg(const std::string& id, const std::string& user,
+                       const std::string& content, int64_t ts = kTs) {
+  CircMessage m;
+  m.id = id;
+  m.userId = "u-" + user;
+  m.username = user;
+  m.content = content;
+  m.timestamp = ts;
+  return m;
+}
+
+static std::string flat(const DisplayLine& l) {
+  std::u32string s;
+  for (const auto& sp : l.spans) s += sp.text;
+  return u32ToUtf8(s);
+}
+
+static size_t width(const DisplayLine& l) {
+  size_t n = 0;
+  for (const auto& sp : l.spans) n += sp.text.size();
+  return n;
+}
+
+static LayoutOptions opts(TextSize s, int cols) {
+  LayoutOptions o;
+  o.size = s;
+  o.cols = cols;
+  o.selfUsername = "oumike";
+  return o;
+}
+
+// Lines of the messages only (no dividers).
+static std::vector<DisplayLine> body(const std::vector<DisplayLine>& in) {
+  std::vector<DisplayLine> out;
+  for (const auto& l : in)
+    if (!l.divider) out.push_back(l);
+  return out;
+}
+
+void test_grid_dims() {
+  int c, r;
+  gridDims(320, 240, TextSize::Comfortable, c, r);
+  TEST_ASSERT_EQUAL(40, c);
+  TEST_ASSERT_EQUAL(15, r);
+  gridDims(320, 240, TextSize::Compact, c, r);
+  TEST_ASSERT_EQUAL(53, c);
+  TEST_ASSERT_EQUAL(20, r);
+  TEST_ASSERT_EQUAL(8, cellSize(TextSize::Comfortable).w);
+  TEST_ASSERT_EQUAL(12, cellSize(TextSize::Compact).h);
+}
+
+void test_grid_dirty() {
+  Grid g(10, 3);
+  g.clearDirty();
+  g.put(1, 1, U'a', 1, 0);
+  TEST_ASSERT_TRUE(g.rowDirty(1));
+  TEST_ASSERT_FALSE(g.rowDirty(0));
+  g.clearDirty();
+  g.put(1, 1, U'a', 1, 0);
+  TEST_ASSERT_FALSE(g.rowDirty(1));
+  g.put(1, 1, U'a', 2, 0);
+  TEST_ASSERT_TRUE(g.rowDirty(1));
+  g.clearDirty();
+  g.put(-1, 0, U'x', 1, 0);
+  g.put(10, 0, U'x', 1, 0);
+  g.put(0, 3, U'x', 1, 0);
+  TEST_ASSERT_FALSE(g.rowDirty(0));
+  TEST_ASSERT_EQUAL(3, g.putText(6, 2, U"hello", 1, 0, 3));
+  TEST_ASSERT_EQUAL_HEX32(U'h', g.at(6, 2).cp);
+  TEST_ASSERT_EQUAL_HEX32(U'e', g.at(7, 2).cp);
+  TEST_ASSERT_EQUAL(2, g.putText(8, 1, U"hello", 1, 0, 9));
+}
+
+void test_time() {
+  TEST_ASSERT_EQUAL_STRING("14:02", formatHHMM(kTs).c_str());
+  TEST_ASSERT_EQUAL_STRING("Sat 25 Oct", formatDay(kTs).c_str());
+  TEST_ASSERT_EQUAL_STRING("Sun 5 Oct", formatDay(1759622400000LL).c_str());
+}
+
+void test_compact_basic() {
+  std::deque<CircMessage> d{msg("m1", "tardibyte",
+                                "anyone else on the 4.0 beta yet? the grid build tools are finally in")};
+  auto lines = body(layoutRoom(d, opts(TextSize::Compact, 53)));
+  TEST_ASSERT_EQUAL(2, lines.size());
+  TEST_ASSERT_EQUAL_STRING("14:02 tardibyte: anyone else on the 4.0 beta yet? the",
+                           flat(lines[0]).c_str());
+  TEST_ASSERT_EQUAL_STRING("                 grid build tools are finally in",
+                           flat(lines[1]).c_str());
+  TEST_ASSERT_EQUAL_STRING("m1", lines[1].messageId.c_str());
+  const Theme& t = defaultTheme();
+  TEST_ASSERT_EQUAL_HEX16(t.time, lines[0].spans[0].fg);
+  TEST_ASSERT_EQUAL_HEX16(nickColor("tardibyte", false), lines[0].spans[1].fg);
+}
+
+void test_compact_long_nick_indent() {
+  std::deque<CircMessage> d{msg("m1", "averyveryverylongnick", std::string(80, 'w'))};
+  auto lines = body(layoutRoom(d, opts(TextSize::Compact, 53)));
+  TEST_ASSERT_TRUE(lines.size() >= 2);
+  TEST_ASSERT_EQUAL_STRING("      w", flat(lines[1]).substr(0, 7).c_str());
+}
+
+void test_compact_day_divider_first() {
+  std::deque<CircMessage> d{msg("m1", "a", "one"), msg("m2", "b", "two", kTs + 60000),
+                            msg("m3", "c", "three", kTs + 86400000LL)};
+  auto lines = layoutRoom(d, opts(TextSize::Compact, 53));
+  TEST_ASSERT_EQUAL(5, lines.size());
+  TEST_ASSERT_TRUE(lines[0].divider);
+  TEST_ASSERT_EQUAL_STRING("", lines[0].messageId.c_str());
+  std::string div = flat(lines[0]);
+  TEST_ASSERT_EQUAL(0, div.find("\xe2\x94\x80\xe2\x94\x80 Sat 25 Oct "));
+  TEST_ASSERT_EQUAL(53, width(lines[0]));
+  TEST_ASSERT_EQUAL_HEX16(defaultTheme().dim, lines[0].spans[0].fg);
+  TEST_ASSERT_FALSE(lines[1].divider);
+  TEST_ASSERT_FALSE(lines[2].divider);
+  TEST_ASSERT_TRUE(lines[3].divider);
+  TEST_ASSERT_TRUE(flat(lines[3]).find("Sun 26 Oct") != std::string::npos);
+}
+
+void test_comfortable_layout() {
+  std::deque<CircMessage> d{msg("m1", "tardibyte", "hi"),
+                            msg("m2", "genghis_khan_the_great", std::string(40, 'z'))};
+  auto lines = body(layoutRoom(d, opts(TextSize::Comfortable, 40)));
+  TEST_ASSERT_EQUAL_STRING("tardibyte  hi", flat(lines[0]).c_str());
+  TEST_ASSERT_EQUAL_STRING("genghis_k\xe2\x80\xa6 zzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+                           flat(lines[1]).c_str());
+  TEST_ASSERT_EQUAL_STRING("           zzzzzzzzzzz", flat(lines[2]).c_str());
+}
+
+void test_comfortable_minute_divider() {
+  std::deque<CircMessage> d{msg("m1", "a", "one"), msg("m2", "b", "two", kTs + 30000),
+                            msg("m3", "c", "three", kTs + 60000)};
+  auto lines = layoutRoom(d, opts(TextSize::Comfortable, 40));
+  int dividers = 0;
+  for (const auto& l : lines) dividers += l.divider;
+  TEST_ASSERT_EQUAL(2, dividers);
+  TEST_ASSERT_TRUE(lines[0].divider);
+  TEST_ASSERT_EQUAL(0, flat(lines[0]).find("\xe2\x94\x80\xe2\x94\x80 14:02 "));
+  TEST_ASSERT_EQUAL(40, width(lines[0]));
+  TEST_ASSERT_TRUE(lines[3].divider);
+  TEST_ASSERT_TRUE(flat(lines[3]).find("14:03") != std::string::npos);
+}
+
+void test_action_line() {
+  CircMessage m = msg("m1", "rain", "slaps tardibyte around a bit with a large trout");
+  m.isAction = true;
+  std::deque<CircMessage> d{m};
+  auto c = body(layoutRoom(d, opts(TextSize::Compact, 53)));
+  TEST_ASSERT_EQUAL(0, flat(c[0]).find("14:02 * rain slaps tardibyte"));
+  TEST_ASSERT_EQUAL_HEX16(defaultTheme().sys, c[0].spans.back().fg);
+  auto f = body(layoutRoom(d, opts(TextSize::Comfortable, 40)));
+  TEST_ASSERT_EQUAL(0, flat(f[0]).find("* rain slaps tardibyte"));
+}
+
+void test_deleted() {
+  CircMessage m = msg("m1", "rain", "[DELETED]");
+  m.deleted = true;
+  std::deque<CircMessage> d{m};
+  auto lines = body(layoutRoom(d, opts(TextSize::Compact, 53)));
+  TEST_ASSERT_EQUAL(1, lines.size());
+  TEST_ASSERT_EQUAL_STRING("14:02 rain: [deleted]", flat(lines[0]).c_str());
+  TEST_ASSERT_EQUAL_HEX16(defaultTheme().dim, lines[0].spans.back().fg);
+}
+
+void test_spoiler_hidden_then_revealed() {
+  CircMessage m = msg("m1", "rain", "snape kills");
+  m.styles = {"spoiler"};
+  std::deque<CircMessage> d{m};
+  LayoutOptions o = opts(TextSize::Compact, 53);
+  auto hidden = body(layoutRoom(d, o));
+  TEST_ASSERT_TRUE(flat(hidden[0]).find("spoiler") != std::string::npos);
+  TEST_ASSERT_TRUE(flat(hidden[0]).find("snape") == std::string::npos);
+  std::set<std::string> revealed{"m1"};
+  o.revealed = &revealed;
+  auto shown = body(layoutRoom(d, o));
+  TEST_ASSERT_EQUAL_STRING("14:02 rain: snape kills", flat(shown[0]).c_str());
+}
+
+void test_eightball_fortune() {
+  CircMessage e = msg("m1", "rain", "will it work?");
+  e.isEightball = true;
+  e.eightballAnswer = "Ask again later";
+  CircMessage f = msg("m2", "rain", "");
+  f.isFortune = true;
+  f.fortuneText = "You will ship.";
+  std::deque<CircMessage> d{e, f};
+  auto lines = body(layoutRoom(d, opts(TextSize::Compact, 53)));
+  TEST_ASSERT_EQUAL_STRING(
+      "14:02 rain: \xf0\x9f\x8e\xb1 will it work? \xe2\x86\x92 Ask again later",
+      flat(lines[0]).c_str());
+  TEST_ASSERT_EQUAL_STRING("14:02 rain: \xf0\x9f\xa5\xa0 You will ship.", flat(lines[1]).c_str());
+}
+
+void test_art_clipped() {
+  // 70 x's then 10 y's, base64.
+  CircMessage m = msg("m1", "rain",
+                      "eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4"
+                      "eHh4eHh4eHh4eHh4eHh4eAp5eXl5eXl5eXl5Cg==");
+  m.styles = {"art"};
+  std::deque<CircMessage> d{m};
+  auto lines = body(layoutRoom(d, opts(TextSize::Compact, 53)));
+  TEST_ASSERT_EQUAL(3, lines.size());
+  TEST_ASSERT_EQUAL_STRING("14:02 rain:", flat(lines[0]).c_str());
+  TEST_ASSERT_EQUAL_STRING(std::string(53, 'x').c_str(), flat(lines[1]).c_str());
+  TEST_ASSERT_EQUAL_STRING("yyyyyyyyyy", flat(lines[2]).c_str());
+  for (const auto& l : lines) TEST_ASSERT_TRUE(width(l) <= 53);
+}
+
+void test_image_only_no_double_url() {
+  CircMessage m = msg("m1", "rain", "https://b.io/i.png");
+  m.imageUrl = "https://b.io/i.png";
+  CircMessage g = msg("m2", "rain", "look");
+  g.gifUrl = "https://t.co/x.gif";
+  CircMessage s = msg("m3", "rain", "");
+  s.hasAudio = true;
+  s.audio.artist = "Artist";
+  s.audio.title = "Song";
+  std::deque<CircMessage> d{m, g, s};
+  auto lines = body(layoutRoom(d, opts(TextSize::Compact, 53)));
+  TEST_ASSERT_EQUAL(4, lines.size());
+  TEST_ASSERT_EQUAL_STRING("14:02 rain: [img] https://b.io/i.png", flat(lines[0]).c_str());
+  TEST_ASSERT_EQUAL_STRING("14:02 rain: look", flat(lines[1]).c_str());
+  TEST_ASSERT_EQUAL_STRING("            [gif] https://t.co/x.gif", flat(lines[2]).c_str());
+  TEST_ASSERT_EQUAL_STRING("14:02 rain: [song] Artist \xe2\x80\x93 Song", flat(lines[3]).c_str());
+}
+
+void test_mention_tint() {
+  std::deque<CircMessage> d{msg("m1", "rain", "hey @OuMike " + std::string(30, 'q')),
+                            msg("m2", "rain", "hey all")};
+  auto lines = body(layoutRoom(d, opts(TextSize::Compact, 53)));
+  TEST_ASSERT_EQUAL(3, lines.size());
+  TEST_ASSERT_TRUE(lines[0].mentionTint);
+  TEST_ASSERT_TRUE(lines[1].mentionTint);
+  TEST_ASSERT_FALSE(lines[2].mentionTint);
+}
+
+void test_self_gold() {
+  std::deque<CircMessage> d{msg("m1", "oumike", "me")};
+  auto lines = body(layoutRoom(d, opts(TextSize::Compact, 53)));
+  TEST_ASSERT_EQUAL_HEX16(0xFE8C, lines[0].spans[1].fg);
+}
+
+void test_muted_skipped() {
+  std::deque<CircMessage> d{msg("m1", "troll", "spam"), msg("m2", "rain", "ok")};
+  std::set<std::string> muted{"troll"};
+  LayoutOptions o = opts(TextSize::Compact, 53);
+  o.muted = &muted;
+  auto lines = body(layoutRoom(d, o));
+  TEST_ASSERT_EQUAL(1, lines.size());
+  TEST_ASSERT_EQUAL_STRING("m2", lines[0].messageId.c_str());
+}
+
+void test_long_no_space_message() {
+  std::deque<CircMessage> d{msg("m1", "x", std::string(2048, 'a'))};
+  auto lines = body(layoutRoom(d, opts(TextSize::Compact, 53)));
+  // Body starts at 6 + 1 + 2 = 9, so 44 cells per line.
+  const int w = 53 - 9;
+  TEST_ASSERT_EQUAL((2048 + w - 1) / w, lines.size());
+  for (const auto& l : lines) TEST_ASSERT_TRUE(width(l) <= 53);
+}
+
+void test_emoji_body() {
+  std::deque<CircMessage> d{msg("m1", "rain", "\xf0\x9f\x8e\xb2\xf0\x9f\x8e\xb2")};
+  auto lines = body(layoutRoom(d, opts(TextSize::Compact, 53)));
+  TEST_ASSERT_EQUAL(1, lines.size());
+  TEST_ASSERT_EQUAL(12 + 2, width(lines[0]));
+}
+
+int main() {
+  UNITY_BEGIN();
+  RUN_TEST(test_grid_dims);
+  RUN_TEST(test_grid_dirty);
+  RUN_TEST(test_time);
+  RUN_TEST(test_compact_basic);
+  RUN_TEST(test_compact_long_nick_indent);
+  RUN_TEST(test_compact_day_divider_first);
+  RUN_TEST(test_comfortable_layout);
+  RUN_TEST(test_comfortable_minute_divider);
+  RUN_TEST(test_action_line);
+  RUN_TEST(test_deleted);
+  RUN_TEST(test_spoiler_hidden_then_revealed);
+  RUN_TEST(test_eightball_fortune);
+  RUN_TEST(test_art_clipped);
+  RUN_TEST(test_image_only_no_double_url);
+  RUN_TEST(test_mention_tint);
+  RUN_TEST(test_self_gold);
+  RUN_TEST(test_muted_skipped);
+  RUN_TEST(test_long_no_space_message);
+  RUN_TEST(test_emoji_body);
+  return UNITY_END();
+}

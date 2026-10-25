@@ -44,6 +44,46 @@ Check every screen and key:
 - the error banners
 - screen off, the screensaver and wake
 
+## Open hardware checks
+
+These were built without flashing and still need a run on the device.
+
+**Room screen (`m9_fake`):**
+
+- [ ] Typing never stalls or freezes, including fast typing while messages arrive
+- [ ] Comfortable and Compact sizes; the drawer opens in each, and the log doesn't reflow
+- [ ] Ctrl palette: pick a command; pick a text size
+- [ ] Room menu: Who's here, Mute…, Unmute…, Mark read, Text size, Leave room
+- [ ] Muting a nick hides their messages; unmuting brings them back
+- [ ] Message menu: Reply inserts `@name `, Reveal unmasks a spoiler, Show full opens art
+- [ ] Show link displays the URL and a scannable QR code (try a GIF link)
+- [ ] Delete own message (with confirm) → `[deleted]`
+- [ ] Report (with confirm), with a reason typed in the input line
+- [ ] `/dice x` → error banner, and the text is back in the input line
+- [ ] The 16th fast send → "Slow down" banner, and the text stays
+- [ ] Up at the top loads older history; Down past the newest returns to typing
+- [ ] Screen off (hold centre), a tap shows the screensaver for 10 s, a hold wakes; other keys are ignored
+
+**Web config (`m9`):**
+
+- [ ] With no Wi-Fi saved: the setup AP appears, `http://192.168.4.1` loads, and nothing pops up
+- [ ] Scan lists networks; saving one restarts the device onto it
+- [ ] `http://rhino-cyberspace.local` and the IP both load the page
+- [ ] Status shows the version, IP, signal, battery and chat state
+- [ ] Removing a saved network works; with five saved, adding a sixth is refused
+- [ ] Display: text size and buzzer change on the device at once; the time zone changes the clock
+- [ ] Setting a page password → the browser asks for Basic auth (user `admin`); clearing it removes the prompt
+- [ ] Setting an AP password → WPA2 after a factory reset; clearing it → open again
+- [ ] Restart works; Factory reset (two confirms) → setup mode with everything erased
+- [ ] Home screen → Factory reset… → Erase everything does the same
+
+**API assumptions to confirm (watch the serial log during the live checklist):**
+
+- [ ] `GET /v1/users/me` shape: Home shows the right username and verified state
+- [ ] `mutedUsersByRoom` shape: mutes made on the website hide messages on the device
+- [ ] An expired or revoked token signs the device out cleanly, without a loop
+- [ ] Rooms open whether the list gives an id or a slug
+
 ## Live checklist (human only)
 
 Agents and scripts must never call the live Cyberspace API. A person runs

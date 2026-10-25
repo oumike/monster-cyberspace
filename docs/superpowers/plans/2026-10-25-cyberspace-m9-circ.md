@@ -576,11 +576,12 @@ docs/{BUILD.md,USE.md,TESTING.md}  .github/workflows/build.yml  AGENTS.md
   - Writes check their `RateLimiter` first. When a limiter refuses, they return `ApiError{429, "LOCAL_RATE_LIMIT", "Slow down: try in Ns"}` without a request.
   - On `401` they refresh once and retry the same call once. That retry is allowed for auth expiry only. No retry follows a successful write that returned 5xx.
 - Accessors: `const Tokens& tokens() const; bool signedIn() const; void signOut();` `signOut` clears the tokens and calls `settings::clearToken()`.
+- Also `void setRefreshToken(const std::string&)` (restores a session from NVS at boot) and `void expireNow()` (forces the next `ensureFresh` to refresh, for RTDB `auth_revoked`). The resend-verification limiter is 1/min and 5/hour; `leave` shares the presence limiter.
 
-- [ ] **Step 1: Implement** both.
-- [ ] **Step 2: Run** `pio run -e m9`. Expected: SUCCESS.
-- [ ] **Step 3: Grep check:** `grep -rn "idToken\|refreshToken\|password" src | grep -i "print\|log"` returns nothing that logs a value.
-- [ ] **Step 4: Commit** `feat: HTTPS client and Cyberspace API layer with local rate limits`.
+- [x] **Step 1: Implement** both.
+- [x] **Step 2: Run** `pio run -e m9`. Expected: SUCCESS.
+- [x] **Step 3: Grep check:** `grep -rn "idToken\|refreshToken\|password" src | grep -i "print\|log"` returns nothing that logs a value.
+- [x] **Step 4: Commit** `feat: HTTPS client and Cyberspace API layer with local rate limits`.
 
 ### Task 17: SSE client
 

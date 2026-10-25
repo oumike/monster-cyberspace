@@ -431,7 +431,7 @@ docs/{BUILD.md,USE.md,TESTING.md}  .github/workflows/build.yml  AGENTS.md
 - `struct PaletteEntry { std::u32string label; std::u32string insert; bool isTextSize = false; };` `const std::vector<PaletteEntry>& paletteEntries();`. The first entry is `Text size: Comfortable/Compact` (`isTextSize`). The rest insert `"/cmd "` for `me slap poke hug hi5 dice 8ball fortune gif art spoiler blink l33t comic cursive times rainbow flip quiet slow glitch wave localtime help muted`.
 - `bool qrToCells(std::string_view text, std::vector<std::u32string>& rows);` Uses ricmoo QRCode with ECC_LOW at the smallest version from 1–10 that fits. Two modules per cell vertically, drawn with `█ ▀ ▄ ' '` and a one-module quiet zone. Returns false if the text doesn't fit version 10.
 
-- [ ] **Step 1: Write failing tests:**
+- [x] **Step 1: Write failing tests:**
   - `test_input_insert_cursor`.
   - `test_input_right_at_end_false`.
   - `test_input_byte_cap`: inserting 2,049 ASCII chars leaves 2,048.
@@ -445,10 +445,10 @@ docs/{BUILD.md,USE.md,TESTING.md}  .github/workflows/build.yml  AGENTS.md
   - `test_banner_expires`.
   - `test_palette_first_is_text_size`.
   - `test_qr_small_url`: `"https://tenor.com/x"` → true, with rows ≤ 15.
-- [ ] **Step 2: Run** `pio test -e native -f test_widgets`. Expected: FAIL.
-- [ ] **Step 3: Implement.**
-- [ ] **Step 4: Run.** Expected: PASS.
-- [ ] **Step 5: Commit** `feat(core): text widgets, drawer, palette, QR cells`.
+- [x] **Step 2: Run** `pio test -e native -f test_widgets`. Expected: FAIL.
+- [x] **Step 3: Implement.**
+- [x] **Step 4: Run.** Expected: PASS.
+- [x] **Step 5: Commit** `feat(core): text widgets, drawer, palette, QR cells`.
 
 ### Task 13: Cell fonts
 

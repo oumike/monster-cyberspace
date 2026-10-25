@@ -1,0 +1,264 @@
+#include <unity.h>
+
+#include <string>
+#include <vector>
+
+#include "ui/grid.h"
+#include "ui/qr_cells.h"
+#include "ui/theme.h"
+#include "ui/widgets/banner.h"
+#include "ui/widgets/drawer.h"
+#include "ui/widgets/input_line.h"
+#include "ui/widgets/list_view.h"
+#include "ui/widgets/log_view.h"
+#include "ui/widgets/palette.h"
+#include "ui/widgets/status_bar.h"
+#include "util/utf8.h"
+
+using namespace rc;
+
+void setUp() {}
+void tearDown() {}
+
+static const Theme& T() { return defaultTheme(); }
+
+static std::string rowText(const Grid& g, int row, int from = 0, int to = -1) {
+  if (to < 0) to = g.cols();
+  std::u32string s;
+  for (int c = from; c < to; ++c) s += g.at(c, row).cp;
+  return u32ToUtf8(s);
+}
+
+static DisplayLine line(const std::string& id, const std::string& text, bool divider = false) {
+  DisplayLine l;
+  l.messageId = divider ? "" : id;
+  l.divider = divider;
+  l.spans.push_back({utf8ToU32(text), 1});
+  return l;
+}
+
+void test_input_insert_cursor() {
+  InputLine in;
+  for (char32_t c : std::u32string(U"hllo")) in.insert(c);
+  TEST_ASSERT_EQUAL(4, in.cursor());
+  for (int i = 0; i < 3; ++i) TEST_ASSERT_TRUE(in.left());
+  in.insert(U'e');
+  TEST_ASSERT_EQUAL_STRING("hello", in.utf8().c_str());
+  TEST_ASSERT_EQUAL(2, in.cursor());
+  in.setText(U"abc");
+  TEST_ASSERT_EQUAL(3, in.cursor());
+  in.clear();
+  TEST_ASSERT_EQUAL_STRING("", in.utf8().c_str());
+  TEST_ASSERT_FALSE(in.left());
+}
+
+void test_input_right_at_end_false() {
+  InputLine in;
+  in.setText(U"ab");
+  TEST_ASSERT_TRUE(in.atEnd());
+  TEST_ASSERT_FALSE(in.right());
+  TEST_ASSERT_TRUE(in.left());
+  TEST_ASSERT_FALSE(in.atEnd());
+  TEST_ASSERT_TRUE(in.right());
+}
+
+void test_input_byte_cap() {
+  InputLine in;
+  for (int i = 0; i < 2049; ++i) in.insert(U'a');
+  TEST_ASSERT_EQUAL(2048, in.utf8().size());
+  in.backspace();
+  in.insert(U'\U0001F3B2');  // 4 bytes don't fit in the 1 byte left
+  TEST_ASSERT_EQUAL(2047, in.utf8().size());
+}
+
+void test_input_backspace_multibyte() {
+  InputLine in;
+  in.insert(U'a');
+  in.insert(U'\U0001F3B2');
+  in.backspace();
+  TEST_ASSERT_EQUAL_STRING("a", in.utf8().c_str());
+  in.backspace();
+  in.backspace();
+  TEST_ASSERT_EQUAL_STRING("", in.utf8().c_str());
+}
+
+void test_input_hscroll() {
+  Grid g(10, 2);
+  InputLine in;
+  in.setText(U"abcdefghijklmnopqrst");
+  in.render(g, 1, T());
+  TEST_ASSERT_EQUAL_STRING("> ", rowText(g, 1, 0, 2).c_str());
+  TEST_ASSERT_EQUAL_HEX32(U't', g.at(8, 1).cp);
+  TEST_ASSERT_EQUAL_HEX16(T().cursorBg, g.at(9, 1).bg);
+  in.setDisabled(true);
+  in.render(g, 1, T());
+  TEST_ASSERT_EQUAL_HEX16(T().dim, g.at(8, 1).fg);
+  TEST_ASSERT_NOT_EQUAL(T().cursorBg, g.at(9, 1).bg);
+}
+
+void test_log_follow_and_select() {
+  LogView v;
+  v.setLines({line("", "-- day --", true), line("a", "one"), line("b", "two"),
+              line("b", "  two more"), line("", "-- day --", true), line("c", "three")});
+  TEST_ASSERT_TRUE(v.following());
+  v.up();
+  TEST_ASSERT_FALSE(v.following());
+  TEST_ASSERT_EQUAL_STRING("c", v.selectedId().c_str());
+  v.up();
+  TEST_ASSERT_EQUAL_STRING("b", v.selectedId().c_str());
+  v.up();
+  TEST_ASSERT_EQUAL_STRING("a", v.selectedId().c_str());
+  TEST_ASSERT_TRUE(v.atTop());
+  v.up();
+  TEST_ASSERT_EQUAL_STRING("a", v.selectedId().c_str());
+  v.down();
+  v.down();
+  TEST_ASSERT_EQUAL_STRING("c", v.selectedId().c_str());
+  v.down();
+  TEST_ASSERT_TRUE(v.following());
+  TEST_ASSERT_EQUAL_STRING("", v.selectedId().c_str());
+}
+
+void test_log_render_follow_and_select() {
+  std::vector<DisplayLine> ls;
+  for (int i = 0; i < 10; ++i) ls.push_back(line("m" + std::to_string(i), "line" + std::to_string(i)));
+  ls[9].mentionTint = true;
+  LogView v;
+  v.setLines(ls);
+  Grid g(12, 5);
+  v.render(g, 1, 4, 2, T());  // rows 1..3, 10 cols wide
+  TEST_ASSERT_EQUAL_STRING("line7", rowText(g, 1, 0, 5).c_str());
+  TEST_ASSERT_EQUAL_STRING("line9", rowText(g, 3, 0, 5).c_str());
+  TEST_ASSERT_EQUAL_HEX16(T().mentionBg, g.at(0, 3).bg);
+  TEST_ASSERT_EQUAL_HEX16(T().mentionBg, g.at(9, 3).bg);
+  TEST_ASSERT_NOT_EQUAL(T().mentionBg, g.at(10, 3).bg);  // right reserve untouched
+  for (int i = 0; i < 5; ++i) v.up();  // selects m5
+  v.render(g, 1, 4, 2, T());
+  TEST_ASSERT_EQUAL_STRING("line5", rowText(g, 3, 0, 5).c_str());
+  TEST_ASSERT_EQUAL_HEX16(T().selectBg, g.at(0, 3).bg);
+}
+
+void test_log_preserves_selection_on_setLines() {
+  LogView v;
+  v.setLines({line("a", "one"), line("b", "two"), line("c", "three")});
+  v.up();
+  v.up();
+  TEST_ASSERT_EQUAL_STRING("b", v.selectedId().c_str());
+  v.setLines({line("z", "older"), line("a", "one"), line("b", "two"), line("c", "three"),
+              line("d", "four")});
+  TEST_ASSERT_EQUAL_STRING("b", v.selectedId().c_str());
+  v.down();
+  TEST_ASSERT_EQUAL_STRING("c", v.selectedId().c_str());
+  v.setLines({line("a", "one")});  // selection gone
+  TEST_ASSERT_TRUE(v.following());
+}
+
+void test_list_scrolls() {
+  std::vector<ListItem> items;
+  for (int i = 0; i < 10; ++i) items.push_back({utf8ToU32("item" + std::to_string(i)), U"", 1});
+  items[7].marker = true;
+  items[7].right = U"3";
+  ListView lv;
+  lv.setItems(items);
+  for (int i = 0; i < 7; ++i) lv.down();
+  TEST_ASSERT_EQUAL(7, lv.selected());
+  Grid g(20, 6);
+  lv.render(g, 1, 5, 0, 20, T());  // 4 rows
+  TEST_ASSERT_EQUAL_STRING("\xe2\x80\xa2 item7", rowText(g, 4, 0, 7).c_str());
+  TEST_ASSERT_EQUAL_HEX32(U'3', g.at(18, 4).cp);
+  TEST_ASSERT_EQUAL_HEX16(T().selectBg, g.at(0, 4).bg);
+  TEST_ASSERT_EQUAL_STRING("  item4", rowText(g, 1, 0, 7).c_str());
+  for (int i = 0; i < 20; ++i) lv.down();
+  TEST_ASSERT_EQUAL(9, lv.selected());
+  for (int i = 0; i < 20; ++i) lv.up();
+  TEST_ASSERT_EQUAL(0, lv.selected());
+}
+
+void test_drawer_idle_marker() {
+  PresenceEntry a, b;
+  a.username = "rain";
+  a.online = true;
+  a.lastActivity = 1000;
+  b.username = "tardibyte";
+  b.online = true;
+  b.lastActivity = -1;
+  Drawer d;
+  d.setPeople({a, b}, 1000 + 600000, 300000);
+  TEST_ASSERT_EQUAL(15, Drawer::width(TextSize::Compact));
+  TEST_ASSERT_EQUAL(15, Drawer::width(TextSize::Comfortable));
+  Grid g(40, 6);
+  d.render(g, 1, 6, T());
+  int x = 40 - 15;
+  TEST_ASSERT_EQUAL_STRING("here \xc2\xb7 2", rowText(g, 1, x + 1, x + 9).c_str());
+  TEST_ASSERT_EQUAL_STRING("rain z", rowText(g, 2, x + 1, x + 7).c_str());
+  TEST_ASSERT_EQUAL_STRING("tardibyte ", rowText(g, 3, x + 1, x + 11).c_str());
+  TEST_ASSERT_EQUAL_HEX16(T().drawerBg, g.at(39, 5).bg);
+  TEST_ASSERT_EQUAL_STRING("rain", d.selectedUsername().c_str());
+  d.down();
+  TEST_ASSERT_EQUAL_STRING("tardibyte", d.selectedUsername().c_str());
+}
+
+void test_status_bar_layout() {
+  Grid g(40, 2);
+  renderStatusBar(g, T(), U"#general", 12, U'\u25cf', 3, 87, "14:02");
+  TEST_ASSERT_EQUAL_STRING(" #general", rowText(g, 0, 0, 9).c_str());
+  TEST_ASSERT_EQUAL_STRING("14:02 ", rowText(g, 0, 34, 40).c_str());
+  TEST_ASSERT_TRUE(rowText(g, 0).find("12") != std::string::npos);
+  TEST_ASSERT_TRUE(rowText(g, 0).find("\xe2\x97\x8f") != std::string::npos);
+  TEST_ASSERT_TRUE(rowText(g, 0).find("87%") != std::string::npos);
+  TEST_ASSERT_EQUAL_HEX16(T().barBg, g.at(20, 0).bg);
+}
+
+void test_banner_expires() {
+  Banner b;
+  TEST_ASSERT_FALSE(b.visible(0));
+  b.show(U"Sent too fast", 1000, 3000, true);
+  TEST_ASSERT_TRUE(b.visible(3999));
+  TEST_ASSERT_FALSE(b.visible(4000));
+  Grid g(20, 3);
+  b.render(g, 2, T(), 2000);
+  TEST_ASSERT_EQUAL_STRING(" Sent too fast", rowText(g, 2, 0, 14).c_str());
+  TEST_ASSERT_EQUAL_HEX16(T().error, g.at(19, 2).bg);
+}
+
+void test_palette_first_is_text_size() {
+  const auto& p = paletteEntries();
+  TEST_ASSERT_TRUE(p[0].isTextSize);
+  TEST_ASSERT_EQUAL(26, p.size());
+  TEST_ASSERT_EQUAL_STRING("/me ", u32ToUtf8(p[1].insert).c_str());
+  TEST_ASSERT_EQUAL_STRING("/muted ", u32ToUtf8(p.back().insert).c_str());
+}
+
+void test_qr_small_url() {
+  std::vector<std::u32string> rows;
+  TEST_ASSERT_TRUE(qrToCells("https://tenor.com/x", rows));
+  TEST_ASSERT_TRUE(rows.size() <= 15);
+  // Version 2: 25 modules + 2 quiet = 27 wide, 14 rows.
+  TEST_ASSERT_EQUAL(14, rows.size());
+  TEST_ASSERT_EQUAL(27, rows[0].size());
+  for (const auto& r : rows)
+    for (char32_t c : r)
+      TEST_ASSERT_TRUE(c == U' ' || c == U'\u2588' || c == U'\u2580' || c == U'\u2584');
+  // Finder pattern: top-left corner after the quiet zone is dark.
+  TEST_ASSERT_EQUAL_HEX32(U'\u2584', rows[0][1]);
+  TEST_ASSERT_FALSE(qrToCells(std::string(272, 'x'), rows));
+}
+
+int main() {
+  UNITY_BEGIN();
+  RUN_TEST(test_input_insert_cursor);
+  RUN_TEST(test_input_right_at_end_false);
+  RUN_TEST(test_input_byte_cap);
+  RUN_TEST(test_input_backspace_multibyte);
+  RUN_TEST(test_input_hscroll);
+  RUN_TEST(test_log_follow_and_select);
+  RUN_TEST(test_log_render_follow_and_select);
+  RUN_TEST(test_log_preserves_selection_on_setLines);
+  RUN_TEST(test_list_scrolls);
+  RUN_TEST(test_drawer_idle_marker);
+  RUN_TEST(test_status_bar_layout);
+  RUN_TEST(test_banner_expires);
+  RUN_TEST(test_palette_first_is_text_size);
+  RUN_TEST(test_qr_small_url);
+  return UNITY_END();
+}

@@ -241,6 +241,10 @@ void FakeChatSource::command(const Command& c) {
       break;
     }
     case CmdType::Activity:
+    case CmdType::OpenConversation:
+    case CmdType::StartConversation:
+    case CmdType::RefreshConversations:
+    case CmdType::Typing:
       break;
   }
 }

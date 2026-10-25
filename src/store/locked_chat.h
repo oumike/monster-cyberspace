@@ -25,6 +25,12 @@ struct ChatState {
   std::set<std::string> revealed;        // spoiler ids the user revealed
   bool noOlder = false;                  // history exhausted for this room
   MutedUsers muted;                      // room id or slug → lower-cased names
+
+  // C-Mail. When dm is true, roomSlug holds the open conversation's id.
+  bool dm = false;
+  std::vector<ConversationInfo> conversations;
+  TypingMap typing;                      // the open conversation's dm_presence
+  TypingCadence typingCadence;
 };
 
 class LockedChat {

@@ -33,17 +33,17 @@
 
 **Files:** `src/cs/cs_api.{h,cpp}`, `src/app/messages.h`, `src/store/locked_chat.h`
 
-- [ ] **Step 1:** Add the `CsApi` calls:
+- [x] **Step 1:** Add the `CsApi` calls:
   - `conversations`, `startConversation`, `cmailHistory`, `cmailSend`;
   - `cmailRead`, `cmailTyping`, `cmailTypingClear`.
 
   Each write checks its local limiter first and is never retried.
-- [ ] **Step 2:** Add the commands `OpenConversation`, `StartConversation`,
+- [x] **Step 2:** Add the commands `OpenConversation`, `StartConversation`,
   `RefreshConversations` and `Typing` (n = 1 on, 0 off), and the events
   `ConversationsUpdated`, `ConversationStarted`, `TypingChanged` and
   `CmailAlert`. Add `dm`, `conversations`, `typing` and `typingCadence` to
   `ChatState`.
-- [ ] **Step 3: Run** `pio run -e m9`. Expected: SUCCESS.
+- [x] **Step 3: Run** `pio run -e m9`. Expected: SUCCESS.
 
   This task is committed together with Task 3, because the commands are not
   handled until then.
@@ -52,18 +52,18 @@
 
 **Files:** `src/app/net_worker.cpp`
 
-- [ ] **Step 1:** Open and close a conversation as a channel:
+- [x] **Step 1:** Open and close a conversation as a channel:
   - history and older pages;
   - the `dm_messages` stream (`limitToLast` ≤ 100);
   - the `dm_presence` stream into `typing`;
   - send and mark read;
   - no presence calls.
-- [ ] **Step 2:** Handle `StartConversation` (`ConversationStarted` carries
+- [x] **Step 2:** Handle `StartConversation` (`ConversationStarted` carries
   the id, or an error), `RefreshConversations` and `Typing`.
-- [ ] **Step 3:** In the watcher, refresh conversations and raise
+- [x] **Step 3:** In the watcher, refresh conversations and raise
   `CmailAlert` for each new unread message (skipping the open conversation).
   Bootstrap also loads the list.
-- [ ] **Step 4: Run** `pio run -e m9`, then **commit**
+- [x] **Step 4: Run** `pio run -e m9`, then **commit**
   `feat: C-Mail API client and network worker`.
 
 ### Task 4: Fake source C-Mail

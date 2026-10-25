@@ -128,6 +128,7 @@ class Worker {
     post(EvtType::AuthState, auth_ = 1, name);
     refreshRooms();
     loadMutes();
+    refreshConversations();
     nextWatch_ = mono() + kWatchMs;
   }
 
@@ -143,7 +144,9 @@ class Worker {
 
   // ---- rooms ----
 
+  // A room's REST/RTDB key (its id), or a conversation id as is.
   std::string roomKey(const std::string& slug) {
+    if (dm_) return slug;
     auto it = roomIds_.find(slug);
     return it != roomIds_.end() ? it->second : slug;
   }
@@ -167,27 +170,35 @@ class Worker {
 
   void closeRoom() {
     stopStreams();
-    if (!room_.empty() && presenceSent_ && online()) api_.leave(roomKey(room_));
+    if (!dm_ && !room_.empty() && presenceSent_ && online()) api_.leave(roomKey(room_));
     presenceSent_ = false;
     room_.clear();
+    dm_ = false;
     historyLoaded_ = false;
     lockedChat().with([](ChatState& s) {
       s.store.clear();
       s.presence.clear();
+      s.typing.clear();
       s.roomSlug.clear();
+      s.dm = false;
       s.noOlder = false;
     });
     post(EvtType::RoomChanged);
   }
 
-  void openRoom(const std::string& slug) {
-    if (slug == room_ && msgSse_.running()) {
+  // Opens a cIRC room (by slug) or, with dm, a C-Mail conversation (by id).
+  void openRoom(const std::string& slug, bool dm) {
+    if (slug == room_ && dm == dm_ && msgSse_.running()) {
       post(EvtType::RoomChanged);
       return;
     }
     closeRoom();
     room_ = slug;
-    lockedChat().with([&](ChatState& s) { s.roomSlug = slug; });
+    dm_ = dm;
+    lockedChat().with([&](ChatState& s) {
+      s.roomSlug = slug;
+      s.dm = dm;
+    });
     backoffMs_ = 1000;
     reconnectAt_ = 0;
     downSince_ = 0;
@@ -195,6 +206,7 @@ class Worker {
     loadHistory();
     if (historyLoaded_) {
       openMsgStream();
+      if (wantsSecondStream()) openPresStream();
       sendPresence();
       markRead(slug);
     }
@@ -203,7 +215,8 @@ class Worker {
   void loadHistory() {
     std::vector<CircMessage> msgs;
     int64_t cursor = -1;
-    ApiError e = api_.history(roomKey(room_), 0, msgs, cursor);
+    ApiError e = dm_ ? api_.cmailHistory(room_, 0, msgs, cursor)
+                     : api_.history(roomKey(room_), 0, msgs, cursor);
     if (!e.ok()) {
       checkAuthError(e);
       banner(e.message, false);
@@ -224,7 +237,8 @@ class Worker {
     if (oldest < 0) return;
     std::vector<CircMessage> msgs;
     int64_t cursor = -1;
-    ApiError e = api_.history(roomKey(room_), oldest, msgs, cursor);
+    ApiError e = dm_ ? api_.cmailHistory(room_, oldest, msgs, cursor)
+                     : api_.history(roomKey(room_), oldest, msgs, cursor);
     if (!e.ok()) {
       checkAuthError(e);
       banner(e.message, false);
@@ -245,8 +259,10 @@ class Worker {
     const Tokens& t = api_.tokens();
     if (t.rtdbUrl.empty() || t.idToken.empty()) return;
     int64_t newest = lockedChat().with([](ChatState& s) { return s.store.newestTimestamp(); });
-    RtdbQuery q{true, newest, newest < 0 ? 50 : 1000};
-    std::string url = rtdbStreamUrl(t.rtdbUrl, "chat_messages/" + roomKey(room_), t.idToken, q);
+    // dm_messages rejects a limitToLast above 100.
+    RtdbQuery q{true, newest, newest < 0 ? 50 : (dm_ ? 100 : 1000)};
+    std::string path = (dm_ ? "dm_messages/" : "chat_messages/") + roomKey(room_);
+    std::string url = rtdbStreamUrl(t.rtdbUrl, path, t.idToken, q);
     msgDown_ = false;
     msgSse_.start(
         url,
@@ -265,6 +281,20 @@ class Worker {
   void openPresStream() {
     const Tokens& t = api_.tokens();
     if (room_.empty() || t.rtdbUrl.empty() || t.idToken.empty()) return;
+    if (dm_) {
+      // In a conversation this slot carries the typing flags.
+      std::string url = rtdbStreamUrl(t.rtdbUrl, "dm_presence/" + room_, t.idToken, {});
+      presSse_.start(
+          url,
+          [this](const SseEvent& ev) {
+            StreamResult r =
+                lockedChat().with([&](ChatState& s) { return applyTypingEvent(s.typing, ev); });
+            if (r == StreamResult::Changed) post(EvtType::TypingChanged);
+            else if (r == StreamResult::AuthRevoked) authRevoked_ = true;
+          },
+          [](bool) {});
+      return;
+    }
     std::string url = rtdbStreamUrl(t.rtdbUrl, "chat_presence/" + roomKey(room_), t.idToken, {});
     presSse_.start(
         url,
@@ -308,14 +338,17 @@ class Worker {
       markRead(room_);
     }
     if (!msgSse_.running()) openMsgStream();
-    if (presenceWanted_ && !presSse_.running()) openPresStream();
-    if (!presenceSent_) sendPresence();
+    if (wantsSecondStream() && !presSse_.running()) openPresStream();
+    if (!dm_ && !presenceSent_) sendPresence();
   }
+
+  // Presence in a room with the drawer open; typing flags in a conversation.
+  bool wantsSecondStream() const { return dm_ || presenceWanted_; }
 
   // ---- presence and read state ----
 
   void sendPresence() {
-    if (room_.empty() || !screenOn_) return;
+    if (dm_ || room_.empty() || !screenOn_) return;
     PresenceCadence cad;
     ApiError e = api_.presence(roomKey(room_), lastActivity_ ? lastActivity_ : epochMs(), cad);
     if (e.ok()) {
@@ -328,6 +361,17 @@ class Worker {
 
   void markRead(const std::string& slug) {
     if (slug.empty()) return;
+    if (dm_) {
+      if (slug != room_) return;
+      if (!api_.cmailRead(slug).ok()) return;
+      lockedChat().with([&](ChatState& s) {
+        s.readAt[slug] = s.store.newestTimestamp();
+        for (auto& c : s.conversations)
+          if (c.id == slug) c.unread = 0;
+      });
+      post(EvtType::ConversationsUpdated);
+      return;
+    }
     ApiError e = api_.markRead(roomKey(slug));
     if (!e.ok()) return;
     lockedChat().with([&](ChatState& s) {
@@ -342,8 +386,62 @@ class Worker {
     pendingMentions_.erase(range.first, range.second);
   }
 
+  // ---- C-Mail ----
+
+  // Refreshes the list and raises one alert per conversation each time a new
+  // unread message arrives (never for the open conversation).
+  void refreshConversations() {
+    std::vector<ConversationInfo> list;
+    ApiError e = api_.conversations(list);
+    if (!e.ok()) {
+      checkAuthError(e);
+      return;
+    }
+    for (auto& c : list) {
+      int64_t& seen = alertedAt_[c.id];
+      bool open = dm_ && c.id == room_;
+      if (c.unread > 0 && c.lastMessageAt > seen && !open) {
+        std::string preview = c.lastMessage.size() > 80 ? c.lastMessage.substr(0, 80) : c.lastMessage;
+        post(EvtType::CmailAlert, 0, "C-Mail from @" + c.partner + ": " + preview);
+      }
+      seen = std::max(seen, c.lastMessageAt);
+    }
+    lockedChat().with([&](ChatState& s) { s.conversations = std::move(list); });
+    post(EvtType::ConversationsUpdated);
+  }
+
+  void startConversation(const std::string& username) {
+    ConversationInfo c;
+    ApiError e = api_.startConversation(username, c);
+    if (!e.ok()) {
+      checkAuthError(e);
+      post(EvtType::ConversationStarted, e.http,
+           e.http == 404 ? "No user named " + username : e.message, false);
+      return;
+    }
+    lockedChat().with([&](ChatState& s) {
+      for (const auto& x : s.conversations)
+        if (x.id == c.id) return;
+      s.conversations.insert(s.conversations.begin(), c);
+    });
+    post(EvtType::ConversationsUpdated);
+    post(EvtType::ConversationStarted, 0, c.id);
+  }
+
+  void typing(const Command& c) {
+    if (!dm_ || c.a != room_ || !screenOn_) return;
+    if (c.n) {
+      TypingCadence cad;
+      if (api_.cmailTyping(room_, cad).ok())
+        lockedChat().with([&](ChatState& s) { s.typingCadence = cad; });
+    } else {
+      api_.cmailTypingClear(room_);
+    }
+  }
+
   void watch() {
     refreshRooms();
+    refreshConversations();
     std::vector<Mention> ms;
     ApiError e = api_.mentions(ms);
     if (!e.ok()) {
@@ -374,7 +472,10 @@ class Worker {
         lastActivity_ = c.n;
         return;
       case CmdType::OpenRoom:
-        openRoom(c.a);
+        openRoom(c.a, false);
+        return;
+      case CmdType::OpenConversation:
+        openRoom(c.a, true);
         return;
       case CmdType::CloseRoom:
         closeRoom();
@@ -382,7 +483,7 @@ class Worker {
       case CmdType::ScreenOff:
         screenOn_ = false;
         stopStreams();
-        if (!room_.empty() && presenceSent_ && online()) api_.leave(roomKey(room_));
+        if (!dm_ && !room_.empty() && presenceSent_ && online()) api_.leave(roomKey(room_));
         presenceSent_ = false;
         setConn(0);
         return;
@@ -394,14 +495,14 @@ class Worker {
         return;  // tick() reopens the streams
       case CmdType::OpenPresence:
         presenceWanted_ = true;
-        if (needNet(c) && !room_.empty()) {
+        if (!dm_ && needNet(c) && !room_.empty()) {
           seedPresence();
           if (!presSse_.running()) openPresStream();
         }
         return;
       case CmdType::ClosePresence:
         presenceWanted_ = false;
-        presSse_.stop();
+        if (!dm_) presSse_.stop();
         return;
       case CmdType::Login:
         login(c);
@@ -411,6 +512,8 @@ class Worker {
         api_.signOut();
         self_.clear();
         ready_ = false;
+        alertedAt_.clear();
+        lockedChat().with([](ChatState& s) { s.conversations.clear(); });
         post(EvtType::AuthState, auth_ = 0);
         return;
       default:
@@ -420,7 +523,8 @@ class Worker {
     switch (c.type) {
       case CmdType::Send: {
         std::string id, reply;
-        ApiError e = api_.send(roomKey(c.a), c.b, id, reply);
+        ApiError e = dm_ && c.a == room_ ? api_.cmailSend(c.a, c.b, id)
+                                         : api_.send(roomKey(c.a), c.b, id, reply);
         if (e.ok()) {
           if (changesMutes(c.b)) loadMutes();
           post(EvtType::SendDone);
@@ -435,11 +539,13 @@ class Worker {
         loadOlder();
         break;
       case CmdType::Delete: {
+        if (dm_) break;  // C-Mail has no delete
         ApiError e = api_.deleteMessage(roomKey(room_), c.a);
         if (!e.ok()) banner(e.message, false);
         break;
       }
       case CmdType::Flag: {
+        if (dm_) break;  // nor report
         ApiError e = api_.flag(roomKey(room_), c.a, c.b);
         banner(e.ok() ? "Reported" : e.message, e.ok());
         break;
@@ -449,6 +555,15 @@ class Worker {
         break;
       case CmdType::RefreshRooms:
         refreshRooms();
+        break;
+      case CmdType::RefreshConversations:
+        refreshConversations();
+        break;
+      case CmdType::StartConversation:
+        startConversation(c.a);
+        break;
+      case CmdType::Typing:
+        typing(c);
         break;
       case CmdType::ResendVerification: {
         ApiError e = api_.resendVerification(api_.tokens().idToken);
@@ -524,7 +639,7 @@ class Worker {
     if (!room_.empty() && screenOn_) {
       if (msgDown_.exchange(false)) scheduleReconnect();
       bool needs = !historyLoaded_ || !msgSse_.running() ||
-                   (presenceWanted_ && !presSse_.running());
+                   (wantsSecondStream() && !presSse_.running());
       if (needs && now >= reconnectAt_) {
         if (msgSse_.running() == false && reconnectAt_ == 0) setConn(1);
         reconnectAt_ = now + backoffMs_;  // until the stream reports live
@@ -534,7 +649,7 @@ class Worker {
         pausedBanner_ = true;
         banner("Chat paused, reconnecting", false);
       }
-      if (now >= nextHeartbeat_) sendPresence();
+      if (!dm_ && now >= nextHeartbeat_) sendPresence();
     }
 
     if (now >= nextWatch_) {
@@ -550,8 +665,10 @@ class Worker {
   std::map<std::string, std::string> roomIds_;  // slug → id
   std::set<std::string> seenMentions_;
   std::multimap<std::string, std::string> pendingMentions_;  // slug → notification id
+  std::map<std::string, int64_t> alertedAt_;  // conversation id → lastMessageAt alerted
 
   std::atomic<bool> msgLive_{false}, msgDown_{false}, authRevoked_{false};
+  bool dm_ = false;  // room_ is a C-Mail conversation id
   bool ready_ = false, historyLoaded_ = false, presenceSent_ = false, presenceWanted_ = false;
   bool screenOn_ = true, wasOnline_ = false, pausedBanner_ = false;
   int conn_ = -1, auth_ = -1;

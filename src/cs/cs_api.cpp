@@ -48,7 +48,11 @@ CsApi::CsApi(HttpsClient& h)
       deleteL_(makeDeleteLimiter()),
       flagL_(makeFlagLimiter()),
       readL_(makeMarkReadLimiter()),
-      resendL_({{1, 60000}, {5, 3600000}}) {}
+      resendL_({{1, 60000}, {5, 3600000}}),
+      cmailSendL_(makeCmailSendLimiter()),
+      startL_(makeStartConversationLimiter()),
+      cmailReadL_(makeMarkReadLimiter()),
+      typingL_(makeTypingLimiter()) {}
 
 void CsApi::adopt(const Tokens& t) {
   tokens_ = t;
@@ -242,6 +246,71 @@ ApiError CsApi::leave(const std::string& slug) {
   if (!l.ok()) return l;
   HttpResult r;
   return call("DELETE", "/v1/circ/" + enc(slug) + "/presence", "", r);
+}
+
+ApiError CsApi::conversations(std::vector<ConversationInfo>& out) {
+  HttpResult r;
+  ApiError e = call("GET", "/v1/cmail", "", r);
+  if (e.ok() && !parseConversations(r.body, out)) return badBody(r.status);
+  return e;
+}
+
+ApiError CsApi::startConversation(const std::string& username, ConversationInfo& out) {
+  ApiError l = limited(startL_);
+  if (!l.ok()) return l;
+  JsonDocument d;
+  d["recipientUsername"] = username;
+  HttpResult r;
+  ApiError e = call("POST", "/v1/cmail", json(d), r);
+  if (e.ok() && !parseStartConversation(r.body, out)) return badBody(r.status);
+  return e;
+}
+
+ApiError CsApi::cmailHistory(const std::string& id, int64_t before, std::vector<CircMessage>& out,
+                             int64_t& cursor) {
+  std::string path = "/v1/cmail/" + enc(id) + "?limit=50";
+  if (before > 0) path += "&before=" + std::to_string(before);
+  HttpResult r;
+  ApiError e = call("GET", path, "", r);
+  if (e.ok() && !parseHistory(r.body, out, cursor)) return badBody(r.status);
+  return e;
+}
+
+ApiError CsApi::cmailSend(const std::string& id, const std::string& utf8, std::string& messageId) {
+  ApiError l = limited(cmailSendL_);
+  if (!l.ok()) return l;
+  JsonDocument d;
+  d["content"] = utf8;
+  HttpResult r;
+  ApiError e = call("POST", "/v1/cmail/" + enc(id), json(d), r);
+  if (e.ok()) {
+    std::string reply;
+    parseSendResult(r.body, messageId, reply);
+  }
+  return e;
+}
+
+ApiError CsApi::cmailRead(const std::string& id) {
+  ApiError l = limited(cmailReadL_);
+  if (!l.ok()) return l;
+  HttpResult r;
+  return call("POST", "/v1/cmail/" + enc(id) + "/read", "", r);
+}
+
+ApiError CsApi::cmailTyping(const std::string& id, TypingCadence& out) {
+  ApiError l = limited(typingL_);
+  if (!l.ok()) return l;
+  HttpResult r;
+  ApiError e = call("POST", "/v1/cmail/" + enc(id) + "/typing", "", r);
+  if (e.ok()) parseTypingAck(r.body, out);
+  return e;
+}
+
+ApiError CsApi::cmailTypingClear(const std::string& id) {
+  ApiError l = limited(typingL_);
+  if (!l.ok()) return l;
+  HttpResult r;
+  return call("DELETE", "/v1/cmail/" + enc(id) + "/typing", "", r);
 }
 
 ApiError CsApi::mutedUsers(MutedUsers& out) {

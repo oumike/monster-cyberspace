@@ -45,6 +45,16 @@ class CsApi {
   ApiError presence(const std::string& slug, int64_t lastActivity, PresenceCadence&);
   ApiError leave(const std::string& slug);
 
+  // C-Mail.
+  ApiError conversations(std::vector<ConversationInfo>&);
+  ApiError startConversation(const std::string& username, ConversationInfo& out);
+  ApiError cmailHistory(const std::string& id, int64_t before, std::vector<CircMessage>&,
+                        int64_t& cursor);
+  ApiError cmailSend(const std::string& id, const std::string& utf8, std::string& messageId);
+  ApiError cmailRead(const std::string& id);
+  ApiError cmailTyping(const std::string& id, TypingCadence& out);
+  ApiError cmailTypingClear(const std::string& id);
+
   // Notifications.
   // GET /v1/settings, reading only mutedUsersByRoom.
   ApiError mutedUsers(MutedUsers&);
@@ -69,6 +79,7 @@ class CsApi {
   int64_t refreshDue_ = 0;
   ApiError refreshErr_{200, "", ""};
   RateLimiter sendL_, presenceL_, deleteL_, flagL_, readL_, resendL_;
+  RateLimiter cmailSendL_, startL_, cmailReadL_, typingL_;
 };
 
 }  // namespace rc

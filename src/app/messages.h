@@ -23,6 +23,11 @@ enum class CmdType {
   ScreenOff,
   ScreenOn,
   Activity,        // n = epoch ms of the latest key press
+  // C-Mail. A conversation is open like a room; CloseRoom closes it.
+  OpenConversation,      // a = conversation id
+  StartConversation,     // a = username
+  RefreshConversations,
+  Typing,                // a = conversation id, n = 1 typing, 0 stopped
 };
 
 struct Command {
@@ -43,6 +48,10 @@ enum class EvtType {
   SendDone,         // ok; text = error message when !ok
   OlderLoaded,      // code = messages added
   PrefsChanged,     // from the web page: code = 0 Comfortable, 1 Compact; ok = buzzer
+  ConversationsUpdated,
+  ConversationStarted,  // ok: text = conversation id; else text = error
+  TypingChanged,
+  CmailAlert,           // text = "C-Mail from @name: preview"
 };
 
 struct Event {

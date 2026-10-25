@@ -120,14 +120,14 @@ ApiError CsApi::refresh(Tokens& io) {
   JsonDocument d;
   d["refreshToken"] = io.refreshToken;
   HttpResult r = http_.request("POST", "/v1/auth/refresh", json(d), "");
-  if (r.transportError) return transport();
+  if (r.transportError) return refreshErr_ = transport();
   ApiError e = parseError(r.status, r.body);
-  if (!e.ok()) return e;
+  if (!e.ok()) return refreshErr_ = e;
   Tokens t = io;
-  if (!parseTokens(r.body, t) || t.idToken.empty()) return badBody(r.status);
+  if (!parseTokens(r.body, t) || t.idToken.empty()) return refreshErr_ = badBody(r.status);
   io = t;
   adopt(t);
-  return e;
+  return refreshErr_ = e;
 }
 
 ApiError CsApi::resendVerification(const std::string& idToken) {
@@ -146,6 +146,19 @@ bool CsApi::ensureFresh(int64_t nowMono, int64_t epochSec) {
   if (!tokens_.idToken.empty() && nowMono < refreshDue_) return true;
   Tokens t = tokens_;
   return refresh(t).ok();
+}
+
+ApiError CsApi::me(std::string& username) {
+  HttpResult r;
+  ApiError e = call("GET", "/v1/users/me", "", r);
+  if (!e.ok()) return e;
+  JsonDocument d;
+  if (deserializeJson(d, r.body)) return badBody(r.status);
+  JsonVariantConst u = d["data"]["username"];
+  if (!u.is<const char*>()) u = d["username"];
+  if (!u.is<const char*>()) return badBody(r.status);
+  username = u.as<const char*>();
+  return e;
 }
 
 ApiError CsApi::rooms(std::vector<RoomInfo>& out) {

@@ -29,6 +29,8 @@ void load(rc::Settings&);
 void save(const rc::Settings&);
 void saveToken(const std::string& refreshToken);
 void clearToken();
+// Saves the email and refresh token after a login.
+void saveAccount(const std::string& email, const std::string& refreshToken);
 // Erases every saved setting. The caller restarts; with no Wi-Fi saved the
 // device then comes up in setup mode.
 void factoryReset();

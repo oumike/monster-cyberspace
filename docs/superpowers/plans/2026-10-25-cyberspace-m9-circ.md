@@ -643,11 +643,17 @@ docs/{BUILD.md,USE.md,TESTING.md}  .github/workflows/build.yml  AGENTS.md
   - the 16th send in a minute returns the local rate-limit banner.
   - `main.cpp` skips Wi-Fi and the net worker in this env and reports signed in as `oumike`.
 
-- [ ] **Step 1: Implement** the messages, queues, `LockedChat` and the source interface.
-- [ ] **Step 2: Implement** `net_worker` and `NetChatSource`.
-- [ ] **Step 3: Implement** `FakeChatSource`.
-- [ ] **Step 4: Run** `pio run -e m9 && pio run -e m9_fake`. Expected: both SUCCESS.
-- [ ] **Step 5: Commit** `feat: net worker, chat source abstraction, fake source for m9_fake`.
+- **As built (refinements):**
+  - `LockedChat::with(f)` passes one `ChatState&` holding `store`, `presence`, `rooms`, `cadence`, `roomSlug`, `self`, `readAt` (slug → `lastMessageAt`), `revealed` and `noOlder`. `lockedChat()` returns the instance.
+  - `chat_source.h` also declares `void startChatSource(const Settings&)`; the net build starts Wi-Fi and the worker there, the fake build its script task. The two sources are `.cpp` files only.
+  - The REST and RTDB paths take the room **id** (docs: `:roomId`, `chat_messages/<roomId>`); the worker maps slug → id from `GET /v1/circ` and falls back to the slug.
+  - The worker learns the username from `GET /v1/users/me` (`CsApi::me`) and saves logins with `settings::saveAccount(email, refreshToken)`. A 401 that survives a refresh, or a 400/401 from the refresh itself, signs out (`AuthState 0`).
+  - An empty room opens its stream with `limitToLast=50` instead of 1000.
+- [x] **Step 1: Implement** the messages, queues, `LockedChat` and the source interface.
+- [x] **Step 2: Implement** `net_worker` and `NetChatSource`.
+- [x] **Step 3: Implement** `FakeChatSource`.
+- [x] **Step 4: Run** `pio run -e m9 && pio run -e m9_fake`. Expected: both SUCCESS.
+- [x] **Step 5: Commit** `feat: net worker, chat source abstraction, fake source for m9_fake`.
 
 ### Task 19: Screens, router, navigation
 

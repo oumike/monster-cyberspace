@@ -26,6 +26,11 @@ class CsApi {
   bool ensureFresh(int64_t monoMs, int64_t epochSec);
   // Forces the next ensureFresh() to refresh (for RTDB auth_revoked).
   void expireNow() { refreshDue_ = 0; }
+  // The result of the latest refresh (ok when none failed).
+  const ApiError& lastRefreshError() const { return refreshErr_; }
+
+  // The signed-in username (GET /v1/users/me).
+  ApiError me(std::string& username);
 
   // cIRC.
   ApiError rooms(std::vector<RoomInfo>&);
@@ -60,6 +65,7 @@ class CsApi {
   HttpsClient& http_;
   Tokens tokens_;
   int64_t refreshDue_ = 0;
+  ApiError refreshErr_{200, "", ""};
   RateLimiter sendL_, presenceL_, deleteL_, flagL_, readL_, resendL_;
 };
 

@@ -77,6 +77,14 @@ void saveToken(const std::string& refreshToken) {
   p.end();
 }
 
+void saveAccount(const std::string& email, const std::string& refreshToken) {
+  Preferences p;
+  if (!p.begin(kNs, false)) return;
+  p.putString("email", email.c_str());
+  p.putString("rtok", refreshToken.c_str());
+  p.end();
+}
+
 void clearToken() {
   Preferences p;
   if (!p.begin(kNs, false)) return;

@@ -1,0 +1,5 @@
+.pio/
+.superpowers/
+.vscode/
+*.log
+.DS_Store

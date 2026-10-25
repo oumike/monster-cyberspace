@@ -46,6 +46,8 @@ class CsApi {
   ApiError leave(const std::string& slug);
 
   // Notifications.
+  // GET /v1/settings, reading only mutedUsersByRoom.
+  ApiError mutedUsers(MutedUsers&);
   ApiError mentions(std::vector<Mention>&);
   ApiError markNotificationRead(const std::string& id);
 

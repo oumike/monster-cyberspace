@@ -244,6 +244,13 @@ ApiError CsApi::leave(const std::string& slug) {
   return call("DELETE", "/v1/circ/" + enc(slug) + "/presence", "", r);
 }
 
+ApiError CsApi::mutedUsers(MutedUsers& out) {
+  HttpResult r;
+  ApiError e = call("GET", "/v1/settings", "", r);
+  if (e.ok() && !parseMutedUsers(r.body, out)) return badBody(r.status);
+  return e;
+}
+
 ApiError CsApi::mentions(std::vector<Mention>& out) {
   HttpResult r;
   ApiError e = call("GET", "/v1/notifications?read=false&type=chat_mention&limit=20", "", r);

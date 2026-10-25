@@ -96,6 +96,23 @@ void test_grid_dirty() {
   TEST_ASSERT_EQUAL(2, g.putText(8, 1, U"hello", 1, 0, 9));
 }
 
+// Screens redraw from scratch each frame: fill, then put the same text back.
+// Only rows that differ from what was last drawn are dirty.
+void test_grid_redraw_same_frame_not_dirty() {
+  Grid g(10, 3);
+  g.putText(0, 1, U"hi", 1, 0, 10);
+  g.clearDirty();
+  g.fill(0);
+  g.putText(0, 1, U"hi", 1, 0, 10);
+  TEST_ASSERT_FALSE(g.rowDirty(1));
+  g.fill(0);
+  g.putText(0, 1, U"ho", 1, 0, 10);
+  TEST_ASSERT_TRUE(g.rowDirty(1));
+  TEST_ASSERT_FALSE(g.rowDirty(0));
+  g.resize(10, 3);
+  TEST_ASSERT_TRUE(g.rowDirty(0));
+}
+
 void test_time() {
   TEST_ASSERT_EQUAL_STRING("14:02", formatHHMM(kTs).c_str());
   TEST_ASSERT_EQUAL_STRING("Sat 25 Oct", formatDay(kTs).c_str());
@@ -265,8 +282,8 @@ void test_self_gold() {
 }
 
 void test_muted_skipped() {
-  std::deque<CircMessage> d{msg("m1", "troll", "spam"), msg("m2", "rain", "ok")};
-  std::set<std::string> muted{"troll"};
+  std::deque<CircMessage> d{msg("m1", "Troll", "spam"), msg("m2", "rain", "ok")};
+  std::set<std::string> muted{"troll"};  // lower-cased
   LayoutOptions o = opts(TextSize::Compact, 53);
   o.muted = &muted;
   auto lines = body(layoutRoom(d, o));
@@ -294,6 +311,7 @@ int main() {
   UNITY_BEGIN();
   RUN_TEST(test_grid_dims);
   RUN_TEST(test_grid_dirty);
+  RUN_TEST(test_grid_redraw_same_frame_not_dirty);
   RUN_TEST(test_time);
   RUN_TEST(test_compact_basic);
   RUN_TEST(test_compact_long_nick_indent);

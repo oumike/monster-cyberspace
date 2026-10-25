@@ -107,7 +107,18 @@ class Worker {
     ready_ = true;
     post(EvtType::AuthState, auth_ = 1, name);
     refreshRooms();
+    loadMutes();
     nextWatch_ = mono() + kWatchMs;
+  }
+
+  void loadMutes() {
+    MutedUsers m;
+    if (api_.mutedUsers(m).ok()) lockedChat().with([&](ChatState& s) { s.muted = std::move(m); });
+  }
+
+  static bool changesMutes(const std::string& text) {
+    return text.rfind("/mute ", 0) == 0 || text.rfind("/unmute ", 0) == 0 ||
+           text.rfind("/unmuteall", 0) == 0;
   }
 
   // ---- rooms ----
@@ -391,6 +402,7 @@ class Worker {
         std::string id, reply;
         ApiError e = api_.send(roomKey(c.a), c.b, id, reply);
         if (e.ok()) {
+          if (changesMutes(c.b)) loadMutes();
           post(EvtType::SendDone);
           if (!reply.empty()) banner(reply);
         } else {

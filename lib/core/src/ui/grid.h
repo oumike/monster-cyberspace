@@ -13,8 +13,10 @@ struct Cell {
   bool operator!=(const Cell& o) const { return !(*this == o); }
 };
 
-// A screen of character cells with per-row dirty tracking. A put marks its
-// row dirty only when the cell actually changes; out-of-range puts are ignored.
+// A screen of character cells with per-row dirty tracking. A row is dirty
+// when its cells differ from what they were at the last clearDirty() (the
+// last frame drawn), so redrawing a screen from scratch each frame only
+// pushes the rows that really changed. Out-of-range puts are ignored.
 class Grid {
  public:
   Grid(int cols, int rows);
@@ -33,8 +35,8 @@ class Grid {
 
  private:
   int cols_ = 0, rows_ = 0;
-  std::vector<Cell> cells_;
-  std::vector<bool> dirty_;
+  std::vector<Cell> cells_, drawn_;
+  std::vector<bool> forced_;  // rows dirty regardless of content (after resize)
 };
 
 enum class TextSize { Comfortable, Compact };

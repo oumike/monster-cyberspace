@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cstdint>
+#include <map>
+#include <set>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -56,5 +58,10 @@ struct Mention {
 bool parseMentions(std::string_view body, std::vector<Mention>& out);
 
 bool parseUnreadCount(std::string_view body, int& count, bool& exact);
+
+// GET /v1/settings → mutedUsersByRoom: room key (id or slug) → lower-cased
+// usernames. Each room may hold an array of names or a {name: bool} object.
+using MutedUsers = std::map<std::string, std::set<std::string>>;
+bool parseMutedUsers(std::string_view body, MutedUsers& out);
 
 }  // namespace rc

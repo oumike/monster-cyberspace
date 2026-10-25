@@ -30,7 +30,7 @@ struct LayoutOptions {
   TextSize size = TextSize::Compact;
   int cols = 53;
   std::string selfUsername;
-  const std::set<std::string>* muted = nullptr;     // usernames
+  const std::set<std::string>* muted = nullptr;     // lower-cased usernames
   const std::set<std::string>* revealed = nullptr;  // spoiler message ids
   const Theme* theme = nullptr;                     // defaultTheme() when null
 };

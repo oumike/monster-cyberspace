@@ -154,6 +154,22 @@ void test_unread_count() {
   TEST_ASSERT_FALSE(parseUnreadCount("<html>", count, exact));
 }
 
+void test_muted_users() {
+  MutedUsers m;
+  // Room keys map to arrays or {name: true} objects; false entries are not muted.
+  TEST_ASSERT_TRUE(parseMutedUsers(
+      R"({"data":{"mutedUsersByRoom":{"r1":["Zed","moth"],"linux":{"kiwi":true,"rain":false}}}})", m));
+  TEST_ASSERT_EQUAL(2, m.size());
+  TEST_ASSERT_EQUAL(1, m["r1"].count("zed"));
+  TEST_ASSERT_EQUAL(1, m["r1"].count("moth"));
+  TEST_ASSERT_EQUAL(1, m["linux"].count("kiwi"));
+  TEST_ASSERT_EQUAL(0, m["linux"].count("rain"));
+  // Missing field: an empty map, still a success.
+  TEST_ASSERT_TRUE(parseMutedUsers(R"({"data":{"filterNSFW":true}})", m));
+  TEST_ASSERT_EQUAL(0, m.size());
+  TEST_ASSERT_FALSE(parseMutedUsers("<html>", m));
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_error_envelope);
@@ -169,5 +185,6 @@ int main() {
   RUN_TEST(test_send_result_and_reply);
   RUN_TEST(test_mentions);
   RUN_TEST(test_unread_count);
+  RUN_TEST(test_muted_users);
   return UNITY_END();
 }

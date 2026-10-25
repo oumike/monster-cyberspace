@@ -10,7 +10,8 @@ void Grid::resize(int cols, int rows) {
   cols_ = std::max(cols, 0);
   rows_ = std::max(rows, 0);
   cells_.assign(static_cast<size_t>(cols_) * rows_, Cell{});
-  dirty_.assign(rows_, true);
+  drawn_ = cells_;
+  forced_.assign(rows_, true);
 }
 
 void Grid::fill(uint16_t bg) {
@@ -23,11 +24,7 @@ void Grid::fillRow(int row, uint16_t bg) {
 
 void Grid::put(int col, int row, char32_t cp, uint16_t fg, uint16_t bg) {
   if (col < 0 || row < 0 || col >= cols_ || row >= rows_) return;
-  Cell& cell = cells_[static_cast<size_t>(row) * cols_ + col];
-  Cell n{cp, fg, bg};
-  if (cell == n) return;
-  cell = n;
-  dirty_[row] = true;
+  cells_[static_cast<size_t>(row) * cols_ + col] = Cell{cp, fg, bg};
 }
 
 int Grid::putText(int col, int row, std::u32string_view s, uint16_t fg, uint16_t bg,
@@ -48,10 +45,16 @@ const Cell& Grid::at(int col, int row) const {
 }
 
 bool Grid::rowDirty(int row) const {
-  return row >= 0 && row < rows_ && dirty_[row];
+  if (row < 0 || row >= rows_) return false;
+  if (forced_[row]) return true;
+  auto first = cells_.begin() + static_cast<size_t>(row) * cols_;
+  return !std::equal(first, first + cols_, drawn_.begin() + static_cast<size_t>(row) * cols_);
 }
 
-void Grid::clearDirty() { std::fill(dirty_.begin(), dirty_.end(), false); }
+void Grid::clearDirty() {
+  drawn_ = cells_;
+  std::fill(forced_.begin(), forced_.end(), false);
+}
 
 CellSize cellSize(TextSize s) {
   return s == TextSize::Compact ? CellSize{6, 12} : CellSize{8, 16};

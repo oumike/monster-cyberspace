@@ -4,6 +4,7 @@
 #include <esp_timer.h>
 #include <sys/time.h>
 
+#include <cctype>
 #include <mutex>
 #include <vector>
 
@@ -159,6 +160,18 @@ void FakeChatSource::command(const Command& c) {
       int64_t now = mono();
       if (c.b.rfind("/dice x", 0) == 0) {
         postEvent(Event{EvtType::SendDone, "Usage: /dice [NdM], e.g. /dice 2d6", 400, false});
+      } else if (c.b.rfind("/mute ", 0) == 0 || c.b.rfind("/unmute ", 0) == 0) {
+        // Like the server: posts nothing, changes this room's mutes, replies.
+        bool mute = c.b[1] == 'm';
+        std::string name = c.b.substr(mute ? 6 : 8);
+        for (char& ch : name) ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
+        lockedChat().with([&](ChatState& s) {
+          if (mute) s.muted[c.a].insert(name);
+          else s.muted[c.a].erase(name);
+        });
+        postEvent(Event{EvtType::SendDone});
+        postEvent(Event{EvtType::Banner, (mute ? "Muted " : "Unmuted ") + name});
+        postEvent(Event{EvtType::RoomChanged});
       } else if (!sendL_.tryAcquire(now)) {
         int64_t s = (sendL_.retryAfterMs(now) + 999) / 1000;
         postEvent(Event{EvtType::SendDone, "Slow down: try in " + std::to_string(s) + "s", 429,

@@ -736,10 +736,12 @@ docs/{BUILD.md,USE.md,TESTING.md}  .github/workflows/build.yml  AGENTS.md
 - **Read state:** when the log is following and the window is visible, send `MarkRead` at most every 10 s, and update `readAt[slug]`.
 - **Offline:** `ConnState 0` disables the input (dim) and blocks Send with `Banner "Offline: not sent"`.
 
-- [ ] **Step 1: Implement.**
-- [ ] **Step 2: Run** `pio run -e m9_fake && pio run -e m9`. Expected: SUCCESS.
+- [x] **Step 1: Implement.**
+- [x] **Step 2: Run** `pio run -e m9_fake && pio run -e m9`. Expected: SUCCESS.
 - [ ] **Step 3: Hardware check (human) on `m9_fake`:** every item in Task 22's live checklist that does not need the real server, including both text sizes, the drawer in each, the palette, menus, a QR on a GIF link, the `/dice` error banner, and the local rate-limit banner on the 16th fast send.
-- [ ] **Step 4: Commit** `feat: cIRC room screen`.
+- [x] **Step 4: Commit** `feat: cIRC room screen`.
+
+> **As built (Task 20):** mutes come from `GET /v1/settings` → `mutedUsersByRoom` (`parseMutedUsers`, lower-cased names; layout compares case-insensitively), loaded at sign-in and after `/mute`/`/unmute`; the room menu's Mute…/Unmute… pick from who's here / the mute list. `Grid` now tracks dirty rows against the last drawn frame, so a full redraw per frame only pushes changed rows. Screens must never send a command while holding `lockedChat()` (the fake source handles commands inline). Step 3 (hardware check) is still open; re-run it on the real `m9` build.
 
 ### Task 21: Web config server
 

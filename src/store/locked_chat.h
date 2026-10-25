@@ -24,6 +24,7 @@ struct ChatState {
   std::map<std::string, int64_t> readAt; // slug → lastMessageAt when last read
   std::set<std::string> revealed;        // spoiler ids the user revealed
   bool noOlder = false;                  // history exhausted for this room
+  MutedUsers muted;                      // room id or slug → lower-cased names
 };
 
 class LockedChat {

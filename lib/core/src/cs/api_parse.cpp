@@ -2,6 +2,7 @@
 
 #include <ArduinoJson.h>
 
+#include <cctype>
 #include <cstdlib>
 
 #include "cs/message_json.h"
@@ -17,6 +18,11 @@ std::string str(JsonVariantConst v) {
 
 bool load(std::string_view body, JsonDocument& doc) {
   return !deserializeJson(doc, body.data(), body.size());
+}
+
+std::string lower(std::string s) {
+  for (char& c : s) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+  return s;
 }
 
 }  // namespace
@@ -150,6 +156,29 @@ bool parseUnreadCount(std::string_view body, int& count, bool& exact) {
   if (!d["count"].is<int>()) return false;
   count = d["count"].as<int>();
   exact = d["exact"] | true;
+  return true;
+}
+
+bool parseMutedUsers(std::string_view body, MutedUsers& out) {
+  JsonDocument doc;
+  if (!load(body, doc)) return false;
+  JsonVariantConst d = doc["data"];
+  if (!d.is<JsonObjectConst>()) return false;
+  out.clear();
+  JsonVariantConst rooms = d["mutedUsersByRoom"];
+  if (!rooms.is<JsonObjectConst>()) return true;
+  for (JsonPairConst room : rooms.as<JsonObjectConst>()) {
+    std::set<std::string> names;
+    JsonVariantConst v = room.value();
+    if (v.is<JsonArrayConst>()) {
+      for (JsonVariantConst n : v.as<JsonArrayConst>())
+        if (n.is<const char*>()) names.insert(lower(n.as<const char*>()));
+    } else if (v.is<JsonObjectConst>()) {
+      for (JsonPairConst n : v.as<JsonObjectConst>())
+        if (n.value().as<bool>()) names.insert(lower(n.key().c_str()));
+    }
+    if (!names.empty()) out[room.key().c_str()] = std::move(names);
+  }
   return true;
 }
 

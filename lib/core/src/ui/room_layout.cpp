@@ -1,6 +1,7 @@
 #include "ui/room_layout.h"
 
 #include <algorithm>
+#include <cctype>
 
 #include "chat/mention.h"
 #include "ui/nick_color.h"
@@ -68,7 +69,11 @@ std::vector<DisplayLine> layoutRoom(const std::deque<CircMessage>& msgs, const L
   int64_t prevBucket = 0;
 
   for (const auto& m : msgs) {
-    if (o.muted && o.muted->count(m.username)) continue;
+    if (o.muted) {
+      std::string name = m.username;
+      for (char& c : name) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+      if (o.muted->count(name)) continue;
+    }
 
     int64_t bucket = compact ? localDayNumber(m.timestamp) : localMinuteNumber(m.timestamp);
     if (first || bucket != prevBucket) {

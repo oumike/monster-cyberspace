@@ -299,17 +299,17 @@ docs/{BUILD.md,USE.md,TESTING.md}  .github/workflows/build.yml  AGENTS.md
   - If `nowEpochSec >= 1700000000` and `expSec > 0`: `receivedMonoMs + max(60, expSec - nowEpochSec - 300) * 1000`.
   - Otherwise: `receivedMonoMs + 55 * 60 * 1000`.
 
-- [ ] **Step 1: Write failing tests:**
+- [x] **Step 1: Write failing tests:**
   - `test_circ_minute`: 15 acquires at t=0..14 s succeed, the 16th at 15 s fails, and `retryAfterMs(15000) == 45000`. At t = 60,001 it succeeds.
   - `test_circ_hourly`: 150 acquires spaced 5 s apart all pass, and the 151st at the next 5 s step fails.
   - `test_jwt_exp`: `"eyJhbGciOiJSUzI1NiJ9.eyJleHAiOiAxNzkyOTYwMDAwLCAidXNlcl9pZCI6ICJ1MSJ9.c2ln"` → `1792960000`. Garbage → `-1`.
   - `test_refresh_synced`: received 1000, now 1792956400, exp 1792960000 → `1000 + 3300*1000`.
   - `test_refresh_unsynced`: now 0 → `1000 + 3300000`.
   - `test_refresh_floor`: exp − now = 100 → `1000 + 60000`.
-- [ ] **Step 2: Run** `pio test -e native -f test_limits_token`. Expected: FAIL.
-- [ ] **Step 3: Implement.**
-- [ ] **Step 4: Run.** Expected: PASS.
-- [ ] **Step 5: Commit** `feat(core): client-side rate limits and token refresh schedule`.
+- [x] **Step 2: Run** `pio test -e native -f test_limits_token`. Expected: FAIL.
+- [x] **Step 3: Implement.**
+- [x] **Step 4: Run.** Expected: PASS.
+- [x] **Step 5: Commit** `feat(core): client-side rate limits and token refresh schedule`.
 
 ### Task 10: M9 keymap and web utilities
 

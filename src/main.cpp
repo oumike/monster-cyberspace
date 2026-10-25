@@ -10,6 +10,8 @@
 #include "core_version.h"
 #include "hal/board.h"
 #include "input/keymap_m9.h"
+#include "net/wifi_mgr.h"
+#include "store/settings.h"
 #include "ui/grid.h"
 #include "ui/nick_color.h"
 #include "ui/renderer.h"
@@ -28,6 +30,8 @@ Screen screen = Screen::On;
 uint32_t saverUntilMs = 0;
 constexpr uint32_t kSaverMs = 10000;
 std::string lastKey = "press a key";
+Settings cfg;
+std::string lastIp;
 
 const char* actionName(Action a) {
   switch (a) {
@@ -132,11 +136,24 @@ void setup() {
   if (!renderer.begin()) Serial.println("[ui] no memory for the frame buffer");
   redrawAll();
   board::backlight(true);
-  Serial.printf("[boot] battery %d%% boot=%d\n", board::batteryPercent(),
-                board::bootButtonHeld());
+  Serial.printf("[boot] battery %d%%\n", board::batteryPercent());
+
+  settings::load(cfg);
+  wifimgr::begin(cfg);
+  Serial.printf("[wifi] mode=%s saved=%u ap=\"%s\" ap_password=%s\n",
+                wifimgr::mode() == wifimgr::Mode::Setup ? "setup" : "station",
+                unsigned(cfg.wifi.size()), wifimgr::apSsid().c_str(),
+                wifimgr::apHasPassword() ? "set" : "none");
 }
 
 void loop() {
+  wifimgr::reconnectWithBackoff();
+  std::string ip = wifimgr::ip();
+  if (ip != lastIp) {
+    lastIp = ip;
+    Serial.printf("[wifi] ip=%s\n", ip.empty() ? "(none)" : ip.c_str());
+  }
+
   if (screen == Screen::Saver && (int32_t)(millis() - saverUntilMs) >= 0) goDark();
   uint8_t raw;
   if (board::pollKey(raw)) {

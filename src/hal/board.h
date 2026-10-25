@@ -21,6 +21,5 @@ bool earlyKeyboard();
 int batteryPercent();  // -1 when unknown
 bool externalPower();
 void beep(int freqHz, int ms);
-bool bootButtonHeld();
 
 }  // namespace board

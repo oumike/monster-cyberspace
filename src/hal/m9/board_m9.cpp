@@ -25,7 +25,6 @@ void begin() {
   // this active-LOW pin would light the backlight.
   ledcAttachChannel(m9::TFT_BL, m9::TFT_BL_FREQ, 8, m9::TFT_BL_PWM_CH);
   backlight(false);
-  pinMode(m9::BOOT_BUTTON, INPUT_PULLUP);
   analogReadResolution(12);
   analogSetPinAttenuation(m9::BATT_ADC, ADC_11db);
   stc8h::begin();
@@ -71,7 +70,6 @@ bool externalPower() { return batteryVolts() > 4.25f; }
 
 void beep(int freqHz, int ms) { tone(m9::BUZZER, freqHz, ms); }
 
-bool bootButtonHeld() { return digitalRead(m9::BOOT_BUTTON) == LOW; }
 
 }  // namespace board
 

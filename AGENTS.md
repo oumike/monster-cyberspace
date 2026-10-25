@@ -43,8 +43,8 @@ and `../rhino-moshi/firmware/`.
 
 ## Progress (hand-off from Claude Code, 2026-10-25)
 
-Work is on branch **`m1-circ`**. Tasks 1–14 of the plan are done and committed, including the Task 14 hardware check,
-with their boxes ticked in the plan. **Next: Task 15 (settings and Wi-Fi manager).**
+Work is on branch **`m1-circ`**. Tasks 1–15 of the plan are done and committed, including their hardware checks,
+with their boxes ticked in the plan. **Next: Task 16 (HTTPS client and Cyberspace API layer).**
 The native suite is green: 108/108
 (`pio test -e native`), and `pio run -e m9` and `-e m9_fake` both build.
 
@@ -58,6 +58,9 @@ Notes for whoever continues:
 - Wake (user decision): holding centre wakes the screen. A centre tap while
   dark shows a 10 s read-only screensaver; it is a placeholder in `src/main.cpp`
   for now, and Task 20 builds the real one (spec §5).
+- Setup mode (user decision): there is no boot gesture. It runs only with no
+  Wi-Fi saved; a factory reset (Home screen, Task 19; web config, Task 21)
+  gets back there. The M9 HAL no longer reads BOOT (GPIO0).
 - If the first `pio run` fails with
   `FileNotFoundError: 'package-postinstall.py'` while installing
   `esptoolpy`, run it again. It's a one-off PlatformIO install glitch.

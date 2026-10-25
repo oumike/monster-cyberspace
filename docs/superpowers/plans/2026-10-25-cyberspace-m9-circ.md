@@ -23,7 +23,7 @@
 - Keyboard I2C pins 20/21 are the S3's USB pads. Release the USB-Serial-JTAG pad claim before `Wire.begin(20, 21)`. Never drive GPIO46. Never touch GPIO35–37 (octal PSRAM).
 - Panel: ST7789, native 240×320, landscape rotation MADCTL `0xA0`, inverted (`0x21`), SPI SCLK 40 / MOSI 47 / MISO 38, CS 16, DC 15, RST 14, SPI 40 MHz. Backlight GPIO17 **active LOW**, LEDC channel 7. VEXT GPIO18 **active LOW** (powers panel and keyboard). SD CS 48 and LoRa CS 39 must be driven HIGH before using SPI.
 - Keyboard: STC8H at 0x6C (also try 0x6D). HW version reg 0x00, FW reg 0xFE. Key reg 0x05 (production) or 0x01 (early: hw 0x03, fw 0x10). INT GPIO12 active HIGH. 0 means no key; there are no release events.
-- Buzzer GPIO9 (passive; `tone()` must not use LEDC channel 7). Battery ADC GPIO13, divider 2.0. BOOT button GPIO0 active LOW.
+- Buzzer GPIO9 (passive; `tone()` must not use LEDC channel 7). Battery ADC GPIO13, divider 2.0.
 - Times: SNTP on connect. Time zone is a POSIX TZ string from settings (default `UTC0`), applied with `setenv("TZ")` + `tzset()`.
 - Allocate chat data in PSRAM: call `heap_caps_malloc_extmem_enable(64)` first thing in `setup()`.
 
@@ -475,7 +475,7 @@ docs/{BUILD.md,USE.md,TESTING.md}  .github/workflows/build.yml  AGENTS.md
 **Files:** Create `src/hal/board.h`, `src/hal/m9/board_m9.cpp`, `src/hal/m9/panel_st7789.{h,cpp}`, `src/hal/m9/keyboard_stc8h.{h,cpp}`, `src/ui/renderer.{h,cpp}`. Modify `src/main.cpp`.
 
 **Interfaces:**
-- `namespace board { void begin(); const char* name(); int panelWidth(); int panelHeight(); void pushRows(const uint16_t* frame, int y0, int y1); void backlight(bool on); void displaySleep(bool sleep); bool pollKey(uint8_t& raw); bool earlyKeyboard(); int batteryPercent(); bool externalPower(); void beep(int freqHz, int ms); bool bootButtonHeld(); }`
+- `namespace board { void begin(); const char* name(); int panelWidth(); int panelHeight(); void pushRows(const uint16_t* frame, int y0, int y1); void backlight(bool on); void displaySleep(bool sleep); bool pollKey(uint8_t& raw); bool earlyKeyboard(); int batteryPercent(); bool externalPower(); void beep(int freqHz, int ms); }`
   - `name()` returns `"M9"`.
   - `pushRows` sends rows `[y0, y1)` of the full 320×240 RGB565 frame through CASET/RASET.
   - `begin()`:
@@ -516,22 +516,22 @@ docs/{BUILD.md,USE.md,TESTING.md}  .github/workflows/build.yml  AGENTS.md
 **Interfaces:**
 - `struct WifiNet { std::string ssid, password; };`
 - `struct Settings { std::vector<WifiNet> wifi; std::string email, refreshToken, tz = "UTC0", pagePassword, apPassword; TextSize textSize = TextSize::Compact; bool drawerOpen = false, buzzer = true; std::string lastRoom = "general"; };`
-- `namespace settings { void load(Settings&); void save(const Settings&); void saveToken(const std::string& refreshToken); void clearToken(); }` Uses NVS namespace `rcfg`, keys ≤ 15 chars, at most 5 Wi-Fi networks.
-- `namespace wifimgr { enum class Mode { Station, Setup }; void begin(const Settings&, bool forceSetup); Mode mode(); bool connected(); int rssiBars(); std::string ip(); std::string apSsid(); bool apHasPassword(); std::vector<std::string> scan(); void reconnectWithBackoff(); }`
-  - Setup mode runs when there are no saved networks or `forceSetup` (BOOT held at boot).
+- `namespace settings { void load(Settings&); void save(const Settings&); void saveToken(const std::string& refreshToken); void clearToken(); void factoryReset(); }` (`factoryReset` erases the whole namespace.) Uses NVS namespace `rcfg`, keys ≤ 15 chars, at most 5 Wi-Fi networks.
+- `namespace wifimgr { enum class Mode { Station, Setup }; void begin(const Settings&); Mode mode(); bool connected(); int rssiBars(); std::string ip(); std::string apSsid(); bool apHasPassword(); std::vector<std::string> scan(); void reconnectWithBackoff(); }`
+  - Setup mode runs when there are no saved networks (first boot, or after a factory reset). There is no boot-time gesture.
   - The SoftAP is `setupApSsid(board::name())`, open unless `apPassword` is non-empty (then WPA2), at 192.168.4.1. **No DNS server.**
   - In station mode it tries saved networks in order.
   - It starts mDNS `rhino-cyberspace` with `_http._tcp` port 80.
   - It runs `configTzTime(tz, "pool.ntp.org", "time.google.com")`.
   - Reconnect backoff is 1, 2, 4 … 60 s.
 
-- [ ] **Step 1: Implement** (no native tests: thin wrappers over NVS and Wi-Fi).
-- [ ] **Step 2: Wire into `main.cpp`** temporarily: load settings, then `wifimgr::begin`. Print the mode, the AP SSID (and whether a password is set, never the password itself), and the IP.
-- [ ] **Step 3: Run** `pio run -e m9`. Expected: SUCCESS.
-- [ ] **Step 4: Hardware check (human):**
+- [x] **Step 1: Implement** (no native tests: thin wrappers over NVS and Wi-Fi).
+- [x] **Step 2: Wire into `main.cpp`** temporarily: load settings, then `wifimgr::begin`. Print the mode, the AP SSID (and whether a password is set, never the password itself), and the IP.
+- [x] **Step 3: Run** `pio run -e m9`. Expected: SUCCESS.
+- [x] **Step 4: Hardware check (human):**
   - first boot shows an open `Rhino-Cyberspace-M9-Setup` that a phone can join, with nothing popping up automatically;
-  - BOOT held at reset forces setup mode.
-- [ ] **Step 5: Commit** `feat: NVS settings and Wi-Fi manager (open setup AP, no captive portal)`.
+  - (user decision) no boot gesture forces setup; a factory reset (Tasks 19 and 21) does.
+- [x] **Step 5: Commit** `feat: NVS settings and Wi-Fi manager (open setup AP, no captive portal)`.
 
 ### Task 16: HTTPS client and Cyberspace API layer
 
@@ -677,11 +677,11 @@ docs/{BUILD.md,USE.md,TESTING.md}  .github/workflows/build.yml  AGENTS.md
   - **Splash:** name, version, "connecting…".
   - **Setup:** the AP SSID, "open network" or "password required", `http://192.168.4.1`, and once on Wi-Fi `http://rhino-cyberspace.local` plus the IP. Entry "Log in on this device" → LoginForm.
   - **LoginForm:** email field, then password field (masked `•`). Select submits a `Login` command and shows the result.
-  - **Home:** user, Wi-Fi SSID and IP, the settings URL, unread mentions count, rooms with new activity, battery.
+  - **Home:** user, Wi-Fi SSID and IP, the settings URL, unread mentions count, rooms with new activity, battery, and a last entry **Factory reset…**: a confirm menu ("Cancel" default, "Erase everything") that calls `settings::factoryReset()` and restarts.
   - **RoomList:** `ListView` of rooms sorted by `sortOrder` then `lastMessageAt`, with a `•` marker when `lastMessageAt > readAt[slug]` and the online count on the right. Select/Right opens the room; Left/Back goes Home.
   - **ComingSoon:** the feature name and "coming in a later version".
 - Boot flow:
-  - no Wi-Fi saved, or BOOT held → Setup;
+  - no Wi-Fi saved → Setup;
   - else signed out → Setup with a "Sign in at rhino-cyberspace.local or on this device" line;
   - else → Home.
 
@@ -752,6 +752,7 @@ docs/{BUILD.md,USE.md,TESTING.md}  .github/workflows/build.yml  AGENTS.md
   | `GET/POST /api/prefs` | `{textSize:"compact"|"comfortable", buzzer, tz}` |
   | `POST /api/security` | `{pagePassword?, apPassword?}` validates with `validApPassword`; 400 with a message on failure |
   | `POST /api/restart` | Restarts the device |
+  | `POST /api/factory-reset` | `{confirm:true}` required (else 400). Calls `settings::factoryReset()` and restarts. The page asks for confirmation first |
 
 - Page sections: Status, Wi-Fi, Cyberspace account, Display, Security. The security notes are copied verbatim from spec §8, the paragraph beginning "the page is plain HTTP on your LAN". The TZ dropdown includes `UTC0`, `EST5EDT,M3.2.0,M11.1.0`, `CST6CDT,M3.2.0,M11.1.0`, `MST7MDT,M3.2.0,M11.1.0`, `PST8PDT,M3.2.0,M11.1.0`, `GMT0BST,M3.5.0/1,M10.5.0`, `CET-1CEST,M3.5.0,M10.5.0/3`, `AEST-10AEDT,M10.1.0,M4.1.0/3`, and a free-text field.
 - Applying Wi-Fi from setup mode saves and restarts into station mode.
@@ -765,7 +766,7 @@ docs/{BUILD.md,USE.md,TESTING.md}  .github/workflows/build.yml  AGENTS.md
 
 **Files:** Create `docs/USE.md`, `docs/TESTING.md`, `.github/workflows/build.yml`, `AGENTS.md`, `.github/copilot-instructions.md` (a two-line pointer to `AGENTS.md`), `README.md`
 
-- [ ] **Step 1: `docs/USE.md`:** first setup (open AP, the address to browse, login), the button map (spec §5 table), room controls, text sizes and drawer, alerts, the security notes, and returning to setup mode by holding BOOT.
+- [ ] **Step 1: `docs/USE.md`:** first setup (open AP, the address to browse, login), the button map (spec §5 table), room controls, text sizes and drawer, alerts, the security notes, and returning to setup mode with a factory reset (Home screen or web config).
 - [ ] **Step 2: `docs/TESTING.md`:** the host test command, the `m9_fake` procedure, and the **live checklist (human only)** from spec §10.3 as checkboxes:
   - web login
   - join a room

@@ -90,7 +90,7 @@ Events flow net → UI (`RoomChanged`, `RoomListUpdated`, `PresenceUpdated`,
 
 | Module | Responsibility | Depends on |
 |---|---|---|
-| `hal/m9/` | Panel init (LovyanGFX ST7789, backlight PWM on LEDC ch 7, active low), keyboard driver (USB-pad release, production/early register detection), VEXT rail, battery ADC, buzzer, BOOT button | Arduino, LovyanGFX |
+| `hal/m9/` | Panel init (LovyanGFX ST7789, backlight PWM on LEDC ch 7, active low), keyboard driver (USB-pad release, production/early register detection), VEXT rail, battery ADC, buzzer | Arduino, LovyanGFX |
 | `hal/board.h` | Board-neutral interface: `display()`, `pollKey()`, `battery()`, `beep()`, `backlight()` | — |
 | `input/` | Per-board keymap: raw code → `Action` (`Up/Down/Left/Right/Select/Back`, `OpenCirc/OpenHome/OpenCmail/OpenFeed`, `Palette`, `ClearLine`, `ScreenOff`, `Char(c)`, `Backspace`) | `hal` |
 | `ui/grid` | Character-cell framebuffer, dirty-row redraw, 6×12 and 8×16 bitmap fonts (Latin-1 + box drawing + a small symbol set), theme colours, nick-colour hash | `hal` |
@@ -194,9 +194,12 @@ nicks in their colours, with `z` for idle users (`lastActivity` older than
   it has been on screen.
 
 **Home dashboard:** the signed-in user, Wi-Fi network and IP, the settings-page
-address, unread mentions, rooms with new activity, and battery.
+address, unread mentions, rooms with new activity, and battery. Its last
+entry is **Factory reset…**, which asks for confirmation (Select on
+"Erase everything", default "Cancel") and then does the same as the web
+config factory reset.
 
-**Setup screen** (no Wi-Fi saved, or BOOT held at power-on): the AP name,
+**Setup screen** (no Wi-Fi saved: first boot, or after a factory reset; there is no boot-time gesture): the AP name,
 which includes the board (`Rhino-Cyberspace-<BOARD>-Setup`, so
 `Rhino-Cyberspace-M9-Setup` on this board, from the board's `BOARD_NAME`),
 and `http://192.168.4.1`. The AP is **open by default**. If a setup-AP
@@ -273,11 +276,14 @@ It is plain HTML, CSS and JS, inline, with no external requests.
   optional setup-AP password (WPA2, 8–63 characters; clearing it makes the AP
   open again).
 - **Status:** firmware version, IP, signal, battery, connection state.
+- **Factory reset:** after a confirmation, erases every saved setting (Wi-Fi
+  networks, account token, preferences, page and setup-AP passwords) and
+  restarts. With no Wi-Fi saved the device comes up in setup mode.
 
 Security notes, also shown on the page: the page is plain HTTP on your LAN, so
 set a page password on shared networks. The setup AP is open unless a setup-AP
 password is set, so anyone in radio range can join it while it runs. It runs
-only with no saved Wi-Fi or with BOOT held at power-on, and anything entered on
+only with no saved Wi-Fi (first boot or after a factory reset), and anything entered on
 it (Wi-Fi password, Cyberspace password) crosses that link unencrypted. Setting
 a setup-AP password closes that gap for later setups. The refresh token can't
 be read back through the page.

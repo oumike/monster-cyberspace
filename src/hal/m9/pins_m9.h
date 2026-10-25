@@ -7,7 +7,6 @@ namespace m9 {
 
 constexpr int VEXT = 18;  // LCD/GPS/sensor rail, active LOW
 constexpr int BUZZER = 9;
-constexpr int BOOT_BUTTON = 0;  // active LOW
 
 constexpr int SPI_SCK = 40, SPI_MISO = 38, SPI_MOSI = 47;
 constexpr uint32_t TFT_SPI_HZ = 40000000;

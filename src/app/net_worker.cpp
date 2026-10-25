@@ -8,8 +8,10 @@
 
 #include <algorithm>
 #include <atomic>
+#include <condition_variable>
 #include <ctime>
 #include <map>
+#include <mutex>
 #include <set>
 
 #include "app/queues.h"
@@ -19,6 +21,7 @@
 #include "net/sse_client.h"
 #include "net/wifi_mgr.h"
 #include "store/locked_chat.h"
+#include "web/web_server.h"
 
 namespace rc::networker {
 
@@ -40,8 +43,25 @@ void banner(const std::string& text, bool ok = true) {
   postEvent(Event{EvtType::Banner, text, 0, ok});
 }
 
+std::atomic<int> gConn{-1}, gAuth{-1};
+
 void post(EvtType t, int code = 0, const std::string& text = "", bool ok = true) {
+  if (t == EvtType::ConnState) gConn = code;
+  if (t == EvtType::AuthState && ok) gAuth = code;
   postEvent(Event{t, text, code, ok});
+}
+
+// Web logins wait here for the worker to finish the Login command.
+std::mutex loginMu;
+std::condition_variable loginCv;
+uint32_t loginTicket = 0, loginDone = 0;
+LoginResult loginResult;
+
+void finishLogin(const LoginResult& r) {
+  std::lock_guard<std::mutex> g(loginMu);
+  loginResult = r;
+  loginDone = loginTicket;
+  loginCv.notify_all();
 }
 
 class Worker {
@@ -441,12 +461,15 @@ class Worker {
   }
 
   void login(Command& c) {
+    LoginResult r;
     if (!online()) {
-      post(EvtType::AuthState, auth_, "Offline", false);
+      r.message = "Offline";
+      post(EvtType::AuthState, auth_, r.message, false);
     } else {
       Tokens t;
       ApiError e = api_.login(c.a, c.b, t);
       if (!e.ok()) {
+        r.message = e.message;
         post(EvtType::AuthState, auth_, e.message, false);
       } else {
         email_ = c.a;
@@ -454,9 +477,14 @@ class Worker {
         ready_ = false;
         nextBootstrap_ = 0;
         bootstrap();
+        r.ok = true;
+        if (auth_ == 2) r.message = "Signed in; verify your email to chat";
+        else if (auth_ != 1) r.message = "Signed in; finishing setup";
       }
     }
     std::fill(c.b.begin(), c.b.end(), '\0');
+    r.code = auth_;
+    finishLogin(r);
   }
 
   // ---- timers ----
@@ -537,8 +565,25 @@ void taskMain(void* arg) {
 
 }  // namespace
 
+int connState() { return gConn; }
+int authState() { return gAuth; }
+
+uint32_t beginLogin() {
+  std::lock_guard<std::mutex> g(loginMu);
+  return ++loginTicket;
+}
+
+bool waitLogin(uint32_t ticket, int timeoutMs, LoginResult& out) {
+  std::unique_lock<std::mutex> l(loginMu);
+  bool done = loginCv.wait_for(l, std::chrono::milliseconds(timeoutMs),
+                               [&] { return loginDone >= ticket; });
+  if (done) out = loginResult;
+  return done;
+}
+
 void start(const Settings& s) {
   wifimgr::begin(s);
+  web::begin();
   static Worker* w = new Worker(s);
   xTaskCreatePinnedToCore(taskMain, "net", 12288, w, 3, nullptr, 0);
 }

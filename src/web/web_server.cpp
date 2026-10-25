@@ -1,0 +1,388 @@
+#include "web/web_server.h"
+
+#include <Arduino.h>
+#include <ArduinoJson.h>
+#include <esp_http_server.h>
+
+#include <algorithm>
+#include <cstdlib>
+#include <string>
+
+#include "app/messages.h"
+#include "app/net_worker.h"
+#include "app/queues.h"
+#include "chat/chat_source.h"
+#include "core_version.h"
+#include "hal/board.h"
+#include "net/wifi_mgr.h"
+#include "store/settings.h"
+#include "web/page.h"
+#include "web/web_util.h"
+
+namespace web {
+
+namespace {
+
+using rc::Settings;
+
+constexpr size_t kMaxBody = 1024;
+constexpr int kLoginWaitMs = 20000;
+
+httpd_handle_t server = nullptr;
+
+void wipe(std::string& s) {
+  std::fill(s.begin(), s.end(), '\0');
+  s.clear();
+}
+
+bool printable(const std::string& s) {
+  for (char c : s)
+    if (c < 0x20 || c > 0x7E) return false;
+  return true;
+}
+
+// Fresh from NVS on each request: the UI task owns the in-memory copy.
+Settings current() {
+  Settings s;
+  settings::load(s);
+  wipe(s.refreshToken);
+  return s;
+}
+
+bool authorized(httpd_req_t* req) {
+  Settings s = current();
+  std::string header;
+  size_t n = httpd_req_get_hdr_value_len(req, "Authorization");
+  if (n > 0 && n < 512) {
+    header.resize(n + 1);
+    if (httpd_req_get_hdr_value_str(req, "Authorization", &header[0], n + 1) == ESP_OK)
+      header.resize(n);
+    else
+      header.clear();
+  }
+  bool ok = rc::checkBasicAuth(header, s.pagePassword);
+  wipe(s.pagePassword);
+  wipe(s.apPassword);
+  if (ok) return true;
+  httpd_resp_set_status(req, "401 Unauthorized");
+  httpd_resp_set_hdr(req, "WWW-Authenticate", "Basic realm=\"rhino-cyberspace\"");
+  httpd_resp_set_type(req, "text/plain");
+  httpd_resp_sendstr(req, "Password required");
+  return false;
+}
+
+esp_err_t sendJson(httpd_req_t* req, const JsonDocument& doc, const char* status = "200 OK") {
+  std::string out;
+  serializeJson(doc, out);
+  httpd_resp_set_status(req, status);
+  httpd_resp_set_type(req, "application/json");
+  httpd_resp_set_hdr(req, "Cache-Control", "no-store");
+  return httpd_resp_send(req, out.data(), out.size());
+}
+
+esp_err_t fail(httpd_req_t* req, const char* status, const std::string& message) {
+  JsonDocument d;
+  d["ok"] = false;
+  d["message"] = message;
+  return sendJson(req, d, status);
+}
+
+esp_err_t okReply(httpd_req_t* req, const char* message = nullptr) {
+  JsonDocument d;
+  d["ok"] = true;
+  if (message) d["message"] = message;
+  return sendJson(req, d);
+}
+
+// Reads the body into `body` (zeroed by the caller when it holds secrets) and
+// parses it in place, so parsed strings point into that buffer.
+bool readJson(httpd_req_t* req, std::string& body, JsonDocument& doc) {
+  if (req->content_len > kMaxBody) return false;
+  body.assign(req->content_len, '\0');
+  size_t got = 0;
+  while (got < body.size()) {
+    int r = httpd_req_recv(req, &body[got], body.size() - got);
+    if (r == HTTPD_SOCK_ERR_TIMEOUT) continue;
+    if (r <= 0) return false;
+    got += size_t(r);
+  }
+  return !deserializeJson(doc, &body[0], body.size());
+}
+
+void restartTask(void*) {
+  vTaskDelay(pdMS_TO_TICKS(600));  // let the response go out
+  ESP.restart();
+}
+
+void restartSoon() { xTaskCreate(restartTask, "restart", 2048, nullptr, 1, nullptr); }
+
+// ---- handlers ----
+
+esp_err_t getPage(httpd_req_t* req) {
+  if (!authorized(req)) return ESP_OK;
+  httpd_resp_set_type(req, "text/html; charset=utf-8");
+  httpd_resp_set_hdr(req, "Cache-Control", "no-store");
+  return httpd_resp_send(req, kPage, HTTPD_RESP_USE_STRLEN);
+}
+
+esp_err_t getStatus(httpd_req_t* req) {
+  if (!authorized(req)) return ESP_OK;
+  Settings s = current();
+  JsonDocument d;
+  d["version"] = RC_VERSION;
+  d["board"] = board::name();
+  bool setup = wifimgr::mode() == wifimgr::Mode::Setup;
+  d["mode"] = setup ? "setup" : "station";
+  d["ip"] = wifimgr::ip();
+  d["ssid"] = wifimgr::ssid();
+  d["rssiBars"] = wifimgr::rssiBars();
+  d["battery"] = board::batteryPercent();
+  int auth = rc::networker::authState();
+  d["signedIn"] = auth == 1 || auth == 2;
+  d["verified"] = auth == 1;
+  d["email"] = s.email;
+  d["conn"] = rc::networker::connState();
+  d["apSsid"] = wifimgr::apSsid();
+  JsonArray nets = d["saved"].to<JsonArray>();
+  for (const auto& w : s.wifi) nets.add(w.ssid);
+  d["pagePasswordSet"] = !s.pagePassword.empty();
+  d["apPasswordSet"] = !s.apPassword.empty();
+  wipe(s.pagePassword);
+  wipe(s.apPassword);
+  for (auto& w : s.wifi) wipe(w.password);
+  return sendJson(req, d);
+}
+
+esp_err_t getScan(httpd_req_t* req) {
+  if (!authorized(req)) return ESP_OK;
+  JsonDocument d;
+  JsonArray a = d["networks"].to<JsonArray>();
+  for (const auto& n : wifimgr::scan()) a.add(n);
+  return sendJson(req, d);
+}
+
+esp_err_t postWifi(httpd_req_t* req) {
+  if (!authorized(req)) return ESP_OK;
+  std::string body;
+  JsonDocument doc;
+  if (!readJson(req, body, doc)) return fail(req, "400 Bad Request", "Bad request");
+  std::string ssid = doc["ssid"] | "";
+  std::string pass = doc["password"] | "";
+  wipe(body);
+  if (ssid.empty() || ssid.size() > 32) return fail(req, "400 Bad Request", "Network name: 1-32 characters");
+  if (pass.size() > 63 || (!pass.empty() && pass.size() < 8)) {
+    wipe(pass);
+    return fail(req, "400 Bad Request", "Wi-Fi password: 8-63 characters, or empty for an open network");
+  }
+  Settings s = current();
+  auto it = std::find_if(s.wifi.begin(), s.wifi.end(),
+                         [&](const rc::WifiNet& w) { return w.ssid == ssid; });
+  if (it != s.wifi.end()) {
+    it->password = pass;
+  } else if (s.wifi.size() >= rc::kMaxWifiNets) {
+    wipe(pass);
+    return fail(req, "400 Bad Request", "Five networks saved already: remove one first");
+  } else {
+    s.wifi.push_back(rc::WifiNet{ssid, pass});
+  }
+  wipe(pass);
+  settings::saveWifi(s.wifi);
+  for (auto& w : s.wifi) wipe(w.password);
+  if (wifimgr::mode() == wifimgr::Mode::Setup) {
+    okReply(req, "Saved. Restarting to join it\u2026");
+    restartSoon();
+    return ESP_OK;
+  }
+  return okReply(req, "Saved. It is used after a restart, or when the current network drops.");
+}
+
+esp_err_t deleteWifi(httpd_req_t* req) {
+  if (!authorized(req)) return ESP_OK;
+  char query[160] = {0}, raw[100] = {0};
+  if (httpd_req_get_url_query_str(req, query, sizeof query) != ESP_OK ||
+      httpd_query_key_value(query, "ssid", raw, sizeof raw) != ESP_OK)
+    return fail(req, "400 Bad Request", "Missing ssid");
+  std::string ssid = rc::urlDecode(raw);
+  Settings s = current();
+  auto before = s.wifi.size();
+  s.wifi.erase(std::remove_if(s.wifi.begin(), s.wifi.end(),
+                              [&](const rc::WifiNet& w) { return w.ssid == ssid; }),
+               s.wifi.end());
+  if (s.wifi.size() == before) return fail(req, "404 Not Found", "Not saved");
+  settings::saveWifi(s.wifi);
+  for (auto& w : s.wifi) wipe(w.password);
+  return okReply(req, s.wifi.empty() ? "Removed. With no networks saved, the next restart opens setup mode."
+                                     : "Removed.");
+}
+
+esp_err_t postLogin(httpd_req_t* req) {
+  if (!authorized(req)) return ESP_OK;
+  std::string body;
+  JsonDocument doc;
+  if (!readJson(req, body, doc)) {
+    wipe(body);
+    return fail(req, "400 Bad Request", "Bad request");
+  }
+  rc::Command c{rc::CmdType::Login, doc["email"] | "", doc["password"] | ""};
+  doc.clear();
+  wipe(body);
+  if (c.a.empty() || c.b.empty()) {
+    wipe(c.b);
+    return fail(req, "400 Bad Request", "Enter your email and password");
+  }
+  uint32_t ticket = rc::networker::beginLogin();
+  rc::chatSource().command(c);
+  wipe(c.b);
+  rc::networker::LoginResult r;
+  if (!rc::networker::waitLogin(ticket, kLoginWaitMs, r)) {
+    r.ok = false;
+    r.message = "Timed out: check the device";
+  }
+  JsonDocument d;
+  d["ok"] = r.ok;
+  d["code"] = r.code;
+  d["message"] = r.message;
+  return sendJson(req, d);
+}
+
+esp_err_t postLogout(httpd_req_t* req) {
+  if (!authorized(req)) return ESP_OK;
+  rc::chatSource().command(rc::Command{rc::CmdType::Logout});
+  return okReply(req, "Signed out");
+}
+
+esp_err_t postResend(httpd_req_t* req) {
+  if (!authorized(req)) return ESP_OK;
+  rc::chatSource().command(rc::Command{rc::CmdType::ResendVerification});
+  return okReply(req, "Requested: the device shows the result");
+}
+
+esp_err_t getPrefs(httpd_req_t* req) {
+  if (!authorized(req)) return ESP_OK;
+  Settings s = current();
+  JsonDocument d;
+  d["textSize"] = s.textSize == rc::TextSize::Compact ? "compact" : "comfortable";
+  d["buzzer"] = s.buzzer;
+  d["tz"] = s.tz;
+  return sendJson(req, d);
+}
+
+esp_err_t postPrefs(httpd_req_t* req) {
+  if (!authorized(req)) return ESP_OK;
+  std::string body;
+  JsonDocument doc;
+  if (!readJson(req, body, doc)) return fail(req, "400 Bad Request", "Bad request");
+  Settings s = current();
+  bool compact = s.textSize == rc::TextSize::Compact;
+  if (doc["textSize"].is<const char*>()) compact = std::string(doc["textSize"].as<const char*>()) != "comfortable";
+  bool buzzer = doc["buzzer"].is<bool>() ? doc["buzzer"].as<bool>() : s.buzzer;
+  if (doc["tz"].is<const char*>()) {
+    std::string tz = doc["tz"].as<const char*>();
+    if (tz.empty() || tz.size() > 63 || !printable(tz))
+      return fail(req, "400 Bad Request", "Time zone: a POSIX TZ string such as UTC0");
+    settings::saveTz(tz);
+    setenv("TZ", tz.c_str(), 1);
+    tzset();
+  }
+  // The UI task owns text size and buzzer; it applies and saves them.
+  rc::postEvent(rc::Event{rc::EvtType::PrefsChanged, "", compact ? 1 : 0, buzzer});
+  return okReply(req, "Saved");
+}
+
+esp_err_t postSecurity(httpd_req_t* req) {
+  if (!authorized(req)) return ESP_OK;
+  std::string body;
+  JsonDocument doc;
+  if (!readJson(req, body, doc)) {
+    wipe(body);
+    return fail(req, "400 Bad Request", "Bad request");
+  }
+  Settings s = current();
+  std::string page = s.pagePassword, ap = s.apPassword;
+  wipe(s.pagePassword);
+  wipe(s.apPassword);
+  if (doc["pagePassword"].is<const char*>()) page = doc["pagePassword"].as<const char*>();
+  if (doc["apPassword"].is<const char*>()) ap = doc["apPassword"].as<const char*>();
+  doc.clear();
+  wipe(body);
+  const char* err = nullptr;
+  if (page.size() > 63 || !printable(page)) err = "Page password: up to 63 printable characters";
+  else if (!rc::validApPassword(ap)) err = "Setup-AP password: 8-63 printable characters, or empty for an open AP";
+  if (!err) settings::saveSecurity(page, ap);
+  wipe(page);
+  wipe(ap);
+  if (err) return fail(req, "400 Bad Request", err);
+  return okReply(req, "Saved. The setup-AP password applies the next time setup mode runs.");
+}
+
+esp_err_t postRestart(httpd_req_t* req) {
+  if (!authorized(req)) return ESP_OK;
+  okReply(req, "Restarting\u2026");
+  restartSoon();
+  return ESP_OK;
+}
+
+esp_err_t postFactoryReset(httpd_req_t* req) {
+  if (!authorized(req)) return ESP_OK;
+  std::string body;
+  JsonDocument doc;
+  if (!readJson(req, body, doc) || !(doc["confirm"] | false))
+    return fail(req, "400 Bad Request", "Send {\"confirm\":true} to erase everything");
+  settings::factoryReset();
+  okReply(req, "Erased. Restarting into setup mode\u2026");
+  restartSoon();
+  return ESP_OK;
+}
+
+}  // namespace
+
+void begin() {
+  if (server) return;
+  httpd_config_t cfg = HTTPD_DEFAULT_CONFIG();
+  cfg.server_port = 80;
+  cfg.max_uri_handlers = 16;
+  cfg.stack_size = 8192;
+  cfg.core_id = 0;
+  cfg.lru_purge_enable = true;
+  if (httpd_start(&server, &cfg) != ESP_OK) {
+    Serial.println("[web] failed to start");
+    server = nullptr;
+    return;
+  }
+  struct Route {
+    const char* uri;
+    httpd_method_t method;
+    esp_err_t (*fn)(httpd_req_t*);
+  };
+  static const Route routes[] = {
+      {"/", HTTP_GET, getPage},
+      {"/api/status", HTTP_GET, getStatus},
+      {"/api/wifi/scan", HTTP_GET, getScan},
+      {"/api/wifi", HTTP_POST, postWifi},
+      {"/api/wifi", HTTP_DELETE, deleteWifi},
+      {"/api/login", HTTP_POST, postLogin},
+      {"/api/logout", HTTP_POST, postLogout},
+      {"/api/resend", HTTP_POST, postResend},
+      {"/api/prefs", HTTP_GET, getPrefs},
+      {"/api/prefs", HTTP_POST, postPrefs},
+      {"/api/security", HTTP_POST, postSecurity},
+      {"/api/restart", HTTP_POST, postRestart},
+      {"/api/factory-reset", HTTP_POST, postFactoryReset},
+  };
+  for (const Route& r : routes) {
+    httpd_uri_t u = {};
+    u.uri = r.uri;
+    u.method = r.method;
+    u.handler = r.fn;
+    httpd_register_uri_handler(server, &u);
+  }
+  Serial.println("[web] listening on port 80");
+}
+
+void stop() {
+  if (!server) return;
+  httpd_stop(server);
+  server = nullptr;
+}
+
+}  // namespace web

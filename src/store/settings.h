@@ -26,9 +26,14 @@ constexpr size_t kMaxWifiNets = 5;
 // NVS namespace "rcfg". Wi-Fi beyond kMaxWifiNets is dropped on save.
 namespace settings {
 void load(rc::Settings&);
-// Saves everything except the email and refresh token, which only the
-// network side writes (saveAccount, saveToken, clearToken).
-void save(const rc::Settings&);
+// Each saver writes only its own keys, so the UI task and the web server
+// never overwrite each other's changes.
+// The UI's own preferences: text size, drawer, buzzer, last room.
+void saveUiPrefs(const rc::Settings&);
+// Web config only. Networks beyond kMaxWifiNets are dropped.
+void saveWifi(const std::vector<rc::WifiNet>&);
+void saveTz(const std::string& tz);
+void saveSecurity(const std::string& pagePassword, const std::string& apPassword);
 void saveToken(const std::string& refreshToken);
 void clearToken();
 // Saves the email and refresh token after a login.

@@ -43,9 +43,9 @@ and `../rhino-moshi/firmware/`.
 
 ## Progress (hand-off from Claude Code, 2026-10-25)
 
-Work is on branch **`m1-circ`**. Tasks 1–20 of the plan (Task 20's hardware check still open) are done and committed, including their hardware checks,
-with their boxes ticked in the plan. **Next: Task 21 (web config server, including the factory reset).**
-The native suite is green: 108/108
+Work is on branch **`m1-circ`**. Tasks 1–21 of the plan are done and committed, with their boxes ticked in the plan. The hardware
+checks for Tasks 20 and 21 are still open: they were built without flashing. **Next: Task 22 (docs, live checklist, CI, agent notes).**
+The native suite is green: 111/111
 (`pio test -e native`), and `pio run -e m9` and `-e m9_fake` both build.
 
 Notes for whoever continues:

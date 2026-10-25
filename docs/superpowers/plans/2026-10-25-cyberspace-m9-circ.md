@@ -769,10 +769,12 @@ docs/{BUILD.md,USE.md,TESTING.md}  .github/workflows/build.yml  AGENTS.md
 - Page sections: Status, Wi-Fi, Cyberspace account, Display, Security. The security notes are copied verbatim from spec §8, the paragraph beginning "the page is plain HTTP on your LAN". The TZ dropdown includes `UTC0`, `EST5EDT,M3.2.0,M11.1.0`, `CST6CDT,M3.2.0,M11.1.0`, `MST7MDT,M3.2.0,M11.1.0`, `PST8PDT,M3.2.0,M11.1.0`, `GMT0BST,M3.5.0/1,M10.5.0`, `CET-1CEST,M3.5.0,M10.5.0/3`, `AEST-10AEDT,M10.1.0,M4.1.0/3`, and a free-text field.
 - Applying Wi-Fi from setup mode saves and restarts into station mode.
 
-- [ ] **Step 1: Implement.**
-- [ ] **Step 2: Run** `pio run -e m9`. Expected: SUCCESS.
+- [x] **Step 1: Implement.**
+- [x] **Step 2: Run** `pio run -e m9`. Expected: SUCCESS.
 - [ ] **Step 3: Hardware check (human):** join the open setup AP, browse to `http://192.168.4.1` (no popup appears), add Wi-Fi, and confirm the device restarts onto it. Then check `http://rhino-cyberspace.local` loads, setting a page password triggers Basic auth, and setting and clearing an AP password works (WPA2 when set, open when cleared).
-- [ ] **Step 4: Commit** `feat: device web config (Wi-Fi, login, prefs, security)`.
+- [x] **Step 4: Commit** `feat: device web config (Wi-Fi, login, prefs, security)`.
+
+> **As built:** the settings writes are scoped (`saveUiPrefs`, `saveWifi`, `saveTz`, `saveSecurity`), so the web server never overwrites UI-owned keys. Text size and buzzer changes reach the UI task as an `EvtType::PrefsChanged` event. Web sign-in waits up to 20 s for the net worker's result through a login ticket. Step 3 is still open: it was built without flashing.
 
 ### Task 22: Docs, live checklist, CI, agent notes
 

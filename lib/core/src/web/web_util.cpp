@@ -44,4 +44,31 @@ bool checkBasicAuth(std::string_view header, std::string_view password) {
   return diff == 0;
 }
 
+namespace {
+int hexVal(char c) {
+  if (c >= '0' && c <= '9') return c - '0';
+  if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+  if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+  return -1;
+}
+}  // namespace
+
+std::string urlDecode(std::string_view s) {
+  std::string out;
+  out.reserve(s.size());
+  for (size_t i = 0; i < s.size(); ++i) {
+    char c = s[i];
+    if (c == '+') {
+      out += ' ';
+    } else if (c == '%' && i + 2 < s.size() &&
+               hexVal(s[i + 1]) >= 0 && hexVal(s[i + 2]) >= 0) {
+      out += static_cast<char>(hexVal(s[i + 1]) * 16 + hexVal(s[i + 2]));
+      i += 2;
+    } else {
+      out += c;
+    }
+  }
+  return out;
+}
+
 }  // namespace rc

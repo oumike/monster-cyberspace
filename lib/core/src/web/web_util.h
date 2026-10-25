@@ -15,4 +15,8 @@ bool validApPassword(std::string_view pw);
 // disables the check.
 bool checkBasicAuth(std::string_view authorizationHeader, std::string_view password);
 
+// Decodes a query-string value: %XX escapes and '+' as a space. A malformed
+// escape is kept as-is.
+std::string urlDecode(std::string_view s);
+
 }  // namespace rc

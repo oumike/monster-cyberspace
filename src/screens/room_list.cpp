@@ -24,7 +24,7 @@ void RoomListScreen::onKey(const KeyEvent& k) {
     case Action::Right:
       if (list_.selected() < int(slugs_.size())) {
         app().cfg.lastRoom = slugs_[list_.selected()];
-        settings::save(app().cfg);
+        settings::saveUiPrefs(app().cfg);
         router::go(router::Id::Room, app().cfg.lastRoom);
       }
       break;

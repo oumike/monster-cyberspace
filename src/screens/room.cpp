@@ -83,7 +83,7 @@ void RoomScreen::closeOverlays() {
 void RoomScreen::setDrawer(bool open) {
   if (app().cfg.drawerOpen == open) return;
   app().cfg.drawerOpen = open;
-  settings::save(app().cfg);
+  settings::saveUiPrefs(app().cfg);
   chatSource().command(Command{open ? CmdType::OpenPresence : CmdType::ClosePresence});
 }
 

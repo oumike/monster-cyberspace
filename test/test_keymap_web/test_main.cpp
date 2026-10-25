@@ -97,6 +97,15 @@ void test_basic_auth() {
   TEST_ASSERT_FALSE(checkBasicAuth("Basic cm9vdDpwYXNz", "pass"));
 }
 
+void test_url_decode() {
+  TEST_ASSERT_EQUAL_STRING("My Net", urlDecode("My%20Net").c_str());
+  TEST_ASSERT_EQUAL_STRING("a b", urlDecode("a+b").c_str());
+  TEST_ASSERT_EQUAL_STRING("caf\xc3\xa9", urlDecode("caf%C3%A9").c_str());
+  // Malformed escapes pass through unchanged.
+  TEST_ASSERT_EQUAL_STRING("100%", urlDecode("100%").c_str());
+  TEST_ASSERT_EQUAL_STRING("%zz", urlDecode("%zz").c_str());
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_keymap_table);
@@ -105,5 +114,6 @@ int main() {
   RUN_TEST(test_ap_ssid);
   RUN_TEST(test_ap_password);
   RUN_TEST(test_basic_auth);
+  RUN_TEST(test_url_decode);
   return UNITY_END();
 }

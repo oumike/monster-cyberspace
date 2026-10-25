@@ -98,6 +98,13 @@ void handleEvent(const Event& e) {
         router::go(Id::Setup);
       if (e.ok && e.code != 0 && (cur == Id::Setup || cur == Id::LoginForm)) router::go(Id::Home);
       break;
+    case EvtType::PrefsChanged: {
+      TextSize ts = e.code == 0 ? TextSize::Comfortable : TextSize::Compact;
+      app().cfg.buzzer = e.ok;
+      if (ts != app().cfg.textSize) setTextSize(ts);  // saves too
+      else settings::saveUiPrefs(app().cfg);
+      break;
+    }
     case EvtType::Banner:
       banner(e.text, !e.ok);
       break;
@@ -184,7 +191,7 @@ void start() {
 
 void setTextSize(TextSize s) {
   app().cfg.textSize = s;
-  settings::save(app().cfg);
+  settings::saveUiPrefs(app().cfg);
   needResize = true;
 }
 

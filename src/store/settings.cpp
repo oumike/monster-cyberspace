@@ -46,25 +46,43 @@ void load(rc::Settings& s) {
   p.end();
 }
 
-void save(const rc::Settings& s) {
+void saveUiPrefs(const rc::Settings& s) {
   Preferences p;
   if (!p.begin(kNs, false)) return;
-  size_t n = s.wifi.size() < rc::kMaxWifiNets ? s.wifi.size() : rc::kMaxWifiNets;
-  char k[8];
-  for (size_t i = 0; i < rc::kMaxWifiNets; ++i) {
-    ssidKey(k, sizeof k, i);
-    if (i < n) p.putString(k, s.wifi[i].ssid.c_str()); else p.remove(k);
-    passKey(k, sizeof k, i);
-    if (i < n) p.putString(k, s.wifi[i].password.c_str()); else p.remove(k);
-  }
-  p.putUChar("wn", uint8_t(n));
-  p.putString("tz", s.tz.c_str());
-  p.putString("pagepw", s.pagePassword.c_str());
-  p.putString("appw", s.apPassword.c_str());
   p.putUChar("tsize", s.textSize == rc::TextSize::Comfortable ? 0 : 1);
   p.putBool("drawer", s.drawerOpen);
   p.putBool("buzz", s.buzzer);
   p.putString("room", s.lastRoom.c_str());
+  p.end();
+}
+
+void saveWifi(const std::vector<rc::WifiNet>& nets) {
+  Preferences p;
+  if (!p.begin(kNs, false)) return;
+  size_t n = nets.size() < rc::kMaxWifiNets ? nets.size() : rc::kMaxWifiNets;
+  char k[8];
+  for (size_t i = 0; i < rc::kMaxWifiNets; ++i) {
+    ssidKey(k, sizeof k, i);
+    if (i < n) p.putString(k, nets[i].ssid.c_str()); else if (p.isKey(k)) p.remove(k);
+    passKey(k, sizeof k, i);
+    if (i < n) p.putString(k, nets[i].password.c_str()); else if (p.isKey(k)) p.remove(k);
+  }
+  p.putUChar("wn", uint8_t(n));
+  p.end();
+}
+
+void saveTz(const std::string& tz) {
+  Preferences p;
+  if (!p.begin(kNs, false)) return;
+  p.putString("tz", tz.c_str());
+  p.end();
+}
+
+void saveSecurity(const std::string& pagePassword, const std::string& apPassword) {
+  Preferences p;
+  if (!p.begin(kNs, false)) return;
+  p.putString("pagepw", pagePassword.c_str());
+  p.putString("appw", apPassword.c_str());
   p.end();
 }
 

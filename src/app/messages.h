@@ -42,6 +42,7 @@ enum class EvtType {
   AuthState,        // code: 0 signed out, 1 signed in, 2 email unverified; text = username or error
   SendDone,         // ok; text = error message when !ok
   OlderLoaded,      // code = messages added
+  PrefsChanged,     // from the web page: code = 0 Comfortable, 1 Compact; ok = buzzer
 };
 
 struct Event {

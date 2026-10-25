@@ -33,7 +33,10 @@ The fake source provides:
 - sends that echo back after 300 ms;
 - a `400` for `/dice x`;
 - the real local send limit, so the 16th fast send shows the rate-limit
-  banner.
+  banner;
+- C-Mail with rain (2 unread), moth, and kiwi (empty). A send echoes, then
+  the partner types for 2 s and replies. rain writes every 45 s. Starting a
+  conversation with `nobody` fails with "User not found".
 
 Check every screen and key:
 
@@ -63,6 +66,17 @@ These were built without flashing and still need a run on the device.
 - [ ] The 16th fast send → "Slow down" banner, and the text stays
 - [ ] Up at the top loads older history; Down past the newest returns to typing
 - [ ] Screen off (hold centre), a tap shows the screensaver for 10 s, a hold wakes; other keys are ignored
+
+**C-Mail (`m9_fake`):**
+
+- [ ] Fn under Home opens the list; rain shows bold with 2; Home shows "c-mail 2 unread"
+- [ ] Opening rain clears its unread; the title is `@rain` and Right opens no drawer
+- [ ] Send → echo, then "rain is typing…" for about 2 s, then rain's reply
+- [ ] Conversation menu: Mark read, Text size, Close conversation; the message menu has no Reply, Delete or Report
+- [ ] The Ctrl palette has no `/art` or `/muted`
+- [ ] In a cIRC room, wait for rain's 45 s DM: a banner plus the buzzer, and the list shows it unread
+- [ ] New conversation… → `kiwi` opens it; `zed` creates a new one; `nobody` → "User not found" and you stay in the input
+- [ ] Fn in a conversation goes to the list; Back from the list goes Home
 
 **Web config (`m9`):**
 
@@ -98,3 +112,14 @@ this checklist on the `m9` build with their own account.
 - [ ] Delete one of your own messages; the website shows the tombstone
 - [ ] Turn Wi-Fi off and back on: ✕, then ● again, with no lost or duplicated messages
 - [ ] Leave it running more than 70 minutes so it crosses a token refresh; chat keeps working
+
+**C-Mail (live):**
+
+- [ ] The list matches the website's C-Mail, with the right unread counts
+- [ ] Open a conversation: history loads; a message sent from the website streams in
+- [ ] Send from the device; the website shows it. Typing on the device shows "…is typing" on the website, and it clears when you empty the line
+- [ ] Typing on the website shows "name is typing…" on the device, and it goes away within ~9 s of stopping
+- [ ] Opening a conversation marks it read on the website too
+- [ ] Start a conversation by username; an unknown name shows a clear error
+- [ ] With the screen off, a C-Mail from another account sounds the buzzer within a minute
+- [ ] Names, previews and senders are right in the list and the log (this confirms the assumed field names, such as `senderUsername`)

@@ -108,7 +108,7 @@
 
 ### Task 6: Docs
 
-- [ ] **Step 1:** Add C-Mail to `docs/USE.md` and `docs/TESTING.md`
+- [x] **Step 1:** Add C-Mail to `docs/USE.md` and `docs/TESTING.md`
   (fake-build checks and a live checklist section). Update AGENTS.md's
   hand-off and README.
-- [ ] **Step 2: Commit** `docs: C-Mail usage and checklist`.
+- [x] **Step 2: Commit** `docs: C-Mail usage and checklist`.

@@ -28,11 +28,11 @@ Dedicated buttons work from anywhere and close whatever is open first.
 |---|---|
 | Messages (far left) | cIRC: the last room. Press it again in a room for the room list |
 | Home | Home dashboard |
-| Fn under Home | C-Mail (coming soon) |
+| Fn under Home | C-Mail: the conversation list. Press it again in a conversation for the list |
 | Fn under Back | Feed (coming soon) |
 | Map | Unassigned |
 | Back | Up one level, or closes a menu or drawer. It never deletes text |
-| Ctrl | In a room: the command palette (slash commands and text size) |
+| Ctrl | In a room or conversation: the command palette (slash commands and text size) |
 | Hold Back/Del | Clear the input line |
 | Hold d-pad centre | Screen off; with the screen off, screen on |
 
@@ -68,6 +68,27 @@ The keyboard always types into the input line at the bottom.
 
 Sending is disabled while offline; nothing is queued or retried for you.
 
+## C-Mail
+
+C-Mail is private, one-to-one messaging. Open it with Fn under Home, or
+**C-Mail** on the Home screen.
+
+- **The list** shows **New conversation…** first, then your conversations,
+  unread first. Unread ones are bold with a count, followed by a preview of
+  the last message.
+- **New conversation…:** Centre, type a username (no `@`), then Centre. You
+  land in that conversation, or a banner explains why not (for example, no
+  such user). Back cancels.
+- **A conversation** works like a room, titled `@name`: type and press Centre
+  to send. Scrolling, the reader and links work the same way. There is no
+  drawer. Its menu (Centre on an empty line) has Mark read, Text size and
+  Close conversation. The message menu has Reveal, Show full and Show link;
+  C-Mail has no reply, delete or report.
+- **Typing:** while you type, the other person sees "…is typing". The device
+  tells the server only as you press keys, and clears it when you empty the
+  line or leave. When they type, "name is typing…" shows above your input
+  line.
+
 ## Text sizes
 
 Switch from the palette, the room menu or the web page. The choice is saved.
@@ -84,6 +105,9 @@ off. Rooms with new messages are marked in the room list. A new mention of
 you shows a banner and sounds the buzzer, if the buzzer is turned on in web
 config. Mentions are marked read when you open that room and scroll to the
 bottom.
+
+A new C-Mail does the same: a banner (`C-Mail from @name: …`) and the buzzer,
+unless that conversation is open. Home shows the total unread C-Mail.
 
 ## Web config
 

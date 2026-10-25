@@ -46,10 +46,12 @@ and `../rhino-moshi/firmware/`.
 
 ## Progress (hand-off from Claude Code, 2026-10-25)
 
-Work is on branch **`m1-circ`**. All 22 tasks of the plan are done and committed, with their boxes ticked in the plan.
-**Still open: the hardware checks for Tasks 20 and 21** (built without flashing), then the human live
-checklist in `docs/TESTING.md` on the `m9` build. CI (`.github/workflows/build.yml`) runs once the repo has a remote.
-The native suite is green: 111/111
+Work is on branch **`m1-circ`**. All 22 tasks of the M1 plan and all 6 of the
+M2 (C-Mail) plan are done and committed, with their boxes ticked.
+**Still open: the hardware checks** (M1 Tasks 20–21, M2 Task 5; all built without flashing), listed under
+"Open hardware checks" in `docs/TESTING.md`, then the human live checklist on the `m9` build.
+CI (`.github/workflows/build.yml`) runs once the repo has a remote.
+The native suite is green: 119/119
 (`pio test -e native`), and `pio run -e m9` and `-e m9_fake` both build.
 
 Notes for whoever continues:
@@ -61,6 +63,9 @@ Notes for whoever continues:
   Glyphs Terminus lacks are aliased in `lib/core/src/ui/glyph_set.h`.
 - Wake (user decision): holding centre wakes the screen. A centre tap while
   dark shows a 10 s read-only screensaver (`src/app/ui_task.cpp`, spec §5).
+- C-Mail reuses `RoomScreen` (`RoomScreen{true}` is `Id::Conversation`) and the
+  net worker's room channel (`dm_`: `dm_messages`, plus `dm_presence` for typing).
+  Typing writes come only from key presses (`RoomScreen::noteTyping`).
 - Locking: never call `chatSource().command()` inside `lockedChat().with(...)`.
   The fake source handles commands inline and would deadlock the UI task.
 - Setup mode (user decision): there is no boot gesture. It runs only with no

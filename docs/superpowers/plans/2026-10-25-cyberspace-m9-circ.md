@@ -338,14 +338,15 @@ docs/{BUILD.md,USE.md,TESTING.md}  .github/workflows/build.yml  AGENTS.md
   | `0x20`–`0x7E` | Char |
   | anything else | None |
 
-- `bool wakesScreen(const KeyEvent& e);` True only for `Select`.
+- `bool wakesScreen(const KeyEvent& e);` True only for `ScreenOff` (centre hold).
+- `bool peeksScreen(const KeyEvent& e);` True only for `Select` (centre tap): shows the screensaver while dark (spec §5).
 - `std::string setupApSsid(std::string_view boardName);` Returns `"Rhino-Cyberspace-" + boardName + "-Setup"`.
 - `bool validApPassword(std::string_view pw);` Empty → true (open AP). Otherwise 8–63 printable ASCII.
 - `bool checkBasicAuth(std::string_view authorizationHeader, std::string_view password);` Empty password → true. Otherwise requires `Basic base64("admin:" + password)`.
 
 - [x] **Step 1: Write failing tests:**
   - Every row of the table, for both `early = true` and `false` where it matters.
-  - `wakesScreen` is true only for Select.
+  - `wakesScreen` is true only for ScreenOff (centre hold).
   - `setupApSsid("M9") == "Rhino-Cyberspace-M9-Setup"`.
   - Passwords: `""` true, `"short"` false, 8 chars true, 64 chars false.
   - `checkBasicAuth("Basic YWRtaW46cGFzcw==", "pass")` true, the wrong password false, `""` password → true.
@@ -496,14 +497,14 @@ docs/{BUILD.md,USE.md,TESTING.md}  .github/workflows/build.yml  AGENTS.md
   - draw a 53×20 compact grid containing the full printable ASCII set, the box glyphs and a nick-colour sample;
   - every key prints `[key] raw=0x.. action=..` (via `mapM9Key`) to serial and appears on screen;
   - Ctrl (Palette) toggles Comfortable/Compact;
-  - `ScreenOff` turns the backlight off; only `Select` wakes it.
+  - `ScreenOff` turns the backlight off; only another `ScreenOff` (centre hold) wakes it. A centre tap while dark shows a placeholder screensaver for 10 s.
 - [x] **Step 4: Run** `pio run -e m9`. Expected: SUCCESS.
-- [ ] **Step 5: Hardware check (human):** `scripts/build-upload-monitor.sh m9`. Expect:
+- [x] **Step 5: Hardware check (human):** `scripts/build-upload-monitor.sh m9`. Expect:
   - correct orientation, with the keyboard below the screen;
   - crisp glyphs;
   - each of the 6 dedicated buttons, the d-pad, centre, centre-hold, Back-hold and Ctrl log the expected actions;
   - the size toggle redraws;
-  - screen off and wake on centre only.
+  - screen off, and wake on centre hold only.
 
   Record the results in the commit message.
 - [x] **Step 6: Commit** `feat(m9): HAL, ST7789 dirty-row renderer, STC8H keyboard`.
@@ -670,7 +671,8 @@ docs/{BUILD.md,USE.md,TESTING.md}  .github/workflows/build.yml  AGENTS.md
   Other duties:
   - `MentionAlert` → `board::beep(2000, 80)` when the buzzer is on, plus a banner.
   - `ScreenOff` action → `backlight(false)`, `displaySleep(true)`, `Command ScreenOff`.
-  - Wake → `ScreenOn`.
+  - Wake (centre hold) → `ScreenOn`.
+  - Centre tap while dark → the **Screensaver** for 10 s, drawn from the stored messages of the current room (no command, no network), then dark again. Replaces the Task 14 placeholder.
 - Screens:
   - **Splash:** name, version, "connecting…".
   - **Setup:** the AP SSID, "open network" or "password required", `http://192.168.4.1`, and once on Wi-Fi `http://rhino-cyberspace.local` plus the IP. Entry "Log in on this device" → LoginForm.
@@ -685,7 +687,7 @@ docs/{BUILD.md,USE.md,TESTING.md}  .github/workflows/build.yml  AGENTS.md
 
 - [ ] **Step 1: Implement** the router, ui_task and the screens above.
 - [ ] **Step 2: Run** `pio run -e m9_fake`. Expected: SUCCESS.
-- [ ] **Step 3: Hardware check (human) on `m9_fake`:** boots to Home; Messages → `#general`; Messages again → room list with markers; Fn keys → Coming soon; Home → Home; Map does nothing; centre-hold → screen off; other keys ignored while off; centre wakes.
+- [ ] **Step 3: Hardware check (human) on `m9_fake`:** boots to Home; Messages → `#general`; Messages again → room list with markers; Fn keys → Coming soon; Home → Home; Map does nothing; centre-hold → screen off; other keys ignored while off; centre tap → screensaver with the last messages, dark again after 10 s; centre-hold wakes.
 - [ ] **Step 4: Commit** `feat: router, home, room list, setup and login screens`.
 
 ### Task 20: Room screen

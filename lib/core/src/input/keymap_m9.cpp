@@ -31,6 +31,8 @@ KeyEvent mapM9Key(uint8_t raw, bool earlyController) {
   return e;
 }
 
-bool wakesScreen(const KeyEvent& e) { return e.action == Action::Select; }
+bool wakesScreen(const KeyEvent& e) { return e.action == Action::ScreenOff; }
+
+bool peeksScreen(const KeyEvent& e) { return e.action == Action::Select; }
 
 }  // namespace rc

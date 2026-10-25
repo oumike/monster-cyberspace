@@ -1,5 +1,6 @@
 // Temporary hardware bring-up for Task 14: a glyph test pattern, live key
-// logging, the text-size toggle and screen off/wake. Replaced in Task 19.
+// logging, the text-size toggle, screen off/wake and a screensaver
+// placeholder. Replaced in Task 19.
 
 #include <Arduino.h>
 #include <esp_heap_caps.h>
@@ -22,7 +23,10 @@ namespace {
 Renderer renderer;
 TextSize textSize = TextSize::Compact;
 Grid grid(1, 1);
-bool screenOn = true;
+enum class Screen { On, Dark, Saver };
+Screen screen = Screen::On;
+uint32_t saverUntilMs = 0;
+constexpr uint32_t kSaverMs = 10000;
 std::string lastKey = "press a key";
 
 const char* actionName(Action a) {
@@ -94,6 +98,29 @@ void drawLastKey() {
   grid.putText(0, row, utf8ToU32(lastKey), t.hintFg, t.hintBg, grid.cols());
 }
 
+void redrawAll() {
+  drawPattern();
+  drawLastKey();
+  renderer.draw(grid, textSize);
+}
+
+// Placeholder for the screensaver: the real one (Task 20) shows the last few
+// stored messages of the current room.
+void drawSaver() {
+  const Theme& t = defaultTheme();
+  grid.fill(t.bg);
+  grid.putText(1, 1, U"screensaver", t.dim, t.bg, grid.cols() - 1);
+  grid.putText(1, 3, U"the last few messages", t.fg, t.bg, grid.cols() - 1);
+  grid.putText(1, 4, U"will show here", t.fg, t.bg, grid.cols() - 1);
+  grid.putText(1, grid.rows() - 2, U"hold \u25CF to wake", t.dim, t.bg, grid.cols() - 1);
+  renderer.draw(grid, textSize);
+}
+
+void goDark() {
+  screen = Screen::Dark;
+  board::displaySleep(true);
+}
+
 }  // namespace
 
 void setup() {
@@ -103,24 +130,33 @@ void setup() {
   Serial.printf("[boot] rhino-cyberspace %s board=M9\n", RC_VERSION);
   board::begin();
   if (!renderer.begin()) Serial.println("[ui] no memory for the frame buffer");
-  drawPattern();
-  drawLastKey();
-  renderer.draw(grid, textSize);
+  redrawAll();
   board::backlight(true);
   Serial.printf("[boot] battery %d%% boot=%d\n", board::batteryPercent(),
                 board::bootButtonHeld());
 }
 
 void loop() {
+  if (screen == Screen::Saver && (int32_t)(millis() - saverUntilMs) >= 0) goDark();
   uint8_t raw;
   if (board::pollKey(raw)) {
     KeyEvent e = mapM9Key(raw, board::earlyKeyboard());
     Serial.printf("[key] raw=0x%02X action=%s\n", raw, actionName(e.action));
-    if (!screenOn) {
-      // Only Select wakes, so a stray press can't act on a dark screen.
+    if (screen != Screen::On) {
+      // Only a centre hold wakes and only a centre tap shows the screensaver,
+      // so a stray press can't act on a dark screen.
       if (wakesScreen(e)) {
-        screenOn = true;
-        board::displaySleep(false);
+        bool wasDark = screen == Screen::Dark;
+        screen = Screen::On;
+        redrawAll();
+        if (wasDark) board::displaySleep(false);
+      } else if (peeksScreen(e)) {
+        saverUntilMs = millis() + kSaverMs;
+        if (screen == Screen::Dark) {
+          screen = Screen::Saver;
+          drawSaver();
+          board::displaySleep(false);
+        }
       }
       return;
     }
@@ -132,8 +168,7 @@ void loop() {
       textSize = textSize == TextSize::Compact ? TextSize::Comfortable : TextSize::Compact;
       drawPattern();
     } else if (e.action == Action::ScreenOff) {
-      screenOn = false;
-      board::displaySleep(true);
+      goDark();
       return;
     }
     drawLastKey();

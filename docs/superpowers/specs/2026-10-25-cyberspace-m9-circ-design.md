@@ -124,10 +124,14 @@ Dedicated buttons work from anywhere and close whatever is open first.
 | Back | Up one level, or closes a menu or drawer. It never deletes text |
 | Ctrl | Command palette: slash commands, "Text size: Comfortable/Compact" |
 | Back/Del hold (0x89) | Clear the input line |
-| Centre hold (0xA3) | Screen off |
+| Centre hold (0xA3) | Screen off; with the screen off, screen on |
 
-**Wake:** only the d-pad centre wakes the screen. Other keys pressed while the
-screen is off are discarded, which keeps pocket presses from sending anything.
+**Wake:** only holding the d-pad centre wakes the screen. A centre **tap**
+while the screen is off shows the **screensaver** for 10 s: a read-only view
+of the last few messages in the current room, from what's already stored (no
+network, no presence), then dark again. A hold during the screensaver wakes
+fully. Other keys pressed while the screen is off or on the screensaver are
+discarded, which keeps pocket presses from sending anything.
 
 **Lists:** Up/Down select, Centre or Right open, Left goes back.
 

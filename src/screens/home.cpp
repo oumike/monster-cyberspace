@@ -9,7 +9,7 @@
 namespace rc {
 
 namespace {
-enum Item { kMessages, kRooms, kReset };
+enum Item { kMessages, kRooms, kCmail, kReset };
 }
 
 void HomeScreen::enter(const std::string&) {
@@ -43,6 +43,8 @@ void HomeScreen::onKey(const KeyEvent& k) {
         router::go(router::Id::Room, app().cfg.lastRoom);
       } else if (menu_.selected() == kRooms) {
         router::go(router::Id::RoomList);
+      } else if (menu_.selected() == kCmail) {
+        router::go(router::Id::CmailList);
       } else if (menu_.selected() == kReset) {
         confirm_ = true;
         confirmMenu_.setSelected(0);
@@ -67,6 +69,12 @@ void HomeScreen::render(Grid& g, const Theme& t, int64_t) {
   field("wi-fi", wifiUp() ? wifiSsid() + "  " + wifiIp() : "not connected", t.fg);
   field("settings", "http://rhino-cyberspace.local", t.fg);
   field("mentions", std::to_string(a.unreadMentions) + " unread", a.unreadMentions ? t.selectBg : t.fg);
+  int cmail = lockedChat().with([](ChatState& s) {
+    int n = 0;
+    for (const auto& c : s.conversations) n += c.unread;
+    return n;
+  });
+  field("c-mail", std::to_string(cmail) + " unread", cmail ? t.selectBg : t.fg);
   std::string active = lockedChat().with([](ChatState& s) {
     std::string out;
     for (const auto& room : s.rooms) {
@@ -82,6 +90,7 @@ void HomeScreen::render(Grid& g, const Theme& t, int64_t) {
   menu_.setItems({
       ListItem{utf8ToU32("Messages  #" + a.cfg.lastRoom), U"", t.fg},
       ListItem{U"Rooms", U"", t.fg},
+      ListItem{U"C-Mail", U"", t.fg},
       ListItem{U"Factory reset\u2026", U"", t.error},
   });
   int bottom = g.rows() - 1;
@@ -92,7 +101,7 @@ void HomeScreen::render(Grid& g, const Theme& t, int64_t) {
     confirmMenu_.render(g, bottom - 2, bottom, 1, g.cols() - 2, t);
     drawHint(g, t, U"\u2191\u2193 pick  \u25CF confirm  back: cancel");
   } else {
-    menu_.render(g, bottom - 3, bottom, 1, g.cols() - 2, t);
+    menu_.render(g, bottom - 4, bottom, 1, g.cols() - 2, t);
     drawHint(g, t, U"\u2191\u2193 pick  \u25CF open");
   }
 }

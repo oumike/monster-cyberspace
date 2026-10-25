@@ -94,7 +94,9 @@ void handleEvent(const Event& e) {
       } else {
         app().authNote = e.text;
       }
-      if (e.ok && e.code == 0 && (cur == Id::Home || cur == Id::RoomList || cur == Id::Room))
+      if (e.ok && e.code == 0 &&
+          (cur == Id::Home || cur == Id::RoomList || cur == Id::Room || cur == Id::CmailList ||
+           cur == Id::Conversation))
         router::go(Id::Setup);
       if (e.ok && e.code != 0 && (cur == Id::Setup || cur == Id::LoginForm)) router::go(Id::Home);
       break;
@@ -111,6 +113,11 @@ void handleEvent(const Event& e) {
     case EvtType::MentionAlert:
       ++app().unreadMentions;
       if (app().cfg.buzzer) board::beep(2000, 80);
+      banner(e.text, false);
+      break;
+    case EvtType::CmailAlert:
+      // The unread count lives in the conversation list (Home sums it).
+      if (app().cfg.buzzer) board::beep(1600, 80);
       banner(e.text, false);
       break;
     default:

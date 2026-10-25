@@ -65,6 +65,25 @@ class RoomListScreen : public Screen {
   std::vector<std::string> slugs_;
 };
 
+// C-Mail: "New conversation…" and the conversations, unread first.
+class CmailListScreen : public Screen {
+ public:
+  void enter(const std::string&) override;
+  void onKey(const KeyEvent&) override;
+  void onEvent(const Event&) override;
+  void render(Grid&, const Theme&, int64_t nowMs) override;
+  bool hasOverlay() const override { return editing_; }
+  void closeOverlays() override { editing_ = busy_ = false; }
+
+ private:
+  void editKey(const KeyEvent&);
+
+  ListView list_;
+  std::vector<std::string> ids_;
+  InputLine input_;  // the username for a new conversation
+  bool editing_ = false, busy_ = false;
+};
+
 class ComingSoonScreen : public Screen {
  public:
   void enter(const std::string& name) override { name_ = name; }

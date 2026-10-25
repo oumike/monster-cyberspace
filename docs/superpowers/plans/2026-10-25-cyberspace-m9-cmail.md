@@ -86,25 +86,25 @@
 - `src/screens/{cmail_list.cpp,screens.h,room.{h,cpp},router.{h,cpp},home.cpp}`
 - `src/app/{ui_task.cpp,app_state.h}`
 
-- [ ] **Step 1:** Write `CmailListScreen`: the New conversation… entry with
+- [x] **Step 1:** Write `CmailListScreen`: the New conversation… entry with
   its username input, the conversation rows, and refresh on enter.
-- [ ] **Step 2:** Add a DM kind to `RoomScreen`:
+- [x] **Step 2:** Add a DM kind to `RoomScreen`:
   - `@name` title and no drawer;
   - the conversation menu and the C-Mail palette;
   - message menu without reply, delete or report;
   - the typing indicator, plus typing on/off sent from key presses.
-- [ ] **Step 3:** Wiring:
+- [x] **Step 3:** Wiring:
   - the router gets `Id::CmailList` and `Id::Conversation`, and Fn under
     Home goes to the list;
-  - the UI task handles `CmailAlert` with a banner and buzzer and bumps
-    `unreadCmail`;
+  - the UI task handles `CmailAlert` with a banner and buzzer (the unread
+    count is summed from the conversation list, so there's no `unreadCmail`);
   - Home gets a "c-mail" line and a C-Mail menu entry.
-- [ ] **Step 4: Run** `pio test -e native && pio run -e m9 -e m9_fake`.
+- [x] **Step 4: Run** `pio test -e native && pio run -e m9 -e m9_fake`.
 - [ ] **Step 5: Hardware check (human) on `m9_fake`:**
   - the list, opening, sending and the typing indicator;
   - an alert while in a room;
   - a new conversation, and the "nobody" error.
-- [ ] **Step 6: Commit** `feat: C-Mail screens`.
+- [x] **Step 6: Commit** `feat: C-Mail screens`.
 
 ### Task 6: Docs
 

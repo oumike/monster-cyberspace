@@ -25,7 +25,17 @@ class Screen {
 
 namespace router {
 
-enum class Id { Splash, Setup, Home, RoomList, Room, ComingSoon, LoginForm };
+enum class Id {
+  Splash,
+  Setup,
+  Home,
+  RoomList,
+  Room,
+  ComingSoon,
+  LoginForm,
+  CmailList,
+  Conversation,
+};
 
 void go(Id id, const std::string& arg = "");
 Id current();

@@ -13,6 +13,8 @@ SetupScreen setup;
 HomeScreen home;
 RoomListScreen roomList;
 RoomScreen room;
+CmailListScreen cmailList;
+RoomScreen conversation{true};
 ComingSoonScreen comingSoon;
 LoginFormScreen loginForm;
 
@@ -28,6 +30,8 @@ Screen* lookup(Id id) {
     case Id::Room: return &room;
     case Id::ComingSoon: return &comingSoon;
     case Id::LoginForm: return &loginForm;
+    case Id::CmailList: return &cmailList;
+    case Id::Conversation: return &conversation;
   }
   return &home;
 }
@@ -75,7 +79,8 @@ bool handleGlobal(const KeyEvent& k) {
       go(Id::Home);
       break;
     case Action::OpenCmail:
-      go(Id::ComingSoon, "C-Mail");
+      // From a conversation, a second press (overlays closed) goes to the list.
+      if (cur != Id::Conversation || !hadOverlay) go(Id::CmailList);
       break;
     case Action::OpenFeed:
       go(Id::ComingSoon, "Feed");

@@ -15,8 +15,12 @@ namespace rc {
 
 // The cIRC room (spec §5–§7): the log, the input line, the who's-here drawer,
 // the palette, the room, person and message menus, a reader and a link view.
+// With dm, a C-Mail conversation instead: no drawer, a typing indicator, and
+// no reply, delete or report.
 class RoomScreen : public Screen {
  public:
+  explicit RoomScreen(bool dm = false) : dm_(dm) {}
+  // slug: a room slug, or a conversation id when dm.
   void enter(const std::string& slug) override;
   void leave() override;
   void onKey(const KeyEvent&) override;
@@ -46,8 +50,16 @@ class RoomScreen : public Screen {
   void openLink(const std::string& url);
   bool isMuted(const std::string& name);
   void insertText(const std::u32string& s);
+  bool drawerOpen() const;
+  // Typing on/off writes, only ever from a key press (C-Mail).
+  void noteTyping();
+  void stopTyping();
 
+  const bool dm_;
   std::string slug_;
+  std::string partner_;         // the other person, when dm
+  bool typingOn_ = false;       // we told the server we're typing
+  int64_t lastTypingPost_ = 0;
   LogView log_;
   InputLine input_;
   Drawer drawer_;

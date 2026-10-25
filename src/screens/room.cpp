@@ -46,7 +46,7 @@ bool compact() { return app().cfg.textSize == TextSize::Compact; }
 }  // namespace
 
 void RoomScreen::enter(const std::string& slug) {
-  slug_ = slug.empty() ? std::string("general") : slug;
+  slug_ = slug.empty() && !dm_ ? std::string("general") : slug;
   log_.follow();
   input_.clear();
   overlay_ = Overlay::None;
@@ -56,6 +56,17 @@ void RoomScreen::enter(const std::string& slug) {
   version_ = UINT32_MAX;
   relayout_ = true;
   lastMarkRead_ = 0;
+  typingOn_ = false;
+  lastTypingPost_ = 0;
+  if (dm_) {
+    partner_ = lockedChat().with([&](ChatState& s) {
+      for (const auto& c : s.conversations)
+        if (c.id == slug_) return c.partner;
+      return std::string("?");
+    });
+    chatSource().command(Command{CmdType::OpenConversation, slug_});
+    return;
+  }
   app().unreadMentions = 0;
   chatSource().command(Command{CmdType::OpenRoom, slug_});
   if (app().cfg.drawerOpen) chatSource().command(Command{CmdType::OpenPresence});
@@ -63,7 +74,33 @@ void RoomScreen::enter(const std::string& slug) {
 
 void RoomScreen::leave() {
   pending_.clear();
+  // Leaving with text typed: clear the flag rather than let it age out.
+  stopTyping();
   chatSource().command(Command{CmdType::CloseRoom});
+}
+
+bool RoomScreen::drawerOpen() const { return !dm_ && app().cfg.drawerOpen; }
+
+void RoomScreen::noteTyping() {
+  if (!dm_) return;
+  if (input_.text().empty()) {
+    stopTyping();
+    return;
+  }
+  if (app().conn == 0) return;
+  int64_t now = nowEpochMs();
+  int64_t beat = lockedChat().with([](ChatState& s) { return s.typingCadence.heartbeatMs; });
+  if (typingOn_ && now - lastTypingPost_ < beat) return;
+  typingOn_ = true;
+  lastTypingPost_ = now;
+  chatSource().command(Command{CmdType::Typing, slug_, "", 1});
+}
+
+void RoomScreen::stopTyping() {
+  if (!dm_ || !typingOn_) return;
+  typingOn_ = false;
+  lastTypingPost_ = 0;
+  if (app().conn != 0) chatSource().command(Command{CmdType::Typing, slug_, "", 0});
 }
 
 bool RoomScreen::hasOverlay() const {
@@ -103,21 +140,24 @@ void RoomScreen::onKey(const KeyEvent& k) {
 }
 
 void RoomScreen::typingKey(const KeyEvent& k) {
-  const bool drawer = app().cfg.drawerOpen;
+  const bool drawer = drawerOpen();
   switch (k.action) {
     case Action::Char:
       input_.insert(k.ch);
+      noteTyping();
       break;
     case Action::Backspace:
       input_.backspace();
+      noteTyping();
       break;
     case Action::ClearLine:
       input_.clear();
+      noteTyping();
       break;
     case Action::Palette: {
       std::vector<ListItem> items;
       menuKeys_.clear();
-      for (const auto& e : paletteEntries()) {
+      for (const auto& e : paletteEntries(dm_ ? PaletteKind::Cmail : PaletteKind::Circ)) {
         std::u32string label = e.label;
         if (e.isTextSize) label = compact() ? U"Text size: Comfortable" : U"Text size: Compact";
         items.push_back(ListItem{label, U"", defaultTheme().fg});
@@ -147,7 +187,7 @@ void RoomScreen::typingKey(const KeyEvent& k) {
       else input_.left();
       break;
     case Action::Right:
-      if (!input_.right() && !drawer) setDrawer(true);
+      if (!input_.right() && !drawer && !dm_) setDrawer(true);
       break;
     case Action::Select:
       if (drawer) {
@@ -164,7 +204,7 @@ void RoomScreen::typingKey(const KeyEvent& k) {
     case Action::Back:
       if (drawer) setDrawer(false);
       else if (!log_.following()) log_.follow();
-      else router::go(router::Id::RoomList);
+      else router::go(dm_ ? router::Id::CmailList : router::Id::RoomList);
       break;
     default:
       break;
@@ -182,6 +222,7 @@ void RoomScreen::send() {
   }
   pending_ = input_.text();
   input_.clear();
+  typingOn_ = false;  // the server clears the flag on send
   relayout_ = true;
   chatSource().command(Command{CmdType::Send, slug_, u32ToUtf8(pending_)});
 }
@@ -254,6 +295,14 @@ void RoomScreen::openMenu(Menu m, std::u32string title, std::vector<ListItem> it
 
 void RoomScreen::openRoomMenu() {
   const Theme& t = defaultTheme();
+  if (dm_) {
+    menuKeys_ = {"read", "size", "close"};
+    openMenu(Menu::Room, utf8ToU32("@" + partner_),
+             {ListItem{U"Mark read", U"", t.fg},
+              ListItem{compact() ? U"Text size: Comfortable" : U"Text size: Compact", U"", t.fg},
+              ListItem{U"Close conversation", U"", t.fg}});
+    return;
+  }
   menuKeys_ = {"who", "mute", "unmute", "read", "size", "leave"};
   openMenu(Menu::Room, utf8ToU32("#" + slug_),
            {ListItem{U"Who's here", U"", t.fg}, ListItem{U"Mute\u2026", U"", t.fg},
@@ -293,12 +342,17 @@ void RoomScreen::openMessageMenu() {
   };
   bool own = lower(m.username) == lower(self_);
   if (!m.deleted) {
-    if (!own) add(U"Reply", "reply", t.fg);
+    if (!own && !dm_) add(U"Reply", "reply", t.fg);
     if (hasStyle(m, "spoiler") && !revealed) add(U"Reveal", "reveal", t.fg);
     else if (hasStyle(m, "art") || m.content.size() > 200) add(U"Show full", "full", t.fg);
     if (!firstUrl(m).empty()) add(U"Show link", "link", t.fg);
-    if (own) add(U"Delete", "delete", t.error);
-    else add(U"Report", "report", t.error);
+    // C-Mail has no delete or report.
+    if (dm_) {
+    } else if (own) {
+      add(U"Delete", "delete", t.error);
+    } else {
+      add(U"Report", "report", t.error);
+    }
   }
   if (items.empty()) return;
   openMenu(Menu::Message, utf8ToU32(m.username.empty() ? std::string("message") : m.username),
@@ -369,6 +423,8 @@ void RoomScreen::pickMenu() {
         ui::setTextSize(compact() ? TextSize::Comfortable : TextSize::Compact);
       } else if (key == "leave") {
         router::go(router::Id::RoomList);
+      } else if (key == "close") {
+        router::go(router::Id::CmailList);
       }
       break;
     case Menu::MutePick:
@@ -503,11 +559,12 @@ void RoomScreen::onEvent(const Event& e) {
 void RoomScreen::render(Grid& g, const Theme& t, int64_t) {
   const bool small = compact();
   const int inputRow = small ? g.rows() - 2 : g.rows() - 1;
-  const int logBottom = inputRow;
+  int logBottom = inputRow;
   const int64_t now = nowEpochMs();
-  const bool drawer = app().cfg.drawerOpen;
+  const bool drawer = drawerOpen();
   int online = 0;
   bool markRead = false;
+  std::vector<std::string> typers;
 
   // Never send a command while holding the chat lock: a source may take it.
   lockedChat().with([&](ChatState& s) {
@@ -515,6 +572,8 @@ void RoomScreen::render(Grid& g, const Theme& t, int64_t) {
     online = int(people.size());
     if (drawer) drawer_.setPeople(std::move(people), now, s.cadence.idleAfterMs);
     self_ = s.self;
+    // A flag going stale produces no event, so this is re-checked each frame.
+    if (dm_) typers = typingNames(s.typing, s.self, now, s.typingCadence.staleAfterMs);
     std::string roomId;
     for (const auto& r : s.rooms)
       if (r.slug == slug_) roomId = r.id;
@@ -564,7 +623,7 @@ void RoomScreen::render(Grid& g, const Theme& t, int64_t) {
   if (markRead) chatSource().command(Command{CmdType::MarkRead, slug_});
 
   g.fill(t.bg);
-  drawStatus(g, t, utf8ToU32("#" + slug_), online);
+  drawStatus(g, t, utf8ToU32(dm_ ? "@" + partner_ : "#" + slug_), dm_ ? -1 : online);
 
   if (overlay_ == Overlay::Reader || overlay_ == Overlay::Link) {
     // Full-screen viewers below the status bar.
@@ -605,6 +664,13 @@ void RoomScreen::render(Grid& g, const Theme& t, int64_t) {
   }
 
   int reserve = drawer ? Drawer::width(app().cfg.textSize) : 0;
+  if (!typers.empty()) {
+    // One row above the input for "name is typing…".
+    --logBottom;
+    std::string who = typers[0];
+    for (size_t i = 1; i < typers.size(); ++i) who += ", " + typers[i];
+    putLine(g, 1, logBottom, who + " is typing\u2026", t.dim, t.bg);
+  }
   log_.render(g, 1, logBottom, reserve, t);
   if (drawer) drawer_.render(g, 1, logBottom, t);
 
@@ -631,6 +697,7 @@ void RoomScreen::render(Grid& g, const Theme& t, int64_t) {
     else if (drawer) hint = U"\u2191\u2193 pick  \u25CF menu  \u2190 close";
     else if (!log_.following()) hint = U"\u25CF actions  \u2193 back to typing";
     else if (offline) hint = U"offline: reading only";
+    else if (dm_) hint = U"\u25CF send  \u2191\u2193 scroll  ctrl cmds";
     else hint = U"\u25CF send  \u2191\u2193 scroll  \u2192 who's here  ctrl cmds";
     drawHint(g, t, hint);
   }

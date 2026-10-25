@@ -6,6 +6,8 @@ web config page, on the Elecrow ThinkNode M9. More boards and Cyberspace
 features come later.
 
 - **Design spec:** `docs/superpowers/specs/2026-10-25-cyberspace-m9-circ-design.md`
+- **Milestone 2 (C-Mail):** spec `docs/superpowers/specs/2026-10-25-cyberspace-m9-cmail-design.md`,
+  plan `docs/superpowers/plans/2026-10-25-cyberspace-m9-cmail.md`.
 - **User guide:** `docs/USE.md`. **Testing and the live checklist:** `docs/TESTING.md`.
 - **Implementation plan:** `docs/superpowers/plans/2026-10-25-cyberspace-m9-circ.md`.
   Work its tasks in order, tick each `- [ ]` box as you finish a step, and

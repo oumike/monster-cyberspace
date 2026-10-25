@@ -15,7 +15,8 @@ config page** on the **Elecrow ThinkNode M9**.
 A member with an M9 and a verified Cyberspace account can:
 
 1. Flash the firmware and, with no Wi-Fi saved, see on screen how to reach the
-   setup page: the access point's name and password, and `http://192.168.4.1`.
+   setup page: the access point's name (open by default) and
+   `http://192.168.4.1`.
 2. On that page, enter Wi-Fi details and their Cyberspace email and password.
    The device logs in, keeps only the refresh token, and joins their Wi-Fi.
 3. Open the room list, enter a room, read its history, and receive new
@@ -92,7 +93,7 @@ Events flow net → UI (`RoomChanged`, `RoomListUpdated`, `PresenceUpdated`,
 | `ui/widgets` | `LogView` (wrap with hanging indent, scrollback, selection), `InputLine` (cursor editing, 2,048-character cap), `List`, `Drawer`, `Menu`/`Palette`, `Banner`, `StatusBar` | `ui/grid` |
 | `screens/` | `Splash`, `Setup`, `Home`, `RoomList`, `Room`, `ComingSoon` | widgets, `store`, queues |
 | `store/chat` | Per-room message ring in PSRAM (cap 1000), upsert by id, read markers, mention flags | — |
-| `store/settings` | NVS: Wi-Fi list, email, refresh token, text size, drawer open, buzzer, page password, setup-AP password, time zone | NVS |
+| `store/settings` | NVS: Wi-Fi list, email, refresh token, text size, drawer open, buzzer, page password, optional setup-AP password (empty = open AP), time zone | NVS |
 | `chat/source` | Abstract chat source interface the screens use (open/close room, send, older, delete, flag, presence). The milestone-1 implementation is `CsCircSource` | — |
 | `cs/auth` | Login, refresh, token lifetime, verification resend | `net/https` |
 | `cs/circ` | REST: room list, history, send, delete, flag, read, users, presence | `net/https` |
@@ -100,7 +101,7 @@ Events flow net → UI (`RoomChanged`, `RoomListUpdated`, `PresenceUpdated`,
 | `cs/ratelimit` | Client-side mirror of the documented per-minute, hourly and daily write limits | — |
 | `net/https` | One kept-alive TLS connection to `api.cyberspace.online`; JSON in/out; error mapping | IDF |
 | `net/sse` | RTDB Server-Sent Events: line parser, `put`/`patch`/`keep-alive`/`cancel`/`auth_revoked`, reconnect with backoff | IDF |
-| `net/wifi` | STA with saved networks, setup AP (WPA2), mDNS `rhino-cyberspace.local`, SNTP | IDF |
+| `net/wifi` | STA with saved networks, setup AP (open, or WPA2 if a password is configured), mDNS `rhino-cyberspace.local`, SNTP | IDF |
 | `web/` | Config pages and JSON endpoints | `esp_http_server`, settings, `cs/auth` |
 
 Each module has a header that states its contract. Files stay small and focused.
@@ -187,9 +188,12 @@ nicks in their colours, with `z` for idle users (`lastActivity` older than
 **Home dashboard:** the signed-in user, Wi-Fi network and IP, the settings-page
 address, unread mentions, rooms with new activity, and battery.
 
-**Setup screen** (no Wi-Fi saved, or BOOT held at power-on): the AP name
-`Rhino-Cyberspace-Setup`, its random WPA2 password (generated on first boot,
-stored in NVS, shown on screen), and `http://192.168.4.1`. Once on Wi-Fi it
+**Setup screen** (no Wi-Fi saved, or BOOT held at power-on): the AP name,
+which includes the board (`Rhino-Cyberspace-<BOARD>-Setup`, so
+`Rhino-Cyberspace-M9-Setup` on this board, from the board's `BOARD_NAME`),
+and `http://192.168.4.1`. The AP is **open by default**. If a setup-AP
+password has been set in web config, the AP uses WPA2 with it, and the screen
+says a password is required without displaying it. Once on Wi-Fi it
 also shows `http://rhino-cyberspace.local` and the IP. A fallback "Log in on
 device" form takes email and password on the M9 keyboard.
 
@@ -257,14 +261,18 @@ It is plain HTML, CSS and JS, inline, with no external requests.
   and password; the device performs the login and discards the password. There
   are also Sign out and Resend verification.
 - **Display:** text size, buzzer on/off, time zone.
-- **Security:** optional page password (HTTP Basic, user `admin`), and
-  regenerate the setup-AP password.
+- **Security:** optional page password (HTTP Basic, user `admin`), and an
+  optional setup-AP password (WPA2, 8–63 characters; clearing it makes the AP
+  open again).
 - **Status:** firmware version, IP, signal, battery, connection state.
 
 Security notes, also shown on the page: the page is plain HTTP on your LAN, so
-set a page password on shared networks. The setup AP is WPA2 with a password
-shown only on the device screen, so setup traffic is encrypted. The refresh
-token can't be read back through the page.
+set a page password on shared networks. The setup AP is open unless a setup-AP
+password is set, so anyone in radio range can join it while it runs. It runs
+only with no saved Wi-Fi or with BOOT held at power-on, and anything entered on
+it (Wi-Fi password, Cyberspace password) crosses that link unencrypted. Setting
+a setup-AP password closes that gap for later setups. The refresh token can't
+be read back through the page.
 
 ## 9. Errors and failures
 

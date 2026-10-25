@@ -1,0 +1,41 @@
+#pragma once
+
+#include <cstdint>
+#include <string>
+
+#include "app/messages.h"
+#include "input/keymap_m9.h"
+#include "ui/grid.h"
+#include "ui/theme.h"
+
+namespace rc {
+
+class Screen {
+ public:
+  virtual ~Screen() = default;
+  virtual void enter(const std::string& arg) { (void)arg; }
+  virtual void leave() {}
+  virtual void onKey(const KeyEvent&) = 0;
+  virtual void onEvent(const Event&) {}
+  virtual void render(Grid&, const Theme&, int64_t nowMs) = 0;
+  // Menus, the drawer or a selection: global keys close these first.
+  virtual bool hasOverlay() const { return false; }
+  virtual void closeOverlays() {}
+};
+
+namespace router {
+
+enum class Id { Splash, Setup, Home, RoomList, Room, ComingSoon, LoginForm };
+
+void go(Id id, const std::string& arg = "");
+Id current();
+Screen& screen();
+// The dedicated buttons (Messages, Home, C-Mail, Feed, Map). True when the
+// key was one of them.
+bool handleGlobal(const KeyEvent&);
+// Where the boot flow lands: Setup with no Wi-Fi or no account, else Home.
+Id bootTarget();
+
+}  // namespace router
+
+}  // namespace rc

@@ -43,8 +43,8 @@ and `../rhino-moshi/firmware/`.
 
 ## Progress (hand-off from Claude Code, 2026-10-25)
 
-Work is on branch **`m1-circ`**. Tasks 1–18 of the plan are done and committed, including their hardware checks,
-with their boxes ticked in the plan. **Next: Task 19 (screens, router, navigation; it wires `startChatSource` into `main.cpp`).**
+Work is on branch **`m1-circ`**. Tasks 1–19 of the plan are done and committed, including their hardware checks,
+with their boxes ticked in the plan. **Next: Task 20 (full room screen; extend the minimal `src/screens/room.cpp`).**
 The native suite is green: 108/108
 (`pio test -e native`), and `pio run -e m9` and `-e m9_fake` both build.
 

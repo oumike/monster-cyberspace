@@ -58,8 +58,6 @@ void save(const rc::Settings& s) {
     if (i < n) p.putString(k, s.wifi[i].password.c_str()); else p.remove(k);
   }
   p.putUChar("wn", uint8_t(n));
-  p.putString("email", s.email.c_str());
-  p.putString("rtok", s.refreshToken.c_str());
   p.putString("tz", s.tz.c_str());
   p.putString("pagepw", s.pagePassword.c_str());
   p.putString("appw", s.apPassword.c_str());

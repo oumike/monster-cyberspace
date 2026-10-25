@@ -693,10 +693,12 @@ docs/{BUILD.md,USE.md,TESTING.md}  .github/workflows/build.yml  AGENTS.md
   - else signed out → Setup with a "Sign in at rhino-cyberspace.local or on this device" line;
   - else → Home.
 
-- [ ] **Step 1: Implement** the router, ui_task and the screens above.
-- [ ] **Step 2: Run** `pio run -e m9_fake`. Expected: SUCCESS.
-- [ ] **Step 3: Hardware check (human) on `m9_fake`:** boots to Home; Messages → `#general`; Messages again → room list with markers; Fn keys → Coming soon; Home → Home; Map does nothing; centre-hold → screen off; other keys ignored while off; centre tap → screensaver with the last messages, dark again after 10 s; centre-hold wakes.
-- [ ] **Step 4: Commit** `feat: router, home, room list, setup and login screens`.
+- [x] **Step 1: Implement** the router, ui_task and the screens above.
+- [x] **Step 2: Run** `pio run -e m9_fake`. Expected: SUCCESS.
+- [x] **Step 3: Hardware check (human) on `m9_fake`:** boots to Home; Messages → `#general`; Messages again → room list with markers; Fn keys → Coming soon; Home → Home; Map does nothing; centre-hold → screen off; other keys ignored while off; centre tap → screensaver with the last messages, dark again after 10 s; centre-hold wakes.
+- [x] **Step 4: Commit** `feat: router, home, room list, setup and login screens`.
+
+> **As built (Task 19):** `src/screens/room.{h,cpp}` ships a minimal room view (log, scrolling, Back → room list, older history at the top) so navigation can be checked; Task 20 extends it. Shared screen classes live in `src/screens/screens.h`; `draw.h` has the text and hint helpers.
 
 ### Task 20: Room screen
 

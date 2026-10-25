@@ -65,7 +65,6 @@ std::vector<CircMessage> history(const std::string& slug, int64_t endTs, int cou
     int64_t ts = endTs - int64_t(count - i) * 97000;
     const char* who = kNicks[(i * 7 + page * 3) % 11];
     std::string text = std::string(lines[(i + page) % 10]);
-    if (slug != "general") text = "[" + slug + "] " + text;
     out.push_back(msg("h" + std::to_string(page) + "-" + std::to_string(i), who, text, ts));
   }
   return out;

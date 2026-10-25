@@ -183,7 +183,7 @@ docs/{BUILD.md,USE.md,TESTING.md}  .github/workflows/build.yml  AGENTS.md
   - Messages are kept ascending by `(timestamp, id)`. Upserting an existing id replaces it and re-sorts if its timestamp changed. Over the cap, the oldest are dropped. `version()` increments on every mutation. Newest and oldest are `-1` when empty. `replaceAll` sorts and dedupes.
 - `bool mentionsUser(std::string_view content, std::string_view username);` Case-insensitive `@username`. The preceding char must be start or non-word, and the following char end or non-word (word = `[A-Za-z0-9_]`).
 
-- [ ] **Step 1: Write failing tests:**
+- [x] **Step 1: Write failing tests:**
   - `test_upsert_orders`: insert ts 30, 10, 20 → order 10, 20, 30.
   - `test_upsert_dedupes`: the same id twice → size 1, latest content kept.
   - `test_cap_drops_oldest`: cap 3, insert 4 → the oldest ts is gone.
@@ -192,10 +192,10 @@ docs/{BUILD.md,USE.md,TESTING.md}  .github/workflows/build.yml  AGENTS.md
   - `test_replace_all_dedupes_and_sorts`.
   - `test_overlap_history_and_stream`: replaceAll of ids a, b, c, then upsert b (changed) and d → order a, b, c, d with b updated.
   - `test_mentions`: `mentionsUser("hey @OuMike!", "oumike")` → true. `"@oumikes"` → false. `"mail@oumike"` → false. `"@oumike"` → true.
-- [ ] **Step 2: Run** `pio test -e native -f test_chat_store`. Expected: FAIL.
-- [ ] **Step 3: Implement** with a `std::deque` and binary-search insertion.
-- [ ] **Step 4: Run.** Expected: PASS.
-- [ ] **Step 5: Commit** `feat(core): ordered chat store and mention detection`.
+- [x] **Step 2: Run** `pio test -e native -f test_chat_store`. Expected: FAIL.
+- [x] **Step 3: Implement** with a `std::deque` and binary-search insertion.
+- [x] **Step 4: Run.** Expected: PASS.
+- [x] **Step 5: Commit** `feat(core): ordered chat store and mention detection`.
 
 ### Task 6: SSE parser
 

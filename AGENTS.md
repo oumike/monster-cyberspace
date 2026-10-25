@@ -43,9 +43,9 @@ and `../rhino-moshi/firmware/`.
 
 ## Progress (hand-off from Claude Code, 2026-10-25)
 
-Work is on branch **`m1-circ`**. Tasks 1–4 of the plan are done and committed,
-with their boxes ticked in the plan. **Next: Task 5 (message model, chat store, mentions).** The native
-suite is green: 17/17 (`pio test -e native`), and `pio run -e m9` and
+Work is on branch **`m1-circ`**. Tasks 1–5 of the plan are done and committed,
+with their boxes ticked in the plan. **Next: Task 6 (SSE parser).** The native
+suite is green: 26/26 (`pio test -e native`), and `pio run -e m9` and
 `-e m9_fake` both build.
 
 Notes for whoever continues:

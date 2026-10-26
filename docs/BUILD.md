@@ -3,7 +3,8 @@
 ## Prerequisites
 
 - [PlatformIO Core](https://platformio.org/install/cli) 6.1 or newer. The first
-  build downloads the pioarduino platform (Arduino core 3.3 / ESP-IDF 5.5).
+  build downloads the pioarduino platform (Arduino core 3.3 / ESP-IDF 5.5)
+  into `.pio-core/`, kept apart from the shared `~/.platformio`.
 - A USB data cable. The ThinkNode M9's console runs through its USB-to-UART
   bridge at 115200 baud; the Wio Tracker L2's through the ESP32-S3's own USB.
 

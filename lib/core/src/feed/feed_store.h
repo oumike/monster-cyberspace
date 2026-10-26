@@ -53,8 +53,12 @@ class FeedStore {
   bool bookmarksLoaded() const { return bookmarksLoaded_; }
 
   // Watched and Bookmarks screens: resolved entries, previews like the feed.
-  void setSideList(std::vector<Entry> entries, const std::string& cursor, bool append);
+  // replyIds runs parallel to entries: the bookmarked reply on that entry, or
+  // "" (missing ones count as "").
+  void setSideList(std::vector<Entry> entries, const std::string& cursor, bool append,
+                   std::vector<std::string> replyIds = {});
   const std::vector<Entry>& sideList() const { return side_; }
+  const std::vector<std::string>& sideReplyIds() const { return sideReplyIds_; }
   const std::string& sideCursor() const { return sideCursor_; }
 
   void clear();  // on sign-out: everything above, plus bookmarksLoaded=false
@@ -74,6 +78,7 @@ class FeedStore {
   bool bookmarksLoaded_ = false;
 
   std::vector<Entry> side_;
+  std::vector<std::string> sideReplyIds_;  // parallel to side_
   std::string sideCursor_;
 };
 

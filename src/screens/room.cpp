@@ -8,7 +8,6 @@
 #include "chat/chat_source.h"
 #include "screens/draw.h"
 #include "store/locked_chat.h"
-#include "ui/qr_cells.h"
 #include "ui/widgets/palette.h"
 #include "ui/wrap.h"
 #include "util/base64.h"
@@ -512,17 +511,12 @@ void RoomScreen::openReader(const CircMessage& m) {
     viewLines_.push_back(utf8ToU32(m.content));
   }
   wrapView_ = art.empty();
-  qr_.clear();
   viewTop_ = viewLeft_ = 0;
   overlay_ = Overlay::Reader;
 }
 
 void RoomScreen::openLink(const std::string& url) {
-  viewLines_ = {utf8ToU32(url)};
-  wrapView_ = true;
-  qr_.clear();
-  if (!qrToCells(url, qr_)) qr_.clear();
-  viewTop_ = viewLeft_ = 0;
+  link_.open(url);
   overlay_ = Overlay::Link;
 }
 
@@ -625,30 +619,16 @@ void RoomScreen::render(Grid& g, const Theme& t, int64_t) {
   g.fill(t.bg);
   drawStatus(g, t, utf8ToU32(dm_ ? "@" + partner_ : "#" + slug_), dm_ ? -1 : online);
 
-  if (overlay_ == Overlay::Reader || overlay_ == Overlay::Link) {
-    // Full-screen viewers below the status bar.
+  if (overlay_ == Overlay::Link) {
+    link_.render(g, t);
+    return;
+  }
+  if (overlay_ == Overlay::Reader) {
+    // A full-screen viewer below the status bar.
     std::vector<std::u32string> rows =
         wrapView_ ? wrapText(viewLines_[0], g.cols() - 2, g.cols() - 2) : viewLines_;
     const int bottom = g.rows() - 1;
     int avail = bottom - 1;
-    int r = 1;
-    if (overlay_ == Overlay::Link) {
-      for (const auto& line : rows)
-        if (r < bottom) g.putText(1, r++, line, t.fg, t.bg, g.cols() - 2);
-      int qrH = int(qr_.size()) + 2, qrW = qr_.empty() ? 0 : int(qr_[0].size()) + 4;
-      if (!qr_.empty() && r + qrH <= bottom && qrW <= g.cols()) {
-        int left = (g.cols() - qrW) / 2;
-        // Dark modules on white with a light margin, so phones can scan it.
-        for (int y = 0; y < qrH; ++y)
-          for (int x = 0; x < qrW; ++x) g.put(left + x, r + y, U' ', 0x0000, 0xFFFF);
-        for (int y = 0; y < int(qr_.size()); ++y)
-          g.putText(left + 2, r + 1 + y, qr_[y], 0x0000, 0xFFFF, qrW - 4);
-      } else if (!qr_.empty() || r < bottom) {
-        if (r + 1 < bottom) putLine(g, 1, r + 1, "(no room for a QR code here)", t.dim, t.bg);
-      }
-      drawHint(g, t, U"back: close");
-      return;
-    }
     int maxTop = std::max(0, int(rows.size()) - avail);
     viewTop_ = std::min(viewTop_, maxTop);
     int widest = 0;

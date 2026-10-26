@@ -122,12 +122,12 @@ class FeedListScreen : public Screen {
   ListView paletteList_;
   bool palette_ = false;
   std::vector<std::string> ids_;
+  std::vector<std::string> replyIds_;  // Bookmarks: the bookmarked reply per row, or ""
   std::string selId_;      // the selected entry, kept across updates
   bool dirty_ = true;      // rows need a rebuild
   bool loaded_ = false;    // a list arrived since enter
   bool more_ = false;      // more pages remain
   bool asked_ = false;     // a page request is outstanding
-  bool loading_ = false;
   int cols_ = 0;
   int64_t builtAt_ = 0;    // for the ages ("3h")
 };

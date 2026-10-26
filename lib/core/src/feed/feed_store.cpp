@@ -136,9 +136,16 @@ std::string FeedStore::bookmarkIdFor(const std::string& targetId) const {
   return it == bookmarks_.end() ? std::string() : it->second;
 }
 
-void FeedStore::setSideList(std::vector<Entry> entries, const std::string& cursor, bool append) {
+void FeedStore::setSideList(std::vector<Entry> entries, const std::string& cursor, bool append,
+                            std::vector<std::string> replyIds) {
   for (auto& e : entries) cutPreview(e);
-  if (!append) side_.clear();
+  replyIds.resize(entries.size());
+  if (!append) {
+    side_.clear();
+    sideReplyIds_.clear();
+  }
+  sideReplyIds_.insert(sideReplyIds_.end(), std::make_move_iterator(replyIds.begin()),
+                       std::make_move_iterator(replyIds.end()));
   side_.insert(side_.end(), std::make_move_iterator(entries.begin()),
                std::make_move_iterator(entries.end()));
   sideCursor_ = cursor;
@@ -152,6 +159,7 @@ void FeedStore::clear() {
   bookmarks_.clear();
   bookmarksLoaded_ = false;
   std::vector<Entry>().swap(side_);
+  std::vector<std::string>().swap(sideReplyIds_);
   sideCursor_.clear();
 }
 

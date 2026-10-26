@@ -668,6 +668,7 @@ void FakeFeedSource::openSide(bool bookmarks, bool append) {
     }
   }
   std::vector<Entry> entries;
+  std::vector<std::string> replyIds;
   std::vector<Bookmark> marks;
   std::string next;
   {
@@ -676,23 +677,27 @@ void FakeFeedSource::openSide(bool bookmarks, bool append) {
     size_t total = bookmarks ? bookmarks_.size() : watched_.size();
     size_t end = std::min(total, start + kSidePage);
     for (size_t i = start; i < end; ++i) {
-      std::string postId;
+      std::string postId, replyId;
       if (bookmarks) {
         const Bookmark& b = bookmarks_[i];
         marks.push_back(b);
         postId = b.postId;
+        replyId = b.replyId;
         if (postId.empty()) findReply(b.replyId, &postId);
       } else {
         postId = watched_[i];
       }
       if (postId.empty() || !held.insert(postId).second) continue;
-      if (const Entry* e = findEntry(postId)) entries.push_back(*e);
+      if (const Entry* e = findEntry(postId)) {
+        entries.push_back(*e);
+        replyIds.push_back(replyId);
+      }
     }
     next = end < total ? std::to_string(end) : "";
   }
   lockedFeed().with([&](FeedState& s) {
     for (const auto& b : marks) s.store.addBookmark(b);
-    s.store.setSideList(std::move(entries), next, append);
+    s.store.setSideList(std::move(entries), next, append, std::move(replyIds));
     s.loading = false;
   });
   post(EvtType::SideListUpdated);

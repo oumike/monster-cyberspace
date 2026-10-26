@@ -77,7 +77,10 @@ void FeedListScreen::onKey(const KeyEvent& k) {
     case Action::Select:
     case Action::Right: {
       int i = list_.selected();
-      if (i >= 0 && i < int(ids_.size())) router::go(router::Id::Entry, ids_[i]);
+      if (i < 0 || i >= int(ids_.size())) break;
+      // A bookmarked reply opens its entry with that reply selected.
+      std::string reply = i < int(replyIds_.size()) ? replyIds_[i] : std::string();
+      router::go(router::Id::Entry, reply.empty() ? ids_[i] : ids_[i] + "\n\n" + reply);
       break;
     }
     case Action::Left:
@@ -156,6 +159,7 @@ void FeedListScreen::onEvent(const Event& e) {
 
 void FeedListScreen::rebuild(int cols, const Theme& t) {
   std::vector<Entry> entries;
+  std::vector<std::string> replyIds;
   std::vector<bool> marked;
   int sel = -1;
   bool side = kind_ != Kind::Feed;
@@ -164,6 +168,7 @@ void FeedListScreen::rebuild(int cols, const Theme& t) {
     more_ = side ? !s.store.sideCursor().empty() : !s.store.feedEnd();
     if (!loaded_) return;
     entries = side ? s.store.sideList() : s.store.feed();
+    if (kind_ == Kind::Bookmarks) replyIds = s.store.sideReplyIds();
     marked.reserve(entries.size());
     for (const auto& e : entries) marked.push_back(!s.store.bookmarkIdFor(e.id).empty());
     if (!selId_.empty() && !side) sel = s.store.indexOf(selId_);
@@ -173,6 +178,7 @@ void FeedListScreen::rebuild(int cols, const Theme& t) {
   std::vector<FeedRow> rows;
   rows.reserve(entries.size());
   ids_.clear();
+  replyIds_ = std::move(replyIds);
   for (size_t i = 0; i < entries.size(); ++i) {
     rows.push_back(layoutFeedRow(entries[i], marked[i], now, cols, t));
     ids_.push_back(entries[i].id);

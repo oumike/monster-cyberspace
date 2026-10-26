@@ -430,7 +430,7 @@ void FeedWorker::openBookmarks(bool append) {
     page.clear();
     return api_.bookmarks(cursor, page, next, limit);
   });
-  std::vector<std::string> postIds;
+  std::vector<std::string> postIds, replyIds;
   if (e.ok()) {
     for (const auto& b : page) {
       std::string postId = b.postId;
@@ -445,7 +445,9 @@ void FeedWorker::openBookmarks(bool append) {
         }
         postId = r.postId;
       }
-      if (!postId.empty()) postIds.push_back(postId);
+      if (postId.empty()) continue;
+      postIds.push_back(postId);
+      replyIds.push_back(b.replyId);
     }
   }
   if (!e.ok()) {
@@ -457,13 +459,13 @@ void FeedWorker::openBookmarks(bool append) {
   lockedFeed().with([&](FeedState& s) {
     for (const auto& b : page) s.store.addBookmark(b);
   });
-  resolveSide(postIds, next, append);
+  resolveSide(postIds, next, append, replyIds);
 }
 
 // Fetches each listed entry (one read each), dedupes by postId and stores the
 // page. A 404 skips that entry; any other error drops the whole page.
 bool FeedWorker::resolveSide(const std::vector<std::string>& postIds, const std::string& next,
-                             bool append) {
+                             bool append, const std::vector<std::string>& replyIds) {
   std::set<std::string> held;
   if (append) {
     lockedFeed().with([&](FeedState& s) {
@@ -471,7 +473,9 @@ bool FeedWorker::resolveSide(const std::vector<std::string>& postIds, const std:
     });
   }
   std::vector<Entry> entries;
-  for (const auto& id : postIds) {
+  std::vector<std::string> entryReplyIds;
+  for (size_t i = 0; i < postIds.size(); ++i) {
+    const std::string& id = postIds[i];
     if (!held.insert(id).second) continue;
     Entry entry;
     ApiError e = api_.entry(id, entry);
@@ -483,9 +487,10 @@ bool FeedWorker::resolveSide(const std::vector<std::string>& postIds, const std:
       return false;
     }
     entries.push_back(std::move(entry));
+    entryReplyIds.push_back(i < replyIds.size() ? replyIds[i] : std::string());
   }
   lockedFeed().with([&](FeedState& s) {
-    s.store.setSideList(std::move(entries), next, append);
+    s.store.setSideList(std::move(entries), next, append, std::move(entryReplyIds));
     s.loading = false;
   });
   post(EvtType::SideListUpdated);

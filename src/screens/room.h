@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "chat/message.h"
+#include "screens/link_view.h"
 #include "screens/router.h"
 #include "ui/widgets/drawer.h"
 #include "ui/widgets/input_line.h"
@@ -72,7 +73,7 @@ class RoomScreen : public Screen {
 
   // Reader and link views.
   std::vector<std::u32string> viewLines_;
-  std::vector<std::u32string> qr_;
+  LinkView link_;
   int viewTop_ = 0, viewLeft_ = 0;
   bool wrapView_ = true;  // wrap text to the width; art is drawn verbatim
 

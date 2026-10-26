@@ -690,8 +690,8 @@
 - If `EntryUpdated` has `ok=false`, it goes back to `FeedList`.
 - Leaving it calls `store.closeEntry()` through `lockedFeed`.
 
-- [ ] **Step 1: Implement.**
-- [ ] **Step 2: Run** `pio test -e native`, `pio run -e m9_fake` and `pio run -e m9`. Expected: all green.
+- [x] **Step 1: Implement.**
+- [x] **Step 2: Run** `pio test -e native`, `pio run -e m9_fake` and `pio run -e m9`. Expected: all green.
 - [ ] **Step 3: Flash `m9_fake`** and check:
   - the CW reveal;
   - the long Markdown entry renders and scrolls;
@@ -699,7 +699,7 @@
   - replying to a reply sets the marker;
   - bookmark, watch and delete (own) work;
   - delete on others is refused.
-- [ ] **Step 4: Commit** `feat(ui): Entry screen with replies and menus`.
+- [x] **Step 4: Commit** `feat(ui): Entry screen with replies and menus`.
 
 ### Task 11: Composer screen
 

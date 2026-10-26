@@ -198,6 +198,18 @@ void test_side_list_append() {
   TEST_ASSERT_EQUAL_STRING("c9", s.sideCursor().c_str());
 }
 
+void test_side_list_reply_ids() {
+  FeedStore s;
+  s.setSideList({E("p1"), E("p2")}, "c2", false, {"", "r4"});
+  s.setSideList({E("p3")}, "", true);
+  TEST_ASSERT_TRUE((std::vector<std::string>{"", "r4", ""}) == s.sideReplyIds());
+  s.setSideList({E("p9")}, "", false);
+  TEST_ASSERT_TRUE((std::vector<std::string>{""}) == s.sideReplyIds());
+  s.setSideList({E("p5")}, "", false, {"r5"});
+  s.clear();
+  TEST_ASSERT_EQUAL(0, (int)s.sideReplyIds().size());
+}
+
 void test_close_entry() {
   FeedStore s;
   s.openEntry(E("p1"));
@@ -221,6 +233,7 @@ int main(int, char**) {
   RUN_TEST(test_index_of);
   RUN_TEST(test_clear_drops_everything);
   RUN_TEST(test_side_list_append);
+  RUN_TEST(test_side_list_reply_ids);
   RUN_TEST(test_close_entry);
   return UNITY_END();
 }

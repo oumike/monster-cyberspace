@@ -647,7 +647,7 @@
 
 - [x] **Step 1: Implement.**
 - [x] **Step 2: Run** `pio run -e m9_fake` and `pio run -e m9`. Expected: SUCCESS.
-- [ ] **Step 3: Flash `m9_fake`** (stop any monitor first) and check on hardware:
+- [x] **Step 3: Flash `m9_fake`** (stop any monitor first) and check on hardware:
   - the list scrolls and pages;
   - the CW row reads `CW: spiders`;
   - `★` follows bookmarks;

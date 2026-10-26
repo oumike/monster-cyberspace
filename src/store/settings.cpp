@@ -53,6 +53,7 @@ void load(rc::Settings& s) {
   s.tzMode = loadTzMode(&p);
   s.tzAutoName = getStr(p, "tzaname", "");
   s.tzAutoPosix = getStr(p, "tzaposix", "");
+  s.ntpServer = getStr(p, "ntp", s.ntpServer);
   s.pagePassword = getStr(p, "pagepw", "");
   s.apPassword = getStr(p, "appw", "");
   s.textSize = p.getUChar("tsize", 1) == 0 ? rc::TextSize::Comfortable : rc::TextSize::Compact;
@@ -100,6 +101,13 @@ void saveTzMode(rc::TzMode mode) {
   Preferences p;
   if (!p.begin(kNs, false)) return;
   p.putUChar("tzmode", mode == rc::TzMode::Manual ? 1 : 0);
+  p.end();
+}
+
+void saveNtpServer(const std::string& host) {
+  Preferences p;
+  if (!p.begin(kNs, false)) return;
+  p.putString("ntp", host.c_str());
   p.end();
 }
 

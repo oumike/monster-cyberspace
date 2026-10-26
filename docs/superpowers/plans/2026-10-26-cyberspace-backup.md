@@ -70,7 +70,7 @@
 - Modify: `src/store/settings.h`
 
 **Interfaces:**
-- Produces, `settings_model.h` (namespace `rc`): `WifiNet`, `Settings` and `kMaxWifiNets` exactly as they are in `src/store/settings.h` today (same fields and defaults: `tz = "UTC0"`, `TextSize::Compact`, `drawerOpen = false`, `buzzer = true`, `ThemeId::Default`, `lastRoom = "general"`). It includes `ui/grid.h` and `ui/theme.h`. `src/store/settings.h` drops those definitions and includes `config/settings_model.h`; the `settings::` declarations stay.
+- Produces, `settings_model.h` (namespace `rc`): `WifiNet`, `Settings` and `kMaxWifiNets` exactly as they are in `src/store/settings.h` today (same fields and defaults: `tz = "UTC0"`, `tzMode = TzMode::Manual`, `ntpServer = "pool.ntp.org"`, `TextSize::Compact`, `drawerOpen = false`, `buzzer = true`, `ThemeId::Default`, `lastRoom = "general"`). It includes `ui/grid.h` and `ui/theme.h`. `src/store/settings.h` drops those definitions and includes `config/settings_model.h`; the `settings::` declarations stay.
 - Produces, `yaml_scalar.h` (namespace `rc`):
   ```cpp
   // Double-quoted, with \\ \" \n \t and \uXXXX for other bytes < 0x20 and 0x7F.
@@ -125,7 +125,7 @@
 - Test: `test/test_backup_yaml/test_main.cpp`
 
 **Interfaces:**
-- Consumes: `Settings`, `WifiNet`, `kMaxWifiNets` (Task 1); `yamlQuote`, `yamlScalar` (Task 1); `themeKey`, `parseThemeId` (`ui/theme.h`); `validApPassword` (`web/web_util.h`).
+- Consumes: `Settings`, `WifiNet`, `kMaxWifiNets` (Task 1); `yamlQuote`, `yamlScalar` (Task 1); `themeKey`, `parseThemeId` (`ui/theme.h`); `validApPassword`, `validNtpServer` (`web/web_util.h`); `tzModeKey`, `parseTzMode` (`tz/tz_lookup.h`).
 - Produces, `backup_yaml.h` (namespace `rc`):
   ```cpp
   constexpr size_t kMaxBackupBytes = 16384;
@@ -140,8 +140,8 @@
   ```
 
 **Writer.** Output is exactly the spec §3 example's layout: the three `#` header lines, then keys in that order, two-space indents, `- ssid:` items with `password:` under `ssid`.
-- Strings use `yamlQuote`: `board`, `firmware`, `created`, `ssid`, `password`, `timezone`, `pagePassword`, `apPassword`, `lastRoom`, `email`, `refreshToken`.
-- Plain values: `format`, `version`, `textSize`, booleans, and `theme`, which is written as `theme: <key>  # default | bw | wb`.
+- Strings use `yamlQuote`: `board`, `firmware`, `created`, `ssid`, `password`, `timezone`, `ntpServer`, `pagePassword`, `apPassword`, `lastRoom`, `email`, `refreshToken`.
+- Plain values: `format`, `version`, `textSize`, booleans, `theme`, which is written as `theme: <key>  # default | bw | wb`, and `tzMode`, written as `tzMode: <key>  # auto | manual` right after `timezone`.
 - `created` is `"YYYY-MM-DDTHH:MM:SSZ"` (UTC, from `gmtime_r`), or `""` when `epochSec < 1700000000`.
 - `wifi: []` when the list is empty.
 
@@ -165,6 +165,8 @@
 - `line N: text size: compact or comfortable`;
 - `line N: theme: default, bw or wb`;
 - `line N: time zone: 1-63 printable characters` (the web config rule);
+- `line N: zone mode: auto or manual`;
+- `line N: NTP server: a host name, 1-63 characters` (`validNtpServer`);
 - `line N: last room: 1-63 printable characters`.
 
 Networks after the fifth are dropped before validation and set `note`.
@@ -220,6 +222,11 @@ Networks after the fifth are dropped before validation and set `note`.
   void test_more_than_five_networks_truncated() {
     // 7 items → ok, wifi.size()==5 (first five, in order),
     // note == "Kept the first 5 of 7 networks."
+  }
+  void test_backup_time_keys() {
+    // tzMode Manual + ntpServer "time.example.org" round-trip;
+    // a backup without tzMode and ntpServer keeps the current values;
+    // ntpServer: "a b" → false, err "line N: NTP server: a host name, 1-63 characters", inOut unchanged
   }
   void test_duplicate_key() { /* two "buzzer:" lines → "line N: duplicate key \"buzzer\"" */ }
   void test_oversize_refused() { /* 16385 bytes of comments → "Backup is over 16 KB" */ }

@@ -71,4 +71,14 @@ std::string urlDecode(std::string_view s) {
   return out;
 }
 
+bool validNtpServer(std::string_view host) {
+  if (host.empty() || host.size() > 63) return false;
+  for (char c : host) {
+    bool ok = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') ||
+              c == '.' || c == '-';
+    if (!ok) return false;
+  }
+  return true;
+}
+
 }  // namespace rc

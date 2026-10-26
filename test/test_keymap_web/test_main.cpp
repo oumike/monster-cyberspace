@@ -106,6 +106,18 @@ void test_url_decode() {
   TEST_ASSERT_EQUAL_STRING("%zz", urlDecode("%zz").c_str());
 }
 
+void test_valid_ntp_server() {
+  TEST_ASSERT_TRUE(validNtpServer("pool.ntp.org"));
+  TEST_ASSERT_TRUE(validNtpServer("time-a.nist.gov"));
+  TEST_ASSERT_TRUE(validNtpServer(std::string(63, 'a')));
+  TEST_ASSERT_FALSE(validNtpServer(""));
+  TEST_ASSERT_FALSE(validNtpServer(std::string(64, 'a')));
+  TEST_ASSERT_FALSE(validNtpServer("ntp server"));
+  TEST_ASSERT_FALSE(validNtpServer("ntp:123"));
+  TEST_ASSERT_FALSE(validNtpServer("a/b"));
+  TEST_ASSERT_FALSE(validNtpServer("\xc3\xa9.org"));
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_keymap_table);
@@ -115,5 +127,6 @@ int main() {
   RUN_TEST(test_ap_password);
   RUN_TEST(test_basic_auth);
   RUN_TEST(test_url_decode);
+  RUN_TEST(test_valid_ntp_server);
   return UNITY_END();
 }

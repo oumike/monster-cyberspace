@@ -58,6 +58,8 @@ wifi:
   - ssid: "Phone"
     password: ""
 timezone: "EST5EDT,M3.2.0,M11.1.0"
+tzMode: auto          # auto | manual
+ntpServer: "pool.ntp.org"
 pagePassword: ""
 apPassword: ""
 textSize: compact
@@ -107,7 +109,11 @@ Anything else is an error that names the line, for example `line 12: expected
   - an SSID is 1–32 bytes;
   - the setup-AP password passes `validApPassword`;
   - the page password is at most 63 printable characters;
-  - the text size is `compact` or `comfortable`.
+  - the text size is `compact` or `comfortable`;
+  - the zone mode is `auto` or `manual` (a board without a GPS loads
+    `auto` as `manual`);
+  - the NTP server passes `validNtpServer` (1–63 characters, each
+    `[A-Za-z0-9.-]`).
 
   A field that fails validation fails the whole restore, and nothing is saved.
 - **Size:** files over 16 KB are refused.

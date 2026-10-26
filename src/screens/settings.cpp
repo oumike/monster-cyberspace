@@ -1,6 +1,7 @@
 #include <Arduino.h>
 
 #include "app/app_state.h"
+#include "app/time_service.h"
 #include "chat/chat_source.h"
 #include "hal/board.h"
 #include "screens/draw.h"
@@ -69,7 +70,10 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
   drawStatus(g, t, U"settings", -1);
   const AppState& a = app();
   int r = 1;
+  const int bottom = g.rows() - 1;
+  // Status lines stop above the menu.
   auto field = [&](const char* label, const std::string& value, uint16_t fg) {
+    if (r >= bottom - kItems) return;
     putLine(g, 1, r, label, t.dim, t.bg);
     putLine(g, 11, r++, value, fg, t.bg);
   };
@@ -85,6 +89,10 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
     field("", setupApHasPassword() ? "password required" : "open network", t.dim);
     field("", "http://192.168.4.1", t.selectBg);
   }
+  const timesvc::Snapshot ts = timesvc::snapshot();
+  field("gps", ts.gps, t.fg);
+  field("time", ts.time, t.fg);
+  field("zone", ts.zone, t.fg);
 
   std::u32string themeItem = U"Theme: ";
   for (const char* c = themeLabel(a.cfg.theme); *c; ++c) themeItem += static_cast<char32_t>(*c);
@@ -94,7 +102,6 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
       ListItem{U"Log out", U""},
       ListItem{U"Factory reset\u2026", U"", ItemTone::Error},
   });
-  int bottom = g.rows() - 1;
   if (confirm_ != Confirm::None) {
     bool reset = confirm_ == Confirm::Reset;
     confirmMenu_.setItems({ListItem{U"Cancel", U""},

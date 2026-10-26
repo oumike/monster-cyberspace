@@ -23,6 +23,7 @@ struct Settings {
   // tz is the manual zone. Automatic uses the zone of the last GPS lookup.
   rc::TzMode tzMode = rc::TzMode::Manual;
   std::string tzAutoName, tzAutoPosix;
+  std::string ntpServer = "pool.ntp.org";  // SNTP server 0; time.google.com is server 1
 };
 
 constexpr size_t kMaxWifiNets = 5;
@@ -40,6 +41,7 @@ void saveUiPrefs(const rc::Settings&);
 void saveWifi(const std::vector<rc::WifiNet>&);
 void saveTz(const std::string& tz);
 void saveTzMode(rc::TzMode mode);
+void saveNtpServer(const std::string& host);
 // The time service calls this only when the looked-up zone changes.
 void saveTzAuto(const std::string& name, const std::string& posix);
 void saveSecurity(const std::string& pagePassword, const std::string& apPassword);

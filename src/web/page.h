@@ -48,7 +48,12 @@ ul{padding-left:1.2em;margin:.3em 0}li button{padding:.1em .4em;font-size:.85em}
 <label>Text size<select id="tsize"><option value="compact">Compact (6×12, 53×20)</option><option value="comfortable">Comfortable (8×16, 40×15)</option></select></label>
 <label>Theme<select id="theme"><option value="default">Default (terminal green)</option><option value="bw">Black &amp; white (white on black)</option><option value="wb">White &amp; black (black on white)</option></select></label>
 <label><input id="buzzer" type="checkbox" style="width:auto"> Buzzer on mentions</label>
-<label>Time zone<select id="tzpick" onchange="if(this.value)tz.value=this.value">
+<button onclick="savePrefs()">Save display</button>
+<div id="prefmsg" class="msg"></div>
+
+<h2>Time</h2>
+<label>Time zone<select id="tzmode" onchange="tzNote()"><option value="auto">Automatic, from GPS</option><option value="manual">Manual</option></select></label>
+<label>Zone<select id="tzpick" onchange="if(this.value)tz.value=this.value">
 <option value="">(type below)</option>
 <option>UTC0</option>
 <option>EST5EDT,M3.2.0,M11.1.0</option>
@@ -60,8 +65,10 @@ ul{padding-left:1.2em;margin:.3em 0}li button{padding:.1em .4em;font-size:.85em}
 <option>AEST-10AEDT,M10.1.0,M4.1.0/3</option>
 </select></label>
 <label>POSIX TZ string<input id="tz" autocomplete="off"></label>
-<button onclick="savePrefs()">Save display</button>
-<div id="prefmsg" class="msg"></div>
+<div id="tznote" class="dim" hidden>Used until GPS finds the zone</div>
+<label>NTP server<input id="ntp" autocomplete="off"></label>
+<button onclick="saveTime()">Save time</button>
+<div id="timemsg" class="msg"></div>
 
 <h2>Security</h2>
 <label>Page password (user <b>admin</b>; empty turns it off) <span id="pagestate" class="dim"></span><input id="pagepw" type="password" autocomplete="new-password"></label>
@@ -75,6 +82,7 @@ ul{padding-left:1.2em;margin:.3em 0}li button{padding:.1em .4em;font-size:.85em}
 <button class="danger" onclick="reset()">Factory reset…</button>
 <div id="devmsg" class="msg"></div>
 
+<footer class="dim">Time zone boundaries © OpenStreetMap contributors (ODbL), from timezone-boundary-builder.</footer>
 <script>
 const $=id=>document.getElementById(id);
 function show(id,r){const e=$(id);e.textContent=r.message||(r.ok?'Done':'Failed');e.className='msg '+(r.ok?'ok':'err');}
@@ -90,7 +98,8 @@ async function load(){
   const rows=[['firmware','v'+s.version+' on '+s.board],['mode',s.mode==='setup'?'setup (AP '+s.apSsid+')':'station'],
     ['wi-fi',s.ssid?s.ssid+' ('+s.rssiBars+'/4)':'not connected'],['ip',s.ip||'-'],
     ['battery',s.battery<0?'unknown':s.battery+'%'],['chat',conn[s.conn]||'-'],
-    ['account',s.signedIn?(s.email||'signed in')+(s.verified?'':' (email not verified)'):'not signed in']];
+    ['account',s.signedIn?(s.email||'signed in')+(s.verified?'':' (email not verified)'):'not signed in'],
+    ['gps',s.gps||'-'],['time',s.time||'-'],['zone',s.zone||'-']];
   $('status').innerHTML='';for(const[k,v]of rows){const tr=$('status').insertRow();tr.insertCell().textContent=k;tr.insertCell().textContent=v;}
   const ul=$('saved');ul.innerHTML='';
   if(!s.saved.length){const li=document.createElement('li');li.textContent='none';li.className='dim';ul.appendChild(li);}
@@ -102,7 +111,9 @@ async function load(){
 }
 async function loadPrefs(){const p=await call('GET','/api/prefs');if(p.tz===undefined)return;
   $('tsize').value=p.textSize;if(p.theme)$('theme').value=p.theme;$('buzzer').checked=p.buzzer;$('tz').value=p.tz;
-  $('tzpick').value=[...$('tzpick').options].some(o=>o.value===p.tz)?p.tz:'';}
+  $('tzpick').value=[...$('tzpick').options].some(o=>o.value===p.tz)?p.tz:'';
+  {const o=$('tzmode').options[0];o.hidden=o.disabled=!p.hasGps;}$('tzmode').value=p.tzMode;$('ntp').value=p.ntpServer;tzNote();}
+function tzNote(){$('tznote').hidden=$('tzmode').value!=='auto';}
 async function scan(){$('scanmsg').textContent='scanning…';const r=await call('GET','/api/wifi/scan');
   const sel=$('ssidpick');sel.innerHTML='<option value="">pick a network…</option>';
   for(const n of r.networks||[]){const o=document.createElement('option');o.value=o.textContent=n;sel.appendChild(o);}
@@ -110,7 +121,8 @@ async function scan(){$('scanmsg').textContent='scanning…';const r=await call(
 async function addWifi(){const r=await post('/api/wifi',{ssid:$('ssid').value,password:$('wpass').value},'wifimsg');if(r.ok)$('wpass').value='';}
 async function login(){$('acctmsg').textContent='Signing in…';$('acctmsg').className='msg dim';
   const r=await call('POST','/api/login',{email:$('email').value,password:$('cpass').value});$('cpass').value='';show('acctmsg',r);load();}
-function savePrefs(){post('/api/prefs',{textSize:$('tsize').value,theme:$('theme').value,buzzer:$('buzzer').checked,tz:$('tz').value},'prefmsg');}
+function savePrefs(){post('/api/prefs',{textSize:$('tsize').value,theme:$('theme').value,buzzer:$('buzzer').checked},'prefmsg');}
+function saveTime(){post('/api/prefs',{tzMode:$('tzmode').value,tz:$('tz').value,ntpServer:$('ntp').value},'timemsg');}
 async function saveSec(){const b={pagePassword:$('pagepw').value,apPassword:$('appw').value};
   if(!b.pagePassword&&!confirm('Leave the page password empty (no password)?'))return;
   const r=await post('/api/security',b,'secmsg');if(r.ok){$('pagepw').value='';$('appw').value='';}}

@@ -19,4 +19,7 @@ bool checkBasicAuth(std::string_view authorizationHeader, std::string_view passw
 // escape is kept as-is.
 std::string urlDecode(std::string_view s);
 
+// An NTP server host name: 1-63 characters, each [A-Za-z0-9.-].
+bool validNtpServer(std::string_view host);
+
 }  // namespace rc

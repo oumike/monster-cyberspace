@@ -13,9 +13,11 @@
 #include <esp_timer.h>
 
 #include <atomic>
+#include <cstring>
 
 #include "gps/nmea.h"
 #include "hal/board.h"
+#include "net/wifi_mgr.h"
 #include "time/clock_policy.h"
 #include "time/time_status.h"
 #include "tz/tz_data.h"  // the 1.16 MB zone blob: include it nowhere else
@@ -60,8 +62,10 @@ constexpr uint32_t kPollMs = 100;
 constexpr int64_t kTickMs = 1000;
 constexpr size_t kChunk = 256;
 
-// esp_sntp_setservername keeps the pointer, so the name must outlive SNTP.
-std::string gNtpServer = "pool.ntp.org";
+// esp_sntp_setservername keeps the pointer, so the name lives in a fixed
+// buffer that changes only while SNTP is stopped, under gNtpMutex.
+char gNtpServer[64] = "pool.ntp.org";
+std::mutex gNtpMutex;  // guards gNtpServer and SNTP start/stop
 std::atomic<bool> gNtpSynced{false};
 
 std::mutex gMutex;  // guards the zone fields, gSnap and the TZ change
@@ -204,7 +208,11 @@ void start(const Settings& s) {
   // The SNTP calls go through the lwIP core, which esp_netif_init brings up.
   esp_netif_init();
   esp_sntp_setoperatingmode(ESP_SNTP_OPMODE_POLL);
-  esp_sntp_setservername(0, gNtpServer.c_str());
+  {
+    std::lock_guard<std::mutex> lock(gNtpMutex);
+    strlcpy(gNtpServer, s.ntpServer.c_str(), sizeof gNtpServer);
+    esp_sntp_setservername(0, gNtpServer);
+  }
   esp_sntp_setservername(1, "time.google.com");
   sntp_set_time_sync_notification_cb(onNtpSync);
 
@@ -212,6 +220,7 @@ void start(const Settings& s) {
 }
 
 void restartNtp() {
+  std::lock_guard<std::mutex> lock(gNtpMutex);
   if (esp_sntp_enabled()) esp_sntp_stop();
   esp_sntp_init();
 }
@@ -219,13 +228,21 @@ void restartNtp() {
 void settingsChanged() {
   Settings s;
   settings::load(s);
-  std::lock_guard<std::mutex> lock(gMutex);
-  if (s.tzMode == TzMode::Automatic && gTzMode != TzMode::Automatic) gTrackerReset = true;
-  gTz = s.tz;
-  gTzMode = s.tzMode;
-  gTzAutoName = s.tzAutoName;
-  gTzAutoPosix = s.tzAutoPosix;
-  applyTz(gTzMode, gTz, gTzAutoPosix);
+  {
+    std::lock_guard<std::mutex> lock(gMutex);
+    if (s.tzMode == TzMode::Automatic && gTzMode != TzMode::Automatic) gTrackerReset = true;
+    gTz = s.tz;
+    gTzMode = s.tzMode;
+    gTzAutoName = s.tzAutoName;
+    gTzAutoPosix = s.tzAutoPosix;
+    applyTz(gTzMode, gTz, gTzAutoPosix);
+  }
+  std::lock_guard<std::mutex> lock(gNtpMutex);
+  if (s.ntpServer == gNtpServer) return;
+  if (esp_sntp_enabled()) esp_sntp_stop();
+  strlcpy(gNtpServer, s.ntpServer.c_str(), sizeof gNtpServer);
+  esp_sntp_setservername(0, gNtpServer);
+  if (wifimgr::connected()) esp_sntp_init();
 }
 
 Snapshot snapshot() {

@@ -11,6 +11,7 @@
 #include "app/messages.h"
 #include "app/net_worker.h"
 #include "app/queues.h"
+#include "app/time_service.h"
 #include "chat/chat_source.h"
 #include "core_version.h"
 #include "hal/board.h"
@@ -143,6 +144,10 @@ esp_err_t getStatus(httpd_req_t* req) {
   d["email"] = s.email;
   d["conn"] = rc::networker::connState();
   d["apSsid"] = wifimgr::apSsid();
+  const rc::timesvc::Snapshot ts = rc::timesvc::snapshot();
+  d["gps"] = ts.gps;
+  d["time"] = ts.time;
+  d["zone"] = ts.zone;
   JsonArray nets = d["saved"].to<JsonArray>();
   for (const auto& w : s.wifi) nets.add(w.ssid);
   d["pagePasswordSet"] = !s.pagePassword.empty();
@@ -265,6 +270,9 @@ esp_err_t getPrefs(httpd_req_t* req) {
   d["buzzer"] = s.buzzer;
   d["theme"] = rc::themeKey(s.theme);
   d["tz"] = s.tz;
+  d["tzMode"] = rc::tzModeKey(s.tzMode);
+  d["ntpServer"] = s.ntpServer;
+  d["hasGps"] = board::hasGps();
   return sendJson(req, d);
 }
 
@@ -280,16 +288,33 @@ esp_err_t postPrefs(httpd_req_t* req) {
   rc::ThemeId theme = s.theme;
   if (doc["theme"].is<const char*>() && !rc::parseThemeId(doc["theme"].as<const char*>(), theme))
     return fail(req, "400 Bad Request", "Theme: default, bw or wb");
+  rc::TzMode tzMode = s.tzMode;
+  if (doc["tzMode"].is<const char*>()) {
+    if (!rc::parseTzMode(doc["tzMode"].as<const char*>(), tzMode))
+      return fail(req, "400 Bad Request", "Zone mode: auto or manual");
+    if (tzMode == rc::TzMode::Automatic && !board::hasGps())
+      return fail(req, "400 Bad Request", "This board has no GPS");
+  }
+  std::string ntp = s.ntpServer;
+  if (doc["ntpServer"].is<const char*>()) {
+    ntp = doc["ntpServer"].as<const char*>();
+    if (!rc::validNtpServer(ntp))
+      return fail(req, "400 Bad Request", "NTP server: a host name, 1-63 characters");
+  }
+  std::string tz = s.tz;
   if (doc["tz"].is<const char*>()) {
-    std::string tz = doc["tz"].as<const char*>();
+    tz = doc["tz"].as<const char*>();
     if (tz.empty() || tz.size() > 63 || !printable(tz))
       return fail(req, "400 Bad Request", "Time zone: a POSIX TZ string such as UTC0");
-    settings::saveTz(tz);
-    setenv("TZ", tz.c_str(), 1);
-    tzset();
   }
+  // The time service owns the TZ and SNTP; it reloads the saved values.
+  if (tzMode != s.tzMode) settings::saveTzMode(tzMode);
+  if (ntp != s.ntpServer) settings::saveNtpServer(ntp);
+  if (tz != s.tz) settings::saveTz(tz);
+  if (tzMode != s.tzMode || ntp != s.ntpServer || tz != s.tz) rc::timesvc::settingsChanged();
   // The UI task owns text size, theme and buzzer; it applies and saves them.
-  rc::postEvent(rc::Event{rc::EvtType::PrefsChanged, rc::themeKey(theme), compact ? 1 : 0, buzzer});
+  if (!doc["textSize"].isNull() || !doc["buzzer"].isNull() || !doc["theme"].isNull())
+    rc::postEvent(rc::Event{rc::EvtType::PrefsChanged, rc::themeKey(theme), compact ? 1 : 0, buzzer});
   return okReply(req, "Saved");
 }
 

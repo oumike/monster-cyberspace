@@ -53,30 +53,30 @@ These were built without flashing and still need a run on the device.
 
 **Room screen (`m9_fake`):**
 
-- [ ] Typing never stalls or freezes, including fast typing while messages arrive
-- [ ] Comfortable and Compact sizes; the drawer opens in each, and the log doesn't reflow
-- [ ] Ctrl palette: pick a command; pick a text size
-- [ ] Room menu: Who's here, Mute…, Unmute…, Mark read, Text size, Leave room
-- [ ] Muting a nick hides their messages; unmuting brings them back
-- [ ] Message menu: Reply inserts `@name `, Reveal unmasks a spoiler, Show full opens art
-- [ ] Show link displays the URL and a scannable QR code (try a GIF link)
-- [ ] Delete own message (with confirm) → `[deleted]`
-- [ ] Report (with confirm), with a reason typed in the input line
-- [ ] `/dice x` → error banner, and the text is back in the input line
-- [ ] The 16th fast send → "Slow down" banner, and the text stays
-- [ ] Up at the top loads older history; Down past the newest returns to typing
-- [ ] Screen off (hold centre), a tap shows the screensaver for 10 s, a hold wakes; other keys are ignored
+- [x] Typing never stalls or freezes, including fast typing while messages arrive
+- [x] Comfortable and Compact sizes; the drawer opens in each, and the log doesn't reflow
+- [x] Ctrl palette: pick a command; pick a text size
+- [x] Room menu: Who's here, Mute…, Unmute…, Mark read, Text size, Leave room
+- [x] Muting a nick hides their messages; unmuting brings them back
+- [x] Message menu: Reply inserts `@name `, Reveal unmasks a spoiler, Show full opens art
+- [x] Show link displays the URL and a scannable QR code (try a GIF link)
+- [x] Delete own message (with confirm) → `[deleted]`
+- [x] Report (with confirm), with a reason typed in the input line
+- [x] `/dice x` → error banner, and the text is back in the input line
+- [x] The 16th fast send → "Slow down" banner, and the text stays
+- [x] Up at the top loads older history; Down past the newest returns to typing
+- [x] Screen off (hold centre), a tap shows the screensaver for 10 s, a hold wakes; other keys are ignored
 
 **C-Mail (`m9_fake`):**
 
-- [ ] Fn under Home opens the list; rain shows bold with 2; Home shows "c-mail 2 unread"
-- [ ] Opening rain clears its unread; the title is `@rain` and Right opens no drawer
-- [ ] Send → echo, then "rain is typing…" for about 2 s, then rain's reply
-- [ ] Conversation menu: Mark read, Text size, Close conversation; the message menu has no Reply, Delete or Report
-- [ ] The Ctrl palette has no `/art` or `/muted`
-- [ ] In a cIRC room, wait for rain's 45 s DM: a banner plus the buzzer, and the list shows it unread
-- [ ] New conversation… → `kiwi` opens it; `zed` creates a new one; `nobody` → "User not found" and you stay in the input
-- [ ] Fn in a conversation goes to the list; Back from the list goes Home
+- [x] Fn under Home opens the list; rain shows bold with 2; Home shows "c-mail 2 unread"
+- [x] Opening rain clears its unread; the title is `@rain` and Right opens no drawer
+- [x] Send → echo, then "rain is typing…" for about 2 s, then rain's reply
+- [x] Conversation menu: Mark read, Text size, Close conversation; the message menu has no Reply, Delete or Report
+- [x] The Ctrl palette has no `/art` or `/muted`
+- [x] In a cIRC room, wait for rain's 45 s DM: a banner plus the buzzer, and the list shows it unread
+- [x] New conversation… → `kiwi` opens it; `zed` creates a new one; `nobody` → "User not found" and you stay in the input
+- [x] Fn in a conversation goes to the list; Back from the list goes Home
 
 **Web config (`m9`):**
 

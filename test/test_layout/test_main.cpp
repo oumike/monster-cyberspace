@@ -133,7 +133,7 @@ void test_compact_basic() {
   TEST_ASSERT_EQUAL_STRING("m1", lines[1].messageId.c_str());
   const Theme& t = defaultTheme();
   TEST_ASSERT_EQUAL_HEX16(t.time, lines[0].spans[0].fg);
-  TEST_ASSERT_EQUAL_HEX16(nickColor("tardibyte", false), lines[0].spans[1].fg);
+  TEST_ASSERT_EQUAL_HEX16(nickColor(defaultTheme(), "tardibyte", false), lines[0].spans[1].fg);
 }
 
 void test_compact_long_nick_indent() {
@@ -355,7 +355,7 @@ void test_feed_row() {
   TEST_ASSERT_TRUE(r.line1 == U"tardibyte \u00b7 3h \u00b7 \u21a95 \u2605");
   TEST_ASSERT_EQUAL_STRING("Hello world", u32ToUtf8(r.line2).c_str());
   TEST_ASSERT_EQUAL_HEX16(t.dim, r.fg2);
-  TEST_ASSERT_EQUAL_HEX16(nickColor("tardibyte", false), r.fg1);
+  TEST_ASSERT_EQUAL_HEX16(nickColor(defaultTheme(), "tardibyte", false), r.fg1);
 
   e.title.clear();
   r = layoutFeedRow(e, false, kTs, 40, t);

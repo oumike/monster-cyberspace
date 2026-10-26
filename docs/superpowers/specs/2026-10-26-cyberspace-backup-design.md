@@ -61,6 +61,7 @@ timezone: "EST5EDT,M3.2.0,M11.1.0"
 pagePassword: ""
 apPassword: ""
 textSize: compact
+theme: default        # default | bw | wb
 drawerOpen: false
 buzzer: true
 lastRoom: "general"

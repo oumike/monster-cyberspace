@@ -84,7 +84,7 @@ std::vector<DisplayLine> layoutRoom(const std::deque<CircMessage>& msgs, const L
     prevBucket = bucket;
 
     const bool self = !o.selfUsername.empty() && m.username == o.selfUsername;
-    const uint16_t nickFg = nickColor(m.username, self);
+    const uint16_t nickFg = nickColor(th, m.username, self);
     const bool tint =
         !m.deleted && !o.selfUsername.empty() && mentionsUser(m.content, o.selfUsername);
     const bool spoilerHidden =

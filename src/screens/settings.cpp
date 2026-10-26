@@ -10,8 +10,8 @@
 namespace rc {
 
 namespace {
-enum Item { kSetupAp, kLogout, kReset };
-constexpr int kItems = 3;
+enum Item { kTheme, kSetupAp, kLogout, kReset };
+constexpr int kItems = 4;
 }
 
 void SettingsScreen::enter(const std::string&) {
@@ -46,6 +46,10 @@ void SettingsScreen::onKey(const KeyEvent& k) {
           delay(100);
           ESP.restart();
         }
+      } else if (menu_.selected() == kTheme) {
+        AppState& a = app();
+        a.cfg.theme = nextTheme(a.cfg.theme);
+        settings::saveUiPrefs(a.cfg);
       } else if (menu_.selected() == kSetupAp) {
         Command c{CmdType::SetupAp};
         c.n = setupApUp() ? 0 : 1;
@@ -82,7 +86,10 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
     field("", "http://192.168.4.1", t.selectBg);
   }
 
+  std::u32string themeItem = U"Theme: ";
+  for (const char* c = themeLabel(a.cfg.theme); *c; ++c) themeItem += static_cast<char32_t>(*c);
   menu_.setItems({
+      ListItem{themeItem, U"", t.fg},
       ListItem{ap ? U"Turn setup AP off" : U"Turn setup AP on", U"", t.fg},
       ListItem{U"Log out", U"", t.fg},
       ListItem{U"Factory reset\u2026", U"", t.error},

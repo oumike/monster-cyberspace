@@ -30,7 +30,7 @@ void test_hsl() {
   TEST_ASSERT_EQUAL_HEX16(0xFFFF, hslToRgb565(0, 0, 1));
 }
 
-void test_self_gold() { TEST_ASSERT_EQUAL_HEX16(0xFE8C, nickColor("x", true)); }
+void test_self_gold() { TEST_ASSERT_EQUAL_HEX16(0xFE8C, nickColor(defaultTheme(), "x", true)); }
 
 void test_theme_bg_black() { TEST_ASSERT_EQUAL_HEX16(0x0000, defaultTheme().bg); }
 

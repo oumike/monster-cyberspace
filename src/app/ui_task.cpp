@@ -105,6 +105,7 @@ void handleEvent(const Event& e) {
     case EvtType::PrefsChanged: {
       TextSize ts = e.code == 0 ? TextSize::Comfortable : TextSize::Compact;
       app().cfg.buzzer = e.ok;
+      parseThemeId(e.text, app().cfg.theme);
       if (ts != app().cfg.textSize) setTextSize(ts);  // saves too
       else settings::saveUiPrefs(app().cfg);
       break;
@@ -149,8 +150,8 @@ void handleKey(const KeyEvent& k) {
       saverUntil = now + kSaverMs;
       if (power == Power::Dark) {
         power = Power::Saver;
-        grid.fill(defaultTheme().bg);
-        drawSaver(defaultTheme());
+        grid.fill(currentTheme().bg);
+        drawSaver(currentTheme());
         renderer.draw(grid, app().cfg.textSize);
         board::displaySleep(false);
       }
@@ -171,7 +172,7 @@ void handleKey(const KeyEvent& k) {
 }
 
 void taskMain(void*) {
-  const Theme& t = defaultTheme();
+  const Theme& t = currentTheme();
   for (;;) {
     uint32_t start = millis();
     KeyEvent key;

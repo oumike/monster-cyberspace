@@ -159,7 +159,7 @@ void RoomScreen::typingKey(const KeyEvent& k) {
       for (const auto& e : paletteEntries(dm_ ? PaletteKind::Cmail : PaletteKind::Circ)) {
         std::u32string label = e.label;
         if (e.isTextSize) label = compact() ? U"Text size: Comfortable" : U"Text size: Compact";
-        items.push_back(ListItem{label, U"", defaultTheme().fg});
+        items.push_back(ListItem{label, U"", currentTheme().fg});
         menuKeys_.push_back(e.isTextSize ? std::string("size") : u32ToUtf8(e.insert));
       }
       openMenu(Menu::Palette, U"commands", std::move(items));
@@ -293,7 +293,7 @@ void RoomScreen::openMenu(Menu m, std::u32string title, std::vector<ListItem> it
 }
 
 void RoomScreen::openRoomMenu() {
-  const Theme& t = defaultTheme();
+  const Theme& t = currentTheme();
   if (dm_) {
     menuKeys_ = {"read", "size", "close"};
     openMenu(Menu::Room, utf8ToU32("@" + partner_),
@@ -311,7 +311,7 @@ void RoomScreen::openRoomMenu() {
 }
 
 void RoomScreen::openPersonMenu(const std::string& name) {
-  const Theme& t = defaultTheme();
+  const Theme& t = currentTheme();
   target_ = name;
   bool muted = isMuted(name);
   menuKeys_ = {"mention", muted ? "unmute1" : "mute1"};
@@ -320,7 +320,7 @@ void RoomScreen::openPersonMenu(const std::string& name) {
 }
 
 void RoomScreen::openMessageMenu() {
-  const Theme& t = defaultTheme();
+  const Theme& t = currentTheme();
   std::string id = log_.selectedId();
   CircMessage m;
   bool found = false, revealed = false;
@@ -383,7 +383,7 @@ void RoomScreen::pickMenu() {
   int i = menuList_.selected();
   if (i < 0 || i >= int(menuKeys_.size())) return;
   const std::string key = menuKeys_[i];
-  const Theme& t = defaultTheme();
+  const Theme& t = currentTheme();
   overlay_ = Overlay::None;
   switch (menu_) {
     case Menu::Palette:

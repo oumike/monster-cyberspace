@@ -263,6 +263,7 @@ esp_err_t getPrefs(httpd_req_t* req) {
   JsonDocument d;
   d["textSize"] = s.textSize == rc::TextSize::Compact ? "compact" : "comfortable";
   d["buzzer"] = s.buzzer;
+  d["theme"] = rc::themeKey(s.theme);
   d["tz"] = s.tz;
   return sendJson(req, d);
 }
@@ -276,6 +277,9 @@ esp_err_t postPrefs(httpd_req_t* req) {
   bool compact = s.textSize == rc::TextSize::Compact;
   if (doc["textSize"].is<const char*>()) compact = std::string(doc["textSize"].as<const char*>()) != "comfortable";
   bool buzzer = doc["buzzer"].is<bool>() ? doc["buzzer"].as<bool>() : s.buzzer;
+  rc::ThemeId theme = s.theme;
+  if (doc["theme"].is<const char*>() && !rc::parseThemeId(doc["theme"].as<const char*>(), theme))
+    return fail(req, "400 Bad Request", "Theme: default, bw or wb");
   if (doc["tz"].is<const char*>()) {
     std::string tz = doc["tz"].as<const char*>();
     if (tz.empty() || tz.size() > 63 || !printable(tz))
@@ -284,8 +288,8 @@ esp_err_t postPrefs(httpd_req_t* req) {
     setenv("TZ", tz.c_str(), 1);
     tzset();
   }
-  // The UI task owns text size and buzzer; it applies and saves them.
-  rc::postEvent(rc::Event{rc::EvtType::PrefsChanged, "", compact ? 1 : 0, buzzer});
+  // The UI task owns text size, theme and buzzer; it applies and saves them.
+  rc::postEvent(rc::Event{rc::EvtType::PrefsChanged, rc::themeKey(theme), compact ? 1 : 0, buzzer});
   return okReply(req, "Saved");
 }
 

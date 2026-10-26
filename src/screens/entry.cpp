@@ -234,7 +234,7 @@ void EntryScreen::openMenu(Menu m, std::u32string title, std::vector<ListItem> i
 }
 
 void EntryScreen::openEntryMenu() {
-  const Theme& t = defaultTheme();
+  const Theme& t = currentTheme();
   Entry e;
   bool found = false, marked = false, watching = false;
   lockedFeed().with([&](FeedState& s) {
@@ -269,7 +269,7 @@ void EntryScreen::openEntryMenu() {
 }
 
 void EntryScreen::openReplyMenu(const std::string& replyId) {
-  const Theme& t = defaultTheme();
+  const Theme& t = currentTheme();
   std::string author, link;
   bool found = false, deleted = false, marked = false;
   lockedFeed().with([&](FeedState& s) {
@@ -331,7 +331,7 @@ void EntryScreen::pickMenu() {
   int i = menuList_.selected();
   if (i < 0 || i >= int(menuKeys_.size())) return;
   const std::string key = menuKeys_[i];
-  const Theme& t = defaultTheme();
+  const Theme& t = currentTheme();
   overlay_ = Overlay::None;
   switch (menu_) {
     case Menu::Entry:

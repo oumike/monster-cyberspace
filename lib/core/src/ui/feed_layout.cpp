@@ -91,7 +91,7 @@ FeedRow layoutFeedRow(const Entry& e, bool bookmarked, int64_t nowMs, int cols, 
   }
   r.line1 = cut(r.line1, cols);
   r.line2 = cut(r.line2, cols);
-  r.fg1 = nickColor(e.author, false);
+  r.fg1 = nickColor(t, e.author, false);
   r.fg2 = t.dim;
   return r;
 }
@@ -104,7 +104,7 @@ std::vector<DisplayLine> layoutEntry(const Entry& e, const std::deque<Reply>& re
 
   DisplayLine head;
   head.messageId = e.id;
-  head.spans.push_back({utf8ToU32(e.author), nickColor(e.author, !o.self.empty() && e.author == o.self)});
+  head.spans.push_back({utf8ToU32(e.author), nickColor(th, e.author, !o.self.empty() && e.author == o.self)});
   head.spans.push_back({kSep + utf8ToU32(relativeAge(e.createdMs, o.nowMs)), th.time});
   clip(head, cols);
   out.push_back(std::move(head));

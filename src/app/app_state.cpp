@@ -14,6 +14,8 @@ AppState& app() {
   return a;
 }
 
+const Theme& currentTheme() { return theme(app().cfg.theme); }
+
 int64_t nowEpochMs() {
   timeval tv;
   gettimeofday(&tv, nullptr);

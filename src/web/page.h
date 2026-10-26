@@ -46,6 +46,7 @@ ul{padding-left:1.2em;margin:.3em 0}li button{padding:.1em .4em;font-size:.85em}
 
 <h2>Display</h2>
 <label>Text size<select id="tsize"><option value="compact">Compact (6×12, 53×20)</option><option value="comfortable">Comfortable (8×16, 40×15)</option></select></label>
+<label>Theme<select id="theme"><option value="default">Default (terminal green)</option><option value="bw">Black &amp; white (white on black)</option><option value="wb">White &amp; black (black on white)</option></select></label>
 <label><input id="buzzer" type="checkbox" style="width:auto"> Buzzer on mentions</label>
 <label>Time zone<select id="tzpick" onchange="if(this.value)tz.value=this.value">
 <option value="">(type below)</option>
@@ -100,7 +101,7 @@ async function load(){
   $('pagestate').textContent=s.pagePasswordSet?'(set)':'(off)';$('apstate').textContent=s.apPasswordSet?'(set)':'(open)';
 }
 async function loadPrefs(){const p=await call('GET','/api/prefs');if(p.tz===undefined)return;
-  $('tsize').value=p.textSize;$('buzzer').checked=p.buzzer;$('tz').value=p.tz;
+  $('tsize').value=p.textSize;if(p.theme)$('theme').value=p.theme;$('buzzer').checked=p.buzzer;$('tz').value=p.tz;
   $('tzpick').value=[...$('tzpick').options].some(o=>o.value===p.tz)?p.tz:'';}
 async function scan(){$('scanmsg').textContent='scanning…';const r=await call('GET','/api/wifi/scan');
   const sel=$('ssidpick');sel.innerHTML='<option value="">pick a network…</option>';
@@ -109,7 +110,7 @@ async function scan(){$('scanmsg').textContent='scanning…';const r=await call(
 async function addWifi(){const r=await post('/api/wifi',{ssid:$('ssid').value,password:$('wpass').value},'wifimsg');if(r.ok)$('wpass').value='';}
 async function login(){$('acctmsg').textContent='Signing in…';$('acctmsg').className='msg dim';
   const r=await call('POST','/api/login',{email:$('email').value,password:$('cpass').value});$('cpass').value='';show('acctmsg',r);load();}
-function savePrefs(){post('/api/prefs',{textSize:$('tsize').value,buzzer:$('buzzer').checked,tz:$('tz').value},'prefmsg');}
+function savePrefs(){post('/api/prefs',{textSize:$('tsize').value,theme:$('theme').value,buzzer:$('buzzer').checked,tz:$('tz').value},'prefmsg');}
 async function saveSec(){const b={pagePassword:$('pagepw').value,apPassword:$('appw').value};
   if(!b.pagePassword&&!confirm('Leave the page password empty (no password)?'))return;
   const r=await post('/api/security',b,'secmsg');if(r.ok){$('pagepw').value='';$('appw').value='';}}

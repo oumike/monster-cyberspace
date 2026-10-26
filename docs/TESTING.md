@@ -52,6 +52,13 @@ Check every screen and key:
 
 These were built without flashing and still need a run on the device.
 
+**Themes (`m9_fake`):**
+
+- [ ] Settings → Theme cycles Default → Black & white → White & black → Default; each redraws at once and survives a restart
+- [ ] Web config Display → Theme changes the device at once; the select shows the saved theme on reload
+- [ ] In both mono themes: Home, room, drawer, menus, palette, Feed list, Entry, Composer, login and Settings are readable; nicks use the text colour
+- [ ] Link view QR stays black on white
+
 **Room screen (`m9_fake`):**
 
 - [x] Typing never stalls or freezes, including fast typing while messages arrive

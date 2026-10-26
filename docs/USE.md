@@ -99,6 +99,19 @@ Switch from the palette, the room menu or the web page. The choice is saved.
 - **Compact:** 6×12 text, `14:02 nick: message`, with a hint row at the
   bottom.
 
+## Themes
+
+Pick a theme on the device (**Home** → **Settings** → **Theme**, each Centre
+press moves to the next one) or in web config under Display. The choice is
+saved.
+
+- **Default:** the terminal look, with coloured nicks.
+- **Black & white:** white text on black, in greys only.
+- **White & black:** black text on white, in greys only.
+
+In the two mono themes nicks are drawn in the text colour. QR codes stay
+black on white in every theme.
+
 ## Alerts
 
 While you're signed in, the device checks every minute, even with the screen
@@ -117,7 +130,7 @@ At `http://rhino-cyberspace.local`, or the device IP, on your LAN:
 - Status
 - Wi-Fi: scan, add, and remove saved networks (up to 5)
 - Cyberspace account: sign in, sign out, resend verification
-- Display: text size, buzzer, time zone
+- Display: text size, theme, buzzer, time zone
 - Security: page password and setup-AP password
 - Restart and factory reset
 
@@ -135,8 +148,10 @@ read back through the page.
 ## Settings
 
 **Home** → **Settings** shows the account, the Wi-Fi network and IP, the web
-config address, the battery and the setup AP state, with three actions:
+config address, the battery and the setup AP state, with four actions:
 
+- **Theme: …** Centre moves to the next theme (Default, Black & white, White &
+  black) and saves it.
 - **Turn setup AP on / off.** Brings up the setup AP (its name, password state
   and `http://192.168.4.1` are shown) while staying on your Wi-Fi, so you can
   reach web config when your network is unreachable. It stays on until you

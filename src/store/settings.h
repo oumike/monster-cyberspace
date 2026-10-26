@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "ui/grid.h"
+#include "ui/theme.h"
 
 namespace rc {
 
@@ -16,6 +17,7 @@ struct Settings {
   std::string email, refreshToken, tz = "UTC0", pagePassword, apPassword;
   TextSize textSize = TextSize::Compact;
   bool drawerOpen = false, buzzer = true;
+  ThemeId theme = ThemeId::Default;
   std::string lastRoom = "general";
 };
 
@@ -28,7 +30,7 @@ namespace settings {
 void load(rc::Settings&);
 // Each saver writes only its own keys, so the UI task and the web server
 // never overwrite each other's changes.
-// The UI's own preferences: text size, drawer, buzzer, last room.
+// The UI's own preferences: text size, theme, drawer, buzzer, last room.
 void saveUiPrefs(const rc::Settings&);
 // Web config only. Networks beyond kMaxWifiNets are dropped.
 void saveWifi(const std::vector<rc::WifiNet>&);

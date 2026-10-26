@@ -22,6 +22,9 @@ struct AppState {
 
 AppState& app();
 
+// The theme the user picked (Settings or web config).
+const Theme& currentTheme();
+
 // Row 0 with the connection marker, Wi-Fi bars, battery and clock.
 void drawStatus(Grid& g, const Theme& t, std::u32string_view title, int count);
 

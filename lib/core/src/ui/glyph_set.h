@@ -31,6 +31,7 @@ constexpr GlyphAlias kGlyphAliases[] = {
     {0x21A9, 0x2190},  // ↩ → ←
     {0x2605, 0x002A},  // ★ → *
     {0x21B3, 0x2514},  // ↳ → └
+    {0x21BB, 0x007E},  // ↻ → ~
 };
 
 }  // namespace rc

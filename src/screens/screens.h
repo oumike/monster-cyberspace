@@ -1,6 +1,7 @@
 #pragma once
 
 #include "screens/router.h"
+#include "ui/widgets/entry_list.h"
 #include "ui/widgets/input_line.h"
 #include "ui/widgets/list_view.h"
 
@@ -82,6 +83,42 @@ class CmailListScreen : public Screen {
   std::vector<std::string> ids_;
   InputLine input_;  // the username for a new conversation
   bool editing_ = false, busy_ = false;
+};
+
+// The Feed, Watched threads and Bookmarks lists: one class, three router
+// instances (spec §5).
+class FeedListScreen : public Screen {
+ public:
+  enum class Kind { Feed, Watched, Bookmarks };
+  explicit FeedListScreen(Kind kind) : kind_(kind) {}
+  void enter(const std::string&) override;
+  void leave() override;
+  void onKey(const KeyEvent&) override;
+  void onEvent(const Event&) override;
+  void render(Grid&, const Theme&, int64_t nowMs) override;
+  bool hasOverlay() const override { return palette_; }
+  void closeOverlays() override { palette_ = false; }
+
+ private:
+  void paletteKey(const KeyEvent&);
+  void open();         // the first page
+  void requestMore();  // the next page
+  void rebuild(int cols, const Theme& t);
+  void remember();     // selId_ from the selection
+
+  const Kind kind_;
+  EntryList list_;
+  ListView paletteList_;
+  bool palette_ = false;
+  std::vector<std::string> ids_;
+  std::string selId_;      // the selected entry, kept across updates
+  bool dirty_ = true;      // rows need a rebuild
+  bool loaded_ = false;    // a list arrived since enter
+  bool more_ = false;      // more pages remain
+  bool asked_ = false;     // a page request is outstanding
+  bool loading_ = false;
+  int cols_ = 0;
+  int64_t builtAt_ = 0;    // for the ages ("3h")
 };
 
 class ComingSoonScreen : public Screen {

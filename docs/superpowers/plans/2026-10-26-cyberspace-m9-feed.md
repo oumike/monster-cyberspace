@@ -645,14 +645,14 @@
 - Home adds the row `field("feed", "<n> unread")` from `lockedFeed().notices.size()`. Selecting it goes to `Entry` with arg `postId + '\n' + noticeId` of the newest notice.
 - `ui_task.cpp`: `FeedAlert` shows the banner, and when `code == 1 && cfg.buzzer` calls `board::beep(1800, 80)`.
 
-- [ ] **Step 1: Implement.**
-- [ ] **Step 2: Run** `pio run -e m9_fake` and `pio run -e m9`. Expected: SUCCESS.
+- [x] **Step 1: Implement.**
+- [x] **Step 2: Run** `pio run -e m9_fake` and `pio run -e m9`. Expected: SUCCESS.
 - [ ] **Step 3: Flash `m9_fake`** (stop any monitor first) and check on hardware:
   - the list scrolls and pages;
   - the CW row reads `CW: spiders`;
   - `★` follows bookmarks;
   - the 90 s alert beeps once.
-- [ ] **Step 4: Commit** `feat(ui): FeedList, Watched and Bookmarks screens`.
+- [x] **Step 4: Commit** `feat(ui): FeedList, Watched and Bookmarks screens`.
 
 ### Task 10: Entry screen
 

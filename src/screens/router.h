@@ -35,6 +35,11 @@ enum class Id {
   LoginForm,
   CmailList,
   Conversation,
+  FeedList,
+  Entry,
+  Composer,
+  Watched,
+  Bookmarks,
 };
 
 void go(Id id, const std::string& arg = "");

@@ -5,11 +5,22 @@
 #include "screens/draw.h"
 #include "screens/screens.h"
 #include "store/locked_chat.h"
+#include "store/locked_feed.h"
 
 namespace rc {
 
 namespace {
-enum Item { kMessages, kRooms, kCmail, kReset };
+enum Item { kMessages, kRooms, kCmail, kFeed, kReset };
+constexpr int kItems = 5;
+
+// The newest unread Feed notice as an Entry arg ("postId\nnoticeId"), or "".
+std::string newestNotice() {
+  return lockedFeed().with([](FeedState& s) {
+    if (s.notices.empty()) return std::string();
+    const FeedNotice& n = s.notices.back();
+    return n.postId + '\n' + n.id;
+  });
+}
 }
 
 void HomeScreen::enter(const std::string&) {
@@ -45,6 +56,11 @@ void HomeScreen::onKey(const KeyEvent& k) {
         router::go(router::Id::RoomList);
       } else if (menu_.selected() == kCmail) {
         router::go(router::Id::CmailList);
+      } else if (menu_.selected() == kFeed) {
+        // With an unread notice, straight to its entry; else the list.
+        std::string arg = newestNotice();
+        if (arg.empty()) router::go(router::Id::FeedList);
+        else router::go(router::Id::Entry, arg);
       } else if (menu_.selected() == kReset) {
         confirm_ = true;
         confirmMenu_.setSelected(0);
@@ -59,7 +75,7 @@ void HomeScreen::render(Grid& g, const Theme& t, int64_t) {
   g.fill(t.bg);
   drawStatus(g, t, U"home", -1);
   const AppState& a = app();
-  int r = 2;
+  int r = 1;
   auto field = [&](const char* label, const std::string& value, uint16_t fg) {
     putLine(g, 1, r, label, t.dim, t.bg);
     putLine(g, 11, r++, value, fg, t.bg);
@@ -75,6 +91,8 @@ void HomeScreen::render(Grid& g, const Theme& t, int64_t) {
     return n;
   });
   field("c-mail", std::to_string(cmail) + " unread", cmail ? t.selectBg : t.fg);
+  int feed = lockedFeed().with([](FeedState& s) { return int(s.notices.size()); });
+  field("feed", std::to_string(feed) + " unread", feed ? t.selectBg : t.fg);
   std::string active = lockedChat().with([](ChatState& s) {
     std::string out;
     for (const auto& room : s.rooms) {
@@ -91,6 +109,7 @@ void HomeScreen::render(Grid& g, const Theme& t, int64_t) {
       ListItem{utf8ToU32("Messages  #" + a.cfg.lastRoom), U"", t.fg},
       ListItem{U"Rooms", U"", t.fg},
       ListItem{U"C-Mail", U"", t.fg},
+      ListItem{U"Feed", U"", t.fg},
       ListItem{U"Factory reset\u2026", U"", t.error},
   });
   int bottom = g.rows() - 1;
@@ -101,7 +120,7 @@ void HomeScreen::render(Grid& g, const Theme& t, int64_t) {
     confirmMenu_.render(g, bottom - 2, bottom, 1, g.cols() - 2, t);
     drawHint(g, t, U"\u2191\u2193 pick  \u25CF confirm  back: cancel");
   } else {
-    menu_.render(g, bottom - 4, bottom, 1, g.cols() - 2, t);
+    menu_.render(g, bottom - kItems, bottom, 1, g.cols() - 2, t);
     drawHint(g, t, U"\u2191\u2193 pick  \u25CF open");
   }
 }

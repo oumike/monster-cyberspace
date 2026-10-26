@@ -96,7 +96,8 @@ void handleEvent(const Event& e) {
       }
       if (e.ok && e.code == 0 &&
           (cur == Id::Home || cur == Id::RoomList || cur == Id::Room || cur == Id::CmailList ||
-           cur == Id::Conversation))
+           cur == Id::Conversation || cur == Id::FeedList || cur == Id::Entry ||
+           cur == Id::Composer || cur == Id::Watched || cur == Id::Bookmarks))
         router::go(Id::Setup);
       if (e.ok && e.code != 0 && (cur == Id::Setup || cur == Id::LoginForm)) router::go(Id::Home);
       break;
@@ -118,6 +119,11 @@ void handleEvent(const Event& e) {
     case EvtType::CmailAlert:
       // The unread count lives in the conversation list (Home sums it).
       if (app().cfg.buzzer) board::beep(1600, 80);
+      banner(e.text, false);
+      break;
+    case EvtType::FeedAlert:
+      // code 1 asks for a beep; post_cooldown (code 0) is a banner only.
+      if (e.code == 1 && app().cfg.buzzer) board::beep(1800, 80);
       banner(e.text, false);
       break;
     default:

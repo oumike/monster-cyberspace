@@ -15,6 +15,9 @@ RoomListScreen roomList;
 RoomScreen room;
 CmailListScreen cmailList;
 RoomScreen conversation{true};
+FeedListScreen feedList{FeedListScreen::Kind::Feed};
+FeedListScreen watched{FeedListScreen::Kind::Watched};
+FeedListScreen bookmarks{FeedListScreen::Kind::Bookmarks};
 ComingSoonScreen comingSoon;
 LoginFormScreen loginForm;
 
@@ -32,6 +35,12 @@ Screen* lookup(Id id) {
     case Id::LoginForm: return &loginForm;
     case Id::CmailList: return &cmailList;
     case Id::Conversation: return &conversation;
+    case Id::FeedList: return &feedList;
+    case Id::Watched: return &watched;
+    case Id::Bookmarks: return &bookmarks;
+    // Placeholders until the Entry (Task 10) and Composer (Task 11) screens.
+    case Id::Entry:
+    case Id::Composer: return &comingSoon;
   }
   return &home;
 }
@@ -50,7 +59,9 @@ void go(Id id, const std::string& arg) {
   active->leave();
   cur = id;
   active = lookup(id);
-  active->enter(arg);
+  if (id == Id::Entry) active->enter("Entry");
+  else if (id == Id::Composer) active->enter("New entry");
+  else active->enter(arg);
 }
 
 Id current() { return cur; }
@@ -83,7 +94,10 @@ bool handleGlobal(const KeyEvent& k) {
       if (cur != Id::Conversation || !hadOverlay) go(Id::CmailList);
       break;
     case Action::OpenFeed:
-      go(Id::ComingSoon, "Feed");
+      // The Composer asks "Discard draft?" first, so it gets the key.
+      if (cur == Id::Composer) active->onKey(k);
+      // In the list, a press with a palette open only closes it.
+      else if (cur != Id::FeedList || !hadOverlay) go(Id::FeedList);
       break;
     default:
       break;

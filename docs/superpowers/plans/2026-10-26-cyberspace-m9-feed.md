@@ -259,7 +259,7 @@
 
   Lengths count code points.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
   ```cpp
   void test_split_topics() {
     auto t = splitTopics(" Music, #Linux ,, ");
@@ -304,10 +304,10 @@
   - `makeEntryLimiter` allows 2 acquires at t=0, refuses the 3rd, and allows one at t=60000;
   - after 24 acquires spread across a day it refuses until 86400000 has passed;
   - the same shape for reply (3/48), bookmark (5/75) and watch (10/100) at the per-minute edge.
-- [ ] **Step 2: Run** `pio test -e native -f test_feed_compose -f test_limits_token`. Expected: FAIL.
-- [ ] **Step 3: Implement.** `compose` uses ArduinoJson. Add the limiters to `rate_limiter.{h,cpp}` next to `makeTypingLimiter`.
-- [ ] **Step 4: Run** the tests. Expected: PASS.
-- [ ] **Step 5: Commit** `feat(core): entry and reply compose, Feed rate limits`.
+- [x] **Step 2: Run** `pio test -e native -f test_feed_compose -f test_limits_token`. Expected: FAIL.
+- [x] **Step 3: Implement.** `compose` uses ArduinoJson. Add the limiters to `rate_limiter.{h,cpp}` next to `makeTypingLimiter`.
+- [x] **Step 4: Run** the tests. Expected: PASS.
+- [x] **Step 5: Commit** `feat(core): entry and reply compose, Feed rate limits`.
 
 ### Task 4: Feed store
 

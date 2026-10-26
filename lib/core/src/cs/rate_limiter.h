@@ -36,5 +36,9 @@ RateLimiter makeMarkReadLimiter();
 RateLimiter makeCmailSendLimiter();
 RateLimiter makeStartConversationLimiter();
 RateLimiter makeTypingLimiter();
+RateLimiter makeEntryLimiter();
+RateLimiter makeReplyLimiter();
+RateLimiter makeBookmarkLimiter();
+RateLimiter makeWatchLimiter();
 
 }  // namespace rc

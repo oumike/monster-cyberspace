@@ -51,6 +51,42 @@ void test_cmail_limits() {
   TEST_ASSERT_FALSE(t.tryAcquire(50));
 }
 
+static void checkMinuteEdge(RateLimiter l, int perMin) {
+  for (int i = 0; i < perMin; ++i) TEST_ASSERT_TRUE(l.tryAcquire(0));
+  TEST_ASSERT_FALSE(l.tryAcquire(0));
+  TEST_ASSERT_FALSE(l.tryAcquire(59999));
+  TEST_ASSERT_TRUE(l.tryAcquire(60000));
+}
+
+static void checkDayEdge(RateLimiter l, int perDay) {
+  // One acquire every 30 minutes stays under every per-minute limit.
+  for (int i = 0; i < perDay; ++i) TEST_ASSERT_TRUE(l.tryAcquire(int64_t(i) * 1800000));
+  int64_t after = int64_t(perDay) * 1800000;
+  if (after < 86400000) TEST_ASSERT_FALSE(l.tryAcquire(after));
+  TEST_ASSERT_FALSE(l.tryAcquire(86399999));
+  TEST_ASSERT_TRUE(l.tryAcquire(86400000));
+}
+
+void test_feed_limiters() {
+  checkMinuteEdge(makeEntryLimiter(), 2);
+  checkDayEdge(makeEntryLimiter(), 24);
+  checkMinuteEdge(makeReplyLimiter(), 3);
+  checkMinuteEdge(makeBookmarkLimiter(), 5);
+  checkMinuteEdge(makeWatchLimiter(), 10);
+  RateLimiter r = makeReplyLimiter();
+  for (int i = 0; i < 48; ++i) TEST_ASSERT_TRUE(r.tryAcquire(int64_t(i) * 1200000));
+  TEST_ASSERT_FALSE(r.tryAcquire(48LL * 1200000 - 1));
+  TEST_ASSERT_TRUE(r.tryAcquire(86400000));
+  RateLimiter b = makeBookmarkLimiter();
+  for (int i = 0; i < 75; ++i) TEST_ASSERT_TRUE(b.tryAcquire(int64_t(i) * 1000000));
+  TEST_ASSERT_FALSE(b.tryAcquire(75000000));
+  TEST_ASSERT_TRUE(b.tryAcquire(86400000));
+  RateLimiter w = makeWatchLimiter();
+  for (int i = 0; i < 100; ++i) TEST_ASSERT_TRUE(w.tryAcquire(int64_t(i) * 800000));
+  TEST_ASSERT_FALSE(w.tryAcquire(80000000));
+  TEST_ASSERT_TRUE(w.tryAcquire(86400000));
+}
+
 static std::string jwt(const char* payload) {
   return std::string("eyJhbGciOiJSUzI1NiJ9.") + payload + ".sig";
 }
@@ -89,5 +125,6 @@ int main() {
   RUN_TEST(test_refresh_unsynced);
   RUN_TEST(test_refresh_floor);
   RUN_TEST(test_cmail_limits);
+  RUN_TEST(test_feed_limiters);
   return UNITY_END();
 }

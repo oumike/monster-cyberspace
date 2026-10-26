@@ -49,5 +49,9 @@ RateLimiter makeStartConversationLimiter() {
   return RateLimiter({{5, 60000}, {30, 3600000}, {50, 86400000}});
 }
 RateLimiter makeTypingLimiter() { return RateLimiter({{40, 60000}}); }
+RateLimiter makeEntryLimiter() { return RateLimiter({{2, 60000}, {24, 86400000}}); }
+RateLimiter makeReplyLimiter() { return RateLimiter({{3, 60000}, {48, 86400000}}); }
+RateLimiter makeBookmarkLimiter() { return RateLimiter({{5, 60000}, {75, 86400000}}); }
+RateLimiter makeWatchLimiter() { return RateLimiter({{10, 60000}, {100, 86400000}}); }
 
 }  // namespace rc

@@ -7,6 +7,7 @@
 #include "hal/m9/keyboard_stc8h.h"
 #include "hal/m9/panel_st7789.h"
 #include "hal/m9/pins_m9.h"
+#include "input/keymap_m9.h"
 
 namespace board {
 
@@ -50,8 +51,12 @@ void displaySleep(bool sleep) {
   }
 }
 
-bool pollKey(uint8_t& raw) { return stc8h::poll(raw); }
-bool earlyKeyboard() { return stc8h::early(); }
+bool pollKey(rc::KeyEvent& key) {
+  uint8_t raw;
+  if (!stc8h::poll(raw)) return false;
+  key = rc::mapM9Key(raw, stc8h::early());
+  return true;
+}
 
 static float batteryVolts() {
   return analogReadMilliVolts(m9::BATT_ADC) * m9::BATT_DIV / 1000.0f;
@@ -69,7 +74,6 @@ int batteryPercent() {
 bool externalPower() { return batteryVolts() > 4.25f; }
 
 void beep(int freqHz, int ms) { tone(m9::BUZZER, freqHz, ms); }
-
 
 }  // namespace board
 

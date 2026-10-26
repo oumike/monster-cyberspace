@@ -6,7 +6,7 @@
 #include "app/queues.h"
 #include "chat/chat_source.h"
 #include "hal/board.h"
-#include "input/keymap_m9.h"
+#include "input/key_event.h"
 #include "screens/composer.h"
 #include "screens/router.h"
 #include "store/locked_chat.h"
@@ -174,8 +174,8 @@ void taskMain(void*) {
   const Theme& t = defaultTheme();
   for (;;) {
     uint32_t start = millis();
-    uint8_t raw;
-    while (board::pollKey(raw)) handleKey(mapM9Key(raw, board::earlyKeyboard()));
+    KeyEvent key;
+    while (board::pollKey(key)) handleKey(key);
     Event e;
     while (nextEvent(e)) handleEvent(e);
 

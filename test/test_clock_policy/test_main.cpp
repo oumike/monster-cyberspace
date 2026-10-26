@@ -110,6 +110,22 @@ void test_gps_implausible_ignored() {
   TEST_ASSERT_EQUAL(static_cast<int>(TimeSource::None), src(p));
 }
 
+void test_gps_plausible_bounds() {
+  ClockPolicy p;
+  p.boot(0, false, 0);
+  GpsState g = gpsAt(1000, kMaxPlausibleSec * 1000, true);  // 2100-01-01: excluded
+  ClockActions a = p.tick(1000, withGps(&g));
+  TEST_ASSERT_FALSE(a.setClock);
+  TEST_ASSERT_EQUAL(static_cast<int>(TimeSource::None), src(p));
+
+  ClockPolicy q;
+  q.boot(0, false, 0);
+  g = gpsAt(1000, kMinPlausibleSec * 1000, true);  // 2025-01-01: included
+  a = q.tick(1000, withGps(&g));
+  TEST_ASSERT_TRUE(a.setClock);
+  TEST_ASSERT_TRUE(a.clockEpochMs == kMinPlausibleSec * 1000);
+}
+
 void test_rtc_boot_counts_unsynced() {
   ClockPolicy p;
   p.boot(0, true, 1793039400);
@@ -273,6 +289,7 @@ int main() {
   RUN_TEST(test_ntp_beats_gps);
   RUN_TEST(test_gps_after_ntp_stale);
   RUN_TEST(test_gps_implausible_ignored);
+  RUN_TEST(test_gps_plausible_bounds);
   RUN_TEST(test_rtc_boot_counts_unsynced);
   RUN_TEST(test_rtc_write_throttled);
   RUN_TEST(test_gps_power_on_off);

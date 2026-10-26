@@ -12,7 +12,7 @@ namespace rc {
 enum class TimeSource : uint8_t { None, Rtc, Gps, Ntp };
 
 constexpr int64_t kMinPlausibleSec = 1735689600;  // 2025-01-01
-constexpr int64_t kMaxPlausibleSec = 4102444800;  // 2100-01-01
+constexpr int64_t kMaxPlausibleSec = 4102444800;  // 2100-01-01, exclusive
 
 struct ClockInputs {
   bool hasGps = false;

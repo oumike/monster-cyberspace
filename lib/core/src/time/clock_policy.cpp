@@ -11,7 +11,7 @@ constexpr int64_t kStaleMs = 6 * kHourMs;        // sync or position older than 
 constexpr int64_t kSearchLimitMs = 15 * 60000;
 constexpr int64_t kRetryWaitMs = kHourMs;
 
-bool plausibleSec(int64_t sec) { return sec >= kMinPlausibleSec && sec <= kMaxPlausibleSec; }
+bool plausibleSec(int64_t sec) { return sec >= kMinPlausibleSec && sec < kMaxPlausibleSec; }
 
 bool olderThan(int64_t atMs, int64_t nowMs, int64_t ageMs) {
   return atMs < 0 || nowMs - atMs > ageMs;

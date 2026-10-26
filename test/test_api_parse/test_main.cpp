@@ -134,8 +134,9 @@ void test_send_result_and_reply() {
 void test_mentions() {
   std::vector<Mention> m;
   TEST_ASSERT_TRUE(parseMentions(fx::kMentions, m));
-  TEST_ASSERT_EQUAL(2, m.size());
+  TEST_ASSERT_EQUAL(4, m.size());
   TEST_ASSERT_EQUAL_STRING("n1", m[0].id.c_str());
+  TEST_ASSERT_EQUAL_STRING("chat_mention", m[0].type.c_str());
   TEST_ASSERT_EQUAL_STRING("general", m[0].roomSlug.c_str());
   TEST_ASSERT_EQUAL_STRING("General", m[0].roomName.c_str());
   TEST_ASSERT_EQUAL_STRING("tardibyte", m[0].actorUsername.c_str());
@@ -143,6 +144,17 @@ void test_mentions() {
   TEST_ASSERT_EQUAL_STRING("n2", m[1].id.c_str());
   TEST_ASSERT_EQUAL_STRING("", m[1].roomSlug.c_str());
   TEST_ASSERT_EQUAL_STRING("", m[1].actorUsername.c_str());
+  // Feed notifications: replyContent wins over postContent; else the reason.
+  TEST_ASSERT_EQUAL_STRING("reply", m[2].type.c_str());
+  TEST_ASSERT_EQUAL_STRING("p1", m[2].targetId.c_str());
+  TEST_ASSERT_EQUAL_STRING("r1", m[2].replyId.c_str());
+  TEST_ASSERT_EQUAL_STRING("nice", m[2].preview.c_str());
+  TEST_ASSERT_EQUAL_STRING("rain", m[2].actorUsername.c_str());
+  TEST_ASSERT_EQUAL_STRING("post_cooldown", m[3].type.c_str());
+  TEST_ASSERT_EQUAL_STRING("p9", m[3].targetId.c_str());
+  TEST_ASSERT_EQUAL_STRING("", m[3].replyId.c_str());
+  TEST_ASSERT_EQUAL_STRING("held", m[3].preview.c_str());
+  TEST_ASSERT_EQUAL_STRING("system", m[3].actorUsername.c_str());
 }
 
 void test_unread_count() {

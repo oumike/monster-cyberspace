@@ -51,7 +51,12 @@ static const char* kMentions = R"({"data":[
   {"id":"n1","userId":"me","type":"chat_mention","actorId":"u1","actorUsername":"tardibyte",
    "read":false,"createdAt":"2026-06-03T12:00:00.000Z",
    "metadata":{"roomSlug":"general","roomName":"General","messageContent":"hey @oumike"}},
-  {"id":"n2","userId":"me","type":"chat_mention","read":false,"createdAt":"2026-06-03T12:01:00.000Z"}
+  {"id":"n2","userId":"me","type":"chat_mention","read":false,"createdAt":"2026-06-03T12:01:00.000Z"},
+  {"id":"n3","userId":"me","type":"reply","actorId":"u2","actorUsername":"rain","targetId":"p1",
+   "read":false,"createdAt":"2026-06-03T12:02:00.000Z",
+   "metadata":{"replyId":"r1","replyContent":"nice","postContent":"the post"}},
+  {"id":"n4","userId":"me","type":"post_cooldown","actorUsername":"system","targetId":"p9",
+   "reason":"held","read":false,"createdAt":"2026-06-03T12:03:00.000Z"}
 ],"cursor":null})";
 
 static const char* kUnread = R"({"data":{"count":100,"exact":false}})";

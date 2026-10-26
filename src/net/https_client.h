@@ -8,6 +8,7 @@ struct HttpResult {
   int status = 0;
   std::string body;
   bool transportError = false;
+  bool overflow = false;  // the body passed the cap; transportError is set too
 };
 
 // HTTPS to https://api.cyberspace.online over one keep-alive connection.

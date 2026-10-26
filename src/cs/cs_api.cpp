@@ -6,6 +6,7 @@
 #include <ctime>
 
 #include "cs/token.h"
+#include "feed/feed_parse.h"
 #include "store/settings.h"
 
 namespace rc {
@@ -31,6 +32,10 @@ std::string enc(const std::string& s) {
 
 ApiError transport() { return ApiError{0, "NETWORK", "Network error"}; }
 
+ApiError tooLarge() { return ApiError{0, "TOO_LARGE", "Response too large"}; }
+
+ApiError transport(const HttpResult& r) { return r.overflow ? tooLarge() : transport(); }
+
 ApiError badBody(int http) { return ApiError{http, "BAD_RESPONSE", "Unexpected response"}; }
 
 std::string json(const JsonDocument& d) {
@@ -52,7 +57,11 @@ CsApi::CsApi(HttpsClient& h)
       cmailSendL_(makeCmailSendLimiter()),
       startL_(makeStartConversationLimiter()),
       cmailReadL_(makeMarkReadLimiter()),
-      typingL_(makeTypingLimiter()) {}
+      typingL_(makeTypingLimiter()),
+      entryL_(makeEntryLimiter()),
+      replyL_(makeReplyLimiter()),
+      bookmarkL_(makeBookmarkLimiter()),
+      watchL_(makeWatchLimiter()) {}
 
 void CsApi::adopt(const Tokens& t) {
   tokens_ = t;
@@ -88,14 +97,14 @@ ApiError CsApi::call(const char* method, const std::string& path, const std::str
     if (!e.ok()) return e;
   }
   out = http_.request(method, path, body, tokens_.idToken);
-  if (out.transportError) return transport();
+  if (out.transportError) return transport(out);
   if (out.status == 401) {
     // Auth expiry: refresh once and repeat the same call once.
     Tokens t = tokens_;
     ApiError e = refresh(t);
     if (!e.ok()) return e;
     out = http_.request(method, path, body, tokens_.idToken);
-    if (out.transportError) return transport();
+    if (out.transportError) return transport(out);
   }
   return parseError(out.status, out.body);
 }
@@ -322,7 +331,8 @@ ApiError CsApi::mutedUsers(MutedUsers& out) {
 
 ApiError CsApi::mentions(std::vector<Mention>& out) {
   HttpResult r;
-  ApiError e = call("GET", "/v1/notifications?read=false&type=chat_mention&limit=20", "", r);
+  ApiError e = call("GET", "/v1/notifications?read=false&type=chat_mention,reply,thread_reply,post_mention,"
+                     "reply_mention,post_cooldown&limit=20", "", r);
   if (e.ok() && !parseMentions(r.body, out)) return badBody(r.status);
   return e;
 }
@@ -330,6 +340,156 @@ ApiError CsApi::mentions(std::vector<Mention>& out) {
 ApiError CsApi::markNotificationRead(const std::string& id) {
   HttpResult r;
   return call("PATCH", "/v1/notifications/" + enc(id), "", r);
+}
+
+namespace {
+
+std::string pageQuery(int limit, const std::string& cursor) {
+  std::string q = "?limit=" + std::to_string(limit);
+  if (!cursor.empty()) q += "&cursor=" + enc(cursor);
+  return q;
+}
+
+std::string reasonBody(const std::string& reason) {
+  if (reason.empty()) return "";
+  JsonDocument d;
+  d["reason"] = reason;
+  return json(d);
+}
+
+}  // namespace
+
+ApiError CsApi::feed(const std::string& cursor, int limit, std::vector<Entry>& out,
+                     std::string& next) {
+  HttpResult r;
+  ApiError e = call("GET", "/v1/posts" + pageQuery(limit, cursor), "", r);
+  if (e.ok() && !parseFeedPage(r.body, out, next)) return badBody(r.status);
+  return e;
+}
+
+ApiError CsApi::entry(const std::string& id, Entry& out) {
+  HttpResult r;
+  ApiError e = call("GET", "/v1/posts/" + enc(id), "", r);
+  if (e.ok() && !parseEntry(r.body, out)) return badBody(r.status);
+  return e;
+}
+
+ApiError CsApi::replies(const std::string& postId, const std::string& cursor, int limit,
+                        std::vector<Reply>& out, std::string& next) {
+  HttpResult r;
+  ApiError e =
+      call("GET", "/v1/posts/" + enc(postId) + "/replies" + pageQuery(limit, cursor), "", r);
+  if (e.ok() && !parseReplies(r.body, out, next)) return badBody(r.status);
+  return e;
+}
+
+ApiError CsApi::reply(const std::string& id, Reply& out) {
+  HttpResult r;
+  ApiError e = call("GET", "/v1/replies/" + enc(id), "", r);
+  if (e.ok() && !parseReply(r.body, out)) return badBody(r.status);
+  return e;
+}
+
+ApiError CsApi::postEntry(const std::string& body, std::string& postId) {
+  ApiError l = limited(entryL_);
+  if (!l.ok()) return l;
+  HttpResult r;
+  ApiError e = call("POST", "/v1/posts", body, r);
+  // Already posted: a bad body is not a failure the user would resend.
+  if (e.ok()) parseCreatedId(r.body, postId);
+  return e;
+}
+
+ApiError CsApi::postReply(const std::string& body, std::string& replyId) {
+  ApiError l = limited(replyL_);
+  if (!l.ok()) return l;
+  HttpResult r;
+  ApiError e = call("POST", "/v1/replies", body, r);
+  if (e.ok()) parseCreatedId(r.body, replyId);
+  return e;
+}
+
+ApiError CsApi::deleteEntry(const std::string& id) {
+  ApiError l = limited(deleteL_);
+  if (!l.ok()) return l;
+  HttpResult r;
+  return call("DELETE", "/v1/posts/" + enc(id), "", r);
+}
+
+ApiError CsApi::deleteReply(const std::string& id) {
+  ApiError l = limited(deleteL_);
+  if (!l.ok()) return l;
+  HttpResult r;
+  return call("DELETE", "/v1/replies/" + enc(id), "", r);
+}
+
+ApiError CsApi::flagEntry(const std::string& id, const std::string& reason) {
+  ApiError l = limited(flagL_);
+  if (!l.ok()) return l;
+  HttpResult r;
+  return call("POST", "/v1/posts/" + enc(id) + "/flag", reasonBody(reason), r);
+}
+
+ApiError CsApi::flagReply(const std::string& id, const std::string& reason) {
+  ApiError l = limited(flagL_);
+  if (!l.ok()) return l;
+  HttpResult r;
+  return call("POST", "/v1/replies/" + enc(id) + "/flag", reasonBody(reason), r);
+}
+
+ApiError CsApi::watchStatus(const std::string& postId, bool& watching) {
+  HttpResult r;
+  ApiError e = call("GET", "/v1/posts/" + enc(postId) + "/watch", "", r);
+  if (e.ok() && !parseWatching(r.body, watching)) return badBody(r.status);
+  return e;
+}
+
+ApiError CsApi::setWatch(const std::string& postId, bool on) {
+  ApiError l = limited(watchL_);
+  if (!l.ok()) return l;
+  HttpResult r;
+  return call(on ? "POST" : "DELETE", "/v1/posts/" + enc(postId) + "/watch", "", r);
+}
+
+ApiError CsApi::watches(const std::string& cursor, std::vector<std::string>& postIds,
+                        std::string& next, int limit) {
+  HttpResult r;
+  ApiError e = call("GET", "/v1/watches" + pageQuery(limit, cursor), "", r);
+  if (e.ok() && !parseWatches(r.body, postIds, next)) return badBody(r.status);
+  return e;
+}
+
+ApiError CsApi::bookmarks(const std::string& cursor, std::vector<Bookmark>& out,
+                          std::string& next, int limit) {
+  HttpResult r;
+  ApiError e = call("GET", "/v1/bookmarks" + pageQuery(limit, cursor), "", r);
+  if (e.ok() && !parseBookmarks(r.body, out, next)) return badBody(r.status);
+  return e;
+}
+
+ApiError CsApi::addBookmark(const std::string& postId, const std::string& replyId,
+                            std::string& bookmarkId) {
+  ApiError l = limited(bookmarkL_);
+  if (!l.ok()) return l;
+  JsonDocument d;
+  if (replyId.empty()) {
+    d["postId"] = postId;
+    d["type"] = "post";
+  } else {
+    d["replyId"] = replyId;
+    d["type"] = "reply";
+  }
+  HttpResult r;
+  ApiError e = call("POST", "/v1/bookmarks", json(d), r);
+  if (e.ok() && !parseCreatedId(r.body, bookmarkId)) return badBody(r.status);
+  return e;
+}
+
+ApiError CsApi::removeBookmark(const std::string& bookmarkId) {
+  ApiError l = limited(bookmarkL_);
+  if (!l.ok()) return l;
+  HttpResult r;
+  return call("DELETE", "/v1/bookmarks/" + enc(bookmarkId), "", r);
 }
 
 }  // namespace rc

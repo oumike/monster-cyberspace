@@ -144,6 +144,12 @@ bool parseMentions(std::string_view body, std::vector<Mention>& out) {
     m.roomSlug = str(md["roomSlug"]);
     m.roomName = str(md["roomName"]);
     m.messageContent = str(md["messageContent"]);
+    m.type = str(n["type"]);
+    m.targetId = str(n["targetId"]);
+    m.replyId = str(md["replyId"]);
+    m.preview = str(md["replyContent"]);
+    if (m.preview.empty()) m.preview = str(md["postContent"]);
+    if (m.preview.empty()) m.preview = str(n["reason"]);
     out.push_back(std::move(m));
   }
   return true;

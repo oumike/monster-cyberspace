@@ -97,6 +97,7 @@ HttpResult HttpsClient::request(const char* method, const std::string& path,
   esp_http_client_set_user_data(h, nullptr);
   if (err != ESP_OK || sink.overflow) {
     r.transportError = true;
+    r.overflow = sink.overflow;
     r.status = 0;
     Serial.printf("[http] %s %s failed: %s\n", method, path.c_str(),
                   sink.overflow ? "body too large" : esp_err_to_name(err));

@@ -15,6 +15,7 @@
 #include <mutex>
 #include <set>
 
+#include "app/feed_worker.h"
 #include "app/queues.h"
 #include "cs/cs_api.h"
 #include "cs/rtdb.h"
@@ -23,6 +24,7 @@
 #include "net/tls_alloc.h"
 #include "net/wifi_mgr.h"
 #include "store/locked_chat.h"
+#include "store/locked_feed.h"
 #include "web/web_server.h"
 
 namespace rc::networker {
@@ -68,7 +70,7 @@ void finishLogin(const LoginResult& r) {
 
 class Worker {
  public:
-  explicit Worker(const Settings& s) : api_(http_), email_(s.email) {
+  explicit Worker(const Settings& s) : api_(http_), feed_(api_), email_(s.email) {
     if (!s.refreshToken.empty()) api_.setRefreshToken(s.refreshToken);
   }
 
@@ -103,6 +105,7 @@ class Worker {
     bool deadToken = e.http == 401 || (!r.ok() && (r.http == 400 || r.http == 401));
     if (deadToken) {
       closeRoom();
+      feed_.signOut();
       api_.signOut();
       self_.clear();
       ready_ = false;
@@ -442,18 +445,25 @@ class Worker {
   }
 
   void logMemory() {
-    size_t msgs = 0, pres = 0, convs = 0;
+    size_t msgs = 0, pres = 0, convs = 0, feed = 0, replies = 0;
     lockedChat().with([&](ChatState& s) {
       msgs = s.store.messages().size();
       pres = s.presence.size();
       convs = s.conversations.size();
     });
-    Serial.printf("[mem] int %u blk %u min %u psram %u | msgs %u pres %u convs %u seen %u\n",
+    lockedFeed().with([&](FeedState& s) {
+      feed = s.store.feed().size();
+      replies = s.store.replies().size();
+    });
+    Serial.printf(
+        "[mem] int %u blk %u min %u psram %u | msgs %u pres %u convs %u seen %u feed %u "
+        "replies %u\n",
                   unsigned(heap_caps_get_free_size(MALLOC_CAP_INTERNAL)),
                   unsigned(heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL)),
                   unsigned(heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL)),
                   unsigned(heap_caps_get_free_size(MALLOC_CAP_SPIRAM)), unsigned(msgs),
-                  unsigned(pres), unsigned(convs), unsigned(seenMentions_.size()));
+                  unsigned(pres), unsigned(convs), unsigned(seenMentions_.size()), unsigned(feed),
+                  unsigned(replies));
   }
 
   void watch() {
@@ -467,6 +477,11 @@ class Worker {
       return;
     }
     for (auto& m : ms) {
+      if (!m.type.empty() && m.type != "chat_mention") {
+        // The UI decides on the beep with its buzzer setting.
+        feed_.onNotice(m, true);
+        continue;
+      }
       if (!seenMentions_.insert(m.id).second) continue;
       pendingMentions_.emplace(m.roomSlug, m.id);
       post(EvtType::MentionAlert, 0,
@@ -480,7 +495,11 @@ class Worker {
   bool needNet(const Command& c) {
     if (online() && ready_) return true;
     banner(online() ? "Not signed in" : "Offline", false);
-    if (c.type == CmdType::Send) post(EvtType::SendDone, 0, online() ? "Not signed in" : "Offline", false);
+    const char* why = online() ? "Not signed in" : "Offline";
+    if (c.type == CmdType::Send) post(EvtType::SendDone, 0, why, false);
+    if (c.type == CmdType::PostEntry || c.type == CmdType::PostReply)
+      post(EvtType::FeedWriteDone, 0, why, false);
+    if (c.type == CmdType::OpenEntry) post(EvtType::EntryUpdated, 0, "", false);
     return false;
   }
 
@@ -525,8 +544,12 @@ class Worker {
       case CmdType::Login:
         login(c);
         return;
+      case CmdType::CloseFeed:
+        feed_.handle(c);
+        return;
       case CmdType::Logout:
         closeRoom();
+        feed_.signOut();
         api_.signOut();
         self_.clear();
         ready_ = false;
@@ -538,6 +561,10 @@ class Worker {
         break;
     }
     if (!needNet(c)) return;
+    if (FeedWorker::isFeedCommand(c.type)) {
+      feed_.handle(c);
+      return;
+    }
     switch (c.type) {
       case CmdType::Send: {
         std::string id, reply;
@@ -647,6 +674,8 @@ class Worker {
       if (!ready_) return;
     }
 
+    feed_.tick(now, screenOn_);
+
     if (msgLive_.exchange(false)) {
       backoffMs_ = 1000;
       downSince_ = 0;
@@ -678,6 +707,7 @@ class Worker {
 
   HttpsClient http_;
   CsApi api_;
+  FeedWorker feed_;
   SseClient msgSse_, presSse_;
   std::string email_, self_, room_;
   std::map<std::string, std::string> roomIds_;  // slug → id

@@ -6,6 +6,7 @@
 
 #include "cs/api_parse.h"
 #include "cs/rate_limiter.h"
+#include "feed/entry.h"
 #include "net/https_client.h"
 
 namespace rc {
@@ -61,6 +62,30 @@ class CsApi {
   ApiError mentions(std::vector<Mention>&);
   ApiError markNotificationRead(const std::string& id);
 
+  // Feed. List cursors are "" at the end. `limit` is the page size.
+  ApiError feed(const std::string& cursor, int limit, std::vector<Entry>&, std::string& next);
+  ApiError entry(const std::string& id, Entry&);
+  ApiError replies(const std::string& postId, const std::string& cursor, int limit,
+                   std::vector<Reply>&, std::string& next);
+  ApiError reply(const std::string& id, Reply&);
+  // `json` is a body built by feed/compose.
+  ApiError postEntry(const std::string& json, std::string& postId);
+  ApiError postReply(const std::string& json, std::string& replyId);
+  ApiError deleteEntry(const std::string& id);
+  ApiError deleteReply(const std::string& id);
+  ApiError flagEntry(const std::string& id, const std::string& reason);
+  ApiError flagReply(const std::string& id, const std::string& reason);
+  ApiError watchStatus(const std::string& postId, bool& watching);
+  ApiError setWatch(const std::string& postId, bool on);  // POST or DELETE
+  ApiError watches(const std::string& cursor, std::vector<std::string>& postIds, std::string& next,
+                   int limit = 10);
+  ApiError bookmarks(const std::string& cursor, std::vector<Bookmark>&, std::string& next,
+                     int limit = 50);
+  // A reply bookmark when replyId is set, else an entry bookmark.
+  ApiError addBookmark(const std::string& postId, const std::string& replyId,
+                       std::string& bookmarkId);
+  ApiError removeBookmark(const std::string& bookmarkId);
+
   const Tokens& tokens() const { return tokens_; }
   bool signedIn() const { return !tokens_.refreshToken.empty(); }
   // Restores a session from the refresh token saved in NVS.
@@ -80,6 +105,7 @@ class CsApi {
   ApiError refreshErr_{200, "", ""};
   RateLimiter sendL_, presenceL_, deleteL_, flagL_, readL_, resendL_;
   RateLimiter cmailSendL_, startL_, cmailReadL_, typingL_;
+  RateLimiter entryL_, replyL_, bookmarkL_, watchL_;
 };
 
 }  // namespace rc

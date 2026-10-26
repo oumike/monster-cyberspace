@@ -542,14 +542,14 @@
   ```
   The net version forwards to `postCommand` with the same "Busy, try again" banner as `NetChatSource`.
 
-- [ ] **Step 1: Write the failing test.** Extend `kMentions` with:
+- [x] **Step 1: Write the failing test.** Extend `kMentions` with:
   - a `reply` notification: `targetId:"p1"`, `metadata.replyId:"r1"`, `metadata.replyContent:"nice"`;
   - a `post_cooldown` with `reason:"held"` and `actorUsername:"system"`.
 
   Extend `test_mentions` to assert `type`, `targetId`, `replyId`, and `preview` `"nice"`/`"held"`.
-- [ ] **Step 2: Run** `pio test -e native -f test_api_parse`. Expected: FAIL.
-- [ ] **Step 3: Implement** the parse change, then the device files above.
-- [ ] **Step 4: Run** `pio test -e native` (PASS) and `pio run -e m9` (SUCCESS). The new commands fall into the net worker's `default:` until Task 7.
+- [x] **Step 2: Run** `pio test -e native -f test_api_parse`. Expected: FAIL.
+- [x] **Step 3: Implement** the parse change, then the device files above.
+- [x] **Step 4: Run** `pio test -e native` (PASS) and `pio run -e m9` (SUCCESS). The new commands fall into the net worker's `default:` until Task 7.
 
   This task is committed together with Task 7.
 
@@ -599,9 +599,9 @@
 - **`watch()`:** `chat_mention` keeps its current path; the other types go to `feed_.onNotice`.
 - **Memory log:** `logMemory()` appends `feed <n> replies <n>`.
 
-- [ ] **Step 1: Implement** `FeedWorker` and the `net_worker.cpp` wiring.
-- [ ] **Step 2: Run** `pio test -e native` (PASS), then `pio run -e m9` (SUCCESS).
-- [ ] **Step 3: Commit** Tasks 6 and 7 together: `feat(net): Feed API calls and worker`.
+- [x] **Step 1: Implement** `FeedWorker` and the `net_worker.cpp` wiring.
+- [x] **Step 2: Run** `pio test -e native` (PASS), then `pio run -e m9` (SUCCESS).
+- [x] **Step 3: Commit** Tasks 6 and 7 together: `feat(net): Feed API calls and worker`.
 
 ### Task 8: Fake Feed source
 

@@ -55,6 +55,9 @@ bool parseSendResult(std::string_view body, std::string& messageId, std::string&
 
 struct Mention {
   std::string id, roomSlug, roomName, actorUsername, messageContent;
+  // Feed notifications: preview is metadata.replyContent, else postContent,
+  // else the top-level reason.
+  std::string type, targetId, replyId, preview;
 };
 bool parseMentions(std::string_view body, std::vector<Mention>& out);
 

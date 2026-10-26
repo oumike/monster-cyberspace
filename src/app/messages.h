@@ -28,6 +28,25 @@ enum class CmdType {
   StartConversation,     // a = username
   RefreshConversations,
   Typing,                // a = conversation id, n = 1 typing, 0 stopped
+  // Feed.
+  OpenFeed,
+  CloseFeed,
+  FeedMore,
+  FeedRefresh,
+  OpenEntry,             // a = postId, b = notification id or ""
+  MoreReplies,
+  PostEntry,             // a = JSON
+  PostReply,             // a = JSON
+  DeleteEntry,           // a = id
+  DeleteReply,           // a = id
+  FlagEntry,             // a = id, b = reason
+  FlagReply,             // a = id, b = reason
+  Bookmark,              // a = postId, b = replyId ("" for the entry)
+  Unbookmark,            // a = target id (post or reply)
+  Watch,                 // a = postId
+  Unwatch,               // a = postId
+  OpenWatched,           // n = 1 to append the next page
+  OpenBookmarks,         // n = 1 to append the next page
 };
 
 struct Command {
@@ -52,6 +71,14 @@ enum class EvtType {
   ConversationStarted,  // ok: text = conversation id; else text = error
   TypingChanged,
   CmailAlert,           // text = "C-Mail from @name: preview"
+  // Feed.
+  FeedUpdated,
+  EntryUpdated,         // ok=false when the entry is gone or failed to load
+  RepliesLoaded,
+  SideListUpdated,
+  FeedWriteDone,        // ok; text = error message when !ok
+  EntryPosted,          // text = postId
+  FeedAlert,            // text = banner; code = 1 to beep
 };
 
 struct Event {

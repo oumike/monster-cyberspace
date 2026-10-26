@@ -109,7 +109,7 @@ this checklist on the `m9` build with their own account.
 - [x] Send a plain message, a `/me` action, and a bad `/dice` (an error banner, and the text stays in the input line)
 - [x] Scroll back past the first page of history
 - [x] Open the drawer and see yourself in it
-- [ ] Turn the screen off, mention yourself from the website, and hear the buzzer
+- [ ] Turn the screen off, have another account mention you from the website, and hear the buzzer within a minute (mentions are polled every 60 s; mentioning yourself makes no notification)
 - [ ] Delete one of your own messages; the website shows the tombstone
 - [ ] Turn Wi-Fi off and back on: ✕, then ● again, with no lost or duplicated messages
 - [ ] Leave it running more than 70 minutes so it crosses a token refresh; chat keeps working

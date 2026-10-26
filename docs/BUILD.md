@@ -25,7 +25,9 @@ scripts/build-upload-monitor.sh m9    # build, flash, then open the serial monit
 
 | Option | What it does |
 |---|---|
-| `ENV`, `--m9`/`-9`, `--m9-fake`/`-f` | Pick the firmware; with none, a menu lists every firmware env |
+| `--m9`/`-9` | Board flag: pick the board (one flag per board as boards are added) |
+| `--fake`/`-f` | Use the board's fake-API build (`--m9 --fake` → `m9_fake`) |
+| `ENV` | Or name any firmware env directly; with neither, a menu lists every firmware env |
 | `--port`/`-p PORT` | Serial port for upload and monitor (default: auto-detect) |
 | `--erase`/`-E` | Erase the whole flash in the same esptool session as the upload (`upload_erase` target); wipes saved settings |
 | `--fullclean`/`-F` | `pio run -t fullclean` first |

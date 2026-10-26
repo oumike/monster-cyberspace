@@ -19,7 +19,7 @@ They never touch the network.
 ## Fake-API firmware (`m9_fake`)
 
 ```sh
-scripts/build-upload-monitor.sh m9_fake
+scripts/build-upload-monitor.sh --m9 --fake
 ```
 
 The network task is replaced by a scripted source, so no account or Wi-Fi is

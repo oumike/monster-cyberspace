@@ -6,6 +6,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR/.."
 
 ENV_NAME=""
+BOARD=""
+FAKE=false
 PORT=""
 ERASE_FIRST=false
 FULLCLEAN=false
@@ -73,11 +75,13 @@ prompt_for_device() {
 
 show_usage() {
 	cat <<USAGE
-Usage: $0 [ENV] [--m9|-9] [--m9-fake|-f] [--port|-p PORT] [--erase|-E] [--fullclean|-F] [--just-build|-B]
+Usage: $0 [ENV] [--m9|-9] [--fake|-f] [--port|-p PORT] [--erase|-E] [--fullclean|-F] [--just-build|-B]
   ENV               Any firmware environment in platformio.ini (e.g. m9, m9_fake).
+  Board flags (one per supported board):
   --m9, -9          Elecrow ThinkNode M9 (m9)
-  --m9-fake, -f     M9 with the scripted fake API, no account needed (m9_fake)
-                    With no environment given, you'll be prompted to choose one.
+  --fake, -f        Use the board's scripted fake API build, no account needed
+                    (e.g. --m9 --fake builds m9_fake).
+                    With no board or environment given, you'll be prompted.
   --port, -p PORT   Serial port for upload and monitor (default: auto-detect)
   --erase, -E       Erase the whole flash while uploading (wipes saved settings)
   --fullclean, -F   Run PlatformIO fullclean before building
@@ -100,8 +104,8 @@ fi
 
 while [ "$#" -gt 0 ]; do
 	case "$1" in
-		--m9|-9)         select_env m9 ;;
-		--m9-fake|-f)    select_env m9_fake ;;
+		--m9|-9)         BOARD=m9 ;;
+		--fake|-f)       FAKE=true ;;
 		--port|-p)
 			[ "$#" -ge 2 ] || { echo "--port needs a value"; exit 1; }
 			PORT="$2"
@@ -120,6 +124,24 @@ while [ "$#" -gt 0 ]; do
 	esac
 	shift
 done
+
+if [ -n "$BOARD" ]; then
+	[ -z "$ENV_NAME" ] || { echo "Give either a board flag or an environment name, not both."; exit 1; }
+	if [ "$FAKE" = true ]; then
+		select_env "${BOARD}_fake"
+	else
+		select_env "$BOARD"
+	fi
+elif [ "$FAKE" = true ]; then
+	if [ -z "$ENV_NAME" ]; then
+		echo "--fake needs a board flag (e.g. --m9 --fake)."
+		exit 1
+	fi
+	case "$ENV_NAME" in
+		*_fake) ;;
+		*) select_env "${ENV_NAME}_fake" ;;
+	esac
+fi
 
 if [ "$JUST_BUILD" = true ]; then
 	if [ "$ERASE_FIRST" = true ]; then

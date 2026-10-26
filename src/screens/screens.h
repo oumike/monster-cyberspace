@@ -126,6 +126,7 @@ class FeedListScreen : public Screen {
   std::string selId_;      // the selected entry, kept across updates
   bool dirty_ = true;      // rows need a rebuild
   bool loaded_ = false;    // a list arrived since enter
+  bool failed_ = false;    // a side list failed before it ever loaded
   bool more_ = false;      // more pages remain
   bool asked_ = false;     // a page request is outstanding
   int cols_ = 0;

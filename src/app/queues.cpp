@@ -34,9 +34,17 @@ void refuseCommand(const Command& c) {
       postEvent(Event{EvtType::SendDone, busy, 0, false});
       return;
     case CmdType::PostEntry:
+      postEvent(Event{EvtType::EntryPosted, busy, 0, false});
+      return;
     case CmdType::PostReply:
       postEvent(Event{EvtType::FeedWriteDone, busy, 0, false});
       return;
+    case CmdType::StartConversation:
+      postEvent(Event{EvtType::ConversationStarted, busy, 0, false});
+      return;
+    case CmdType::OpenEntry:
+      postEvent(Event{EvtType::EntryUpdated, "", 0, false});
+      break;
     case CmdType::LoadOlder:
       postEvent(Event{EvtType::OlderLoaded, "", 0, true});
       break;
@@ -50,7 +58,7 @@ void refuseCommand(const Command& c) {
       break;
     case CmdType::OpenWatched:
     case CmdType::OpenBookmarks:
-      postEvent(Event{EvtType::SideListUpdated});
+      postEvent(Event{EvtType::SideListUpdated, "", 0, false});
       break;
     default:
       break;

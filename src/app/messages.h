@@ -77,8 +77,8 @@ enum class EvtType {
   EntryUpdated,         // ok=false when the entry is gone or failed to load
   RepliesLoaded,
   SideListUpdated,
-  FeedWriteDone,        // ok; text = error message when !ok
-  EntryPosted,          // text = postId
+  FeedWriteDone,        // a reply's result: ok; text = error message when !ok
+  EntryPosted,          // text = postId; !ok: text = error (the entry wasn't posted)
   FeedAlert,            // text = banner; code = 1 to beep
 };
 

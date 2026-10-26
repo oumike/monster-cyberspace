@@ -36,6 +36,7 @@ void FeedListScreen::leave() {
 }
 
 void FeedListScreen::open() {
+  failed_ = false;
   switch (kind_) {
     case Kind::Feed: feedSource().command(Command{CmdType::OpenFeed}); break;
     case Kind::Watched: feedSource().command(Command{CmdType::OpenWatched}); break;
@@ -145,12 +146,14 @@ void FeedListScreen::onEvent(const Event& e) {
     case EvtType::SideListUpdated:
       if (kind_ == Kind::Feed) break;
       dirty_ = true;
-      loaded_ = true;
       asked_ = false;
+      // A failed load leaves the other list (they share the store) hidden.
+      if (e.ok) loaded_ = true;
+      else if (!loaded_) failed_ = true;
       break;
     case EvtType::EntryPosted:
       // The store doesn't insert a posted entry; the first page brings it.
-      if (kind_ == Kind::Feed) feedSource().command(Command{CmdType::FeedRefresh});
+      if (kind_ == Kind::Feed && e.ok) feedSource().command(Command{CmdType::FeedRefresh});
       break;
     default:
       break;
@@ -210,6 +213,7 @@ void FeedListScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
     // An empty feed with pages to come hasn't loaded yet.
     bool waiting = !loaded_ || loading || (kind_ == Kind::Feed && more_);
     const char* empty = waiting && app().conn == 0 ? "offline"
+                        : !loaded_ && failed_    ? "couldn't load: Ctrl, Refresh"
                         : waiting                ? "loading\u2026"
                         : kind_ == Kind::Feed    ? "no entries yet"
                         : kind_ == Kind::Watched ? "no watched threads"

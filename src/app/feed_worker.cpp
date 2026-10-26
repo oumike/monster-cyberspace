@@ -300,10 +300,9 @@ void FeedWorker::postEntry(const Command& c) {
   std::string postId;
   ApiError e = api_.postEntry(c.a, postId);
   if (!e.ok()) {
-    post(EvtType::FeedWriteDone, errorText(e, false), e.http, false);
+    post(EvtType::EntryPosted, errorText(e, false), e.http, false);
     return;
   }
-  post(EvtType::FeedWriteDone);
   post(EvtType::EntryPosted, postId);
 }
 
@@ -408,7 +407,7 @@ void FeedWorker::openWatched(bool append) {
   if (!e.ok()) {
     setLoading(false);
     fail(e);
-    post(EvtType::SideListUpdated);
+    post(EvtType::SideListUpdated, "", 0, false);
     return;
   }
   resolveSide(postIds, next, append);
@@ -453,7 +452,7 @@ void FeedWorker::openBookmarks(bool append) {
   if (!e.ok()) {
     setLoading(false);
     fail(e);
-    post(EvtType::SideListUpdated);
+    post(EvtType::SideListUpdated, "", 0, false);
     return;
   }
   lockedFeed().with([&](FeedState& s) {
@@ -483,7 +482,7 @@ bool FeedWorker::resolveSide(const std::vector<std::string>& postIds, const std:
     if (!e.ok()) {
       setLoading(false);
       fail(e);
-      post(EvtType::SideListUpdated);
+      post(EvtType::SideListUpdated, "", 0, false);
       return false;
     }
     entries.push_back(std::move(entry));

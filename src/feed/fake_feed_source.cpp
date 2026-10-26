@@ -462,14 +462,14 @@ void FakeFeedSource::postEntry(const Command& c) {
   }
   std::string why = validateDraft(d);
   if (!why.empty()) {
-    post(EvtType::FeedWriteDone, why, 400, false);
+    post(EvtType::EntryPosted, why, 400, false);
     return;
   }
   std::string id;
   {
     std::lock_guard<std::mutex> g(mu_);
     if (limited(entryL_, why)) {
-      post(EvtType::FeedWriteDone, why, 429, false);
+      post(EvtType::EntryPosted, why, 429, false);
       return;
     }
     Entry e;
@@ -487,7 +487,6 @@ void FakeFeedSource::postEntry(const Command& c) {
     id = e.id;
     entries_.insert(entries_.begin(), std::move(e));
   }
-  post(EvtType::FeedWriteDone);
   post(EvtType::EntryPosted, id);
 }
 

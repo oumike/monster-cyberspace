@@ -497,8 +497,10 @@ class Worker {
     banner(online() ? "Not signed in" : "Offline", false);
     const char* why = online() ? "Not signed in" : "Offline";
     if (c.type == CmdType::Send) post(EvtType::SendDone, 0, why, false);
-    if (c.type == CmdType::PostEntry || c.type == CmdType::PostReply)
-      post(EvtType::FeedWriteDone, 0, why, false);
+    if (c.type == CmdType::PostEntry) post(EvtType::EntryPosted, 0, why, false);
+    if (c.type == CmdType::PostReply) post(EvtType::FeedWriteDone, 0, why, false);
+    if (c.type == CmdType::StartConversation) post(EvtType::ConversationStarted, 0, why, false);
+    if (c.type == CmdType::LoadOlder) post(EvtType::OlderLoaded, 0);
     if (c.type == CmdType::OpenEntry) post(EvtType::EntryUpdated, 0, "", false);
     // Settle the screens waiting on a page, or they stay "loading…".
     if (c.type == CmdType::MoreReplies) post(EvtType::RepliesLoaded);
@@ -506,7 +508,7 @@ class Worker {
         c.type == CmdType::FeedRefresh)
       post(EvtType::FeedUpdated);
     if (c.type == CmdType::OpenWatched || c.type == CmdType::OpenBookmarks)
-      post(EvtType::SideListUpdated);
+      post(EvtType::SideListUpdated, 0, "", false);
     return false;
   }
 

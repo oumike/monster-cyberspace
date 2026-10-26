@@ -23,18 +23,12 @@ bool hasText() {
 
 // True when the event settles the post in flight.
 bool settle(const Event& e) {
-  if (!gPosting) return false;
-  if (e.type == EvtType::FeedWriteDone && !e.ok) {
-    gPosting = false;  // the draft stays, to post again by hand
+  if (!gPosting || e.type != EvtType::EntryPosted) return false;
+  gPosting = false;
+  if (e.ok) gDraft = EntryDraft{};
+  else  // the draft stays, to post again by hand
     ui::banner(e.text.empty() ? std::string("Not posted") : e.text, true);
-    return true;
-  }
-  if (e.type == EvtType::EntryPosted) {
-    gPosting = false;
-    gDraft = EntryDraft{};
-    return true;
-  }
-  return false;
+  return true;
 }
 
 }  // namespace
@@ -238,7 +232,7 @@ void ComposerScreen::post() {
 // ---- events ----
 
 void ComposerScreen::onEvent(const Event& e) {
-  if (!settle(e) || e.type != EvtType::EntryPosted) return;
+  if (!settle(e) || !e.ok) return;
   load();  // the cleared draft
   focus_ = kTitle;
   router::go(router::Id::Entry, e.text);

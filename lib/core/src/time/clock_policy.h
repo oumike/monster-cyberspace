@@ -29,6 +29,7 @@ struct ClockActions {
   int64_t rtcEpochSec = 0;
   bool gpsChanged = false;
   bool gpsOn = false;
+  bool gaveUp = false;  // the GPS went off after a 15 min search; retry in 1 h
 };
 
 struct ClockStatus {
@@ -51,7 +52,7 @@ class ClockPolicy {
   ClockStatus status_;
   int64_t lastNtpMs_ = -1;
   int64_t lastGpsSampleMs_ = -1;  // utcAtMs of the latest GPS sample used
-  int64_t lastFixMs_ = -1;        // survives the parser reset at power-off
+  int64_t lastPosMs_ = -1;        // Automatic mode only; survives the parser reset
   int64_t lastRtcWriteMs_ = -1;
   int64_t retryAtMs_ = -1;        // after a failed search, no search before this
 };

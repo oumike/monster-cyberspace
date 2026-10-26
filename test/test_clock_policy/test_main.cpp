@@ -5,6 +5,7 @@
 #include "gps/nmea.h"
 #include "time/clock_policy.h"
 #include "time/time_status.h"
+#include "tz/tz_lookup.h"
 
 using namespace rc;
 
@@ -19,7 +20,7 @@ static GpsState gpsAt(int64_t atMs, int64_t epochMs, bool fix) {
   g.fix = fix;
   g.utcAtMs = atMs;
   g.utcEpochMs = epochMs;
-  if (fix) g.lastFixMs = atMs;
+  if (fix) g.lastFixMs = g.posAtMs = atMs;
   return g;
 }
 
@@ -214,12 +215,14 @@ void test_search_gives_up_and_retries() {
   a = p.tick(base + 15 * M, withGps(nullptr));
   TEST_ASSERT_TRUE(a.gpsChanged);
   TEST_ASSERT_FALSE(a.gpsOn);
+  TEST_ASSERT_TRUE(a.gaveUp);
   a = p.tick(base + 15 * M + 59 * M, withGps(nullptr));
   TEST_ASSERT_FALSE(a.gpsChanged);
   TEST_ASSERT_FALSE(p.status().gpsOn);
   a = p.tick(base + 15 * M + H, withGps(nullptr));
   TEST_ASSERT_TRUE(a.gpsChanged);
   TEST_ASSERT_TRUE(a.gpsOn);
+  TEST_ASSERT_FALSE(a.gaveUp);
   TEST_ASSERT_TRUE(p.status().searchStartMs == base + 15 * M + H);
 }
 
@@ -240,6 +243,7 @@ void test_auto_zone_keeps_gps_until_position() {
   TEST_ASSERT_FALSE(a.setClock);  // NTP synced 10 min ago
   TEST_ASSERT_TRUE(a.gpsChanged);
   TEST_ASSERT_FALSE(a.gpsOn);
+  TEST_ASSERT_FALSE(a.gaveUp);
 
   GpsState empty;  // the parser was reset when the GPS powered off
   ClockInputs in3 = withGps(&empty);
@@ -252,6 +256,64 @@ void test_auto_zone_keeps_gps_until_position() {
   a = p.tick(10 * M + 6 * H + 1, in3);
   TEST_ASSERT_TRUE(a.gpsChanged);
   TEST_ASSERT_TRUE(a.gpsOn);
+}
+
+void test_position_at_search_limit_not_gave_up() {
+  ClockPolicy p;
+  p.boot(0, false, 0);
+  ClockInputs in = ntp(T);
+  in.hasGps = true;
+  in.autoZone = true;
+  p.tick(0, in);
+  GpsState g = gpsAt(15 * M, T + 15 * M, true);
+  ClockInputs in2 = withGps(&g);
+  in2.autoZone = true;
+  ClockActions a = p.tick(15 * M, in2);
+  TEST_ASSERT_TRUE(a.gpsChanged);
+  TEST_ASSERT_FALSE(a.gpsOn);
+  TEST_ASSERT_FALSE(a.gaveUp);  // the position arrived; no retry wait
+  a = p.tick(15 * M + 1000, in2);
+  TEST_ASSERT_FALSE(a.gpsChanged);
+}
+
+void test_auto_zone_fix_without_position() {
+  ClockPolicy p;
+  p.boot(0, false, 0);
+  ClockInputs in = ntp(T);
+  in.hasGps = true;
+  in.autoZone = true;
+  p.tick(0, in);
+  GpsState g = gpsAt(10 * M, T + 10 * M, true);
+  g.posAtMs = -1;  // an 'A' RMC with empty lat/lon
+  ClockInputs in2 = withGps(&g);
+  in2.autoZone = true;
+  ClockActions a = p.tick(10 * M, in2);
+  TEST_ASSERT_FALSE(a.gpsChanged);
+  TEST_ASSERT_TRUE(p.status().gpsOn);
+}
+
+void test_manual_position_not_counted_for_auto() {
+  ClockPolicy p;
+  p.boot(0, false, 0);
+  GpsState g = gpsAt(1000, T, true);  // Manual: the GPS ran for the time only
+  ClockActions a = p.tick(1000, withGps(&g));
+  TEST_ASSERT_TRUE(a.setClock);
+  TEST_ASSERT_FALSE(p.status().gpsOn);
+  GpsState empty;
+  ClockInputs in = withGps(&empty);
+  in.autoZone = true;  // switched to Automatic: no zone position yet
+  a = p.tick(2000, in);
+  TEST_ASSERT_TRUE(a.gpsChanged);
+  TEST_ASSERT_TRUE(a.gpsOn);
+}
+
+void test_zone_status_text() {
+  TEST_ASSERT_EQUAL_STRING("America/New_York (auto)",
+                           zoneStatusText(TzMode::Automatic, "America/New_York", "UTC0").c_str());
+  TEST_ASSERT_EQUAL_STRING("UTC0 (manual)",
+                           zoneStatusText(TzMode::Manual, "America/New_York", "UTC0").c_str());
+  TEST_ASSERT_EQUAL_STRING("UTC0 (auto, no fix yet)",
+                           zoneStatusText(TzMode::Automatic, "", "UTC0").c_str());
 }
 
 void test_status_text() {
@@ -297,6 +359,10 @@ int main() {
   RUN_TEST(test_no_gps_hardware);
   RUN_TEST(test_search_gives_up_and_retries);
   RUN_TEST(test_auto_zone_keeps_gps_until_position);
+  RUN_TEST(test_position_at_search_limit_not_gave_up);
+  RUN_TEST(test_auto_zone_fix_without_position);
+  RUN_TEST(test_manual_position_not_counted_for_auto);
+  RUN_TEST(test_zone_status_text);
   RUN_TEST(test_status_text);
   return UNITY_END();
 }

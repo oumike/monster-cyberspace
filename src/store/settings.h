@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 
+#include "tz/tz_lookup.h"
 #include "ui/grid.h"
 #include "ui/theme.h"
 
@@ -19,6 +20,9 @@ struct Settings {
   bool drawerOpen = false, buzzer = true;
   ThemeId theme = ThemeId::Default;
   std::string lastRoom = "general";
+  // tz is the manual zone. Automatic uses the zone of the last GPS lookup.
+  rc::TzMode tzMode = rc::TzMode::Manual;
+  std::string tzAutoName, tzAutoPosix;
 };
 
 constexpr size_t kMaxWifiNets = 5;
@@ -35,6 +39,9 @@ void saveUiPrefs(const rc::Settings&);
 // Web config only. Networks beyond kMaxWifiNets are dropped.
 void saveWifi(const std::vector<rc::WifiNet>&);
 void saveTz(const std::string& tz);
+void saveTzMode(rc::TzMode mode);
+// The time service calls this only when the looked-up zone changes.
+void saveTzAuto(const std::string& name, const std::string& posix);
 void saveSecurity(const std::string& pagePassword, const std::string& apPassword);
 void saveToken(const std::string& refreshToken);
 void clearToken();

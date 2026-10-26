@@ -94,6 +94,20 @@ void test_rmc_void_not_valid() {
   TEST_ASSERT_EQUAL_INT64(2, p.state().lastFixMs);
 }
 
+void test_rmc_without_position() {
+  NmeaParser p;
+  const std::string noPos = nmea(replace(kRmc, "4042.768,N,07400.360,W", ",,,").c_str());
+  feed(p, noPos, 1);
+  TEST_ASSERT_TRUE(p.state().fix);
+  TEST_ASSERT_EQUAL_INT64(-1, p.state().posAtMs);
+  feed(p, nmea(kRmc), 2);
+  TEST_ASSERT_EQUAL_INT64(2, p.state().posAtMs);
+  // A later fix without a position leaves the old one marked as old.
+  feed(p, noPos, 3);
+  TEST_ASSERT_TRUE(p.state().fix);
+  TEST_ASSERT_EQUAL_INT64(2, p.state().posAtMs);
+}
+
 void test_rmc_empty_date_not_valid() {
   NmeaParser p;
   feed(p, nmea(replace(kRmc, ",261026,", ",,").c_str()), 1);
@@ -161,6 +175,7 @@ int main(int, char**) {
   RUN_TEST(test_gsv_summed_over_talkers);
   RUN_TEST(test_bad_checksum_ignored);
   RUN_TEST(test_rmc_void_not_valid);
+  RUN_TEST(test_rmc_without_position);
   RUN_TEST(test_rmc_empty_date_not_valid);
   RUN_TEST(test_split_across_reads);
   RUN_TEST(test_unknown_and_talkers);

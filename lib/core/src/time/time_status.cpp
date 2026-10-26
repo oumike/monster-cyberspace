@@ -42,4 +42,10 @@ std::string timeStatusText(const ClockStatus& c, int64_t nowMs) {
   return buf;
 }
 
+std::string zoneStatusText(TzMode mode, const std::string& autoName, const std::string& manualTz) {
+  if (mode == TzMode::Manual) return manualTz + " (manual)";
+  if (!autoName.empty()) return autoName + " (auto)";
+  return manualTz + " (auto, no fix yet)";
+}
+
 }  // namespace rc

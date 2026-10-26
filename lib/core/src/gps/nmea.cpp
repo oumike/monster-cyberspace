@@ -161,6 +161,7 @@ void NmeaParser::handleRmc(char** f, int nf, int64_t nowMs) {
       (f[4][0] == 'N' || f[4][0] == 'S') && (f[6][0] == 'E' || f[6][0] == 'W')) {
     state_.lat = f[4][0] == 'S' ? -lat : lat;
     state_.lon = f[6][0] == 'W' ? -lon : lon;
+    state_.posAtMs = nowMs;
   }
 
   int64_t timeMs, days;

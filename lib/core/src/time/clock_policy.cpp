@@ -40,7 +40,7 @@ void ClockPolicy::maybeWriteRtc(int64_t nowMs, int64_t epochMs, ClockActions& a)
 bool ClockPolicy::gpsNeeded(int64_t nowMs, const ClockInputs& in) const {
   if (!in.hasGps) return false;
   if (olderThan(status_.lastSyncMs, nowMs, kStaleMs)) return true;
-  return in.autoZone && olderThan(lastFixMs_, nowMs, kStaleMs);
+  return in.autoZone && olderThan(lastPosMs_, nowMs, kStaleMs);
 }
 
 ClockActions ClockPolicy::tick(int64_t nowMs, const ClockInputs& in) {
@@ -55,7 +55,8 @@ ClockActions ClockPolicy::tick(int64_t nowMs, const ClockInputs& in) {
 
   const GpsState* g = in.gps;
   if (g) {
-    if (g->lastFixMs > lastFixMs_) lastFixMs_ = g->lastFixMs;
+    // Only a position seen in Automatic mode was given to the zone lookup.
+    if (in.autoZone && g->posAtMs > lastPosMs_) lastPosMs_ = g->posAtMs;
     if (g->utcValid && g->utcAtMs > lastGpsSampleMs_) {
       const int64_t epochMs = g->utcEpochMs + (nowMs - g->utcAtMs);
       // An RTC boot leaves lastSyncMs at -1, so GPS may still set the clock.
@@ -83,6 +84,7 @@ ClockActions ClockPolicy::tick(int64_t nowMs, const ClockInputs& in) {
       status_.searchStartMs = -1;
       retryAtMs_ = nowMs + kRetryWaitMs;
       a.gpsChanged = true;
+      a.gaveUp = true;
     }
   } else if (needed && (retryAtMs_ < 0 || nowMs >= retryAtMs_)) {
     status_.gpsOn = true;

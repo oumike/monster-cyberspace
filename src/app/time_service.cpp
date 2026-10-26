@@ -18,14 +18,19 @@
 #include "hal/board.h"
 #include "time/clock_policy.h"
 #include "time/time_status.h"
+#include "tz/tz_data.h"  // the 1.16 MB zone blob: include it nowhere else
 #endif
+
+#include "tz/tz_lookup.h"
 
 namespace rc::timesvc {
 
 namespace {
 
-void applyTz(const std::string& tz) {
-  setenv("TZ", tz.c_str(), 1);
+// The one place the process TZ changes. The time task may call it while the UI
+// task runs localtime(); see the Task 6 report for that residual risk.
+void applyTz(TzMode mode, const std::string& manualTz, const std::string& autoPosix) {
+  setenv("TZ", effectiveTz(mode, manualTz, autoPosix).c_str(), 1);
   tzset();
 }
 
@@ -33,14 +38,14 @@ void applyTz(const std::string& tz) {
 
 #if RC_FAKE_API
 
-void start(const Settings& s) { applyTz(s.tz); }
+void start(const Settings& s) { applyTz(s.tzMode, s.tz, s.tzAutoPosix); }
 
 void restartNtp() {}
 
 void settingsChanged() {
   Settings s;
   settings::load(s);
-  applyTz(s.tz);
+  applyTz(s.tzMode, s.tz, s.tzAutoPosix);
 }
 
 Snapshot snapshot() {
@@ -53,19 +58,23 @@ namespace {
 
 constexpr uint32_t kPollMs = 100;
 constexpr int64_t kTickMs = 1000;
-constexpr int64_t kSearchLimitMs = 15 * 60000;
 constexpr size_t kChunk = 256;
 
 // esp_sntp_setservername keeps the pointer, so the name must outlive SNTP.
 std::string gNtpServer = "pool.ntp.org";
 std::atomic<bool> gNtpSynced{false};
 
-std::mutex gMutex;  // guards gTz and gSnap
-std::string gTz;
+std::mutex gMutex;  // guards the zone fields, gSnap and the TZ change
+std::string gTz;    // the manual zone
+TzMode gTzMode = TzMode::Manual;
+std::string gTzAutoName, gTzAutoPosix;
 Snapshot gSnap;
+std::atomic<bool> gTrackerReset{false};  // settingsChanged() switched to Automatic
 
 ClockPolicy gPolicy;  // the time task's only, after start()
 NmeaParser gParser;
+TzTracker gTracker;
+int64_t gLastPosMs = -1;  // posAtMs of the last position given to the tracker
 
 int64_t monoMs() { return esp_timer_get_time() / 1000; }
 
@@ -90,15 +99,39 @@ void rebuildSnapshot(int64_t nowMs) {
   s.gps = gpsStatusText(board::hasGps(), c, gParser.state(), nowMs);
   s.time = timeStatusText(c, nowMs);
   std::lock_guard<std::mutex> lock(gMutex);
-  s.zone = gTz + " (manual)";
+  s.zone = zoneStatusText(gTzMode, gTzAutoName, gTz);
   gSnap = std::move(s);
 }
 
+bool autoZone() {
+  std::lock_guard<std::mutex> lock(gMutex);
+  return gTzMode == TzMode::Automatic;
+}
+
+// Looks the zone up for a newly parsed position (never a fix without one).
+void trackZone() {
+  if (gTrackerReset.exchange(false)) gTracker.reset();
+  const GpsState& g = gParser.state();
+  if (!g.fix || g.posAtMs < 0 || g.posAtMs == gLastPosMs) return;
+  gLastPosMs = g.posAtMs;
+  TzZone z;
+  if (!gTracker.update(kTzData, kTzDataSize, g.lat, g.lon, z)) return;
+  {
+    std::lock_guard<std::mutex> lock(gMutex);
+    if (gTzMode != TzMode::Automatic || z.name == gTzAutoName) return;
+    gTzAutoName = z.name;
+    gTzAutoPosix = z.posix;
+    applyTz(gTzMode, gTz, gTzAutoPosix);
+  }
+  settings::saveTzAuto(z.name, z.posix);
+  Serial.printf("[tz] zone %s\n", z.name.c_str());
+}
+
 void tickPolicy(int64_t nowMs, bool& hadFix) {
-  const ClockStatus before = gPolicy.status();
+  const bool zoneAuto = autoZone();
   ClockInputs in;
   in.hasGps = board::hasGps();
-  in.autoZone = false;  // zone modes arrive with Task 6
+  in.autoZone = zoneAuto;
   in.ntpSynced = gNtpSynced.exchange(false);
   in.systemEpochMs = systemEpochMs();
   in.gps = &gParser.state();
@@ -115,13 +148,7 @@ void tickPolicy(int64_t nowMs, bool& hadFix) {
     if (a.gpsOn) {
       Serial.println("[gps] on");
     } else {
-      gParser.reset();
-      hadFix = false;
-      // The policy gives up a search after 15 min; a sync this tick means
-      // the GPS simply is no longer needed.
-      const bool gaveUp = before.gpsOn && nowMs - before.searchStartMs >= kSearchLimitMs &&
-                          !a.setClock && !in.ntpSynced;
-      Serial.println(gaveUp ? "[gps] off: no fix in 15 min, retry in 1 h" : "[gps] off");
+      Serial.println(a.gaveUp ? "[gps] off: no fix in 15 min, retry in 1 h" : "[gps] off");
     }
   }
 
@@ -129,6 +156,11 @@ void tickPolicy(int64_t nowMs, bool& hadFix) {
   if (g.fix && !hadFix)
     Serial.printf("[gps] fix, %d of %d satellites\n", g.satsUsed, g.satsInView);
   hadFix = g.fix;
+  if (zoneAuto) trackZone();
+  if (a.gpsChanged && !a.gpsOn) {
+    gParser.reset();
+    hadFix = false;
+  }
 }
 
 void taskMain(void*) {
@@ -151,10 +183,13 @@ void taskMain(void*) {
 }  // namespace
 
 void start(const Settings& s) {
-  applyTz(s.tz);
   {
     std::lock_guard<std::mutex> lock(gMutex);
     gTz = s.tz;
+    gTzMode = s.tzMode;
+    gTzAutoName = s.tzAutoName;
+    gTzAutoPosix = s.tzAutoPosix;
+    applyTz(gTzMode, gTz, gTzAutoPosix);
   }
 
   int64_t rtcSec = 0;
@@ -184,9 +219,13 @@ void restartNtp() {
 void settingsChanged() {
   Settings s;
   settings::load(s);
-  applyTz(s.tz);
   std::lock_guard<std::mutex> lock(gMutex);
+  if (s.tzMode == TzMode::Automatic && gTzMode != TzMode::Automatic) gTrackerReset = true;
   gTz = s.tz;
+  gTzMode = s.tzMode;
+  gTzAutoName = s.tzAutoName;
+  gTzAutoPosix = s.tzAutoPosix;
+  applyTz(gTzMode, gTz, gTzAutoPosix);
 }
 
 Snapshot snapshot() {

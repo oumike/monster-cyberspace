@@ -78,6 +78,59 @@ void test_grid_dims() {
   TEST_ASSERT_EQUAL(12, cellSize(TextSize::Compact).h);
 }
 
+void test_big_cells() {
+  TEST_ASSERT_EQUAL(8, bigCellSize(TextSize::Compact).w);
+  TEST_ASSERT_EQUAL(14, bigCellSize(TextSize::Compact).h);
+  TEST_ASSERT_EQUAL(10, bigCellSize(TextSize::Comfortable).w);
+  TEST_ASSERT_EQUAL(18, bigCellSize(TextSize::Comfortable).h);
+  TEST_ASSERT_EQUAL(40, bigCols(320, TextSize::Compact));
+  TEST_ASSERT_EQUAL(32, bigCols(320, TextSize::Comfortable));
+}
+
+void test_grid_row_kinds() {
+  Grid g(10, 4);
+  TEST_ASSERT_TRUE(g.rowKind(1) == RowKind::Normal);
+  g.setRowKind(1, RowKind::Big);
+  g.setRowKind(2, RowKind::Skip);
+  g.setRowKind(9, RowKind::Big);  // out of range: ignored
+  TEST_ASSERT_TRUE(g.rowKind(1) == RowKind::Big);
+  TEST_ASSERT_TRUE(g.rowKind(9) == RowKind::Normal);
+  // Rows stack by height; the last row stays at the bottom.
+  std::vector<RowSpan> s = rowSpans(g, 12, 14);
+  TEST_ASSERT_EQUAL(4, int(s.size()));
+  TEST_ASSERT_EQUAL(0, s[0].y);
+  TEST_ASSERT_EQUAL(12, s[0].h);
+  TEST_ASSERT_EQUAL(12, s[1].y);
+  TEST_ASSERT_EQUAL(14, s[1].h);
+  TEST_ASSERT_EQUAL(0, s[2].h);
+  TEST_ASSERT_EQUAL(36, s[3].y);
+  TEST_ASSERT_EQUAL(12, s[3].h);
+  g.fill(0);
+  TEST_ASSERT_TRUE(g.rowKind(1) == RowKind::Normal);
+  TEST_ASSERT_TRUE(g.rowKind(2) == RowKind::Normal);
+}
+
+void test_row_spans_cut_before_last_row() {
+  Grid g(5, 3);
+  g.setRowKind(0, RowKind::Big);
+  g.setRowKind(1, RowKind::Big);
+  std::vector<RowSpan> s = rowSpans(g, 12, 14);
+  TEST_ASSERT_EQUAL(14, s[0].h);
+  TEST_ASSERT_EQUAL(14, s[1].y);
+  TEST_ASSERT_EQUAL(10, s[1].h);  // cut where the last row starts
+  TEST_ASSERT_EQUAL(24, s[2].y);
+}
+
+void test_grid_add_edges() {
+  Grid g(4, 2);
+  g.put(1, 0, U'a', 1, 2);
+  g.addEdges(1, 0, kEdgeTop | kEdgeRight, 7);
+  g.addEdges(1, 0, kEdgeLeft, 7);
+  g.addEdges(9, 9, kEdgeTop, 7);  // out of range: ignored
+  TEST_ASSERT_EQUAL(kEdgeTop | kEdgeRight | kEdgeLeft, g.at(1, 0).edges);
+  TEST_ASSERT_EQUAL_HEX16(7, g.at(1, 0).edgeColor);
+}
+
 void test_grid_dirty() {
   Grid g(10, 3);
   g.clearDirty();
@@ -379,6 +432,12 @@ void test_feed_row() {
   TEST_ASSERT_TRUE(r.line1.size() <= 20);
   TEST_ASSERT_TRUE(r.line2.size() <= 20);
 
+  // The header line can be cut narrower, for its larger font.
+  e = feedEntry();
+  r = layoutFeedRow(e, true, kTs, 40, t, 10);
+  TEST_ASSERT_TRUE(r.line1.size() <= 10);
+  TEST_ASSERT_EQUAL_STRING("Hello world", u32ToUtf8(r.line2).c_str());
+
   e.deleted = true;
   r = layoutFeedRow(e, false, kTs, 40, t);
   TEST_ASSERT_TRUE(r.line2 == U"[deleted]");
@@ -545,6 +604,10 @@ void test_splash_drops_art_when_too_small() {
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_grid_dims);
+  RUN_TEST(test_big_cells);
+  RUN_TEST(test_grid_row_kinds);
+  RUN_TEST(test_row_spans_cut_before_last_row);
+  RUN_TEST(test_grid_add_edges);
   RUN_TEST(test_grid_dirty);
   RUN_TEST(test_grid_redraw_same_frame_not_dirty);
   RUN_TEST(test_time);

@@ -4,7 +4,8 @@
     python3 -I scripts/bdf2cells.py ter-u12n.bdf cell6x12 > src/ui/fonts/cell6x12.h
 
 Emits 0x20-0x7E, 0xA0-0xFF and every code point in lib/core/src/ui/glyph_set.h,
-each padded to the font bounding box, one byte per row, MSB first. Aliased
+each padded to the font bounding box, one byte per row (two when wider than
+8 px), MSB first. Aliased
 code points (kGlyphAliases) reuse their stand-in's bitmap. Terminus is under
 the SIL OFL, whose Reserved Font Name clause is why the output is named
 cell6x12/cell8x16, not Terminus.
@@ -55,7 +56,8 @@ def read_bdf(path):
 def cell_bitmap(g, fbb):
     fw, fh, fx, fy = fbb
     bw, bh, bx, by = g["bbx"]
-    out = [0] * fh
+    rb = (fw + 7) // 8
+    out = [0] * (fh * rb)
     top = (fh + fy) - (by + bh)  # rows from the cell top
     for y, r in enumerate(g["rows"]):
         bits = int(r, 16)
@@ -64,7 +66,7 @@ def cell_bitmap(g, fbb):
             if (bits >> (nbits - 1 - x)) & 1:
                 cx, cy = x + bx - fx, top + y
                 if 0 <= cx < fw and 0 <= cy < fh:
-                    out[cy] |= 0x80 >> cx
+                    out[cy * rb + cx // 8] |= 0x80 >> (cx % 8)
     return out
 
 
@@ -72,8 +74,8 @@ def main():
     path, name = sys.argv[1], sys.argv[2]
     fbb, glyphs = read_bdf(path)
     fw, fh = fbb[0], fbb[1]
-    if fw > 8:
-        sys.exit("cells wider than 8 px are not supported")
+    if fw > 16:
+        sys.exit("cells wider than 16 px are not supported")
     extra, aliases = glyph_set()
     wanted = sorted(set(range(0x20, 0x7F)) | set(range(0xA0, 0x100)) | set(extra))
     table = []

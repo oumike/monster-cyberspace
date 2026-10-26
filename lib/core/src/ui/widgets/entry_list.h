@@ -20,12 +20,17 @@ class EntryList {
   void setSelected(int i);  // clamps
   size_t size() const { return rows_.size(); }
   bool atEnd() const;  // the last row is selected
+  // Draws each entry's first line as a RowKind::Big row cut to headCols, and
+  // fits as many entries as rowH and bigH pixel rows allow; rows left over
+  // are skipped. bigH 0 (the default) draws two Normal rows an entry.
+  void setBigHeads(int rowH, int bigH, int headCols);
   // Draws rows [top, bottom) across the full grid width.
   void render(Grid& g, int top, int bottom, const Theme& t) const;
 
  private:
   std::vector<FeedRow> rows_;
   int sel_ = 0;
+  int rowH_ = 0, bigH_ = 0, headCols_ = 0;
 };
 
 }  // namespace rc

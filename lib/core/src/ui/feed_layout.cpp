@@ -64,7 +64,8 @@ std::string relativeAge(int64_t createdMs, int64_t nowMs) {
   return buf;
 }
 
-FeedRow layoutFeedRow(const Entry& e, bool bookmarked, int64_t nowMs, int cols, const Theme& t) {
+FeedRow layoutFeedRow(const Entry& e, bool bookmarked, int64_t nowMs, int cols, const Theme& t,
+                      int headCols) {
   FeedRow r;
   r.line1 = utf8ToU32(e.author) + kSep + utf8ToU32(relativeAge(e.createdMs, nowMs)) + kSep +
             U"\u21a9" + utf8ToU32(std::to_string(e.replies));
@@ -89,7 +90,7 @@ FeedRow layoutFeedRow(const Entry& e, bool bookmarked, int64_t nowMs, int cols, 
       start = nl + 1;
     }
   }
-  r.line1 = cut(r.line1, cols);
+  r.line1 = cut(r.line1, headCols < 0 ? cols : headCols);
   r.line2 = cut(r.line2, cols);
   r.fg1 = nickColor(t, e.author, false);
   r.fg2 = t.dim;

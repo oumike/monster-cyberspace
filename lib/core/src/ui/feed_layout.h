@@ -22,8 +22,10 @@ struct FeedRow {
 
 // line1: "nick · 3h · ↩5" (+ " ★" when bookmarked); line2 dim: the title, else the
 // first non-empty line of markdownToText(body); with a cw: "CW: <cw>"; nsfw only:
-// "CW: NSFW"; deleted: "[deleted]". Both lines are cut to cols.
-FeedRow layoutFeedRow(const Entry& e, bool bookmarked, int64_t nowMs, int cols, const Theme& t);
+// "CW: NSFW"; deleted: "[deleted]". line2 is cut to cols, line1 to headCols
+// (cols when negative), since it may be drawn in a larger font.
+FeedRow layoutFeedRow(const Entry& e, bool bookmarked, int64_t nowMs, int cols, const Theme& t,
+                      int headCols = -1);
 
 struct EntryLayoutOptions {
   int cols = 53;

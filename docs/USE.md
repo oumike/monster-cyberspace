@@ -99,7 +99,9 @@ Feed alerts; with one waiting, **Feed** opens its entry instead of the list.
 **The list:**
 
 - Each entry takes two lines: `nick · 3h · ↩5` (replies), plus `★` if you
-  bookmarked it, then the title or the first line of the body, dimmed. An
+  bookmarked it, one font size larger, then the title or the first line of
+  the body, dimmed. While the command palette is open both lines are the
+  same size. An
   entry with a content warning or the NSFW flag shows `CW: …` instead.
 - Up/Down select. Down on the last entry loads the next page; once every page
   is loaded it wraps to the top, and Up on the first wraps to the last.

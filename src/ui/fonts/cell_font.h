@@ -8,8 +8,8 @@
 
 namespace rc {
 
-// Code points are sorted ascending. Each glyph is h bytes, one per row
-// (w <= 8), MSB = leftmost pixel.
+// Code points are sorted ascending. Each glyph is h rows of rowBytes(f)
+// bytes (one for w <= 8, two for w <= 16), MSB = leftmost pixel.
 struct CellFont {
   uint8_t w, h;
   uint16_t count;
@@ -17,12 +17,19 @@ struct CellFont {
   const uint8_t* bitmaps;
 };
 
+inline int rowBytes(const CellFont& f) { return (f.w + 7) / 8; }
+
+// Whether pixel (x, y) of glyph g is inked.
+inline bool glyphPixel(const CellFont& f, const uint8_t* g, int x, int y) {
+  return (g[y * rowBytes(f) + x / 8] & (0x80 >> (x % 8))) != 0;
+}
+
 inline const uint8_t* findGlyph(const CellFont& f, char32_t cp) {
   int lo = 0, hi = static_cast<int>(f.count) - 1;
   while (lo <= hi) {
     int mid = (lo + hi) / 2;
     uint32_t c = f.codepoints[mid];
-    if (c == cp) return f.bitmaps + static_cast<size_t>(mid) * f.h;
+    if (c == cp) return f.bitmaps + static_cast<size_t>(mid) * f.h * rowBytes(f);
     if (c < cp) lo = mid + 1;
     else hi = mid - 1;
   }

@@ -21,6 +21,10 @@ struct Cell {
   bool operator!=(const Cell& o) const { return !(*this == o); }
 };
 
+// How tall a row is drawn: Normal in the text size's font, Big in the next
+// font up (fewer columns fit), Skip not at all.
+enum class RowKind : uint8_t { Normal, Big, Skip };
+
 // A screen of character cells with per-row dirty tracking. A row is dirty
 // when its cells differ from what they were at the last clearDirty() (the
 // last frame drawn), so redrawing a screen from scratch each frame only
@@ -30,6 +34,7 @@ class Grid {
   Grid(int cols, int rows);
   int cols() const { return cols_; }
   int rows() const { return rows_; }
+  // Clears every cell to bg and every row to RowKind::Normal.
   void fill(uint16_t bg);
   void fillRow(int row, uint16_t bg);
   void put(int col, int row, char32_t cp, uint16_t fg, uint16_t bg);
@@ -38,6 +43,10 @@ class Grid {
   // Draws a box on the edges of cells [c0..c1] x [r0..r1] (inclusive). Call it
   // after writing the cells: put() clears a cell's edges.
   void outline(int c0, int r0, int c1, int r1, uint16_t color);
+  // ORs edges into one cell's edges, in color.
+  void addEdges(int col, int row, uint8_t edges, uint16_t color);
+  void setRowKind(int row, RowKind k);
+  RowKind rowKind(int row) const;
   const Cell& at(int col, int row) const;
   bool rowDirty(int row) const;
   void clearDirty();
@@ -48,6 +57,7 @@ class Grid {
   int cols_ = 0, rows_ = 0;
   std::vector<Cell> cells_, drawn_;
   std::vector<bool> forced_;  // rows dirty regardless of content (after resize)
+  std::vector<RowKind> kinds_;
 };
 
 enum class TextSize { Comfortable, Compact };
@@ -56,5 +66,17 @@ struct CellSize {
 };
 CellSize cellSize(TextSize s);
 void gridDims(int panelW, int panelH, TextSize s, int& cols, int& rows);
+// The font one step up from s, for RowKind::Big rows, and how many of its
+// cells fit across the panel.
+CellSize bigCellSize(TextSize s);
+int bigCols(int panelW, TextSize s);
+
+// Where each row is drawn, in pixels. Rows stack from the top by kind
+// (Normal rowH, Big bigH, Skip 0); the last row stays at (rows-1)*rowH, so
+// the hint keeps its place, and a row reaching past it is cut short.
+struct RowSpan {
+  int y, h;
+};
+std::vector<RowSpan> rowSpans(const Grid& g, int rowH, int bigH);
 
 }  // namespace rc

@@ -3,6 +3,7 @@
 #include "app/app_state.h"
 #include "app/ui_task.h"
 #include "feed/feed_source.h"
+#include "hal/board.h"
 #include "screens/draw.h"
 #include "screens/screens.h"
 #include "store/locked_feed.h"
@@ -17,6 +18,9 @@ constexpr int64_t kAgeRefreshMs = 30000;  // re-lay rows so "3m" keeps up
 enum PaletteItem { kNew, kRefresh, kWatched, kBookmarks, kTextSize };
 
 bool compact() { return app().cfg.textSize == TextSize::Compact; }
+
+// Columns of an entry's first line, which is drawn one font size up.
+int headCols() { return bigCols(board::panelWidth(), app().cfg.textSize); }
 
 }  // namespace
 
@@ -183,7 +187,7 @@ void FeedListScreen::rebuild(int cols, const Theme& t) {
   ids_.clear();
   replyIds_ = std::move(replyIds);
   for (size_t i = 0; i < entries.size(); ++i) {
-    rows.push_back(layoutFeedRow(entries[i], marked[i], now, cols, t));
+    rows.push_back(layoutFeedRow(entries[i], marked[i], now, cols, t, headCols()));
     ids_.push_back(entries[i].id);
     if (side && sel < 0 && entries[i].id == selId_) sel = int(i);
   }
@@ -208,6 +212,11 @@ void FeedListScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
                                                    : U"Bookmarks";
   drawStatus(g, t, title, -1);
   int bottom = g.rows() - 1;  // the last row holds the hint
+  // The palette is drawn over the list in plain rows, so the list drops its
+  // larger first lines while it's open.
+  TextSize ts = app().cfg.textSize;
+  if (palette_) list_.setBigHeads(0, 0, 0);
+  else list_.setBigHeads(cellSize(ts).h, bigCellSize(ts).h, headCols());
   list_.render(g, 1, bottom, t);
   if (list_.size() == 0) {
     // An empty feed with pages to come hasn't loaded yet.

@@ -12,10 +12,27 @@ void Grid::resize(int cols, int rows) {
   cells_.assign(static_cast<size_t>(cols_) * rows_, Cell{});
   drawn_ = cells_;
   forced_.assign(rows_, true);
+  kinds_.assign(rows_, RowKind::Normal);
 }
 
 void Grid::fill(uint16_t bg) {
   for (int r = 0; r < rows_; ++r) fillRow(r, bg);
+  std::fill(kinds_.begin(), kinds_.end(), RowKind::Normal);
+}
+
+void Grid::setRowKind(int row, RowKind k) {
+  if (row >= 0 && row < rows_) kinds_[row] = k;
+}
+
+RowKind Grid::rowKind(int row) const {
+  return row >= 0 && row < rows_ ? kinds_[row] : RowKind::Normal;
+}
+
+void Grid::addEdges(int col, int row, uint8_t edges, uint16_t color) {
+  if (col < 0 || row < 0 || col >= cols_ || row >= rows_) return;
+  Cell& cell = cells_[static_cast<size_t>(row) * cols_ + col];
+  cell.edges |= edges;
+  cell.edgeColor = color;
 }
 
 void Grid::fillRow(int row, uint16_t bg) {
@@ -81,6 +98,29 @@ void gridDims(int panelW, int panelH, TextSize s, int& cols, int& rows) {
   CellSize c = cellSize(s);
   cols = panelW / c.w;
   rows = panelH / c.h;
+}
+
+CellSize bigCellSize(TextSize s) {
+  return s == TextSize::Compact ? CellSize{8, 14} : CellSize{10, 18};
+}
+
+int bigCols(int panelW, TextSize s) { return panelW / bigCellSize(s).w; }
+
+std::vector<RowSpan> rowSpans(const Grid& g, int rowH, int bigH) {
+  const int n = g.rows();
+  std::vector<RowSpan> out(n, RowSpan{0, 0});
+  if (n == 0) return out;
+  const int lastY = (n - 1) * rowH;
+  int y = 0;
+  for (int r = 0; r < n - 1; ++r) {
+    RowKind k = g.rowKind(r);
+    int h = k == RowKind::Skip ? 0 : k == RowKind::Big ? bigH : rowH;
+    h = std::max(0, std::min(h, lastY - y));
+    out[r] = RowSpan{y, h};
+    y += h;
+  }
+  out[n - 1] = RowSpan{lastY, rowH};
+  return out;
 }
 
 }  // namespace rc

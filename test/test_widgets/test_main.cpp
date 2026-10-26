@@ -385,6 +385,41 @@ void test_entry_list_scrolls() {
   TEST_ASSERT_EQUAL(5, el.selected());
 }
 
+void test_entry_list_big_heads() {
+  EntryList el;
+  el.setRows(feedRows(12));
+  el.setBigHeads(12, 14, 8);  // 12 px rows, 14 px heads cut to 8 columns
+  el.setSelected(1);
+  Grid g(10, 20);
+  el.render(g, 1, 19, T());  // 18 rows = 216 px; 26 px an entry = 8 entries
+  TEST_ASSERT_TRUE(g.rowKind(1) == RowKind::Big);
+  TEST_ASSERT_TRUE(g.rowKind(2) == RowKind::Normal);
+  TEST_ASSERT_TRUE(g.rowKind(15) == RowKind::Big);
+  TEST_ASSERT_TRUE(g.rowKind(16) == RowKind::Normal);
+  TEST_ASSERT_TRUE(g.rowKind(17) == RowKind::Skip);
+  TEST_ASSERT_TRUE(g.rowKind(18) == RowKind::Skip);
+  TEST_ASSERT_TRUE(g.rowKind(19) == RowKind::Normal);
+  TEST_ASSERT_EQUAL_STRING("nick1", rowText(g, 3, 0, 5).c_str());
+  TEST_ASSERT_EQUAL_STRING("title1", rowText(g, 4, 0, 6).c_str());
+  // The head's outline ends at its last column; the text row's at the grid's.
+  TEST_ASSERT_EQUAL(kEdgeTop | kEdgeLeft, g.at(0, 3).edges);
+  TEST_ASSERT_EQUAL(kEdgeTop | kEdgeRight, g.at(7, 3).edges);
+  TEST_ASSERT_EQUAL(0, g.at(8, 3).edges);
+  TEST_ASSERT_EQUAL(kEdgeBottom | kEdgeLeft, g.at(0, 4).edges);
+  TEST_ASSERT_EQUAL(kEdgeBottom | kEdgeRight, g.at(9, 4).edges);
+  // Heads are cut to their own width.
+  el.setRows({{U"abcdefghijk", U"x", 1, 2}});
+  g.fill(0);
+  el.render(g, 1, 19, T());
+  TEST_ASSERT_EQUAL_STRING("abcdefgh", rowText(g, 1, 0, 8).c_str());
+  TEST_ASSERT_TRUE(g.at(8, 1).cp == U' ');
+  // Scrolling keeps the selection in the 8 visible entries.
+  el.setRows(feedRows(12));
+  el.setSelected(11);
+  el.render(g, 1, 19, T());
+  TEST_ASSERT_EQUAL_STRING("nick4", rowText(g, 1, 0, 5).c_str());
+}
+
 void test_entry_list_wraps() {
   EntryList el;
   el.up();
@@ -487,6 +522,7 @@ int main() {
   RUN_TEST(test_qr_small_url);
   RUN_TEST(test_entry_list_outline);
   RUN_TEST(test_entry_list_scrolls);
+  RUN_TEST(test_entry_list_big_heads);
   RUN_TEST(test_entry_list_wraps);
   RUN_TEST(test_text_area_newlines_and_cap);
   RUN_TEST(test_text_area_up_down);

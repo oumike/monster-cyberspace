@@ -40,7 +40,8 @@ features come later.
 pio test -e native          # host unit tests (lib/core)
 pio run -e m9               # firmware
 pio run -e m9_fake          # firmware with the scripted fake API (no account needed)
-scripts/build-upload-monitor.sh m9   # flash + serial monitor (115200)
+scripts/build-upload-monitor.sh m9   # flash + serial monitor (115200); --help for options
+scripts/build-upload-monitor.sh -B   # build every firmware env, no device needed
 ```
 
 ## Layout

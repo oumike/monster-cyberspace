@@ -21,5 +21,15 @@ pio run -e m9                         # build
 scripts/build-upload-monitor.sh m9    # build, flash, then open the serial monitor
 ```
 
+`scripts/build-upload-monitor.sh` options (`--help` lists them):
+
+| Option | What it does |
+|---|---|
+| `ENV`, `--m9`/`-9`, `--m9-fake`/`-f` | Pick the firmware; with none, a menu lists every firmware env |
+| `--port`/`-p PORT` | Serial port for upload and monitor (default: auto-detect) |
+| `--erase`/`-E` | Erase the whole flash in the same esptool session as the upload (`upload_erase` target); wipes saved settings |
+| `--fullclean`/`-F` | `pio run -t fullclean` first |
+| `--just-build`/`-B` | Compile only, every firmware env or the one named; prints a pass/fail summary |
+
 If a first build fails while installing a tool package, run it again. A
 one-off PlatformIO install error has been seen on the first run.

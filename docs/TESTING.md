@@ -23,7 +23,8 @@ scripts/build-upload-monitor.sh m9_fake
 ```
 
 The network task is replaced by a scripted source, so no account or Wi-Fi is
-needed. The web server does not run in this build.
+needed. Wi-Fi, the setup AP and the web server do not run in this build; flash
+`m9` for the web config checks.
 
 The fake source provides:
 

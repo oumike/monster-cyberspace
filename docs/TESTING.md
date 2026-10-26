@@ -99,6 +99,22 @@ These were built without flashing and still need a run on the device.
 - [ ] Factory reset… → Erase everything → setup mode with everything erased
 - [ ] With the saved network switched off for 5 minutes, the setup AP comes up; when the network returns (nobody joined) it goes away
 
+**Open hardware checks (Wio Tracker L2, `wio_l2_fake` then `wio_l2`):**
+
+Hardware bring-up only; the touch UI is still being designed. Until it lands,
+BOOT tap = Down, BOOT hold (0.7 s) = Back, Wake tap = Select, Wake hold (1 s)
+= screen off / wake.
+
+- [ ] Boots: the serial log shows `[boot] … on WioL2`, `[wio-io] ready`, and `[touch] GT911 … at 0x5D`
+- [ ] Splash shows `· WioL2`
+- [ ] Display: landscape, right way up, nothing cut off at the edges; colours right (red is red, not blue; no inverted black)
+- [ ] Backlight comes on at boot, and goes off and back on with Wake hold
+- [ ] Battery %: Settings and the web Status page show a sensible value; it's `-1`/blank with no cell
+- [ ] Beep: a mention or C-Mail alert in `wio_l2_fake` plays a tone with the buzzer on, with no click between sounds
+- [ ] Buttons: BOOT tap moves down, BOOT hold goes back, Wake tap opens, Wake hold turns the screen off and back on
+- [ ] Touch log: tapping the four corners logs `[touch] down x,y` near (0,0), (319,0), (0,239), (319,239) for top-left, top-right, bottom-left, bottom-right; lifting logs `[touch] up`
+- [ ] Wi-Fi setup (`wio_l2`, nothing saved): the AP is named `Rhino-Cyberspace-WioL2-Setup` and `http://192.168.4.1` loads
+
 **API assumptions to confirm (watch the serial log during the live checklist):**
 
 - [ ] `GET /v1/users/me` shape: Home shows the right username and verified state

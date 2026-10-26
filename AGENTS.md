@@ -40,16 +40,23 @@ features come later.
 pio test -e native          # host unit tests (lib/core)
 pio run -e m9               # firmware
 pio run -e m9_fake          # firmware with the scripted fake API (no account needed)
-scripts/build-upload-monitor.sh m9   # flash + serial monitor (115200); --help for options
+pio run -e wio_l2           # Seeed Wio Tracker L2 firmware (wio_l2_fake: with the fake API)
+scripts/build-upload-monitor.sh m9   # flash + serial monitor (115200); -w for the Wio L2; --help for options
 scripts/build-upload-monitor.sh -B   # build every firmware env, no device needed
 ```
 
 ## Layout
 
 `lib/core/` holds portable, Arduino-free logic with native tests in `test/`.
-`src/` holds the M9 HAL, networking, tasks, screens, and the web server. Hardware
-references live in the sibling projects `../camillia/camillia-mt/src/hal/hw_m9.h`
-and `../rhino-moshi/firmware/`.
+`src/` holds networking, tasks, screens, and the web server; each board's HAL
+sits behind `src/hal/board.h` in `src/hal/<board>/` (boards return portable
+keys from `board::pollKey`). M9 hardware references live in the sibling
+projects `../camillia/camillia-mt/src/hal/hw_m9.h` and `../rhino-moshi/firmware/`.
+`src/hal/wio_l2/` is the Seeed Wio Tracker L2, ported from
+`../camillia/camillia-mt` (`src/hal/hw_wio_tracker_l2.h`, `wio_tracker_l2_io.cpp`)
+and `../platy-aprs/src/hal/` (`pins_wio_l2.h`, `wio_l2_io.cpp`, `audio.cpp`).
+Its touch UI (on-screen keyboard, taps) is still being designed; until then
+its two buttons stand in and `board::readTouch` only feeds a debug log.
 
 ## Progress (hand-off from Claude Code, 2026-10-25)
 

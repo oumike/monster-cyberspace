@@ -129,6 +129,13 @@ Each registers its targets while drawing; nothing changes for key input.
 ### 4.3 Screens (`src/screens`)
 
 - All list screens handle `Activate(i)`.
+- **Home on touch boards** (user decision, 2026-10-26): six large tiles in two
+  columns between the status bar and the hint (about 64 px tall at Comfortable
+  size): `messages` (`#<last room>`), `rooms`, `c-mail` (unread count), `feed`
+  (unread count), `settings` and `mentions` (count; opens the last room). A
+  tile with unread items has its label in the accent colour; the selected
+  tile is filled. A tap opens a tile; buttons or a Bluetooth keyboard move the
+  selection over the tile grid. Keyed boards (the M9) keep today's list.
 - Screens with menus or confirms switch to `Overlay`.
 - Composer: a tap on a field focuses it; a tap on a checkbox toggles it; `⋯`
   opens Post/Discard.
@@ -171,6 +178,7 @@ After the Feed plan's Task 12 (the backup feature is also queued after Feed):
 2. `Gestures`, `TapMap`, touch transform (lib/core, TDD).
 3. `Overlay` refactor (M9 only; verified against today's behaviour).
 4. Widget tap registration, `Activate`, status-bar `‹` and `⋯`.
+   Then the Home tiles.
 5. `Osk`.
 6. Orientation (HAL rotation, Settings row, web config, frame resize).
 7. Docs: `USE.md` (Wio L2 controls), `TESTING.md`, `AGENTS.md`.

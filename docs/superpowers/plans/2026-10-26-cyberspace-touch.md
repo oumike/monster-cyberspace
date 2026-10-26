@@ -19,7 +19,7 @@
 
 - Never call the live API (`api.cyberspace.online` or its RTDB) from tests, scripts or an agent. Run touch flows on `wio_l2_fake` and `m9_fake`.
 - Every write comes from a user action. A tap or a keyboard key counts as a key press. A gesture never produces a write by itself: a drag or swipe only moves a selection or scrolls, and never sends `Select`. Nothing is retried.
-- Never log passwords or tokens. Never log touch coordinates either, because they would reveal what was typed on the keyboard. Task 7 removes `RC_TOUCH_LOG`.
+- Never log passwords or tokens. Never log touch coordinates either, because they would reveal what was typed on the keyboard. Task 8 removes `RC_TOUCH_LOG`.
 - Keep lib/core board-agnostic. Gestures, `TapMap`, the resolver, `Osk`, `Overlay` and the touch transform live in `lib/core` with no Arduino and no board headers. Device code outside `src/hal/` reaches hardware only through `src/hal/board.h`.
 - Gesture thresholds (spec §3.2):
   - tap: up within 10 px of the down point and before 500 ms;
@@ -51,7 +51,7 @@
    - GT911 raw values beyond its 240×320 clamp to the frame edge;
    - a rotation outside 0–3 from NVS or web config falls back to Landscape.
 
-   Tests: Task 1, `test_transform_clamps`; Task 10, `test_rotation_from_index_out_of_range`.
+   Tests: Task 1, `test_transform_clamps`; Task 11, `test_rotation_from_index_out_of_range`.
 
 ## File Structure
 
@@ -60,14 +60,15 @@
 | `lib/core/src/input/gestures.{h,cpp}` | Gesture state machine (Task 1) |
 | `lib/core/src/input/touch_transform.{h,cpp}` | Raw GT911 → frame coordinates per rotation (Task 1) |
 | `lib/core/src/input/key_event.{h,cpp}` | Gains `Activate`, `Focus`, `PowerTap`, `ListId`, `index`/`target`/`then` (Task 2) |
+| `lib/core/src/ui/home_tiles.{h,cpp}` | Home's tile layout and tile-grid key moves (touch boards) |
 | `lib/core/src/ui/tap_map.{h,cpp}` | Per-frame hit targets and the active-map pointer (Task 2) |
 | `lib/core/src/input/touch_resolve.{h,cpp}` | Gesture + `TapMap` → keys (Task 2) |
 | `lib/core/src/ui/widgets/overlay.{h,cpp}` | The one menu/confirm box (Task 3) |
-| `lib/core/src/ui/widgets/osk.{h,cpp}` | On-screen keyboard layout, state and drawing (Task 8) |
-| `lib/core/src/ui/rotation.{h,cpp}` | Rotation labels, Settings order and parsing (Task 10) |
-| `src/hal/board.h`, `src/hal/{m9,wio_l2}/…` | `wakeHint`, `canRotate`, `setRotation`, Wio buttons (Tasks 7 and 10) |
+| `lib/core/src/ui/widgets/osk.{h,cpp}` | On-screen keyboard layout, state and drawing (Task 9) |
+| `lib/core/src/ui/rotation.{h,cpp}` | Rotation labels, Settings order and parsing (Task 11) |
+| `src/hal/board.h`, `src/hal/{m9,wio_l2}/…` | `wakeHint`, `canRotate`, `setRotation`, Wio buttons (Tasks 8 and 11) |
 | `src/screens/*` | `Overlay` adoption, `Activate`/`Focus`, touch hints, `acceptsText` (Tasks 4 and 6) |
-| `src/app/ui_task.cpp`, `src/ui/renderer.*` | Touch loop, keyboard docking, rotation (Tasks 7, 9 and 10) |
+| `src/app/ui_task.cpp`, `src/ui/renderer.*` | Touch loop, keyboard docking, rotation (Tasks 8, 10 and 11) |
 | `test/test_touch_input/`, `test/test_osk/` | New native suites; widget tests extend `test/test_widgets/` |
 
 ---
@@ -117,7 +118,7 @@
   - r2: `(H-1-lx, W-1-ly)`
   - r3: `(ly, H-1-lx)`
 
-  The panel's rotation direction is checked on hardware in Task 10. If portrait comes out mirrored, swap the r1 and r3 formulas and their tests.
+  The panel's rotation direction is checked on hardware in Task 11. If portrait comes out mirrored, swap the r1 and r3 formulas and their tests.
 
 - [ ] **Step 1: Write the failing tests.** Add a helper `feedAll` that feeds a list of `{down, x, y, ms}` samples and collects the gestures.
   ```cpp
@@ -378,7 +379,7 @@
 - [ ] **Step 1: Convert** Room and Entry. Keep each menu's rows, title text, `menuKeys_` order and hints exactly as they are.
 - [ ] **Step 2: Convert** Composer (Actions, ConfirmPost, ConfirmDiscard), the FeedList palette, and the Settings confirms (Logout, Reset).
 - [ ] **Step 3: Run** `pio test -e native`, then `scripts/build-upload-monitor.sh -B`. Expected: green, and all four envs build.
-- [ ] **Step 4: Check M9 behaviour.** Diff each converted screen's old `menuKey` against `Overlay::key`: Up/Down wrap, Select/Right pick, Back/Left close, and Cancel is the default. `test_overlay_render_*` pins the drawing. If an M9 is at hand, flash `m9_fake` and open every menu and confirm in Room, Entry, Composer, Feed and Settings. Task 11 adds this as a TESTING.md check.
+- [ ] **Step 4: Check M9 behaviour.** Diff each converted screen's old `menuKey` against `Overlay::key`: Up/Down wrap, Select/Right pick, Back/Left close, and Cancel is the default. `test_overlay_render_*` pins the drawing. If an M9 is at hand, flash `m9_fake` and open every menu and confirm in Room, Entry, Composer, Feed and Settings. Task 12 adds this as a TESTING.md check.
 - [ ] **Step 5: Commit** `refactor(screens): menus and confirms use Overlay`.
 
 ### Task 5: Widgets register tap targets; touch status bar; new glyphs
@@ -523,10 +524,53 @@
   It passes once Task 2's enum exists. It guards the M9 against ever reaching the new paths.
 - [ ] **Step 2: Run** `pio test -e native -f test_keymap_web`. Expected: PASS. This is a guard, not a red-green test.
 - [ ] **Step 3: Implement** `acceptsText`, the `drawHint` overload, and the `Activate`/`Focus` handling, screen by screen.
-- [ ] **Step 4: Run** `pio test -e native`, then `scripts/build-upload-monitor.sh -B`. Expected: green, and all four envs build. **M9:** no M9 key maps to `Activate`/`Focus` (Step 1), `drawHint` picks the key text when `hasTouch()` is false, and `acceptsText` is read only by Task 9's docking.
+- [ ] **Step 4: Run** `pio test -e native`, then `scripts/build-upload-monitor.sh -B`. Expected: green, and all four envs build. **M9:** no M9 key maps to `Activate`/`Focus` (Step 1), `drawHint` picks the key text when `hasTouch()` is false, and `acceptsText` is read only by Task 10's docking.
 - [ ] **Step 5: Commit** `feat(screens): tap rows and fields, touch hints`.
 
-### Task 7: Touch in the UI loop; Wio buttons; the wake hint
+### Task 7: Home tiles on touch boards
+
+**Files:**
+- Create: `lib/core/src/ui/home_tiles.{h,cpp}`
+- Modify: `src/screens/home.cpp`, `src/screens/screens.h` (HomeScreen members)
+- Test: `test/test_widgets/test_main.cpp`
+
+**Interfaces:**
+- Consumes: `TapMap`, `activeTaps()`, `Target`, `ListId::Main` (Task 2); `Activate` handling on `Main` (Task 6); `drawHint(g, t, keys, touch)` (Task 6).
+- Produces (namespace `rc`):
+  ```cpp
+  struct TileRect { int c0, r0, c1, r1; };  // inclusive cells
+  // count tiles in 2 columns, row-major, filling rows 1..rows-2 (between the
+  // status bar and the hint). Empty when a tile would be under 3 rows or 10 cols.
+  std::vector<TileRect> homeTiles(int cols, int rows, int count);
+  // Tile-grid moves for keys: Up/Down by a row (±2), Left/Right within a row; clamps, no wrap.
+  int tileMove(int selected, int count, Action a);
+  ```
+- Behaviour (the user approved this layout):
+  - Only when `board::hasTouch()` and `homeTiles(...)` is non-empty; otherwise Home draws today's list, unchanged (the M9 path).
+  - Six tiles, in order: `messages` (sub-line `#<lastRoom>`), `rooms`, `c-mail` (`N unread`), `feed` (`N unread`), `settings`, `mentions` (label `N mentions`, opens the last room like `messages`). The user/active-rooms fields are not shown in tile mode; `@user` stays in the status bar.
+  - Each tile: `Grid::outline` in `t.dim`; label centred on the tile's middle row, sub-line under it in `t.dim`. A tile with unread items draws its label in `t.selectBg`. The selected tile is filled `t.selectBg` with `t.selectFg` text and an outline in `t.selectBg`.
+  - Each tile registers `addCells(c0, r0, c1, r1, Target{Row, Main, index=i})`, and Home calls `setList(Main, selected, 6, /*wraps*/false)`. A tap opens the tile (Task 6's `Activate` → `Select`).
+  - Keys in tile mode: Up/Down/Left/Right use `tileMove`; Select opens. (Right no longer opens in tile mode.)
+  - Touch hint: `tap to open` (from Task 6).
+
+- [ ] **Step 1: Write the failing tests** in `test_widgets`:
+  ```cpp
+  void test_home_tiles_fit() {
+    // (40,15,6) and (53,20,6) and portrait (30,20,6): 6 tiles; each inside cols 0..cols-1, rows 1..rows-2;
+    // no two overlap; every tile >= 3 rows and >= 10 cols; tiles 0,2,4 share c0 and 1,3,5 share c0; row-major
+  }
+  void test_home_tiles_too_small()  // homeTiles(16, 8, 6) → empty
+  void test_tile_move() {
+    // count 6: tileMove(0,6,Down)=2; tileMove(4,6,Down)=4; tileMove(1,6,Left)=0; tileMove(0,6,Left)=0;
+    // tileMove(0,6,Right)=1; tileMove(1,6,Right)=1; tileMove(3,6,Up)=1; tileMove(1,6,Up)=1
+  }
+  ```
+- [ ] **Step 2: Run** `pio test -e native -f test_widgets`. Expected: it fails to build.
+- [ ] **Step 3: Implement** `homeTiles`, `tileMove`, and the tile mode in `home.cpp`.
+- [ ] **Step 4: Run** `pio test -e native` and `scripts/build-upload-monitor.sh -B`. Expected: green, all four envs build; the M9 Home is unchanged (`hasTouch()` false).
+- [ ] **Step 5: Commit** `feat(home): large tiles on touch boards`.
+
+### Task 8: Touch in the UI loop; Wio buttons; the wake hint
 
 **Files:**
 - Modify: `src/app/ui_task.cpp`
@@ -545,7 +589,7 @@
   - Each frame, **first** (before `pollKey`): if `power == On` and `hasTouch()`, read one sample, feed `gestures`, and if a gesture completes, call `resolver.resolve(g, taps, out)`.
     - Apply `hideBanner` → `topBanner.hide()`.
     - Each of `out.keys` → `handleKey`.
-    - `oskKey` is ignored until Task 9.
+    - `oskKey` is ignored until Task 10.
 
     Touch comes before buttons so a gesture always resolves against the map of the frame on screen.
   - Before `router::screen().render`: `taps.clear(); taps.setOrigin(cellSize(textSize), 0)`.
@@ -562,7 +606,7 @@
 - [ ] **Step 3: Check M9 behaviour.** `hasTouch()` is false, so the touch block never runs and `activeTaps()` stays null. M9 `wakeHint()` returns today's string. Neither M9 button mapping produces `PowerTap`.
 - [ ] **Step 4: Commit** `feat(app): touch input in the UI loop; Wio BOOT and Wake buttons`.
 
-### Task 8: The on-screen keyboard (`Osk`)
+### Task 9: The on-screen keyboard (`Osk`)
 
 **Files:**
 - Create: `lib/core/src/ui/widgets/osk.{h,cpp}`
@@ -646,13 +690,13 @@
 - [ ] **Step 4: Run** `pio test -e native`. Expected: PASS.
 - [ ] **Step 5: Commit** `feat(ui): on-screen keyboard`.
 
-### Task 9: Dock the keyboard
+### Task 10: Dock the keyboard
 
 **Files:**
 - Modify: `src/ui/renderer.{h,cpp}`, `src/app/ui_task.cpp`
 
 **Interfaces:**
-- Consumes: `Osk`, `OskOutput` (Task 8); `Screen::acceptsText` (Task 6); `TouchOutput::oskKey` (Task 2).
+- Consumes: `Osk`, `OskOutput` (Task 9); `Screen::acceptsText` (Task 6); `TouchOutput::oskKey` (Task 2).
 - Produces:
   ```cpp
   // Renderer: draws g's dirty rows starting at grid row firstRow of the panel.
@@ -670,14 +714,14 @@
 
 - [ ] **Step 1: Implement** the `Renderer` offset, then the docking.
 - [ ] **Step 2: Run** `pio test -e native`, then `scripts/build-upload-monitor.sh -B`. Expected: green, and all four envs build. **M9:** no `Focus` key is ever produced, so `oskShown` stays false and `draw`'s default offset is 0.
-- [ ] **Step 3: Check on `wio_l2_fake`** if a board is at hand; otherwise leave it to the Task 11 checklist:
+- [ ] **Step 3: Check on `wio_l2_fake`** if a board is at hand; otherwise leave it to the Task 12 checklist:
   - tap the Room input and the keyboard docks;
   - type, use `⌫` and enter;
   - `▼` hides the keyboard;
   - Back with the keyboard up leaves the room and the keyboard goes.
 - [ ] **Step 4: Commit** `feat(app): dock the on-screen keyboard`.
 
-### Task 10: Orientation
+### Task 11: Orientation
 
 **Files:**
 - Create: `lib/core/src/ui/rotation.{h,cpp}`
@@ -740,7 +784,7 @@
 - [ ] **Step 5: Run** `pio test -e native`, then `scripts/build-upload-monitor.sh -B`. Expected: green, and all four envs build. **M9:** `canRotate()` is false, so the Orientation row and the web field are hidden and `setRotation` is never applied. The extra NVS key `rot` is read as 0.
 - [ ] **Step 6: Commit** `feat: selectable orientation on touch boards`.
 
-### Task 11: Docs
+### Task 12: Docs
 
 **Files:**
 - Modify: `docs/USE.md`, `docs/TESTING.md`, `AGENTS.md`

@@ -16,8 +16,8 @@ namespace rc {
 
 // One Feed entry (spec §5): the header and body, then the replies in the room
 // log style, with a reply line below. It opens at the top. Up/Down move over
-// the blocks (a long body in screen-sized pages, then each reply); Select
-// sends, reveals a content warning, or opens the entry or reply menu.
+// the blocks (the body, then each reply; a long one in screen-sized pages);
+// Select sends, reveals a content warning, or opens the entry or reply menu.
 class EntryScreen : public Screen {
  public:
   // arg: "postId", "postId\nnoticeId" or "postId\nnoticeId\nreplyId" (the
@@ -47,8 +47,8 @@ class EntryScreen : public Screen {
   void rebuild(int cols, int logRows, const Theme& t);
   void selectBlock(const std::string& id);
 
-  bool isBody(const std::string& id) const;
-  std::string selectedReply() const;  // "" when the body is selected or following
+  // The selected reply's id (any page of it); "" for the body or following.
+  std::string selectedReply() const;
 
   std::string postId_, noticeId_;
   std::string wantReply_;     // a reply to select once the replies arrive

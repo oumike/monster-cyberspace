@@ -17,9 +17,15 @@ namespace {
 
 constexpr int64_t kAgeRefreshMs = 60000;  // re-lay so "3m" keeps up
 constexpr size_t kReasonMaxChars = 500;
-// Body pages past the first are tagged "<postId>\x1f<n>" so the log can
-// step through a long body a screen at a time.
+// Pages of a block past the first are tagged "<id>\x1f<n>" so the log can
+// step through a long body or reply a screen at a time.
 constexpr char kPageSep = '\x1f';
+
+// The entry or reply id behind a (possibly paged) log id.
+std::string baseId(const std::string& id) {
+  size_t p = id.find(kPageSep);
+  return p == std::string::npos ? id : id.substr(0, p);
+}
 
 bool compact() { return app().cfg.textSize == TextSize::Compact; }
 
@@ -85,15 +91,9 @@ void EntryScreen::closeOverlays() {
   log_.follow();
 }
 
-bool EntryScreen::isBody(const std::string& id) const {
-  return id == postId_ ||
-         (id.size() > postId_.size() && id.compare(0, postId_.size(), postId_) == 0 &&
-          id[postId_.size()] == kPageSep);
-}
-
 std::string EntryScreen::selectedReply() const {
-  std::string id = log_.selectedId();
-  return id.empty() || isBody(id) ? std::string() : id;
+  std::string id = baseId(log_.selectedId());
+  return id == postId_ ? std::string() : id;
 }
 
 // ---- keys ----
@@ -261,8 +261,8 @@ void EntryScreen::openEntryMenu() {
   add(watching ? U"Unwatch" : U"Watch", watching ? "unwatch" : "watch", t.fg);
   add(U"Show link", "link", t.fg);
   if (!e.deleted) {
-    add(U"Report\u2026", "report", t.error);
     if (isSelf(e.author)) add(U"Delete\u2026", "delete", t.error);
+    else add(U"Report\u2026", "report", t.error);
   }
   add(compact() ? U"Text size: Comfortable" : U"Text size: Compact", "size", t.fg);
   openMenu(Menu::Entry, U"entry", std::move(items));
@@ -299,8 +299,8 @@ void EntryScreen::openReplyMenu(const std::string& replyId) {
   add(marked ? U"Unbookmark" : U"Bookmark", marked ? "unbookmark" : "bookmark", t.fg);
   add(U"Show link", "link", t.fg);
   if (!deleted) {
-    add(U"Report\u2026", "report", t.error);
     if (isSelf(author)) add(U"Delete\u2026", "delete", t.error);
+    else add(U"Report\u2026", "report", t.error);
   }
   openMenu(Menu::Reply, utf8ToU32(author.empty() ? std::string("reply") : author),
            std::move(items));
@@ -431,11 +431,17 @@ void EntryScreen::rebuild(int cols, int logRows, const Theme& t) {
     lines = layoutEntry(*e, s.store.replies(), o);
     for (const auto& r : s.store.replies()) authors[r.id] = r.author;
   });
+  // A block's lines are consecutive; count them per block.
+  std::string block;
   int n = 0;
   for (auto& l : lines) {
-    if (l.divider || l.messageId != postId_) continue;
+    if (l.divider) continue;
+    if (l.messageId != block) {
+      block = l.messageId;
+      n = 0;
+    }
     int p = n++ / page;
-    if (p > 0) l.messageId = postId_ + kPageSep + std::to_string(p);
+    if (p > 0) l.messageId = block + kPageSep + std::to_string(p);
   }
   // The entry opens at its top: the header and the first page of the body.
   if (present && !loaded_) {
@@ -454,7 +460,8 @@ void EntryScreen::rebuild(int cols, int logRows, const Theme& t) {
   }
 }
 
-// LogView only steps, so walk up from the end to the block.
+// LogView only steps, so walk up from the end to the block (its first page:
+// the untagged id).
 void EntryScreen::selectBlock(const std::string& id) {
   log_.follow();
   while (log_.selectedId() != id) {

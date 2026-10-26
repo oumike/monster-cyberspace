@@ -730,7 +730,7 @@
 
 - [x] **Step 1: Implement.**
 - [x] **Step 2: Run** `pio run -e m9_fake` and `pio run -e m9`. Expected: SUCCESS.
-- [ ] **Step 3: Flash `m9_fake`** and check:
+- [x] **Step 3: Flash `m9_fake`** and check:
   - a multi-line body;
   - the counter;
   - 4 topics are rejected;

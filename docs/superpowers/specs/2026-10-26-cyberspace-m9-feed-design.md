@@ -189,8 +189,12 @@ returns to the FeedList.
 
 - The fields are Title, Body, Topics (comma-separated), Public [ ], NSFW [ ],
   and CW.
-- Up/Down move between fields. In Body, Enter adds a new line, and a counter
-  shows `n/4096`. Centre toggles the checkboxes.
+- Up/Down move between fields. On the M9, Enter and Centre are the same key
+  (Select).
+  - In Body, Select adds a new line, Up/Down move by line, and a counter shows
+    `n/4096`. Up on the first line moves to Title, and Down on the last line
+    moves to Topics.
+  - On a checkbox, Select toggles it.
 - Ctrl opens **Post** and **Discard**. Post first asks for confirmation and
   shows the limit ("2 per minute, 24 per day").
 - Back with any text in the fields asks "Discard draft?".
@@ -238,8 +242,9 @@ selected.
 
 The M1 §9 rules apply. In addition:
 
-- **401:** refresh the token, then retry a *read* once. Writes are never
-  retried.
+- **401:** as in M1, `CsApi::call` refreshes the token and repeats that one
+  request once. The server rejected the first attempt, so this never
+  duplicates a write. Nothing else is retried.
 - **403:** shows "Not allowed" for delete or report, and the server message
   otherwise. **404 on an entry:** "Entry gone", and the device goes back.
 - **429:** "Slow down", with the limit that was hit.

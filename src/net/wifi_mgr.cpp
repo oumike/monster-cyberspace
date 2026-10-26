@@ -7,6 +7,7 @@
 #include <algorithm>
 
 #include "hal/board.h"
+#include "net/ap_fallback.h"
 #include "web/web_util.h"
 
 namespace wifimgr {
@@ -21,7 +22,9 @@ Mode gMode = Mode::Station;
 std::vector<rc::WifiNet> gNets;
 std::string gApSsid;
 bool gApPassword = false;
+std::string gApPw;  // the configured setup-AP password; never logged
 bool gMdns = false;
+rc::ApFallback gFallback;
 
 size_t gNext = 0;          // index of the next network to try
 bool gTrying = false;
@@ -37,6 +40,35 @@ void startMdns() {
   }
   MDNS.addService("http", "tcp", 80);
   gMdns = true;
+}
+
+void raiseAp() {
+  bool usePw = !gApPw.empty();
+  if (usePw && !rc::validApPassword(gApPw)) {
+    Serial.println("[wifi] setup-AP password invalid, AP stays open");
+    usePw = false;
+  }
+  gApPassword = usePw;
+  WiFi.softAPConfig(IPAddress(192, 168, 4, 1), IPAddress(192, 168, 4, 1),
+                    IPAddress(255, 255, 255, 0));
+  if (!WiFi.softAP(gApSsid.c_str(), usePw ? gApPw.c_str() : nullptr))
+    Serial.println("[wifi] softAP failed");
+}
+
+void apOn() {
+  if (gMode == Mode::Setup) return;
+  WiFi.mode(WIFI_AP_STA);
+  raiseAp();
+  gMode = Mode::Setup;
+  Serial.println("[wifi] setup AP up");
+}
+
+void apOff() {
+  if (gMode != Mode::Setup || gNets.empty()) return;
+  WiFi.softAPdisconnect(true);
+  WiFi.mode(WIFI_STA);
+  gMode = Mode::Station;
+  Serial.println("[wifi] setup AP down");
 }
 
 void tryNext() {
@@ -62,18 +94,8 @@ void begin(const rc::Settings& s) {
   WiFi.setAutoReconnect(false);  // reconnectWithBackoff() owns retries
   WiFi.mode(gMode == Mode::Setup ? WIFI_AP_STA : WIFI_STA);
 
-  if (gMode == Mode::Setup) {
-    bool usePw = !s.apPassword.empty();
-    if (usePw && !rc::validApPassword(s.apPassword)) {
-      Serial.println("[wifi] setup-AP password invalid, AP stays open");
-      usePw = false;
-    }
-    gApPassword = usePw;
-    WiFi.softAPConfig(IPAddress(192, 168, 4, 1), IPAddress(192, 168, 4, 1),
-                      IPAddress(255, 255, 255, 0));
-    if (!WiFi.softAP(gApSsid.c_str(), usePw ? s.apPassword.c_str() : nullptr))
-      Serial.println("[wifi] softAP failed");
-  }
+  gApPw = s.apPassword;
+  if (gMode == Mode::Setup) raiseAp();
 
   configTzTime(s.tz.c_str(), "pool.ntp.org", "time.google.com");
   startMdns();
@@ -109,6 +131,12 @@ std::string apSsid() { return gApSsid; }
 
 bool apHasPassword() { return gApPassword; }
 
+void setSetupAp(bool on) {
+  if (on) apOn();
+  else apOff();
+  gFallback.noteManual(millis(), mode() == Mode::Setup);
+}
+
 std::vector<std::string> scan() {
   std::vector<std::pair<int, std::string>> found;
   int n = WiFi.scanNetworks(false, false);
@@ -130,6 +158,18 @@ std::vector<std::string> scan() {
 
 void reconnectWithBackoff() {
   if (gNets.empty()) return;
+  switch (gFallback.update(millis(), connected(), gMode == Mode::Setup,
+                           gMode == Mode::Setup ? WiFi.softAPgetStationNum() : 0)) {
+    case rc::ApFallback::Act::Raise:
+      Serial.println("[wifi] saved networks unreachable for 5 min");
+      apOn();
+      break;
+    case rc::ApFallback::Act::Drop:
+      apOff();
+      break;
+    default:
+      break;
+  }
   if (connected()) {
     if (gTrying) {
       Serial.printf("[wifi] connected, ip %s\n", WiFi.localIP().toString().c_str());

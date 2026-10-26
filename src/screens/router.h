@@ -40,6 +40,7 @@ enum class Id {
   Composer,
   Watched,
   Bookmarks,
+  Settings,
 };
 
 void go(Id id, const std::string& arg = "");

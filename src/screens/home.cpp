@@ -1,5 +1,3 @@
-#include <Arduino.h>
-
 #include "app/app_state.h"
 #include "hal/board.h"
 #include "screens/draw.h"
@@ -10,7 +8,7 @@
 namespace rc {
 
 namespace {
-enum Item { kMessages, kRooms, kCmail, kFeed, kReset };
+enum Item { kMessages, kRooms, kCmail, kFeed, kSettings };
 constexpr int kItems = 5;
 
 // The newest unread Feed notice as an Entry arg ("postId\nnoticeId"), or "".
@@ -24,33 +22,20 @@ std::string newestNotice() {
 }
 
 void HomeScreen::enter(const std::string&) {
-  confirm_ = false;
   menu_.setSelected(0);
 }
 
 void HomeScreen::onKey(const KeyEvent& k) {
-  ListView& m = confirm_ ? confirmMenu_ : menu_;
   switch (k.action) {
     case Action::Up:
-      m.up();
+      menu_.up();
       break;
     case Action::Down:
-      m.down();
-      break;
-    case Action::Back:
-    case Action::Left:
-      confirm_ = false;
+      menu_.down();
       break;
     case Action::Select:
     case Action::Right:
-      if (confirm_) {
-        if (confirmMenu_.selected() == 1) {
-          settings::factoryReset();
-          delay(100);
-          ESP.restart();
-        }
-        confirm_ = false;
-      } else if (menu_.selected() == kMessages) {
+      if (menu_.selected() == kMessages) {
         router::go(router::Id::Room, app().cfg.lastRoom);
       } else if (menu_.selected() == kRooms) {
         router::go(router::Id::RoomList);
@@ -61,9 +46,8 @@ void HomeScreen::onKey(const KeyEvent& k) {
         std::string arg = newestNotice();
         if (arg.empty()) router::go(router::Id::FeedList);
         else router::go(router::Id::Entry, arg);
-      } else if (menu_.selected() == kReset) {
-        confirm_ = true;
-        confirmMenu_.setSelected(0);
+      } else if (menu_.selected() == kSettings) {
+        router::go(router::Id::Settings);
       }
       break;
     default:
@@ -83,7 +67,7 @@ void HomeScreen::render(Grid& g, const Theme& t, int64_t) {
   field("user", a.user.empty() ? "not signed in" : "@" + a.user + (a.auth == 2 ? " (unverified)" : ""),
         t.fg);
   field("wi-fi", wifiUp() ? wifiSsid() + "  " + wifiIp() : "not connected", t.fg);
-  field("settings", "http://rhino-cyberspace.local", t.fg);
+  field("config", "http://rhino-cyberspace.local", t.fg);
   field("mentions", std::to_string(a.unreadMentions) + " unread", a.unreadMentions ? t.selectBg : t.fg);
   int cmail = lockedChat().with([](ChatState& s) {
     int n = 0;
@@ -110,19 +94,11 @@ void HomeScreen::render(Grid& g, const Theme& t, int64_t) {
       ListItem{U"Rooms", U"", t.fg},
       ListItem{U"C-Mail", U"", t.fg},
       ListItem{U"Feed", U"", t.fg},
-      ListItem{U"Factory reset\u2026", U"", t.error},
+      ListItem{U"Settings", U"", t.fg},
   });
   int bottom = g.rows() - 1;
-  if (confirm_) {
-    confirmMenu_.setItems({ListItem{U"Cancel", U"", t.fg},
-                           ListItem{U"Erase everything", U"", t.error}});
-    putLine(g, 1, bottom - 3, "Erase Wi-Fi, account and settings?", t.error, t.bg);
-    confirmMenu_.render(g, bottom - 2, bottom, 1, g.cols() - 2, t);
-    drawHint(g, t, U"\u2191\u2193 pick  \u25CF confirm  back: cancel");
-  } else {
-    menu_.render(g, bottom - kItems, bottom, 1, g.cols() - 2, t);
-    drawHint(g, t, U"\u2191\u2193 pick  \u25CF open");
-  }
+  menu_.render(g, bottom - kItems, bottom, 1, g.cols() - 2, t);
+  drawHint(g, t, U"\u2191\u2193 pick  \u25CF open");
 }
 
 }  // namespace rc

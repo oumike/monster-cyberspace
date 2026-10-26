@@ -67,7 +67,7 @@ ul{padding-left:1.2em;margin:.3em 0}li button{padding:.1em .4em;font-size:.85em}
 <label>Setup-AP password (WPA2, 8–63 characters; empty makes the AP open) <span id="apstate" class="dim"></span><input id="appw" type="password" autocomplete="new-password"></label>
 <button onclick="saveSec()">Save security</button>
 <div id="secmsg" class="msg"></div>
-<p class="dim">The page is plain HTTP on your LAN, so set a page password on shared networks. The setup AP is open unless a setup-AP password is set, so anyone in radio range can join it while it runs. It runs only with no saved Wi-Fi (first boot or after a factory reset), and anything entered on it (Wi-Fi password, Cyberspace password) crosses that link unencrypted. Setting a setup-AP password closes that gap for later setups. The refresh token can't be read back through the page.</p>
+<p class="dim">The page is plain HTTP on your LAN, so set a page password on shared networks. The setup AP is open unless a setup-AP password is set, so anyone in radio range can join it while it runs. It runs with no saved Wi-Fi (first boot or after a factory reset), when turned on in the device's Settings, or after the saved networks fail for 5 minutes, and anything entered on it (Wi-Fi password, Cyberspace password) crosses that link unencrypted. Setting a setup-AP password closes that gap for later setups. The refresh token can't be read back through the page.</p>
 
 <h2>Device</h2>
 <button onclick="if(confirm('Restart the device?'))post('/api/restart',{},'devmsg')">Restart</button>

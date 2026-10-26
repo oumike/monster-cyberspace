@@ -90,7 +90,14 @@ These were built without flashing and still need a run on the device.
 - [x] Setting a page password → the browser asks for Basic auth (user `admin`); clearing it removes the prompt
 - [x] Setting an AP password → WPA2 after a factory reset; clearing it → open again
 - [x] Restart works; Factory reset (two confirms) → setup mode with everything erased
-- [x] Home screen → Factory reset… → Erase everything does the same
+- [x] Home screen → Factory reset… → Erase everything does the same (now under Home → Settings)
+
+**Device Settings (`m9`):**
+
+- [ ] Home → Settings: Turn setup AP on → the AP appears with `http://192.168.4.1` while Wi-Fi stays up; Turn off removes it
+- [ ] Log out → confirm → Setup screen; Wi-Fi kept; signing in again works
+- [ ] Factory reset… → Erase everything → setup mode with everything erased
+- [ ] With the saved network switched off for 5 minutes, the setup AP comes up; when the network returns (nobody joined) it goes away
 
 **API assumptions to confirm (watch the serial log during the live checklist):**
 

@@ -550,6 +550,9 @@ class Worker {
       case CmdType::OpenFeed:
         feed_.markOpen();
         break;
+      case CmdType::SetupAp:
+        wifimgr::setSetupAp(c.n != 0);
+        return;
       case CmdType::Logout:
         closeRoom();
         feed_.signOut();

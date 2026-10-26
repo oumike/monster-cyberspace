@@ -19,6 +19,7 @@ enum class CmdType {
   RefreshRooms,
   Login,           // a = email, b = password (zeroed after use)
   Logout,
+  SetupAp,         // n = 1 on, 0 off
   ResendVerification,
   ScreenOff,
   ScreenOn,

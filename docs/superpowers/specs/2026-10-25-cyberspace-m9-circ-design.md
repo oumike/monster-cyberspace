@@ -195,11 +195,12 @@ nicks in their colours, with `z` for idle users (`lastActivity` older than
 
 **Home dashboard:** the signed-in user, Wi-Fi network and IP, the settings-page
 address, unread mentions, rooms with new activity, and battery. Its last
-entry is **Factory reset…**, which asks for confirmation (Select on
-"Erase everything", default "Cancel") and then does the same as the web
-config factory reset.
+entry is **Settings**: the setup AP toggle (on while staying on Wi-Fi, until
+turned off or a restart), **Log out** and **Factory reset…**. Log out and
+factory reset each ask for confirmation (default "Cancel"); factory reset does
+the same as the web config one.
 
-**Setup screen** (no Wi-Fi saved: first boot, or after a factory reset; there is no boot-time gesture): the AP name,
+**Setup screen** (no Wi-Fi saved: first boot, or after a factory reset; there is no boot-time gesture. The setup AP also comes up from Settings, or by itself after the saved networks fail for 5 minutes, dropping once Wi-Fi is back with nobody joined): the AP name,
 which includes the board (`Rhino-Cyberspace-<BOARD>-Setup`, so
 `Rhino-Cyberspace-M9-Setup` on this board, from the board's `BOARD_NAME`),
 and `http://192.168.4.1`. The AP is **open by default**. If a setup-AP
@@ -283,7 +284,8 @@ It is plain HTML, CSS and JS, inline, with no external requests.
 Security notes, also shown on the page: the page is plain HTTP on your LAN, so
 set a page password on shared networks. The setup AP is open unless a setup-AP
 password is set, so anyone in radio range can join it while it runs. It runs
-only with no saved Wi-Fi (first boot or after a factory reset), and anything entered on
+with no saved Wi-Fi (first boot or after a factory reset), when turned on in
+Settings, or after the saved networks fail for 5 minutes, and anything entered on
 it (Wi-Fi password, Cyberspace password) crosses that link unencrypted. Setting
 a setup-AP password closes that gap for later setups. The refresh token can't
 be read back through the page.

@@ -18,6 +18,7 @@ RoomScreen conversation{true};
 FeedListScreen feedList{FeedListScreen::Kind::Feed};
 FeedListScreen watched{FeedListScreen::Kind::Watched};
 FeedListScreen bookmarks{FeedListScreen::Kind::Bookmarks};
+SettingsScreen settingsScreen;
 ComingSoonScreen comingSoon;
 LoginFormScreen loginForm;
 
@@ -38,6 +39,7 @@ Screen* lookup(Id id) {
     case Id::FeedList: return &feedList;
     case Id::Watched: return &watched;
     case Id::Bookmarks: return &bookmarks;
+    case Id::Settings: return &settingsScreen;
     // Placeholders until the Entry (Task 10) and Composer (Task 11) screens.
     case Id::Entry:
     case Id::Composer: return &comingSoon;

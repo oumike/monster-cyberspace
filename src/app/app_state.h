@@ -29,6 +29,10 @@ void drawStatus(Grid& g, const Theme& t, std::u32string_view title, int count);
 bool wifiUp();
 std::string wifiSsid();
 std::string wifiIp();
+// The setup AP (Settings, or the 5-minute fallback).
+bool setupApUp();
+std::string setupApSsid();
+bool setupApHasPassword();
 int wifiBars();
 
 // A local-time "HH:MM", or "--:--" before SNTP has set the clock.

@@ -47,12 +47,23 @@ class HomeScreen : public Screen {
   void enter(const std::string&) override;
   void onKey(const KeyEvent&) override;
   void render(Grid&, const Theme&, int64_t nowMs) override;
-  bool hasOverlay() const override { return confirm_; }
-  void closeOverlays() override { confirm_ = false; }
+ private:
+  ListView menu_;
+};
+
+// On-device settings: the setup AP, log out, factory reset.
+class SettingsScreen : public Screen {
+ public:
+  void enter(const std::string&) override;
+  void onKey(const KeyEvent&) override;
+  void render(Grid&, const Theme&, int64_t nowMs) override;
+  bool hasOverlay() const override { return confirm_ != Confirm::None; }
+  void closeOverlays() override { confirm_ = Confirm::None; }
 
  private:
+  enum class Confirm { None, Logout, Reset };
   ListView menu_, confirmMenu_;
-  bool confirm_ = false;
+  Confirm confirm_ = Confirm::None;
 };
 
 class RoomListScreen : public Screen {

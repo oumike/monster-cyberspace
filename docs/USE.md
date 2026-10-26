@@ -125,11 +125,28 @@ At `http://rhino-cyberspace.local`, or the device IP, on your LAN:
 
 The page is plain HTTP on your LAN, so set a page password on shared networks
 (user `admin`). The setup AP is open unless a setup-AP password is set, so
-anyone in radio range can join it while it runs. It runs only with no saved
-Wi-Fi (first boot or after a factory reset), and anything entered on it
+anyone in radio range can join it while it runs. It runs with no saved
+Wi-Fi (first boot or after a factory reset), when you turn it on in Settings,
+or after the saved networks fail for 5 minutes, and anything entered on it
 (Wi-Fi password, Cyberspace password) crosses that link unencrypted. Setting a
 setup-AP password closes that gap for later setups. The refresh token can't be
 read back through the page.
+
+## Settings
+
+**Home** → **Settings** shows the account, the web config address and the
+setup AP state, with three actions:
+
+- **Turn setup AP on / off.** Brings up the setup AP (its name, password state
+  and `http://192.168.4.1` are shown) while staying on your Wi-Fi, so you can
+  reach web config when your network is unreachable. It stays on until you
+  turn it off or restart.
+- **Log out** (confirm with **Log out**). Signs out of Cyberspace and goes to
+  the Setup screen. Wi-Fi and preferences are kept.
+- **Factory reset…** (confirm with **Erase everything**). See below.
+
+If the saved networks fail for 5 minutes, the setup AP comes up by itself.
+It goes away again once Wi-Fi is back and nobody is joined to it.
 
 ## Back to setup mode
 
@@ -137,5 +154,5 @@ A **factory reset** erases saved Wi-Fi, the account token, preferences and
 both passwords, then restarts into setup mode. You can do it from either
 place:
 
-- **Home** screen → **Factory reset…** → select **Erase everything**.
+- **Home** → **Settings** → **Factory reset…** → select **Erase everything**.
 - Web config → **Factory reset…** (you confirm twice).

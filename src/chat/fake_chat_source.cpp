@@ -282,6 +282,9 @@ void FakeChatSource::command(const Command& c) {
     case CmdType::Logout:
       postEvent(Event{EvtType::AuthState, "", 0});
       break;
+    case CmdType::SetupAp:
+      postEvent(Event{EvtType::Banner, "No setup AP in the fake build"});
+      break;
     case CmdType::ResendVerification:
       postEvent(Event{EvtType::Banner, "Verification email sent"});
       break;

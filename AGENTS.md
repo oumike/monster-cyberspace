@@ -75,9 +75,11 @@ Notes for whoever continues:
   Typing writes come only from key presses (`RoomScreen::noteTyping`).
 - Locking: never call `chatSource().command()` inside `lockedChat().with(...)`.
   The fake source handles commands inline and would deadlock the UI task.
-- Setup mode (user decision): there is no boot gesture. It runs only with no
-  Wi-Fi saved; a factory reset (Home screen, Task 19; web config, Task 21)
-  gets back there. The M9 HAL no longer reads BOOT (GPIO0).
+- Setup mode (user decision): there is no boot gesture. It runs at boot with
+  no Wi-Fi saved, from Home → Settings → "Turn setup AP on", or by itself
+  after the saved networks fail for 5 minutes (`rc::ApFallback`; that AP drops
+  once Wi-Fi is back and nobody is joined). Factory reset lives in Home →
+  Settings and in web config. The M9 HAL no longer reads BOOT (GPIO0).
 - If the first `pio run` fails with
   `FileNotFoundError: 'package-postinstall.py'` while installing
   `esptoolpy`, run it again. It's a one-off PlatformIO install glitch.

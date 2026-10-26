@@ -3,6 +3,7 @@
 #include "app/net_worker.h"
 
 #include <Arduino.h>
+#include <esp_heap_caps.h>
 #include <esp_timer.h>
 #include <sys/time.h>
 
@@ -19,6 +20,7 @@
 #include "cs/rtdb.h"
 #include "net/https_client.h"
 #include "net/sse_client.h"
+#include "net/tls_alloc.h"
 #include "net/wifi_mgr.h"
 #include "store/locked_chat.h"
 #include "web/web_server.h"
@@ -439,7 +441,23 @@ class Worker {
     }
   }
 
+  void logMemory() {
+    size_t msgs = 0, pres = 0, convs = 0;
+    lockedChat().with([&](ChatState& s) {
+      msgs = s.store.messages().size();
+      pres = s.presence.size();
+      convs = s.conversations.size();
+    });
+    Serial.printf("[mem] int %u blk %u min %u psram %u | msgs %u pres %u convs %u seen %u\n",
+                  unsigned(heap_caps_get_free_size(MALLOC_CAP_INTERNAL)),
+                  unsigned(heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL)),
+                  unsigned(heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL)),
+                  unsigned(heap_caps_get_free_size(MALLOC_CAP_SPIRAM)), unsigned(msgs),
+                  unsigned(pres), unsigned(convs), unsigned(seenMentions_.size()));
+  }
+
   void watch() {
+    logMemory();
     refreshRooms();
     refreshConversations();
     std::vector<Mention> ms;
@@ -699,6 +717,7 @@ bool waitLogin(uint32_t ticket, int timeoutMs, LoginResult& out) {
 }
 
 void start(const Settings& s) {
+  tls::usePsram();
   wifimgr::begin(s);
   web::begin();
   static Worker* w = new Worker(s);

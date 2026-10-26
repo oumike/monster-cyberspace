@@ -191,9 +191,14 @@ At `http://rhino-cyberspace.local`, or the device IP, on your LAN:
 - Status
 - Wi-Fi: scan, add, and remove saved networks (up to 5)
 - Cyberspace account: sign in, sign out, resend verification
-- Display: text size, theme, buzzer, time zone
+- Display: text size, theme, buzzer
+- Time: zone mode, zone and NTP server (see Time and time zone below)
 - Security: page password and setup-AP password
 - Restart and factory reset
+
+The page footer carries the attribution for the bundled zone data:
+
+Time zone boundaries © OpenStreetMap contributors (ODbL), from timezone-boundary-builder.
 
 ### Security notes
 
@@ -206,10 +211,59 @@ or after the saved networks fail for 5 minutes, and anything entered on it
 setup-AP password closes that gap for later setups. The refresh token can't be
 read back through the page.
 
+## Time and time zone
+
+The clock sets itself from the best source it has:
+
+- **NTP** over Wi-Fi, best. It syncs each time Wi-Fi connects, from the NTP
+  server set in web config (default `pool.ntp.org`), then `time.google.com`.
+- **GPS**, when there's no Wi-Fi. A GPS time is used only when the clock is
+  unset or hasn't synced in the last hour, so it never overrides a fresh NTP
+  time.
+- **RTC** (M9 only; its PCF8563 chip keeps time while the device is off). The
+  device writes it after an NTP or GPS sync, at most once an hour, and reads
+  it at boot, so the clock is right before Wi-Fi or GPS. The Wio Tracker L2
+  has no RTC, so its clock is unset until NTP or GPS.
+
+The GPS powers itself on only while it's needed: when the clock is unset or
+its last sync is over 6 hours old, or, in Automatic zone mode, when there's
+no position from the last 6 hours. It turns off once those needs are met. A
+search with no fix gives up after 15 minutes and tries again an hour later.
+For a first fix, take the device outdoors with a view of the sky.
+
+Pick the zone mode in web config under **Time**:
+
+- **Automatic, from GPS** (the default on boards with GPS). The zone comes
+  from the GPS position, looked up offline in zone boundaries stored on the
+  device. It's found on the first fix after boot and again after moving more
+  than 10 km, and it's saved, so the clock shows local time after a reboot
+  even before a fix. Until the first fix, the **Zone** below is used. Out at
+  sea, with no zone, the clock uses whole hours from the longitude
+  (`Etc/GMT±n`).
+- **Manual.** The **Zone** you pick (or the POSIX TZ string you type) applies
+  at once.
+
+**NTP server** takes a host name (1–63 characters). **Save time** saves all
+three fields.
+
+**Home** → **Settings** and the web Status page show three lines:
+
+- **gps:** `none` (no GPS on this board), `off`, `searching m:ss`, or
+  `fix, N of M satellites`.
+- **time:** the source and age of the last sync, such as `NTP, just now` or
+  `GPS, 12 min ago`; `RTC, at boot`; or `not set`.
+- **zone:** the zone name with `(auto)` or `(manual)`, or the manual zone with
+  `(auto, no fix yet)` before the first fix.
+
+Privacy: your position is never sent anywhere, never stored and never logged.
+The serial log says only whether there's a fix, satellite counts and the zone
+name. Only the zone name and its POSIX string are saved.
+
 ## Settings
 
 **Home** → **Settings** shows the account, the Wi-Fi network and IP, the web
-config address, the battery and the setup AP state, with four actions:
+config address, the battery, the setup AP state and the gps, time and zone
+lines (see Time and time zone), with four actions:
 
 - **Theme: …** Centre moves to the next theme (Default, Black & white, White &
   black) and saves it.

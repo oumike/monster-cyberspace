@@ -143,6 +143,29 @@ BOOT tap = Down, BOOT hold (0.7 s) = Back, Wake tap = Select, Wake hold (1 s)
 - [ ] Touch log: tapping the four corners logs `[touch] down x,y` near (0,0), (319,0), (0,239), (319,239) for top-left, top-right, bottom-left, bottom-right; lifting logs `[touch] up`
 - [ ] Wi-Fi setup (`wio_l2`, nothing saved): the AP is named `Rhino-Cyberspace-WioL2-Setup` and `http://192.168.4.1` loads
 
+**GPS time, RTC and time zone (`m9`):**
+
+- [ ] With Wi-Fi in range, `[time] NTP sync` and `[time] RTC written` appear, then `[gps] off`
+- [ ] A Wi-Fi drop and rejoin logs a fresh `[time] NTP sync`
+- [ ] After a reboot with the saved network switched off, the status-bar clock is right at once (`[time] set from RTC`), and `[gps] on` follows
+- [ ] Outdoors with Wi-Fi off, a GPS fix sets the clock: `[gps] fix, …` and `[time] set from GPS` within 15 min
+- [ ] Automatic zone: `[tz] zone <name>` matches the location and the status-bar clock shows local time; after a reboot, local time is right before any fix
+- [ ] The GPS turns off afterwards: `[gps] off` once both the time and the position are fresh
+- [ ] No log line shows coordinates
+- [ ] The Settings screen shows gps, time and zone in both text sizes; with the setup AP on at Comfortable size nothing overlaps the menu
+- [ ] The web Status page shows the same three lines
+- [ ] Web config Time: switching to Manual applies the picked TZ at once
+- [ ] NTP server field: a bad server shows the error; `time.cloudflare.com` logs `[time] NTP sync` after a Wi-Fi rejoin
+- [ ] The web config footer shows `Time zone boundaries © OpenStreetMap contributors (ODbL), from timezone-boundary-builder.`
+- [ ] `m9_fake`: Settings shows the canned gps, time and zone lines
+
+**GPS time and time zone (`wio_l2`, no RTC):**
+
+- [ ] Outdoors with Wi-Fi off, a GPS fix sets the clock: `[gps] fix, …` and `[time] set from GPS` within 15 min
+- [ ] Automatic zone: `[tz] zone <name>` matches the location and the status-bar clock shows local time
+- [ ] The GPS turns off afterwards: `[gps] off` once both the time and the position are fresh
+- [ ] No log line shows coordinates
+
 **API assumptions to confirm (watch the serial log during the live checklist):**
 
 - [ ] `GET /v1/users/me` shape: Home shows the right username and verified state

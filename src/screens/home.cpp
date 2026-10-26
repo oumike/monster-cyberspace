@@ -1,5 +1,4 @@
 #include "app/app_state.h"
-#include "hal/board.h"
 #include "screens/draw.h"
 #include "screens/screens.h"
 #include "store/locked_chat.h"
@@ -66,8 +65,6 @@ void HomeScreen::render(Grid& g, const Theme& t, int64_t) {
   };
   field("user", a.user.empty() ? "not signed in" : "@" + a.user + (a.auth == 2 ? " (unverified)" : ""),
         t.fg);
-  field("wi-fi", wifiUp() ? wifiSsid() + "  " + wifiIp() : "not connected", t.fg);
-  field("config", "http://rhino-cyberspace.local", t.fg);
   field("mentions", std::to_string(a.unreadMentions) + " unread", a.unreadMentions ? t.selectBg : t.fg);
   int cmail = lockedChat().with([](ChatState& s) {
     int n = 0;
@@ -86,8 +83,6 @@ void HomeScreen::render(Grid& g, const Theme& t, int64_t) {
     return out.empty() ? std::string("none") : out;
   });
   field("active", active, t.fg);
-  int bat = board::batteryPercent();
-  field("battery", bat < 0 ? "unknown" : std::to_string(bat) + "%", t.fg);
 
   menu_.setItems({
       ListItem{utf8ToU32("Messages  #" + a.cfg.lastRoom), U"", t.fg},

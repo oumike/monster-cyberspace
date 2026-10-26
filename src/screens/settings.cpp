@@ -2,6 +2,7 @@
 
 #include "app/app_state.h"
 #include "chat/chat_source.h"
+#include "hal/board.h"
 #include "screens/draw.h"
 #include "screens/screens.h"
 #include "store/settings.h"
@@ -69,7 +70,10 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
     putLine(g, 11, r++, value, fg, t.bg);
   };
   field("account", a.user.empty() ? "not signed in" : "@" + a.user, t.fg);
+  field("wi-fi", wifiUp() ? wifiSsid() + "  " + wifiIp() : "not connected", t.fg);
   field("config", "http://rhino-cyberspace.local", t.fg);
+  int bat = board::batteryPercent();
+  field("battery", bat < 0 ? "unknown" : std::to_string(bat) + "%", t.fg);
   bool ap = setupApUp();
   field("setup AP", ap ? "on" : "off", ap ? t.selectBg : t.fg);
   if (ap) {

@@ -193,9 +193,10 @@ nicks in their colours, with `z` for idle users (`lastActivity` older than
 - A message that mentions you (`@yourname`, case-insensitive) is tinted until
   it has been on screen.
 
-**Home dashboard:** the signed-in user, Wi-Fi network and IP, the settings-page
-address, unread mentions, rooms with new activity, and battery. Its last
-entry is **Settings**: the setup AP toggle (on while staying on Wi-Fi, until
+**Home dashboard:** the signed-in user, unread mentions, C-Mail and Feed,
+and rooms with new activity (the battery is in the status bar). Its last
+entry is **Settings**, which shows the Wi-Fi network and IP, the web config
+address and the battery, with the setup AP toggle (on while staying on Wi-Fi, until
 turned off or a restart), **Log out** and **Factory reset…**. Log out and
 factory reset each ask for confirmation (default "Cancel"); factory reset does
 the same as the web config one.

@@ -134,8 +134,8 @@ read back through the page.
 
 ## Settings
 
-**Home** → **Settings** shows the account, the web config address and the
-setup AP state, with three actions:
+**Home** → **Settings** shows the account, the Wi-Fi network and IP, the web
+config address, the battery and the setup AP state, with three actions:
 
 - **Turn setup AP on / off.** Brings up the setup AP (its name, password state
   and `http://192.168.4.1` are shown) while staying on your Wi-Fi, so you can

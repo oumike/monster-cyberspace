@@ -1,6 +1,7 @@
 #include "screens/router.h"
 
 #include "app/app_state.h"
+#include "screens/composer.h"
 #include "screens/entry.h"
 #include "screens/room.h"
 #include "screens/screens.h"
@@ -20,6 +21,7 @@ FeedListScreen feedList{FeedListScreen::Kind::Feed};
 FeedListScreen watched{FeedListScreen::Kind::Watched};
 FeedListScreen bookmarks{FeedListScreen::Kind::Bookmarks};
 EntryScreen entry;
+ComposerScreen composer;
 SettingsScreen settingsScreen;
 ComingSoonScreen comingSoon;
 LoginFormScreen loginForm;
@@ -43,8 +45,7 @@ Screen* lookup(Id id) {
     case Id::Bookmarks: return &bookmarks;
     case Id::Settings: return &settingsScreen;
     case Id::Entry: return &entry;
-    // A placeholder until the Composer screen (Task 11).
-    case Id::Composer: return &comingSoon;
+    case Id::Composer: return &composer;
   }
   return &home;
 }
@@ -63,8 +64,7 @@ void go(Id id, const std::string& arg) {
   active->leave();
   cur = id;
   active = lookup(id);
-  if (id == Id::Composer) active->enter("New entry");
-  else active->enter(arg);
+  active->enter(arg);
 }
 
 Id current() { return cur; }

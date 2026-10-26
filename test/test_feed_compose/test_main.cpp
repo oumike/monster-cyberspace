@@ -110,6 +110,24 @@ void test_reply_flag_bookmark_json() {
   TEST_ASSERT_EQUAL_STRING("{\"replyId\":\"r1\",\"type\":\"reply\"}", bookmarkJson("", "r1").c_str());
 }
 
+void test_title_and_cw_trimmed() {
+  EntryDraft d;
+  d.body = "hi";
+  d.title = " \t ";
+  d.cw = "  \n";
+  TEST_ASSERT_EQUAL_STRING("{\"content\":\"hi\"}", entryJson(d).c_str());
+  d.title = "  T ";
+  d.cw = " cw  ";
+  JsonDocument doc;
+  TEST_ASSERT_FALSE(deserializeJson(doc, entryJson(d)));
+  TEST_ASSERT_EQUAL_STRING("T", doc["title"].as<const char*>());
+  TEST_ASSERT_EQUAL_STRING("cw", doc["contentWarning"].as<const char*>());
+  // Lengths count the trimmed text.
+  d.title = " " + std::string(100, 'a') + " ";
+  d.cw = " " + std::string(60, 'w') + " ";
+  TEST_ASSERT_EQUAL_STRING("", validateDraft(d).c_str());
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_split_topics);
@@ -119,5 +137,6 @@ int main() {
   RUN_TEST(test_whitespace_body_rejected);
   RUN_TEST(test_entry_json_omits_empties);
   RUN_TEST(test_reply_flag_bookmark_json);
+  RUN_TEST(test_title_and_cw_trimmed);
   return UNITY_END();
 }

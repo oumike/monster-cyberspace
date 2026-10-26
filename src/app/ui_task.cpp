@@ -7,6 +7,7 @@
 #include "chat/chat_source.h"
 #include "hal/board.h"
 #include "input/keymap_m9.h"
+#include "screens/composer.h"
 #include "screens/router.h"
 #include "store/locked_chat.h"
 #include "ui/renderer.h"
@@ -129,6 +130,8 @@ void handleEvent(const Event& e) {
     default:
       break;
   }
+  // A post that settles after the Composer was left still clears its draft.
+  if (cur != Id::Composer) composerBackgroundEvent(e);
   router::screen().onEvent(e);
 }
 

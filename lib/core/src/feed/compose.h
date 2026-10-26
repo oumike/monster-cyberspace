@@ -16,9 +16,11 @@ constexpr size_t kBodyMaxChars = 4096;
 
 // Trims; strips a leading '#'; lower-cases ASCII; drops empties.
 std::vector<std::string> splitTopics(std::string_view s);
-// "" when valid, else the message to show. Lengths count code points.
+// "" when valid, else the message to show. Lengths count code points; the
+// title and cw are counted trimmed.
 std::string validateDraft(const EntryDraft& d);
-// Leaves out an empty title, empty topics and an empty cw; leaves out
+// Trims the title and cw. Leaves out an empty (or whitespace-only) title,
+// empty topics and an empty cw; leaves out
 // isPublic and isNSFW when false.
 std::string entryJson(const EntryDraft& d);
 // parentReplyId only when non-empty.

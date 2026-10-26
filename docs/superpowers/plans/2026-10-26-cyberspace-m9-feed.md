@@ -728,8 +728,8 @@
 - The draft is a static `EntryDraft` that survives leaving the screen. It is cleared only by Post or Discard.
 - The counter reads `n/4096` beside the Body label.
 
-- [ ] **Step 1: Implement.**
-- [ ] **Step 2: Run** `pio run -e m9_fake` and `pio run -e m9`. Expected: SUCCESS.
+- [x] **Step 1: Implement.**
+- [x] **Step 2: Run** `pio run -e m9_fake` and `pio run -e m9`. Expected: SUCCESS.
 - [ ] **Step 3: Flash `m9_fake`** and check:
   - a multi-line body;
   - the counter;
@@ -737,7 +737,7 @@
   - the third post within a minute shows "Slow down";
   - posting opens the new entry;
   - Back asks to discard.
-- [ ] **Step 4: Commit** `feat(ui): entry Composer`.
+- [x] **Step 4: Commit** `feat(ui): entry Composer`.
 
 ### Task 12: Documentation
 

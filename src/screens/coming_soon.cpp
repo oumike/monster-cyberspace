@@ -5,8 +5,6 @@
 namespace rc {
 
 void ComingSoonScreen::onKey(const KeyEvent& k) {
-  // The router hands the Composer's OpenFeed to the screen.
-  if (k.action == Action::OpenFeed) return router::go(router::Id::FeedList);
   if (k.action == Action::Back || k.action == Action::Left || k.action == Action::Select)
     router::go(router::Id::Home);
 }

@@ -58,16 +58,17 @@ std::vector<std::string> splitTopics(std::string_view s) {
 std::string validateDraft(const EntryDraft& d) {
   if (trim(d.body).empty()) return "Body is empty";
   if (codePoints(d.body) > kBodyMaxChars) return "Body over 4096 characters";
-  if (codePoints(d.title) > kTitleMaxChars) return "Title over 100 characters";
+  if (codePoints(trim(d.title)) > kTitleMaxChars) return "Title over 100 characters";
   if (splitTopics(d.topics).size() > kMaxTopics) return "At most 3 topics";
-  if (codePoints(d.cw) > kWarningMaxChars) return "Warning over 60 characters";
+  if (codePoints(trim(d.cw)) > kWarningMaxChars) return "Warning over 60 characters";
   return "";
 }
 
 std::string entryJson(const EntryDraft& d) {
   JsonDocument doc;
   doc["content"] = d.body;
-  if (!d.title.empty()) doc["title"] = d.title;
+  std::string_view title = trim(d.title), cw = trim(d.cw);
+  if (!title.empty()) doc["title"] = std::string(title);
   std::vector<std::string> topics = splitTopics(d.topics);
   if (!topics.empty()) {
     JsonArray arr = doc["topics"].to<JsonArray>();
@@ -75,7 +76,7 @@ std::string entryJson(const EntryDraft& d) {
   }
   if (d.isPublic) doc["isPublic"] = true;
   if (d.nsfw) doc["isNSFW"] = true;
-  if (!d.cw.empty()) doc["contentWarning"] = d.cw;
+  if (!cw.empty()) doc["contentWarning"] = std::string(cw);
   return serialize(doc);
 }
 

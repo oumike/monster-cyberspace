@@ -180,7 +180,7 @@
   - `- `, `* ` and `+ ` bullets → `• `; `> ` → `│ `.
   - More than one blank line in a row collapses to one.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
   ```cpp
   void test_md_headings_emphasis() {
     TEST_ASSERT_TRUE(U"Title\nbold and it" == markdownToText("## Title\n**bold** and *it*"));
@@ -215,10 +215,10 @@
     TEST_ASSERT_EQUAL(0, nextSmallerLimit(2));
   }
   ```
-- [ ] **Step 2: Run** `pio test -e native -f test_feed_text`. Expected: FAIL.
-- [ ] **Step 3: Implement.** Work line by line with a "fenced" flag. Use `lib/core/src/util/utf8.h` to decode. Handle inline markup with a single left-to-right scan.
-- [ ] **Step 4: Run** the tests. Expected: PASS.
-- [ ] **Step 5: Commit** `feat(core): Markdown to plain text and truncation`.
+- [x] **Step 2: Run** `pio test -e native -f test_feed_text`. Expected: FAIL.
+- [x] **Step 3: Implement.** Work line by line with a "fenced" flag. Use `lib/core/src/util/utf8.h` to decode. Handle inline markup with a single left-to-right scan.
+- [x] **Step 4: Run** the tests. Expected: PASS.
+- [x] **Step 5: Commit** `feat(core): Markdown to plain text and truncation`.
 
 ### Task 3: Compose and Feed rate limits
 

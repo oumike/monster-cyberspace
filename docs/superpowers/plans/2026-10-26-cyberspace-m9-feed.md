@@ -105,7 +105,7 @@
     - image → `"[img]"`;
     - anything else → `"[attachment]"`.
 
-- [ ] **Step 1: Write the fixtures and failing tests**
+- [x] **Step 1: Write the fixtures and failing tests**
 
   Fixtures in `feed_fixtures.h`, namespace `fx`, hand-written from the doc shapes with the header comment used in `api_fixtures.h`:
   - `kFeedPage`: 3 entries, one with title, topics `["music","linux"]`, `isNSFW:true` and `contentWarning:"spiders"`; `cursor:"p3"`.
@@ -148,10 +148,10 @@
   void test_parse_bookmarks_watches() // post vs reply bookmark fields; watch postIds; watching==true
   void test_parse_rejects_garbage()   // every parse* returns false on "<html>" and on {"data":null}
   ```
-- [ ] **Step 2: Run** `pio test -e native -f test_feed_parse`. Expected: it fails to build (the headers are missing).
-- [ ] **Step 3: Implement** `entry.h` and `feed_parse.cpp` with ArduinoJson. Reuse the `load()` pattern from `lib/core/src/cs/api_parse.cpp`. `parseIsoMs` uses days-from-civil arithmetic, not `mktime` (it is UTC and must not depend on the time zone).
-- [ ] **Step 4: Run** `pio test -e native -f test_feed_parse`. Expected: PASS.
-- [ ] **Step 5: Commit** `feat(core): Feed types and response parsing`.
+- [x] **Step 2: Run** `pio test -e native -f test_feed_parse`. Expected: it fails to build (the headers are missing).
+- [x] **Step 3: Implement** `entry.h` and `feed_parse.cpp` with ArduinoJson. Reuse the `load()` pattern from `lib/core/src/cs/api_parse.cpp`. `parseIsoMs` uses days-from-civil arithmetic, not `mktime` (it is UTC and must not depend on the time zone).
+- [x] **Step 4: Run** `pio test -e native -f test_feed_parse`. Expected: PASS.
+- [x] **Step 5: Commit** `feat(core): Feed types and response parsing`.
 
 ### Task 2: Markdown to text, truncation, limit fallback
 

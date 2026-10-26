@@ -9,7 +9,7 @@
 namespace board {
 
 void begin();
-const char* name();  // "M9"; also used in the setup AP name
+const char* name();  // "M9", "WioL2"; also used in the setup AP name
 int panelWidth();
 int panelHeight();
 // Sends rows [y0, y1) of a full panelWidth() x panelHeight() RGB565 frame.
@@ -22,5 +22,9 @@ int batteryPercent();  // -1 when unknown
 bool externalPower();
 // Returns at once; the tone plays in the background.
 void beep(int freqHz, int ms);
+// Raw touch, for boards with a touch panel. readTouch is true while a finger
+// is down, with x, y in the panelWidth() x panelHeight() frame.
+bool hasTouch();
+bool readTouch(int16_t& x, int16_t& y);
 
 }  // namespace board

@@ -75,6 +75,9 @@ bool externalPower() { return batteryVolts() > 4.25f; }
 
 void beep(int freqHz, int ms) { tone(m9::BUZZER, freqHz, ms); }
 
+bool hasTouch() { return false; }
+bool readTouch(int16_t&, int16_t&) { return false; }
+
 }  // namespace board
 
 #endif

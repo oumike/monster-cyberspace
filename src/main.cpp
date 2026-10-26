@@ -2,6 +2,7 @@
 #include <esp_heap_caps.h>
 
 #include "app/app_state.h"
+#include "app/time_service.h"
 #include "app/ui_task.h"
 #include "chat/chat_source.h"
 #include "core_version.h"
@@ -17,6 +18,7 @@ void setup() {
   Serial.printf("[boot] rhino-cyberspace %s on %s\n", RC_VERSION, board::name());
   board::begin();
   settings::load(app().cfg);
+  timesvc::start(app().cfg);
   // The network source brings up Wi-Fi too; the m9_fake build has none.
   startChatSource(app().cfg);
   ui::start();

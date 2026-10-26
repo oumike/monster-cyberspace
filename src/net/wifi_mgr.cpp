@@ -6,6 +6,7 @@
 
 #include <algorithm>
 
+#include "app/time_service.h"
 #include "hal/board.h"
 #include "net/ap_fallback.h"
 #include "web/web_util.h"
@@ -97,7 +98,6 @@ void begin(const rc::Settings& s) {
   gApPw = s.apPassword;
   if (gMode == Mode::Setup) raiseAp();
 
-  configTzTime(s.tz.c_str(), "pool.ntp.org", "time.google.com");
   startMdns();
 
   gNext = 0;
@@ -173,6 +173,7 @@ void reconnectWithBackoff() {
   if (connected()) {
     if (gTrying) {
       Serial.printf("[wifi] connected, ip %s\n", WiFi.localIP().toString().c_str());
+      rc::timesvc::restartNtp();
       gTrying = false;
     }
     gBackoffMs = 1000;

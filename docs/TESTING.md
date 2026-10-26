@@ -104,11 +104,11 @@ These were built without flashing and still need a run on the device.
 Agents and scripts must never call the live Cyberspace API. A person runs
 this checklist on the `m9` build with their own account.
 
-- [ ] Web login: sign in from the web page; Home shows the account
-- [ ] Join a room; history loads and new messages stream in
-- [ ] Send a plain message, a `/me` action, and a bad `/dice` (an error banner, and the text stays in the input line)
-- [ ] Scroll back past the first page of history
-- [ ] Open the drawer and see yourself in it
+- [x] Web login: sign in from the web page; Home shows the account
+- [x] Join a room; history loads and new messages stream in
+- [x] Send a plain message, a `/me` action, and a bad `/dice` (an error banner, and the text stays in the input line)
+- [x] Scroll back past the first page of history
+- [x] Open the drawer and see yourself in it
 - [ ] Turn the screen off, mention yourself from the website, and hear the buzzer
 - [ ] Delete one of your own messages; the website shows the tombstone
 - [ ] Turn Wi-Fi off and back on: ✕, then ● again, with no lost or duplicated messages
@@ -116,7 +116,7 @@ this checklist on the `m9` build with their own account.
 
 **C-Mail (live):**
 
-- [ ] The list matches the website's C-Mail, with the right unread counts
+- [x] The list matches the website's C-Mail, with the right unread counts
 - [ ] Open a conversation: history loads; a message sent from the website streams in
 - [ ] Send from the device; the website shows it. Typing on the device shows "…is typing" on the website, and it clears when you empty the line
 - [ ] Typing on the website shows "name is typing…" on the device, and it goes away within ~9 s of stopping

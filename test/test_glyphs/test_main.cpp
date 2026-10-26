@@ -51,6 +51,14 @@ void test_box_drawing_present() {
   }
 }
 
+void test_feed_marks_use_runtime_aliases() {
+  for (const CellFont* f : {&cell6x12, &cell8x16}) {
+    TEST_ASSERT_EQUAL_PTR(findGlyph(*f, 0x2190), glyphFor(*f, 0x21A9));  // ↩ → ←
+    TEST_ASSERT_EQUAL_PTR(findGlyph(*f, U'*'), glyphFor(*f, 0x2605));   // ★ → *
+    TEST_ASSERT_EQUAL_PTR(findGlyph(*f, 0x2514), glyphFor(*f, 0x21B3));  // ↳ → └
+  }
+}
+
 void test_missing_falls_back() {
   const uint8_t* g = glyphFor(cell8x16, 0x4E2D);  // 中
   TEST_ASSERT_NOT_NULL(g);
@@ -68,6 +76,7 @@ int main() {
   RUN_TEST(test_dims);
   RUN_TEST(test_ascii_present);
   RUN_TEST(test_box_drawing_present);
+  RUN_TEST(test_feed_marks_use_runtime_aliases);
   RUN_TEST(test_missing_falls_back);
   return UNITY_END();
 }

@@ -4,6 +4,8 @@
 
 #include <cstdint>
 
+#include "ui/glyph_set.h"
+
 namespace rc {
 
 // Code points are sorted ascending. Each glyph is h bytes, one per row
@@ -27,10 +29,13 @@ inline const uint8_t* findGlyph(const CellFont& f, char32_t cp) {
   return nullptr;
 }
 
-// The glyph for cp. Missing code points fall back to U+FFFD, then to '?';
-// nullptr only if the font has neither.
+// The glyph for cp. Missing code points use their kGlyphAliases stand-in,
+// then fall back to U+FFFD, then to '?'; nullptr only if the font has none.
 inline const uint8_t* glyphFor(const CellFont& f, char32_t cp) {
   if (const uint8_t* g = findGlyph(f, cp)) return g;
+  for (const GlyphAlias& a : kGlyphAliases)
+    if (a.cp == cp)
+      if (const uint8_t* g = findGlyph(f, a.as)) return g;
   if (const uint8_t* g = findGlyph(f, 0xFFFD)) return g;
   return findGlyph(f, U'?');
 }

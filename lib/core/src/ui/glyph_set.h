@@ -16,7 +16,9 @@ constexpr char32_t kExtraGlyphs[] = {
     0xFFFD,
 };
 
-// Glyphs missing from Terminus, drawn with a stand-in's bitmap.
+// Glyphs missing from Terminus, drawn with a stand-in's bitmap. bdf2cells.py
+// bakes aliases for kExtraGlyphs entries; glyphFor() resolves the rest at run
+// time.
 struct GlyphAlias {
   char32_t cp, as;
 };
@@ -26,6 +28,9 @@ constexpr GlyphAlias kGlyphAliases[] = {
     {0x1F3B2, 0x002A},  // 🎲 → *
     {0x1F3B1, 0x0038},  // 🎱 → 8
     {0x1F960, 0x0066},  // 🥠 → f
+    {0x21A9, 0x2190},  // ↩ → ←
+    {0x2605, 0x002A},  // ★ → *
+    {0x21B3, 0x2514},  // ↳ → └
 };
 
 }  // namespace rc

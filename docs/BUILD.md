@@ -39,3 +39,40 @@ scripts/build-upload-monitor.sh m9    # build, flash, then open the serial monit
 
 If a first build fails while installing a tool package, run it again. A
 one-off PlatformIO install error has been seen on the first run.
+
+## Time zone data
+
+`src/tz/tz_data.h` holds the zone boundaries and POSIX strings for the
+automatic time zone. `scripts/tzgen.py` (Python 3 standard library only)
+generates it; the downloaded data stays outside the repo.
+
+1. Download `timezones.geojson.zip` (the no-oceans file, not
+   `-with-oceans`) from the
+   [timezone-boundary-builder](https://github.com/evansiroky/timezone-boundary-builder/releases)
+   release, currently `2026e`, to a folder outside the repo.
+2. Regenerate, with tzdata from `/usr/share/zoneinfo` (its `+VERSION` was
+   `2026e`):
+
+   ```sh
+   python3 -I scripts/tzgen.py /path/to/timezones.geojson.zip --release 2026e > src/tz/tz_data.h
+   ```
+
+   It prints `zones 419, rings 1098, points 146728, blob 1158338 bytes` for
+   `2026e` at the default `--tolerance 0.01` (degrees). The blob must stay
+   under 2 MiB; if it grows past that, the script fails and a larger
+   `--tolerance` (`0.015`, then `0.02`) brings it down.
+3. If the script lists zones missing from zoneinfo, point `--zoneinfo` at a
+   newer tzdata, for example the `zoneinfo` folder of the `tzdata` pip package
+   installed in a virtual environment outside the repo.
+
+The unit-test fixture `test/fixtures/tz_fixture_blob.h` comes from the same
+script:
+
+```sh
+python3 -I scripts/tzgen.py test/fixtures/tz_fixture.geojson \
+    --posix test/fixtures/tz_fixture_posix.json --no-simplify \
+    --release test --name kTzFixture --namespace fx > test/fixtures/tz_fixture_blob.h
+```
+
+The data is © OpenStreetMap contributors under the ODbL; the README's
+"Time zone data" section carries the attribution.

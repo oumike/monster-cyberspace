@@ -364,7 +364,7 @@
   };
   ```
 
-- [ ] **Step 1: Write the failing tests** (build the entries with a helper `E(id)`)
+- [x] **Step 1: Write the failing tests** (build the entries with a helper `E(id)`)
   ```cpp
   void test_first_page_prepends_new_keeps_cursor()
     // hold p3,p2,p1 cursor "c1"; merge p5,p4,p3 cursor "x" → p5,p4,p3,p2,p1; cursor "c1"
@@ -387,10 +387,10 @@
   void test_clear_drops_everything()
     // after clear: feed empty, entry null, bookmarkIdFor("p1")=="", !bookmarksLoaded()
   ```
-- [ ] **Step 2: Run** `pio test -e native -f test_feed_store`. Expected: FAIL.
-- [ ] **Step 3: Implement** with `std::vector` for the feed and `std::deque` for replies, plus a `std::map` for bookmarks.
-- [ ] **Step 4: Run** the tests. Expected: PASS.
-- [ ] **Step 5: Commit** `feat(core): Feed store with paging, caps and bookmarks`.
+- [x] **Step 2: Run** `pio test -e native -f test_feed_store`. Expected: FAIL.
+- [x] **Step 3: Implement** with `std::vector` for the feed and `std::deque` for replies, plus a `std::map` for bookmarks.
+- [x] **Step 4: Run** the tests. Expected: PASS.
+- [x] **Step 5: Commit** `feat(core): Feed store with paging, caps and bookmarks`.
 
 ### Task 5: Feed layout and widgets
 

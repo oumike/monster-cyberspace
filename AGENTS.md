@@ -27,6 +27,10 @@ features come later.
   open unless a password is configured in web config. The page is served at
   `http://192.168.4.1`, with no DNS hijacking and nothing that pops up.
 - Never log or store passwords. Never log tokens.
+- **More boards are planned.** Keep Cyberspace logic board-agnostic: portable
+  logic in `lib/core`, and hardware access outside `src/hal/` only through
+  `src/hal/board.h`. Never include `src/hal/<board>/` headers elsewhere or
+  hard-code panel size, pins or key codes.
 - **Long-term idea, not to be built yet:** a LoRa gateway that bridges cIRC to
   other devices. It needs the Cyberspace operator's permission first (spec §12).
 

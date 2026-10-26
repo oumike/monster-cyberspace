@@ -26,6 +26,7 @@
 ## Global Constraints
 
 - Never call the live API (`api.cyberspace.online` or its RTDB) from tests, scripts or an agent. Fixtures are hand-written from the documented shapes.
+- More boards will follow, so keep Cyberspace code board-agnostic. Parsing, store, layout and widget logic stay in `lib/core` (no Arduino, no board headers). Device code outside `src/hal/` touches hardware only through `src/hal/board.h` (`board::panelWidth()`, `board::beep()`, …) and never includes `src/hal/<board>/` headers or hard-codes panel size, pins or key codes. Board-specific values belong behind the HAL.
 - Every write comes from a key press. Nothing is retried, apart from `CsApi::call`'s existing single repeat after a 401 refresh.
 - Never log passwords or tokens.
 - Device caps:

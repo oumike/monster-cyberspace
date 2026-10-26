@@ -453,7 +453,7 @@
   };
   ```
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
   - In `test_layout`:
     - `test_relative_age`: 30 s → `"now"`, 5 min → `"5m"`, 3 h → `"3h"`, 2 d → `"2d"`.
     - `test_feed_row`: line1 == `U"tardibyte · 3h · ↩5 ★"`; line2 is the title; a cw entry gives `U"CW: spiders"`; NSFW only gives `U"CW: NSFW"`; at cols 20 both lines are ≤ 20 code points.
@@ -466,12 +466,12 @@
     - `test_entry_list_wraps`: 3 rows; `up()` from 0 selects 2 and `atEnd()`; `down()` then selects 0; on an empty list `up()`/`down()` are no-ops.
     - `test_text_area_newlines_and_cap`: insert `"ab\ncd"`; `utf8()=="ab\ncd"`; at `TextArea(3)`, the 4th insert returns false.
     - `test_text_area_up_down`: the cursor on line 2 `up(40)` moves to line 1, and `up(40)` again returns false.
-- [ ] **Step 2: Run** `pio test -e native -f test_layout -f test_widgets`. Expected: FAIL.
-- [ ] **Step 3: Implement.**
+- [x] **Step 2: Run** `pio test -e native -f test_layout -f test_widgets`. Expected: FAIL.
+- [x] **Step 3: Implement.**
   - Replies reuse the per-message line format of `layoutRoom` by converting each `Reply` into a `CircMessage` (`id`, `username`, `content` = plain text, `timestamp` = `createdMs`) and calling `layoutRoom` on a one-element deque.
   - Use the theme's dim colour for line 2 and for the `↳` and `[deleted]` lines.
-- [ ] **Step 4: Run** the tests. Expected: PASS (the full suite too).
-- [ ] **Step 5: Commit** `feat(ui): Feed rows, entry layout, EntryList and TextArea`.
+- [x] **Step 4: Run** the tests. Expected: PASS (the full suite too).
+- [x] **Step 5: Commit** `feat(ui): Feed rows, entry layout, EntryList and TextArea`.
 
 ### Task 6: API calls, commands, shared state and sources
 

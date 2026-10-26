@@ -8,11 +8,13 @@
 #include "ui/theme.h"
 #include "ui/widgets/banner.h"
 #include "ui/widgets/drawer.h"
+#include "ui/widgets/entry_list.h"
 #include "ui/widgets/input_line.h"
 #include "ui/widgets/list_view.h"
 #include "ui/widgets/log_view.h"
 #include "ui/widgets/palette.h"
 #include "ui/widgets/status_bar.h"
+#include "ui/widgets/text_area.h"
 #include "util/utf8.h"
 
 using namespace rc;
@@ -331,6 +333,123 @@ void test_qr_small_url() {
   TEST_ASSERT_FALSE(qrToCells(std::string(272, 'x'), rows));
 }
 
+static std::vector<FeedRow> feedRows(int n) {
+  std::vector<FeedRow> rows;
+  for (int i = 0; i < n; ++i)
+    rows.push_back({utf8ToU32("nick" + std::to_string(i)), utf8ToU32("title" + std::to_string(i)),
+                    1, 2});
+  return rows;
+}
+
+void test_entry_list_outline() {
+  EntryList el;
+  el.setRows(feedRows(3));
+  el.down();
+  TEST_ASSERT_EQUAL(1, el.selected());
+  Grid g(20, 8);
+  el.render(g, 0, 8, T());
+  TEST_ASSERT_EQUAL_STRING("nick1", rowText(g, 2, 0, 5).c_str());
+  TEST_ASSERT_EQUAL_STRING("title1", rowText(g, 3, 0, 6).c_str());
+  TEST_ASSERT_EQUAL(kEdgeTop | kEdgeLeft, g.at(0, 2).edges);
+  TEST_ASSERT_EQUAL(kEdgeBottom | kEdgeLeft, g.at(0, 3).edges);
+  TEST_ASSERT_EQUAL(kEdgeTop, g.at(5, 2).edges);
+  TEST_ASSERT_EQUAL(kEdgeBottom | kEdgeRight, g.at(19, 3).edges);
+  TEST_ASSERT_EQUAL(0, g.at(0, 1).edges);
+  TEST_ASSERT_EQUAL(0, g.at(0, 4).edges);
+  TEST_ASSERT_EQUAL_HEX16(T().bg, g.at(0, 2).bg);
+  TEST_ASSERT_EQUAL_HEX16(2, g.at(0, 3).fg);
+}
+
+void test_entry_list_scrolls() {
+  EntryList el;
+  el.setRows(feedRows(6));
+  el.setSelected(5);
+  Grid g(20, 5);
+  el.render(g, 1, 5, T());  // 4 rows = 2 items
+  TEST_ASSERT_EQUAL_STRING("nick5", rowText(g, 3, 0, 5).c_str());
+  TEST_ASSERT_EQUAL_STRING("nick4", rowText(g, 1, 0, 5).c_str());
+  el.setSelected(99);
+  TEST_ASSERT_EQUAL(5, el.selected());
+}
+
+void test_entry_list_wraps() {
+  EntryList el;
+  el.up();
+  el.down();
+  TEST_ASSERT_EQUAL(0, el.selected());
+  TEST_ASSERT_EQUAL(0, el.size());
+  el.setRows(feedRows(3));
+  TEST_ASSERT_FALSE(el.atEnd());
+  el.up();
+  TEST_ASSERT_EQUAL(2, el.selected());
+  TEST_ASSERT_TRUE(el.atEnd());
+  el.down();
+  TEST_ASSERT_EQUAL(0, el.selected());
+}
+
+static void typeInto(TextArea& ta, const std::u32string& s) {
+  for (char32_t c : s) ta.insert(c);
+}
+
+void test_text_area_newlines_and_cap() {
+  TextArea ta;
+  typeInto(ta, U"ab\ncd");
+  TEST_ASSERT_EQUAL_STRING("ab\ncd", ta.utf8().c_str());
+  TEST_ASSERT_EQUAL(5, ta.length());
+  ta.backspace();
+  TEST_ASSERT_EQUAL_STRING("ab\nc", ta.utf8().c_str());
+  TEST_ASSERT_TRUE(ta.left());
+  ta.backspace();  // removes the '\n'
+  TEST_ASSERT_EQUAL_STRING("abc", ta.utf8().c_str());
+  ta.clear();
+  TEST_ASSERT_EQUAL(0, ta.length());
+  TEST_ASSERT_FALSE(ta.left());
+  TEST_ASSERT_FALSE(ta.right());
+
+  TextArea small(3);
+  TEST_ASSERT_TRUE(small.insert(U'\u00e9'));
+  TEST_ASSERT_TRUE(small.insert(U'\U0001F3B2'));
+  TEST_ASSERT_TRUE(small.insert(U'x'));
+  TEST_ASSERT_FALSE(small.insert(U'y'));
+  TEST_ASSERT_EQUAL(3, small.length());
+}
+
+void test_text_area_up_down() {
+  TextArea ta;
+  typeInto(ta, U"first\nsecond");
+  TEST_ASSERT_FALSE(ta.down(40));
+  TEST_ASSERT_TRUE(ta.up(40));
+  TEST_ASSERT_FALSE(ta.up(40));
+  ta.insert(U'X');  // cursor kept column 5 on the shorter line: end of "first"
+  TEST_ASSERT_EQUAL_STRING("firstX\nsecond", ta.utf8().c_str());
+  TEST_ASSERT_TRUE(ta.down(40));
+  ta.insert(U'Y');
+  TEST_ASSERT_EQUAL_STRING("firstX\nsecondY", ta.utf8().c_str());
+
+  // Wrapped lines count as visual lines.
+  TextArea w;
+  typeInto(w, U"abcdefghij");
+  TEST_ASSERT_TRUE(w.up(4));  // "abcd|efgh|ij": from line 3 to line 2
+  w.insert(U'Z');
+  TEST_ASSERT_EQUAL_STRING("abcdefZghij", w.utf8().c_str());
+}
+
+void test_text_area_render_cursor_visible() {
+  TextArea ta;
+  for (int i = 0; i < 10; ++i) {
+    ta.insert(static_cast<char32_t>(U'0' + i));
+    if (i < 9) ta.insert(U'\n');
+  }
+  Grid g(10, 5);
+  ta.render(g, 1, 4, T(), true);  // 3 rows: lines 7, 8, 9
+  TEST_ASSERT_EQUAL_HEX32(U'7', g.at(0, 1).cp);
+  TEST_ASSERT_EQUAL_HEX32(U'9', g.at(0, 3).cp);
+  TEST_ASSERT_EQUAL_HEX16(T().cursorBg, g.at(1, 3).bg);
+  Grid g2(10, 5);
+  ta.render(g2, 1, 4, T(), false);
+  TEST_ASSERT_TRUE(g2.at(1, 3).bg != T().cursorBg);
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_input_insert_cursor);
@@ -352,5 +471,11 @@ int main() {
   RUN_TEST(test_palette_first_is_text_size);
   RUN_TEST(test_palette_cmail_drops_circ_only);
   RUN_TEST(test_qr_small_url);
+  RUN_TEST(test_entry_list_outline);
+  RUN_TEST(test_entry_list_scrolls);
+  RUN_TEST(test_entry_list_wraps);
+  RUN_TEST(test_text_area_newlines_and_cap);
+  RUN_TEST(test_text_area_up_down);
+  RUN_TEST(test_text_area_render_cursor_visible);
   return UNITY_END();
 }

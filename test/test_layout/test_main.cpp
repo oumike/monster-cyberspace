@@ -6,6 +6,8 @@
 #include <set>
 #include <string>
 
+#include "feed/entry.h"
+#include "ui/feed_layout.h"
 #include "ui/grid.h"
 #include "ui/nick_color.h"
 #include "ui/room_layout.h"
@@ -307,6 +309,173 @@ void test_emoji_body() {
   TEST_ASSERT_EQUAL(12 + 2, width(lines[0]));
 }
 
+// ---- Feed ----
+
+static const int64_t kMin = 60 * 1000LL, kHour = 60 * kMin, kDay = 24 * kHour;
+
+static Entry feedEntry() {
+  Entry e;
+  e.id = "e1";
+  e.author = "tardibyte";
+  e.title = "Hello world";
+  e.body = "First line\n\nSecond paragraph about **spiders**.";
+  e.createdMs = kTs - 3 * kHour;
+  e.replies = 5;
+  return e;
+}
+
+static EntryLayoutOptions entryOpts(bool revealed = false) {
+  EntryLayoutOptions o;
+  o.cols = 40;
+  o.size = TextSize::Comfortable;
+  o.nowMs = kTs;
+  o.self = "oumike";
+  o.revealed = revealed;
+  return o;
+}
+
+static bool anyLineContains(const std::vector<DisplayLine>& ls, const std::string& s) {
+  for (const auto& l : ls)
+    if (flat(l).find(s) != std::string::npos) return true;
+  return false;
+}
+
+void test_relative_age() {
+  TEST_ASSERT_EQUAL_STRING("now", relativeAge(kTs - 30000, kTs).c_str());
+  TEST_ASSERT_EQUAL_STRING("5m", relativeAge(kTs - 5 * kMin, kTs).c_str());
+  TEST_ASSERT_EQUAL_STRING("3h", relativeAge(kTs - 3 * kHour, kTs).c_str());
+  TEST_ASSERT_EQUAL_STRING("2d", relativeAge(kTs - 2 * kDay, kTs).c_str());
+  TEST_ASSERT_EQUAL_STRING("25 Oct", relativeAge(kTs, kTs + 7 * kDay).c_str());
+}
+
+void test_feed_row() {
+  Entry e = feedEntry();
+  const Theme& t = defaultTheme();
+  FeedRow r = layoutFeedRow(e, true, kTs, 40, t);
+  TEST_ASSERT_TRUE(r.line1 == U"tardibyte \u00b7 3h \u00b7 \u21a95 \u2605");
+  TEST_ASSERT_EQUAL_STRING("Hello world", u32ToUtf8(r.line2).c_str());
+  TEST_ASSERT_EQUAL_HEX16(t.dim, r.fg2);
+  TEST_ASSERT_EQUAL_HEX16(nickColor("tardibyte", false), r.fg1);
+
+  e.title.clear();
+  r = layoutFeedRow(e, false, kTs, 40, t);
+  TEST_ASSERT_TRUE(r.line1 == U"tardibyte \u00b7 3h \u00b7 \u21a95");
+  TEST_ASSERT_EQUAL_STRING("First line", u32ToUtf8(r.line2).c_str());
+
+  e.contentWarning = "spiders";
+  r = layoutFeedRow(e, false, kTs, 40, t);
+  TEST_ASSERT_TRUE(r.line2 == U"CW: spiders");
+
+  e.contentWarning.clear();
+  e.nsfw = true;
+  r = layoutFeedRow(e, false, kTs, 40, t);
+  TEST_ASSERT_TRUE(r.line2 == U"CW: NSFW");
+
+  e = feedEntry();
+  e.title = "A very long title that goes past twenty columns";
+  r = layoutFeedRow(e, true, kTs, 20, t);
+  TEST_ASSERT_TRUE(r.line1.size() <= 20);
+  TEST_ASSERT_TRUE(r.line2.size() <= 20);
+
+  e.deleted = true;
+  r = layoutFeedRow(e, false, kTs, 40, t);
+  TEST_ASSERT_TRUE(r.line2 == U"[deleted]");
+}
+
+void test_entry_layout_reveal() {
+  Entry e = feedEntry();
+  e.contentWarning = "spiders";
+  e.topics = {"t1", "t2"};
+  e.isPublic = true;
+  std::deque<Reply> none;
+  auto ls = layoutEntry(e, none, entryOpts(false));
+  TEST_ASSERT_TRUE(flat(ls[0]) == "tardibyte \xc2\xb7 3h");
+  TEST_ASSERT_EQUAL_STRING("#t1 #t2 \xc2\xb7 public", flat(ls[1]).c_str());
+  TEST_ASSERT_FALSE(anyLineContains(ls, "Second paragraph"));
+  TEST_ASSERT_TRUE(anyLineContains(ls, "CW: spiders"));
+  for (const auto& l : ls)
+    if (!l.divider) TEST_ASSERT_EQUAL_STRING("e1", l.messageId.c_str());
+  ls = layoutEntry(e, none, entryOpts(true));
+  TEST_ASSERT_TRUE(anyLineContains(ls, "Second paragraph"));
+  TEST_ASSERT_FALSE(anyLineContains(ls, "CW: spiders"));
+  for (const auto& l : ls) TEST_ASSERT_TRUE(width(l) <= 40);
+}
+
+void test_entry_layout_threading() {
+  Entry e = feedEntry();
+  std::deque<Reply> replies;
+  Reply a;
+  a.id = "r1";
+  a.author = "rain";
+  a.body = "top-level reply";
+  a.createdMs = kTs - kHour;
+  Reply b;
+  b.id = "r2";
+  b.parentId = "r1";
+  b.parentAuthor = "tardibyte";
+  b.author = "oumike";
+  b.body = "nested reply";
+  b.createdMs = kTs - kMin;
+  replies.push_back(a);
+  replies.push_back(b);
+  auto ls = layoutEntry(e, replies, entryOpts());
+  TEST_ASSERT_TRUE(anyLineContains(ls, "\xe2\x94\x80\xe2\x94\x80 5 replies \xe2\x94\x80\xe2\x94\x80"));
+  int marker = -1, nested = -1;
+  for (int i = 0; i < static_cast<int>(ls.size()); ++i) {
+    if (flat(ls[i]) == "\xe2\x86\xb3 @tardibyte") marker = i;
+    if (flat(ls[i]).find("nested reply") != std::string::npos) nested = i;
+  }
+  TEST_ASSERT_TRUE(marker >= 0);
+  TEST_ASSERT_EQUAL(marker + 1, nested);
+  TEST_ASSERT_EQUAL_STRING("r2", ls[marker].messageId.c_str());
+  TEST_ASSERT_EQUAL_HEX16(defaultTheme().dim, ls[marker].spans[0].fg);
+  TEST_ASSERT_EQUAL_STRING("r2", ls[nested].messageId.c_str());
+  for (const auto& l : ls)
+    if (flat(l).find("top-level reply") != std::string::npos)
+      TEST_ASSERT_EQUAL_STRING("r1", l.messageId.c_str());
+}
+
+void test_entry_layout_truncated() {
+  Entry e = feedEntry();
+  e.truncated = true;
+  e.attachments = {"[img] https://x/y.png"};
+  std::deque<Reply> none;
+  auto ls = layoutEntry(e, none, entryOpts());
+  int last = -1;
+  for (int i = 0; i < static_cast<int>(ls.size()); ++i)
+    if (ls[i].messageId == "e1") last = i;
+  TEST_ASSERT_TRUE(last >= 1);
+  TEST_ASSERT_TRUE(flat(ls[last]) == "\xe2\x80\xa6 read the rest on the web");
+  TEST_ASSERT_TRUE(flat(ls[last - 1]) == "[img] https://x/y.png");
+}
+
+void test_entry_layout_deleted() {
+  Entry e = feedEntry();
+  e.deleted = true;
+  std::deque<Reply> replies;
+  Reply r;
+  r.id = "r1";
+  r.author = "rain";
+  r.deleted = true;
+  r.createdMs = kTs;
+  replies.push_back(r);
+  auto ls = layoutEntry(e, replies, entryOpts());
+  int n = 0;
+  for (const auto& l : ls) {
+    if (flat(l) == "[deleted]") {
+      ++n;
+      TEST_ASSERT_EQUAL_STRING("e1", l.messageId.c_str());
+      TEST_ASSERT_EQUAL_HEX16(defaultTheme().dim, l.spans.back().fg);
+    }
+  }
+  TEST_ASSERT_EQUAL(1, n);
+  TEST_ASSERT_FALSE(anyLineContains(ls, "Second paragraph"));
+  bool replyDeleted = false;
+  for (const auto& l : ls)
+    if (l.messageId == "r1" && flat(l).find("[deleted]") != std::string::npos) replyDeleted = true;
+  TEST_ASSERT_TRUE(replyDeleted);
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_grid_dims);
@@ -329,5 +498,11 @@ int main() {
   RUN_TEST(test_muted_skipped);
   RUN_TEST(test_long_no_space_message);
   RUN_TEST(test_emoji_body);
+  RUN_TEST(test_relative_age);
+  RUN_TEST(test_feed_row);
+  RUN_TEST(test_entry_layout_reveal);
+  RUN_TEST(test_entry_layout_threading);
+  RUN_TEST(test_entry_layout_truncated);
+  RUN_TEST(test_entry_layout_deleted);
   return UNITY_END();
 }

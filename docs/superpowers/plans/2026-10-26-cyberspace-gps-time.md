@@ -109,7 +109,7 @@
 
   The M9's `Wire` is the keyboard bus (20/21), so the RTC gets `Wire1`, begun on first use. `M9 board::begin` drives `GPS_EN` HIGH and `GPS_RST` LOW, so the GPS starts off. Call `Serial1.setRxBufferSize(4096)` before `Serial1.begin`.
 
-- [ ] **Step 1: Write the failing tests** in `test/test_time_civil/test_main.cpp`:
+- [x] **Step 1: Write the failing tests** in `test/test_time_civil/test_main.cpp`:
   ```cpp
   void test_days_from_civil() {
     TEST_ASSERT_EQUAL_INT64(0, daysFromCivil(1970, 1, 1));
@@ -127,12 +127,12 @@
   void test_pcf_bad_bcd() { /* month 0x13 → false; seconds 0x5A → false; day 0x00 → false */ }
   ```
   `pcf8563Decode` masks the unused bits: seconds `0x7F`, minutes `0x7F`, hours `0x3F`, days `0x3F`, weekday `0x07`, months `0x1F`.
-- [ ] **Step 2: Run** `pio test -e native -f test_time_civil`. Expected: it fails to build (no headers).
-- [ ] **Step 3: Implement** `civil.cpp` (Howard Hinnant's algorithms) and `pcf8563.cpp`. Switch `feed_parse.cpp` to `rc::daysFromCivil`.
-- [ ] **Step 4: Run** `pio test -e native`. Expected: all pass, `test_feed_parse` included.
-- [ ] **Step 5: Implement the board functions** in `gps_rtc_m9.cpp` (inside `#if defined(BOARD_M9)`) and `gps_wio_l2.cpp` (inside `#if defined(BOARD_WIO_L2)`). `rtcRead` reads 7 bytes from register 0x02 and decodes them; `rtcWrite` encodes and writes them. Fix the comment in `io_pca9555.cpp` to "GPS off until the time service turns it on".
-- [ ] **Step 6: Run** `scripts/build-upload-monitor.sh -B`. Expected: all four envs build.
-- [ ] **Step 7: Commit**
+- [x] **Step 2: Run** `pio test -e native -f test_time_civil`. Expected: it fails to build (no headers).
+- [x] **Step 3: Implement** `civil.cpp` (Howard Hinnant's algorithms) and `pcf8563.cpp`. Switch `feed_parse.cpp` to `rc::daysFromCivil`.
+- [x] **Step 4: Run** `pio test -e native`. Expected: all pass, `test_feed_parse` included.
+- [x] **Step 5: Implement the board functions** in `gps_rtc_m9.cpp` (inside `#if defined(BOARD_M9)`) and `gps_wio_l2.cpp` (inside `#if defined(BOARD_WIO_L2)`). `rtcRead` reads 7 bytes from register 0x02 and decodes them; `rtcWrite` encodes and writes them. Fix the comment in `io_pca9555.cpp` to "GPS off until the time service turns it on".
+- [x] **Step 6: Run** `scripts/build-upload-monitor.sh -B`. Expected: all four envs build.
+- [x] **Step 7: Commit**
   ```bash
   git add <the Files listed above>
   git commit -m "feat(hal): GPS power and UART, PCF8563 RTC" -m "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
@@ -172,7 +172,7 @@
   - The RMC date `ddmmyy` means year 2000 + yy.
   - GSV: only message 1 of each talker's group updates that talker's count. `satsInView` is the sum of the latest count per talker.
 
-- [ ] **Step 1: Write the failing tests.** Add a test helper `std::string nmea(const char* body)` that returns `"$" + body + "*" + hex(XOR) + "\r\n"`.
+- [x] **Step 1: Write the failing tests.** Add a test helper `std::string nmea(const char* body)` that returns `"$" + body + "*" + hex(XOR) + "\r\n"`.
   ```cpp
   const char* kRmc = "GNRMC,183000.00,A,4042.768,N,07400.360,W,0.0,0.0,261026,,,A";
   void test_rmc_sets_time_and_position() {
@@ -193,10 +193,10 @@
   }
   void test_reset_clears()               // after reset(): fix false, satsInView 0, utcAtMs -1
   ```
-- [ ] **Step 2: Run** `pio test -e native -f test_nmea`. Expected: it fails to build.
-- [ ] **Step 3: Implement.** Use a 96-byte line buffer and split on `,`. Latitude `ddmm.mmmm` and longitude `dddmm.mmmm` become degrees, negated for `S` and `W`. Use `rc::daysFromCivil` for the epoch.
-- [ ] **Step 4: Run** `pio test -e native -f test_nmea`. Expected: PASS.
-- [ ] **Step 5: Commit**
+- [x] **Step 2: Run** `pio test -e native -f test_nmea`. Expected: it fails to build.
+- [x] **Step 3: Implement.** Use a 96-byte line buffer and split on `,`. Latitude `ddmm.mmmm` and longitude `dddmm.mmmm` become degrees, negated for `S` and `W`. Use `rc::daysFromCivil` for the epoch.
+- [x] **Step 4: Run** `pio test -e native -f test_nmea`. Expected: PASS.
+- [x] **Step 5: Commit**
   ```bash
   git add <the Files listed above>
   git commit -m "feat(core): NMEA parser for RMC, GGA and GSV" -m "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
@@ -263,7 +263,7 @@
     - `"RTC, at boot"`;
     - for NTP or GPS, the age of `lastSyncMs`: `"NTP, just now"` under 1 min, `"GPS, 12 min ago"` under 1 h, `"NTP, 3 h ago"` under 2 days, otherwise `"NTP, 4 d ago"`.
 
-- [ ] **Step 1: Write the failing tests.** The helper `GpsState gpsAt(int64_t atMs, int64_t epochMs, bool fix)` sets `utcValid` and `fix`.
+- [x] **Step 1: Write the failing tests.** The helper `GpsState gpsAt(int64_t atMs, int64_t epochMs, bool fix)` sets `utcValid` and `fix`.
   ```cpp
   constexpr int64_t H = 3600000, M = 60000, T = 1793039400000LL;
   void test_boot_from_rtc()           // boot(0,true,1793039400) → setClock, clockEpochMs T, status().source Rtc, lastSyncMs -1
@@ -289,10 +289,10 @@
     // "not set", "RTC, at boot", "NTP, just now", "GPS, 12 min ago", "NTP, 3 h ago", "NTP, 4 d ago"
   }
   ```
-- [ ] **Step 2: Run** `pio test -e native -f test_clock_policy`. Expected: it fails to build.
-- [ ] **Step 3: Implement** `ClockPolicy` and the two text functions. They have no clocks of their own: every time comes from the arguments.
-- [ ] **Step 4: Run** `pio test -e native -f test_clock_policy`. Expected: PASS.
-- [ ] **Step 5: Commit**
+- [x] **Step 2: Run** `pio test -e native -f test_clock_policy`. Expected: it fails to build.
+- [x] **Step 3: Implement** `ClockPolicy` and the two text functions. They have no clocks of their own: every time comes from the arguments.
+- [x] **Step 4: Run** `pio test -e native -f test_clock_policy`. Expected: PASS.
+- [x] **Step 5: Commit**
   ```bash
   git add <the Files listed above>
   git commit -m "feat(core): clock source and GPS power policy" -m "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
@@ -338,14 +338,14 @@
   - **`main.cpp`:** call `timesvc::start(app().cfg)` after `settings::load`, before `startChatSource`.
   - **`wifi_mgr.cpp`:** remove `configTzTime`. Call `timesvc::restartNtp()` where `[wifi] connected` is logged.
 
-- [ ] **Step 1: Implement** `time_service.cpp` and the two call sites.
-- [ ] **Step 2: Run** `scripts/build-upload-monitor.sh -B` and `pio test -e native`. Expected: all four envs build, and every test passes.
+- [x] **Step 1: Implement** `time_service.cpp` and the two call sites.
+- [x] **Step 2: Run** `scripts/build-upload-monitor.sh -B` and `pio test -e native`. Expected: all four envs build, and every test passes.
 - [ ] **Step 3: Flash `m9`** and check:
   - with Wi-Fi in range, `[time] NTP sync` and `[time] RTC written` appear, and `[gps] off` follows;
   - after a reboot with the saved network switched off, the status-bar clock is right at once (`[time] set from RTC`), and `[gps] on` follows;
   - outdoors, `[gps] fix, …` and `[time] set from GPS` appear within 15 min;
   - a Wi-Fi drop and rejoin logs a fresh `[time] NTP sync`.
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
   ```bash
   git add <the Files listed above>
   git commit -m "feat(time): time service with RTC boot, SNTP restart on connect and GPS" -m "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
@@ -450,8 +450,8 @@
 
   Generate the blob with `--no-simplify --release test --name kTzFixture --namespace fx`.
 
-- [ ] **Step 1: Write the fixture GeoJSON, the POSIX map and `tzgen.py`.** Generate `test/fixtures/tz_fixture_blob.h`.
-- [ ] **Step 2: Write the failing tests** in `test/test_tz_lookup/test_main.cpp`, including `../fixtures/tz_fixture_blob.h`:
+- [x] **Step 1: Write the fixture GeoJSON, the POSIX map and `tzgen.py`.** Generate `test/fixtures/tz_fixture_blob.h`.
+- [x] **Step 2: Write the failing tests** in `test/test_tz_lookup/test_main.cpp`, including `../fixtures/tz_fixture_blob.h`:
   ```cpp
   void test_blob_valid()        // tzBlobValid(fixture) true; a copy with a bad magic → false
   void test_lookup_inside()     // (42.5,-7.5) → true, "Test/West", "<-01>1"; (42.5,-2.5) → "Test/East"
@@ -469,18 +469,18 @@
   }
   void test_effective_tz_and_mode_keys() // Automatic+"" → manual; Automatic+"<+02>-2" → it; Manual → manual; parseTzMode("auto"/"manual"/"x")
   ```
-- [ ] **Step 3: Run** `pio test -e native -f test_tz_lookup`. Expected: it fails to build.
-- [ ] **Step 4: Implement `tz_lookup.cpp`.**
+- [x] **Step 3: Run** `pio test -e native -f test_tz_lookup`. Expected: it fails to build.
+- [x] **Step 4: Implement `tz_lookup.cpp`.**
   - Use the grid to find the candidate zones, and skip any ring whose bounding box excludes the point. That is safe under even-odd.
   - The crossing test uses int64 µdeg maths: an edge counts when `(yi > y) != (yj > y)` and `x < xi + (xj - xi) * (y - yi) / (yj - yi)`.
   - The first zone with an odd count wins.
   - Bounds-check every offset and every varint read against `size`. An out-of-range read counts as "not in this zone".
-- [ ] **Step 5: Run** `pio test -e native -f test_tz_lookup`. Expected: PASS.
-- [ ] **Step 6: Generate the real data.**
+- [x] **Step 5: Run** `pio test -e native -f test_tz_lookup`. Expected: PASS.
+- [x] **Step 6: Generate the real data.**
   - Download `timezones.geojson.zip` from timezone-boundary-builder release `2026e` outside the repo (like the Terminus fonts).
   - Run `python3 -I scripts/tzgen.py <zip> --release 2026e > src/tz/tz_data.h`.
   - If the blob is over 2 MiB, retry with `--tolerance 0.015`, then `0.02`. Record the final command in the header and in `docs/BUILD.md`.
-- [ ] **Step 7: Add a real-data sanity test** `test_real_data` that includes `../../src/tz/tz_data.h` and checks these points. Then run `pio test -e native`. Expected: all pass.
+- [x] **Step 7: Add a real-data sanity test** `test_real_data` that includes `../../src/tz/tz_data.h` and checks these points. Then run `pio test -e native`. Expected: all pass.
 
   | Place | Position | Expected |
   |---|---|---|
@@ -490,8 +490,8 @@
   | Tokyo | (35.6762, 139.6503) | `Asia/Tokyo` |
   | Sydney | (−33.8688, 151.2093) | `Australia/Sydney` |
   | Mid-Atlantic | (30, −40) | `Etc/GMT+3` |
-- [ ] **Step 8: Add the README attribution section**, "Time zone data", with the attribution line and links to timezone-boundary-builder and the ODbL. Then run `scripts/build-upload-monitor.sh -B`. Expected: all four envs build; the M9 flash usage is under 100%.
-- [ ] **Step 9: Commit**
+- [x] **Step 8: Add the README attribution section**, "Time zone data", with the attribution line and links to timezone-boundary-builder and the ODbL. Then run `scripts/build-upload-monitor.sh -B`. Expected: all four envs build; the M9 flash usage is under 100%.
+- [x] **Step 9: Commit**
   ```bash
   git add <the Files listed above>
   git commit -m "feat(tz): tzgen.py, bundled zone boundaries and offline lookup" -m "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
@@ -525,17 +525,17 @@
   - `settingsChanged()` reloads the mode and zone, reapplies `effectiveTz`, and resets the tracker when the mode becomes Automatic;
   - the snapshot's `zone` comes from `zoneStatusText`.
 
-- [ ] **Step 1: Write the failing test** `test_zone_status_text` with the three cases above (`"America/New_York (auto)"`, `"UTC0 (manual)"`, `"UTC0 (auto, no fix yet)"`).
-- [ ] **Step 2: Run** `pio test -e native -f test_clock_policy`. Expected: it fails to build.
-- [ ] **Step 3: Implement** `zoneStatusText`, the settings fields and savers, and the time-service changes.
-- [ ] **Step 4: Run** `pio test -e native` and `scripts/build-upload-monitor.sh -B`. Expected: all pass, and all four envs build.
+- [x] **Step 1: Write the failing test** `test_zone_status_text` with the three cases above (`"America/New_York (auto)"`, `"UTC0 (manual)"`, `"UTC0 (auto, no fix yet)"`).
+- [x] **Step 2: Run** `pio test -e native -f test_clock_policy`. Expected: it fails to build.
+- [x] **Step 3: Implement** `zoneStatusText`, the settings fields and savers, and the time-service changes.
+- [x] **Step 4: Run** `pio test -e native` and `scripts/build-upload-monitor.sh -B`. Expected: all pass, and all four envs build.
 - [ ] **Step 5: Flash `m9`** and check outdoors with Wi-Fi off:
   - `[tz] zone <name>` matches the location;
   - the status-bar clock shows local time;
   - after a reboot, local time is right before any fix (the zone was saved);
   - `[gps] off` follows once both the time and the position are fresh;
   - no log line shows coordinates.
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
   ```bash
   git add <the Files listed above>
   git commit -m "feat(time): automatic time zone from the GPS position" -m "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
@@ -581,7 +581,7 @@
   - If `lib/core/src/config/backup_yaml.cpp` exists, add `tzMode: auto|manual` (after `timezone`) and `ntpServer: "…"`. Missing keys keep the current value, and a bad `ntpServer` is an error.
   - If it doesn't exist yet, add both keys to the §3 example in `docs/superpowers/specs/2026-10-26-cyberspace-backup-design.md` and its plan's codec task instead.
 
-- [ ] **Step 1: Write the failing tests:**
+- [x] **Step 1: Write the failing tests:**
   ```cpp
   void test_valid_ntp_server() {
     TEST_ASSERT_TRUE(validNtpServer("pool.ntp.org")); TEST_ASSERT_TRUE(validNtpServer("time-a.nist.gov"));
@@ -594,9 +594,9 @@
   void test_backup_time_keys() // round trip of tzMode Manual + ntpServer "time.example.org";
                                // a backup without them keeps the current values; ntpServer "a b" → error
   ```
-- [ ] **Step 2: Run** `pio test -e native -f test_keymap_web` (and `-f test_backup_yaml`). Expected: FAIL.
-- [ ] **Step 3: Implement** `validNtpServer`, the setting, the screen, the web changes and the backup keys.
-- [ ] **Step 4: Run** `pio test -e native` and `scripts/build-upload-monitor.sh -B`. Expected: all pass, and all four envs build.
+- [x] **Step 2: Run** `pio test -e native -f test_keymap_web` (and `-f test_backup_yaml`). Expected: FAIL.
+- [x] **Step 3: Implement** `validNtpServer`, the setting, the screen, the web changes and the backup keys.
+- [x] **Step 4: Run** `pio test -e native` and `scripts/build-upload-monitor.sh -B`. Expected: all pass, and all four envs build.
 - [ ] **Step 5: Flash `m9`** and check:
   - the Settings screen shows `gps`, `time` and `zone` in both text sizes, and with the setup AP on in Comfortable size nothing overlaps the menu;
   - the web Status shows the same three lines;
@@ -606,7 +606,7 @@
   - the footer shows the attribution.
   
   On `m9_fake`, Settings shows the canned lines.
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
   ```bash
   git add <the Files listed above>
   git commit -m "feat(time): NTP server, time status in Settings and web config, backup keys" -m "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
@@ -617,7 +617,7 @@
 **Files:**
 - Modify: `docs/USE.md`, `docs/TESTING.md`, `AGENTS.md`
 
-- [ ] **Step 1: `USE.md`.**
+- [x] **Step 1: `USE.md`.**
   - Add a "Time and time zone" section covering:
     - the sources (NTP, GPS, RTC);
     - the GPS powering itself off;
@@ -626,7 +626,7 @@
     - the three Settings lines;
     - the privacy note from spec §7.
   - Add the attribution line under Web config.
-- [ ] **Step 2: `TESTING.md`.** Under "Open hardware checks", add the Task 4, 6 and 7 flash checks as unticked items:
+- [x] **Step 2: `TESTING.md`.** Under "Open hardware checks", add the Task 4, 6 and 7 flash checks as unticked items:
   - the clock is right after a reboot with Wi-Fi off (RTC, M9);
   - an outdoor GPS fix with Wi-Fi off sets the clock;
   - the zone matches the location;
@@ -635,11 +635,11 @@
   - the same GPS checks on the Wio L2.
   
   Don't change the user's other edits there.
-- [ ] **Step 3: `AGENTS.md`.**
+- [x] **Step 3: `AGENTS.md`.**
   - Add a "GPS time" line pointing at the spec and this plan.
   - Note `scripts/tzgen.py` next to the font-generation note.
   - Update the progress section (task status and the native test count from `pio test -e native`).
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
   ```bash
   git add <the Files listed above>
   git commit -m "docs: GPS time, RTC and time zone guide and checks" -m "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"

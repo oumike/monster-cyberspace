@@ -481,7 +481,7 @@ ApiError CsApi::addBookmark(const std::string& postId, const std::string& replyI
   }
   HttpResult r;
   ApiError e = call("POST", "/v1/bookmarks", json(d), r);
-  if (e.ok() && !parseCreatedId(r.body, bookmarkId)) return badBody(r.status);
+  if (e.ok() && !parseCreatedId(r.body, bookmarkId)) bookmarkId.clear();  // saved, id unknown
   return e;
 }
 

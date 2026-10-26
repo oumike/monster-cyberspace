@@ -26,6 +26,7 @@ class FeedWorker {
   void signOut();  // lockedFeed store.clear(), notices cleared
 
   static bool isFeedCommand(CmdType t);
+  void markOpen();
 
  private:
   void openFeed();

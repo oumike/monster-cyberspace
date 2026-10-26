@@ -30,7 +30,8 @@ void banner(const std::string& text, bool ok = false) { post(EvtType::Banner, te
 
 std::string errorText(const ApiError& e, bool deleteOrFlag) {
   if (deleteOrFlag && e.http == 403) return "Not allowed";
-  if (e.http == 429) return "Slow down";  // the server's, or our own limiter's
+  if (e.code == "LOCAL_RATE_LIMIT") return e.message;  // "Slow down: try in Ns"
+  if (e.http == 429) return "Slow down";
   return e.message;
 }
 
@@ -94,7 +95,10 @@ void FeedWorker::handle(const Command& c) {
     case CmdType::OpenFeed: openFeed(); break;
     case CmdType::CloseFeed: feedOpen_ = false; break;
     case CmdType::FeedMore: more(); break;
-    case CmdType::FeedRefresh: refreshFirst(true, true); break;
+    case CmdType::FeedRefresh:
+      nextRefresh_ = mono() + kRefreshMs;
+      refreshFirst(true, true);
+      break;
     case CmdType::OpenEntry: openEntry(c); break;
     case CmdType::MoreReplies: moreReplies(); break;
     case CmdType::PostEntry: postEntry(c); break;
@@ -117,6 +121,12 @@ void FeedWorker::tick(int64_t monoMs, bool screenOn) {
   if (!feedOpen_ || !screenOn || monoMs < nextRefresh_) return;
   nextRefresh_ = monoMs + kRefreshMs;
   refreshFirst(false, false);
+}
+
+// FeedList is showing, even if offline: the next tick once online refreshes.
+void FeedWorker::markOpen() {
+  feedOpen_ = true;
+  nextRefresh_ = 0;
 }
 
 void FeedWorker::signOut() {
@@ -165,12 +175,11 @@ void FeedWorker::refreshFirst(bool report, bool reloadBookmarks) {
   if (e.ok()) {
     // An empty first page would wipe a held list (mergeFirstPage replaces it
     // when nothing overlaps), so it is ignored while the list holds entries.
-    bool applied = lockedFeed().with([&](FeedState& s) {
-      if (page.empty() && !s.store.feed().empty()) return false;
+    lockedFeed().with([&](FeedState& s) {
+      if (page.empty() && !s.store.feed().empty()) return;
       s.store.mergeFirstPage(std::move(page), next);
-      return true;
     });
-    if (applied) post(EvtType::FeedUpdated);
+    post(EvtType::FeedUpdated);
   } else if (report || e.code == "TOO_LARGE") {
     fail(e);
   }
@@ -338,7 +347,10 @@ void FeedWorker::bookmark(const Command& c) {
     banner(errorText(e, false));
     return;
   }
-  lockedFeed().with([&](FeedState& s) { s.store.addBookmark(Bookmark{bookmarkId, c.a, c.b}); });
+  // Saved, but the reply carried no id: reload the map rather than invite a
+  // duplicate press.
+  if (bookmarkId.empty()) loadBookmarkMap();
+  else lockedFeed().with([&](FeedState& s) { s.store.addBookmark(Bookmark{bookmarkId, c.a, c.b}); });
   post(EvtType::EntryUpdated);
   post(EvtType::FeedUpdated);
 }
@@ -346,7 +358,12 @@ void FeedWorker::bookmark(const Command& c) {
 void FeedWorker::unbookmark(const Command& c) {
   std::string bookmarkId =
       lockedFeed().with([&](FeedState& s) { return s.store.bookmarkIdFor(c.a); });
-  if (bookmarkId.empty()) return;
+  if (bookmarkId.empty()) {
+    banner("Bookmarks not loaded yet");
+    loadBookmarkMap();
+    post(EvtType::EntryUpdated);
+    return;
+  }
   ApiError e = api_.removeBookmark(bookmarkId);
   if (!e.ok()) {
     banner(errorText(e, false));

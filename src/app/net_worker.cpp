@@ -547,6 +547,9 @@ class Worker {
       case CmdType::CloseFeed:
         feed_.handle(c);
         return;
+      case CmdType::OpenFeed:
+        feed_.markOpen();
+        break;
       case CmdType::Logout:
         closeRoom();
         feed_.signOut();

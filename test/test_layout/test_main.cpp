@@ -1,5 +1,6 @@
 #include <unity.h>
 
+#include <algorithm>
 #include <cstdlib>
 #include <ctime>
 #include <deque>
@@ -11,6 +12,7 @@
 #include "ui/grid.h"
 #include "ui/nick_color.h"
 #include "ui/room_layout.h"
+#include "ui/splash_layout.h"
 #include "ui/theme.h"
 #include "ui/timefmt.h"
 #include "util/utf8.h"
@@ -487,6 +489,59 @@ void test_entry_layout_deleted() {
   TEST_ASSERT_TRUE(replyDeleted);
 }
 
+static const SplashLine* findRole(const std::vector<SplashLine>& v, SplashRole r) {
+  for (const auto& l : v)
+    if (l.role == r) return &l;
+  return nullptr;
+}
+
+static void checkSplashFits(int cols, int rows) {
+  auto v = splashLayout(cols, rows, "v0.1.0 \u00b7 M9");
+  TEST_ASSERT_FALSE(v.empty());
+  int top = rows, bottom = -1;
+  for (const auto& l : v) {
+    int w = static_cast<int>(utf8Length(l.text));
+    TEST_ASSERT_TRUE(l.col >= 0);
+    TEST_ASSERT_TRUE(l.col + w <= cols);
+    TEST_ASSERT_TRUE(l.row >= 0 && l.row < rows);
+    top = std::min(top, l.row);
+    bottom = std::max(bottom, l.row);
+  }
+  // Vertically centred: the gaps above and below differ by at most one row.
+  TEST_ASSERT_TRUE(std::abs(top - (rows - 1 - bottom)) <= 1);
+  const SplashLine* title = findRole(v, SplashRole::Title);
+  TEST_ASSERT_NOT_NULL(title);
+  TEST_ASSERT_EQUAL_STRING("Platy for Cyberspace", title->text.c_str());
+  int w = static_cast<int>(utf8Length(title->text));
+  TEST_ASSERT_TRUE(std::abs(title->col - (cols - w - title->col)) <= 1);
+  TEST_ASSERT_NOT_NULL(findRole(v, SplashRole::Detail));
+  TEST_ASSERT_NOT_NULL(findRole(v, SplashRole::Prompt));
+}
+
+void test_splash_fits_both_text_sizes() {
+  checkSplashFits(40, 15);
+  checkSplashFits(53, 20);
+}
+
+void test_splash_art_is_one_block() {
+  auto v = splashLayout(40, 15, "v0.1.0 \u00b7 M9");
+  int col = -1, n = 0;
+  for (const auto& l : v) {
+    if (l.role != SplashRole::Art) continue;
+    if (col < 0) col = l.col;
+    TEST_ASSERT_EQUAL(col, l.col);  // shared left edge keeps the drawing intact
+    ++n;
+  }
+  TEST_ASSERT_TRUE(n >= 4);
+}
+
+void test_splash_drops_art_when_too_small() {
+  auto v = splashLayout(24, 6, "v0.1.0 \u00b7 WioL2");
+  TEST_ASSERT_NULL(findRole(v, SplashRole::Art));
+  TEST_ASSERT_NOT_NULL(findRole(v, SplashRole::Title));
+  for (const auto& l : v) TEST_ASSERT_TRUE(l.col + static_cast<int>(utf8Length(l.text)) <= 24);
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_grid_dims);
@@ -516,5 +571,8 @@ int main() {
   RUN_TEST(test_entry_layout_threading);
   RUN_TEST(test_entry_layout_truncated);
   RUN_TEST(test_entry_layout_deleted);
+  RUN_TEST(test_splash_fits_both_text_sizes);
+  RUN_TEST(test_splash_art_is_one_block);
+  RUN_TEST(test_splash_drops_art_when_too_small);
   return UNITY_END();
 }

@@ -10,7 +10,7 @@ namespace rc {
 class SplashScreen : public Screen {
  public:
   void enter(const std::string&) override;
-  void onKey(const KeyEvent&) override {}
+  void onKey(const KeyEvent&) override;
   void render(Grid&, const Theme&, int64_t nowMs) override;
 
  private:

@@ -14,6 +14,10 @@ namespace board {
 void begin() {
   pinMode(m9::VEXT, OUTPUT);
   digitalWrite(m9::VEXT, LOW);  // rail on
+  pinMode(m9::GPS_EN, OUTPUT);
+  digitalWrite(m9::GPS_EN, HIGH);  // GPS off until the time service turns it on
+  pinMode(m9::GPS_RST, OUTPUT);
+  digitalWrite(m9::GPS_RST, LOW);
   delay(50);
   // Every device on the shared bus deselected before any of them is spoken to.
   for (int cs : {m9::SD_CS, m9::LORA_CS, m9::TFT_CS}) {

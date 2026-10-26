@@ -33,6 +33,10 @@ constexpr uint8_t EXP_GNSS_POWER = 13;
 constexpr uint8_t EXP_SD_POWER = 14;
 constexpr uint8_t EXP_BATT_SENSE_EN = 15;
 
+// GPS on Serial1; power and reset are expander bits.
+constexpr int GPS_RX = 18, GPS_TX = 17;
+constexpr uint32_t GPS_BAUD = 9600;
+
 // NV3031B, 240x320 native, on quad SPI: no DC line, reset on the expander.
 constexpr int TFT_SCK = 42;
 constexpr int TFT_IO0 = 41, TFT_IO1 = 40, TFT_IO2 = 39, TFT_IO3 = 38;

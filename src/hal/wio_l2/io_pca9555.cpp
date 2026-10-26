@@ -86,7 +86,7 @@ bool ioBegin() {
   stage(EXP_USER_LED, false);
   stage(EXP_USB_OTG_EN, false);
   stage(EXP_AUDIO_PA, false);
-  stage(EXP_GNSS_POWER, false);  // no GPS in this firmware
+  stage(EXP_GNSS_POWER, false);  // GPS off until the time service turns it on
   stage(EXP_SD_POWER, false);
   stage(EXP_BATT_SENSE_EN, false);
   bool ok = commit();

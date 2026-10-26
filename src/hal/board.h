@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 
 #include "input/key_event.h"
@@ -26,5 +27,15 @@ void beep(int freqHz, int ms);
 // is down, with x, y in the panelWidth() x panelHeight() frame.
 bool hasTouch();
 bool readTouch(int16_t& x, int16_t& y);
+// GPS receiver. On: power, a 10 ms reset pulse, then the UART up. Off: the
+// UART down, then power off.
+bool hasGps();
+void gpsPower(bool on);
+// Raw NMEA bytes. Never blocks; 0 while off.
+size_t gpsRead(uint8_t* buf, size_t n);
+// Battery-backed RTC, in UTC seconds. rtcRead is false with no RTC, an I2C
+// error, or a time the RTC flags as unreliable (lost power).
+bool rtcRead(int64_t& epochUtc);
+bool rtcWrite(int64_t epochUtc);
 
 }  // namespace board

@@ -2,6 +2,8 @@
 
 #include <ArduinoJson.h>
 
+#include "time/civil.h"
+
 namespace rc {
 
 namespace {
@@ -23,16 +25,6 @@ bool digits(std::string_view s, size_t pos, size_t n, int& out) {
     out = out * 10 + (s[i] - '0');
   }
   return true;
-}
-
-// Howard Hinnant's days_from_civil: days since 1970-01-01 in the proleptic Gregorian calendar.
-int64_t daysFromCivil(int64_t y, int m, int d) {
-  y -= m <= 2;
-  const int64_t era = (y >= 0 ? y : y - 399) / 400;
-  const int64_t yoe = y - era * 400;
-  const int64_t doy = (153 * (m + (m > 2 ? -3 : 9)) + 2) / 5 + d - 1;
-  const int64_t doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
-  return era * 146097 + doe - 719468;
 }
 
 bool isLeap(int y) { return (y % 4 == 0 && y % 100 != 0) || y % 400 == 0; }

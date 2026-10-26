@@ -21,6 +21,16 @@ constexpr uint8_t KB_ADDRS[] = {0x6C, 0x6D};
 constexpr uint8_t KB_REG_HW = 0x00, KB_REG_FW = 0xFE;
 constexpr uint8_t KB_REG_KEY = 0x05, KB_REG_KEY_EARLY = 0x01;
 
+// GPS on Serial1. Power is active LOW; reset is active HIGH through an NPN.
+constexpr int GPS_RX = 2, GPS_TX = 3;
+constexpr uint32_t GPS_BAUD = 115200;
+constexpr int GPS_EN = 11, GPS_RST = 5;
+
+// PCF8563 RTC on Wire1 (Wire is the keyboard bus).
+constexpr uint8_t RTC_ADDR = 0x51;
+constexpr int RTC_SDA = 7, RTC_SCL = 6;
+constexpr uint32_t RTC_I2C_HZ = 100000;
+
 constexpr int BATT_ADC = 13;
 constexpr float BATT_DIV = 2.0f;
 

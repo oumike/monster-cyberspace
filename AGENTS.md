@@ -60,7 +60,7 @@ its two buttons stand in and `board::readTouch` only feeds a debug log.
 
 ## Progress (hand-off from Claude Code, 2026-10-25)
 
-Work is on branch **`m1-circ`**. All 22 tasks of the M1 plan, all 6 of the
+Work is on **`main`** at https://github.com/oumike/platy-cyberspace. All 22 tasks of the M1 plan, all 6 of the
 M2 (C-Mail) plan and all 12 of the M3 (Feed) plan are done and committed, with
 their boxes ticked. The room-screen, C-Mail, web config and Feed (`m9_fake`)
 hardware checks passed on the device (2026-10-26).
@@ -71,8 +71,8 @@ Specs awaiting review: `docs/superpowers/specs/2026-10-26-cyberspace-{backup,tou
 **Still open:** the unticked items under "Open hardware checks" in
 `docs/TESTING.md` (themes, device Settings, Wio L2, API assumptions), then the
 human live checklist on the `m9` build.
-CI (`.github/workflows/build.yml`) runs once the repo has a remote.
-The native suite is green: 192/192
+CI (`.github/workflows/build.yml`) runs on GitHub.
+The native suite is green: 195/195
 (`pio test -e native`), and `pio run -e m9` and `-e m9_fake` both build.
 
 Notes for whoever continues:

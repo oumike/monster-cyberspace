@@ -8,7 +8,7 @@ features come later.
 - **Design spec:** `docs/superpowers/specs/2026-10-25-cyberspace-m9-circ-design.md`
 - **Milestone 2 (C-Mail):** spec `docs/superpowers/specs/2026-10-25-cyberspace-m9-cmail-design.md`,
   plan `docs/superpowers/plans/2026-10-25-cyberspace-m9-cmail.md`.
-- **Milestone 3 (Feed):** spec `docs/superpowers/specs/2026-10-26-cyberspace-m9-feed-design.md`
+- **Milestone 3 (Feed):** spec `docs/superpowers/specs/2026-10-26-cyberspace-m9-feed-design.md`,
   plan `docs/superpowers/plans/2026-10-26-cyberspace-m9-feed.md`.
 - **User guide:** `docs/USE.md`. **Testing and the live checklist:** `docs/TESTING.md`.
 - **Implementation plan:** `docs/superpowers/plans/2026-10-25-cyberspace-m9-circ.md`.
@@ -60,13 +60,19 @@ its two buttons stand in and `board::readTouch` only feeds a debug log.
 
 ## Progress (hand-off from Claude Code, 2026-10-25)
 
-Work is on branch **`m1-circ`**. All 22 tasks of the M1 plan and all 6 of the
-M2 (C-Mail) plan are done and committed, with their boxes ticked.
-The room-screen, C-Mail and web config hardware checks passed on the device (2026-10-26).
-**Still open:** the API assumptions under "Open hardware checks" in `docs/TESTING.md`,
-confirmed during the human live checklist on the `m9` build.
+Work is on branch **`m1-circ`**. All 22 tasks of the M1 plan, all 6 of the
+M2 (C-Mail) plan and all 12 of the M3 (Feed) plan are done and committed, with
+their boxes ticked. The room-screen, C-Mail, web config and Feed (`m9_fake`)
+hardware checks passed on the device (2026-10-26).
+Also done since: themes (Default / Black & white / White & black, picked in
+Settings and web config), and the Wio Tracker L2 HAL with envs `wio_l2` and
+`wio_l2_fake` (bring-up only, untested on hardware).
+Specs awaiting review: `docs/superpowers/specs/2026-10-26-cyberspace-{backup,touch,gps-time}-design.md`.
+**Still open:** the unticked items under "Open hardware checks" in
+`docs/TESTING.md` (themes, device Settings, Wio L2, API assumptions), then the
+human live checklist on the `m9` build.
 CI (`.github/workflows/build.yml`) runs once the repo has a remote.
-The native suite is green: 119/119
+The native suite is green: 192/192
 (`pio test -e native`), and `pio run -e m9` and `-e m9_fake` both build.
 
 Notes for whoever continues:

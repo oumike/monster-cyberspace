@@ -29,7 +29,7 @@ Dedicated buttons work from anywhere and close whatever is open first.
 | Messages (far left) | cIRC: the last room. Press it again in a room for the room list |
 | Home | Home dashboard |
 | Fn under Home | C-Mail: the conversation list. Press it again in a conversation for the list |
-| Fn under Back | Feed (coming soon) |
+| Fn under Back | Feed: the entry list. Press it again anywhere in the Feed for the list |
 | Map | Unassigned |
 | Back | Up one level, or closes a menu or drawer. It never deletes text |
 | Ctrl | In a room or conversation: the command palette (slash commands and text size) |
@@ -90,6 +90,62 @@ C-Mail is private, one-to-one messaging. Open it with Fn under Home, or
   line or leave. When they type, "name is typing…" shows above your input
   line.
 
+## Feed
+
+The Feed is the Cyberspace timeline of entries and their replies. Open it
+with Fn under Back, or **Feed** on the Home screen. Home shows the unread
+Feed alerts; with one waiting, **Feed** opens its entry instead of the list.
+
+**The list:**
+
+- Each entry takes two lines: `nick · 3h · ↩5` (replies), plus `★` if you
+  bookmarked it, then the title or the first line of the body, dimmed. An
+  entry with a content warning or the NSFW flag shows `CW: …` instead.
+- Up/Down select. Down on the last entry loads the next page; once every page
+  is loaded it wraps to the top, and Up on the first wraps to the last.
+- Centre or Right opens the entry. Left or Back goes Home.
+- **Ctrl** opens the palette: **New entry**, **Refresh**, **Watched
+  threads**, **Bookmarks** and **Text size**.
+- **Auto-refresh:** while the list is on screen and the screen is on, it
+  re-fetches the first page every 2 minutes (the title reads `Feed ↻ 2m`).
+  New entries appear at the top and your selection stays put. Refresh in the
+  palette does it at once.
+
+**An entry:**
+
+- A header (author, time, topics, `public`/`NSFW`), the body, a
+  `── N replies ──` divider, then the replies. A reply to a reply has a dim
+  `↳ @parent` line above it.
+- Up/Down select the body or a reply. Down past the last reply loads more.
+  Back with something selected returns to typing; Back again goes to the list.
+- A content warning hides the body until you press Centre on it.
+- **Reply:** type, then Centre or Enter. With a reply selected, you answer it
+  and `↳ @name` shows above the input line; otherwise you answer the entry.
+  Nothing is retried: a failed reply stays in the line.
+- **Entry menu** (Centre on an empty line): Bookmark/Unbookmark,
+  Watch/Unwatch, Show link (text and a QR code), Delete… on your own entry or
+  Report… on others' (both confirm; a report takes an optional reason), and
+  Text size.
+- **Reply menu** (Centre on a selected reply): Reply, Bookmark/Unbookmark,
+  Show link, and Delete… (yours) or Report… (others').
+
+**New entry** (palette → New entry):
+
+- Fields: Title, Body, Topics (comma-separated, up to 3), Public [ ],
+  NSFW [ ] and CW.
+- Up/Down move between fields. In Body they move by line first, and Centre
+  adds a new line; the counter shows `n/4096`. On a checkbox, Centre toggles
+  it.
+- **Ctrl** opens **Post…** and **Discard…**. Post checks the draft, then asks
+  "Post entry? (2 per minute, 24 per day)". A posted entry opens at once; a
+  failed one keeps the draft.
+- Back (or Fn under Back) with any text asks "Discard draft?". The draft
+  stays in memory until you post or discard it.
+
+**Watched threads and Bookmarks** are lists in the same style, from the
+palette. Centre opens the entry; a bookmarked reply opens its entry with that
+reply selected. Left or Back returns to the Feed list.
+
 ## Text sizes
 
 Switch from the palette, the room menu or the web page. The choice is saved.
@@ -122,6 +178,11 @@ bottom.
 
 A new C-Mail does the same: a banner (`C-Mail from @name: …`) and the buzzer,
 unless that conversation is open. Home shows the total unread C-Mail.
+
+Feed alerts come from the same check: a reply to your entry or reply, or a
+mention in one, shows a banner (`@name replied: …`) and sounds the buzzer if
+it's on. If that entry is open, its replies just refresh instead. Home counts
+them as Feed unread. An entry held for review shows a banner only.
 
 ## Web config
 

@@ -744,8 +744,8 @@
 **Files:**
 - Modify: `docs/USE.md`, `docs/TESTING.md`, `AGENTS.md`
 
-- [ ] **Step 1: `USE.md`.** Add a Feed section covering the keys from spec §5 (FeedList, Entry, Composer, Watched and Bookmarks) and the alerts.
-- [ ] **Step 2: `TESTING.md`.**
+- [x] **Step 1: `USE.md`.** Add a Feed section covering the keys from spec §5 (FeedList, Entry, Composer, Watched and Bookmarks) and the alerts.
+- [x] **Step 2: `TESTING.md`.**
   - Under "Open hardware checks", add the Task 9–11 `m9_fake` checks.
   - In the live checklist, add a Feed block:
     - read the feed;
@@ -755,5 +755,5 @@
     - watch and unwatch;
     - a reply alert from a second account within a minute;
     - auto-refresh shows a new entry within 2 minutes.
-- [ ] **Step 3: `AGENTS.md`.** Point the M3 line at this plan, and update the progress section (task status and the native test count from `pio test -e native`).
-- [ ] **Step 4: Commit** `docs: Feed user guide and checks`.
+- [x] **Step 3: `AGENTS.md`.** Point the M3 line at this plan, and update the progress section (task status and the native test count from `pio test -e native`).
+- [x] **Step 4: Commit** `docs: Feed user guide and checks`.

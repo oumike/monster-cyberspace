@@ -38,6 +38,10 @@ The fake source provides:
 - C-Mail with rain (2 unread), moth, and kiwi (empty). A send echoes, then
   the partner types for 2 s and replies. rain writes every 45 s. Starting a
   conversation with `nobody` fails with "User not found".
+- a Feed of 15 entries in two pages: your own (with a reply alert on it
+  every 90 s), a bookmarked one with 25 threaded replies, a `spiders` CW, an
+  NSFW one, a watched one and a long Markdown one. Writes apply locally under
+  the real limits.
 
 Check every screen and key:
 
@@ -85,6 +89,23 @@ These were built without flashing and still need a run on the device.
 - [x] In a cIRC room, wait for rain's 45 s DM: a banner plus the buzzer, and the list shows it unread
 - [x] New conversation… → `kiwi` opens it; `zed` creates a new one; `nobody` → "User not found" and you stay in the input
 - [x] Fn in a conversation goes to the list; Back from the list goes Home
+
+**Feed (`m9_fake`):**
+
+- [x] The list scrolls and pages
+- [x] The CW row reads `CW: spiders`
+- [x] `★` follows bookmarks
+- [x] The 90 s reply alert shows a banner and beeps once
+- [x] Entry: Centre reveals the CW
+- [x] Entry: the long Markdown entry renders and scrolls
+- [x] Entry: a threaded reply shows `↳`
+- [x] Entry: replying to a reply sets the `↳ @name` marker
+- [x] Entry: bookmark, watch and delete (own) work; delete on others' entries is refused
+- [x] Composer: a multi-line body; the `n/4096` counter
+- [x] Composer: 4 topics are rejected
+- [x] Composer: the third post within a minute shows "Slow down"
+- [x] Composer: posting opens the new entry
+- [x] Composer: Back asks to discard
 
 **Web config (`m9`):**
 
@@ -154,3 +175,13 @@ this checklist on the `m9` build with their own account.
 - [ ] Start a conversation by username; an unknown name shows a clear error
 - [ ] With the screen off, a C-Mail from another account sounds the buzzer within a minute
 - [ ] Names, previews and senders are right in the list and the log (this confirms the assumed field names, such as `senderUsername`)
+
+**Feed (live):**
+
+- [ ] Read the feed: entries, previews and reply counts match the website
+- [ ] Post a test entry, then delete it; the website shows both
+- [ ] Reply to an entry, and reply to a reply; the website threads them
+- [ ] Bookmark and unbookmark an entry; the website agrees
+- [ ] Watch and unwatch an entry; the website agrees
+- [ ] A reply from a second account shows a banner (and the buzzer) within a minute
+- [ ] With the Feed list open, auto-refresh shows a new entry within 2 minutes

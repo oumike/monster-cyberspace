@@ -8,6 +8,8 @@ features come later.
 - **Design spec:** `docs/superpowers/specs/2026-10-25-cyberspace-m9-circ-design.md`
 - **Milestone 2 (C-Mail):** spec `docs/superpowers/specs/2026-10-25-cyberspace-m9-cmail-design.md`,
   plan `docs/superpowers/plans/2026-10-25-cyberspace-m9-cmail.md`.
+- **Milestone 3 (Feed):** spec `docs/superpowers/specs/2026-10-26-cyberspace-m9-feed-design.md`
+  (plan to follow).
 - **User guide:** `docs/USE.md`. **Testing and the live checklist:** `docs/TESTING.md`.
 - **Implementation plan:** `docs/superpowers/plans/2026-10-25-cyberspace-m9-circ.md`.
   Work its tasks in order, tick each `- [ ]` box as you finish a step, and

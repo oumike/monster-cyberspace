@@ -83,7 +83,7 @@ std::vector<DisplayLine> layoutRoom(const std::deque<CircMessage>& msgs, const L
     first = false;
     prevBucket = bucket;
 
-    const bool self = !o.selfUsername.empty() && m.username == o.selfUsername;
+    const bool self = !o.selfUsername.empty() && sameUsername(m.username, o.selfUsername);
     const uint16_t nickFg = nickColor(th, m.username, self);
     const bool tint =
         !m.deleted && !o.selfUsername.empty() && mentionsUser(m.content, o.selfUsername);

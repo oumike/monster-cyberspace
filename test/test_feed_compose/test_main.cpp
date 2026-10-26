@@ -74,6 +74,12 @@ void test_whitespace_body_rejected() {
   TEST_ASSERT_EQUAL_STRING("Body is empty", validateDraft(d).c_str());
 }
 
+void test_whitespace_reply_rejected() {
+  TEST_ASSERT_EQUAL_STRING("Reply is empty", validateReply("").c_str());
+  TEST_ASSERT_EQUAL_STRING("Reply is empty", validateReply(" \t\n ").c_str());
+  TEST_ASSERT_EQUAL_STRING("", validateReply("  hi ").c_str());
+}
+
 void test_entry_json_omits_empties() {
   EntryDraft d;
   d.body = "hi";
@@ -135,6 +141,7 @@ int main() {
   RUN_TEST(test_validate_counts_code_points);
   RUN_TEST(test_validate_order);
   RUN_TEST(test_whitespace_body_rejected);
+  RUN_TEST(test_whitespace_reply_rejected);
   RUN_TEST(test_entry_json_omits_empties);
   RUN_TEST(test_reply_flag_bookmark_json);
   RUN_TEST(test_title_and_cw_trimmed);

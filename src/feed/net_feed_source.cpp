@@ -10,7 +10,7 @@ namespace {
 class NetFeedSource : public FeedSource {
  public:
   void command(const Command& c) override {
-    if (!postCommand(c)) postEvent(Event{EvtType::Banner, "Busy, try again", 0, false});
+    if (!postCommand(c)) refuseCommand(c);
   }
 };
 

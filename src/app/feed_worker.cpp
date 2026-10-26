@@ -509,7 +509,9 @@ void FeedWorker::onNotice(const Mention& m, bool buzzer) {
     post(EvtType::FeedAlert, "Entry held for review (saved as a note)", 0);
     return;
   }
-  if (!m.targetId.empty() && m.targetId == openPostId()) {
+  // A notice without a target would open GET /v1/posts/; drop it.
+  if (m.targetId.empty()) return;
+  if (m.targetId == openPostId()) {
     // The entry is on screen: refresh its replies instead of alerting.
     api_.markNotificationRead(m.id);
     fetchNewReplies(m.targetId);

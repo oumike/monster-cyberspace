@@ -500,6 +500,13 @@ class Worker {
     if (c.type == CmdType::PostEntry || c.type == CmdType::PostReply)
       post(EvtType::FeedWriteDone, 0, why, false);
     if (c.type == CmdType::OpenEntry) post(EvtType::EntryUpdated, 0, "", false);
+    // Settle the screens waiting on a page, or they stay "loading…".
+    if (c.type == CmdType::MoreReplies) post(EvtType::RepliesLoaded);
+    if (c.type == CmdType::OpenFeed || c.type == CmdType::FeedMore ||
+        c.type == CmdType::FeedRefresh)
+      post(EvtType::FeedUpdated);
+    if (c.type == CmdType::OpenWatched || c.type == CmdType::OpenBookmarks)
+      post(EvtType::SideListUpdated);
     return false;
   }
 

@@ -80,6 +80,10 @@ std::string entryJson(const EntryDraft& d) {
   return serialize(doc);
 }
 
+std::string validateReply(std::string_view body) {
+  return trim(body).empty() ? "Reply is empty" : "";
+}
+
 std::string replyJson(const std::string& postId, const std::string& body,
                       const std::string& parentReplyId) {
   JsonDocument doc;

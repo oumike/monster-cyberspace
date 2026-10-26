@@ -27,6 +27,37 @@ bool postCommand(Command c) {
   return true;
 }
 
+void refuseCommand(const Command& c) {
+  const char* busy = "Busy, try again";
+  switch (c.type) {
+    case CmdType::Send:
+      postEvent(Event{EvtType::SendDone, busy, 0, false});
+      return;
+    case CmdType::PostEntry:
+    case CmdType::PostReply:
+      postEvent(Event{EvtType::FeedWriteDone, busy, 0, false});
+      return;
+    case CmdType::LoadOlder:
+      postEvent(Event{EvtType::OlderLoaded, "", 0, true});
+      break;
+    case CmdType::MoreReplies:
+      postEvent(Event{EvtType::RepliesLoaded});
+      break;
+    case CmdType::OpenFeed:
+    case CmdType::FeedMore:
+    case CmdType::FeedRefresh:
+      postEvent(Event{EvtType::FeedUpdated});
+      break;
+    case CmdType::OpenWatched:
+    case CmdType::OpenBookmarks:
+      postEvent(Event{EvtType::SideListUpdated});
+      break;
+    default:
+      break;
+  }
+  postEvent(Event{EvtType::Banner, busy, 0, false});
+}
+
 bool nextCommand(Command& c, uint32_t waitMs) {
   std::unique_lock<std::mutex> g(cmdMu);
   if (!cmdCv.wait_for(g, std::chrono::milliseconds(waitMs), [] { return !cmds.empty(); }))

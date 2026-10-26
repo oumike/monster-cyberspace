@@ -180,13 +180,19 @@ void EntryScreen::send() {
     ui::banner("Still sending\u2026", true);
     return;
   }
+  std::string body = input_.utf8();
+  std::string err = validateReply(body);
+  if (!err.empty()) {
+    ui::banner(err, true);
+    return;
+  }
   if (app().conn == 0) {
     ui::banner("Offline: not sent", true);
     return;
   }
   sending_ = true;
   feedSource().command(
-      Command{CmdType::PostReply, replyJson(postId_, input_.utf8(), selectedReply())});
+      Command{CmdType::PostReply, replyJson(postId_, body, selectedReply())});
 }
 
 void EntryScreen::reasonKey(const KeyEvent& k) {

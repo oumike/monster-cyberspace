@@ -1,5 +1,6 @@
 #include "ui/nick_color.h"
 
+#include <cctype>
 #include <cmath>
 
 namespace rc {
@@ -40,4 +41,13 @@ uint16_t nickColor(const Theme& t, std::string_view name, bool isSelf) {
   return hslToRgb565(nickHue(name), 0.70f, 0.68f);
 }
 
+
+bool sameUsername(std::string_view a, std::string_view b) {
+  if (a.size() != b.size()) return false;
+  for (size_t i = 0; i < a.size(); ++i)
+    if (std::tolower(static_cast<unsigned char>(a[i])) !=
+        std::tolower(static_cast<unsigned char>(b[i])))
+      return false;
+  return true;
+}
 }  // namespace rc

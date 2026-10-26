@@ -382,6 +382,17 @@ void test_feed_row() {
   TEST_ASSERT_TRUE(r.line2 == U"[deleted]");
 }
 
+void test_self_gold_ignores_case() {
+  std::deque<CircMessage> d{msg("m1", "OuMike", "me")};
+  auto lines = body(layoutRoom(d, opts(TextSize::Compact, 53)));
+  TEST_ASSERT_EQUAL_HEX16(0xFE8C, lines[0].spans[1].fg);
+  Entry e = feedEntry();
+  e.author = "OuMike";
+  std::deque<Reply> none;
+  auto ls = layoutEntry(e, none, entryOpts());
+  TEST_ASSERT_EQUAL_HEX16(0xFE8C, ls[0].spans[0].fg);
+}
+
 void test_entry_layout_reveal() {
   Entry e = feedEntry();
   e.contentWarning = "spiders";
@@ -495,6 +506,7 @@ int main() {
   RUN_TEST(test_image_only_no_double_url);
   RUN_TEST(test_mention_tint);
   RUN_TEST(test_self_gold);
+  RUN_TEST(test_self_gold_ignores_case);
   RUN_TEST(test_muted_skipped);
   RUN_TEST(test_long_no_space_message);
   RUN_TEST(test_emoji_body);

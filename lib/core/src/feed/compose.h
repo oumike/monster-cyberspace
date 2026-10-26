@@ -23,6 +23,8 @@ std::string validateDraft(const EntryDraft& d);
 // empty topics and an empty cw; leaves out
 // isPublic and isNSFW when false.
 std::string entryJson(const EntryDraft& d);
+// "" when the reply can be sent, else the message to show (whitespace-only is empty).
+std::string validateReply(std::string_view body);
 // parentReplyId only when non-empty.
 std::string replyJson(const std::string& postId, const std::string& body,
                       const std::string& parentReplyId);

@@ -12,6 +12,10 @@ constexpr size_t kQueueDepth = 32;
 // A full command queue refuses the command. A full event queue drops its
 // oldest RoomChanged (the next one redraws anyway), else its oldest event.
 bool postCommand(Command c);
+// For a command postCommand refused: shows "Busy, try again" and posts the
+// event a screen waits on (a failed send or post, an empty page) so nothing
+// stays "sending…" or "loading…". Never retries.
+void refuseCommand(const Command& c);
 bool nextCommand(Command& c, uint32_t waitMs);
 bool postEvent(Event e);
 bool nextEvent(Event& e);

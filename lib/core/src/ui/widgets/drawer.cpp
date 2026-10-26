@@ -53,15 +53,16 @@ void Drawer::render(Grid& g, int top, int bottom, const Theme& t) const {
     int row = top + 1 + r;
     const Person& p = people_[idx];
     bool sel = idx == sel_;
-    uint16_t bg = sel ? t.selectBg : t.drawerBg;
-    uint16_t fg = sel ? t.selectFg : nickColor(p.username, false);
+    uint16_t bg = t.drawerBg;
+    uint16_t fg = nickColor(p.username, false);
     for (int c = x + 1; c < g.cols(); ++c) g.put(c, row, U' ', fg, bg);
     std::u32string name = utf8ToU32(p.username);
     int nameMax = inner - (p.idle ? 2 : 0);
     if (static_cast<int>(name.size()) > nameMax)
       name = name.substr(0, std::max(nameMax - 1, 0)) + U"\u2026";
     int n = g.putText(x + 1, row, name, fg, bg, nameMax);
-    if (p.idle) g.putText(x + 1 + n, row, U" z", sel ? fg : t.dim, bg, 2);
+    if (p.idle) g.putText(x + 1 + n, row, U" z", t.dim, bg, 2);
+    if (sel) g.outline(x + 1, row, g.cols() - 1, row, t.selectBg);
   }
 }
 

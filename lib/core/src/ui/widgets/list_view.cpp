@@ -25,16 +25,16 @@ void ListView::render(Grid& g, int top, int bottom, int left, int width, const T
     int row = top + r;
     int idx = first + r;
     bool sel = idx == sel_ && idx < static_cast<int>(items_.size());
-    uint16_t bg = sel ? t.selectBg : t.bg;
-    for (int c = 0; c < width; ++c) g.put(left + c, row, U' ', t.fg, bg);
+    for (int c = 0; c < width; ++c) g.put(left + c, row, U' ', t.fg, t.bg);
     if (idx >= static_cast<int>(items_.size())) continue;
     const ListItem& it = items_[idx];
-    uint16_t fg = sel ? t.selectFg : it.fg;
+    uint16_t fg = it.fg, bg = t.bg;
     int rw = static_cast<int>(it.right.size());
     int labelMax = std::max(0, width - 2 - (rw ? rw + 2 : 0));
     if (it.marker) g.put(left, row, U'\u2022', fg, bg);
     g.putText(left + 2, row, it.label, fg, bg, labelMax);
     if (rw && rw + 1 <= width) g.putText(left + width - 1 - rw, row, it.right, fg, bg, rw);
+    if (sel) g.outline(left, row, left + width - 1, row, t.selectBg);
   }
 }
 

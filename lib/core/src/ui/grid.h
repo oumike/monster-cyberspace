@@ -6,10 +6,18 @@
 
 namespace rc {
 
+// Cell edges drawn as 1 px lines, for outlining a selection.
+constexpr uint8_t kEdgeTop = 1, kEdgeBottom = 2, kEdgeLeft = 4, kEdgeRight = 8;
+
 struct Cell {
   char32_t cp = U' ';
   uint16_t fg = 0, bg = 0;
-  bool operator==(const Cell& o) const { return cp == o.cp && fg == o.fg && bg == o.bg; }
+  uint8_t edges = 0;
+  uint16_t edgeColor = 0;
+  bool operator==(const Cell& o) const {
+    return cp == o.cp && fg == o.fg && bg == o.bg && edges == o.edges &&
+           (!edges || edgeColor == o.edgeColor);
+  }
   bool operator!=(const Cell& o) const { return !(*this == o); }
 };
 
@@ -27,6 +35,9 @@ class Grid {
   void put(int col, int row, char32_t cp, uint16_t fg, uint16_t bg);
   // Writes up to maxCols cells of s from col; returns the number written.
   int putText(int col, int row, std::u32string_view s, uint16_t fg, uint16_t bg, int maxCols);
+  // Draws a box on the edges of cells [c0..c1] x [r0..r1] (inclusive). Call it
+  // after writing the cells: put() clears a cell's edges.
+  void outline(int c0, int r0, int c1, int r1, uint16_t color);
   const Cell& at(int col, int row) const;
   bool rowDirty(int row) const;
   void clearDirty();

@@ -27,6 +27,23 @@ void Grid::put(int col, int row, char32_t cp, uint16_t fg, uint16_t bg) {
   cells_[static_cast<size_t>(row) * cols_ + col] = Cell{cp, fg, bg};
 }
 
+void Grid::outline(int c0, int r0, int c1, int r1, uint16_t color) {
+  c0 = std::max(c0, 0);
+  r0 = std::max(r0, 0);
+  c1 = std::min(c1, cols_ - 1);
+  r1 = std::min(r1, rows_ - 1);
+  for (int r = r0; r <= r1; ++r) {
+    for (int c = c0; c <= c1; ++c) {
+      uint8_t e = (r == r0 ? kEdgeTop : 0) | (r == r1 ? kEdgeBottom : 0) |
+                  (c == c0 ? kEdgeLeft : 0) | (c == c1 ? kEdgeRight : 0);
+      if (!e) continue;
+      Cell& cell = cells_[static_cast<size_t>(r) * cols_ + c];
+      cell.edges |= e;
+      cell.edgeColor = color;
+    }
+  }
+}
+
 int Grid::putText(int col, int row, std::u32string_view s, uint16_t fg, uint16_t bg,
                   int maxCols) {
   int n = 0;

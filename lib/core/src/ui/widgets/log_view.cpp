@@ -65,6 +65,7 @@ void LogView::render(Grid& g, int top, int bottom, int rightReserve, const Theme
     end = std::min(static_cast<int>(lines_.size()), start + height);
   }
 
+  int selTop = -1, selBottom = -1;
   for (int r = 0; r < height; ++r) {
     int row = top + r;
     int idx = start + r;
@@ -74,14 +75,16 @@ void LogView::render(Grid& g, int top, int bottom, int rightReserve, const Theme
     }
     const DisplayLine& l = lines_[idx];
     bool sel = !following() && !l.divider && l.messageId == selected_;
-    uint16_t bg = sel ? t.selectBg : l.mentionTint ? t.mentionBg : t.bg;
-    int col = 0;
-    for (const auto& s : l.spans) {
-      uint16_t fg = sel ? t.selectFg : s.fg;
-      col += g.putText(col, row, s.text, fg, bg, width - col);
+    if (sel) {
+      if (selTop < 0) selTop = row;
+      selBottom = row;
     }
+    uint16_t bg = l.mentionTint ? t.mentionBg : t.bg;
+    int col = 0;
+    for (const auto& s : l.spans) col += g.putText(col, row, s.text, s.fg, bg, width - col);
     for (; col < width; ++col) g.put(col, row, U' ', t.fg, bg);
   }
+  if (selTop >= 0 && width > 0) g.outline(0, selTop, width - 1, selBottom, t.selectBg);
 }
 
 }  // namespace rc

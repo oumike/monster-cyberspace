@@ -135,7 +135,43 @@ void test_log_render_follow_and_select() {
   for (int i = 0; i < 5; ++i) v.up();  // selects m5
   v.render(g, 1, 4, 2, T());
   TEST_ASSERT_EQUAL_STRING("line5", rowText(g, 3, 0, 5).c_str());
-  TEST_ASSERT_EQUAL_HEX16(T().selectBg, g.at(0, 3).bg);
+  // Selection is an outline, not a fill: colours stay, the box sits on the edges.
+  TEST_ASSERT_EQUAL_HEX16(T().bg, g.at(0, 3).bg);
+  TEST_ASSERT_EQUAL_HEX16(1, g.at(0, 3).fg);
+  TEST_ASSERT_EQUAL(kEdgeTop | kEdgeBottom | kEdgeLeft, g.at(0, 3).edges);
+  TEST_ASSERT_EQUAL(kEdgeTop | kEdgeBottom | kEdgeRight, g.at(9, 3).edges);
+  TEST_ASSERT_EQUAL_HEX16(T().selectBg, g.at(0, 3).edgeColor);
+  TEST_ASSERT_EQUAL(0, g.at(10, 3).edges);  // right reserve untouched
+  TEST_ASSERT_EQUAL(0, g.at(0, 2).edges);
+}
+
+void test_log_outlines_whole_message() {
+  LogView v;
+  v.setLines({line("a", "one"), line("b", "two"), line("b", "two more"), line("c", "three")});
+  v.up();
+  v.up();  // selects b, two lines
+  TEST_ASSERT_EQUAL_STRING("b", v.selectedId().c_str());
+  Grid g(10, 6);
+  v.render(g, 0, 4, 0, T());
+  TEST_ASSERT_EQUAL(kEdgeTop | kEdgeLeft, g.at(0, 1).edges);
+  TEST_ASSERT_EQUAL(kEdgeBottom | kEdgeLeft, g.at(0, 2).edges);
+  TEST_ASSERT_EQUAL(kEdgeBottom | kEdgeRight, g.at(9, 2).edges);
+  TEST_ASSERT_EQUAL(0, g.at(0, 3).edges);
+}
+
+void test_grid_outline() {
+  Grid g(6, 4);
+  g.clearDirty();
+  g.outline(1, 1, 4, 2, 7);
+  TEST_ASSERT_TRUE(g.rowDirty(1));
+  TEST_ASSERT_FALSE(g.rowDirty(0));
+  TEST_ASSERT_EQUAL(kEdgeTop | kEdgeLeft, g.at(1, 1).edges);
+  TEST_ASSERT_EQUAL(kEdgeTop, g.at(2, 1).edges);
+  TEST_ASSERT_EQUAL(kEdgeBottom | kEdgeRight, g.at(4, 2).edges);
+  TEST_ASSERT_EQUAL(0, g.at(0, 1).edges);
+  TEST_ASSERT_EQUAL_HEX16(7, g.at(1, 1).edgeColor);
+  g.put(1, 1, U'x', 1, 0);  // a fresh put clears the edges
+  TEST_ASSERT_EQUAL(0, g.at(1, 1).edges);
 }
 
 void test_log_preserves_selection_on_setLines() {
@@ -166,7 +202,10 @@ void test_list_scrolls() {
   lv.render(g, 1, 5, 0, 20, T());  // 4 rows
   TEST_ASSERT_EQUAL_STRING("\xe2\x80\xa2 item7", rowText(g, 4, 0, 7).c_str());
   TEST_ASSERT_EQUAL_HEX32(U'3', g.at(18, 4).cp);
-  TEST_ASSERT_EQUAL_HEX16(T().selectBg, g.at(0, 4).bg);
+  TEST_ASSERT_EQUAL_HEX16(T().bg, g.at(0, 4).bg);
+  TEST_ASSERT_EQUAL(kEdgeTop | kEdgeBottom | kEdgeLeft, g.at(0, 4).edges);
+  TEST_ASSERT_EQUAL(kEdgeTop | kEdgeBottom | kEdgeRight, g.at(19, 4).edges);
+  TEST_ASSERT_EQUAL(0, g.at(0, 3).edges);
   TEST_ASSERT_EQUAL_STRING("  item4", rowText(g, 1, 0, 7).c_str());
   for (int i = 0; i < 20; ++i) lv.down();
   TEST_ASSERT_EQUAL(9, lv.selected());
@@ -193,6 +232,10 @@ void test_drawer_idle_marker() {
   TEST_ASSERT_EQUAL_STRING("rain z", rowText(g, 2, x + 1, x + 7).c_str());
   TEST_ASSERT_EQUAL_STRING("tardibyte ", rowText(g, 3, x + 1, x + 11).c_str());
   TEST_ASSERT_EQUAL_HEX16(T().drawerBg, g.at(39, 5).bg);
+  TEST_ASSERT_EQUAL_HEX16(T().drawerBg, g.at(x + 1, 2).bg);
+  TEST_ASSERT_EQUAL(kEdgeTop | kEdgeBottom | kEdgeLeft, g.at(x + 1, 2).edges);
+  TEST_ASSERT_EQUAL(kEdgeTop | kEdgeBottom | kEdgeRight, g.at(39, 2).edges);
+  TEST_ASSERT_EQUAL(0, g.at(x + 1, 3).edges);
   TEST_ASSERT_EQUAL_STRING("rain", d.selectedUsername().c_str());
   d.down();
   TEST_ASSERT_EQUAL_STRING("tardibyte", d.selectedUsername().c_str());
@@ -269,6 +312,8 @@ int main() {
   RUN_TEST(test_input_hscroll);
   RUN_TEST(test_log_follow_and_select);
   RUN_TEST(test_log_render_follow_and_select);
+  RUN_TEST(test_log_outlines_whole_message);
+  RUN_TEST(test_grid_outline);
   RUN_TEST(test_log_preserves_selection_on_setLines);
   RUN_TEST(test_list_scrolls);
   RUN_TEST(test_drawer_idle_marker);

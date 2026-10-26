@@ -34,6 +34,19 @@ void Renderer::draw(Grid& g, TextSize s) {
         uint16_t* px = frame_ + static_cast<size_t>(y0 + y) * w_ + x0;
         for (int x = 0; x < cw; ++x) px[x] = (bits & (0x80 >> x)) ? cell.fg : cell.bg;
       }
+      if (cell.edges) {
+        const uint16_t ec = cell.edgeColor;
+        uint16_t* top = frame_ + static_cast<size_t>(y0) * w_ + x0;
+        uint16_t* bottom = top + static_cast<size_t>(ch - 1) * w_;
+        if (cell.edges & kEdgeTop)
+          for (int x = 0; x < cw; ++x) top[x] = ec;
+        if (cell.edges & kEdgeBottom)
+          for (int x = 0; x < cw; ++x) bottom[x] = ec;
+        if (cell.edges & kEdgeLeft)
+          for (int y = 0; y < ch; ++y) top[static_cast<size_t>(y) * w_] = ec;
+        if (cell.edges & kEdgeRight)
+          for (int y = 0; y < ch; ++y) top[static_cast<size_t>(y) * w_ + cw - 1] = ec;
+      }
     }
     // Pixels right of the last whole cell take the last cell's background.
     const int used = g.cols() * cw;

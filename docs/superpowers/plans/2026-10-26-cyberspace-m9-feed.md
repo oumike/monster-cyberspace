@@ -692,7 +692,7 @@
 
 - [x] **Step 1: Implement.**
 - [x] **Step 2: Run** `pio test -e native`, `pio run -e m9_fake` and `pio run -e m9`. Expected: all green.
-- [ ] **Step 3: Flash `m9_fake`** and check:
+- [x] **Step 3: Flash `m9_fake`** and check:
   - the CW reveal;
   - the long Markdown entry renders and scrolls;
   - a threaded reply shows `↳`;

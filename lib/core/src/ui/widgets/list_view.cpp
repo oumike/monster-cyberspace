@@ -14,8 +14,15 @@ void ListView::setSelected(int i) {
   sel_ = n == 0 ? 0 : std::clamp(i, 0, n - 1);
 }
 
-void ListView::up() { setSelected(sel_ - 1); }
-void ListView::down() { setSelected(sel_ + 1); }
+void ListView::up() {
+  int n = static_cast<int>(items_.size());
+  if (n) sel_ = (sel_ + n - 1) % n;
+}
+
+void ListView::down() {
+  int n = static_cast<int>(items_.size());
+  if (n) sel_ = (sel_ + 1) % n;
+}
 
 void ListView::render(Grid& g, int top, int bottom, int left, int width, const Theme& t) const {
   const int height = bottom - top;

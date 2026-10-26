@@ -19,11 +19,13 @@ void Drawer::setPeople(std::vector<PresenceEntry> people, int64_t nowMs, int64_t
 }
 
 void Drawer::up() {
-  if (sel_ > 0) --sel_;
+  int n = static_cast<int>(people_.size());
+  if (n) sel_ = (sel_ + n - 1) % n;
 }
 
 void Drawer::down() {
-  if (sel_ + 1 < static_cast<int>(people_.size())) ++sel_;
+  int n = static_cast<int>(people_.size());
+  if (n) sel_ = (sel_ + 1) % n;
 }
 
 std::string Drawer::selectedUsername() const {

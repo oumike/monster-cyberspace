@@ -15,7 +15,7 @@ struct ListItem {
   bool marker = false;  // drawn as "•" before the label
 };
 
-// A vertical menu that scrolls to keep the selection visible.
+// A vertical menu that scrolls to keep the selection visible. Up and Down wrap.
 class ListView {
  public:
   void setItems(std::vector<ListItem> items);

@@ -41,7 +41,8 @@ while it's dark shows the last few messages for 10 s, then goes dark again.
 Every other key is ignored while the screen is off, so pocket presses can't
 send anything.
 
-**Lists:** Up/Down select, Centre or Right open, Left goes back.
+**Lists:** Up/Down select and wrap round at the ends, Centre or Right open,
+Left goes back.
 
 ## In a room
 

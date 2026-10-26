@@ -45,6 +45,7 @@
 - The notification poll's type filter is exactly `chat_mention,reply,thread_reply,post_mention,reply_mention,post_cooldown`.
 - Feed alerts beep at 1800 Hz for 80 ms when the buzzer is on. A `post_cooldown` alert shows a banner only.
 - Never call `feedSource().command()` inside `lockedFeed().with(...)`.
+- Menus and lists wrap round: Up on the first item selects the last, Down on the last selects the first (`ListView`, `Drawer`, `EntryList`). A paged list loads its next page from the last row before wrapping. Text views (logs, entry body) and form fields do not wrap.
 - Each task follows TDD where it has host tests, then commits with the given message and the trailer `Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>`.
 - Verify:
   - `pio test -e native` is green;
@@ -428,8 +429,8 @@
   class EntryList {
    public:
     void setRows(std::vector<FeedRow> rows);
-    void up(); void down();
-    int selected() const; void setSelected(int i);
+    void up(); void down();          // wrap round the ends, like ListView
+    int selected() const; void setSelected(int i);  // clamps
     size_t size() const;
     bool atEnd() const;  // the last row is selected
     void render(Grid& g, int top, int bottom, const Theme& t) const;
@@ -462,6 +463,7 @@
     - `test_entry_layout_deleted`: a deleted entry body gives `U"[deleted]"`.
   - In `test_widgets`:
     - `test_entry_list_outline`: 3 rows, `down()`; the cells of rows 2–3 carry `kEdgeTop` on row 2 and `kEdgeBottom` on row 3.
+    - `test_entry_list_wraps`: 3 rows; `up()` from 0 selects 2 and `atEnd()`; `down()` then selects 0; on an empty list `up()`/`down()` are no-ops.
     - `test_text_area_newlines_and_cap`: insert `"ab\ncd"`; `utf8()=="ab\ncd"`; at `TextArea(3)`, the 4th insert returns false.
     - `test_text_area_up_down`: the cursor on line 2 `up(40)` moves to line 1, and `up(40)` again returns false.
 - [ ] **Step 2: Run** `pio test -e native -f test_layout -f test_widgets`. Expected: FAIL.
@@ -636,7 +638,7 @@
   - one class, three router instances (like `RoomScreen{true}`);
   - `enter` sends `OpenFeed`, `OpenWatched` or `OpenBookmarks`; `leave` sends `CloseFeed` for `Feed`.
   - It renders `EntryList` from `store.feed()` or `store.sideList()`, and keeps the selection by id across `FeedUpdated` using `indexOf`.
-  - Down on the last row sends `FeedMore`, or `OpenWatched`/`OpenBookmarks` with n = 1.
+  - Down on the last row (`atEnd()`) sends `FeedMore`, or `OpenWatched`/`OpenBookmarks` with n = 1, while more remain (`!feedEnd()`, or a non-empty `sideCursor()`), and keeps the selection; once the list is complete it wraps to the top. Up on the first row wraps to the last held row.
   - Select or Right goes to `Entry` with arg = postId; Left or Back goes Home.
   - Ctrl opens a `ListView` palette: `New entry`, `Refresh`, `Watched threads`, `Bookmarks`, `Text size`.
   - The status title is `Feed`, `Watched` or `Bookmarks`. Feed adds ` ↻ 2m`.

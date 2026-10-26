@@ -155,7 +155,8 @@ returns to the FeedList.
     content warning or the NSFW flag shows `CW: <warning>` (or `CW: NSFW`)
     instead.
 - Up/Down select; the selected entry is outlined. Down at the end loads the
-  next page. Centre or Right opens the entry, and Left or Back goes Home.
+  next page; once every page is loaded it wraps to the top, and Up on the
+  first entry wraps to the last. Centre or Right opens the entry, and Left or Back goes Home.
 - Ctrl opens the palette: **New entry**, **Refresh**, **Watched threads**,
   **Bookmarks**, and **Text size**.
 - The status bar reads `Feed`, with `↻ 2m` while auto-refresh is on.

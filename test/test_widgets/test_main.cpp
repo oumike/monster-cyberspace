@@ -207,10 +207,38 @@ void test_list_scrolls() {
   TEST_ASSERT_EQUAL(kEdgeTop | kEdgeBottom | kEdgeRight, g.at(19, 4).edges);
   TEST_ASSERT_EQUAL(0, g.at(0, 3).edges);
   TEST_ASSERT_EQUAL_STRING("  item4", rowText(g, 1, 0, 7).c_str());
-  for (int i = 0; i < 20; ++i) lv.down();
-  TEST_ASSERT_EQUAL(9, lv.selected());
-  for (int i = 0; i < 20; ++i) lv.up();
+}
+
+void test_list_wraps() {
+  ListView lv;
+  lv.up();  // empty: no-op
   TEST_ASSERT_EQUAL(0, lv.selected());
+  std::vector<ListItem> items;
+  for (int i = 0; i < 10; ++i) items.push_back({utf8ToU32("item" + std::to_string(i)), U"", 1});
+  lv.setItems(items);
+  lv.up();
+  TEST_ASSERT_EQUAL(9, lv.selected());
+  Grid g(20, 6);
+  lv.render(g, 1, 5, 0, 20, T());
+  TEST_ASSERT_EQUAL_STRING("  item9", rowText(g, 4, 0, 7).c_str());
+  lv.down();
+  TEST_ASSERT_EQUAL(0, lv.selected());
+  lv.setSelected(42);  // direct selection still clamps
+  TEST_ASSERT_EQUAL(9, lv.selected());
+}
+
+void test_drawer_wraps() {
+  PresenceEntry a, b;
+  a.username = "rain";
+  b.username = "tardibyte";
+  Drawer d;
+  d.up();  // empty: no-op
+  TEST_ASSERT_EQUAL_STRING("", d.selectedUsername().c_str());
+  d.setPeople({a, b}, 0, 300000);
+  d.up();
+  TEST_ASSERT_EQUAL_STRING("tardibyte", d.selectedUsername().c_str());
+  d.down();
+  TEST_ASSERT_EQUAL_STRING("rain", d.selectedUsername().c_str());
 }
 
 void test_drawer_idle_marker() {
@@ -316,6 +344,8 @@ int main() {
   RUN_TEST(test_grid_outline);
   RUN_TEST(test_log_preserves_selection_on_setLines);
   RUN_TEST(test_list_scrolls);
+  RUN_TEST(test_list_wraps);
+  RUN_TEST(test_drawer_wraps);
   RUN_TEST(test_drawer_idle_marker);
   RUN_TEST(test_status_bar_layout);
   RUN_TEST(test_banner_expires);

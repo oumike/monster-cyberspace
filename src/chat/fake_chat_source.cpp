@@ -12,6 +12,7 @@
 #include "app/queues.h"
 #include "chat/chat_source.h"
 #include "cs/rate_limiter.h"
+#include "feed/feed_source.h"
 #include "store/locked_chat.h"
 
 // The scripted fake API for the m9_fake build: no network, no account.
@@ -166,6 +167,7 @@ void FakeChatSource::start() {
   postEvent(Event{EvtType::RoomsUpdated});
   postEvent(Event{EvtType::ConversationsUpdated});
   xTaskCreatePinnedToCore(taskMain, "fake", 8192, this, 3, nullptr, 0);
+  feedSource();  // seeds the fake Feed and starts its 90 s reply notices
 }
 
 void FakeChatSource::command(const Command& c) {

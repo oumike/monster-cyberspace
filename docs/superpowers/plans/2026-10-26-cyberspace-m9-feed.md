@@ -620,9 +620,9 @@
   - Commands are applied inline, as in `fake_chat_source.cpp`.
 - Header comment lists the script, as in `fake_chat_source.cpp`.
 
-- [ ] **Step 1: Implement.**
-- [ ] **Step 2: Run** `pio run -e m9_fake`. Expected: SUCCESS.
-- [ ] **Step 3: Commit** `feat(fake): scripted Feed for m9_fake`.
+- [x] **Step 1: Implement.**
+- [x] **Step 2: Run** `pio run -e m9_fake`. Expected: SUCCESS.
+- [x] **Step 3: Commit** `feat(fake): scripted Feed for m9_fake`.
 
 ### Task 9: FeedList, Watched and Bookmarks screens, router, Home, alerts
 

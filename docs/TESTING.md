@@ -58,7 +58,7 @@ These were built without flashing and still need a run on the device.
 
 **Themes (`m9_fake`):**
 
-- [ ] Settings → Theme cycles Default → Black & white → White & black → Default; each redraws at once and survives a restart
+- [x] Settings → Theme cycles Default → Black & white → White & black → Default; each redraws at once and survives a restart
 - [ ] Web config Display → Theme changes the device at once; the select shows the saved theme on reload
 - [ ] In both mono themes: Home, room, drawer, menus, palette, Feed list, Entry, Composer, login and Settings are readable; nicks use the text colour
 - [ ] Link view QR stays black on white

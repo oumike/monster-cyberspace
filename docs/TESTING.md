@@ -81,16 +81,16 @@ These were built without flashing and still need a run on the device.
 
 **Web config (`m9`):**
 
-- [ ] With no Wi-Fi saved: the setup AP appears, `http://192.168.4.1` loads, and nothing pops up
-- [ ] Scan lists networks; saving one restarts the device onto it
-- [ ] `http://rhino-cyberspace.local` and the IP both load the page
-- [ ] Status shows the version, IP, signal, battery and chat state
-- [ ] Removing a saved network works; with five saved, adding a sixth is refused
-- [ ] Display: text size and buzzer change on the device at once; the time zone changes the clock
-- [ ] Setting a page password → the browser asks for Basic auth (user `admin`); clearing it removes the prompt
-- [ ] Setting an AP password → WPA2 after a factory reset; clearing it → open again
-- [ ] Restart works; Factory reset (two confirms) → setup mode with everything erased
-- [ ] Home screen → Factory reset… → Erase everything does the same
+- [x] With no Wi-Fi saved: the setup AP appears, `http://192.168.4.1` loads, and nothing pops up
+- [x] Scan lists networks; saving one restarts the device onto it
+- [x] `http://rhino-cyberspace.local` and the IP both load the page
+- [x] Status shows the version, IP, signal, battery and chat state
+- [x] Removing a saved network works; with five saved, adding a sixth is refused
+- [x] Display: text size and buzzer change on the device at once; the time zone changes the clock
+- [x] Setting a page password → the browser asks for Basic auth (user `admin`); clearing it removes the prompt
+- [x] Setting an AP password → WPA2 after a factory reset; clearing it → open again
+- [x] Restart works; Factory reset (two confirms) → setup mode with everything erased
+- [x] Home screen → Factory reset… → Erase everything does the same
 
 **API assumptions to confirm (watch the serial log during the live checklist):**
 

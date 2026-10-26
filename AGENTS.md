@@ -48,9 +48,9 @@ and `../rhino-moshi/firmware/`.
 
 Work is on branch **`m1-circ`**. All 22 tasks of the M1 plan and all 6 of the
 M2 (C-Mail) plan are done and committed, with their boxes ticked.
-The room-screen and C-Mail hardware checks passed on the device (`m9_fake`, 2026-10-26).
-**Still open:** the web config checks (`m9`, M1 Task 21) and the API assumptions under
-"Open hardware checks" in `docs/TESTING.md`, then the human live checklist on the `m9` build.
+The room-screen, C-Mail and web config hardware checks passed on the device (2026-10-26).
+**Still open:** the API assumptions under "Open hardware checks" in `docs/TESTING.md`,
+confirmed during the human live checklist on the `m9` build.
 CI (`.github/workflows/build.yml`) runs once the repo has a remote.
 The native suite is green: 119/119
 (`pio test -e native`), and `pio run -e m9` and `-e m9_fake` both build.

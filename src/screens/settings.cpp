@@ -89,16 +89,16 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
   std::u32string themeItem = U"Theme: ";
   for (const char* c = themeLabel(a.cfg.theme); *c; ++c) themeItem += static_cast<char32_t>(*c);
   menu_.setItems({
-      ListItem{themeItem, U"", t.fg},
-      ListItem{ap ? U"Turn setup AP off" : U"Turn setup AP on", U"", t.fg},
-      ListItem{U"Log out", U"", t.fg},
-      ListItem{U"Factory reset\u2026", U"", t.error},
+      ListItem{themeItem, U""},
+      ListItem{ap ? U"Turn setup AP off" : U"Turn setup AP on", U""},
+      ListItem{U"Log out", U""},
+      ListItem{U"Factory reset\u2026", U"", ItemTone::Error},
   });
   int bottom = g.rows() - 1;
   if (confirm_ != Confirm::None) {
     bool reset = confirm_ == Confirm::Reset;
-    confirmMenu_.setItems({ListItem{U"Cancel", U"", t.fg},
-                           ListItem{reset ? U"Erase everything" : U"Log out", U"", t.error}});
+    confirmMenu_.setItems({ListItem{U"Cancel", U""},
+                           ListItem{reset ? U"Erase everything" : U"Log out", U"", ItemTone::Error}});
     putLine(g, 1, bottom - 3,
             reset ? "Erase Wi-Fi, account and settings?" : "Log out of Cyberspace?", t.error,
             t.bg);

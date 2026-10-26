@@ -85,11 +85,11 @@ void HomeScreen::render(Grid& g, const Theme& t, int64_t) {
   field("active", active, t.fg);
 
   menu_.setItems({
-      ListItem{utf8ToU32("Messages  #" + a.cfg.lastRoom), U"", t.fg},
-      ListItem{U"Rooms", U"", t.fg},
-      ListItem{U"C-Mail", U"", t.fg},
-      ListItem{U"Feed", U"", t.fg},
-      ListItem{U"Settings", U"", t.fg},
+      ListItem{utf8ToU32("Messages  #" + a.cfg.lastRoom), U""},
+      ListItem{U"Rooms", U""},
+      ListItem{U"C-Mail", U""},
+      ListItem{U"Feed", U""},
+      ListItem{U"Settings", U""},
   });
   int bottom = g.rows() - 1;
   menu_.render(g, bottom - kItems, bottom, 1, g.cols() - 2, t);

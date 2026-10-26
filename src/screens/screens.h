@@ -130,6 +130,7 @@ class FeedListScreen : public Screen {
   bool asked_ = false;     // a page request is outstanding
   int cols_ = 0;
   int64_t builtAt_ = 0;    // for the ages ("3h")
+  const Theme* theme_ = nullptr;  // the rows bake its colours
 };
 
 class ComingSoonScreen : public Screen {

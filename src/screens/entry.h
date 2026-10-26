@@ -81,6 +81,7 @@ class EntryScreen : public Screen {
   int cols_ = 0, logRows_ = 0;
   TextSize size_ = TextSize::Compact;
   int64_t builtAt_ = 0;
+  const Theme* theme_ = nullptr;  // the lines bake its colours
 };
 
 }  // namespace rc

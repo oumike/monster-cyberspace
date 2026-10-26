@@ -159,7 +159,7 @@ void RoomScreen::typingKey(const KeyEvent& k) {
       for (const auto& e : paletteEntries(dm_ ? PaletteKind::Cmail : PaletteKind::Circ)) {
         std::u32string label = e.label;
         if (e.isTextSize) label = compact() ? U"Text size: Comfortable" : U"Text size: Compact";
-        items.push_back(ListItem{label, U"", currentTheme().fg});
+        items.push_back(ListItem{label, U""});
         menuKeys_.push_back(e.isTextSize ? std::string("size") : u32ToUtf8(e.insert));
       }
       openMenu(Menu::Palette, U"commands", std::move(items));
@@ -293,34 +293,31 @@ void RoomScreen::openMenu(Menu m, std::u32string title, std::vector<ListItem> it
 }
 
 void RoomScreen::openRoomMenu() {
-  const Theme& t = currentTheme();
   if (dm_) {
     menuKeys_ = {"read", "size", "close"};
     openMenu(Menu::Room, utf8ToU32("@" + partner_),
-             {ListItem{U"Mark read", U"", t.fg},
-              ListItem{compact() ? U"Text size: Comfortable" : U"Text size: Compact", U"", t.fg},
-              ListItem{U"Close conversation", U"", t.fg}});
+             {ListItem{U"Mark read", U""},
+              ListItem{compact() ? U"Text size: Comfortable" : U"Text size: Compact", U""},
+              ListItem{U"Close conversation", U""}});
     return;
   }
   menuKeys_ = {"who", "mute", "unmute", "read", "size", "leave"};
   openMenu(Menu::Room, utf8ToU32("#" + slug_),
-           {ListItem{U"Who's here", U"", t.fg}, ListItem{U"Mute\u2026", U"", t.fg},
-            ListItem{U"Unmute\u2026", U"", t.fg}, ListItem{U"Mark read", U"", t.fg},
-            ListItem{compact() ? U"Text size: Comfortable" : U"Text size: Compact", U"", t.fg},
-            ListItem{U"Leave room", U"", t.fg}});
+           {ListItem{U"Who's here", U""}, ListItem{U"Mute\u2026", U""},
+            ListItem{U"Unmute\u2026", U""}, ListItem{U"Mark read", U""},
+            ListItem{compact() ? U"Text size: Comfortable" : U"Text size: Compact", U""},
+            ListItem{U"Leave room", U""}});
 }
 
 void RoomScreen::openPersonMenu(const std::string& name) {
-  const Theme& t = currentTheme();
   target_ = name;
   bool muted = isMuted(name);
   menuKeys_ = {"mention", muted ? "unmute1" : "mute1"};
   openMenu(Menu::Person, utf8ToU32(name),
-           {ListItem{U"Mention", U"", t.fg}, ListItem{muted ? U"Unmute" : U"Mute", U"", t.fg}});
+           {ListItem{U"Mention", U""}, ListItem{muted ? U"Unmute" : U"Mute", U""}});
 }
 
 void RoomScreen::openMessageMenu() {
-  const Theme& t = currentTheme();
   std::string id = log_.selectedId();
   CircMessage m;
   bool found = false, revealed = false;
@@ -335,22 +332,22 @@ void RoomScreen::openMessageMenu() {
   target_ = id;
   std::vector<ListItem> items;
   menuKeys_.clear();
-  auto add = [&](const char32_t* label, const char* key, uint16_t fg) {
-    items.push_back(ListItem{label, U"", fg});
+  auto add = [&](const char32_t* label, const char* key, ItemTone tone = ItemTone::Normal) {
+    items.push_back(ListItem{label, U"", tone});
     menuKeys_.push_back(key);
   };
   bool own = lower(m.username) == lower(self_);
   if (!m.deleted) {
-    if (!own && !dm_) add(U"Reply", "reply", t.fg);
-    if (hasStyle(m, "spoiler") && !revealed) add(U"Reveal", "reveal", t.fg);
-    else if (hasStyle(m, "art") || m.content.size() > 200) add(U"Show full", "full", t.fg);
-    if (!firstUrl(m).empty()) add(U"Show link", "link", t.fg);
+    if (!own && !dm_) add(U"Reply", "reply");
+    if (hasStyle(m, "spoiler") && !revealed) add(U"Reveal", "reveal");
+    else if (hasStyle(m, "art") || m.content.size() > 200) add(U"Show full", "full");
+    if (!firstUrl(m).empty()) add(U"Show link", "link");
     // C-Mail has no delete or report.
     if (dm_) {
     } else if (own) {
-      add(U"Delete", "delete", t.error);
+      add(U"Delete", "delete", ItemTone::Error);
     } else {
-      add(U"Report", "report", t.error);
+      add(U"Report", "report", ItemTone::Error);
     }
   }
   if (items.empty()) return;
@@ -383,7 +380,6 @@ void RoomScreen::pickMenu() {
   int i = menuList_.selected();
   if (i < 0 || i >= int(menuKeys_.size())) return;
   const std::string key = menuKeys_[i];
-  const Theme& t = currentTheme();
   overlay_ = Overlay::None;
   switch (menu_) {
     case Menu::Palette:
@@ -400,7 +396,7 @@ void RoomScreen::pickMenu() {
         lockedChat().with([&](ChatState& s) {
           for (const auto& p : visiblePresence(s.presence, nowEpochMs(), s.cadence.staleAfterMs)) {
             if (lower(p.username) == lower(self_) || isMuted(p.username)) continue;
-            items.push_back(ListItem{utf8ToU32(p.username), U"", t.fg});
+            items.push_back(ListItem{utf8ToU32(p.username), U""});
             menuKeys_.push_back(p.username);
           }
         });
@@ -410,7 +406,7 @@ void RoomScreen::pickMenu() {
         std::vector<ListItem> items;
         menuKeys_.clear();
         for (const auto& n : muted_) {
-          items.push_back(ListItem{utf8ToU32(n), U"", t.fg});
+          items.push_back(ListItem{utf8ToU32(n), U""});
           menuKeys_.push_back(n);
         }
         if (items.empty()) ui::banner("Nobody muted in this room", false);
@@ -467,11 +463,11 @@ void RoomScreen::pickMenu() {
       } else if (key == "delete") {
         menuKeys_ = {"cancel", "delete"};
         openMenu(Menu::ConfirmDelete, U"delete this message?",
-                 {ListItem{U"Cancel", U"", t.fg}, ListItem{U"Delete", U"", t.error}});
+                 {ListItem{U"Cancel", U""}, ListItem{U"Delete", U"", ItemTone::Error}});
       } else if (key == "report") {
         menuKeys_ = {"cancel", "report"};
         openMenu(Menu::ConfirmReport, U"report this message?",
-                 {ListItem{U"Cancel", U"", t.fg}, ListItem{U"Report\u2026", U"", t.error}});
+                 {ListItem{U"Cancel", U""}, ListItem{U"Report\u2026", U"", ItemTone::Error}});
       }
       break;
     }
@@ -591,8 +587,10 @@ void RoomScreen::render(Grid& g, const Theme& t, int64_t) {
         markRead = true;
       }
     }
-    if (!relayout_ && s.store.version() == version_ && g.cols() == cols_) return;
+    if (!relayout_ && s.store.version() == version_ && g.cols() == cols_ && &t == theme_)
+      return;
     relayout_ = false;
+    theme_ = &t;
     version_ = s.store.version();
     cols_ = g.cols();
     LayoutOptions o;

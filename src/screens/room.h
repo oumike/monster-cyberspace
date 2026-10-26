@@ -86,6 +86,7 @@ class RoomScreen : public Screen {
   uint32_t version_ = UINT32_MAX;
   int cols_ = 0;
   bool relayout_ = true;
+  const Theme* theme_ = nullptr;  // the lines bake its colours
   int64_t lastMarkRead_ = 0;
   std::set<std::string> muted_;  // this room's mutes, lower-cased
   std::string self_;

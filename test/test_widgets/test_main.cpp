@@ -193,7 +193,7 @@ void test_log_preserves_selection_on_setLines() {
 
 void test_list_scrolls() {
   std::vector<ListItem> items;
-  for (int i = 0; i < 10; ++i) items.push_back({utf8ToU32("item" + std::to_string(i)), U"", 1});
+  for (int i = 0; i < 10; ++i) items.push_back({utf8ToU32("item" + std::to_string(i)), U""});
   items[7].marker = true;
   items[7].right = U"3";
   ListView lv;
@@ -216,7 +216,7 @@ void test_list_wraps() {
   lv.up();  // empty: no-op
   TEST_ASSERT_EQUAL(0, lv.selected());
   std::vector<ListItem> items;
-  for (int i = 0; i < 10; ++i) items.push_back({utf8ToU32("item" + std::to_string(i)), U"", 1});
+  for (int i = 0; i < 10; ++i) items.push_back({utf8ToU32("item" + std::to_string(i)), U""});
   lv.setItems(items);
   lv.up();
   TEST_ASSERT_EQUAL(9, lv.selected());
@@ -227,6 +227,19 @@ void test_list_wraps() {
   TEST_ASSERT_EQUAL(0, lv.selected());
   lv.setSelected(42);  // direct selection still clamps
   TEST_ASSERT_EQUAL(9, lv.selected());
+}
+
+void test_list_colours_follow_theme() {
+  ListView lv;
+  lv.setItems({ListItem{U"Go", U""}, ListItem{U"Erase", U"", ItemTone::Error}});
+  Grid g(20, 3);
+  for (ThemeId id : {ThemeId::Default, ThemeId::BlackWhite, ThemeId::WhiteBlack}) {
+    const Theme& t = theme(id);
+    lv.render(g, 0, 2, 0, 20, t);
+    TEST_ASSERT_EQUAL_HEX16(t.fg, g.at(2, 0).fg);
+    TEST_ASSERT_EQUAL_HEX16(t.bg, g.at(2, 0).bg);
+    TEST_ASSERT_EQUAL_HEX16(t.error, g.at(2, 1).fg);
+  }
 }
 
 void test_drawer_wraps() {
@@ -464,6 +477,7 @@ int main() {
   RUN_TEST(test_log_preserves_selection_on_setLines);
   RUN_TEST(test_list_scrolls);
   RUN_TEST(test_list_wraps);
+  RUN_TEST(test_list_colours_follow_theme);
   RUN_TEST(test_drawer_wraps);
   RUN_TEST(test_drawer_idle_marker);
   RUN_TEST(test_status_bar_layout);

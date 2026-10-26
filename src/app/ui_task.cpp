@@ -172,7 +172,7 @@ void handleKey(const KeyEvent& k) {
 }
 
 void taskMain(void*) {
-  const Theme& t = currentTheme();
+  ThemeId shown = app().cfg.theme;
   for (;;) {
     uint32_t start = millis();
     KeyEvent key;
@@ -182,7 +182,13 @@ void taskMain(void*) {
 
     int64_t now = nowMs();
     if (power == Power::Saver && now >= saverUntil) goDark();
+    // Settings and web config change the theme between frames; repaint it all.
+    if (app().cfg.theme != shown) {
+      shown = app().cfg.theme;
+      needResize = true;
+    }
     if (needResize) resizeGrid();
+    const Theme& t = currentTheme();
     if (power == Power::On) {
       router::screen().render(grid, t, now);
       topBanner.render(grid, grid.rows() - 1, t, now);

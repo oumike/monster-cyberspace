@@ -6,7 +6,7 @@
 namespace rc {
 
 void SetupScreen::enter(const std::string&) {
-  menu_.setItems({ListItem{U"Log in on this device", U"", currentTheme().fg}});
+  menu_.setItems({ListItem{U"Log in on this device", U""}});
 }
 
 void SetupScreen::onKey(const KeyEvent& k) {

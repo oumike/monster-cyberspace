@@ -190,8 +190,9 @@ void FeedListScreen::rebuild(int cols, const Theme& t) {
 }
 
 void FeedListScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
-  if (dirty_ || g.cols() != cols_ || nowMs - builtAt_ >= kAgeRefreshMs) {
+  if (dirty_ || g.cols() != cols_ || &t != theme_ || nowMs - builtAt_ >= kAgeRefreshMs) {
     rebuild(g.cols(), t);
+    theme_ = &t;
     dirty_ = false;
     cols_ = g.cols();
     builtAt_ = nowMs;
@@ -218,11 +219,11 @@ void FeedListScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
 
   if (palette_) {
     paletteList_.setItems({
-        ListItem{U"New entry", U"", t.fg},
-        ListItem{U"Refresh", U"", t.fg},
-        ListItem{U"Watched threads", U"", t.fg},
-        ListItem{U"Bookmarks", U"", t.fg},
-        ListItem{compact() ? U"Text size: Comfortable" : U"Text size: Compact", U"", t.fg},
+        ListItem{U"New entry", U""},
+        ListItem{U"Refresh", U""},
+        ListItem{U"Watched threads", U""},
+        ListItem{U"Bookmarks", U""},
+        ListItem{compact() ? U"Text size: Comfortable" : U"Text size: Compact", U""},
     });
     int n = int(paletteList_.size());
     int h = std::min(n, bottom - 2);

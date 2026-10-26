@@ -130,9 +130,8 @@ void ComposerScreen::fieldKey(const KeyEvent& k) {
       }
       break;
     case Action::Palette: {
-      const Theme& t = currentTheme();
       openMenu(Menu::Actions, U"entry",
-               {ListItem{U"Post\u2026", U"", t.fg}, ListItem{U"Discard\u2026", U"", t.error}});
+               {ListItem{U"Post\u2026", U""}, ListItem{U"Discard\u2026", U"", ItemTone::Error}});
       break;
     }
     default:
@@ -144,9 +143,8 @@ void ComposerScreen::askLeave() {
   // A post in flight keeps the draft until it settles.
   if (gPosting) return router::go(router::Id::FeedList);
   if (!hasText()) return discard();
-  const Theme& t = currentTheme();
   openMenu(Menu::ConfirmDiscard, U"Discard draft?",
-           {ListItem{U"Cancel", U"", t.fg}, ListItem{U"Discard", U"", t.error}});
+           {ListItem{U"Cancel", U""}, ListItem{U"Discard", U"", ItemTone::Error}});
 }
 
 void ComposerScreen::discard() {
@@ -233,9 +231,8 @@ void ComposerScreen::post() {
     ui::banner("Offline: not posted", true);
     return;
   }
-  const Theme& t = currentTheme();
   openMenu(Menu::ConfirmPost, U"Post entry? (2 per minute, 24 per day)",
-           {ListItem{U"Cancel", U"", t.fg}, ListItem{U"Post", U"", t.fg}});
+           {ListItem{U"Cancel", U""}, ListItem{U"Post", U""}});
 }
 
 // ---- events ----

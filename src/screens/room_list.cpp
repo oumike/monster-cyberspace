@@ -50,7 +50,7 @@ void RoomListScreen::render(Grid& g, const Theme& t, int64_t) {
       auto it = s.readAt.find(r.slug);
       bool unread = it == s.readAt.end() ? r.lastMessageAt > 0 : r.lastMessageAt > it->second;
       items.push_back(ListItem{utf8ToU32("#" + r.slug), utf8ToU32(std::to_string(r.onlineCount)),
-                               t.fg, unread});
+                               ItemTone::Normal, unread});
       slugs_.push_back(r.slug);
     }
   });

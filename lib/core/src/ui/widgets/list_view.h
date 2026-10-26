@@ -9,9 +9,13 @@
 
 namespace rc {
 
+// A colour role, not a colour: items take the theme's colour when drawn, so a
+// theme change applies to menus already open.
+enum class ItemTone : uint8_t { Normal, Error };
+
 struct ListItem {
   std::u32string label, right;
-  uint16_t fg;
+  ItemTone tone = ItemTone::Normal;
   bool marker = false;  // drawn as "•" before the label
 };
 

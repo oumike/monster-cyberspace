@@ -94,14 +94,14 @@ void CmailListScreen::onEvent(const Event& e) {
 }
 
 void CmailListScreen::render(Grid& g, const Theme& t, int64_t) {
-  std::vector<ListItem> items{ListItem{U"New conversation\u2026", U"", t.fg}};
+  std::vector<ListItem> items{ListItem{U"New conversation\u2026", U""}};
   ids_.clear();
   lockedChat().with([&](ChatState& s) {
     for (const auto& c : s.conversations) {
       std::string label = "@" + c.partner + (c.partnerDeleted ? " (deleted)" : "");
       if (!c.lastMessage.empty()) label += "  " + c.lastMessage;
       std::string right = c.unread > 0 ? std::to_string(c.unread) : std::string();
-      items.push_back(ListItem{utf8ToU32(label), utf8ToU32(right), t.fg, c.unread > 0});
+      items.push_back(ListItem{utf8ToU32(label), utf8ToU32(right), ItemTone::Normal, c.unread > 0});
       ids_.push_back(c.id);
     }
   });

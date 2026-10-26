@@ -35,7 +35,7 @@ void ListView::render(Grid& g, int top, int bottom, int left, int width, const T
     for (int c = 0; c < width; ++c) g.put(left + c, row, U' ', t.fg, t.bg);
     if (idx >= static_cast<int>(items_.size())) continue;
     const ListItem& it = items_[idx];
-    uint16_t fg = it.fg, bg = t.bg;
+    uint16_t fg = it.tone == ItemTone::Error ? t.error : t.fg, bg = t.bg;
     int rw = static_cast<int>(it.right.size());
     int labelMax = std::max(0, width - 2 - (rw ? rw + 2 : 0));
     if (it.marker) g.put(left, row, U'\u2022', fg, bg);

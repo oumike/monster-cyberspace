@@ -234,7 +234,6 @@ void EntryScreen::openMenu(Menu m, std::u32string title, std::vector<ListItem> i
 }
 
 void EntryScreen::openEntryMenu() {
-  const Theme& t = currentTheme();
   Entry e;
   bool found = false, marked = false, watching = false;
   lockedFeed().with([&](FeedState& s) {
@@ -253,23 +252,22 @@ void EntryScreen::openEntryMenu() {
   url_ = entryUrl(e);
   std::vector<ListItem> items;
   menuKeys_.clear();
-  auto add = [&](const char32_t* label, const char* key, uint16_t fg) {
-    items.push_back(ListItem{label, U"", fg});
+  auto add = [&](const char32_t* label, const char* key, ItemTone tone = ItemTone::Normal) {
+    items.push_back(ListItem{label, U"", tone});
     menuKeys_.push_back(key);
   };
-  add(marked ? U"Unbookmark" : U"Bookmark", marked ? "unbookmark" : "bookmark", t.fg);
-  add(watching ? U"Unwatch" : U"Watch", watching ? "unwatch" : "watch", t.fg);
-  add(U"Show link", "link", t.fg);
+  add(marked ? U"Unbookmark" : U"Bookmark", marked ? "unbookmark" : "bookmark");
+  add(watching ? U"Unwatch" : U"Watch", watching ? "unwatch" : "watch");
+  add(U"Show link", "link");
   if (!e.deleted) {
-    if (isSelf(e.author)) add(U"Delete\u2026", "delete", t.error);
-    else add(U"Report\u2026", "report", t.error);
+    if (isSelf(e.author)) add(U"Delete\u2026", "delete", ItemTone::Error);
+    else add(U"Report\u2026", "report", ItemTone::Error);
   }
-  add(compact() ? U"Text size: Comfortable" : U"Text size: Compact", "size", t.fg);
+  add(compact() ? U"Text size: Comfortable" : U"Text size: Compact", "size");
   openMenu(Menu::Entry, U"entry", std::move(items));
 }
 
 void EntryScreen::openReplyMenu(const std::string& replyId) {
-  const Theme& t = currentTheme();
   std::string author, link;
   bool found = false, deleted = false, marked = false;
   lockedFeed().with([&](FeedState& s) {
@@ -291,16 +289,16 @@ void EntryScreen::openReplyMenu(const std::string& replyId) {
   url_ = link;
   std::vector<ListItem> items;
   menuKeys_.clear();
-  auto add = [&](const char32_t* label, const char* key, uint16_t fg) {
-    items.push_back(ListItem{label, U"", fg});
+  auto add = [&](const char32_t* label, const char* key, ItemTone tone = ItemTone::Normal) {
+    items.push_back(ListItem{label, U"", tone});
     menuKeys_.push_back(key);
   };
-  if (!deleted) add(U"Reply", "reply", t.fg);
-  add(marked ? U"Unbookmark" : U"Bookmark", marked ? "unbookmark" : "bookmark", t.fg);
-  add(U"Show link", "link", t.fg);
+  if (!deleted) add(U"Reply", "reply");
+  add(marked ? U"Unbookmark" : U"Bookmark", marked ? "unbookmark" : "bookmark");
+  add(U"Show link", "link");
   if (!deleted) {
-    if (isSelf(author)) add(U"Delete\u2026", "delete", t.error);
-    else add(U"Report\u2026", "report", t.error);
+    if (isSelf(author)) add(U"Delete\u2026", "delete", ItemTone::Error);
+    else add(U"Report\u2026", "report", ItemTone::Error);
   }
   openMenu(Menu::Reply, utf8ToU32(author.empty() ? std::string("reply") : author),
            std::move(items));
@@ -331,7 +329,6 @@ void EntryScreen::pickMenu() {
   int i = menuList_.selected();
   if (i < 0 || i >= int(menuKeys_.size())) return;
   const std::string key = menuKeys_[i];
-  const Theme& t = currentTheme();
   overlay_ = Overlay::None;
   switch (menu_) {
     case Menu::Entry:
@@ -351,11 +348,11 @@ void EntryScreen::pickMenu() {
       } else if (key == "report") {
         menuKeys_ = {"cancel", "report"};
         openMenu(Menu::ConfirmReport, targetReply_ ? U"report this reply?" : U"report this entry?",
-                 {ListItem{U"Cancel", U"", t.fg}, ListItem{U"Report\u2026", U"", t.error}});
+                 {ListItem{U"Cancel", U""}, ListItem{U"Report\u2026", U"", ItemTone::Error}});
       } else if (key == "delete") {
         menuKeys_ = {"cancel", "delete"};
         openMenu(Menu::ConfirmDelete, targetReply_ ? U"delete this reply?" : U"delete this entry?",
-                 {ListItem{U"Cancel", U"", t.fg}, ListItem{U"Delete", U"", t.error}});
+                 {ListItem{U"Cancel", U""}, ListItem{U"Delete", U"", ItemTone::Error}});
       } else if (key == "size") {
         ui::setTextSize(compact() ? TextSize::Comfortable : TextSize::Compact);
       }
@@ -477,12 +474,13 @@ void EntryScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
   const int inputRow = small ? g.rows() - 2 : g.rows() - 1;
   const int logRows = inputRow - 1;
   if (dirty_ || g.cols() != cols_ || logRows != logRows_ || app().cfg.textSize != size_ ||
-      nowMs - builtAt_ >= kAgeRefreshMs) {
+      &t != theme_ || nowMs - builtAt_ >= kAgeRefreshMs) {
     rebuild(g.cols(), logRows, t);
     dirty_ = false;
     cols_ = g.cols();
     logRows_ = logRows;
     size_ = app().cfg.textSize;
+    theme_ = &t;
     builtAt_ = nowMs;
   }
 

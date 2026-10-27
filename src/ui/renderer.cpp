@@ -80,7 +80,15 @@ void Renderer::drawRow(const Grid& g, int r, const CellFont& font, RowSpan span)
     if (last.edges & kEdgeRight)
       for (int y = 0; y < ch; ++y) top[static_cast<size_t>(y) * w_ + w_ - 1] = ec;
   }
-  board::pushRows(frame_, y0, y0 + ch);
+  // A pad row taller than the font: the rest takes the row's background.
+  if (span.h > ch && g.cols() > 0) {
+    const uint16_t bg = g.at(0, r).bg;
+    for (int y = ch; y < span.h; ++y) {
+      uint16_t* px = frame_ + static_cast<size_t>(y0 + y) * w_;
+      for (int x = 0; x < w_; ++x) px[x] = bg;
+    }
+  }
+  board::pushRows(frame_, y0, y0 + span.h);
 }
 
 void Renderer::draw(Grid& g, TextSize s, int firstRow) {

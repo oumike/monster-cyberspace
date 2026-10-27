@@ -885,6 +885,30 @@ void test_home_tiles_percent() {
   TEST_ASSERT_EQUAL(0, homeTiles(21, 15, 6, 90).size());
 }
 
+void test_home_tiles_height_percent() {
+  // Width at 90%, height at 100%: rows 1..13 filled.
+  std::vector<TileRect> t = homeTiles(40, 15, 6, 90, 100);
+  TEST_ASSERT_EQUAL(2, t[0].c0);
+  TEST_ASSERT_EQUAL(1, t[0].r0);
+  TEST_ASSERT_EQUAL(13, t[5].r1);
+}
+
+void test_tile_rows_centre() {
+  // 208 px between the status bar and the hint, 18 px rows, 90%: 187 px is
+  // 10 rows (180 px), leaving 14 px above and 14 below.
+  TileRows r = tileRows(208, 18, 90);
+  TEST_ASSERT_EQUAL(10, r.rows);
+  TEST_ASSERT_EQUAL(14, r.padPx);
+  // An odd leftover puts the extra pixel below.
+  r = tileRows(209, 18, 90);
+  TEST_ASSERT_EQUAL(10, r.rows);
+  TEST_ASSERT_EQUAL(14, r.padPx);
+  // Never more rows than fit.
+  r = tileRows(36, 18, 100);
+  TEST_ASSERT_EQUAL(2, r.rows);
+  TEST_ASSERT_EQUAL(0, r.padPx);
+}
+
 void test_tile_move() {
   TEST_ASSERT_EQUAL(2, tileMove(0, 6, Action::Down));
   TEST_ASSERT_EQUAL(4, tileMove(4, 6, Action::Down));
@@ -945,6 +969,8 @@ int main() {
   RUN_TEST(test_home_tiles_fit);
   RUN_TEST(test_home_tiles_too_small);
   RUN_TEST(test_home_tiles_percent);
+  RUN_TEST(test_home_tiles_height_percent);
+  RUN_TEST(test_tile_rows_centre);
   RUN_TEST(test_tile_move);
   return UNITY_END();
 }

@@ -13,11 +13,13 @@ void Grid::resize(int cols, int rows) {
   drawn_ = cells_;
   forced_.assign(rows_, true);
   kinds_.assign(rows_, RowKind::Normal);
+  pads_.assign(rows_, -1);
 }
 
 void Grid::fill(uint16_t bg) {
   for (int r = 0; r < rows_; ++r) fillRow(r, bg);
   std::fill(kinds_.begin(), kinds_.end(), RowKind::Normal);
+  std::fill(pads_.begin(), pads_.end(), int16_t(-1));
 }
 
 void Grid::setRowKind(int row, RowKind k) {
@@ -27,6 +29,12 @@ void Grid::setRowKind(int row, RowKind k) {
 RowKind Grid::rowKind(int row) const {
   return row >= 0 && row < rows_ ? kinds_[row] : RowKind::Normal;
 }
+
+void Grid::setRowPad(int row, int px) {
+  if (row >= 0 && row < rows_) pads_[row] = static_cast<int16_t>(px < 0 ? -1 : px);
+}
+
+int Grid::rowPad(int row) const { return row >= 0 && row < rows_ ? pads_[row] : -1; }
 
 void Grid::addEdges(int col, int row, uint8_t edges, uint16_t color) {
   if (col < 0 || row < 0 || col >= cols_ || row >= rows_) return;
@@ -115,6 +123,7 @@ std::vector<RowSpan> rowSpans(const Grid& g, int rowH, int bigH) {
   for (int r = 0; r < n - 1; ++r) {
     RowKind k = g.rowKind(r);
     int h = k == RowKind::Skip ? 0 : k == RowKind::Big ? bigH : rowH;
+    if (g.rowPad(r) >= 0) h = g.rowPad(r);
     h = std::max(0, std::min(h, lastY - y));
     out[r] = RowSpan{y, h};
     y += h;

@@ -47,6 +47,10 @@ class Grid {
   void addEdges(int col, int row, uint8_t edges, uint16_t color);
   void setRowKind(int row, RowKind k);
   RowKind rowKind(int row) const;
+  // Draws the row px tall whatever its kind, for blank padding rows; -1 (the
+  // default, and after fill()) goes by the kind.
+  void setRowPad(int row, int px);
+  int rowPad(int row) const;
   const Cell& at(int col, int row) const;
   bool rowDirty(int row) const;
   void clearDirty();
@@ -58,6 +62,7 @@ class Grid {
   std::vector<Cell> cells_, drawn_;
   std::vector<bool> forced_;  // rows dirty regardless of content (after resize)
   std::vector<RowKind> kinds_;
+  std::vector<int16_t> pads_;
 };
 
 enum class TextSize { Comfortable, Compact };
@@ -72,7 +77,7 @@ CellSize bigCellSize(TextSize s);
 int bigCols(int panelW, TextSize s);
 
 // Where each row is drawn, in pixels. Rows stack from the top by kind
-// (Normal rowH, Big bigH, Skip 0); the last row stays at (rows-1)*rowH, so
+// (Normal rowH, Big bigH, Skip 0) or by their pad height; the last row stays at (rows-1)*rowH, so
 // the hint keeps its place, and a row reaching past it is cut short.
 struct RowSpan {
   int y, h;

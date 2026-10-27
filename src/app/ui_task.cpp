@@ -6,12 +6,15 @@
 #include "app/queues.h"
 #include "chat/chat_source.h"
 #include "hal/board.h"
+#include "input/gestures.h"
 #include "input/key_event.h"
+#include "input/touch_resolve.h"
 #include "screens/composer.h"
 #include "screens/router.h"
 #include "store/locked_chat.h"
 #include "ui/renderer.h"
 #include "ui/room_layout.h"
+#include "ui/tap_map.h"
 #include "ui/theme.h"
 #include "ui/widgets/banner.h"
 #include "util/utf8.h"
@@ -29,6 +32,9 @@ enum class Power { On, Dark, Saver };
 Renderer renderer;
 Grid grid(1, 1);
 Banner topBanner;
+Gestures gestures;
+TouchResolver resolver;
+TapMap taps;
 Power power = Power::On;
 int64_t saverUntil = 0, lastActivitySent = -kActivityMs;
 bool needResize = true;
@@ -72,7 +78,7 @@ void drawSaver(const Theme& t) {
     for (const Span& sp : lines[i].spans)
       col += grid.putText(col, row, sp.text, sp.fg, t.bg, grid.cols() - col);
   }
-  grid.putText(0, bottom, U"hold \u25CF to wake", t.dim, t.bg, grid.cols());
+  grid.putText(0, bottom, utf8ToU32(board::wakeHint()), t.dim, t.bg, grid.cols());
 }
 
 void goDark() {
@@ -162,7 +168,7 @@ void handleKey(const KeyEvent& k) {
     lastActivitySent = now;
     chatSource().command(Command{CmdType::Activity, "", "", nowEpochMs()});
   }
-  if (k.action == Action::ScreenOff) {
+  if (k.action == Action::ScreenOff || k.action == Action::PowerTap) {
     chatSource().command(Command{CmdType::ScreenOff});
     goDark();
     return;
@@ -175,6 +181,23 @@ void taskMain(void*) {
   ThemeId shown = app().cfg.theme;
   for (;;) {
     uint32_t start = millis();
+    router::Id beforeScreen = router::current();
+    Power beforePower = power;
+    // Touch first, so a gesture resolves against the map of the frame on
+    // screen; then the buttons. Only while lit: touch never wakes a dark
+    // screen.
+    if (power == Power::On && board::hasTouch()) {
+      int16_t tx, ty;
+      bool down = board::readTouch(tx, ty);
+      Gesture g;
+      if (gestures.feed(down, tx, ty, millis(), g)) {
+        TouchOutput out;
+        resolver.resolve(g, taps, out);
+        if (out.hideBanner) topBanner.hide();
+        for (const KeyEvent& k : out.keys) handleKey(k);
+        // out.oskKey is ignored until Task 10 docks the on-screen keyboard.
+      }
+    }
     KeyEvent key;
     while (board::pollKey(key)) handleKey(key);
     Event e;
@@ -182,6 +205,12 @@ void taskMain(void*) {
 
     int64_t now = nowMs();
     if (power == Power::Saver && now >= saverUntil) goDark();
+    // A gesture in progress is dropped whenever the screen or power state
+    // changes under it (screen change, going dark, the saver, waking).
+    if (router::current() != beforeScreen || power != beforePower) {
+      gestures.reset();
+      resolver.reset();
+    }
     // Settings and web config change the theme between frames; repaint it all.
     if (app().cfg.theme != shown) {
       shown = app().cfg.theme;
@@ -190,8 +219,12 @@ void taskMain(void*) {
     if (needResize) resizeGrid();
     const Theme& t = currentTheme();
     if (power == Power::On) {
+      taps.clear();
+      taps.setOrigin(cellSize(app().cfg.textSize), 0);
       router::screen().render(grid, t, now);
       topBanner.render(grid, grid.rows() - 1, t, now);
+      taps.mapRows(0, rowSpans(grid, cellSize(app().cfg.textSize).h,
+                               bigCellSize(app().cfg.textSize).h));
       renderer.draw(grid, app().cfg.textSize);
     } else if (power == Power::Saver) {
       drawSaver(t);
@@ -206,6 +239,7 @@ void taskMain(void*) {
 
 void start() {
   if (!renderer.begin()) Serial.println("[ui] no memory for the frame buffer");
+  setActiveTaps(board::hasTouch() ? &taps : nullptr);
   resizeGrid();
   router::go(router::Id::Splash);
   board::backlight(true);

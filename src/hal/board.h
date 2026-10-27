@@ -22,6 +22,8 @@ int panelHeight();
 void pushRows(const uint16_t* frame, int y0, int y1);
 void backlight(bool on);
 void displaySleep(bool sleep);
+// The last line of the screensaver, telling the user how to wake the screen.
+const char* wakeHint();
 // The next pending key press, already mapped to a portable key.
 bool pollKey(rc::KeyEvent& key);
 int batteryPercent();  // -1 when unknown

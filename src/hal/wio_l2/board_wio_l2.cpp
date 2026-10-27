@@ -88,10 +88,11 @@ float batteryVolts() {
   return battVolts;
 }
 
-// Buttons. Temporary mapping until the touch UI lands:
-//   BOOT tap = Down, BOOT hold = Back,
-//   Wake tap = Select, Wake hold = ScreenOff (which also wakes the screen).
-constexpr uint32_t kDebounceMs = 30, kBootHoldMs = 700, kWakeHoldMs = 1000;
+// Buttons. The touch panel is the primary input; these two keys stand in for
+// gestures that are hard to touch:
+//   BOOT tap = Back, BOOT hold = OpenHome,
+//   Wake tap = PowerTap (screen off/peek/wake), Wake hold = ScreenOff.
+constexpr uint32_t kDebounceMs = 30, kBootHoldMs = 600, kWakeHoldMs = 1000;
 constexpr uint32_t kWakeFallbackMs = 200;
 
 struct Button {
@@ -123,30 +124,15 @@ void track(Button& b, bool down, uint32_t now, uint32_t holdMs, Action tap, Acti
 
 void scanButtons() {
   uint32_t now = millis();
-  track(bootBtn, digitalRead(wio::BOOT_BUTTON) == LOW, now, kBootHoldMs, Action::Down,
-        Action::Back);
+  track(bootBtn, digitalRead(wio::BOOT_BUTTON) == LOW, now, kBootHoldMs, Action::Back,
+        Action::OpenHome);
   // The Wake button is on the expander: read it when the expander flags a
   // change, while a press is being timed, and now and then in case INT is missed.
   if (digitalRead(wio::EXPANDER_INT) == LOW || wakeBtn.down || now - wakeReadMs >= kWakeFallbackMs) {
     wakeReadMs = now;
-    track(wakeBtn, wio::ioWakePressed(), now, kWakeHoldMs, Action::Select, Action::ScreenOff);
+    track(wakeBtn, wio::ioWakePressed(), now, kWakeHoldMs, Action::PowerTap, Action::ScreenOff);
   }
 }
-
-#if RC_TOUCH_LOG
-// Bring-up aid: logs touch down/up with coordinates, so the mapping can be
-// checked on hardware. Nothing in the app consumes touch yet.
-void logTouch() {
-  static bool was = false;
-  static int16_t lx = 0, ly = 0;
-  int16_t x, y;
-  bool now = readTouch(x, y);
-  if (now && !was) Serial.printf("[touch] down %d,%d\n", x, y);
-  if (!now && was) Serial.printf("[touch] up %d,%d\n", lx, ly);
-  if (now) lx = x, ly = y;
-  was = now;
-}
-#endif
 
 }  // namespace
 
@@ -187,9 +173,6 @@ void displaySleep(bool sleep) {
 
 bool pollKey(rc::KeyEvent& key) {
   if (!pendingCount) {
-#if RC_TOUCH_LOG
-    logTouch();
-#endif
     scanButtons();
   }
   if (!pendingCount) return false;
@@ -212,6 +195,8 @@ int batteryPercent() {
 bool externalPower() { return HWCDC::isPlugged() || batteryVolts() > 4.25f; }
 
 void beep(int freqHz, int ms) { es8311::beep(freqHz, ms); }
+
+const char* wakeHint() { return "hold Wake to wake"; }
 
 bool hasTouch() { return gt911::present(); }
 bool readTouch(int16_t& x, int16_t& y) { return gt911::read(x, y); }

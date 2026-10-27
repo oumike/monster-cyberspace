@@ -80,6 +80,8 @@ bool externalPower() { return batteryVolts() > 4.25f; }
 
 void beep(int freqHz, int ms) { tone(m9::BUZZER, freqHz, ms); }
 
+const char* wakeHint() { return "hold \xE2\x97\x8F to wake"; }
+
 bool hasTouch() { return false; }
 bool readTouch(int16_t&, int16_t&) { return false; }
 

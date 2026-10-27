@@ -139,9 +139,13 @@ Touch above, but with no buttons:
 - **No cursor:** as on the Wio Tracker L2, lists and Home tiles draw no
   selection outline; a tap opens what's under the finger.
 - **Rooms:** on the Wio Tracker L2 and the CrowPanels the room list is a
-  grid of small buttons, three across, each with the room's name and how many
-  are online (the name in the accent colour when unread). Tap one to open it;
-  drag up or down to scroll.
+  grid of small buttons, three across on a screen at least 800 px wide (the
+  5.0" in landscape) and two across otherwise, each with the room's name and
+  how many are online (the name in the accent colour when unread). Tap one to
+  open it; drag up or down to scroll.
+- **Settings:** the actions are buttons in the same grid, each showing its
+  current value at the right (Setup AP shows on or off; tap to switch). The
+  status lines (account, Wi-Fi, battery, time) are left out.
 - **3.5":** the microSD slot takes settings backups; a GPS module on the UART1
   connector, if fitted, sets the clock.
 - **5.0":** no SD slot (its pins belong to the wireless-module slot) and no GPS.
@@ -258,8 +262,9 @@ reply selected. Left or Back returns to the Feed list.
 
 ## Text sizes
 
-Switch in **Settings** → **Text size**, the Feed palette, an entry's menu or
-the web page; each switch steps Compact → Comfortable → Large. The choice is saved.
+Pick one in **Settings** → **Text size** (a box with all three), or switch
+in the Feed palette, an entry's menu or the web page, where each switch steps
+Compact → Comfortable → Large. The choice is saved.
 
 - **Comfortable:** larger 8×16 text, `nick message`, with a time divider when
   the minute changes.
@@ -372,8 +377,8 @@ touch board and two more on a board with an SD card slot:
 
 - **Theme: …** Centre moves to the next theme (Default, Black & white, White &
   black) and saves it.
-- **Text size: …** Centre steps to the next size (Compact, Comfortable,
-  Large) and saves it.
+- **Text size: …** Opens a box with the three sizes (Compact, Comfortable,
+  Large); picking one applies and saves it.
 - **Time zone: …** Opens the zone list; Centre picks one and saves it, Back
   closes the list unchanged.
 - **Orientation: …** (touch boards) Opens a box with the four orientations; picking one

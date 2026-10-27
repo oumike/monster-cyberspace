@@ -38,12 +38,16 @@ std::u32string widen(const char* s) {
   for (; *s; ++s) out += static_cast<char32_t>(static_cast<unsigned char>(*s));
   return out;
 }
+
+// The text size picker's rows, in size order.
+constexpr TextSize kSizeOrder[] = {TextSize::Compact, TextSize::Comfortable, TextSize::Large};
 }  // namespace
 
 void SettingsScreen::enter(const std::string&) {
   confirm_ = Confirm::None;
   picking_ = false;
   menu_.setSelected(0);
+  pad_.reset();
 }
 
 void SettingsScreen::openZones() {
@@ -109,6 +113,11 @@ void SettingsScreen::confirmKey(const KeyEvent& k) {
         if (i >= 0 && i < 4) ui::setRotation(kRotationOrder[i]);
         break;
       }
+      if (c == Confirm::TextSize) {
+        const int i = confirmBox_.selected();
+        if (i >= 0 && i < 3 && kSizeOrder[i] != app().cfg.textSize) ui::setTextSize(kSizeOrder[i]);
+        break;
+      }
       if (confirmBox_.selected() != 1) break;
       if (c == Confirm::Logout) {
         chatSource().command(Command{CmdType::Logout});
@@ -125,6 +134,12 @@ void SettingsScreen::onKey(const KeyEvent& k) {
   if (picker_.isOpen()) return picker_.onKey(k);
   if (picking_) return zoneKey(k);
   if (confirm_ != Confirm::None) return confirmKey(k);
+  if (buttons_ && k.action != Action::Back && k.action != Action::Left) {
+    const std::vector<Item> items = menuItems();
+    const int i = pad_.key(k);
+    if (i >= 0 && i < int(items.size())) activate(items[i]);
+    return;
+  }
   switch (k.action) {
     case Action::Up:
       menu_.up();
@@ -141,59 +156,75 @@ void SettingsScreen::onKey(const KeyEvent& k) {
       break;
     case Action::Select:
     case Action::Right:
-      switch (menuItems()[menu_.selected()]) {
-        case kTheme: {
-          AppState& a = app();
-          a.cfg.theme = nextTheme(a.cfg.theme);
-          settings::saveUiPrefs(a.cfg);
-          break;
-        }
-        case kTextSize:
-          ui::cycleTextSize();
-          break;
-        case kZone:
-          openZones();
-          break;
-        case kRotation: {
-          std::vector<ListItem> rows;
-          int sel = 0;
-          for (int i = 0; i < 4; ++i) {
-            ListItem it{widen(rotationLabel(kRotationOrder[i])), U""};
-            if (kRotationOrder[i] == app().cfg.rotation) {
-              it.marker = true;
-              sel = i;
-            }
-            rows.push_back(std::move(it));
-          }
-          confirm_ = Confirm::Rotation;
-          confirmBox_.open(U"orientation", std::move(rows), sel);
-          break;
-        }
-        case kSetupAp: {
-          Command c{CmdType::SetupAp};
-          c.n = setupApUp() ? 0 : 1;
-          chatSource().command(c);
-          break;
-        }
-        case kBackup: {
-          const backupstore::Result r = backupstore::saveToSd();
-          ui::banner(r.message, !r.ok);
-          break;
-        }
-        case kRestore:
-          picker_.open();
-          break;
-        case kLogout:
-          confirm_ = Confirm::Logout;
-          confirmBox_.confirm(U"Log out of Cyberspace?", U"Log out");
-          break;
-        case kReset:
-          confirm_ = Confirm::Reset;
-          confirmBox_.confirm(U"Erase Wi-Fi, account and settings?", U"Erase everything");
-          break;
-      }
+      activate(menuItems()[menu_.selected()]);
       break;
     default:
+      break;
+  }
+}
+
+void SettingsScreen::activate(int item) {
+  switch (item) {
+    case kTheme: {
+      AppState& a = app();
+      a.cfg.theme = nextTheme(a.cfg.theme);
+      settings::saveUiPrefs(a.cfg);
+      break;
+    }
+    case kTextSize: {
+      std::vector<ListItem> rows;
+      int sel = 0;
+      for (int i = 0; i < 3; ++i) {
+        ListItem it{textSizeLabel(kSizeOrder[i]), U""};
+        if (kSizeOrder[i] == app().cfg.textSize) {
+          it.marker = true;
+          sel = i;
+        }
+        rows.push_back(std::move(it));
+      }
+      confirm_ = Confirm::TextSize;
+      confirmBox_.open(U"text size", std::move(rows), sel);
+      break;
+    }
+    case kZone:
+      openZones();
+      break;
+    case kRotation: {
+      std::vector<ListItem> rows;
+      int sel = 0;
+      for (int i = 0; i < 4; ++i) {
+        ListItem it{widen(rotationLabel(kRotationOrder[i])), U""};
+        if (kRotationOrder[i] == app().cfg.rotation) {
+          it.marker = true;
+          sel = i;
+        }
+        rows.push_back(std::move(it));
+      }
+      confirm_ = Confirm::Rotation;
+      confirmBox_.open(U"orientation", std::move(rows), sel);
+      break;
+    }
+    case kSetupAp: {
+      Command c{CmdType::SetupAp};
+      c.n = setupApUp() ? 0 : 1;
+      chatSource().command(c);
+      break;
+    }
+    case kBackup: {
+      const backupstore::Result r = backupstore::saveToSd();
+      ui::banner(r.message, !r.ok);
+      break;
+    }
+    case kRestore:
+      picker_.open();
+      break;
+    case kLogout:
+      confirm_ = Confirm::Logout;
+      confirmBox_.confirm(U"Log out of Cyberspace?", U"Log out");
+      break;
+    case kReset:
+      confirm_ = Confirm::Reset;
+      confirmBox_.confirm(U"Erase Wi-Fi, account and settings?", U"Erase everything");
       break;
   }
 }
@@ -203,77 +234,92 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
   drawStatus(g, t, U"settings", -1);
   if (picker_.isOpen()) return picker_.render(g, t);
   const AppState& a = app();
-  int r = 1;
   const int bottom = g.rows() - 1;
   const std::vector<Item> items = menuItems();
   const int nItems = int(items.size());
-  // Status lines stop above the menu.
-  // On a narrow grid a value too long for its row continues on the next rows.
-  const bool narrow = narrowGrid(g);
-  auto field = [&](const char* label, const std::string& value, uint16_t fg) {
-    if (r >= bottom - nItems) return;
-    putLine(g, 1, r, label, t.dim, t.bg);
-    if (!narrow) {
-      putLine(g, 11, r++, value, fg, t.bg);
-      return;
-    }
-    for (const std::u32string& line : wrapText(utf8ToU32(value), g.cols() - 11, g.cols() - 11)) {
-      if (r >= bottom - nItems) break;
-      g.putText(11, r++, line, fg, t.bg, g.cols() - 11);
-    }
-  };
-  field("account", a.user.empty() ? "not signed in" : "@" + a.user, t.fg);
-  field("wi-fi", wifiUp() ? wifiSsid() + "  " + wifiIp() : "not connected", t.fg);
-  field("config", "http://monster-cyberspace.local", t.fg);
-  int bat = board::batteryPercent();
-  field("battery", bat < 0 ? "unknown" : std::to_string(bat) + "%", t.fg);
-  bool ap = setupApUp();
-  field("setup AP", ap ? "on" : "off", ap ? t.selectBg : t.fg);
-  if (ap) {
-    field("", setupApSsid(), t.selectBg);
-    field("", setupApHasPassword() ? "password required" : "open network", t.dim);
-    field("", "http://192.168.4.1", t.selectBg);
-  }
+  const bool ap = setupApUp();
   const timesvc::Snapshot ts = timesvc::snapshot();
-  field("gps", ts.gps, t.fg);
-  field("time", ts.time, t.fg);
-  field("zone", ts.zone, t.fg);
+  buttons_ = ButtonPad::active();
 
-  menu_.setItems([&] {
-    std::vector<ListItem> rows;
-    for (Item it : items) {
-      switch (it) {
-        case kTheme:
-          rows.push_back(ListItem{U"Theme: " + widen(themeLabel(a.cfg.theme)), U""});
-          break;
-        case kTextSize:
-          rows.push_back(ListItem{U"Text size: " + textSizeLabel(a.cfg.textSize), U""});
-          break;
-        case kZone:
-          rows.push_back(ListItem{U"Time zone: " + widen(zoneLabel(ts.tzName)), U""});
-          break;
-        case kRotation:
-          rows.push_back(ListItem{U"Orientation: " + widen(rotationLabel(a.cfg.rotation)), U""});
-          break;
-        case kSetupAp:
+  // Each item as a label and its current value; lines join them, buttons put
+  // the value at the right.
+  std::vector<ListItem> rows;
+  for (Item it : items) {
+    switch (it) {
+      case kTheme:
+        rows.push_back(ListItem{U"Theme", widen(themeLabel(a.cfg.theme))});
+        break;
+      case kTextSize:
+        rows.push_back(ListItem{U"Text size", textSizeLabel(a.cfg.textSize)});
+        break;
+      case kZone:
+        rows.push_back(ListItem{U"Time zone", widen(zoneLabel(ts.tzName))});
+        break;
+      case kRotation:
+        rows.push_back(ListItem{U"Orientation", widen(rotationLabel(a.cfg.rotation))});
+        break;
+      case kSetupAp:
+        if (buttons_)
+          rows.push_back(ListItem{U"Setup AP", ap ? U"on" : U"off", ItemTone::Normal, ap});
+        else
           rows.push_back(ListItem{ap ? U"Turn setup AP off" : U"Turn setup AP on", U""});
-          break;
-        case kBackup:
-          rows.push_back(ListItem{U"Back up to SD card", U""});
-          break;
-        case kRestore:
-          rows.push_back(ListItem{U"Restore from SD card\u2026", U""});
-          break;
-        case kLogout:
-          rows.push_back(ListItem{U"Log out", U""});
-          break;
-        case kReset:
-          rows.push_back(ListItem{U"Factory reset\u2026", U"", ItemTone::Error});
-          break;
-      }
+        break;
+      case kBackup:
+        rows.push_back(ListItem{U"Back up to SD card", U""});
+        break;
+      case kRestore:
+        rows.push_back(ListItem{U"Restore from SD card\u2026", U""});
+        break;
+      case kLogout:
+        rows.push_back(ListItem{U"Log out", U""});
+        break;
+      case kReset:
+        rows.push_back(ListItem{U"Factory reset\u2026", U"", ItemTone::Error});
+        break;
     }
-    return rows;
-  }());
+  }
+
+  if (buttons_) {
+    // Touch-only boards: the menu as buttons, without the status lines.
+    if (!picking_) pad_.render(g, t, rows, 2, bottom, true);
+  } else {
+    int r = 1;
+    // Status lines stop above the menu.
+    // On a narrow grid a value too long for its row continues on the next rows.
+    const bool narrow = narrowGrid(g);
+    auto field = [&](const char* label, const std::string& value, uint16_t fg) {
+      if (r >= bottom - nItems) return;
+      putLine(g, 1, r, label, t.dim, t.bg);
+      if (!narrow) {
+        putLine(g, 11, r++, value, fg, t.bg);
+        return;
+      }
+      for (const std::u32string& line : wrapText(utf8ToU32(value), g.cols() - 11, g.cols() - 11)) {
+        if (r >= bottom - nItems) break;
+        g.putText(11, r++, line, fg, t.bg, g.cols() - 11);
+      }
+    };
+    field("account", a.user.empty() ? "not signed in" : "@" + a.user, t.fg);
+    field("wi-fi", wifiUp() ? wifiSsid() + "  " + wifiIp() : "not connected", t.fg);
+    field("config", "http://monster-cyberspace.local", t.fg);
+    int bat = board::batteryPercent();
+    field("battery", bat < 0 ? "unknown" : std::to_string(bat) + "%", t.fg);
+    field("setup AP", ap ? "on" : "off", ap ? t.selectBg : t.fg);
+    if (ap) {
+      field("", setupApSsid(), t.selectBg);
+      field("", setupApHasPassword() ? "password required" : "open network", t.dim);
+      field("", "http://192.168.4.1", t.selectBg);
+    }
+    field("gps", ts.gps, t.fg);
+    field("time", ts.time, t.fg);
+    field("zone", ts.zone, t.fg);
+    for (ListItem& it : rows) {
+      if (!it.right.empty()) it.label += U": " + it.right;
+      it.right.clear();
+    }
+    menu_.setItems(std::move(rows));
+  }
+
   if (picking_) {
     // Drawn over the status lines and the menu, below the status bar.
     const int top = 1;
@@ -284,16 +330,18 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
     zoneList_.render(g, top + 1, bottom, 1, g.cols() - 2, t);
     drawHint(g, t, U"\u2191\u2193 pick  \u25CF set  back: cancel", U"tap to select");
   } else if (confirm_ != Confirm::None) {
-    // The orientation picker is a centred box with all four; the bottom
+    // The orientation and text size pickers are centred boxes; the bottom
     // strip only has room for a two-row confirm.
-    confirmBox_.render(g, 1, bottom, 0,
-                       confirm_ == Confirm::Rotation ? OverlayPlace::Centre : OverlayPlace::Bottom, t);
-    if (confirm_ == Confirm::Rotation)
+    const bool pick = confirm_ == Confirm::Rotation || confirm_ == Confirm::TextSize;
+    confirmBox_.render(g, 1, bottom, 0, pick ? OverlayPlace::Centre : OverlayPlace::Bottom, t);
+    if (pick)
       drawHint(g, t, U"\u2191\u2193 pick  \u25CF set  back: cancel",
                U"tap: select  outside: cancel");
     else
       drawHint(g, t, U"\u2191\u2193 pick  \u25CF confirm  back: cancel",
                U"tap: confirm  outside: cancel");
+  } else if (buttons_) {
+    drawHint(g, t, U"", U"tap to select  drag to scroll");
   } else {
     menu_.render(g, bottom - nItems, bottom, 1, g.cols() - 2, t);
     drawHint(g, t, U"\u2191\u2193 pick  \u25CF select  back: home", U"tap to select");

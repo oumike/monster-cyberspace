@@ -1,6 +1,7 @@
 #pragma once
 
 #include "screens/backup_picker.h"
+#include "screens/button_pad.h"
 #include "screens/router.h"
 #include "ui/home_tiles.h"
 #include "ui/widgets/entry_list.h"
@@ -84,7 +85,8 @@ class SettingsScreen : public Screen {
   }
 
  private:
-  enum class Confirm { None, Logout, Reset, Rotation };
+  enum class Confirm { None, Logout, Reset, Rotation, TextSize };
+  void activate(int item);
   void openZones();
   void zoneKey(const KeyEvent&);
   void confirmKey(const KeyEvent&);
@@ -94,6 +96,8 @@ class SettingsScreen : public Screen {
   BackupPicker picker_;
   Confirm confirm_ = Confirm::None;
   bool picking_ = false;  // the time zone list is open
+  ButtonPad pad_;         // touch-only boards: the menu as buttons
+  bool buttons_ = false;
 };
 
 class RoomListScreen : public Screen {
@@ -104,14 +108,10 @@ class RoomListScreen : public Screen {
 
  private:
   void open(int index);
-  void renderButtons(Grid&, const Theme&, const std::vector<ListItem>&);
   ListView list_;
   std::vector<std::string> slugs_;
-  // Touch-only boards: rooms as a three-column grid of buttons, scrolled by
-  // whole button rows; a drag's Up/Down steps add up to one row's pitch.
+  ButtonPad pad_;  // touch-only boards: rooms as buttons
   bool buttons_ = false;
-  int scroll_ = 0;
-  int dragSteps_ = 0;
 };
 
 // C-Mail: "New conversation…" and the conversations, unread first.

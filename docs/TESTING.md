@@ -127,11 +127,15 @@ These were built without flashing and still need a run on the device.
 - [ ] Factory reset… → Erase everything → setup mode with everything erased
 - [ ] With the saved network switched off for 5 minutes, the setup AP comes up; when the network returns (nobody joined) it goes away
 
+**Touch UI regression (`m9`):**
+
+- [ ] Every menu and confirm in Room, Entry, Composer, Feed and Settings behaves as before the touch UI: Up/Down wrap, Centre/Right pick, Back/Left close, Cancel preselected
+- [ ] Settings and web config show no Orientation; Home is the usual list
+
 **Open hardware checks (Wio Tracker L2, `wio_l2_fake` then `wio_l2`):**
 
-Hardware bring-up only; the touch UI is still being designed. Until it lands,
-BOOT tap = Down, BOOT hold (0.7 s) = Back, Wake tap = Select, Wake hold (1 s)
-= screen off / wake.
+Buttons: BOOT tap = Back, BOOT hold (0.6 s) = Home; Wake tap = screen off
+(while dark: the 10 s screensaver), Wake hold (1 s) = screen off / wake.
 
 - [x] Boots: the serial log shows `[boot] … on WioL2`, `[wio-io] ready`, and `[touch] GT911 … at 0x5D`
 - [x] Splash shows `· WioL2`
@@ -139,8 +143,14 @@ BOOT tap = Down, BOOT hold (0.7 s) = Back, Wake tap = Select, Wake hold (1 s)
 - [ ] Backlight comes on at boot, and goes off and back on with Wake hold
 - [ ] Battery %: Settings and the web Status page show a sensible value; it's `-1`/blank with no cell
 - [ ] Beep: a mention or C-Mail alert in `wio_l2_fake` plays a tone with the buzzer on, with no click between sounds
-- [ ] Buttons: BOOT tap moves down, BOOT hold goes back, Wake tap opens, Wake hold turns the screen off and back on
-- [ ] Touch log: tapping the four corners logs `[touch] down x,y` near (0,0), (319,0), (0,239), (319,239) for top-left, top-right, bottom-left, bottom-right; lifting logs `[touch] up`
+- [ ] Buttons: BOOT tap goes back, BOOT hold goes Home; Wake tap turns the screen off, a Wake tap while dark shows the screensaver for 10 s, Wake hold wakes it
+- [ ] Tap accuracy: in each of the four orientations, the `‹` (top-left), `⋯` (top-right, in a room) and the bottom-left and bottom-right Home tiles or keyboard keys respond where tapped (this confirms the Portrait and Portrait 180 touch direction)
+- [ ] Every screen by touch: Home tiles, Rooms, Room (tap a message, hold for the menu, the drawer, the menus), C-Mail, Feed (drag, swipe a page, load more at the end), Entry, Composer (fields, checkboxes, `⋯` Post/Discard), Settings, Login
+- [ ] Keyboard: tapping a field docks it and hides it again with `▼`; all three pages (`?123`, `#+=`, `ABC`); `⇧` one-shot and double-tap caps lock; `⌫`; enter sends in a room and makes a new line in the Composer Body; keys are about 32 px wide in landscape and 24 px in portrait
+- [ ] Keyboard goes away on Back out of a room, on a screen change and when the screen turns off
+- [ ] `‹` tap goes back and hold goes Home; `⋯` opens the screen menu; a swipe right from the left edge goes back; a tap on a banner dismisses it; tapping outside a menu closes it
+- [ ] Touch never wakes a dark screen, and a finger left down across a screen change fires nothing on the new screen
+- [ ] Orientation from Settings and from web config (Display) applies at once and survives a reboot; in portrait no screen has text cut or overlapping (Settings and Setup lines wrap)
 - [ ] Wi-Fi setup (`wio_l2`, nothing saved): the AP is named `Rhino-Cyberspace-WioL2-Setup` and `http://192.168.4.1` loads
 
 **GPS time, RTC and time zone (`m9`):**

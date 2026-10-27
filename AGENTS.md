@@ -14,6 +14,10 @@ features come later.
   plan `docs/superpowers/plans/2026-10-26-cyberspace-gps-time.md`.
 - **Settings backup:** spec `docs/superpowers/specs/2026-10-26-cyberspace-backup-design.md`,
   plan `docs/superpowers/plans/2026-10-26-cyberspace-backup.md`.
+- **Touch UI:** spec `docs/superpowers/specs/2026-10-26-cyberspace-touch-design.md`,
+  plan `docs/superpowers/plans/2026-10-26-cyberspace-touch.md`.
+- **T-Deck Plus:** spec `docs/superpowers/specs/2026-10-26-cyberspace-tdeck-plus-design.md`,
+  plan `docs/superpowers/plans/2026-10-26-cyberspace-tdeck-plus.md`.
 - **User guide:** `docs/USE.md`. **Testing and the live checklist:** `docs/TESTING.md`.
 - **Implementation plan:** `docs/superpowers/plans/2026-10-25-cyberspace-m9-circ.md`.
   Work its tasks in order, tick each `- [ ]` box as you finish a step, and
@@ -62,8 +66,10 @@ projects `../camillia/camillia-mt/src/hal/hw_m9.h` and `../rhino-moshi/firmware/
 `src/hal/wio_l2/` is the Seeed Wio Tracker L2, ported from
 `../camillia/camillia-mt` (`src/hal/hw_wio_tracker_l2.h`, `wio_tracker_l2_io.cpp`)
 and `../platy-aprs/src/hal/` (`pins_wio_l2.h`, `wio_l2_io.cpp`, `audio.cpp`).
-Its touch UI (on-screen keyboard, taps) is still being designed; until then
-its two buttons stand in and `board::readTouch` only feeds a debug log.
+Touch: `lib/core` turns samples into gestures and resolves them against the
+per-frame `TapMap` widgets fill as they draw (`input/gestures`, `ui/tap_map`,
+`input/touch_resolve`, the `Osk` keyboard); `ui_task` feeds `handleKey` and
+docks the keyboard. Boards without touch register nothing.
 
 ## Progress (hand-off from Claude Code, 2026-10-25)
 
@@ -81,12 +87,16 @@ zone lines in Settings and web config (built without flashing).
 All 8 tasks of the backup plan are done and committed: backup YAML in
 `lib/core/src/config/`, SD access in the HAL (mounted per operation, the card
 is removable), `src/store/backup_store.cpp`, Settings/Setup items and the web
-Backup section (built without flashing). Next: the touch plan, then T-Deck Plus.
+Backup section (built without flashing).
+All 12 tasks of the touch plan are done and committed: gestures, tap map,
+`Overlay` menus, touch status bar and Home tiles, the docked on-screen
+keyboard and four orientations (built without flashing). Next: the T-Deck
+Plus plan.
 **Still open:** the unticked items under "Open hardware checks" in
-`docs/TESTING.md` (themes, device Settings, Wio L2, GPS time, API
+`docs/TESTING.md` (themes, device Settings, touch UI, Wio L2, GPS time, API
 assumptions, settings backup), then the human live checklist on the `m9` build.
 CI (`.github/workflows/build.yml`) runs on GitHub.
-The native suite is green: 273/273
+The native suite is green: 337/337
 (`pio test -e native`), and `scripts/build-upload-monitor.sh -B` builds all
 four firmware envs.
 

@@ -795,7 +795,7 @@
 
 `docs/TESTING.md` may hold uncommitted edits by the user. Stage only your own hunks (`git add -p docs/TESTING.md`) and leave theirs alone.
 
-- [ ] **Step 1: USE.md.** Add a "Touch (Seeed Wio Tracker L2)" section that covers:
+- [x] **Step 1: USE.md.** Add a "Touch (Seeed Wio Tracker L2)" section that covers:
   - taps: tap a row to open it, hold a row for its menu, and `⋯` for the screen menu;
   - going back and home: `‹` goes back and holding it goes home; BOOT does the same (tap Back, hold Home); swiping right from the left edge goes back;
   - drag or swipe to scroll;
@@ -804,7 +804,7 @@
   - Settings → Orientation and its web-config field.
 
   Change the title so it no longer names only the M9.
-- [ ] **Step 2: TESTING.md.** Under "Open hardware checks (Wio Tracker L2)":
+- [x] **Step 2: TESTING.md.** Under "Open hardware checks (Wio Tracker L2)":
   - replace the temporary button mapping and its "Buttons" item with the new BOOT/Wake mapping;
   - add unticked checks, run on `wio_l2_fake` and then `wio_l2`:
     - tap accuracy at the four corners in each of the four orientations (this confirms Task 1's r1/r3 direction);
@@ -815,8 +815,8 @@
     - orientation from Settings and from web config, and it survives a reboot.
 
   Add an M9 regression item: every menu and confirm in Room, Entry, Composer, Feed and Settings behaves as before (Task 4).
-- [ ] **Step 3: AGENTS.md.**
+- [x] **Step 3: AGENTS.md.**
   - Add `**Touch UI:** spec docs/superpowers/specs/2026-10-26-cyberspace-touch-design.md, plan docs/superpowers/plans/2026-10-26-cyberspace-touch.md`.
   - Replace "Its touch UI … still being designed; until then its two buttons stand in and `board::readTouch` only feeds a debug log" with a one-line description of the touch layer (`lib/core` gestures/`TapMap`/`Osk`; `ui_task` resolves).
   - Update the native test count in Progress.
-- [ ] **Step 4: Commit** `docs: touch UI guide, Wio L2 checks, AGENTS pointer`.
+- [x] **Step 4: Commit** `docs: touch UI guide, Wio L2 checks, AGENTS pointer`.

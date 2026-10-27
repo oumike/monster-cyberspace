@@ -1,4 +1,7 @@
-# Using Rhino Cyberspace on the ThinkNode M9
+# Using Rhino Cyberspace
+
+On the Elecrow ThinkNode M9 (keyboard and d-pad) and the Seeed Wio Tracker L2
+(touch screen; see Touch below). Key names in this guide are the M9's.
 
 ## First setup
 
@@ -43,6 +46,46 @@ send anything.
 
 **Lists:** Up/Down select and wrap round at the ends, Centre or Right open,
 Left goes back.
+
+## Touch (Seeed Wio Tracker L2)
+
+Every screen works by touch. Touch never wakes a dark screen.
+
+- **Tap** a row to open it, or a field to type in it. **Hold** a row (half a
+  second) to select it and open the screen's menu, as `⋯` does.
+- **Status bar:** `‹` at the left goes back; holding it goes Home. `⋯` at the
+  right opens the screen's menu (the palette in a room, Post/Discard in the
+  Composer).
+- **Back:** a swipe right that starts at the left edge also goes back. Tapping
+  outside an open menu or confirm closes it. A tap on a banner dismisses it.
+- **Scroll:** drag a list or log to move line by line; swipe up or down to
+  move a page. Dragging past the end of a list stops there.
+- **Home** shows six large tiles: messages, rooms, c-mail, feed, settings and
+  mentions.
+
+**Keyboard.** Tapping a text field docks a keyboard at the bottom; the screen
+above it gets shorter.
+
+- `⇧` shifts the next letter; tap it twice quickly to lock caps, and once
+  more to unlock.
+- `?123` shows digits and common symbols, `#+=` the rest, and `ABC` returns to
+  letters.
+- `⌫` deletes, and enter sends or moves on, as Enter does on a keyboard. In the
+  Composer Body enter starts a new line.
+- `▼` hides the keyboard; tap the field to bring it back. It also goes away
+  when you leave the screen or the screen turns off.
+
+**Buttons.**
+
+| Button | Tap | Hold |
+|---|---|---|
+| BOOT | Back | Home (0.6 s) |
+| Wake | Screen off; with the screen off, shows the last few messages for 10 s | Screen off; with the screen off, wakes it (1 s) |
+
+**Orientation.** **Settings** → **Orientation** (or Display in web config)
+turns the screen: Landscape, Landscape 180, Portrait or Portrait 180. It
+applies at once and is kept across restarts and in backups. In portrait, long
+lines on the Settings and Setup screens wrap.
 
 ## In a room
 
@@ -193,7 +236,7 @@ At `http://rhino-cyberspace.local`, or the device IP, on your LAN:
 - Status
 - Wi-Fi: scan, add, and remove saved networks (up to 5)
 - Cyberspace account: sign in, sign out, resend verification
-- Display: text size, theme, buzzer
+- Display: text size, theme, buzzer, and orientation (touch boards)
 - Time: zone and NTP server (see Time and time zone below)
 - Security: page password and setup-AP password
 - Restart and factory reset
@@ -255,13 +298,15 @@ The serial log says only whether there's a fix and satellite counts.
 
 **Home** → **Settings** shows the account, the Wi-Fi network and IP, the web
 config address, the battery, the setup AP state and the gps, time and zone
-lines (see Time and time zone), with five actions, or seven on a board with
-an SD card slot:
+lines (see Time and time zone), with five actions, plus Orientation on a
+touch board and two more on a board with an SD card slot:
 
 - **Theme: …** Centre moves to the next theme (Default, Black & white, White &
   black) and saves it.
 - **Time zone: …** Opens the zone list; Centre picks one and saves it, Back
   closes the list unchanged.
+- **Orientation: …** (touch boards) Opens the four orientations; picking one
+  turns the screen at once and saves it.
 - **Turn setup AP on / off.** Brings up the setup AP (its name, password state
   and `http://192.168.4.1` are shown) while staying on your Wi-Fi, so you can
   reach web config when your network is unreachable. It stays on until you

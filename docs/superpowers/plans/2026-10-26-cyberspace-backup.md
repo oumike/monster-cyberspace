@@ -8,7 +8,7 @@
 
 - The YAML codec, merge and validation, and the file-name rules are pure functions in `lib/core/src/config/`, with native tests. `rc::Settings` moves there too.
 - On the device:
-  - `board::sdFs()` mounts the card behind the HAL;
+  - `board::sdMount()`/`sdUnmount()` give the card behind the HAL, one operation at a time;
   - `src/store/backup_store` does every file operation under one mutex and applies a restore with `settings::saveAll`, then restarts;
   - a shared `BackupPicker` overlay serves the Settings and Setup screens;
   - web config gains a Backup section and seven routes.
@@ -27,7 +27,7 @@
 - Format: `format: rhino-cyberspace-backup`, `version: 1`. Files over 16 KB (`16384` bytes) are refused from their size.
 - At most `rc::kMaxWifiNets` (5) networks. SSID 1–32 bytes; Wi-Fi password empty or 8–63 characters; setup-AP password passes `rc::validApPassword`; page password at most 63 printable characters; text size `compact` or `comfortable`; theme `default`, `bw` or `wb`.
 - Files live in `/rhino-cyberspace/backups/`. Names are `rc-backup-YYYYMMDD-HHMMSS.yaml`, or `rc-backup-N.yaml` without a clock. A valid name is only `[A-Za-z0-9._-]`, ends in `.yaml`, has no leading dot, and is at most 64 bytes.
-- M9 SD: shared SPI bus, CS 48, 20 MHz; a failed mount is retried no more than once every 5 s.
+- SD on every hardware board, and the card is removable: nothing stays mounted between operations. Each backup-store operation calls `board::sdMount()`, works, then `board::sdUnmount()`. M9: `SD`, shared SPI, CS 48, 20 MHz. Wio L2: `SD_MMC` 1-bit, CLK 2 / CMD 3 / D0 1, power on expander bit 14 (on before mounting, off after unmounting). T-Deck Plus gets its SD code in the T-Deck plan.
 - User-facing copy (exact): `Back up to SD card`, `Restore from SD card…`, `Restore <name> and restart?` with `Cancel` / `Restore`, `Saved <name>`, `No SD card`, `SD write failed`, `SD read failed`, `Restore failed: <error>`, `Restored. Restarting…`, `Not a Rhino Cyberspace backup`, `Backup version N is newer than this firmware`.
 - A successful restore restarts the device after about 1 s (`1000` ms).
 - Never hold `lockedChat` or `lockedFeed` while calling the backup store.
@@ -53,7 +53,7 @@
 | `lib/core/src/config/backup_yaml.{h,cpp}` (create) | `BackupMeta`, `backupToYaml`, `backupFromYaml` (parse, merge, validate), `backupFileName`, `validBackupName`, `sortBackupNames`, `kMaxBackupBytes`. |
 | `test/test_backup_yaml/test_main.cpp` (create) | All native backup tests. |
 | `src/store/settings.{h,cpp}` (modify) | Includes the model header; adds `settings::saveAll`. |
-| `src/hal/board.h`, `src/hal/m9/board_m9.cpp`, `src/hal/wio_l2/board_wio_l2.cpp` (modify) | `board::hasSdSlot()`, `board::sdFs()`. |
+| `src/hal/board.h`, `src/hal/m9/board_m9.cpp`, `src/hal/wio_l2/board_wio_l2.cpp` (modify) | `board::hasSdSlot()`, `board::sdMount()`, `board::sdUnmount()`. |
 | `src/app/restart.{h,cpp}` (create) | `restartSoon(ms)`, moved out of `web_server.cpp`. |
 | `src/store/backup_store.{h,cpp}` (create) | SD file operations under a mutex, YAML for download, `applyAndRestart`. |
 | `src/screens/backup_picker.{h,cpp}` (create) | The file list overlay and the restore confirm, shared by Settings and Setup. |
@@ -301,13 +301,16 @@ Networks after the fifth are dropped before validation and set `note`.
 **Interfaces:**
 - Produces, `board.h` (forward-declare `namespace fs { class FS; }`, so the header stays free of `FS.h`):
   ```cpp
-  bool hasSdSlot();   // M9 true; Wio L2 false for now
-  // Mounts on first use; nullptr with no slot or no card. A failed mount is
-  // retried no more than once every 5 s. Not thread-safe: only the backup store calls it.
-  fs::FS* sdFs();
+  bool hasSdSlot();   // M9 and Wio L2 true
+  // Mounts the card for one operation; nullptr with no slot or no card (the
+  // card may have been pulled since last time). Pair every non-null result
+  // with sdUnmount(). Not thread-safe: only the backup store calls these.
+  fs::FS* sdMount();
+  void sdUnmount();
   ```
-  - M9: `SD.begin(m9::SD_CS, SPI, 20000000)` on the bus `board::begin` already set up.
-  - When mounted, `SD.cardType() == CARD_NONE` means the card was pulled: `SD.end()` and treat it as unmounted.
+  - M9: `SD.begin(m9::SD_CS, SPI, 20000000)` on the bus `board::begin` already set up; `SD.end()` to unmount.
+  - Wio L2: power on (expander bit 14, through the existing expander lock), wait 10 ms, `SD_MMC.setPins(2, 3, 1)`, `SD_MMC.begin("/sdcard", true, false)`; unmount is `SD_MMC.end()` then power off. Add the pin constants to `pins_wio_l2.h`.
+  - Either board: a mount that reports `cardType() == CARD_NONE` is ended and treated as no card.
 - Produces, `src/app/restart.h`: `namespace rc { void restartSoon(uint32_t delayMs); }`. This is the `restartTask` from `web_server.cpp`, with the delay as a parameter. Web config keeps its 600 ms.
 - Produces, `settings.h`: `void saveAll(const rc::Settings&);`. It calls `saveWifi`, `saveTz`, `saveSecurity`, `saveUiPrefs` and `saveAccount`. When `refreshToken` is empty it calls `clearToken()` in place of saving the token.
 
@@ -326,7 +329,7 @@ Networks after the fifth are dropped before validation and set `note`.
 - Modify: `src/main.cpp` (call `backupstore::begin()` after `board::begin()`)
 
 **Interfaces:**
-- Consumes: `board::hasSdSlot`, `board::sdFs`, `rc::restartSoon`, `settings::load`, `settings::saveAll` (Task 4); `backupToYaml`, `backupFromYaml`, `backupFileName`, `validBackupName`, `sortBackupNames`, `kMaxBackupBytes` (Tasks 2–3); `RC_VERSION`, `board::name()`.
+- Consumes: `board::hasSdSlot`, `board::sdMount`, `board::sdUnmount`, `rc::restartSoon`, `settings::load`, `settings::saveAll` (Task 4); `backupToYaml`, `backupFromYaml`, `backupFileName`, `validBackupName`, `sortBackupNames`, `kMaxBackupBytes` (Tasks 2–3); `RC_VERSION`, `board::name()`.
 - Produces, `backup_store.h` (namespace `backupstore`):
   ```cpp
   struct Result { bool ok = false; std::string message; };  // message is user-facing copy
@@ -345,8 +348,8 @@ Networks after the fifth are dropped before validation and set `note`.
   Result applyAndRestart(std::string_view yaml);
   ```
 - Rules:
-  - Every function takes the mutex for its whole body, including `sdFs()`.
-  - `sdFs()` null gives `"No SD card"`.
+  - Every function takes the mutex for its whole body, mounts with `board::sdMount()`, and calls `board::sdUnmount()` before returning on every path (an RAII guard).
+  - `sdMount()` null gives `"No SD card"`.
   - Each name passes `validBackupName`, else `"Bad file name"`.
   - The directory is `/rhino-cyberspace/backups`; create both levels on save.
   - A short write or failed open gives `"SD write failed"`, and the partial file is removed. A failed read gives `"SD read failed"`. Over the size gives `"Restore failed: Backup is over 16 KB"`.

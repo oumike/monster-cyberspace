@@ -32,6 +32,12 @@ YAML, and passwords are always included.
   - save a backup to the SD card;
   - list the SD backups, each with restore, download and delete.
 - **Order:** this is built after Feed Tasks 10–12.
+- **Boards (2026-10-26):** every hardware build. The M9 and the T-Deck Plus
+  read the card over their shared SPI bus; the Wio Tracker L2 uses SDMMC in
+  1-bit mode. The T-Deck gets its SD code with the rest of its HAL.
+- **Removable card (2026-10-26):** a card can be pulled or swapped at any
+  time, so nothing stays mounted between operations. Each backup operation
+  mounts the card, does its work and unmounts it.
 
 ### Rule change
 
@@ -58,7 +64,6 @@ wifi:
   - ssid: "Phone"
     password: ""
 timezone: "EST5EDT,M3.2.0,M11.1.0"
-tzMode: auto          # auto | manual
 ntpServer: "pool.ntp.org"
 pagePassword: ""
 apPassword: ""
@@ -110,8 +115,6 @@ Anything else is an error that names the line, for example `line 12: expected
   - the setup-AP password passes `validApPassword`;
   - the page password is at most 63 printable characters;
   - the text size is `compact` or `comfortable`;
-  - the zone mode is `auto` or `manual` (a board without a GPS loads
-    `auto` as `manual`);
   - the NTP server passes `validNtpServer` (1–63 characters, each
     `[A-Za-z0-9.-]`).
 
@@ -126,7 +129,7 @@ Anything else is an error that names the line, for example `line 12: expected
 | Settings model | `lib/core/src/config/settings_model.h` | `rc::Settings` and `rc::WifiNet` move here from `src/store/settings.h`, which includes this header. No behaviour change. |
 | Backup codec | `lib/core/src/config/backup_yaml.{h,cpp}` | `std::string backupToYaml(const Settings&, const BackupMeta&)`; `bool backupFromYaml(std::string_view, Settings& inOut, std::string& err, std::string& note)`, which merges per §3; the YAML scalar quoting and unquoting helpers. Arduino-free and host-tested. |
 | Backup names | the same file | `backupFileName(epochSec, existingNames)` gives `rc-backup-YYYYMMDD-HHMMSS.yaml`, or `rc-backup-N.yaml` without a clock, with no clash. `validBackupName(name)` accepts only `[A-Za-z0-9._-]`, ending in `.yaml`, with no leading dot, at most 64 bytes. |
-| SD access | `src/hal/board.h` and `src/hal/m9/` | `fs::FS* board::sdFs()` mounts on first use (SD on the shared SPI bus, CS 48, 20 MHz) and returns `nullptr` on a board with no slot or no card. It retries a failed mount no more than once every 5 s. |
+| SD access | `src/hal/board.h` and each board's HAL | `bool board::hasSdSlot()`. `fs::FS* board::sdMount()` mounts the card and returns its file system, or `nullptr` with no slot or no card; `board::sdUnmount()` releases it. Nothing stays mounted between operations. M9: `SD` on the shared SPI bus, CS 48, 20 MHz. Wio L2: `SD_MMC` 1-bit on CLK 2 / CMD 3 / D0 1, with the card's power switched on through expander bit 14 before mounting and off after unmounting. T-Deck Plus: `SD` on the shared SPI bus, CS 39. |
 | Backup store | `src/store/backup_store.{h,cpp}` | Under one mutex: `saveToSd`, `listSd` (newest first), `readSd`, `deleteSd`, and `applyAndRestart(yaml)`. Files live in `/rhino-cyberspace/backups/`. `applyAndRestart` parses into a copy of the settings, saves it with the existing savers plus a new `settings::saveAll`, then calls `restartSoon()`. |
 | Settings screen | `src/screens/settings.cpp` | Adds two items, Back up to SD card and Restore from SD card…. The restore item opens a list overlay, then the confirm "Restore <name> and restart?" (Cancel / Restore). Results show in the banner, for example "Saved rc-backup-….yaml", "No SD card" or "Restore failed: …". |
 | Setup screen | `src/screens/setup.cpp` | Lists the SD backups once on `enter`. If any exist, it adds **Restore from SD card**, which uses the same list and confirm. |
@@ -150,10 +153,12 @@ Every `name` goes through `validBackupName` before any file call.
 
 ## 5. Concurrency
 
-- **The SPI bus.** The SD card shares SPI with the panel. Both use Arduino
-  `SPI` transactions, and Arduino-ESP32 serialises those across tasks with
-  the SPI bus lock. `board::sdFs()` and every file operation run under the
-  backup-store mutex.
+- **The SPI bus (M9, T-Deck).** The SD card shares SPI with the panel. Both
+  use Arduino `SPI` transactions, and Arduino-ESP32 serialises those across
+  tasks with the SPI bus lock. The Wio L2's card is on its own SDMMC pins,
+  but its power switch goes through the expander's I2C lock.
+- `board::sdMount()`, every file operation and `board::sdUnmount()` run
+  under the backup-store mutex, as one unit per operation.
 - **Large files.** A file over 16 KB is never read whole; it is refused from
   its size.
 - **Who calls what.** The UI task calls the backup store from key presses,
@@ -162,10 +167,13 @@ Every `name` goes through `validBackupName` before any file call.
 
 ## 6. Error handling
 
-- No slot (`sdFs()` is null on that board): the device items and the web SD
+- No slot (`board::hasSdSlot()` is false): the device items and the web SD
   section are hidden. The page learns this from `GET /api/backup/sd`, which
   returns `card: false` and `slot: false`.
 - No card, or a failed mount: "No SD card".
+- A card pulled during an operation: the read or write fails ("SD read
+  failed" or "SD write failed"), the card is unmounted, and the next
+  operation mounts afresh.
 - A write or read fails: "SD write failed" or "SD read failed". A partly
   written file is removed.
 - A parse or validation error: the first error with its line. Nothing is
@@ -200,6 +208,11 @@ Every `name` goes through `validBackupName` before any file call.
 - Web config: download, upload-restore, save to SD, then restore, download
   and delete from the SD list.
 - With no card, every path says "No SD card".
+- Pull the card after a backup and put it back (or swap in another): the
+  next list, backup and restore work without a restart. Pull it during a
+  backup: "SD write failed", and the device carries on.
+- On every board with a slot: M9, Wio L2 and, once its HAL lands, T-Deck
+  Plus.
 
 ## 8. Out of scope
 

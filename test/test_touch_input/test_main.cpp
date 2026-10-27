@@ -327,6 +327,16 @@ void test_tap_map_rows_leave_other_grids() {
   TEST_ASSERT_EQUAL(int(TargetKind::None), int(m.hit(5, 35).kind));
 }
 
+void test_tap_map_offset_origin() {
+  // The keyboard docked under a grid whose header is 4 px taller.
+  TapMap m;
+  m.setOrigin(CellSize{8, 16}, 3, 4);
+  m.addCells(0, 0, 19, 0, rowTarget(ListId::Main, 7));
+  TEST_ASSERT_EQUAL(7, m.hit(5, 52).index);
+  TEST_ASSERT_EQUAL(7, m.hit(5, 67).index);
+  TEST_ASSERT_EQUAL(int(TargetKind::None), int(m.hit(5, 51).kind));
+}
+
 void test_tap_map_clear() {
   TapMap m;
   m.setOrigin(CellSize{6, 12}, 0);
@@ -587,6 +597,7 @@ int main() {
   RUN_TEST(test_tap_map_rows_follow_spans);
   RUN_TEST(test_tap_map_rows_follow_shift);
   RUN_TEST(test_tap_map_rows_leave_other_grids);
+  RUN_TEST(test_tap_map_offset_origin);
   RUN_TEST(test_field_hit_position);
   RUN_TEST(test_resolve_row_tap_and_hold);
   RUN_TEST(test_resolve_fixed);

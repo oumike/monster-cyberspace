@@ -110,10 +110,10 @@ CellSize cellSize(TextSize s) {
   return s == TextSize::Compact ? CellSize{6, 12} : CellSize{8, 16};
 }
 
-void gridDims(int panelW, int panelH, TextSize s, int& cols, int& rows) {
+void gridDims(int panelW, int panelH, TextSize s, int& cols, int& rows, int headerPx) {
   CellSize c = cellSize(s);
   cols = panelW / c.w;
-  rows = panelH / c.h;
+  rows = headerPx > 0 ? std::max(0, panelH - headerPx) / c.h + 1 : panelH / c.h;
 }
 
 CellSize bigCellSize(TextSize s) {
@@ -122,21 +122,31 @@ CellSize bigCellSize(TextSize s) {
 
 int bigCols(int panelW, TextSize s) { return panelW / bigCellSize(s).w; }
 
+HeaderSize touchHeader(int panelW, TextSize s) {
+  HeaderSize h;
+  h.px = (cellSize(s).h * 5 + 2) / 4;
+  h.cellW = bigCellSize(s).w;
+  h.cols = bigCols(panelW, s);
+  return h;
+}
+
 std::vector<RowSpan> rowSpans(const Grid& g, int rowH, int bigH) {
   const int n = g.rows();
   std::vector<RowSpan> out(n, RowSpan{0, 0});
   if (n == 0) return out;
-  const int lastY = (n - 1) * rowH;
+  const int headPx = g.header().px;
+  const int lastY = (n - 1) * rowH + (headPx > 0 && n > 1 ? std::max(0, headPx - rowH) : 0);
   int y = 0;
   for (int r = 0; r < n - 1; ++r) {
     RowKind k = g.rowKind(r);
     int h = k == RowKind::Skip ? 0 : k == RowKind::Big ? bigH : rowH;
     if (g.rowPad(r) >= 0) h = g.rowPad(r);
+    if (r == 0 && headPx > 0) h = headPx;
     h = std::max(0, std::min(h, lastY - y));
     out[r] = RowSpan{y, h, g.rowShift(r)};
     y += h;
   }
-  out[n - 1] = RowSpan{lastY, rowH, g.rowShift(n - 1)};
+  out[n - 1] = RowSpan{lastY, rowH + g.bottomPad(), g.rowShift(n - 1)};
   return out;
 }
 

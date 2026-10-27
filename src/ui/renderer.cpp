@@ -33,8 +33,16 @@ void Renderer::resize() {
   docked_ = Layer{};
 }
 
-void Renderer::drawRow(const Grid& g, int r, const CellFont& font, RowSpan span) {
-  const int cw = font.w, ch = std::min<int>(font.h, span.h), y0 = span.y;
+void Renderer::drawRow(const Grid& g, int r, const CellFont& font, RowSpan span, int yoff) {
+  yoff = std::clamp(yoff, 0, span.h);
+  const int cw = font.w, ch = std::min<int>(font.h, span.h - yoff), y0 = span.y + yoff;
+  if (yoff > 0 && g.cols() > 0) {
+    const uint16_t bg = g.at(0, r).bg;
+    for (int y = span.y; y < y0; ++y) {
+      uint16_t* px = frame_ + static_cast<size_t>(y) * w_;
+      for (int x = 0; x < w_; ++x) px[x] = bg;
+    }
+  }
   const int ox = std::clamp(span.x, 0, w_);
   const int rb = rowBytes(font);
   const int cols = std::min(g.cols(), (w_ - ox) / cw);
@@ -90,23 +98,23 @@ void Renderer::drawRow(const Grid& g, int r, const CellFont& font, RowSpan span)
       for (int y = 0; y < ch; ++y) top[static_cast<size_t>(y) * w_ + w_ - 1] = ec;
   }
   // A pad row taller than the font: the rest takes the row's background.
-  if (span.h > ch && g.cols() > 0) {
+  if (span.h - yoff > ch && g.cols() > 0) {
     const uint16_t bg = g.at(0, r).bg;
-    for (int y = ch; y < span.h; ++y) {
+    for (int y = ch; y < span.h - yoff; ++y) {
       uint16_t* px = frame_ + static_cast<size_t>(y0 + y) * w_;
       for (int x = 0; x < w_; ++x) px[x] = bg;
     }
   }
-  board::pushRows(frame_, y0, y0 + span.h);
+  board::pushRows(frame_, span.y, span.y + span.h);
 }
 
-void Renderer::draw(Grid& g, TextSize s, int firstRow) {
+void Renderer::draw(Grid& g, TextSize s, int firstRow, int offsetPx) {
   if (!frame_) return;
   const CellFont& font = s == TextSize::Compact ? cell6x12 : cell8x16;
   const CellFont& big = s == TextSize::Compact ? cell8x14 : cell10x18;
   Layer& layer = firstRow == 0 ? main_ : docked_;
-  if (layer.firstRow != firstRow) layer = Layer{firstRow};
-  const int top = firstRow * font.h;
+  const int top = firstRow * font.h + offsetPx;
+  if (layer.firstRow != firstRow || layer.top != top) layer = Layer{firstRow, top};
   const int n = g.rows();
   std::vector<RowSpan> spans = rowSpans(g, font.h, big.h);
   const bool sameShape = layer.spans.size() == spans.size();
@@ -118,7 +126,9 @@ void Renderer::draw(Grid& g, TextSize s, int firstRow) {
     if (!moved && !g.rowDirty(r)) continue;
     if (r == n - 2) aboveGapChanged = true;
     if (sp.h <= 0 || top + sp.y + sp.h > h_) continue;
-    drawRow(g, r, g.rowKind(r) == RowKind::Big ? big : font, RowSpan{top + sp.y, sp.h, sp.x});
+    const bool head = r == 0 && g.header().px > 0;
+    drawRow(g, r, head || g.rowKind(r) == RowKind::Big ? big : font,
+            RowSpan{top + sp.y, sp.h, sp.x}, head ? (sp.h - big.h) / 2 : 0);
   }
   // Rows of other heights can leave a gap above the last row; clear it.
   if (n >= 2) {

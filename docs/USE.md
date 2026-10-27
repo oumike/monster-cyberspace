@@ -59,6 +59,8 @@ Every screen works by touch. Touch never wakes a dark screen.
 - **Status bar:** `‹` at the left goes back; holding it goes Home. `⋯` at the
   right opens the screen's menu (the palette in a room, Post/Discard in the
   Composer).
+  On boards without a keyboard the status bar is 1.25 times a row's height,
+  in a bigger font, so it's easier to tap.
 - **Back:** a swipe right that starts at the left edge also goes back. Tapping
   outside an open menu or confirm closes it. A tap on a banner dismisses it.
 - **Scroll:** drag a list or log to move line by line; swipe up or down to

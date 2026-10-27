@@ -87,6 +87,29 @@ void test_big_cells() {
   TEST_ASSERT_EQUAL(32, bigCols(320, TextSize::Comfortable));
 }
 
+void test_header_rows() {
+  // 1.25x a row in the big font; row 0 takes 20 px of 240, so 14 rows fit.
+  HeaderSize h = touchHeader(320, TextSize::Comfortable);
+  TEST_ASSERT_EQUAL(20, h.px);
+  TEST_ASSERT_EQUAL(10, h.cellW);
+  TEST_ASSERT_EQUAL(32, h.cols);
+  TEST_ASSERT_EQUAL(15, touchHeader(320, TextSize::Compact).px);
+  int c, r;
+  gridDims(320, 240, TextSize::Comfortable, c, r, h.px);
+  TEST_ASSERT_EQUAL(40, c);
+  TEST_ASSERT_EQUAL(14, r);
+  Grid g(c, r);
+  g.setHeader(h);
+  g.setBottomPad(12);
+  g.fill(0);  // keeps both
+  std::vector<RowSpan> s = rowSpans(g, 16, 18);
+  TEST_ASSERT_EQUAL(20, s[0].h);
+  TEST_ASSERT_EQUAL(20, s[1].y);
+  TEST_ASSERT_EQUAL(16, s[12].h);  // nothing cut before the last row
+  TEST_ASSERT_EQUAL(212, s[13].y);
+  TEST_ASSERT_EQUAL(28, s[13].h);  // to the panel's bottom edge
+}
+
 void test_grid_row_kinds() {
   Grid g(10, 4);
   TEST_ASSERT_TRUE(g.rowKind(1) == RowKind::Normal);
@@ -631,6 +654,7 @@ int main() {
   RUN_TEST(test_row_spans_cut_before_last_row);
   RUN_TEST(test_row_spans_pad_rows);
   RUN_TEST(test_row_spans_shift);
+  RUN_TEST(test_header_rows);
   RUN_TEST(test_grid_add_edges);
   RUN_TEST(test_grid_dirty);
   RUN_TEST(test_grid_redraw_same_frame_not_dirty);

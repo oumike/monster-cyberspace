@@ -15,9 +15,10 @@ void TapMap::clear() {
   lists_.clear();
 }
 
-void TapMap::setOrigin(CellSize cell, int firstRow) {
+void TapMap::setOrigin(CellSize cell, int firstRow, int offsetPx) {
   cell_ = cell;
   firstRow_ = firstRow;
+  offsetPx_ = offsetPx;
 }
 
 void TapMap::addCells(int c0, int r0, int c1, int r1, const Target& t, int cellW) {
@@ -25,8 +26,9 @@ void TapMap::addCells(int c0, int r0, int c1, int r1, const Target& t, int cellW
   Rect rc;
   rc.x0 = c0 * w;
   rc.x1 = (c1 + 1) * w - 1;
-  rc.y0 = (firstRow_ + r0) * cell_.h;
-  rc.y1 = (firstRow_ + r1 + 1) * cell_.h - 1;
+  rc.top = firstRow_ * cell_.h + offsetPx_;
+  rc.y0 = rc.top + r0 * cell_.h;
+  rc.y1 = rc.top + (r1 + 1) * cell_.h - 1;
   rc.firstRow = firstRow_;
   rc.r0 = r0;
   rc.r1 = r1;
@@ -36,11 +38,10 @@ void TapMap::addCells(int c0, int r0, int c1, int r1, const Target& t, int cellW
 
 void TapMap::mapRows(int firstRow, const std::vector<RowSpan>& spans) {
   const int n = static_cast<int>(spans.size());
-  const int top = firstRow * cell_.h;
   for (auto& rc : rects_) {
     if (rc.firstRow != firstRow || rc.r0 < 0 || rc.r1 >= n || rc.r0 > rc.r1) continue;
-    rc.y0 = top + spans[rc.r0].y;
-    rc.y1 = top + spans[rc.r1].y + spans[rc.r1].h - 1;  // all-Skip rows: y1 < y0, never hit
+    rc.y0 = rc.top + spans[rc.r0].y;
+    rc.y1 = rc.top + spans[rc.r1].y + spans[rc.r1].h - 1;  // all-Skip rows: y1 < y0, never hit
     rc.x0 += spans[rc.r0].x;
     rc.x1 += spans[rc.r0].x;
   }

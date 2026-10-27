@@ -2,6 +2,8 @@
 
 #include <Arduino.h>
 
+#include <algorithm>
+
 #include "app/app_state.h"
 #include "app/queues.h"
 #include "chat/chat_source.h"
@@ -52,17 +54,30 @@ bool needResize = true;
 
 int64_t nowMs() { return int64_t(millis()); }
 
+int oskOffsetPx = 0;  // the header's extra height, which moves the keyboard down
+
 void resizeGrid() {
   int cols, rows;
   const TextSize ts = app().cfg.textSize;
-  gridDims(board::panelWidth(), board::panelHeight(), ts, cols, rows);
+  const int rowH = cellSize(ts).h;
+  // Keyboardless touch boards get a taller status bar, easier to tap.
+  const HeaderSize hd = board::hasTouch() && !board::hasKeyboard()
+                            ? touchHeader(board::panelWidth(), ts)
+                            : HeaderSize{};
+  gridDims(board::panelWidth(), board::panelHeight(), ts, cols, rows, hd.px);
+  oskOffsetPx = hd.px > 0 ? std::max(0, hd.px - rowH) : 0;
+  const int slack = std::max(0, board::panelHeight() - rows * rowH - oskOffsetPx);
+  grid.setHeader(hd);
   if (oskShown) {
     const int k = Osk::rows(ts);
     grid.resize(cols, rows - k);
+    grid.setBottomPad(0);
     oskGrid.resize(cols, k);
+    oskGrid.setBottomPad(slack);
     osk.layout(cols, ts);
   } else {
     grid.resize(cols, rows);
+    grid.setBottomPad(slack);
   }
   needResize = false;
 }
@@ -310,9 +325,9 @@ void taskMain(void*) {
                                bigCellSize(app().cfg.textSize).h));
       renderer.draw(grid, app().cfg.textSize);
       if (oskShown) {
-        taps.setOrigin(cellSize(app().cfg.textSize), grid.rows());
+        taps.setOrigin(cellSize(app().cfg.textSize), grid.rows(), oskOffsetPx);
         osk.render(oskGrid, t);
-        renderer.draw(oskGrid, app().cfg.textSize, grid.rows());
+        renderer.draw(oskGrid, app().cfg.textSize, grid.rows(), oskOffsetPx);
       }
     } else if (power == Power::Saver) {
       drawSaver(t);

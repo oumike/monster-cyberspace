@@ -791,6 +791,20 @@ void test_status_bar_touch_layout() {
   TEST_ASSERT_EQUAL(int(TargetKind::None), int(m2.hit(1, 0).kind));
 }
 
+void test_status_bar_header() {
+  // A header row fits fewer, wider cells: the right side ends at its last one.
+  Grid g(40, 2);
+  g.setHeader(HeaderSize{20, 32, 2});
+  TapMap m = makeTaps();
+  setActiveTaps(&m);
+  renderStatusBar(g, T(), U"#general", 12, U'\u25cf', 3, 87, "14:02",
+                  StatusTouch{true, true, true});
+  TEST_ASSERT_EQUAL_HEX32(0x22EF, g.at(30, 0).cp);
+  TEST_ASSERT_EQUAL_STRING("14:02", rowText(g, 0, 24, 29).c_str());
+  TEST_ASSERT_EQUAL(int(Action::Palette), int(m.hit(62, 0).tap.action));  // cells 2 px wide
+  TEST_ASSERT_EQUAL(int(Action::Back), int(m.hit(7, 0).tap.action));
+}
+
 void test_overlay_registers_taps() {
   Overlay o;
   o.open(U"menu", {ListItem{U"a", U""}, ListItem{U"b", U""}, ListItem{U"c", U""}});
@@ -978,6 +992,7 @@ int main() {
   RUN_TEST(test_input_field_hit_scrolled);
   RUN_TEST(test_text_area_field_rows);
   RUN_TEST(test_status_bar_touch_layout);
+  RUN_TEST(test_status_bar_header);
   RUN_TEST(test_overlay_registers_taps);
   RUN_TEST(test_banner_tap_target);
   RUN_TEST(test_no_registration_without_active_map);

@@ -25,6 +25,12 @@ struct Cell {
 // font up (fewer columns fit), Skip not at all.
 enum class RowKind : uint8_t { Normal, Big, Skip };
 
+// A taller row 0 for the status bar: px tall, drawn in the RowKind::Big font,
+// cols cells of cellW px across. px 0 leaves row 0 a normal row.
+struct HeaderSize {
+  int px = 0, cols = 0, cellW = 0;
+};
+
 // A screen of character cells with per-row dirty tracking. A row is dirty
 // when its cells differ from what they were at the last clearDirty() (the
 // last frame drawn), so redrawing a screen from scratch each frame only
@@ -55,6 +61,14 @@ class Grid {
   // for centring to the pixel; the strip on the left takes cell 0's background.
   void setRowShift(int row, int px);
   int rowShift(int row) const;
+  // Row 0 as a header (HeaderSize). Kept across fill() and resize().
+  void setHeader(HeaderSize h) { header_ = h; }
+  const HeaderSize& header() const { return header_; }
+  // Extra px drawn under the last row in its background, so a grid ending
+  // above the panel's bottom edge leaves no stale strip. Kept across fill()
+  // and resize().
+  void setBottomPad(int px) { bottomPad_ = px < 0 ? 0 : px; }
+  int bottomPad() const { return bottomPad_; }
   const Cell& at(int col, int row) const;
   bool rowDirty(int row) const;
   void clearDirty();
@@ -67,6 +81,8 @@ class Grid {
   std::vector<bool> forced_;  // rows dirty regardless of content (after resize)
   std::vector<RowKind> kinds_;
   std::vector<int16_t> pads_, shifts_;
+  HeaderSize header_;
+  int bottomPad_ = 0;
 };
 
 enum class TextSize { Comfortable, Compact };
@@ -74,15 +90,21 @@ struct CellSize {
   int w, h;
 };
 CellSize cellSize(TextSize s);
-void gridDims(int panelW, int panelH, TextSize s, int& cols, int& rows);
+// headerPx > 0: row 0 is that tall (Grid::setHeader) and the rest cellSize(s).
+void gridDims(int panelW, int panelH, TextSize s, int& cols, int& rows, int headerPx = 0);
 // The font one step up from s, for RowKind::Big rows, and how many of its
 // cells fit across the panel.
 CellSize bigCellSize(TextSize s);
 int bigCols(int panelW, TextSize s);
+// The status bar of keyboardless touch boards: 1.25x a row, in the big font,
+// so it's easier to tap.
+HeaderSize touchHeader(int panelW, TextSize s);
 
 // Where each row is drawn, in pixels. Rows stack from the top by kind
 // (Normal rowH, Big bigH, Skip 0) or by their pad height; the last row stays at (rows-1)*rowH, so
-// the hint keeps its place, and a row reaching past it is cut short.
+// the hint keeps its place, and a row reaching past it is cut short. A header
+// (Grid::setHeader) makes row 0 its px tall and moves the last row down by the
+// difference; the last row also takes the grid's bottom pad.
 struct RowSpan {
   int y, h;
   int x = 0;  // the row's shift (Grid::setRowShift)

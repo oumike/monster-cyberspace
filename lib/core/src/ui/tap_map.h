@@ -32,7 +32,9 @@ struct ListInfo {
 class TapMap {
  public:
   void clear();                                 // targets and list infos
-  void setOrigin(CellSize cell, int firstRow);  // for the addCells calls that follow
+  // For the addCells calls that follow; offsetPx moves the grid down (a docked
+  // grid under one with a header, Grid::setHeader).
+  void setOrigin(CellSize cell, int firstRow, int offsetPx = 0);
   // Inclusive, stored in px. cellW > 0 overrides the cell width, for the wider
   // cells of RowKind::Big rows.
   void addCells(int c0, int r0, int c1, int r1, const Target& t, int cellW = 0);
@@ -53,12 +55,13 @@ class TapMap {
   struct Rect {
     int x0, y0, x1, y1;
     int firstRow, r0, r1;  // the cells the rect was added from
+    int top;               // px of the grid's row 0
     Target t;
   };
   std::vector<Rect> rects_;
   std::vector<ListInfo> lists_;
   CellSize cell_{0, 0};
-  int firstRow_ = 0;
+  int firstRow_ = 0, offsetPx_ = 0;
 };
 
 TapMap* activeTaps();          // null: no touch, so widgets register nothing

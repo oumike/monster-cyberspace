@@ -13,6 +13,9 @@ void renderStatusBar(Grid& g, const Theme& t, std::u32string_view title, int cou
                      StatusTouch touch) {
   const int row = 0;
   g.fillRow(row, t.barBg);
+  // A header row (Grid::setHeader) is drawn in a wider font: fewer cells fit.
+  const HeaderSize& hd = g.header();
+  const int cols = hd.cols > 0 ? std::min(hd.cols, g.cols()) : g.cols();
 
   std::u32string right;
   right += connMarker;
@@ -25,8 +28,8 @@ void renderStatusBar(Grid& g, const Theme& t, std::u32string_view title, int cou
   if (touch.on && touch.menu) right += U" \u22ef";  // ⋯, its own cell after the clock
   right += U' ';
 
-  int rightStart = std::max(0, g.cols() - static_cast<int>(right.size()));
-  g.putText(rightStart, row, right, t.barFg, t.barBg, g.cols() - rightStart);
+  int rightStart = std::max(0, cols - static_cast<int>(right.size()));
+  g.putText(rightStart, row, right, t.barFg, t.barBg, cols - rightStart);
 
   int titleCol = 0;
   std::u32string left;
@@ -50,13 +53,13 @@ void renderStatusBar(Grid& g, const Theme& t, std::u32string_view title, int cou
       b.kind = TargetKind::Fixed;
       b.tap.action = Action::Back;
       b.hold.action = Action::OpenHome;
-      activeTaps()->addCells(0, row, 3, row, b);
+      activeTaps()->addCells(0, row, 3, row, b, hd.cellW);
     }
     if (touch.menu) {
       Target m;
       m.kind = TargetKind::Fixed;
       m.tap.action = Action::Palette;
-      activeTaps()->addCells(g.cols() - 4, row, g.cols() - 1, row, m);
+      activeTaps()->addCells(cols - 4, row, cols - 1, row, m, hd.cellW);
     }
   }
 }

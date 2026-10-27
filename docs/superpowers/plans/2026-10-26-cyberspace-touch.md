@@ -17,6 +17,7 @@
 
 ## Global Constraints
 
+- **Build only: never flash, upload or open a serial port** (the USB port is in use). Hardware checks go into `docs/TESTING.md` (Task 12).
 - Never call the live API (`api.cyberspace.online` or its RTDB) from tests, scripts or an agent. Run touch flows on `wio_l2_fake` and `m9_fake`.
 - Every write comes from a user action. A tap or a keyboard key counts as a key press. A gesture never produces a write by itself: a drag or swipe only moves a selection or scrolls, and never sends `Select`. Nothing is retried.
 - Never log passwords or tokens. Never log touch coordinates either, because they would reveal what was typed on the keyboard. Task 8 removes `RC_TOUCH_LOG`.
@@ -38,7 +39,7 @@
 - **The M9 stays unchanged.** `board::hasTouch()` is false on the M9, so `activeTaps()` stays null, nothing registers, the status bar draws as today, and the keyboard never shows. Every task that touches `src/` runs `pio run -e m9 && pio run -e m9_fake` and states why M9 behaviour is unchanged.
 - Each task follows TDD where it has host tests, then commits with the given message followed by a blank line and `Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>`. Use `git commit -m "<message>" -m "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"`.
 - Verify:
-  - `pio test -e native` is green (195 tests before this plan);
+  - `pio test -e native` is green (273 tests before this plan);
   - from Task 4 on, `pio run -e m9`, `-e m9_fake`, `-e wio_l2` and `-e wio_l2_fake` all build (`scripts/build-upload-monitor.sh -B` builds all four).
 
 ## Review Focus
@@ -374,12 +375,12 @@
     - Entry and FeedList: `BottomRight`, reserve 0;
     - Composer: `Centre` with `top 0, bottom g.rows()`;
     - Settings: `Bottom` with `confirm(question, action)`.
-  - Composer's and Settings's confirms use `Overlay::confirm`. Room's and Entry's ConfirmDelete/ConfirmReport keep their own titles and items through `open`, so their key mapping (`cancel`, `delete`, …) is unchanged.
+  - Composer's, Settings's and `BackupPicker`'s confirms use `Overlay::confirm` (BackupPicker: `Bottom`, Cancel preselected as today). The Settings time-zone list and BackupPicker's file list stay `ListView`s. Room's and Entry's ConfirmDelete/ConfirmReport keep their own titles and items through `open`, so their key mapping (`cancel`, `delete`, …) is unchanged.
 
 - [ ] **Step 1: Convert** Room and Entry. Keep each menu's rows, title text, `menuKeys_` order and hints exactly as they are.
 - [ ] **Step 2: Convert** Composer (Actions, ConfirmPost, ConfirmDiscard), the FeedList palette, and the Settings confirms (Logout, Reset).
 - [ ] **Step 3: Run** `pio test -e native`, then `scripts/build-upload-monitor.sh -B`. Expected: green, and all four envs build.
-- [ ] **Step 4: Check M9 behaviour.** Diff each converted screen's old `menuKey` against `Overlay::key`: Up/Down wrap, Select/Right pick, Back/Left close, and Cancel is the default. `test_overlay_render_*` pins the drawing. If an M9 is at hand, flash `m9_fake` and open every menu and confirm in Room, Entry, Composer, Feed and Settings. Task 12 adds this as a TESTING.md check.
+- [ ] **Step 4: Check M9 behaviour.** Diff each converted screen's old `menuKey` against `Overlay::key`: Up/Down wrap, Select/Right pick, Back/Left close, and Cancel is the default. `test_overlay_render_*` pins the drawing. Do not flash. Task 12 adds the on-device check (every menu and confirm in Room, Entry, Composer, Feed and Settings) to TESTING.md.
 - [ ] **Step 5: Commit** `refactor(screens): menus and confirms use Overlay`.
 
 ### Task 5: Widgets register tap targets; touch status bar; new glyphs
@@ -476,7 +477,7 @@
   inline void drawHint(Grid& g, const Theme& t, std::u32string_view keys, std::u32string_view touch);
   ```
 - `Activate` handling: if `k.target` names one of the screen's lists and `select(k.index)` succeeds, the screen calls `onKey(KeyEvent{k.then})`. When `then` is None it just moves the selection. A failed `select` does nothing.
-  - Home, Settings, Setup, RoomList and CmailList: `Main`.
+  - Home, Settings, Setup, RoomList and CmailList: `Main`. This includes the Settings time-zone list and the `BackupPicker` file list (Settings and Setup) while they are open.
   - FeedList: `Main`. Selecting the last row with `more_ && !asked_` calls `requestMore()`, because a drag never reaches the Down-at-end path.
   - Room: `Log` closes the drawer first (as Left does), then `selectMessage`. `Drawer` uses `drawer_.select`.
   - Entry: `Log`.
@@ -547,7 +548,7 @@
   ```
 - Behaviour (the user approved this layout):
   - Only when `board::hasTouch()` and `homeTiles(...)` is non-empty; otherwise Home draws today's list, unchanged (the M9 path).
-  - Six tiles, in order: `messages` (sub-line `#<lastRoom>`), `rooms`, `c-mail` (`N unread`), `feed` (`N unread`), `settings`, `mentions` (label `N mentions`, opens the last room like `messages`). The user/active-rooms fields are not shown in tile mode; `@user` stays in the status bar.
+  - Six tiles, in order: `messages` (sub-line `#<lastRoom>`), `rooms`, `c-mail` (`N unread`), `feed` (`N unread`; opens like today's Feed item, straight to the newest unread notice), `settings`, `mentions` (label `N mentions`, opens the last room like `messages`). The user/active-rooms fields are not shown in tile mode; `@user` stays in the status bar.
   - Each tile: `Grid::outline` in `t.dim`; label centred on the tile's middle row, sub-line under it in `t.dim`. A tile with unread items draws its label in `t.selectBg`. The selected tile is filled `t.selectBg` with `t.selectFg` text and an outline in `t.selectBg`.
   - Each tile registers `addCells(c0, r0, c1, r1, Target{Row, Main, index=i})`, and Home calls `setList(Main, selected, 6, /*wraps*/false)`. A tap opens the tile (Task 6's `Activate` → `Select`).
   - Keys in tile mode: Up/Down/Left/Right use `tileMove`; Select opens. (Right no longer opens in tile mode.)
@@ -726,7 +727,7 @@
 **Files:**
 - Create: `lib/core/src/ui/rotation.{h,cpp}`
 - Modify: `src/hal/board.h`, `src/hal/m9/board_m9.cpp`, `src/hal/wio_l2/{board_wio_l2,panel_nv3031b,touch_gt911}.{h,cpp}`
-- Modify: `src/store/settings.{h,cpp}`, `src/app/messages.h`, `src/app/ui_task.{h,cpp}`, `src/ui/renderer.{h,cpp}`
+- Modify: `lib/core/src/config/settings_model.h`, `lib/core/src/config/backup_yaml.cpp`, `test/test_backup_yaml/test_main.cpp`, `docs/superpowers/specs/2026-10-26-cyberspace-backup-design.md`, `src/store/settings.{h,cpp}`, `src/app/messages.h`, `src/app/ui_task.{h,cpp}`, `src/ui/renderer.{h,cpp}`
 - Modify: `src/screens/settings.cpp`, `src/screens/screens.h`, `src/web/web_server.cpp`, `src/web/page.h`
 - Test: `test/test_touch_input/test_main.cpp`
 
@@ -757,14 +758,14 @@
   - `panelWidth`/`panelHeight` swap when `rotationPortrait(rot)`, and `pushRows` uses `panelWidth()`.
 - Boot: `ui::start()` calls `board::setRotation(app().cfg.rotation)` before `renderer.begin()` when `canRotate()`.
 - `ui::setRotation(r)` and `RotationChanged` both do the following: `cfg.rotation = r`, `settings::saveUiPrefs`, `board::setRotation`, `renderer.resize()`, `gestures.reset()`, then `needResize`.
-- Settings screen: the menu becomes a key list (`"theme"`, `"rotation"` only when `canRotate()`, `"ap"`, `"logout"`, `"reset"`) instead of the fixed `Item` enum.
+- Settings screen: the menu is already a dynamic `menuItems()` list of `Item` ids. Add `kRotation` right after `kZone`, only when `canRotate()`.
   - The row is labelled `Orientation: <label>`.
   - Select opens `box_.open(U"orientation", the four labels in kRotationOrder, the current one selected)`, and Picked calls `ui::setRotation(kRotationOrder[i])`.
 - Web config:
   - GET `/api/prefs` adds `"rotation": r` only when `board::canRotate()`.
   - POST accepts an integer 0–3, which posts `RotationChanged`; anything else returns `400 "Orientation: 0 to 3"`.
   - `page.h` adds an Orientation `<select>` (values 0, 2, 1, 3 in that order), shown only when `p.rotation` is present.
-- Backups: if the backup feature (`docs/superpowers/specs/2026-10-26-cyberspace-backup-design.md`) has landed, add `rotation` to its exported prefs, with import validation through `rotationFromIndex` and a test in its suite. If it hasn't, add `rotation (0–3)` to that spec's prefs list in this commit.
+- Backups (landed): `Settings::rotation` lives in `settings_model.h`. The YAML writes `rotation: <0-3>  # 0 landscape, 1 portrait, 2 landscape 180, 3 portrait 180` right after `theme`; on read an integer goes through `rotationFromIndex`, and a missing key keeps the current value. Add a round-trip and out-of-range test to `test_backup_yaml`, and add the key to the backup spec §3.
 
 - [ ] **Step 1: Write the failing tests.**
   ```cpp

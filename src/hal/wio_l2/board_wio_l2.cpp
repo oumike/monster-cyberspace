@@ -207,7 +207,9 @@ bool anyInputWakes() { return false; }
 bool readTouch(int16_t& x, int16_t& y) {
   int16_t rx = 0, ry = 0;
   const bool down = gt911::read(rx, ry);
-  rc::touchToFrame(rx, ry, wio::PANEL_NATIVE_W, wio::PANEL_NATIVE_H, rotation, x, y);
+  // LovyanGFX turns portrait the opposite way to rc::touchToFrame (as on the
+  // CrowPanel 3.5"), so the portraits swap; the landscapes are unchanged.
+  rc::touchToFrame(rx, ry, wio::PANEL_NATIVE_W, wio::PANEL_NATIVE_H, (4 - rotation) & 3, x, y);
   return down;
 }
 

@@ -3,10 +3,12 @@
 #include <string>
 #include <vector>
 
+#include "input/key_event.h"
 #include "ui/grid.h"
 #include "ui/qr_cells.h"
 #include "ui/theme.h"
 #include "ui/widgets/banner.h"
+#include "ui/widgets/overlay.h"
 #include "ui/widgets/drawer.h"
 #include "ui/widgets/entry_list.h"
 #include "ui/widgets/input_line.h"
@@ -482,6 +484,108 @@ void test_text_area_up_down() {
   TEST_ASSERT_EQUAL_STRING("abcdefZghij", w.utf8().c_str());
 }
 
+static KeyEvent overlayKe(Action a) {
+  KeyEvent k;
+  k.action = a;
+  return k;
+}
+
+void test_overlay_confirm_defaults_cancel_and_wraps() {
+  Overlay o;
+  o.confirm(U"Log out?", U"Log out");
+  TEST_ASSERT_TRUE(o.isOpen());
+  TEST_ASSERT_EQUAL(0, o.selected());
+  TEST_ASSERT_EQUAL(int(Overlay::Result::None), int(o.key(overlayKe(Action::Up))));
+  TEST_ASSERT_EQUAL(1, o.selected());
+  TEST_ASSERT_EQUAL(int(Overlay::Result::Picked), int(o.key(overlayKe(Action::Select))));
+  TEST_ASSERT_FALSE(o.isOpen());
+  TEST_ASSERT_EQUAL(1, o.selected());
+}
+
+void test_overlay_back_and_left_close() {
+  Overlay o;
+  o.confirm(U"Delete?", U"Delete");
+  TEST_ASSERT_EQUAL(int(Overlay::Result::Closed), int(o.key(overlayKe(Action::Back))));
+  TEST_ASSERT_FALSE(o.isOpen());
+  o.confirm(U"Delete?", U"Delete");
+  TEST_ASSERT_EQUAL(int(Overlay::Result::Closed), int(o.key(overlayKe(Action::Left))));
+  TEST_ASSERT_FALSE(o.isOpen());
+}
+
+void test_overlay_activate_picks() {
+  Overlay o;
+  o.open(U"menu", {ListItem{U"a", U""}, ListItem{U"b", U""}, ListItem{U"c", U""}});
+  KeyEvent k;
+  k.action = Action::Activate;
+  k.index = 2;
+  k.target = static_cast<uint8_t>(ListId::Menu);
+  k.then = Action::Select;
+  TEST_ASSERT_EQUAL(int(Overlay::Result::Picked), int(o.key(k)));
+  TEST_ASSERT_EQUAL(2, o.selected());
+  TEST_ASSERT_FALSE(o.isOpen());
+}
+
+void test_overlay_activate_out_of_range() {
+  Overlay o;
+  o.open(U"menu", {ListItem{U"a", U""}, ListItem{U"b", U""}, ListItem{U"c", U""}});
+  o.key(overlayKe(Action::Down));  // selected 1
+  TEST_ASSERT_EQUAL(1, o.selected());
+  KeyEvent k;
+  k.action = Action::Activate;
+  k.index = 9;  // past the end
+  k.target = static_cast<uint8_t>(ListId::Menu);
+  k.then = Action::Select;
+  TEST_ASSERT_EQUAL(int(Overlay::Result::None), int(o.key(k)));
+  TEST_ASSERT_TRUE(o.isOpen());
+  TEST_ASSERT_EQUAL(1, o.selected());
+  KeyEvent other;
+  other.action = Action::Activate;
+  other.index = 1;
+  other.target = static_cast<uint8_t>(ListId::Main);  // another list's row
+  other.then = Action::Select;
+  TEST_ASSERT_EQUAL(int(Overlay::Result::None), int(o.key(other)));
+  TEST_ASSERT_TRUE(o.isOpen());
+  TEST_ASSERT_EQUAL(1, o.selected());
+}
+
+void test_overlay_render_bottom_right() {
+  Grid g(53, 20);
+  Overlay o;
+  o.open(U"menu", {ListItem{U"a", U""}, ListItem{U"b", U""}, ListItem{U"c", U""}});
+  o.render(g, 1, 18, 0, OverlayPlace::BottomRight, T());
+  // width 30, left 22, title bar on row 14 across cols 22..51.
+  TEST_ASSERT_EQUAL_HEX16(T().barBg, g.at(22, 14).bg);
+  TEST_ASSERT_EQUAL_HEX16(T().barBg, g.at(51, 14).bg);
+  TEST_ASSERT_EQUAL_STRING(" menu", rowText(g, 14, 22, 27).c_str());
+  // Rows 15..17 hold a, b, c (label at left + 2 = 24); row 15 is selected.
+  TEST_ASSERT_EQUAL_HEX32(U'a', g.at(24, 15).cp);
+  TEST_ASSERT_EQUAL_HEX32(U'b', g.at(24, 16).cp);
+  TEST_ASSERT_EQUAL_HEX32(U'c', g.at(24, 17).cp);
+  TEST_ASSERT_EQUAL(kEdgeTop | kEdgeBottom | kEdgeLeft, g.at(22, 15).edges);
+  TEST_ASSERT_EQUAL(kEdgeTop | kEdgeBottom | kEdgeRight, g.at(51, 15).edges);
+}
+
+void test_overlay_render_centre_and_bottom() {
+  Grid g(40, 20);
+  Overlay o;
+  o.open(U"Discard draft?", {ListItem{U"Cancel", U""}, ListItem{U"Discard", U"", ItemTone::Error}});
+  o.render(g, 0, 20, 0, OverlayPlace::Centre, T());
+  // width max(20, 14+2)=20, left (40-20)/2=10, boxTop (20-2-1)/2=8.
+  TEST_ASSERT_EQUAL_HEX16(T().barBg, g.at(10, 8).bg);
+  TEST_ASSERT_EQUAL_HEX32(U'D', g.at(11, 8).cp);
+  TEST_ASSERT_EQUAL_HEX32(U'C', g.at(12, 9).cp);  // "Cancel" label at left + 2 = 12
+
+  Grid g2(40, 20);
+  Overlay c;
+  c.confirm(U"Log out?", U"Log out");
+  c.render(g2, 1, 19, 0, OverlayPlace::Bottom, T());
+  // Title in error at col 1, row bottom-3=16; list in [17,19) at cols 1..38.
+  TEST_ASSERT_EQUAL_HEX32(U'L', g2.at(1, 16).cp);
+  TEST_ASSERT_EQUAL_HEX16(T().error, g2.at(1, 16).fg);
+  TEST_ASSERT_EQUAL_HEX32(U'C', g2.at(3, 17).cp);     // "Cancel" label at col 1 + 2 = 3
+  TEST_ASSERT_EQUAL_HEX16(T().error, g2.at(3, 18).fg);  // the action row is error-toned
+}
+
 void test_text_area_render_cursor_visible() {
   TextArea ta;
   for (int i = 0; i < 10; ++i) {
@@ -526,6 +630,12 @@ int main() {
   RUN_TEST(test_entry_list_wraps);
   RUN_TEST(test_text_area_newlines_and_cap);
   RUN_TEST(test_text_area_up_down);
+  RUN_TEST(test_overlay_confirm_defaults_cancel_and_wraps);
+  RUN_TEST(test_overlay_back_and_left_close);
+  RUN_TEST(test_overlay_activate_picks);
+  RUN_TEST(test_overlay_activate_out_of_range);
+  RUN_TEST(test_overlay_render_bottom_right);
+  RUN_TEST(test_overlay_render_centre_and_bottom);
   RUN_TEST(test_text_area_render_cursor_visible);
   return UNITY_END();
 }

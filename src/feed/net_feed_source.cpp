@@ -1,4 +1,3 @@
-#if !RC_FAKE_API
 
 #include "app/queues.h"
 #include "feed/feed_source.h"
@@ -23,4 +22,3 @@ FeedSource& feedSource() {
 
 }  // namespace rc
 
-#endif

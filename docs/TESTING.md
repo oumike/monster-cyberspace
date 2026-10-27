@@ -16,47 +16,13 @@ These cover the portable logic in `lib/core`:
 
 They never touch the network.
 
-## Fake-API firmware (`m9_fake`)
-
-```sh
-scripts/build-upload-monitor.sh --m9 --fake
-```
-
-The network task is replaced by a scripted source, so no account or Wi-Fi is
-needed. Wi-Fi, the setup AP and the web server do not run in this build; flash
-`m9` for the web config checks.
-
-The fake source provides:
-
-- the rooms `general`, `linux` and `music`, with fixture history and a new
-  message every 4 s;
-- 12 people, 3 of them idle;
-- sends that echo back after 300 ms;
-- a `400` for `/dice x`;
-- the real local send limit, so the 16th fast send shows the rate-limit
-  banner;
-- C-Mail with rain (2 unread), moth, and kiwi (empty). A send echoes, then
-  the partner types for 2 s and replies. rain writes every 45 s. Starting a
-  conversation with `nobody` fails with "User not found".
-- a Feed of 15 entries in two pages: your own (with a reply alert on it
-  every 90 s), a bookmarked one with 25 threaded replies, a `spiders` CW, an
-  NSFW one, a watched one and a long Markdown one. Writes apply locally under
-  the real limits.
-
-Check every screen and key:
-
-- both text sizes, and the drawer in each
-- the palette and the room, message and person menus
-- spoilers and art
-- a QR code on a link
-- the error banners
-- screen off, the screensaver and wake
-
 ## Open hardware checks
 
-These were built without flashing and still need a run on the device.
+These were built without flashing and still need a run on the device. The
+scripted fake-API builds (`m9_fake`, `wio_l2_fake`, `tdeck_fake`) were removed
+on 2026-10-27; the sections marked `m9_fake` passed on it before then.
 
-**Themes (`m9_fake`):**
+**Themes (`m9`):**
 
 - [x] Settings → Theme cycles Default → Black & white → White & black → Default; each redraws at once and survives a restart
 - [ ] Web config Display → Theme changes the device at once; the select shows the saved theme on reload
@@ -132,7 +98,7 @@ These were built without flashing and still need a run on the device.
 - [ ] Every menu and confirm in Room, Entry, Composer, Feed and Settings behaves as before the touch UI: Up/Down wrap, Centre/Right pick, Back/Left close, Cancel preselected
 - [ ] Settings and web config show no Orientation; Home is the usual list
 
-**Open hardware checks (Wio Tracker L2, `wio_l2_fake` then `wio_l2`):**
+**Open hardware checks (Wio Tracker L2, `wio_l2`):**
 
 Buttons: BOOT tap = Back, BOOT hold (0.6 s) = Home; Wake tap = screen off
 (while dark: the 10 s screensaver), Wake hold (1 s) = screen off / wake.
@@ -142,7 +108,7 @@ Buttons: BOOT tap = Back, BOOT hold (0.6 s) = Home; Wake tap = screen off
 - [x] Display: landscape, right way up, nothing cut off at the edges; colours right (red is red, not blue; no inverted black)
 - [ ] Backlight comes on at boot, and goes off and back on with Wake hold
 - [ ] Battery %: Settings and the web Status page show a sensible value; it's `-1`/blank with no cell
-- [ ] Beep: a mention or C-Mail alert in `wio_l2_fake` plays a tone with the buzzer on, with no click between sounds
+- [ ] Beep: a mention or C-Mail alert plays a tone with the buzzer on, with no click between sounds
 - [ ] Buttons: BOOT tap goes back, BOOT hold goes Home; Wake tap turns the screen off, a Wake tap while dark shows the screensaver for 10 s, Wake hold wakes it
 - [ ] Tap accuracy: in each of the four orientations, the `‹` (top-left), `⋯` (top-right, in a room) and the bottom-left and bottom-right Home tiles or keyboard keys respond where tapped (this confirms the Portrait and Portrait 180 touch direction)
 - [ ] Every screen by touch: Home tiles, Rooms, Room (tap a message, hold for the menu, the drawer, the menus), C-Mail, Feed (drag, swipe a page, load more at the end), Entry, Composer (fields, checkboxes, `⋯` Post/Discard), Settings, Login
@@ -153,7 +119,7 @@ Buttons: BOOT tap = Back, BOOT hold (0.6 s) = Home; Wake tap = screen off
 - [ ] Orientation from Settings and from web config (Display) applies at once and survives a reboot; in portrait no screen has text cut or overlapping (Settings and Setup lines wrap)
 - [ ] Wi-Fi setup (`wio_l2`, nothing saved): the AP is named `Rhino-Cyberspace-WioL2-Setup` and `http://192.168.4.1` loads
 
-**T-Deck Plus (`tdeck_fake` then `tdeck`):**
+**T-Deck Plus (`tdeck`):**
 
 - [ ] Boots: the serial log shows `[boot] … on TDeck`, `[kb] keyboard found` and `[touch] GT911 … at 0x5D`
 - [ ] Splash shows `· TDeck`
@@ -166,7 +132,7 @@ Buttons: BOOT tap = Back, BOOT hold (0.6 s) = Home; Wake tap = screen off
 - [ ] With the screen off, a key, a roll, a click and a touch each wake it, and none of them types, moves, selects or taps
 - [ ] Tapping a text field focuses it without the on-screen keyboard; there's no Orientation item in Settings
 - [ ] `⋯` and a long-press open the palette in a room
-- [ ] Beep: a mention or C-Mail alert in `tdeck_fake` plays a tone with the buzzer on
+- [ ] Beep: a mention or C-Mail alert plays a tone with the buzzer on
 - [ ] Battery %: Settings shows a sensible value; the charging state follows the USB cable
 - [ ] GPS: outdoors with Wi-Fi off, `[gps] fix, …` and `[time] set from GPS` within 15 min, then `[gps] off`; no log line shows coordinates
 - [ ] SD (FAT32 card): Settings → Back up to SD card, then Restore from SD card…, both work
@@ -189,7 +155,6 @@ Buttons: BOOT tap = Back, BOOT hold (0.6 s) = Home; Wake tap = screen off
 - [ ] The web Status page shows the same three lines
 - [ ] Web config Time: picking a zone applies it at once; Custom shows the POSIX field and a typed string applies
 - [ ] NTP server field: a bad server shows the error; `time.cloudflare.com` logs `[time] NTP sync` after a Wi-Fi rejoin
-- [ ] `m9_fake`: Settings shows the canned gps, time and zone lines
 
 **GPS time and time zone (`wio_l2`, no RTC):**
 

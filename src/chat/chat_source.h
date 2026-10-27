@@ -5,8 +5,8 @@
 
 namespace rc {
 
-// Where screens send commands. The network build posts them to the net
-// worker; the m9_fake build applies them to scripted fixtures.
+// Where screens send commands; the network source posts them to the net
+// worker.
 class ChatSource {
  public:
   virtual ~ChatSource() = default;

@@ -21,7 +21,7 @@ void setup() {
   backupstore::begin();
   settings::load(app().cfg);
   timesvc::start(app().cfg);
-  // The network source brings up Wi-Fi too; the m9_fake build has none.
+  // The network source brings up Wi-Fi too.
   startChatSource(app().cfg);
   ui::start();
 }

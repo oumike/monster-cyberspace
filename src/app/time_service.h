@@ -5,8 +5,7 @@
 #include "store/settings.h"
 
 // The clock: the RTC at boot, SNTP after each Wi-Fi connect, and the GPS when
-// both are stale (spec §4). The fake builds keep their fixed clock and report
-// canned status lines.
+// both are stale (spec §4).
 namespace rc::timesvc {
 
 struct Snapshot {

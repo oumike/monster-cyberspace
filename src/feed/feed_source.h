@@ -5,7 +5,7 @@
 namespace rc {
 
 // Where Feed screens send commands. The network build posts them to the net
-// worker; the m9_fake build applies them to scripted fixtures.
+// worker.
 class FeedSource {
  public:
   virtual ~FeedSource() = default;

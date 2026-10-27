@@ -1,4 +1,3 @@
-#if !RC_FAKE_API
 
 #include "app/net_worker.h"
 
@@ -771,4 +770,3 @@ void start(const Settings& s) {
 
 }  // namespace rc::networker
 
-#endif

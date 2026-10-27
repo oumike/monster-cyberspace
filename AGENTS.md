@@ -28,8 +28,8 @@ boards and Cyberspace features come later.
 
 - **Never call the live Cyberspace API** (`api.cyberspace.online` or its
   Firebase RTDB) from tests, scripts, or an AI agent session. The API terms ban
-  bots, scraping, and LLM-driven agents. Use the fixtures and the `m9_fake`
-  build. A human runs the live checklist in `docs/TESTING.md`.
+  bots, scraping, and LLM-driven agents. Use the host-test fixtures. A human
+  runs the live checklist in `docs/TESTING.md`.
 - Every write the firmware makes must come from a user's key press. No
   automation, and no automatic retries of sends.
 - **No captive portal.** The setup AP (`Rhino-Cyberspace-<BOARD>-Setup`) is
@@ -51,9 +51,8 @@ boards and Cyberspace features come later.
 ```sh
 pio test -e native          # host unit tests (lib/core)
 pio run -e m9               # firmware
-pio run -e m9_fake          # firmware with the scripted fake API (no account needed)
-pio run -e wio_l2           # Seeed Wio Tracker L2 firmware (wio_l2_fake: with the fake API)
-pio run -e tdeck            # LilyGO T-Deck Plus firmware (tdeck_fake: with the fake API)
+pio run -e wio_l2           # Seeed Wio Tracker L2 firmware
+pio run -e tdeck            # LilyGO T-Deck Plus firmware
 scripts/build-upload-monitor.sh m9   # flash + serial monitor (115200); -w for the Wio L2, -t for the T-Deck Plus; --help for options
 scripts/build-upload-monitor.sh -B   # build every firmware env, no device needed
 ```
@@ -84,8 +83,8 @@ M2 (C-Mail) plan and all 12 of the M3 (Feed) plan are done and committed, with
 their boxes ticked. The room-screen, C-Mail, web config and Feed (`m9_fake`)
 hardware checks passed on the device (2026-10-26).
 Also done since: themes (Default / Black & white / White & black, picked in
-Settings and web config), and the Wio Tracker L2 HAL with envs `wio_l2` and
-`wio_l2_fake` (bring-up only, untested on hardware).
+Settings and web config), and the Wio Tracker L2 HAL with env `wio_l2`
+(bring-up only, untested on hardware).
 All 8 tasks of the GPS time plan are done and committed: NTP, GPS and RTC
 clock sources (`src/app/time_service.cpp`), the GPS powering itself off,
 the offline automatic time zone, the NTP server field, and the gps, time and
@@ -99,15 +98,17 @@ All 12 tasks of the touch plan are done and committed: gestures, tap map,
 keyboard and four orientations (built without flashing).
 All 7 tasks of the T-Deck Plus plan are done and committed: shared panel and
 touch drivers, keyboard, Backspace-as-Back, any-input wake, trackball, GPS,
-battery, speaker and SD, with envs `tdeck` and `tdeck_fake` (built without
-flashing; `PANEL_MADCTL` and `TOUCH_ROT` await the hardware check).
+battery, speaker and SD, with env `tdeck` (built without flashing;
+`PANEL_MADCTL` and `TOUCH_ROT` await the hardware check).
+The scripted fake-API builds (`*_fake`, `RC_FAKE_API`) were removed on
+2026-10-27 at the user's request; every firmware env talks to the real API.
 **Still open:** the unticked items under "Open hardware checks" in
 `docs/TESTING.md` (themes, device Settings, touch UI, Wio L2, T-Deck Plus, GPS time, API
 assumptions, settings backup), then the human live checklist on the `m9` build.
 CI (`.github/workflows/build.yml`) runs on GitHub.
 The native suite is green: 358/358
 (`pio test -e native`), and `scripts/build-upload-monitor.sh -B` builds all
-six firmware envs.
+three firmware envs.
 
 Notes for whoever continues:
 - Each task follows test-driven development: write the plan's tests first, run
@@ -124,8 +125,6 @@ Notes for whoever continues:
 - C-Mail reuses `RoomScreen` (`RoomScreen{true}` is `Id::Conversation`) and the
   net worker's room channel (`dm_`: `dm_messages`, plus `dm_presence` for typing).
   Typing writes come only from key presses (`RoomScreen::noteTyping`).
-- Locking: never call `chatSource().command()` inside `lockedChat().with(...)`.
-  The fake source handles commands inline and would deadlock the UI task.
 - Setup mode (user decision): there is no boot gesture. It runs at boot with
   no Wi-Fi saved, from Home → Settings → "Turn setup AP on", or by itself
   after the saved networks fail for 5 minutes (`rc::ApFallback`; that AP drops

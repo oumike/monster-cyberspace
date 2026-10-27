@@ -29,7 +29,7 @@ const Theme& currentTheme();
 // the screen has a Ctrl menu, so a touch board draws a `⋯` at the right.
 void drawStatus(Grid& g, const Theme& t, std::u32string_view title, int count, bool menu = false);
 
-// Wi-Fi and address details that differ in the m9_fake build.
+// Wi-Fi and address details.
 bool wifiUp();
 std::string wifiSsid();
 std::string wifiIp();

@@ -7,7 +7,6 @@ cd "$SCRIPT_DIR/.."
 
 ENV_NAME=""
 BOARD=""
-FAKE=false
 PORT=""
 ERASE_FIRST=false
 FULLCLEAN=false
@@ -26,13 +25,10 @@ has_env() {
 
 env_label() {
 	case "$1" in
-		m9)      echo "Elecrow ThinkNode M9" ;;
-		m9_fake) echo "Elecrow ThinkNode M9 (fake API)" ;;
-		wio_l2)      echo "Seeed Wio Tracker L2" ;;
-		wio_l2_fake) echo "Seeed Wio Tracker L2 (fake API)" ;;
-		tdeck)       echo "LilyGO T-Deck Plus" ;;
-		tdeck_fake)  echo "LilyGO T-Deck Plus (fake API)" ;;
-		*)       echo "$1" ;;
+		m9)     echo "Elecrow ThinkNode M9" ;;
+		wio_l2) echo "Seeed Wio Tracker L2" ;;
+		tdeck)  echo "LilyGO T-Deck Plus" ;;
+		*)      echo "$1" ;;
 	esac
 }
 
@@ -79,15 +75,12 @@ prompt_for_device() {
 
 show_usage() {
 	cat <<USAGE
-Usage: $0 [ENV] [--m9|-9] [--wio-l2|-w] [--tdeck|-t] [--fake|-f] [--port|-p PORT] [--erase|-E] [--fullclean|-F] [--just-build|-B]
-  ENV               Any firmware environment in platformio.ini (e.g. m9, wio_l2_fake).
+Usage: $0 [ENV] [--m9|-9] [--wio-l2|-w] [--tdeck|-t] [--port|-p PORT] [--erase|-E] [--fullclean|-F] [--just-build|-B]
+  ENV               Any firmware environment in platformio.ini (e.g. m9, tdeck).
   Board flags (one per supported board):
   --m9, -9          Elecrow ThinkNode M9 (m9)
   --wio-l2, -w      Seeed Wio Tracker L2 (wio_l2)
   --tdeck, -t       LilyGO T-Deck Plus (tdeck)
-  --fake, -f        Use the board's scripted fake API build, no account needed
-                    (e.g. --m9 --fake builds m9_fake, -w -f wio_l2_fake,
-                    -t -f tdeck_fake).
                     With no board or environment given, you'll be prompted.
   --port, -p PORT   Serial port for upload and monitor (default: auto-detect)
   --erase, -E       Erase the whole flash while uploading (wipes saved settings)
@@ -114,7 +107,6 @@ while [ "$#" -gt 0 ]; do
 		--m9|-9)         BOARD=m9 ;;
 		--wio-l2|-w)     BOARD=wio_l2 ;;
 		--tdeck|-t)      BOARD=tdeck ;;
-		--fake|-f)       FAKE=true ;;
 		--port|-p)
 			[ "$#" -ge 2 ] || { echo "--port needs a value"; exit 1; }
 			PORT="$2"
@@ -136,20 +128,7 @@ done
 
 if [ -n "$BOARD" ]; then
 	[ -z "$ENV_NAME" ] || { echo "Give either a board flag or an environment name, not both."; exit 1; }
-	if [ "$FAKE" = true ]; then
-		select_env "${BOARD}_fake"
-	else
-		select_env "$BOARD"
-	fi
-elif [ "$FAKE" = true ]; then
-	if [ -z "$ENV_NAME" ]; then
-		echo "--fake needs a board flag (e.g. --m9 --fake)."
-		exit 1
-	fi
-	case "$ENV_NAME" in
-		*_fake) ;;
-		*) select_env "${ENV_NAME}_fake" ;;
-	esac
+	select_env "$BOARD"
 fi
 
 if [ "$JUST_BUILD" = true ]; then

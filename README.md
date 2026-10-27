@@ -8,7 +8,7 @@ web config page served by the device. No phone app or companion is needed.
 
 - [Using it](docs/USE.md): setup, buttons, rooms, C-Mail, web config
 - [Building](docs/BUILD.md)
-- [Testing](docs/TESTING.md): unit tests, the fake-API build, and the live checklist
+- [Testing](docs/TESTING.md): unit tests, hardware checks and the live checklist
 - [Design spec](docs/superpowers/specs/2026-10-25-cyberspace-m9-circ-design.md)
   and [plan](docs/superpowers/plans/2026-10-25-cyberspace-m9-circ.md);
   C-Mail [spec](docs/superpowers/specs/2026-10-25-cyberspace-m9-cmail-design.md)

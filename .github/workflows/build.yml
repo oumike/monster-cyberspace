@@ -19,4 +19,4 @@ jobs:
           restore-keys: pio-${{ runner.os }}-
       - run: pip install platformio
       - run: pio test -e native
-      - run: pio run -e m9 -e m9_fake -e wio_l2 -e wio_l2_fake -e tdeck -e tdeck_fake
+      - run: pio run -e m9 -e wio_l2 -e tdeck

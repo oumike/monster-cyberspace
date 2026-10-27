@@ -14,11 +14,8 @@
 | Env | What it builds |
 |---|---|
 | `m9` | The firmware for the Elecrow ThinkNode M9 |
-| `m9_fake` | The same firmware with a scripted fake Cyberspace API, for trying every screen without an account |
 | `wio_l2` | The firmware for the Seeed Wio Tracker L2 (touch UI; not yet tried on hardware) |
-| `wio_l2_fake` | The Wio Tracker L2 firmware with the fake API |
 | `tdeck` | The firmware for the LilyGO T-Deck Plus (keyboard, trackball, touch; not yet tried on hardware) |
-| `tdeck_fake` | The T-Deck Plus firmware with the fake API |
 | `native` | Host unit tests for `lib/core` |
 
 ```sh
@@ -36,7 +33,6 @@ scripts/build-upload-monitor.sh m9    # build, flash, then open the serial monit
 | `--m9`/`-9` | Board flag: Elecrow ThinkNode M9 (`m9`) |
 | `--wio-l2`/`-w` | Board flag: Seeed Wio Tracker L2 (`wio_l2`) |
 | `--tdeck`/`-t` | Board flag: LilyGO T-Deck Plus (`tdeck`) |
-| `--fake`/`-f` | Use the board's fake-API build (`--m9 --fake` → `m9_fake`, `-w -f` → `wio_l2_fake`, `-t -f` → `tdeck_fake`) |
 | `ENV` | Or name any firmware env directly; with neither, a menu lists every firmware env |
 | `--port`/`-p PORT` | Serial port for upload and monitor (default: auto-detect) |
 | `--erase`/`-E` | Erase the whole flash in the same esptool session as the upload (`upload_erase` target); wipes saved settings |

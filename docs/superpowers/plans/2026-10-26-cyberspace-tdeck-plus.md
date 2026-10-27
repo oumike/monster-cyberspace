@@ -203,7 +203,7 @@ Task 7 writes both amendments into the spec.
 
 **Files:**
 - Create: `src/hal/tdeck/pins_tdeck.h`, `src/hal/tdeck/board_tdeck.cpp`, `src/hal/tdeck/keyboard_tdeck.{h,cpp}`
-- Modify: `platformio.ini`, `scripts/build-upload-monitor.sh`, `.github/workflows/build.yml`, and the `#if` guards that pick a HAL so that `BOARD_TDECK` compiles `src/hal/tdeck/` only
+- Modify: `platformio.ini`, `scripts/build-upload-monitor.sh`, `docs/BUILD.md`, `AGENTS.md`, `.github/workflows/build.yml`, and the `#if` guards that pick a HAL so that `BOARD_TDECK` compiles `src/hal/tdeck/` only
   - The M9 panel and Wio touch drivers must compile into the T-Deck build. Widen their guards to `BOARD_M9 || BOARD_TDECK` and `BOARD_WIO_L2 || BOARD_TDECK`.
 
 **Interfaces:**
@@ -243,7 +243,12 @@ Task 7 writes both amendments into the spec.
   - `[env:tdeck]` copies `[env:m9]`'s board, memory, flash and partition lines, and adds `-DBOARD_TDECK -DBOARD_HAS_PSRAM -DARDUINO_USB_MODE=1 -DARDUINO_USB_CDC_ON_BOOT=1 -std=gnu++17`, plus the `upload_erase` script.
   - `[env:tdeck_fake]` extends it with `-DRC_FAKE_API=1`.
   - Add a comment block in the style of the Wio's.
-- Build script: add `tdeck` and `tdeck_fake` to `env_label` ("LilyGO T-Deck Plus"), add a `--tdeck|-t` board flag, and add the flag to the usage text.
+- Build script (`scripts/build-upload-monitor.sh`), so the T-Deck works like the other boards:
+  - `env_label`: `tdeck` → "LilyGO T-Deck Plus", `tdeck_fake` → "LilyGO T-Deck Plus (fake API)";
+  - a `--tdeck|-t` board flag (`BOARD=tdeck`), so `-t`, `-t -f` (→ `tdeck_fake`), `-t -E` and `-t -B` all work;
+  - the usage text: the flag in the `Usage:` line and the board-flags list, and `-t -f` → `tdeck_fake` in the `--fake` example;
+  - the `-B` sweep and the interactive picker read `platformio.ini`, so they need no change; confirm both list the two new envs.
+- Docs for the script: add the `--tdeck`/`-t` row to the options table in `docs/BUILD.md` (and the `-t -f` example in its `--fake` row), and mention `-t` beside `-w` in `AGENTS.md`'s Commands block.
 - CI: append `-e tdeck -e tdeck_fake`.
 
 - [ ] **Step 1: Implement** the above.

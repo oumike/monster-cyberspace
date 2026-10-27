@@ -106,8 +106,50 @@ void Grid::clearDirty() {
   std::fill(forced_.begin(), forced_.end(), false);
 }
 
+TextSize nextTextSize(TextSize s) {
+  switch (s) {
+    case TextSize::Compact: return TextSize::Comfortable;
+    case TextSize::Comfortable: return TextSize::Large;
+    default: return TextSize::Compact;
+  }
+}
+
+const char* textSizeKey(TextSize s) {
+  switch (s) {
+    case TextSize::Compact: return "compact";
+    case TextSize::Large: return "large";
+    default: return "comfortable";
+  }
+}
+
+bool parseTextSize(std::string_view key, TextSize& out) {
+  for (TextSize s : {TextSize::Compact, TextSize::Comfortable, TextSize::Large}) {
+    if (key == textSizeKey(s)) {
+      out = s;
+      return true;
+    }
+  }
+  return false;
+}
+
+std::u32string textSizeLabel(TextSize s) {
+  switch (s) {
+    case TextSize::Compact: return U"Compact";
+    case TextSize::Large: return U"Large";
+    default: return U"Comfortable";
+  }
+}
+
+TextSize textSizeFromIndex(int i) {
+  return i >= 0 && i <= static_cast<int>(TextSize::Large) ? static_cast<TextSize>(i) : TextSize::Compact;
+}
+
 CellSize cellSize(TextSize s) {
-  return s == TextSize::Compact ? CellSize{6, 12} : CellSize{8, 16};
+  switch (s) {
+    case TextSize::Compact: return CellSize{6, 12};
+    case TextSize::Large: return CellSize{10, 18};
+    default: return CellSize{8, 16};
+  }
 }
 
 void gridDims(int panelW, int panelH, TextSize s, int& cols, int& rows, int headerPx) {
@@ -117,7 +159,11 @@ void gridDims(int panelW, int panelH, TextSize s, int& cols, int& rows, int head
 }
 
 CellSize bigCellSize(TextSize s) {
-  return s == TextSize::Compact ? CellSize{8, 14} : CellSize{10, 18};
+  switch (s) {
+    case TextSize::Compact: return CellSize{8, 14};
+    case TextSize::Large: return CellSize{12, 24};
+    default: return CellSize{10, 18};
+  }
 }
 
 int bigCols(int panelW, TextSize s) { return panelW / bigCellSize(s).w; }

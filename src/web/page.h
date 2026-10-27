@@ -47,7 +47,7 @@ a{color:#6cf}
 <div id="acctmsg" class="msg"></div>
 
 <h2>Display</h2>
-<label>Text size<select id="tsize"><option value="compact">Compact (6×12, 53×20)</option><option value="comfortable">Comfortable (8×16, 40×15)</option></select></label>
+<label>Text size<select id="tsize"><option value="compact">Compact (6×12, 53×20)</option><option value="comfortable">Comfortable (8×16, 40×15)</option><option value="large">Large (10×18, 32×13)</option></select></label>
 <label>Theme<select id="theme"><option value="default">Default (terminal green)</option><option value="bw">Black &amp; white (white on black)</option><option value="wb">White &amp; black (black on white)</option></select></label>
 <label id="rotrow" hidden>Orientation<select id="rot"><option value="0">Landscape</option><option value="2">Landscape 180</option><option value="1">Portrait</option><option value="3">Portrait 180</option></select></label>
 <label><input id="buzzer" type="checkbox" style="width:auto"> Buzzer on mentions</label>

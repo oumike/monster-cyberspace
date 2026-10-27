@@ -5,7 +5,7 @@ namespace rc {
 const std::vector<PaletteEntry>& paletteEntries(PaletteKind kind) {
   static const std::vector<PaletteEntry> entries = [] {
     std::vector<PaletteEntry> v;
-    v.push_back({U"Text size: Comfortable/Compact", U"", true});
+    v.push_back({U"Text size", U"", true});
     static const char32_t* const kCmds[] = {
         U"me",      U"slap",  U"poke",  U"hug",   U"hi5",    U"dice",    U"8ball",
         U"fortune", U"gif",   U"art",   U"spoiler", U"blink", U"l33t",   U"comic",

@@ -18,11 +18,14 @@ class Drawer {
   void down();
   bool select(int i);  // false when out of range
   std::string selectedUsername() const;
-  // Draws rows [top, bottom) in the rightmost width() columns.
-  void render(Grid& g, int top, int bottom, const Theme& t) const;
+  // Draws rows [top, bottom) in the rightmost width(cols, docked) columns.
+  void render(Grid& g, int top, int bottom, const Theme& t, bool docked = false) const;
   // 15 cols (120 px in Comfortable, 90 px in Compact), capped at half of a
-  // narrow (portrait) grid of `cols` columns.
-  static int width(int cols);
+  // narrow (portrait) grid of `cols` columns. Docked: a fifth of the grid,
+  // at least 15 cols.
+  static int width(int cols, bool docked = false);
+  // A panel this wide (px) keeps the drawer docked open in rooms.
+  static bool docks(int panelWidthPx);
 
  private:
   struct Person {

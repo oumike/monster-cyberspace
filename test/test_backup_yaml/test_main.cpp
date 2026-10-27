@@ -178,6 +178,9 @@ void test_hand_edits() {
   TEST_ASSERT_EQUAL_STRING("Cafe", s.wifi[1].ssid.c_str());
   TEST_ASSERT_TRUE(s.textSize == TextSize::Comfortable);
   TEST_ASSERT_FALSE(s.buzzer);
+  TEST_ASSERT_TRUE(run(std::string(kHead) + "textSize: large\n", s, err, note));
+  TEST_ASSERT_TRUE(s.textSize == TextSize::Large);
+  TEST_ASSERT_NOT_EQUAL(std::string::npos, backupToYaml(s, {"M9", "0.1.0", 0}).find("textSize: large\n"));
   TEST_ASSERT_EQUAL_STRING("lobby", s.lastRoom.c_str());
 }
 
@@ -298,7 +301,7 @@ void test_bad_values_rejected() {
        "line 4: network name: 1-32 bytes"},
       {"apPassword: abc\n", "line 3: setup-AP password: 8-63 printable characters, or empty"},
       {"pagePassword: \"a\\nb\"\n", "line 3: page password: up to 63 printable characters"},
-      {"textSize: huge\n", "line 3: text size: compact or comfortable"},
+      {"textSize: huge\n", "line 3: text size: compact, comfortable or large"},
       {"theme: pink\n", "line 3: theme: default, bw or wb"},
       {"rotation: up\n", "line 3: orientation: 0 to 3"},
       {"buzzer: maybe\n", "line 3: expected true or false"},
@@ -377,7 +380,7 @@ void test_oversize_refused() {
 
 void test_failure_leaves_settings_unchanged() {
   expectFail(std::string(kHead) + "wifi:\n  - ssid: A\n    password: \"\"\ntextSize: huge\n",
-             "line 6: text size: compact or comfortable");
+             "line 6: text size: compact, comfortable or large");
 }
 
 void test_file_name_with_clock() {

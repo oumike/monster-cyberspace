@@ -107,9 +107,7 @@ void FeedListScreen::onKey(const KeyEvent& k) {
                                  ListItem{U"Refresh", U""},
                                  ListItem{U"Watched threads", U""},
                                  ListItem{U"Bookmarks", U""},
-                                 ListItem{compact() ? U"Text size: Comfortable"
-                                                    : U"Text size: Compact",
-                                          U""},
+                                 ListItem{ui::textSizeItem(), U""},
                              });
       break;
     default:
@@ -146,7 +144,7 @@ void FeedListScreen::paletteKey(const KeyEvent& k) {
           router::go(router::Id::Bookmarks);
           break;
         case kTextSize:
-          ui::setTextSize(compact() ? TextSize::Comfortable : TextSize::Compact);
+          ui::cycleTextSize();
           break;
       }
       break;

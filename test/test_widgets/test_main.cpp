@@ -291,6 +291,12 @@ void test_drawer_idle_marker() {
   TEST_ASSERT_EQUAL(15, Drawer::width(53));
   TEST_ASSERT_EQUAL(15, Drawer::width(30));
   TEST_ASSERT_EQUAL(12, Drawer::width(24));  // capped at half the grid
+  // Docked on a wide panel: a fifth of the grid, at least 15.
+  TEST_ASSERT_FALSE(Drawer::docks(480));
+  TEST_ASSERT_TRUE(Drawer::docks(800));
+  TEST_ASSERT_EQUAL(26, Drawer::width(133, true));
+  TEST_ASSERT_EQUAL(16, Drawer::width(80, true));
+  TEST_ASSERT_EQUAL(15, Drawer::width(53, true));
   Grid g(40, 6);
   d.render(g, 1, 6, T());
   int x = 40 - 15;

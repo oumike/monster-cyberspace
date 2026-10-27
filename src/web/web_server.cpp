@@ -300,7 +300,7 @@ esp_err_t getPrefs(httpd_req_t* req) {
   if (!authorized(req)) return ESP_OK;
   Settings s = current();
   JsonDocument d;
-  d["textSize"] = s.textSize == rc::TextSize::Compact ? "compact" : "comfortable";
+  d["textSize"] = rc::textSizeKey(s.textSize);
   d["buzzer"] = s.buzzer;
   d["theme"] = rc::themeKey(s.theme);
   d["tz"] = s.tz;
@@ -330,8 +330,9 @@ esp_err_t postPrefs(httpd_req_t* req) {
   JsonDocument doc;
   if (!readJson(req, body, doc)) return fail(req, "400 Bad Request", "Bad request");
   Settings s = current();
-  bool compact = s.textSize == rc::TextSize::Compact;
-  if (doc["textSize"].is<const char*>()) compact = std::string(doc["textSize"].as<const char*>()) != "comfortable";
+  rc::TextSize size = s.textSize;
+  if (doc["textSize"].is<const char*>() && !rc::parseTextSize(doc["textSize"].as<const char*>(), size))
+    return fail(req, "400 Bad Request", "Text size: compact, comfortable or large");
   bool buzzer = doc["buzzer"].is<bool>() ? doc["buzzer"].as<bool>() : s.buzzer;
   rc::ThemeId theme = s.theme;
   if (doc["theme"].is<const char*>() && !rc::parseThemeId(doc["theme"].as<const char*>(), theme))
@@ -372,7 +373,7 @@ esp_err_t postPrefs(httpd_req_t* req) {
   if (ntp != s.ntpServer || tz != s.tz || tzName != s.tzName) rc::timesvc::settingsChanged();
   // The UI task owns text size, theme and buzzer; it applies and saves them.
   if (!doc["textSize"].isNull() || !doc["buzzer"].isNull() || !doc["theme"].isNull())
-    rc::postEvent(rc::Event{rc::EvtType::PrefsChanged, rc::themeKey(theme), compact ? 1 : 0, buzzer});
+    rc::postEvent(rc::Event{rc::EvtType::PrefsChanged, rc::themeKey(theme), static_cast<int>(size), buzzer});
   if (rotation >= 0 && board::canRotate() && rotation != s.rotation)
     rc::postEvent(rc::Event{rc::EvtType::RotationChanged, "", rotation, true});
   return okReply(req, "Saved");

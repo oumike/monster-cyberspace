@@ -87,6 +87,40 @@ void test_big_cells() {
   TEST_ASSERT_EQUAL(32, bigCols(320, TextSize::Comfortable));
 }
 
+void test_large_text_size() {
+  // Large steps everything up: the body takes Comfortable's big font.
+  TEST_ASSERT_EQUAL(10, cellSize(TextSize::Large).w);
+  TEST_ASSERT_EQUAL(18, cellSize(TextSize::Large).h);
+  TEST_ASSERT_EQUAL(12, bigCellSize(TextSize::Large).w);
+  TEST_ASSERT_EQUAL(24, bigCellSize(TextSize::Large).h);
+  int c, r;
+  gridDims(320, 240, TextSize::Large, c, r);
+  TEST_ASSERT_EQUAL(32, c);
+  TEST_ASSERT_EQUAL(13, r);
+  TEST_ASSERT_EQUAL(27, touchHeader(320, TextSize::Large).px);
+}
+
+void test_text_size_cycle_and_names() {
+  TEST_ASSERT_TRUE(nextTextSize(TextSize::Compact) == TextSize::Comfortable);
+  TEST_ASSERT_TRUE(nextTextSize(TextSize::Comfortable) == TextSize::Large);
+  TEST_ASSERT_TRUE(nextTextSize(TextSize::Large) == TextSize::Compact);
+  TEST_ASSERT_EQUAL_STRING("large", textSizeKey(TextSize::Large));
+  TEST_ASSERT_EQUAL_STRING("compact", textSizeKey(TextSize::Compact));
+  TEST_ASSERT_TRUE(textSizeLabel(TextSize::Large) == U"Large");
+  TextSize s = TextSize::Compact;
+  TEST_ASSERT_TRUE(parseTextSize("comfortable", s));
+  TEST_ASSERT_TRUE(s == TextSize::Comfortable);
+  TEST_ASSERT_TRUE(parseTextSize("large", s));
+  TEST_ASSERT_TRUE(s == TextSize::Large);
+  TEST_ASSERT_FALSE(parseTextSize("huge", s));
+  TEST_ASSERT_TRUE(s == TextSize::Large);
+  // The index saved on the device and sent by the web page.
+  TEST_ASSERT_TRUE(textSizeFromIndex(0) == TextSize::Comfortable);
+  TEST_ASSERT_TRUE(textSizeFromIndex(1) == TextSize::Compact);
+  TEST_ASSERT_TRUE(textSizeFromIndex(2) == TextSize::Large);
+  TEST_ASSERT_TRUE(textSizeFromIndex(9) == TextSize::Compact);
+}
+
 void test_header_rows() {
   // 1.5x a row in the big font; row 0 takes 24 px of 240, so 14 rows fit.
   HeaderSize h = touchHeader(320, TextSize::Comfortable);
@@ -650,6 +684,8 @@ int main() {
   UNITY_BEGIN();
   RUN_TEST(test_grid_dims);
   RUN_TEST(test_big_cells);
+  RUN_TEST(test_large_text_size);
+  RUN_TEST(test_text_size_cycle_and_names);
   RUN_TEST(test_grid_row_kinds);
   RUN_TEST(test_row_spans_cut_before_last_row);
   RUN_TEST(test_row_spans_pad_rows);

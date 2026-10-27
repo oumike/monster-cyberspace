@@ -6,6 +6,7 @@
 
 #include "hal/board.h"
 #include "ui/fonts/cell10x18.h"
+#include "ui/fonts/cell12x24.h"
 #include "ui/fonts/cell6x12.h"
 #include "ui/fonts/cell8x14.h"
 #include "ui/fonts/cell8x16.h"
@@ -110,8 +111,8 @@ void Renderer::drawRow(const Grid& g, int r, const CellFont& font, RowSpan span,
 
 void Renderer::draw(Grid& g, TextSize s, int firstRow, int offsetPx) {
   if (!frame_) return;
-  const CellFont& font = s == TextSize::Compact ? cell6x12 : cell8x16;
-  const CellFont& big = s == TextSize::Compact ? cell8x14 : cell10x18;
+  const CellFont& font = s == TextSize::Compact ? cell6x12 : s == TextSize::Large ? cell10x18 : cell8x16;
+  const CellFont& big = s == TextSize::Compact ? cell8x14 : s == TextSize::Large ? cell12x24 : cell10x18;
   Layer& layer = firstRow == 0 ? main_ : docked_;
   const int top = firstRow * font.h + offsetPx;
   if (layer.firstRow != firstRow || layer.top != top) layer = Layer{firstRow, top};

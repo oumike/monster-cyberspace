@@ -11,6 +11,9 @@ namespace rc::ui {
 void start();
 // Switches the text size, saves it and redraws everything.
 void setTextSize(TextSize s);
+// The menu item "Text size: <next>" and what picking it does.
+std::u32string textSizeItem();
+void cycleTextSize();
 // Turns the panel (rotation r, ui/rotation.h) at once, saves it and reflows
 // the grid. Only on boards that can rotate.
 void setRotation(uint8_t r);

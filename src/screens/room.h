@@ -57,6 +57,9 @@ class RoomScreen : public Screen {
   bool isMuted(const std::string& name);
   void insertText(const std::u32string& s);
   bool drawerOpen() const;
+  // A wide panel keeps the who's-here list docked on the right of a room,
+  // whether or not the drawer has the keys.
+  bool drawerDocked() const;
   // Typing on/off writes, only ever from a key press (C-Mail).
   void noteTyping();
   void stopTyping();

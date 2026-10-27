@@ -8,7 +8,12 @@
 
 namespace rc {
 
-int Drawer::width(int cols) { return std::min(15, cols / 2); }
+int Drawer::width(int cols, bool docked) {
+  if (docked) return std::min(std::max(15, cols / 5), cols / 2);
+  return std::min(15, cols / 2);
+}
+
+bool Drawer::docks(int panelWidthPx) { return panelWidthPx >= 640; }
 
 void Drawer::setPeople(std::vector<PresenceEntry> people, int64_t nowMs, int64_t idleAfterMs) {
   std::string keep = selectedUsername();
@@ -39,8 +44,8 @@ bool Drawer::select(int i) {
   return true;
 }
 
-void Drawer::render(Grid& g, int top, int bottom, const Theme& t) const {
-  const int x = std::max(0, g.cols() - width(g.cols()));
+void Drawer::render(Grid& g, int top, int bottom, const Theme& t, bool docked) const {
+  const int x = std::max(0, g.cols() - width(g.cols(), docked));
   const int inner = g.cols() - x - 1;
   const int height = bottom - top;
   if (height <= 0 || inner <= 0) return;

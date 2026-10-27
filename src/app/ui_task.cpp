@@ -163,7 +163,7 @@ void handleEvent(const Event& e) {
       if (e.ok && e.code != 0 && (cur == Id::Setup || cur == Id::LoginForm)) router::go(Id::Home);
       break;
     case EvtType::PrefsChanged: {
-      TextSize ts = e.code == 0 ? TextSize::Comfortable : TextSize::Compact;
+      TextSize ts = textSizeFromIndex(e.code);
       app().cfg.buzzer = e.ok;
       parseThemeId(e.text, app().cfg.theme);
       if (ts != app().cfg.textSize) setTextSize(ts);  // saves too
@@ -356,6 +356,10 @@ void setTextSize(TextSize s) {
   settings::saveUiPrefs(app().cfg);
   needResize = true;
 }
+
+std::u32string textSizeItem() { return U"Text size: " + textSizeLabel(nextTextSize(app().cfg.textSize)); }
+
+void cycleTextSize() { setTextSize(nextTextSize(app().cfg.textSize)); }
 
 void setRotation(uint8_t r) { applyRotation(r); }
 

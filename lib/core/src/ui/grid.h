@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <string>
 #include <string_view>
 #include <vector>
 
@@ -85,7 +86,17 @@ class Grid {
   int bottomPad_ = 0;
 };
 
-enum class TextSize { Comfortable, Compact };
+// The values are saved on the device and sent by the web page: never reorder.
+enum class TextSize { Comfortable, Compact, Large };
+// Compact -> Comfortable -> Large -> Compact, for the "Text size" menu item.
+TextSize nextTextSize(TextSize s);
+// "compact", "comfortable", "large": backups and the web page.
+const char* textSizeKey(TextSize s);
+// false (out unchanged) for anything else.
+bool parseTextSize(std::string_view key, TextSize& out);
+std::u32string textSizeLabel(TextSize s);  // U"Compact" ...
+// The saved index (the enum's value); out of range is Compact.
+TextSize textSizeFromIndex(int i);
 struct CellSize {
   int w, h;
 };

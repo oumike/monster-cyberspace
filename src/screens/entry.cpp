@@ -278,7 +278,8 @@ void EntryScreen::openEntryMenu() {
     if (isSelf(e.author)) add(U"Delete\u2026", "delete", ItemTone::Error);
     else add(U"Report\u2026", "report", ItemTone::Error);
   }
-  add(compact() ? U"Text size: Comfortable" : U"Text size: Compact", "size");
+  const std::u32string sizeItem = ui::textSizeItem();
+  add(sizeItem.c_str(), "size");
   openMenu(Menu::Entry, U"entry", std::move(items));
 }
 
@@ -361,7 +362,7 @@ void EntryScreen::pickMenu() {
         openMenu(Menu::ConfirmDelete, targetReply_ ? U"delete this reply?" : U"delete this entry?",
                  {ListItem{U"Cancel", U""}, ListItem{U"Delete", U"", ItemTone::Error}});
       } else if (key == "size") {
-        ui::setTextSize(compact() ? TextSize::Comfortable : TextSize::Compact);
+        ui::cycleTextSize();
       }
       break;
     case Menu::ConfirmDelete:

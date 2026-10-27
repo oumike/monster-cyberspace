@@ -6,6 +6,7 @@
 #include "app/app_state.h"
 #include "app/ui_task.h"
 #include "chat/chat_source.h"
+#include "hal/board.h"
 #include "screens/draw.h"
 #include "store/locked_chat.h"
 #include "ui/widgets/palette.h"
@@ -68,7 +69,7 @@ void RoomScreen::enter(const std::string& slug) {
   }
   app().unreadMentions = 0;
   chatSource().command(Command{CmdType::OpenRoom, slug_});
-  if (app().cfg.drawerOpen) chatSource().command(Command{CmdType::OpenPresence});
+  if (app().cfg.drawerOpen || drawerDocked()) chatSource().command(Command{CmdType::OpenPresence});
 }
 
 void RoomScreen::leave() {
@@ -79,6 +80,8 @@ void RoomScreen::leave() {
 }
 
 bool RoomScreen::drawerOpen() const { return !dm_ && app().cfg.drawerOpen; }
+
+bool RoomScreen::drawerDocked() const { return !dm_ && Drawer::docks(board::panelWidth()); }
 
 void RoomScreen::noteTyping() {
   if (!dm_) return;
@@ -121,7 +124,8 @@ void RoomScreen::setDrawer(bool open) {
   if (app().cfg.drawerOpen == open) return;
   app().cfg.drawerOpen = open;
   settings::saveUiPrefs(app().cfg);
-  chatSource().command(Command{open ? CmdType::OpenPresence : CmdType::ClosePresence});
+  // Docked, presence is already open and stays so.
+  if (!drawerDocked()) chatSource().command(Command{open ? CmdType::OpenPresence : CmdType::ClosePresence});
 }
 
 bool RoomScreen::isMuted(const std::string& name) { return muted_.count(lower(name)) > 0; }
@@ -159,7 +163,7 @@ void RoomScreen::typingKey(const KeyEvent& k) {
       menuKeys_.clear();
       for (const auto& e : paletteEntries(dm_ ? PaletteKind::Cmail : PaletteKind::Circ)) {
         std::u32string label = e.label;
-        if (e.isTextSize) label = compact() ? U"Text size: Comfortable" : U"Text size: Compact";
+        if (e.isTextSize) label = ui::textSizeItem();
         items.push_back(ListItem{label, U""});
         menuKeys_.push_back(e.isTextSize ? std::string("size") : u32ToUtf8(e.insert));
       }
@@ -194,7 +198,10 @@ void RoomScreen::typingKey(const KeyEvent& k) {
         if (drawer) setDrawer(false);
         if (log_.selectMessage(k.index)) onKey(KeyEvent{k.then});
       } else if (k.target == uint8_t(ListId::Drawer)) {
-        if (drawer_.select(k.index)) onKey(KeyEvent{k.then});
+        if (!drawer_.select(k.index)) break;
+        // A tap on the docked list acts on the name even without the keys.
+        if (!drawer && k.then == Action::Select) openPersonMenu(drawer_.selectedUsername());
+        else onKey(KeyEvent{k.then});
       }
       break;
     case Action::Focus:
@@ -310,7 +317,7 @@ void RoomScreen::openRoomMenu() {
     menuKeys_ = {"read", "size", "close"};
     openMenu(Menu::Room, utf8ToU32("@" + partner_),
              {ListItem{U"Mark read", U""},
-              ListItem{compact() ? U"Text size: Comfortable" : U"Text size: Compact", U""},
+              ListItem{ui::textSizeItem(), U""},
               ListItem{U"Close conversation", U""}});
     return;
   }
@@ -318,7 +325,7 @@ void RoomScreen::openRoomMenu() {
   openMenu(Menu::Room, utf8ToU32("#" + slug_),
            {ListItem{U"Who's here", U""}, ListItem{U"Mute\u2026", U""},
             ListItem{U"Unmute\u2026", U""}, ListItem{U"Mark read", U""},
-            ListItem{compact() ? U"Text size: Comfortable" : U"Text size: Compact", U""},
+            ListItem{ui::textSizeItem(), U""},
             ListItem{U"Leave room", U""}});
 }
 
@@ -388,7 +395,7 @@ void RoomScreen::pickMenu() {
   view_ = View::None;
   switch (menu_) {
     case Menu::Palette:
-      if (key == "size") ui::setTextSize(compact() ? TextSize::Comfortable : TextSize::Compact);
+      if (key == "size") ui::cycleTextSize();
       else insertText(utf8ToU32(key));
       break;
     case Menu::Room:
@@ -420,7 +427,7 @@ void RoomScreen::pickMenu() {
         chatSource().command(Command{CmdType::MarkRead, slug_});
         lastMarkRead_ = nowEpochMs();
       } else if (key == "size") {
-        ui::setTextSize(compact() ? TextSize::Comfortable : TextSize::Compact);
+        ui::cycleTextSize();
       } else if (key == "leave") {
         router::go(router::Id::RoomList);
       } else if (key == "close") {
@@ -557,6 +564,8 @@ void RoomScreen::render(Grid& g, const Theme& t, int64_t) {
   int logBottom = inputRow;
   const int64_t now = nowEpochMs();
   const bool drawer = drawerOpen();
+  const bool docked = drawerDocked();
+  const bool shown = drawer || docked;
   int online = 0;
   bool markRead = false;
   std::vector<std::string> typers;
@@ -565,7 +574,7 @@ void RoomScreen::render(Grid& g, const Theme& t, int64_t) {
   lockedChat().with([&](ChatState& s) {
     auto people = visiblePresence(s.presence, now, s.cadence.staleAfterMs);
     online = int(people.size());
-    if (drawer) drawer_.setPeople(std::move(people), now, s.cadence.idleAfterMs);
+    if (shown) drawer_.setPeople(std::move(people), now, s.cadence.idleAfterMs);
     self_ = s.self;
     // A flag going stale produces no event, so this is re-checked each frame.
     if (dm_) typers = typingNames(s.typing, s.self, now, s.typingCadence.staleAfterMs);
@@ -646,7 +655,7 @@ void RoomScreen::render(Grid& g, const Theme& t, int64_t) {
     return;
   }
 
-  int reserve = drawer ? Drawer::width(g.cols()) : 0;
+  int reserve = shown ? Drawer::width(g.cols(), docked) : 0;
   if (!typers.empty()) {
     // One row above the input for "name is typing…".
     --logBottom;
@@ -655,7 +664,7 @@ void RoomScreen::render(Grid& g, const Theme& t, int64_t) {
     putLine(g, 1, logBottom, who + " is typing\u2026", t.dim, t.bg);
   }
   log_.render(g, 1, logBottom, reserve, t);
-  if (drawer) drawer_.render(g, 1, logBottom, t);
+  if (shown) drawer_.render(g, 1, logBottom, t, docked);
 
   if (view_ == View::Menu)
     box_.render(g, 1, logBottom, reserve, OverlayPlace::BottomRight, t);

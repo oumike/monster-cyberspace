@@ -52,7 +52,7 @@ void load(rc::Settings& s) {
   s.ntpServer = getStr(p, "ntp", s.ntpServer);
   s.pagePassword = getStr(p, "pagepw", "");
   s.apPassword = getStr(p, "appw", "");
-  s.textSize = p.getUChar("tsize", 1) == 0 ? rc::TextSize::Comfortable : rc::TextSize::Compact;
+  s.textSize = rc::textSizeFromIndex(p.getUChar("tsize", 1));
   s.drawerOpen = p.getBool("drawer", false);
   s.buzzer = p.getBool("buzz", true);
   s.theme = rc::themeFromIndex(p.getUChar("theme", 0));
@@ -64,7 +64,7 @@ void load(rc::Settings& s) {
 void saveUiPrefs(const rc::Settings& s) {
   Preferences p;
   if (!p.begin(kNs, false)) return;
-  p.putUChar("tsize", s.textSize == rc::TextSize::Comfortable ? 0 : 1);
+  p.putUChar("tsize", static_cast<uint8_t>(s.textSize));
   p.putBool("drawer", s.drawerOpen);
   p.putBool("buzz", s.buzzer);
   p.putUChar("theme", static_cast<uint8_t>(s.theme));

@@ -155,7 +155,8 @@ The keyboard always types into the input line at the bottom.
 - **Who's here drawer:** Right with the cursor at the end of the line opens
   it. Up/Down pick a person, Centre opens their menu (mention, mute or
   unmute), and Left or Back closes it. The drawer stays open or closed as you
-  move between rooms.
+  move between rooms. On the CrowPanel 5.0" the list is always docked on the
+  right; tap a name for their menu.
 - **Commands:** type slash commands such as `/me`, `/dice` and `/mute name`,
   or pick them from the Ctrl palette.
 
@@ -242,12 +243,14 @@ reply selected. Left or Back returns to the Feed list.
 
 ## Text sizes
 
-Switch from the palette, the room menu or the web page. The choice is saved.
+Switch from the palette, the room menu or the web page; each switch steps
+Compact → Comfortable → Large. The choice is saved.
 
 - **Comfortable:** larger 8×16 text, `nick message`, with a time divider when
   the minute changes.
 - **Compact:** 6×12 text, `14:02 nick: message`, with a hint row at the
   bottom.
+- **Large:** like Comfortable, one size up: 10×18 text and 12×24 titles.
 
 ## Themes
 

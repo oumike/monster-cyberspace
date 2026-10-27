@@ -119,7 +119,7 @@ Anything else is an error that names the line, for example `line 12: expected
   - an SSID is 1–32 bytes;
   - the setup-AP password passes `validApPassword`;
   - the page password is at most 63 printable characters;
-  - the text size is `compact` or `comfortable`;
+  - the text size is `compact`, `comfortable` or `large`;
   - the NTP server passes `validNtpServer` (1–63 characters, each
     `[A-Za-z0-9.-]`).
 

@@ -345,7 +345,7 @@ std::string backupToYaml(const Settings& s, const BackupMeta& m) {
   o += "ntpServer: " + yamlQuote(s.ntpServer) + "\n";
   o += "pagePassword: " + yamlQuote(s.pagePassword) + "\n";
   o += "apPassword: " + yamlQuote(s.apPassword) + "\n";
-  o += std::string("textSize: ") + (s.textSize == TextSize::Compact ? "compact" : "comfortable") + "\n";
+  o += std::string("textSize: ") + textSizeKey(s.textSize) + "\n";
   o += std::string("theme: ") + themeKey(s.theme) + "  # default | bw | wb\n";
   o += "rotation: " + std::to_string(s.rotation) +
        "  # 0 landscape, 1 portrait, 2 landscape 180, 3 portrait 180\n";
@@ -410,8 +410,8 @@ bool backupFromYaml(std::string_view yaml, Settings& inOut, std::string& err, st
   } else if (st.pagePassword.has &&
              (st.pagePassword.v.size() > 63 || !printable(st.pagePassword.v))) {
     err = at(st.pagePassword.line, "page password: up to 63 printable characters");
-  } else if (st.textSize.has && st.textSize.v != "compact" && st.textSize.v != "comfortable") {
-    err = at(st.textSize.line, "text size: compact or comfortable");
+  } else if (TextSize ts; st.textSize.has && !parseTextSize(st.textSize.v, ts)) {
+    err = at(st.textSize.line, "text size: compact, comfortable or large");
   } else if (st.theme.has && !parseThemeId(st.theme.v, theme)) {
     err = at(st.theme.line, "theme: default, bw or wb");
   } else if (st.rotation.has && !plainInt(st.rotation, rotation)) {
@@ -444,7 +444,7 @@ bool backupFromYaml(std::string_view yaml, Settings& inOut, std::string& err, st
   if (st.pagePassword.has) inOut.pagePassword = st.pagePassword.v;
   if (st.apPassword.has) inOut.apPassword = st.apPassword.v;
   if (st.textSize.has)
-    inOut.textSize = st.textSize.v == "compact" ? TextSize::Compact : TextSize::Comfortable;
+    parseTextSize(st.textSize.v, inOut.textSize);
   if (st.theme.has) inOut.theme = theme;
   if (st.rotation.has) inOut.rotation = rotationFromIndex(rotation);
   if (st.drawerOpen.has) inOut.drawerOpen = st.drawerOpen.v;

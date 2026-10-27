@@ -14,9 +14,11 @@
 #include "app/restart.h"
 #include "app/time_service.h"
 #include "chat/chat_source.h"
+#include "config/backup_yaml.h"
 #include "core_version.h"
 #include "hal/board.h"
 #include "net/wifi_mgr.h"
+#include "store/backup_store.h"
 #include "store/settings.h"
 #include "tz/zones.h"
 #include "web/page.h"
@@ -110,6 +112,43 @@ bool readJson(httpd_req_t* req, std::string& body, JsonDocument& doc) {
     got += size_t(r);
   }
   return !deserializeJson(doc, &body[0], body.size());
+}
+
+// Reads the raw request body (the caller wipes it when it holds secrets).
+bool readBody(httpd_req_t* req, std::string& body, size_t max) {
+  if (req->content_len > max) return false;
+  body.assign(req->content_len, '\0');
+  size_t got = 0;
+  while (got < body.size()) {
+    int r = httpd_req_recv(req, &body[got], body.size() - got);
+    if (r == HTTPD_SOCK_ERR_TIMEOUT) continue;
+    if (r <= 0) return false;
+    got += size_t(r);
+  }
+  return true;
+}
+
+// Decodes the `name` query parameter. False unless it is a valid backup name,
+// which the caller turns into "Bad file name"; runs before any store call.
+bool queryName(httpd_req_t* req, std::string& name) {
+  char query[256] = {0}, raw[160] = {0};
+  if (httpd_req_get_url_query_str(req, query, sizeof query) != ESP_OK ||
+      httpd_query_key_value(query, "name", raw, sizeof raw) != ESP_OK)
+    return false;
+  name = rc::urlDecode(raw);
+  return rc::validBackupName(name);
+}
+
+// Sends `yaml` as a download named `name` (a validated name, so no escaping),
+// then wipes it.
+esp_err_t sendYamlAttachment(httpd_req_t* req, std::string& yaml, const std::string& name) {
+  httpd_resp_set_type(req, "text/yaml; charset=utf-8");
+  std::string disp = "attachment; filename=\"" + name + "\"";
+  httpd_resp_set_hdr(req, "Content-Disposition", disp.c_str());
+  httpd_resp_set_hdr(req, "Cache-Control", "no-store");
+  esp_err_t r = httpd_resp_send(req, yaml.data(), yaml.size());
+  wipe(yaml);
+  return r;
 }
 
 // ---- handlers ----
@@ -375,13 +414,96 @@ esp_err_t postFactoryReset(httpd_req_t* req) {
   return ESP_OK;
 }
 
+esp_err_t getBackup(httpd_req_t* req) {
+  if (!authorized(req)) return ESP_OK;
+  std::string yaml, name;
+  backupstore::currentYaml(yaml, name);
+  return sendYamlAttachment(req, yaml, name);
+}
+
+esp_err_t postRestore(httpd_req_t* req) {
+  if (!authorized(req)) return ESP_OK;
+  if (req->content_len > rc::kMaxBackupBytes)
+    return fail(req, "413 Payload Too Large", "Restore failed: Backup is over 16 KB");
+  std::string body;
+  if (!readBody(req, body, rc::kMaxBackupBytes)) {
+    wipe(body);
+    return fail(req, "400 Bad Request", "Bad request");
+  }
+  backupstore::Result r = backupstore::applyAndRestart(body);
+  wipe(body);
+  if (!r.ok) return fail(req, "400 Bad Request", r.message);
+  return okReply(req, r.message.c_str());
+}
+
+esp_err_t getBackupSd(httpd_req_t* req) {
+  if (!authorized(req)) return ESP_OK;
+  JsonDocument d;
+  d["slot"] = board::hasSdSlot();
+  std::vector<backupstore::FileInfo> files;
+  backupstore::Result r = backupstore::listSd(files);
+  d["card"] = r.ok;
+  JsonArray a = d["files"].to<JsonArray>();
+  for (const auto& f : files) {
+    JsonObject o = a.add<JsonObject>();
+    o["name"] = f.name;
+    o["size"] = f.size;
+  }
+  return sendJson(req, d);
+}
+
+esp_err_t postBackupSd(httpd_req_t* req) {
+  if (!authorized(req)) return ESP_OK;
+  backupstore::Result r = backupstore::saveToSd();
+  if (!r.ok) return fail(req, "400 Bad Request", r.message);
+  return okReply(req, r.message.c_str());
+}
+
+esp_err_t postBackupSdRestore(httpd_req_t* req) {
+  if (!authorized(req)) return ESP_OK;
+  std::string name;
+  if (!queryName(req, name)) return fail(req, "400 Bad Request", "Bad file name");
+  std::string yaml;
+  backupstore::Result r = backupstore::readSd(name, yaml);
+  if (!r.ok) {
+    wipe(yaml);
+    return fail(req, "400 Bad Request", r.message);
+  }
+  r = backupstore::applyAndRestart(yaml);
+  wipe(yaml);
+  if (!r.ok) return fail(req, "400 Bad Request", r.message);
+  return okReply(req, r.message.c_str());
+}
+
+esp_err_t getBackupSdDownload(httpd_req_t* req) {
+  if (!authorized(req)) return ESP_OK;
+  std::string name;
+  if (!queryName(req, name)) return fail(req, "400 Bad Request", "Bad file name");
+  std::string yaml;
+  backupstore::Result r = backupstore::readSd(name, yaml);
+  if (!r.ok) {
+    wipe(yaml);
+    return fail(req, "400 Bad Request", r.message);
+  }
+  return sendYamlAttachment(req, yaml, name);
+}
+
+esp_err_t postBackupSdDelete(httpd_req_t* req) {
+  if (!authorized(req)) return ESP_OK;
+  std::string name;
+  if (!queryName(req, name)) return fail(req, "400 Bad Request", "Bad file name");
+  backupstore::Result r = backupstore::deleteSd(name);
+  if (!r.ok) return fail(req, "400 Bad Request", r.message);
+  return okReply(req, r.message.c_str());
+}
+
 }  // namespace
 
 void begin() {
   if (server) return;
   httpd_config_t cfg = HTTPD_DEFAULT_CONFIG();
   cfg.server_port = 80;
-  cfg.max_uri_handlers = 16;
+  cfg.max_uri_handlers = 24;
   cfg.stack_size = 8192;
   cfg.core_id = 0;
   cfg.lru_purge_enable = true;
@@ -410,6 +532,13 @@ void begin() {
       {"/api/security", HTTP_POST, postSecurity},
       {"/api/restart", HTTP_POST, postRestart},
       {"/api/factory-reset", HTTP_POST, postFactoryReset},
+      {"/api/backup", HTTP_GET, getBackup},
+      {"/api/restore", HTTP_POST, postRestore},
+      {"/api/backup/sd", HTTP_GET, getBackupSd},
+      {"/api/backup/sd", HTTP_POST, postBackupSd},
+      {"/api/backup/sd/restore", HTTP_POST, postBackupSdRestore},
+      {"/api/backup/sd/download", HTTP_GET, getBackupSdDownload},
+      {"/api/backup/sd/delete", HTTP_POST, postBackupSdDelete},
   };
   for (const Route& r : routes) {
     httpd_uri_t u = {};

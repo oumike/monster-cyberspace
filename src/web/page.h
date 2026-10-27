@@ -18,6 +18,7 @@ button.danger{color:#f66;border-color:#a33}
 table{border-collapse:collapse;width:100%}td{padding:.15em .4em .15em 0;vertical-align:top}td:first-child{color:#7a7;width:9em}
 ul{padding-left:1.2em;margin:.3em 0}li button{padding:.1em .4em;font-size:.85em}
 .msg{min-height:1.4em}
+a{color:#6cf}
 </style></head><body>
 <h1>rhino-cyberspace</h1>
 
@@ -65,6 +66,16 @@ ul{padding-left:1.2em;margin:.3em 0}li button{padding:.1em .4em;font-size:.85em}
 <button onclick="saveSec()">Save security</button>
 <div id="secmsg" class="msg"></div>
 <p class="dim">The page is plain HTTP on your LAN, so set a page password on shared networks. The setup AP is open unless a setup-AP password is set, so anyone in radio range can join it while it runs. It runs with no saved Wi-Fi (first boot or after a factory reset), when turned on in the device's Settings, or after the saved networks fail for 5 minutes, and anything entered on it (Wi-Fi password, Cyberspace password) crosses that link unencrypted. Setting a setup-AP password closes that gap for later setups. The refresh token can't be read back through the page.</p>
+
+<h2>Backup</h2>
+<p class="dim">A backup holds your Wi-Fi passwords, the page and setup-AP passwords and a Cyberspace sign-in token. Anyone with the file can use your account: keep it private. It travels over plain HTTP unless you use the setup AP with a password.</p>
+<p><a href="/api/backup">Download backup</a></p>
+<label>Restore from file…<input id="restorefile" type="file" accept=".yaml" onchange="restoreFile()"></label>
+<div id="sdblock" hidden>
+<button onclick="saveSd()">Save backup to SD card</button>
+<ul id="sdfiles"></ul>
+</div>
+<div id="backupmsg" class="msg"></div>
 
 <h2>Device</h2>
 <button onclick="if(confirm('Restart the device?'))post('/api/restart',{},'devmsg')">Restart</button>
@@ -133,7 +144,36 @@ async function saveSec(){const b={pagePassword:$('pagepw').value,apPassword:$('a
   if(!b.pagePassword&&!confirm('Leave the page password empty (no password)?'))return;
   const r=await post('/api/security',b,'secmsg');if(r.ok){$('pagepw').value='';$('appw').value='';}}
 function reset(){if(confirm('Erase Wi-Fi, account and all settings, then restart into setup mode?')&&confirm('Really erase everything?'))post('/api/factory-reset',{confirm:true},'devmsg');}
-load();loadZones().then(loadPrefs);setInterval(load,10000);
+async function restoreFile(){
+  const f=$('restorefile').files[0];if(!f)return;
+  if(f.size>16384){show('backupmsg',{ok:false,message:'Backup is over 16 KB'});$('restorefile').value='';return;}
+  if(!confirm('Restore '+f.name+' and restart?')){$('restorefile').value='';return;}
+  let j;
+  try{const r=await fetch('/api/restore',{method:'POST',headers:{'Content-Type':'application/yaml'},body:await f.text()});
+    try{j=await r.json();}catch(e){j={ok:r.ok};}if(j.ok===undefined)j.ok=r.ok;}
+  catch(e){j={ok:false,message:'No response from the device'};}
+  show('backupmsg',j);$('restorefile').value='';
+}
+async function saveSd(){const r=await call('POST','/api/backup/sd',{});show('backupmsg',r);loadBackup();}
+async function loadBackup(){
+  const s=await call('GET','/api/backup/sd');if(s.slot===undefined)return;
+  $('sdblock').hidden=!s.slot;if(!s.slot)return;
+  const ul=$('sdfiles');ul.innerHTML='';
+  if(!s.card){const li=document.createElement('li');li.textContent='No SD card';li.className='dim';ul.appendChild(li);return;}
+  if(!(s.files||[]).length){const li=document.createElement('li');li.textContent='No backups yet';li.className='dim';ul.appendChild(li);}
+  for(const f of s.files||[]){
+    const li=document.createElement('li');const span=document.createElement('span');
+    span.textContent=f.name+' ('+f.size+' B) ';li.appendChild(span);
+    const rb=document.createElement('button');rb.textContent='restore';
+    rb.onclick=async()=>{if(!confirm('Restore '+f.name+' and restart?'))return;show('backupmsg',await call('POST','/api/backup/sd/restore?name='+encodeURIComponent(f.name)));};
+    const db=document.createElement('button');db.textContent='download';
+    db.onclick=()=>{location.href='/api/backup/sd/download?name='+encodeURIComponent(f.name);};
+    const xb=document.createElement('button');xb.textContent='delete';xb.className='danger';
+    xb.onclick=async()=>{if(!confirm('Delete '+f.name+'?'))return;show('backupmsg',await call('POST','/api/backup/sd/delete?name='+encodeURIComponent(f.name)));loadBackup();};
+    li.appendChild(rb);li.appendChild(db);li.appendChild(xb);ul.appendChild(li);
+  }
+}
+load();loadZones().then(loadPrefs);loadBackup();setInterval(load,10000);
 </script></body></html>)HTML";
 
 }  // namespace web

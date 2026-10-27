@@ -34,6 +34,9 @@ void SetupScreen::onKey(const KeyEvent& k) {
     case Action::Down:
       menu_.down();
       break;
+    case Action::Activate:
+      if (k.target == uint8_t(ListId::Main) && menu_.select(k.index)) onKey(KeyEvent{k.then});
+      break;
     case Action::Select:
     case Action::Right:
       if (hasRestore_ && menu_.selected() == 1) picker_.open();
@@ -73,7 +76,7 @@ void SetupScreen::render(Grid& g, const Theme& t, int64_t) {
   int bottom = g.rows() - 1;
   const int n = int(menu_.size());
   menu_.render(g, bottom - n, bottom, 1, g.cols() - 2, t);
-  drawHint(g, t, U"\u2191\u2193 pick  \u25CF select");
+  drawHint(g, t, U"\u2191\u2193 pick  \u25CF select", U"tap to select");
 }
 
 }  // namespace rc

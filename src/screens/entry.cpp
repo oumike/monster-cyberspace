@@ -134,6 +134,12 @@ void EntryScreen::typingKey(const KeyEvent& k) {
     case Action::Right:
       input_.right();
       break;
+    case Action::Activate:
+      if (k.target == uint8_t(ListId::Log) && log_.selectMessage(k.index)) onKey(KeyEvent{k.then});
+      break;
+    case Action::Focus:
+      input_.setCursor(k.index);
+      break;
     case Action::Select:
       select();
       break;
@@ -213,6 +219,9 @@ void EntryScreen::reasonKey(const KeyEvent& k) {
       break;
     case Action::Right:
       input_.right();
+      break;
+    case Action::Focus:
+      input_.setCursor(k.index);
       break;
     case Action::Select: {
       std::string reason = input_.utf8();
@@ -483,7 +492,7 @@ void EntryScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
   }
 
   g.fill(t.bg);
-  drawStatus(g, t, title_.empty() ? std::u32string(U"entry") : title_, -1);
+  drawStatus(g, t, title_.empty() ? std::u32string(U"entry") : title_, -1, true);
   if (view_ == View::Link) {
     link_.render(g, t);
     return;
@@ -510,16 +519,33 @@ void EntryScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
 
   if (small) {
     const char32_t* hint;
-    if (reasonMode_) hint = U"type a reason (optional)  \u25CF report  back: cancel";
-    else if (view_ == View::Menu) hint = U"\u2191\u2193 pick  \u25CF choose  back: close";
-    else if (sending_) hint = U"sending\u2026";
-    else if (moreAsked_) hint = U"loading replies\u2026";
-    else if (offline) hint = U"offline: reading only";
-    else if (!reply.empty()) hint = U"type to answer  \u25CF reply menu  back: unselect";
-    else if (hidden_ && !revealed_) hint = U"\u25CF reveal  \u2191\u2193 scroll";
-    else if (!log_.following()) hint = U"\u25CF send / menu  \u2191\u2193 scroll  back: unselect";
-    else hint = U"\u25CF send / menu  \u2191\u2193 scroll  back: feed";
-    drawHint(g, t, hint);
+    const char32_t* touch;
+    if (reasonMode_) {
+      hint = U"type a reason (optional)  \u25CF report  back: cancel";
+      touch = U"type a reason (optional)  enter: report";
+    } else if (view_ == View::Menu) {
+      hint = U"\u2191\u2193 pick  \u25CF choose  back: close";
+      touch = U"tap to choose  tap outside: close";
+    } else if (sending_) {
+      hint = touch = U"sending\u2026";
+    } else if (moreAsked_) {
+      hint = touch = U"loading replies\u2026";
+    } else if (offline) {
+      hint = touch = U"offline: reading only";
+    } else if (!reply.empty()) {
+      hint = U"type to answer  \u25CF reply menu  back: unselect";
+      touch = U"type to answer  \u2039 unselect";
+    } else if (hidden_ && !revealed_) {
+      hint = U"\u25CF reveal  \u2191\u2193 scroll";
+      touch = U"tap to reveal  tap a reply for actions";
+    } else if (!log_.following()) {
+      hint = U"\u25CF send / menu  \u2191\u2193 scroll  back: unselect";
+      touch = U"tap the line to type  tap a reply for actions";
+    } else {
+      hint = U"\u25CF send / menu  \u2191\u2193 scroll  back: feed";
+      touch = U"tap the line to type  tap a reply for actions";
+    }
+    drawHint(g, t, hint, touch);
   }
 }
 

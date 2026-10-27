@@ -40,6 +40,10 @@ void LoginFormScreen::onKey(const KeyEvent& k) {
     case Action::Down:
       focus_ = 1;
       break;
+    case Action::Focus:
+      focus_ = k.target == 1 ? 1 : 0;
+      (focus_ == 0 ? email_ : password_).setCursor(k.index);
+      break;
     case Action::Back:
       router::go(router::Id::Setup);
       break;
@@ -78,11 +82,14 @@ void LoginFormScreen::render(Grid& g, const Theme& t, int64_t) {
   putLine(g, 1, 5, "Password", t.dim, t.bg);
   InputLine mask;
   mask.setText(std::u32string(password_.text().size(), U'\u2022'));
+  mask.setFieldId(1);
+  mask.setCursor(password_.cursor());
   mask.setDisabled(focus_ != 1 || busy_);
   mask.render(g, 6, t);
   if (!note_.empty()) putLine(g, 1, 8, note_, busy_ ? t.fg : t.error, t.bg);
   putLine(g, 1, 10, "The password is sent once and never stored.", t.dim, t.bg);
-  drawHint(g, t, U"\u2191\u2193 field  \u25CF next/sign in  back: cancel");
+  drawHint(g, t, U"\u2191\u2193 field  \u25CF next/sign in  back: cancel",
+           U"tap a field  enter: next/sign in");
 }
 
 }  // namespace rc

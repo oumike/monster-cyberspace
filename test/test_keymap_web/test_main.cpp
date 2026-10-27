@@ -50,6 +50,15 @@ void test_keymap_table() {
   expectBoth(0xFF, Action::None);
 }
 
+// The M9 (keyed board) must never reach the touch-only paths.
+void test_m9_keymap_never_touch_actions() {
+  for (int raw = 0; raw < 256; ++raw)
+    for (bool early : {false, true}) {
+      Action a = mapM9Key(uint8_t(raw), early).action;
+      TEST_ASSERT_TRUE(a != Action::Activate && a != Action::Focus && a != Action::PowerTap);
+    }
+}
+
 void test_keymap_chars() {
   for (int c = 0x20; c <= 0x7E; ++c) {
     KeyEvent e = mapM9Key(static_cast<uint8_t>(c), false);
@@ -121,6 +130,7 @@ void test_valid_ntp_server() {
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_keymap_table);
+  RUN_TEST(test_m9_keymap_never_touch_actions);
   RUN_TEST(test_keymap_chars);
   RUN_TEST(test_wakes_screen);
   RUN_TEST(test_ap_ssid);

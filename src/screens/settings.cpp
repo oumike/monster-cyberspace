@@ -72,6 +72,9 @@ void SettingsScreen::zoneKey(const KeyEvent& k) {
     case Action::Left:
       picking_ = false;
       break;
+    case Action::Activate:
+      if (k.target == uint8_t(ListId::Main) && zoneList_.select(k.index)) zoneKey(KeyEvent{k.then});
+      break;
     case Action::Select:
     case Action::Right: {
       picking_ = false;
@@ -123,6 +126,9 @@ void SettingsScreen::onKey(const KeyEvent& k) {
     case Action::Back:
     case Action::Left:
       router::go(router::Id::Home);
+      break;
+    case Action::Activate:
+      if (k.target == uint8_t(ListId::Main) && menu_.select(k.index)) onKey(KeyEvent{k.then});
       break;
     case Action::Select:
     case Action::Right:
@@ -234,13 +240,14 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
     for (int row = top + 1; row < bottom; ++row)
       for (int c = 0; c < g.cols(); ++c) g.put(c, row, U' ', t.fg, t.bg);
     zoneList_.render(g, top + 1, bottom, 1, g.cols() - 2, t);
-    drawHint(g, t, U"\u2191\u2193 pick  \u25CF set  back: cancel");
+    drawHint(g, t, U"\u2191\u2193 pick  \u25CF set  back: cancel", U"tap to select");
   } else if (confirm_ != Confirm::None) {
     confirmBox_.render(g, 1, bottom, 0, OverlayPlace::Bottom, t);
-    drawHint(g, t, U"\u2191\u2193 pick  \u25CF confirm  back: cancel");
+    drawHint(g, t, U"\u2191\u2193 pick  \u25CF confirm  back: cancel",
+             U"tap to confirm  tap outside: cancel");
   } else {
     menu_.render(g, bottom - nItems, bottom, 1, g.cols() - 2, t);
-    drawHint(g, t, U"\u2191\u2193 pick  \u25CF select  back: home");
+    drawHint(g, t, U"\u2191\u2193 pick  \u25CF select  back: home", U"tap to select");
   }
 }
 

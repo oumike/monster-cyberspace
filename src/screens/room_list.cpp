@@ -20,6 +20,9 @@ void RoomListScreen::onKey(const KeyEvent& k) {
     case Action::Down:
       list_.down();
       break;
+    case Action::Activate:
+      if (k.target == uint8_t(ListId::Main) && list_.select(k.index)) onKey(KeyEvent{k.then});
+      break;
     case Action::Select:
     case Action::Right:
       if (list_.selected() < int(slugs_.size())) {
@@ -59,7 +62,7 @@ void RoomListScreen::render(Grid& g, const Theme& t, int64_t) {
   if (items.empty()) putLine(g, 1, 2, "loading rooms\u2026", t.dim, t.bg);
   list_.setItems(std::move(items));
   list_.render(g, 1, g.rows() - 1, 0, g.cols(), t);
-  drawHint(g, t, U"\u2191\u2193 pick  \u25CF open  \u2190 home");
+  drawHint(g, t, U"\u2191\u2193 pick  \u25CF open  \u2190 home", U"tap to open  swipe to scroll");
 }
 
 }  // namespace rc

@@ -40,6 +40,7 @@ class LoginFormScreen : public Screen {
   void onKey(const KeyEvent&) override;
   void onEvent(const Event&) override;
   void render(Grid&, const Theme&, int64_t nowMs) override;
+  bool acceptsText() const override { return !busy_; }
 
  private:
   InputLine email_, password_;
@@ -105,6 +106,7 @@ class CmailListScreen : public Screen {
   void render(Grid&, const Theme&, int64_t nowMs) override;
   bool hasOverlay() const override { return editing_; }
   void closeOverlays() override { editing_ = busy_ = false; }
+  bool acceptsText() const override { return editing_ && !busy_; }
 
  private:
   void editKey(const KeyEvent&);

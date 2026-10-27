@@ -7,6 +7,7 @@
 #include "feed/compose.h"
 #include "feed/feed_source.h"
 #include "screens/draw.h"
+#include "ui/tap_map.h"
 
 namespace rc {
 
@@ -37,7 +38,16 @@ void composerBackgroundEvent(const Event& e) { settle(e); }
 
 void ComposerScreen::enter(const std::string&) {
   menu_ = Menu::None;
+  title_.setFieldId(kTitle);
+  body_.setFieldId(kBody);
+  topics_.setFieldId(kTopics);
+  cw_.setFieldId(kCw);
   load();
+}
+
+bool ComposerScreen::acceptsText() const {
+  if (menu_ != Menu::None || gPosting) return false;
+  return focus_ == kTitle || focus_ == kBody || focus_ == kTopics || focus_ == kCw;
 }
 
 void ComposerScreen::load() {
@@ -128,6 +138,19 @@ void ComposerScreen::fieldKey(const KeyEvent& k) {
                {ListItem{U"Post\u2026", U""}, ListItem{U"Discard\u2026", U"", ItemTone::Error}});
       break;
     }
+    case Action::Focus:
+      if (k.target == kPublic) {
+        focus_ = kPublic;
+        gDraft.isPublic = !gDraft.isPublic;
+      } else if (k.target == kNsfw) {
+        focus_ = kNsfw;
+        gDraft.nsfw = !gDraft.nsfw;
+      } else if (k.target < kFieldCount) {
+        focus_ = k.target;
+        if (InputLine* f = line()) f->setCursor(k.index);
+        else if (focus_ == kBody) body_.setCursor(k.index);
+      }
+      break;
     default:
       break;
   }
@@ -239,7 +262,7 @@ void ComposerScreen::render(Grid& g, const Theme& t, int64_t) {
   const int rows = g.rows();
   cols_ = g.cols();
   g.fill(t.bg);
-  drawStatus(g, t, U"new entry", -1);
+  drawStatus(g, t, U"new entry", -1, true);
 
   // Rows: title, the body label, the body, topics, the checkboxes, CW, hint.
   const int hintRows = small ? 1 : 0;
@@ -269,7 +292,18 @@ void ComposerScreen::render(Grid& g, const Theme& t, int64_t) {
     return col + g.putText(col, checkRow, s, fg, bg, g.cols() - col);
   };
   int col = box(0, gDraft.isPublic, U"Public", focus_ == kPublic);
-  box(col + 2, gDraft.nsfw, U"NSFW", focus_ == kNsfw);
+  int nsfwStart = col + 2;
+  int nsfwEnd = box(nsfwStart, gDraft.nsfw, U"NSFW", focus_ == kNsfw);
+  if (activeTaps()) {
+    Target tp;
+    tp.kind = TargetKind::Field;
+    tp.field = kPublic;
+    activeTaps()->addCells(0, checkRow, std::max(0, col - 1), checkRow, tp);
+    Target tn;
+    tn.kind = TargetKind::Field;
+    tn.field = kNsfw;
+    activeTaps()->addCells(nsfwStart, checkRow, std::max(nsfwStart, nsfwEnd - 1), checkRow, tn);
+  }
 
   cw_.setDisabled(focus_ != kCw || gPosting);
   cw_.render(g, cwRow, t, U"CW ");
@@ -279,13 +313,23 @@ void ComposerScreen::render(Grid& g, const Theme& t, int64_t) {
 
   if (small) {
     const char32_t* hint;
-    if (menu_ != Menu::None) hint = U"\u2191\u2193 pick  \u25CF choose  back: close";
-    else if (gPosting) hint = U"posting\u2026";
-    else if (focus_ == kBody) hint = U"\u25CF new line  \u2191\u2193 lines  ctrl post  back: feed";
-    else if (focus_ == kPublic || focus_ == kNsfw)
+    const char32_t* touch;
+    if (menu_ != Menu::None) {
+      hint = U"\u2191\u2193 pick  \u25CF choose  back: close";
+      touch = U"tap to choose  tap outside: close";
+    } else if (gPosting) {
+      hint = touch = U"posting\u2026";
+    } else if (focus_ == kBody) {
+      hint = U"\u25CF new line  \u2191\u2193 lines  ctrl post  back: feed";
+      touch = U"\u25CF new line  \u2191\u2193 lines  \u22ef post  \u2039 feed";
+    } else if (focus_ == kPublic || focus_ == kNsfw) {
       hint = U"\u25CF toggle  \u2191\u2193 fields  ctrl post  back: feed";
-    else hint = U"\u2191\u2193 fields  ctrl post  back: feed";
-    drawHint(g, t, hint);
+      touch = U"tap to toggle  \u22ef post  \u2039 feed";
+    } else {
+      hint = U"\u2191\u2193 fields  ctrl post  back: feed";
+      touch = U"tap a field  \u22ef post  \u2039 feed";
+    }
+    drawHint(g, t, hint, touch);
   }
 }
 

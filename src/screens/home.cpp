@@ -32,6 +32,9 @@ void HomeScreen::onKey(const KeyEvent& k) {
     case Action::Down:
       menu_.down();
       break;
+    case Action::Activate:
+      if (k.target == uint8_t(ListId::Main) && menu_.select(k.index)) onKey(KeyEvent{k.then});
+      break;
     case Action::Select:
     case Action::Right:
       if (menu_.selected() == kMessages) {
@@ -93,7 +96,7 @@ void HomeScreen::render(Grid& g, const Theme& t, int64_t) {
   });
   int bottom = g.rows() - 1;
   menu_.render(g, bottom - kItems, bottom, 1, g.cols() - 2, t);
-  drawHint(g, t, U"\u2191\u2193 pick  \u25CF open");
+  drawHint(g, t, U"\u2191\u2193 pick  \u25CF open", U"tap to open");
 }
 
 }  // namespace rc

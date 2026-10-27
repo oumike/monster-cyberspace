@@ -79,6 +79,14 @@ void FeedListScreen::onKey(const KeyEvent& k) {
       }
       remember();
       break;
+    case Action::Activate:
+      if (k.target == uint8_t(ListId::Main) && list_.select(k.index)) {
+        // A drag can land on the last row directly, so page more here too.
+        if (list_.atEnd() && more_ && !asked_) requestMore();
+        remember();
+        onKey(KeyEvent{k.then});
+      }
+      break;
     case Action::Select:
     case Action::Right: {
       int i = list_.selected();
@@ -214,7 +222,7 @@ void FeedListScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
   const char32_t* title = kind_ == Kind::Feed      ? U"Feed \u21BB 2m"
                           : kind_ == Kind::Watched ? U"Watched"
                                                    : U"Bookmarks";
-  drawStatus(g, t, title, -1);
+  drawStatus(g, t, title, -1, true);
   int bottom = g.rows() - 1;  // the last row holds the hint
   // The palette is drawn over the list in plain rows, so the list drops its
   // larger first lines while it's open.
@@ -226,7 +234,8 @@ void FeedListScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
     // An empty feed with pages to come hasn't loaded yet.
     bool waiting = !loaded_ || loading || (kind_ == Kind::Feed && more_);
     const char* empty = waiting && app().conn == 0 ? "offline"
-                        : !loaded_ && failed_    ? "couldn't load: Ctrl, Refresh"
+                        : !loaded_ && failed_    ? (board::hasTouch() ? "couldn't load: \u22ef, Refresh"
+                                                                      : "couldn't load: Ctrl, Refresh")
                         : waiting                ? "loading\u2026"
                         : kind_ == Kind::Feed    ? "no entries yet"
                         : kind_ == Kind::Watched ? "no watched threads"
@@ -236,13 +245,14 @@ void FeedListScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
 
   if (palette_) {
     box_.render(g, 1, bottom, 0, OverlayPlace::BottomRight, t);
-    drawHint(g, t, U"\u2191\u2193 pick  \u25CF choose  back: close");
+    drawHint(g, t, U"\u2191\u2193 pick  \u25CF choose  back: close", U"tap to choose  tap outside: close");
   } else if (asked_) {
-    drawHint(g, t, U"loading more\u2026");
+    drawHint(g, t, U"loading more\u2026", U"loading more\u2026");
   } else {
     drawHint(g, t,
              kind_ == Kind::Feed ? U"\u2191\u2193 pick  \u25CF open  \u2190 home  ctrl cmds"
-                                 : U"\u2191\u2193 pick  \u25CF open  \u2190 feed  ctrl cmds");
+                                 : U"\u2191\u2193 pick  \u25CF open  \u2190 feed  ctrl cmds",
+             U"tap to open  hold: menu");
   }
 }
 

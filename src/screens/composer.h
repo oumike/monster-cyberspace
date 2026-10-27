@@ -22,6 +22,7 @@ class ComposerScreen : public Screen {
   void render(Grid&, const Theme&, int64_t nowMs) override;
   bool hasOverlay() const override { return menu_ != Menu::None; }
   void closeOverlays() override { menu_ = Menu::None; box_.close(); }
+  bool acceptsText() const override;
 
  private:
   enum Field { kTitle, kBody, kTopics, kPublic, kNsfw, kCw, kFieldCount };

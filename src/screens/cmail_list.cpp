@@ -24,6 +24,9 @@ void CmailListScreen::onKey(const KeyEvent& k) {
     case Action::Down:
       list_.down();
       break;
+    case Action::Activate:
+      if (k.target == uint8_t(ListId::Main) && list_.select(k.index)) onKey(KeyEvent{k.then});
+      break;
     case Action::Select:
     case Action::Right: {
       int i = list_.selected();
@@ -64,6 +67,9 @@ void CmailListScreen::editKey(const KeyEvent& k) {
       break;
     case Action::Right:
       input_.right();
+      break;
+    case Action::Focus:
+      input_.setCursor(k.index);
       break;
     case Action::Select:
       if (input_.text().empty()) break;
@@ -115,9 +121,10 @@ void CmailListScreen::render(Grid& g, const Theme& t, int64_t) {
   if (editing_) {
     input_.setDisabled(busy_);
     input_.render(g, bottom, t, U"to> @");
-    drawHint(g, t, busy_ ? U"starting\u2026  back: cancel" : U"type a username  \u25CF start  back: cancel");
+    drawHint(g, t, busy_ ? U"starting\u2026  back: cancel" : U"type a username  \u25CF start  back: cancel",
+             busy_ ? U"starting\u2026" : U"type a username  enter: start");
   } else {
-    drawHint(g, t, U"\u2191\u2193 pick  \u25CF open  \u2190 home");
+    drawHint(g, t, U"\u2191\u2193 pick  \u25CF open  \u2190 home", U"tap to open  swipe to scroll");
   }
 }
 

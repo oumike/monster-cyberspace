@@ -189,6 +189,17 @@ void RoomScreen::typingKey(const KeyEvent& k) {
     case Action::Right:
       if (!input_.right() && !drawer && !dm_) setDrawer(true);
       break;
+    case Action::Activate:
+      if (k.target == uint8_t(ListId::Log)) {
+        if (drawer) setDrawer(false);
+        if (log_.selectMessage(k.index)) onKey(KeyEvent{k.then});
+      } else if (k.target == uint8_t(ListId::Drawer)) {
+        if (drawer_.select(k.index)) onKey(KeyEvent{k.then});
+      }
+      break;
+    case Action::Focus:
+      input_.setCursor(k.index);
+      break;
     case Action::Select:
       if (drawer) {
         std::string who = drawer_.selectedUsername();
@@ -243,6 +254,9 @@ void RoomScreen::reasonKey(const KeyEvent& k) {
       break;
     case Action::Right:
       input_.right();
+      break;
+    case Action::Focus:
+      input_.setCursor(k.index);
       break;
     case Action::Select:
       chatSource().command(Command{CmdType::Flag, target_, input_.utf8()});
@@ -606,7 +620,7 @@ void RoomScreen::render(Grid& g, const Theme& t, int64_t) {
   if (markRead) chatSource().command(Command{CmdType::MarkRead, slug_});
 
   g.fill(t.bg);
-  drawStatus(g, t, utf8ToU32(dm_ ? "@" + partner_ : "#" + slug_), dm_ ? -1 : online);
+  drawStatus(g, t, utf8ToU32(dm_ ? "@" + partner_ : "#" + slug_), dm_ ? -1 : online, true);
 
   if (view_ == View::Link) {
     link_.render(g, t);
@@ -628,7 +642,7 @@ void RoomScreen::render(Grid& g, const Theme& t, int64_t) {
       if (int(line.size()) > viewLeft_)
         g.putText(0, 1 + i, std::u32string_view(line).substr(viewLeft_), t.fg, t.bg, g.cols());
     }
-    drawHint(g, t, U"\u2191\u2193\u2190\u2192 scroll  back: close");
+    drawHint(g, t, U"\u2191\u2193\u2190\u2192 scroll  back: close", U"swipe to scroll  \u2039 close");
     return;
   }
 
@@ -652,14 +666,30 @@ void RoomScreen::render(Grid& g, const Theme& t, int64_t) {
 
   if (small) {
     const char32_t* hint;
-    if (reasonMode_) hint = U"type a reason (optional)  \u25CF report  back: cancel";
-    else if (view_ == View::Menu) hint = U"\u2191\u2193 pick  \u25CF choose  back: close";
-    else if (drawer) hint = U"\u2191\u2193 pick  \u25CF menu  \u2190 close";
-    else if (!log_.following()) hint = U"\u25CF actions  \u2193 back to typing";
-    else if (offline) hint = U"offline: reading only";
-    else if (dm_) hint = U"\u25CF send  \u2191\u2193 scroll  ctrl cmds";
-    else hint = U"\u25CF send  \u2191\u2193 scroll  \u2192 who's here  ctrl cmds";
-    drawHint(g, t, hint);
+    const char32_t* touch;
+    if (reasonMode_) {
+      hint = U"type a reason (optional)  \u25CF report  back: cancel";
+      touch = U"type a reason (optional)  enter: report";
+    } else if (view_ == View::Menu) {
+      hint = U"\u2191\u2193 pick  \u25CF choose  back: close";
+      touch = U"tap to choose  tap outside: close";
+    } else if (drawer) {
+      hint = U"\u2191\u2193 pick  \u25CF menu  \u2190 close";
+      touch = U"tap a name for actions";
+    } else if (!log_.following()) {
+      hint = U"\u25CF actions  \u2193 back to typing";
+      touch = U"tap the line to type  tap a message for actions";
+    } else if (offline) {
+      hint = U"offline: reading only";
+      touch = U"offline: reading only";
+    } else if (dm_) {
+      hint = U"\u25CF send  \u2191\u2193 scroll  ctrl cmds";
+      touch = U"tap the line to type  tap a message for actions";
+    } else {
+      hint = U"\u25CF send  \u2191\u2193 scroll  \u2192 who's here  ctrl cmds";
+      touch = U"tap the line to type  tap a message for actions";
+    }
+    drawHint(g, t, hint, touch);
   }
 }
 

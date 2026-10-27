@@ -15,7 +15,7 @@ void ComingSoonScreen::render(Grid& g, const Theme& t, int64_t) {
   int mid = g.rows() / 2 - 1;
   putLine(g, 2, mid, name_, t.selectBg, t.bg);
   putLine(g, 2, mid + 1, "coming in a later version", t.dim, t.bg);
-  drawHint(g, t, U"back: home");
+  drawHint(g, t, U"back: home", U"\u2039 home");
 }
 
 }  // namespace rc

@@ -28,7 +28,7 @@ void LinkView::render(Grid& g, const Theme& t) const {
   } else if (!qr_.empty() || r < bottom) {
     if (r + 1 < bottom) putLine(g, 1, r + 1, "(no room for a QR code here)", t.dim, t.bg);
   }
-  drawHint(g, t, U"back: close");
+  drawHint(g, t, U"back: close", U"\u2039 close");
 }
 
 }  // namespace rc

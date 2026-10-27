@@ -73,6 +73,9 @@ void BackupPicker::onKey(const KeyEvent& k) {
     case Action::Down:
       list_.down();
       break;
+    case Action::Activate:
+      if (k.target == uint8_t(ListId::Main) && list_.select(k.index)) onKey(KeyEvent{k.then});
+      break;
     case Action::Back:
     case Action::Left:
       close();
@@ -99,10 +102,12 @@ void BackupPicker::render(Grid& g, const Theme& t) {
     for (int c = 0; c < g.cols(); ++c) g.put(c, row, U' ', t.fg, t.bg);
   if (confirming_) {
     confirmBox_.render(g, top, bottom, 0, OverlayPlace::Bottom, t);
-    drawHint(g, t, U"\u2191\u2193 pick  \u25CF confirm  back: cancel");
+    drawHint(g, t, U"\u2191\u2193 pick  \u25CF confirm  back: cancel",
+             U"tap to confirm  tap outside: cancel");
   } else {
     list_.render(g, top + 1, bottom, 1, g.cols() - 2, t);
-    drawHint(g, t, U"\u2191\u2193 pick  \u25CF restore  back: cancel");
+    drawHint(g, t, U"\u2191\u2193 pick  \u25CF restore  back: cancel",
+             U"tap to restore  \u2039 cancel");
   }
 }
 

@@ -30,6 +30,7 @@ class RoomScreen : public Screen {
   void render(Grid&, const Theme&, int64_t nowMs) override;
   bool hasOverlay() const override;
   void closeOverlays() override;
+  bool acceptsText() const override { return view_ == View::None; }
 
  private:
   enum class View { None, Menu, Reader, Link };

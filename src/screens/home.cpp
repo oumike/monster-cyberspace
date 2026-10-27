@@ -153,7 +153,7 @@ void HomeScreen::renderTiles(Grid& g, const Theme& t, const std::vector<TileRect
       int sw = std::min<int>(int(it.sub.size()), inW);
       g.putText(r.c0 + 1 + std::max(0, (inW - sw) / 2), mid + 1, it.sub, subFg, bg, sw);
     }
-    g.outline(r.c0, r.r0, r.c1, r.r1, sel ? t.selectBg : t.dim);
+    g.outline(r.c0, r.r0, r.c1, r.r1, sel && cursorShown() ? t.selectBg : t.dim);
 
     if (activeTaps()) {
       Target tt;

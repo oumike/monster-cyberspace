@@ -87,6 +87,7 @@ const char* wakeHint() { return "press any key to wake"; }
 
 bool hasTouch() { return gt911::present(); }
 bool hasKeyboard() { return true; }
+bool hasKeys() { return true; }
 bool backspaceIsBack() { return true; }
 bool anyInputWakes() { return true; }
 

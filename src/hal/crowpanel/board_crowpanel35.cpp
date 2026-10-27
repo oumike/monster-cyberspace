@@ -5,11 +5,12 @@
 #include <SPI.h>
 #include <Wire.h>
 
+#include <utility>
+
 #include "hal/board.h"
 #include "hal/crowpanel/panel_ili9488.h"
 #include "hal/crowpanel/pins_crowpanel.h"
 #include "hal/wio_l2/touch_gt911.h"
-#include "input/touch_transform.h"
 #include "ui/rotation.h"
 
 // Elecrow CrowPanel Advance 3.5": touch only, no keyboard or buttons. The
@@ -84,15 +85,27 @@ const char* wakeHint() { return "tap to wake"; }
 
 bool hasTouch() { return gt911::present(); }
 bool hasKeyboard() { return false; }
+bool hasKeys() { return false; }
 bool backspaceIsBack() { return false; }
 bool anyInputWakes() { return true; }
 
 bool readTouch(int16_t& x, int16_t& y) {
   int16_t rx = 0, ry = 0;
   const bool down = gt911::read(rx, ry);
-  // The panel's landscape is LovyanGFX rotation 3, two turns on from the
-  // rotation 1 touchToFrame takes as landscape.
-  rc::touchToFrame(rx, ry, PANEL_NATIVE_W, PANEL_NATIVE_H, (rotation + 2) & 3, x, y);
+  if (rx < 0) rx = 0;
+  if (rx >= PANEL_NATIVE_W) rx = PANEL_NATIVE_W - 1;
+  if (ry < 0) ry = 0;
+  if (ry >= PANEL_NATIVE_H) ry = PANEL_NATIVE_H - 1;
+  // LovyanGFX's own touch transform (Panel_Device::convertRawXY) for the
+  // panel's rotation, offset_rotation 3 plus ours: what camillia-mt gets.
+  // rc::touchToFrame turns portrait the other way, so it isn't used here.
+  const uint8_t r = (rotation + 3) & 3;
+  int tx = rx, ty = ry;
+  if (r & 1) std::swap(tx, ty);
+  if (r & 2) tx = panelWidth() - 1 - tx;
+  if (r == 1 || r == 2) ty = panelHeight() - 1 - ty;
+  x = static_cast<int16_t>(tx);
+  y = static_cast<int16_t>(ty);
   return down;
 }
 

@@ -22,6 +22,11 @@ const Theme& theme(ThemeId id);
 // The "terminal" look of the mockups: green on black.
 const Theme& defaultTheme();
 
+// Whether lists, logs and Home tiles outline their selection. Off on boards
+// with no keys, where a tap picks by position and a cursor only misleads.
+bool cursorShown();
+void setCursorShown(bool on);
+
 ThemeId nextTheme(ThemeId id);  // wraps round
 ThemeId themeFromIndex(int i);  // out of range gives Default
 // Stable keys for settings and web config: "default", "bw", "wb".

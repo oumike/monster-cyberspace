@@ -126,6 +126,8 @@ Touch above, but with no buttons:
 - **Screen off:** there's no button to turn the screen off, so it stays on.
   If it does go dark, a tap wakes it (that tap does nothing else).
 - **Orientation:** pick it in Settings or web config, as on the Wio Tracker L2.
+- **No cursor:** with no keys to move it, lists and Home tiles draw no
+  selection outline; a tap opens what's under the finger.
 - **3.5":** the microSD slot takes settings backups; a GPS module on the UART1
   connector, if fitted, sets the clock.
 - **5.0":** no SD slot (its pins belong to the wireless-module slot) and no GPS.

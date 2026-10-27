@@ -69,7 +69,7 @@ void EntryList::render(Grid& g, int top, int bottom, const Theme& t) const {
     }
     g.putText(0, row, fr.line1, fr.fg1, t.bg, headW);
     if (row + 1 < bottom) g.putText(0, row + 1, fr.line2, fr.fg2, t.bg, width);
-    if (idx != sel_) continue;
+    if (idx != sel_ || !cursorShown()) continue;
     if (!big) {
       g.outline(0, row, width - 1, std::min(row + 1, bottom - 1), t.selectBg);
       continue;

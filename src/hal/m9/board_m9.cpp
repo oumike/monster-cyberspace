@@ -82,6 +82,7 @@ const char* wakeHint() { return "hold \xE2\x97\x8F to wake"; }
 
 bool hasTouch() { return false; }
 bool hasKeyboard() { return true; }
+bool hasKeys() { return true; }
 bool backspaceIsBack() { return false; }
 bool anyInputWakes() { return false; }
 bool readTouch(int16_t&, int16_t&) { return false; }

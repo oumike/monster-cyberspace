@@ -200,6 +200,7 @@ const char* wakeHint() { return "hold Wake to wake"; }
 
 bool hasTouch() { return gt911::present(); }
 bool hasKeyboard() { return false; }
+bool hasKeys() { return true; }
 bool backspaceIsBack() { return false; }
 bool anyInputWakes() { return false; }
 bool readTouch(int16_t& x, int16_t& y) {

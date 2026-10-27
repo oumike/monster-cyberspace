@@ -80,7 +80,7 @@ void Drawer::render(Grid& g, int top, int bottom, const Theme& t) const {
       name = name.substr(0, std::max(nameMax - 1, 0)) + U"\u2026";
     int n = g.putText(x + 1, row, name, fg, bg, nameMax);
     if (p.idle) g.putText(x + 1 + n, row, U" z", t.dim, bg, 2);
-    if (sel) g.outline(x + 1, row, g.cols() - 1, row, t.selectBg);
+    if (sel && cursorShown()) g.outline(x + 1, row, g.cols() - 1, row, t.selectBg);
   }
 }
 

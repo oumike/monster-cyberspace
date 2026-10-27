@@ -57,7 +57,7 @@ void ListView::render(Grid& g, int top, int bottom, int left, int width, const T
     if (it.marker) g.put(left, row, U'\u2022', fg, bg);
     g.putText(left + 2, row, it.label, fg, bg, labelMax);
     if (rw && rw + 1 <= width) g.putText(left + width - 1 - rw, row, it.right, fg, bg, rw);
-    if (sel) g.outline(left, row, left + width - 1, row, t.selectBg);
+    if (sel && cursorShown()) g.outline(left, row, left + width - 1, row, t.selectBg);
   }
 }
 

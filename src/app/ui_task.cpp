@@ -344,6 +344,7 @@ void start() {
   if (board::canRotate()) board::setRotation(app().cfg.rotation);
   if (!renderer.begin()) Serial.println("[ui] no memory for the frame buffer");
   setActiveTaps(board::hasTouch() ? &taps : nullptr);
+  setCursorShown(board::hasKeys());
   resizeGrid();
   router::go(router::Id::Splash);
   board::backlight(true);

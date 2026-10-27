@@ -216,6 +216,23 @@ void test_list_scrolls() {
   TEST_ASSERT_EQUAL_STRING("  item4", rowText(g, 1, 0, 7).c_str());
 }
 
+void test_cursor_hidden() {
+  // Boards with no keys draw no selection outline; taps pick by position.
+  std::vector<ListItem> items = {{U"a", U""}, {U"b", U""}};
+  ListView lv;
+  lv.setItems(items);
+  LogView log;
+  log.setLines({line("a", "one"), line("b", "two")});
+  log.up();
+  setCursorShown(false);
+  Grid g(20, 6);
+  lv.render(g, 0, 2, 0, 20, T());
+  log.render(g, 3, 6, 0, T());
+  setCursorShown(true);
+  for (int r = 0; r < 6; ++r)
+    for (int c = 0; c < 20; ++c) TEST_ASSERT_EQUAL(0, g.at(c, r).edges);
+}
+
 void test_list_wraps() {
   ListView lv;
   lv.up();  // empty: no-op
@@ -960,6 +977,7 @@ int main() {
   RUN_TEST(test_log_render_follow_and_select);
   RUN_TEST(test_log_outlines_whole_message);
   RUN_TEST(test_grid_outline);
+  RUN_TEST(test_cursor_hidden);
   RUN_TEST(test_log_preserves_selection_on_setLines);
   RUN_TEST(test_list_scrolls);
   RUN_TEST(test_list_wraps);

@@ -145,7 +145,7 @@ void LogView::render(Grid& g, int top, int bottom, int rightReserve, const Theme
     for (const auto& s : l.spans) col += g.putText(col, row, s.text, s.fg, bg, width - col);
     for (; col < width; ++col) g.put(col, row, U' ', t.fg, bg);
   }
-  if (selTop >= 0 && width > 0) g.outline(0, selTop, width - 1, selBottom, t.selectBg);
+  if (selTop >= 0 && width > 0 && cursorShown()) g.outline(0, selTop, width - 1, selBottom, t.selectBg);
 }
 
 }  // namespace rc

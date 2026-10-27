@@ -53,6 +53,13 @@ const Theme& theme(ThemeId id) {
 
 const Theme& defaultTheme() { return kDefault; }
 
+namespace {
+bool gCursorShown = true;
+}  // namespace
+
+bool cursorShown() { return gCursorShown; }
+void setCursorShown(bool on) { gCursorShown = on; }
+
 ThemeId themeFromIndex(int i) {
   return i >= 0 && i < kThemeCount ? static_cast<ThemeId>(i) : ThemeId::Default;
 }

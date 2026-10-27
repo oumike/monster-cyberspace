@@ -30,6 +30,8 @@ env_label() {
 		m9_fake) echo "Elecrow ThinkNode M9 (fake API)" ;;
 		wio_l2)      echo "Seeed Wio Tracker L2" ;;
 		wio_l2_fake) echo "Seeed Wio Tracker L2 (fake API)" ;;
+		tdeck)       echo "LilyGO T-Deck Plus" ;;
+		tdeck_fake)  echo "LilyGO T-Deck Plus (fake API)" ;;
 		*)       echo "$1" ;;
 	esac
 }
@@ -77,13 +79,15 @@ prompt_for_device() {
 
 show_usage() {
 	cat <<USAGE
-Usage: $0 [ENV] [--m9|-9] [--wio-l2|-w] [--fake|-f] [--port|-p PORT] [--erase|-E] [--fullclean|-F] [--just-build|-B]
+Usage: $0 [ENV] [--m9|-9] [--wio-l2|-w] [--tdeck|-t] [--fake|-f] [--port|-p PORT] [--erase|-E] [--fullclean|-F] [--just-build|-B]
   ENV               Any firmware environment in platformio.ini (e.g. m9, wio_l2_fake).
   Board flags (one per supported board):
   --m9, -9          Elecrow ThinkNode M9 (m9)
   --wio-l2, -w      Seeed Wio Tracker L2 (wio_l2)
+  --tdeck, -t       LilyGO T-Deck Plus (tdeck)
   --fake, -f        Use the board's scripted fake API build, no account needed
-                    (e.g. --m9 --fake builds m9_fake, -w -f wio_l2_fake).
+                    (e.g. --m9 --fake builds m9_fake, -w -f wio_l2_fake,
+                    -t -f tdeck_fake).
                     With no board or environment given, you'll be prompted.
   --port, -p PORT   Serial port for upload and monitor (default: auto-detect)
   --erase, -E       Erase the whole flash while uploading (wipes saved settings)
@@ -109,6 +113,7 @@ while [ "$#" -gt 0 ]; do
 	case "$1" in
 		--m9|-9)         BOARD=m9 ;;
 		--wio-l2|-w)     BOARD=wio_l2 ;;
+		--tdeck|-t)      BOARD=tdeck ;;
 		--fake|-f)       FAKE=true ;;
 		--port|-p)
 			[ "$#" -ge 2 ] || { echo "--port needs a value"; exit 1; }

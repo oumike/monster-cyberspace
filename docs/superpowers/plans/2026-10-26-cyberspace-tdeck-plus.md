@@ -248,6 +248,7 @@ Task 7 writes both amendments into the spec.
   - a `--tdeck|-t` board flag (`BOARD=tdeck`), so `-t`, `-t -f` (→ `tdeck_fake`), `-t -E` and `-t -B` all work;
   - the usage text: the flag in the `Usage:` line and the board-flags list, and `-t -f` → `tdeck_fake` in the `--fake` example;
   - the `-B` sweep and the interactive picker read `platformio.ini`, so they need no change; confirm both list the two new envs.
+  - *Done ahead of the task (2026-10-27): the labels, the `-t` flag, the usage text and the BUILD.md/AGENTS.md mentions. Until the envs land, `-t` reports "Environment 'tdeck' not found". Still to do here: confirm `-B` and the picker list the new envs.*
 - Docs for the script: add the `--tdeck`/`-t` row to the options table in `docs/BUILD.md` (and the `-t -f` example in its `--fake` row), and mention `-t` beside `-w` in `AGENTS.md`'s Commands block.
 - CI: append `-e tdeck -e tdeck_fake`.
 

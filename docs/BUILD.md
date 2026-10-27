@@ -31,7 +31,8 @@ scripts/build-upload-monitor.sh m9    # build, flash, then open the serial monit
 |---|---|
 | `--m9`/`-9` | Board flag: Elecrow ThinkNode M9 (`m9`) |
 | `--wio-l2`/`-w` | Board flag: Seeed Wio Tracker L2 (`wio_l2`) |
-| `--fake`/`-f` | Use the board's fake-API build (`--m9 --fake` → `m9_fake`, `-w -f` → `wio_l2_fake`) |
+| `--tdeck`/`-t` | Board flag: LilyGO T-Deck Plus (`tdeck`) |
+| `--fake`/`-f` | Use the board's fake-API build (`--m9 --fake` → `m9_fake`, `-w -f` → `wio_l2_fake`, `-t -f` → `tdeck_fake`) |
 | `ENV` | Or name any firmware env directly; with neither, a menu lists every firmware env |
 | `--port`/`-p PORT` | Serial port for upload and monitor (default: auto-detect) |
 | `--erase`/`-E` | Erase the whole flash in the same esptool session as the upload (`upload_erase` target); wipes saved settings |

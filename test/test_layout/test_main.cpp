@@ -8,6 +8,7 @@
 #include <string>
 
 #include "feed/entry.h"
+#include "ui/button_grid.h"
 #include "ui/feed_layout.h"
 #include "ui/grid.h"
 #include "ui/nick_color.h"
@@ -680,6 +681,28 @@ void test_splash_drops_art_when_too_small() {
   for (const auto& l : v) TEST_ASSERT_TRUE(l.col + static_cast<int>(utf8Length(l.text)) <= 24);
 }
 
+void test_button_grid_three_columns() {
+  // 53 cols, rows 2..18: four rows of 3-row buttons with a blank row between.
+  ButtonGrid b = buttonGrid(53, 2, 19, 14, 3, 0);
+  TEST_ASSERT_EQUAL(12, int(b.rects.size()));
+  TEST_ASSERT_EQUAL(1, b.maxScroll);
+  TEST_ASSERT_EQUAL(1, b.rects[0].c0);
+  TEST_ASSERT_EQUAL(16, b.rects[0].c1);
+  TEST_ASSERT_EQUAL(18, b.rects[1].c0);  // a blank column between
+  TEST_ASSERT_EQUAL(2, b.rects[0].r0);
+  TEST_ASSERT_EQUAL(4, b.rects[0].r1);
+  TEST_ASSERT_EQUAL(6, b.rects[3].r0);  // a blank row between
+  TEST_ASSERT_EQUAL(14, b.rects[11].r0);
+  // Scrolling past the end clamps; the last rows fill the screen.
+  b = buttonGrid(53, 2, 19, 14, 3, 9);
+  TEST_ASSERT_EQUAL(1, b.scrollRow);
+  TEST_ASSERT_EQUAL(3, b.first);
+  TEST_ASSERT_EQUAL(11, int(b.rects.size()));
+  TEST_ASSERT_EQUAL(2, b.rects[0].r0);
+  // Too narrow for buttons: none.
+  TEST_ASSERT_EQUAL(0, int(buttonGrid(9, 2, 19, 5, 3, 0).rects.size()));
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_grid_dims);
@@ -721,5 +744,6 @@ int main() {
   RUN_TEST(test_splash_fits_both_text_sizes);
   RUN_TEST(test_splash_art_is_one_block);
   RUN_TEST(test_splash_drops_art_when_too_small);
+  RUN_TEST(test_button_grid_three_columns);
   return UNITY_END();
 }

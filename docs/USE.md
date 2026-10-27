@@ -137,6 +137,10 @@ Touch above, but with no buttons:
 - **Orientation:** pick it in Settings or web config, as on the Wio Tracker L2.
 - **No cursor:** as on the Wio Tracker L2, lists and Home tiles draw no
   selection outline; a tap opens what's under the finger.
+- **Rooms:** on the Wio Tracker L2 and the CrowPanels the room list is a
+  grid of small buttons, three across, each with the room's name and how many
+  are online (the name in the accent colour when unread). Tap one to open it;
+  drag up or down to scroll.
 - **3.5":** the microSD slot takes settings backups; a GPS module on the UART1
   connector, if fitted, sets the clock.
 - **5.0":** no SD slot (its pins belong to the wireless-module slot) and no GPS.

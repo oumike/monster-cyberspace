@@ -103,8 +103,15 @@ class RoomListScreen : public Screen {
   void render(Grid&, const Theme&, int64_t nowMs) override;
 
  private:
+  void open(int index);
+  void renderButtons(Grid&, const Theme&, const std::vector<ListItem>&);
   ListView list_;
   std::vector<std::string> slugs_;
+  // Touch-only boards: rooms as a three-column grid of buttons, scrolled by
+  // whole button rows; a drag's Up/Down steps add up to one row's pitch.
+  bool buttons_ = false;
+  int scroll_ = 0;
+  int dragSteps_ = 0;
 };
 
 // C-Mail: "New conversation…" and the conversations, unread first.

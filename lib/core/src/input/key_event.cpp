@@ -4,6 +4,8 @@ namespace rc {
 
 bool wakesScreen(const KeyEvent& e) { return e.action == Action::ScreenOff; }
 
-bool peeksScreen(const KeyEvent& e) { return e.action == Action::Select; }
+bool peeksScreen(const KeyEvent& e) {
+  return e.action == Action::Select || e.action == Action::PowerTap;
+}
 
 }  // namespace rc

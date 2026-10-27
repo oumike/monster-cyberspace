@@ -254,7 +254,7 @@
 
   A Drag that starts on a target that isn't a Row clears `carry`.
 
-- [ ] **Step 1: Write the failing tests.** They live in the same suite as Task 1.
+- [x] **Step 1: Write the failing tests.** They live in the same suite as Task 1.
   ```cpp
   void test_tap_map_cells_to_px() {
     TapMap m; m.setOrigin(CellSize{6, 12}, 10);
@@ -287,10 +287,10 @@
   void test_resolve_nothing_hit()         // Tap on empty map → no output
   void test_power_tap_peeks_not_wakes()   // peeksScreen(PowerTap) && !wakesScreen(PowerTap)
   ```
-- [ ] **Step 2: Run** `pio test -e native -f test_touch_input`. Expected: the build fails because `tap_map.h` and `touch_resolve.h` are missing.
-- [ ] **Step 3: Implement** `tap_map.cpp`. Store px rects in a `std::vector` (reserve 128). `activeTaps` is a file-static pointer. Then implement `touch_resolve.cpp` and the `key_event` changes, and switch `router.h` to `key_event.h`.
-- [ ] **Step 4: Run** `pio test -e native`, then `pio run -e m9 && pio run -e m9_fake && pio run -e wio_l2`. Expected: all pass. **M9:** `mapM9Key` never produces the new actions, and appending to `Action` changes no existing value.
-- [ ] **Step 5: Commit** `feat(core): tap map, touch resolver and portable key targets`.
+- [x] **Step 2: Run** `pio test -e native -f test_touch_input`. Expected: the build fails because `tap_map.h` and `touch_resolve.h` are missing.
+- [x] **Step 3: Implement** `tap_map.cpp`. Store px rects in a `std::vector` (reserve 128). `activeTaps` is a file-static pointer. Then implement `touch_resolve.cpp` and the `key_event` changes, and switch `router.h` to `key_event.h`.
+- [x] **Step 4: Run** `pio test -e native`, then `pio run -e m9 && pio run -e m9_fake && pio run -e wio_l2`. Expected: all pass. **M9:** `mapM9Key` never produces the new actions, and appending to `Action` changes no existing value.
+- [x] **Step 5: Commit** `feat(core): tap map, touch resolver and portable key targets`.
 
 ### Task 3: The `Overlay` widget
 

@@ -4,6 +4,10 @@
 
 #include "input/gestures.h"
 #include "input/touch_transform.h"
+#include "input/key_event.h"
+#include "input/touch_resolve.h"
+#include "ui/tap_map.h"
+#include "ui/grid.h"
 
 using namespace rc;
 
@@ -209,6 +213,280 @@ void test_transform_clamps() {
   TEST_ASSERT_TRUE(y >= 0 && y <= 319);
 }
 
+// ---- Task 2: key events, the tap map and the touch resolver ----
+
+static KeyEvent ev(Action a) {
+  KeyEvent e;
+  e.action = a;
+  return e;
+}
+
+static Target rowTarget(ListId l, int idx) {
+  Target t;
+  t.kind = TargetKind::Row;
+  t.list = l;
+  t.index = (int16_t)idx;
+  return t;
+}
+
+static Target fixedTarget(KeyEvent tap, KeyEvent hold = KeyEvent{}) {
+  Target t;
+  t.kind = TargetKind::Fixed;
+  t.tap = tap;
+  t.hold = hold;
+  return t;
+}
+
+static Gesture mkG(GestureKind k, int16_t x, int16_t y) {
+  Gesture g;
+  g.kind = k;
+  g.x = x;
+  g.y = y;
+  return g;
+}
+
+void test_tap_map_cells_to_px() {
+  TapMap m;
+  m.setOrigin(CellSize{6, 12}, 10);
+  m.addCells(2, 0, 4, 0, rowTarget(ListId::Main, 3));
+  Target h = m.hit(12, 120);
+  TEST_ASSERT_EQUAL(int(TargetKind::Row), int(h.kind));
+  TEST_ASSERT_EQUAL(3, h.index);
+  TEST_ASSERT_EQUAL(int(TargetKind::None), int(m.hit(11, 120).kind));
+  TEST_ASSERT_EQUAL(int(TargetKind::None), int(m.hit(12, 119).kind));
+  TEST_ASSERT_EQUAL(int(TargetKind::None), int(m.hit(30, 120).kind));
+}
+
+void test_tap_map_topmost_wins() {
+  TapMap m;
+  m.setOrigin(CellSize{6, 12}, 0);
+  m.addCells(0, 0, 10, 0, rowTarget(ListId::Main, 1));
+  m.addCells(0, 0, 10, 0, fixedTarget(ev(Action::Back)));
+  Target h = m.hit(6, 6);
+  TEST_ASSERT_EQUAL(int(TargetKind::Fixed), int(h.kind));
+  TEST_ASSERT_EQUAL(int(Action::Back), int(h.tap.action));
+}
+
+void test_tap_map_clear() {
+  TapMap m;
+  m.setOrigin(CellSize{6, 12}, 0);
+  m.addCells(0, 0, 4, 0, rowTarget(ListId::Main, 0));
+  m.setList(ListId::Main, 0, 3, true);
+  TEST_ASSERT_TRUE(m.size() > 0);
+  m.clear();
+  TEST_ASSERT_EQUAL(0u, m.size());
+  TEST_ASSERT_NULL(m.list(ListId::Main));
+}
+
+void test_field_hit_position() {
+  TapMap m;
+  m.setOrigin(CellSize{6, 12}, 0);
+  Target f;
+  f.kind = TargetKind::Field;
+  f.field = 2;
+  f.first = 5;
+  f.len = 3;
+  m.addCells(2, 0, 10, 0, f);
+  Target h = m.hit(4 * 6, 6);  // col 4 → first + 2 = 7
+  TEST_ASSERT_EQUAL(int(TargetKind::Field), int(h.kind));
+  TEST_ASSERT_EQUAL(7, h.index);
+  Target h2 = m.hit(9 * 6, 6);  // col 9 → capped at first+len = 8
+  TEST_ASSERT_EQUAL(8, h2.index);
+}
+
+void test_resolve_row_tap_and_hold() {
+  TapMap m;
+  m.setOrigin(CellSize{6, 12}, 0);
+  m.addCells(0, 0, 10, 0, rowTarget(ListId::Main, 3));
+  TouchResolver r;
+  TouchOutput out;
+  r.resolve(mkG(GestureKind::Tap, 6, 6), m, out);
+  TEST_ASSERT_EQUAL(1u, out.keys.size());
+  TEST_ASSERT_EQUAL(int(Action::Activate), int(out.keys[0].action));
+  TEST_ASSERT_EQUAL(3, out.keys[0].index);
+  TEST_ASSERT_EQUAL(int(ListId::Main), out.keys[0].target);
+  TEST_ASSERT_EQUAL(int(Action::Select), int(out.keys[0].then));
+  TouchOutput out2;
+  r.resolve(mkG(GestureKind::LongPress, 6, 6), m, out2);
+  TEST_ASSERT_EQUAL(1u, out2.keys.size());
+  TEST_ASSERT_EQUAL(int(Action::Palette), int(out2.keys[0].then));
+}
+
+void test_resolve_fixed() {
+  TapMap m;
+  m.setOrigin(CellSize{6, 12}, 0);
+  m.addCells(0, 0, 10, 0, fixedTarget(ev(Action::Back), ev(Action::OpenHome)));
+  TouchResolver r;
+  TouchOutput out;
+  r.resolve(mkG(GestureKind::Tap, 6, 6), m, out);
+  TEST_ASSERT_EQUAL(int(Action::Back), int(out.keys[0].action));
+  TouchOutput out2;
+  r.resolve(mkG(GestureKind::LongPress, 6, 6), m, out2);
+  TEST_ASSERT_EQUAL(int(Action::OpenHome), int(out2.keys[0].action));
+
+  TapMap m2;
+  m2.setOrigin(CellSize{6, 12}, 0);
+  m2.addCells(0, 0, 10, 0, fixedTarget(ev(Action::Palette)));
+  TouchOutput out3;
+  r.resolve(mkG(GestureKind::LongPress, 6, 6), m2, out3);
+  TEST_ASSERT_EQUAL(int(Action::Palette), int(out3.keys[0].action));
+}
+
+void test_resolve_field_focus() {
+  TapMap m;
+  m.setOrigin(CellSize{6, 12}, 0);
+  Target f;
+  f.kind = TargetKind::Field;
+  f.field = 2;
+  f.first = 5;
+  f.len = 3;
+  m.addCells(2, 0, 10, 0, f);
+  TouchResolver r;
+  TouchOutput out;
+  r.resolve(mkG(GestureKind::Tap, 4 * 6, 6), m, out);
+  TEST_ASSERT_EQUAL(1u, out.keys.size());
+  TEST_ASSERT_EQUAL(int(Action::Focus), int(out.keys[0].action));
+  TEST_ASSERT_EQUAL(2, out.keys[0].target);
+  TEST_ASSERT_EQUAL(7, out.keys[0].index);
+}
+
+void test_resolve_osk_hold_is_tap() {
+  TapMap m;
+  m.setOrigin(CellSize{6, 12}, 0);
+  Target o;
+  o.kind = TargetKind::Osk;
+  o.index = 12;
+  m.addCells(0, 0, 10, 0, o);
+  TouchResolver r;
+  TouchOutput out;
+  r.resolve(mkG(GestureKind::Tap, 6, 6), m, out);
+  TEST_ASSERT_EQUAL(12, out.oskKey);
+  TEST_ASSERT_EQUAL(0u, out.keys.size());
+  TouchOutput out2;
+  r.resolve(mkG(GestureKind::LongPress, 6, 6), m, out2);
+  TEST_ASSERT_EQUAL(12, out2.oskKey);
+  TEST_ASSERT_EQUAL(0u, out2.keys.size());
+}
+
+void test_resolve_banner() {
+  TapMap m;
+  m.setOrigin(CellSize{6, 12}, 0);
+  Target b;
+  b.kind = TargetKind::Banner;
+  m.addCells(0, 0, 10, 0, b);
+  TouchResolver r;
+  TouchOutput out;
+  r.resolve(mkG(GestureKind::Tap, 6, 6), m, out);
+  TEST_ASSERT_TRUE(out.hideBanner);
+  TEST_ASSERT_EQUAL(0u, out.keys.size());
+}
+
+void test_resolve_drag_log_steps() {
+  TapMap m;
+  m.setOrigin(CellSize{6, 12}, 0);
+  m.addCells(0, 0, 10, 0, rowTarget(ListId::Log, 0));
+  m.setList(ListId::Log, 0, 100, false);
+  TouchResolver r;
+  {
+    TouchOutput out;
+    Gesture g = mkG(GestureKind::Drag, 6, 6);
+    g.dy = 13;
+    r.resolve(g, m, out);
+    TEST_ASSERT_EQUAL(1u, out.keys.size());
+    TEST_ASSERT_EQUAL(int(Action::Up), int(out.keys[0].action));
+  }
+  {
+    TouchOutput out;
+    Gesture g = mkG(GestureKind::Drag, 6, 6);
+    g.dy = 11;
+    r.resolve(g, m, out);
+    TEST_ASSERT_EQUAL(1u, out.keys.size());
+    TEST_ASSERT_EQUAL(int(Action::Up), int(out.keys[0].action));
+  }
+  {
+    TouchOutput out;
+    Gesture g = mkG(GestureKind::Drag, 6, 6);
+    g.dy = -24;
+    r.resolve(g, m, out);
+    TEST_ASSERT_EQUAL(2u, out.keys.size());
+    TEST_ASSERT_EQUAL(int(Action::Down), int(out.keys[0].action));
+    TEST_ASSERT_EQUAL(int(Action::Down), int(out.keys[1].action));
+  }
+}
+
+void test_resolve_drag_wrapping_list_clamps() {
+  {
+    TapMap m;
+    m.setOrigin(CellSize{6, 12}, 0);
+    m.addCells(0, 0, 10, 0, rowTarget(ListId::Main, 1));
+    m.setList(ListId::Main, 1, 5, true);
+    TouchResolver r;
+    TouchOutput out;
+    Gesture g = mkG(GestureKind::Drag, 6, 6);
+    g.dy = -72;  // 6 steps later
+    r.resolve(g, m, out);
+    TEST_ASSERT_EQUAL(1u, out.keys.size());
+    TEST_ASSERT_EQUAL(int(Action::Activate), int(out.keys[0].action));
+    TEST_ASSERT_EQUAL(4, out.keys[0].index);
+    TEST_ASSERT_EQUAL(int(Action::None), int(out.keys[0].then));
+  }
+  {
+    TapMap m;
+    m.setOrigin(CellSize{6, 12}, 0);
+    m.addCells(0, 0, 10, 0, rowTarget(ListId::Main, 0));
+    m.setList(ListId::Main, 0, 5, true);
+    TouchResolver r;
+    TouchOutput out;
+    Gesture g = mkG(GestureKind::Drag, 6, 6);
+    g.dy = 36;  // 3 steps earlier, clamps at 0 → nothing
+    r.resolve(g, m, out);
+    TEST_ASSERT_EQUAL(0u, out.keys.size());
+  }
+}
+
+void test_resolve_swipe_pages() {
+  TapMap m;
+  m.setOrigin(CellSize{6, 12}, 0);
+  for (int i = 0; i < 6; ++i) m.addCells(0, i, 10, i, rowTarget(ListId::Main, i));
+  m.setList(ListId::Main, 0, 20, true);
+  TouchResolver r;
+  TouchOutput out;
+  Gesture g = mkG(GestureKind::Swipe, 6, 6);
+  g.dir = SwipeDir::Up;
+  r.resolve(g, m, out);
+  TEST_ASSERT_EQUAL(1u, out.keys.size());
+  TEST_ASSERT_EQUAL(int(Action::Activate), int(out.keys[0].action));
+  TEST_ASSERT_EQUAL(5, out.keys[0].index);
+}
+
+void test_resolve_edge_back() {
+  TapMap m;
+  m.setOrigin(CellSize{6, 12}, 0);
+  TouchResolver r;
+  TouchOutput out;
+  r.resolve(mkG(GestureKind::EdgeBack, 2, 6), m, out);
+  TEST_ASSERT_EQUAL(1u, out.keys.size());
+  TEST_ASSERT_EQUAL(int(Action::Back), int(out.keys[0].action));
+}
+
+void test_resolve_nothing_hit() {
+  TapMap m;
+  m.setOrigin(CellSize{6, 12}, 0);
+  TouchResolver r;
+  TouchOutput out;
+  r.resolve(mkG(GestureKind::Tap, 6, 6), m, out);
+  TEST_ASSERT_EQUAL(0u, out.keys.size());
+  TEST_ASSERT_EQUAL(-1, out.oskKey);
+  TEST_ASSERT_FALSE(out.hideBanner);
+}
+
+void test_power_tap_peeks_not_wakes() {
+  KeyEvent e;
+  e.action = Action::PowerTap;
+  TEST_ASSERT_TRUE(peeksScreen(e));
+  TEST_ASSERT_FALSE(wakesScreen(e));
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_tap);
@@ -225,5 +503,20 @@ int main() {
   RUN_TEST(test_transform_landscape_matches_bringup);
   RUN_TEST(test_transform_rotations_corners);
   RUN_TEST(test_transform_clamps);
+  RUN_TEST(test_tap_map_cells_to_px);
+  RUN_TEST(test_tap_map_topmost_wins);
+  RUN_TEST(test_tap_map_clear);
+  RUN_TEST(test_field_hit_position);
+  RUN_TEST(test_resolve_row_tap_and_hold);
+  RUN_TEST(test_resolve_fixed);
+  RUN_TEST(test_resolve_field_focus);
+  RUN_TEST(test_resolve_osk_hold_is_tap);
+  RUN_TEST(test_resolve_banner);
+  RUN_TEST(test_resolve_drag_log_steps);
+  RUN_TEST(test_resolve_drag_wrapping_list_clamps);
+  RUN_TEST(test_resolve_swipe_pages);
+  RUN_TEST(test_resolve_edge_back);
+  RUN_TEST(test_resolve_nothing_hit);
+  RUN_TEST(test_power_tap_peeks_not_wakes);
   return UNITY_END();
 }

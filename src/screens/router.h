@@ -4,7 +4,7 @@
 #include <string>
 
 #include "app/messages.h"
-#include "input/keymap_m9.h"
+#include "input/key_event.h"
 #include "ui/grid.h"
 #include "ui/theme.h"
 

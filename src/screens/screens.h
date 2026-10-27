@@ -83,6 +83,8 @@ class SettingsScreen : public Screen {
     picking_ = false;
     picker_.close();
   }
+  // Larger sizes cut off the buttons' text.
+  bool compactText() const override { return true; }
 
  private:
   enum class Confirm { None, Logout, Reset, Rotation, TextSize };

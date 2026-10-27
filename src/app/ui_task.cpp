@@ -51,6 +51,13 @@ bool oskShown = false;
 Power power = Power::On;
 int64_t saverUntil = 0, lastActivitySent = -kActivityMs;
 bool needResize = true;
+// The text size the grid was last sized for: the saved one, or Compact on a
+// screen that asks for it.
+TextSize gridSize = TextSize::Comfortable;
+
+TextSize wantedSize() {
+  return router::screen().compactText() ? TextSize::Compact : app().cfg.textSize;
+}
 
 int64_t nowMs() { return int64_t(millis()); }
 
@@ -58,7 +65,7 @@ int oskOffsetPx = 0;  // the header's extra height, which moves the keyboard dow
 
 void resizeGrid() {
   int cols, rows;
-  const TextSize ts = app().cfg.textSize;
+  const TextSize ts = gridSize = wantedSize();
   const int rowH = cellSize(ts).h;
   // Keyboardless touch boards get a taller status bar, easier to tap.
   const HeaderSize hd = board::hasTouch() && !board::hasKeyboard()
@@ -103,7 +110,7 @@ void drawSaver(const Theme& t) {
     size_t from = all.size() > 12 ? all.size() - 12 : 0;
     last.assign(all.begin() + from, all.end());
     LayoutOptions o;
-    o.size = app().cfg.textSize;
+    o.size = gridSize;
     o.cols = grid.cols();
     o.selfUsername = s.self;
     o.revealed = &s.revealed;
@@ -222,7 +229,7 @@ void handleKey(const KeyEvent& key) {
         power = Power::Saver;
         grid.fill(currentTheme().bg);
         drawSaver(currentTheme());
-        renderer.draw(grid, app().cfg.textSize);
+        renderer.draw(grid, gridSize);
         board::displaySleep(false);
       }
     }
@@ -315,24 +322,24 @@ void taskMain(void*) {
       shown = app().cfg.theme;
       needResize = true;
     }
+    if (wantedSize() != gridSize) needResize = true;
     if (needResize) resizeGrid();
     const Theme& t = currentTheme();
     if (power == Power::On) {
       taps.clear();
-      taps.setOrigin(cellSize(app().cfg.textSize), 0);
+      taps.setOrigin(cellSize(gridSize), 0);
       router::screen().render(grid, t, now);
       topBanner.render(grid, grid.rows() - 1, t, now);
-      taps.mapRows(0, rowSpans(grid, cellSize(app().cfg.textSize).h,
-                               bigCellSize(app().cfg.textSize).h));
-      renderer.draw(grid, app().cfg.textSize);
+      taps.mapRows(0, rowSpans(grid, cellSize(gridSize).h, bigCellSize(gridSize).h));
+      renderer.draw(grid, gridSize);
       if (oskShown) {
-        taps.setOrigin(cellSize(app().cfg.textSize), grid.rows(), oskOffsetPx);
+        taps.setOrigin(cellSize(gridSize), grid.rows(), oskOffsetPx);
         osk.render(oskGrid, t);
-        renderer.draw(oskGrid, app().cfg.textSize, grid.rows(), oskOffsetPx);
+        renderer.draw(oskGrid, gridSize, grid.rows(), oskOffsetPx);
       }
     } else if (power == Power::Saver) {
       drawSaver(t);
-      renderer.draw(grid, app().cfg.textSize);
+      renderer.draw(grid, gridSize);
     }
     uint32_t spent = millis() - start;
     vTaskDelay(pdMS_TO_TICKS(spent < kFrameMs ? kFrameMs - spent : 1));

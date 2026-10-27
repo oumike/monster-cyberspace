@@ -264,7 +264,8 @@ reply selected. Left or Back returns to the Feed list.
 
 Pick one in **Settings** → **Text size** (a box with all three), or switch
 in the Feed palette, an entry's menu or the web page, where each switch steps
-Compact → Comfortable → Large. The choice is saved.
+Compact → Comfortable → Large. The choice is saved. Settings itself always
+uses Compact, so its items fit.
 
 - **Comfortable:** larger 8×16 text, `nick message`, with a time divider when
   the minute changes.

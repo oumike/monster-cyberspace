@@ -28,6 +28,8 @@ class Screen {
   // Menus, the drawer or a selection: global keys close these first.
   virtual bool hasOverlay() const { return false; }
   virtual void closeOverlays() {}
+  // Drawn in Compact text whatever the saved text size.
+  virtual bool compactText() const { return false; }
 };
 
 namespace router {

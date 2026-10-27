@@ -2,9 +2,9 @@
 
 #include <cstdint>
 
-// The CrowPanel 5"'s 800x480 RGB panel, through ESP-IDF's esp_lcd RGB driver.
-// The LCD peripheral scans a PSRAM framebuffer out continuously; pushRows
-// copies (and, in portrait, turns) the renderer's rows into it.
+// The CrowPanel 5"'s 800x480 RGB panel, through LovyanGFX's RGB bus. The LCD
+// peripheral scans a PSRAM framebuffer out continuously; pushRows copies (and,
+// in portrait, turns) the renderer's rows into it.
 namespace rgb800 {
 
 bool begin();

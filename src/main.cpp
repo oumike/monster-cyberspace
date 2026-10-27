@@ -7,6 +7,7 @@
 #include "chat/chat_source.h"
 #include "core_version.h"
 #include "hal/board.h"
+#include "store/backup_store.h"
 #include "store/settings.h"
 
 using namespace rc;
@@ -17,6 +18,7 @@ void setup() {
   Serial.begin(115200);
   Serial.printf("[boot] rhino-cyberspace %s on %s\n", RC_VERSION, board::name());
   board::begin();
+  backupstore::begin();
   settings::load(app().cfg);
   timesvc::start(app().cfg);
   // The network source brings up Wi-Fi too; the m9_fake build has none.

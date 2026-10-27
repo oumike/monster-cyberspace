@@ -42,6 +42,9 @@ class LoginFormScreen : public Screen {
   void onEvent(const Event&) override;
   void render(Grid&, const Theme&, int64_t nowMs) override;
   bool acceptsText() const override { return !busy_; }
+  bool consumesBackspace() const override {
+    return !busy_ && !(focus_ == 0 ? email_ : password_).text().empty();
+  }
 
  private:
   InputLine email_, password_;
@@ -113,6 +116,9 @@ class CmailListScreen : public Screen {
   bool hasOverlay() const override { return editing_; }
   void closeOverlays() override { editing_ = busy_ = false; }
   bool acceptsText() const override { return editing_ && !busy_; }
+  bool consumesBackspace() const override {
+    return editing_ && !busy_ && !input_.text().empty();
+  }
 
  private:
   void editKey(const KeyEvent&);

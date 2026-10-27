@@ -21,6 +21,10 @@ class Screen {
   // True while a focused text field is taking typing, so a touch board can
   // dock its on-screen keyboard. False on keyed boards (nothing reads it).
   virtual bool acceptsText() const { return false; }
+  // True while a focused text input has something to delete. Boards where
+  // Backspace doubles as Back (board::backspaceIsBack) treat it as Back
+  // otherwise. Only answers a question; onKey is unchanged.
+  virtual bool consumesBackspace() const { return false; }
   // Menus, the drawer or a selection: global keys close these first.
   virtual bool hasOverlay() const { return false; }
   virtual void closeOverlays() {}

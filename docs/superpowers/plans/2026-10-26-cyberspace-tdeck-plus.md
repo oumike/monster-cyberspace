@@ -193,11 +193,11 @@ Task 7 writes both amendments into the spec.
   - While `touchSwallow` is set, samples aren't fed to `gestures`. It clears on the first sample with no finger down.
 - On the M9 and Wio both flags are false, so neither branch runs.
 
-- [ ] **Step 1: Implement** `consumesBackspace` on each text screen. It returns true while the focused input's text is non-empty. On a multi-field form, use the focused field.
-- [ ] **Step 2: Implement** the `handleKey` branch and the touch wake.
-- [ ] **Step 3: Run** `pio test -e native` and `scripts/build-upload-monitor.sh -B`. Expected: green, and all four envs build.
-- [ ] **Step 4: Check that M9 and Wio behaviour is unchanged.** Both new branches are gated on flags that are false on those boards. `consumesBackspace` only answers a question and doesn't change `onKey`.
-- [ ] **Step 5: Commit** `feat(app): Backspace acts as Back and any input wakes, on boards that ask`.
+- [x] **Step 1: Implement** `consumesBackspace` on each text screen. It returns true while the focused input's text is non-empty. On a multi-field form, use the focused field.
+- [x] **Step 2: Implement** the `handleKey` branch and the touch wake.
+- [x] **Step 3: Run** `pio test -e native` and `scripts/build-upload-monitor.sh -B`. Expected: green, and all four envs build.
+- [x] **Step 4: Check that M9 and Wio behaviour is unchanged.** Both new branches are gated on flags that are false on those boards. `consumesBackspace` only answers a question and doesn't change `onKey`.
+- [x] **Step 5: Commit** `feat(app): Backspace acts as Back and any input wakes, on boards that ask`.
 
 ### Task 4: T-Deck envs, pins, power, panel, keyboard and touch
 

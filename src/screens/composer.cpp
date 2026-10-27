@@ -50,6 +50,13 @@ bool ComposerScreen::acceptsText() const {
   return focus_ == kTitle || focus_ == kBody || focus_ == kTopics || focus_ == kCw;
 }
 
+bool ComposerScreen::consumesBackspace() const {
+  if (!acceptsText()) return false;
+  if (focus_ == kBody) return body_.length() > 0;
+  const InputLine* in = focus_ == kTitle ? &title_ : focus_ == kTopics ? &topics_ : &cw_;
+  return !in->text().empty();
+}
+
 void ComposerScreen::load() {
   title_.setText(utf8ToU32(gDraft.title));
   topics_.setText(utf8ToU32(gDraft.topics));

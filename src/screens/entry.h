@@ -31,6 +31,9 @@ class EntryScreen : public Screen {
   bool hasOverlay() const override;
   void closeOverlays() override;
   bool acceptsText() const override { return view_ == View::None; }
+  bool consumesBackspace() const override {
+    return view_ == View::None && !input_.text().empty();
+  }
 
  private:
   enum class View { None, Menu, Link };

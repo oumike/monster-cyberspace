@@ -6,6 +6,7 @@
 #include "app/queues.h"
 #include "chat/chat_source.h"
 #include "hal/board.h"
+#include "input/backspace.h"
 #include "input/gestures.h"
 #include "input/key_event.h"
 #include "input/touch_resolve.h"
@@ -35,6 +36,11 @@ Renderer renderer;
 Grid grid(1, 1);
 Banner topBanner;
 Gestures gestures;
+// Set by a touch that woke the screen: that finger is ignored until it lifts.
+bool touchSwallow = false;
+// The last Backspace that deleted text (backspaceIsBack boards).
+uint32_t lastDeleteMs = 0;
+bool deletedOnce = false;
 TouchResolver resolver;
 TapMap taps;
 Osk osk;
@@ -178,16 +184,22 @@ void handleEvent(const Event& e) {
   router::screen().onEvent(e);
 }
 
-void handleKey(const KeyEvent& k) {
+void wake() {
+  bool wasDark = power == Power::Dark;
+  power = Power::On;
+  redrawAll();
+  chatSource().command(Command{CmdType::ScreenOn});
+  if (wasDark) board::displaySleep(false);
+}
+
+void handleKey(const KeyEvent& key) {
   int64_t now = nowMs();
+  KeyEvent k = key;
   if (power != Power::On) {
-    // Only a centre hold wakes; only a centre tap peeks. Nothing else acts.
+    // Only a centre hold wakes (any input, on boards that ask); only a centre
+    // tap peeks. The waking press does nothing else.
     if (wakesScreen(k, board::anyInputWakes())) {
-      bool wasDark = power == Power::Dark;
-      power = Power::On;
-      redrawAll();
-      chatSource().command(Command{CmdType::ScreenOn});
-      if (wasDark) board::displaySleep(false);
+      wake();
     } else if (peeksScreen(k)) {
       saverUntil = now + kSaverMs;
       if (power == Power::Dark) {
@@ -209,6 +221,21 @@ void handleKey(const KeyEvent& k) {
     goDark();
     return;
   }
+  if (k.action == Action::Backspace && board::backspaceIsBack()) {
+    uint32_t ms = millis();
+    switch (resolveBackspace(router::screen().consumesBackspace(),
+                             deletedOnce ? ms - lastDeleteMs : UINT32_MAX)) {
+      case BackspaceUse::Delete:
+        lastDeleteMs = ms;
+        deletedOnce = true;
+        break;
+      case BackspaceUse::Back:
+        k.action = Action::Back;
+        break;
+      case BackspaceUse::Drop:
+        return;
+    }
+  }
   if (router::handleGlobal(k)) return;
   router::screen().onKey(k);
 }
@@ -220,13 +247,22 @@ void taskMain(void*) {
     router::Id beforeScreen = router::current();
     Power beforePower = power;
     // Touch first, so a gesture resolves against the map of the frame on
-    // screen; then the buttons. Only while lit: touch never wakes a dark
-    // screen.
-    if (power == Power::On && board::hasTouch()) {
+    // screen; then the buttons. Touch acts only while lit, and wakes a dark
+    // screen only on boards where any input wakes (that finger then does
+    // nothing until it lifts).
+    if (power != Power::On && board::hasTouch() && board::anyInputWakes()) {
+      int16_t tx, ty;
+      if (board::readTouch(tx, ty)) {
+        wake();
+        touchSwallow = true;
+        gestures.reset();
+      }
+    } else if (power == Power::On && board::hasTouch()) {
       int16_t tx, ty;
       bool down = board::readTouch(tx, ty);
+      if (touchSwallow && !down) touchSwallow = false;
       Gesture g;
-      if (gestures.feed(down, tx, ty, millis(), g)) {
+      if (!touchSwallow && gestures.feed(down, tx, ty, millis(), g)) {
         TouchOutput out;
         resolver.resolve(g, taps, out);
         if (out.hideBanner) topBanner.hide();

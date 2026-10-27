@@ -377,11 +377,11 @@
     - Settings: `Bottom` with `confirm(question, action)`.
   - Composer's, Settings's and `BackupPicker`'s confirms use `Overlay::confirm` (BackupPicker: `Bottom`, Cancel preselected as today). The Settings time-zone list and BackupPicker's file list stay `ListView`s. Room's and Entry's ConfirmDelete/ConfirmReport keep their own titles and items through `open`, so their key mapping (`cancel`, `delete`, …) is unchanged.
 
-- [ ] **Step 1: Convert** Room and Entry. Keep each menu's rows, title text, `menuKeys_` order and hints exactly as they are.
-- [ ] **Step 2: Convert** Composer (Actions, ConfirmPost, ConfirmDiscard), the FeedList palette, and the Settings confirms (Logout, Reset).
-- [ ] **Step 3: Run** `pio test -e native`, then `scripts/build-upload-monitor.sh -B`. Expected: green, and all four envs build.
-- [ ] **Step 4: Check M9 behaviour.** Diff each converted screen's old `menuKey` against `Overlay::key`: Up/Down wrap, Select/Right pick, Back/Left close, and Cancel is the default. `test_overlay_render_*` pins the drawing. Do not flash. Task 12 adds the on-device check (every menu and confirm in Room, Entry, Composer, Feed and Settings) to TESTING.md.
-- [ ] **Step 5: Commit** `refactor(screens): menus and confirms use Overlay`.
+- [x] **Step 1: Convert** Room and Entry. Keep each menu's rows, title text, `menuKeys_` order and hints exactly as they are.
+- [x] **Step 2: Convert** Composer (Actions, ConfirmPost, ConfirmDiscard), the FeedList palette, and the Settings confirms (Logout, Reset).
+- [x] **Step 3: Run** `pio test -e native`, then `scripts/build-upload-monitor.sh -B`. Expected: green, and all four envs build.
+- [x] **Step 4: Check M9 behaviour.** Diff each converted screen's old `menuKey` against `Overlay::key`: Up/Down wrap, Select/Right pick, Back/Left close, and Cancel is the default. `test_overlay_render_*` pins the drawing. Do not flash. Task 12 adds the on-device check (every menu and confirm in Room, Entry, Composer, Feed and Settings) to TESTING.md.
+- [x] **Step 5: Commit** `refactor(screens): menus and confirms use Overlay`.
 
 ### Task 5: Widgets register tap targets; touch status bar; new glyphs
 
@@ -512,7 +512,7 @@
   | LoginForm | `tap a field  enter: next/sign in` |
   | ComingSoon | `‹ home` |
 
-- [ ] **Step 1: Write the failing test** in `test_keymap_web`:
+- [x] **Step 1: Write the failing test** in `test_keymap_web`:
   ```cpp
   void test_m9_keymap_never_touch_actions() {
     for (int raw = 0; raw < 256; ++raw)
@@ -523,10 +523,10 @@
   }
   ```
   It passes once Task 2's enum exists. It guards the M9 against ever reaching the new paths.
-- [ ] **Step 2: Run** `pio test -e native -f test_keymap_web`. Expected: PASS. This is a guard, not a red-green test.
-- [ ] **Step 3: Implement** `acceptsText`, the `drawHint` overload, and the `Activate`/`Focus` handling, screen by screen.
-- [ ] **Step 4: Run** `pio test -e native`, then `scripts/build-upload-monitor.sh -B`. Expected: green, and all four envs build. **M9:** no M9 key maps to `Activate`/`Focus` (Step 1), `drawHint` picks the key text when `hasTouch()` is false, and `acceptsText` is read only by Task 10's docking.
-- [ ] **Step 5: Commit** `feat(screens): tap rows and fields, touch hints`.
+- [x] **Step 2: Run** `pio test -e native -f test_keymap_web`. Expected: PASS. This is a guard, not a red-green test.
+- [x] **Step 3: Implement** `acceptsText`, the `drawHint` overload, and the `Activate`/`Focus` handling, screen by screen.
+- [x] **Step 4: Run** `pio test -e native`, then `scripts/build-upload-monitor.sh -B`. Expected: green, and all four envs build. **M9:** no M9 key maps to `Activate`/`Focus` (Step 1), `drawHint` picks the key text when `hasTouch()` is false, and `acceptsText` is read only by Task 10's docking.
+- [x] **Step 5: Commit** `feat(screens): tap rows and fields, touch hints`.
 
 ### Task 7: Home tiles on touch boards
 
@@ -554,7 +554,7 @@
   - Keys in tile mode: Up/Down/Left/Right use `tileMove`; Select opens. (Right no longer opens in tile mode.)
   - Touch hint: `tap to open` (from Task 6).
 
-- [ ] **Step 1: Write the failing tests** in `test_widgets`:
+- [x] **Step 1: Write the failing tests** in `test_widgets`:
   ```cpp
   void test_home_tiles_fit() {
     // (40,15,6) and (53,20,6) and portrait (30,20,6): 6 tiles; each inside cols 0..cols-1, rows 1..rows-2;
@@ -566,10 +566,10 @@
     // tileMove(0,6,Right)=1; tileMove(1,6,Right)=1; tileMove(3,6,Up)=1; tileMove(1,6,Up)=1
   }
   ```
-- [ ] **Step 2: Run** `pio test -e native -f test_widgets`. Expected: it fails to build.
-- [ ] **Step 3: Implement** `homeTiles`, `tileMove`, and the tile mode in `home.cpp`.
-- [ ] **Step 4: Run** `pio test -e native` and `scripts/build-upload-monitor.sh -B`. Expected: green, all four envs build; the M9 Home is unchanged (`hasTouch()` false).
-- [ ] **Step 5: Commit** `feat(home): large tiles on touch boards`.
+- [x] **Step 2: Run** `pio test -e native -f test_widgets`. Expected: it fails to build.
+- [x] **Step 3: Implement** `homeTiles`, `tileMove`, and the tile mode in `home.cpp`.
+- [x] **Step 4: Run** `pio test -e native` and `scripts/build-upload-monitor.sh -B`. Expected: green, all four envs build; the M9 Home is unchanged (`hasTouch()` false).
+- [x] **Step 5: Commit** `feat(home): large tiles on touch boards`.
 
 ### Task 8: Touch in the UI loop; Wio buttons; the wake hint
 
@@ -603,10 +603,10 @@
   - Wake: tap → `PowerTap`, hold → `ScreenOff` (unchanged).
   - Delete `logTouch` and the `RC_TOUCH_LOG` blocks, and update the comment on the mapping.
 
-- [ ] **Step 1: Implement** the changes above. There is no new host test, because the logic is covered by Tasks 1–2.
-- [ ] **Step 2: Run** `pio test -e native`, then `scripts/build-upload-monitor.sh -B`. Expected: green, and all four envs build. Also check that `grep -rn "RC_TOUCH_LOG\|\[touch\] down" src platformio.ini` finds nothing.
-- [ ] **Step 3: Check M9 behaviour.** `hasTouch()` is false, so the touch block never runs and `activeTaps()` stays null. M9 `wakeHint()` returns today's string. Neither M9 button mapping produces `PowerTap`.
-- [ ] **Step 4: Commit** `feat(app): touch input in the UI loop; Wio BOOT and Wake buttons`.
+- [x] **Step 1: Implement** the changes above. There is no new host test, because the logic is covered by Tasks 1–2.
+- [x] **Step 2: Run** `pio test -e native`, then `scripts/build-upload-monitor.sh -B`. Expected: green, and all four envs build. Also check that `grep -rn "RC_TOUCH_LOG\|\[touch\] down" src platformio.ini` finds nothing.
+- [x] **Step 3: Check M9 behaviour.** `hasTouch()` is false, so the touch block never runs and `activeTaps()` stays null. M9 `wakeHint()` returns today's string. Neither M9 button mapping produces `PowerTap`.
+- [x] **Step 4: Commit** `feat(app): touch input in the UI loop; Wio BOOT and Wake buttons`.
 
 ### Task 9: The on-screen keyboard (`Osk`)
 
@@ -667,7 +667,7 @@
   Page keys keep the Shift state.
 - Drawing: the keys are filled with `t.inputBg`, with the label centred in `t.fg` and an outline in `t.dim`. Shift is drawn in `selectBg`/`selectFg` while shifted or locked. Everything else is `t.bg`.
 
-- [ ] **Step 1: Write the failing tests.**
+- [x] **Step 1: Write the failing tests.**
   ```cpp
   void test_osk_rows()                    // rows(Comfortable)==8, rows(Compact)==12
   void test_osk_layout_landscape_compact() {
@@ -687,10 +687,10 @@
   }
   void test_osk_registers_targets()       // render with activeTaps set: hit on 'q' → Osk{index of 'q'}
   ```
-- [ ] **Step 2: Run** `pio test -e native -f test_osk`. Expected: the build fails because `osk.h` is missing.
-- [ ] **Step 3: Implement** `Osk`.
-- [ ] **Step 4: Run** `pio test -e native`. Expected: PASS.
-- [ ] **Step 5: Commit** `feat(ui): on-screen keyboard`.
+- [x] **Step 2: Run** `pio test -e native -f test_osk`. Expected: the build fails because `osk.h` is missing.
+- [x] **Step 3: Implement** `Osk`.
+- [x] **Step 4: Run** `pio test -e native`. Expected: PASS.
+- [x] **Step 5: Commit** `feat(ui): on-screen keyboard`.
 
 ### Task 10: Dock the keyboard
 
@@ -714,14 +714,14 @@
     2. while shown, `taps.setOrigin(cell, grid.rows())`, `osk.render(oskGrid, t)`, then `renderer.draw(oskGrid, ts, grid.rows())`.
   - **Touch:** `out.oskKey >= 0` → `osk.press(i, millis())`. A `key` with an action goes to `handleKey`. `hide` hides the keyboard.
 
-- [ ] **Step 1: Implement** the `Renderer` offset, then the docking.
-- [ ] **Step 2: Run** `pio test -e native`, then `scripts/build-upload-monitor.sh -B`. Expected: green, and all four envs build. **M9:** no `Focus` key is ever produced, so `oskShown` stays false and `draw`'s default offset is 0.
-- [ ] **Step 3: Check on `wio_l2_fake`** if a board is at hand; otherwise leave it to the Task 12 checklist:
+- [x] **Step 1: Implement** the `Renderer` offset, then the docking.
+- [x] **Step 2: Run** `pio test -e native`, then `scripts/build-upload-monitor.sh -B`. Expected: green, and all four envs build. **M9:** no `Focus` key is ever produced, so `oskShown` stays false and `draw`'s default offset is 0.
+- [x] **Step 3: Check on `wio_l2_fake`** if a board is at hand; otherwise leave it to the Task 12 checklist (no board: left to Task 12):
   - tap the Room input and the keyboard docks;
   - type, use `⌫` and enter;
   - `▼` hides the keyboard;
   - Back with the keyboard up leaves the room and the keyboard goes.
-- [ ] **Step 4: Commit** `feat(app): dock the on-screen keyboard`.
+- [x] **Step 4: Commit** `feat(app): dock the on-screen keyboard`.
 
 ### Task 11: Orientation
 

@@ -17,6 +17,7 @@
 #include "ui/tap_map.h"
 #include "ui/theme.h"
 #include "ui/widgets/banner.h"
+#include "ui/widgets/osk.h"
 #include "util/utf8.h"
 
 namespace rc::ui {
@@ -35,6 +36,9 @@ Banner topBanner;
 Gestures gestures;
 TouchResolver resolver;
 TapMap taps;
+Osk osk;
+Grid oskGrid(1, 1);
+bool oskShown = false;
 Power power = Power::On;
 int64_t saverUntil = 0, lastActivitySent = -kActivityMs;
 bool needResize = true;
@@ -43,9 +47,25 @@ int64_t nowMs() { return int64_t(millis()); }
 
 void resizeGrid() {
   int cols, rows;
-  gridDims(board::panelWidth(), board::panelHeight(), app().cfg.textSize, cols, rows);
-  grid.resize(cols, rows);
+  const TextSize ts = app().cfg.textSize;
+  gridDims(board::panelWidth(), board::panelHeight(), ts, cols, rows);
+  if (oskShown) {
+    const int k = Osk::rows(ts);
+    grid.resize(cols, rows - k);
+    oskGrid.resize(cols, k);
+    osk.layout(cols, ts);
+  } else {
+    grid.resize(cols, rows);
+  }
   needResize = false;
+}
+
+// The on-screen keyboard docks below the screen while a text field has focus.
+void showOsk(bool on) {
+  if (on == oskShown) return;
+  oskShown = on;
+  if (on) osk.reset();
+  needResize = true;
 }
 
 // The screensaver: the newest messages of the current room, read-only.
@@ -82,6 +102,7 @@ void drawSaver(const Theme& t) {
 }
 
 void goDark() {
+  showOsk(false);
   power = Power::Dark;
   board::displaySleep(true);
 }
@@ -194,8 +215,17 @@ void taskMain(void*) {
         TouchOutput out;
         resolver.resolve(g, taps, out);
         if (out.hideBanner) topBanner.hide();
-        for (const KeyEvent& k : out.keys) handleKey(k);
-        // out.oskKey is ignored until Task 10 docks the on-screen keyboard.
+        for (const KeyEvent& k : out.keys) {
+          handleKey(k);
+          if (k.action == Action::Focus && power == Power::On &&
+              router::screen().acceptsText())
+            showOsk(true);
+        }
+        if (out.oskKey >= 0 && oskShown) {
+          OskOutput o = osk.press(out.oskKey, millis());
+          if (o.key.action != Action::None) handleKey(o.key);
+          if (o.hide) showOsk(false);
+        }
       }
     }
     KeyEvent key;
@@ -210,7 +240,9 @@ void taskMain(void*) {
     if (router::current() != beforeScreen || power != beforePower) {
       gestures.reset();
       resolver.reset();
+      if (router::current() != beforeScreen) showOsk(false);
     }
+    if (oskShown && !router::screen().acceptsText()) showOsk(false);
     // Settings and web config change the theme between frames; repaint it all.
     if (app().cfg.theme != shown) {
       shown = app().cfg.theme;
@@ -226,6 +258,11 @@ void taskMain(void*) {
       taps.mapRows(0, rowSpans(grid, cellSize(app().cfg.textSize).h,
                                bigCellSize(app().cfg.textSize).h));
       renderer.draw(grid, app().cfg.textSize);
+      if (oskShown) {
+        taps.setOrigin(cellSize(app().cfg.textSize), grid.rows());
+        osk.render(oskGrid, t);
+        renderer.draw(oskGrid, app().cfg.textSize, grid.rows());
+      }
     } else if (power == Power::Saver) {
       drawSaver(t);
       renderer.draw(grid, app().cfg.textSize);

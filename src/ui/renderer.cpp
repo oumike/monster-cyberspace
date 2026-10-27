@@ -70,27 +70,30 @@ void Renderer::drawRow(const Grid& g, int r, const CellFont& font, RowSpan span)
   board::pushRows(frame_, y0, y0 + ch);
 }
 
-void Renderer::draw(Grid& g, TextSize s) {
+void Renderer::draw(Grid& g, TextSize s, int firstRow) {
   if (!frame_) return;
   const CellFont& font = s == TextSize::Compact ? cell6x12 : cell8x16;
   const CellFont& big = s == TextSize::Compact ? cell8x14 : cell10x18;
+  Layer& layer = firstRow == 0 ? main_ : docked_;
+  if (layer.firstRow != firstRow) layer = Layer{firstRow};
+  const int top = firstRow * font.h;
   const int n = g.rows();
   std::vector<RowSpan> spans = rowSpans(g, font.h, big.h);
-  const bool sameShape = spans_.size() == spans.size();
+  const bool sameShape = layer.spans.size() == spans.size();
   bool aboveGapChanged = false;
   for (int r = 0; r < n; ++r) {
     const RowSpan sp = spans[r];
-    const bool moved = !sameShape || spans_[r].y != sp.y || spans_[r].h != sp.h;
+    const bool moved = !sameShape || layer.spans[r].y != sp.y || layer.spans[r].h != sp.h;
     if (!moved && !g.rowDirty(r)) continue;
     if (r == n - 2) aboveGapChanged = true;
-    if (sp.h <= 0 || sp.y + sp.h > h_) continue;
-    drawRow(g, r, g.rowKind(r) == RowKind::Big ? big : font, sp);
+    if (sp.h <= 0 || top + sp.y + sp.h > h_) continue;
+    drawRow(g, r, g.rowKind(r) == RowKind::Big ? big : font, RowSpan{top + sp.y, sp.h});
   }
   // Rows of other heights can leave a gap above the last row; clear it.
   if (n >= 2) {
-    const int gapY = spans[n - 2].y + spans[n - 2].h;
-    const int gapEnd = std::min(spans[n - 1].y, h_);
-    if (gapY < gapEnd && (gapY != gapY_ || aboveGapChanged || !sameShape)) {
+    const int gapY = top + spans[n - 2].y + spans[n - 2].h;
+    const int gapEnd = std::min(top + spans[n - 1].y, h_);
+    if (gapY < gapEnd && (gapY != layer.gapY || aboveGapChanged || !sameShape)) {
       const uint16_t bg = g.at(0, n - 2).bg;
       for (int y = gapY; y < gapEnd; ++y) {
         uint16_t* px = frame_ + static_cast<size_t>(y) * w_;
@@ -98,9 +101,9 @@ void Renderer::draw(Grid& g, TextSize s) {
       }
       board::pushRows(frame_, gapY, gapEnd);
     }
-    gapY_ = gapY;
+    layer.gapY = gapY;
   }
-  spans_ = std::move(spans);
+  layer.spans = std::move(spans);
   g.clearDirty();
 }
 

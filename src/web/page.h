@@ -43,7 +43,7 @@ a{color:#6cf}
 <button onclick="login()">Sign in</button>
 <button onclick="post('/api/logout',{},'acctmsg')">Sign out</button>
 <button onclick="post('/api/resend',{},'acctmsg')">Resend verification</button>
-<div class="dim">The device signs in and discards your password. Only a refresh token is kept, and it can't be read back here.</div>
+<div class="dim">The device signs in and discards your password. Only a refresh token is kept; it is shown nowhere, but a backup (below) contains it.</div>
 <div id="acctmsg" class="msg"></div>
 
 <h2>Display</h2>
@@ -65,7 +65,7 @@ a{color:#6cf}
 <label>Setup-AP password (WPA2, 8–63 characters; empty makes the AP open) <span id="apstate" class="dim"></span><input id="appw" type="password" autocomplete="new-password"></label>
 <button onclick="saveSec()">Save security</button>
 <div id="secmsg" class="msg"></div>
-<p class="dim">The page is plain HTTP on your LAN, so set a page password on shared networks. The setup AP is open unless a setup-AP password is set, so anyone in radio range can join it while it runs. It runs with no saved Wi-Fi (first boot or after a factory reset), when turned on in the device's Settings, or after the saved networks fail for 5 minutes, and anything entered on it (Wi-Fi password, Cyberspace password) crosses that link unencrypted. Setting a setup-AP password closes that gap for later setups. The refresh token can't be read back through the page.</p>
+<p class="dim">The page is plain HTTP on your LAN, so set a page password on shared networks. The setup AP is open unless a setup-AP password is set, so anyone in radio range can join it while it runs. It runs with no saved Wi-Fi (first boot or after a factory reset), when turned on in the device's Settings, or after the saved networks fail for 5 minutes, and anything entered on it (Wi-Fi password, Cyberspace password) crosses that link unencrypted. Setting a setup-AP password closes that gap for later setups. A backup download contains the refresh token and every password, so anyone who can open this page can take them: set a page password.</p>
 
 <h2>Backup</h2>
 <p class="dim">A backup holds your Wi-Fi passwords, the page and setup-AP passwords and a Cyberspace sign-in token. Anyone with the file can use your account: keep it private. It travels over plain HTTP unless you use the setup AP with a password.</p>

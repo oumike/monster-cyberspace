@@ -206,8 +206,9 @@ anyone in radio range can join it while it runs. It runs with no saved
 Wi-Fi (first boot or after a factory reset), when you turn it on in Settings,
 or after the saved networks fail for 5 minutes, and anything entered on it
 (Wi-Fi password, Cyberspace password) crosses that link unencrypted. Setting a
-setup-AP password closes that gap for later setups. The refresh token can't be
-read back through the page.
+setup-AP password closes that gap for later setups. A backup download (see
+Backup and restore) contains the refresh token and every password, so anyone
+who can open the page can take them: set a page password.
 
 ## Time and time zone
 

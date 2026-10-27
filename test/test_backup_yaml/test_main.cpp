@@ -2,6 +2,7 @@
 
 #include <cstring>
 #include <string>
+#include <vector>
 
 #include "config/backup_yaml.h"
 #include "config/yaml_scalar.h"
@@ -358,6 +359,39 @@ void test_failure_leaves_settings_unchanged() {
              "line 6: text size: compact or comfortable");
 }
 
+void test_file_name_with_clock() {
+  std::vector<std::string> ex;
+  TEST_ASSERT_EQUAL_STRING("rc-backup-20261026-183000.yaml", rc::backupFileName(1793039400, ex).c_str());
+  ex.push_back("rc-backup-20261026-183000.yaml");
+  TEST_ASSERT_EQUAL_STRING("rc-backup-20261026-183000-2.yaml", rc::backupFileName(1793039400, ex).c_str());
+  ex.push_back("rc-backup-20261026-183000-2.yaml");
+  TEST_ASSERT_EQUAL_STRING("rc-backup-20261026-183000-3.yaml", rc::backupFileName(1793039400, ex).c_str());
+}
+
+void test_file_name_without_clock() {
+  TEST_ASSERT_EQUAL_STRING("rc-backup-1.yaml", rc::backupFileName(0, {}).c_str());
+  TEST_ASSERT_EQUAL_STRING("rc-backup-8.yaml",
+                           rc::backupFileName(0, {"rc-backup-1.yaml", "rc-backup-7.yaml", "x.yaml"}).c_str());
+}
+
+void test_valid_backup_name() {
+  TEST_ASSERT_TRUE(rc::validBackupName("rc-backup-1.yaml"));
+  TEST_ASSERT_TRUE(rc::validBackupName("My_file.v2.yaml"));
+  for (const char* bad : {"../x.yaml", "a/b.yaml", ".yaml", "x.yml", "x.YAML", "a b.yaml", ""})
+    TEST_ASSERT_FALSE(rc::validBackupName(bad));
+  TEST_ASSERT_TRUE(rc::validBackupName(std::string(59, 'a') + ".yaml"));
+  TEST_ASSERT_FALSE(rc::validBackupName(std::string(60, 'a') + ".yaml"));
+}
+
+void test_sort_backup_names() {
+  std::vector<std::string> n = {"rc-backup-2.yaml", "old.yaml", "rc-backup-20261026-183000.yaml",
+                                "rc-backup-10.yaml", "rc-backup-20261101-090000.yaml"};
+  rc::sortBackupNames(n);
+  std::vector<std::string> want = {"rc-backup-20261101-090000.yaml", "rc-backup-20261026-183000.yaml",
+                                   "rc-backup-10.yaml", "rc-backup-2.yaml", "old.yaml"};
+  TEST_ASSERT_TRUE(n == want);
+}
+
 int main(int, char**) {
   UNITY_BEGIN();
   RUN_TEST(test_quote_escapes);
@@ -385,5 +419,9 @@ int main(int, char**) {
   RUN_TEST(test_duplicate_key);
   RUN_TEST(test_oversize_refused);
   RUN_TEST(test_failure_leaves_settings_unchanged);
+  RUN_TEST(test_file_name_with_clock);
+  RUN_TEST(test_file_name_without_clock);
+  RUN_TEST(test_valid_backup_name);
+  RUN_TEST(test_sort_backup_names);
   return UNITY_END();
 }

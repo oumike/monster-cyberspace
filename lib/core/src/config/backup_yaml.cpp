@@ -1,5 +1,6 @@
 #include "config/backup_yaml.h"
 
+#include <algorithm>
 #include <ctime>
 #include <set>
 #include <vector>
@@ -429,6 +430,96 @@ bool backupFromYaml(std::string_view yaml, Settings& inOut, std::string& err, st
   if (st.refreshToken.has) inOut.refreshToken = st.refreshToken.v;
   note = wifiNote;
   return true;
+}
+
+namespace {
+constexpr std::string_view kPrefix = "rc-backup-";
+constexpr std::string_view kExt = ".yaml";
+
+bool allDigits(std::string_view v) {
+  if (v.empty()) return false;
+  for (char c : v)
+    if (c < '0' || c > '9') return false;
+  return true;
+}
+
+// Stem between prefix and ".yaml", or nullopt-like false.
+bool stemOf(std::string_view name, std::string_view& stem) {
+  if (name.size() <= kPrefix.size() + kExt.size()) return false;
+  if (name.substr(0, kPrefix.size()) != kPrefix) return false;
+  if (name.substr(name.size() - kExt.size()) != kExt) return false;
+  stem = name.substr(kPrefix.size(), name.size() - kPrefix.size() - kExt.size());
+  return true;
+}
+
+// Dated: "YYYYMMDD-HHMMSS" or "YYYYMMDD-HHMMSS-N". stamp = the 15 chars, seq = N (1 when absent).
+bool datedParts(std::string_view name, std::string_view& stamp, long& seq) {
+  std::string_view stem;
+  if (!stemOf(name, stem) || stem.size() < 15) return false;
+  if (!allDigits(stem.substr(0, 8)) || stem[8] != '-' || !allDigits(stem.substr(9, 6))) return false;
+  stamp = stem.substr(0, 15);
+  seq = 1;
+  if (stem.size() == 15) return true;
+  if (stem[15] != '-' || !allDigits(stem.substr(16)) || stem.size() > 25) return false;
+  seq = std::stol(std::string(stem.substr(16)));
+  return true;
+}
+
+bool numbered(std::string_view name, long& n) {
+  std::string_view stem;
+  if (!stemOf(name, stem) || !allDigits(stem) || stem.size() > 9) return false;
+  n = std::stol(std::string(stem));
+  return true;
+}
+}  // namespace
+
+std::string backupFileName(int64_t epochSec, const std::vector<std::string>& existing) {
+  auto has = [&](const std::string& n) { return std::find(existing.begin(), existing.end(), n) != existing.end(); };
+  if (epochSec >= kMinClock) {
+    time_t t = static_cast<time_t>(epochSec);
+    struct tm tm;
+    gmtime_r(&t, &tm);
+    char b[16];
+    strftime(b, sizeof b, "%Y%m%d-%H%M%S", &tm);
+    std::string base = std::string(kPrefix) + b;
+    std::string name = base + std::string(kExt);
+    for (int n = 2; has(name); ++n) name = base + "-" + std::to_string(n) + std::string(kExt);
+    return name;
+  }
+  long maxN = 0;
+  for (const auto& e : existing) {
+    long n;
+    if (numbered(e, n)) maxN = std::max(maxN, n);
+  }
+  return std::string(kPrefix) + std::to_string(maxN + 1) + std::string(kExt);
+}
+
+bool validBackupName(std::string_view name) {
+  if (name.size() <= kExt.size() || name.size() > 64) return false;
+  if (name.substr(name.size() - kExt.size()) != kExt) return false;
+  for (char c : name) {
+    bool ok = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '.' ||
+              c == '_' || c == '-';
+    if (!ok) return false;
+  }
+  return true;
+}
+
+void sortBackupNames(std::vector<std::string>& names) {
+  auto rank = [](const std::string& s, std::string_view& stamp, long& n) {
+    if (datedParts(s, stamp, n)) return 0;
+    if (numbered(s, n)) return 1;
+    return 2;
+  };
+  std::sort(names.begin(), names.end(), [&](const std::string& a, const std::string& b) {
+    std::string_view sa, sb;
+    long na = 0, nb = 0;
+    int ra = rank(a, sa, na), rb = rank(b, sb, nb);
+    if (ra != rb) return ra < rb;
+    if (ra == 0) return sa != sb ? sa > sb : na > nb;
+    if (ra == 1) return na != nb ? na > nb : a < b;
+    return a < b;
+  });
 }
 
 }  // namespace rc

@@ -8,6 +8,7 @@
 #include "ui/grid.h"
 #include "ui/theme.h"
 #include "ui/widgets/list_view.h"
+#include "ui/widgets/overlay.h"
 
 namespace rc {
 
@@ -30,7 +31,8 @@ class BackupPicker {
   void restore();
 
   std::vector<backupstore::FileInfo> files_;
-  ListView list_, confirmMenu_;
+  ListView list_;
+  Overlay confirmBox_;
   bool open_ = false;
   bool confirming_ = false;
 };

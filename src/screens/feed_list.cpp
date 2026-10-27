@@ -94,7 +94,15 @@ void FeedListScreen::onKey(const KeyEvent& k) {
       break;
     case Action::Palette:
       palette_ = true;
-      paletteList_.setSelected(0);
+      box_.open(U"commands", {
+                                 ListItem{U"New entry", U""},
+                                 ListItem{U"Refresh", U""},
+                                 ListItem{U"Watched threads", U""},
+                                 ListItem{U"Bookmarks", U""},
+                                 ListItem{compact() ? U"Text size: Comfortable"
+                                                    : U"Text size: Compact",
+                                          U""},
+                             });
       break;
     default:
       break;
@@ -102,22 +110,20 @@ void FeedListScreen::onKey(const KeyEvent& k) {
 }
 
 void FeedListScreen::paletteKey(const KeyEvent& k) {
-  switch (k.action) {
-    case Action::Up:
-      paletteList_.up();
+  if (k.action == Action::Palette) {
+    palette_ = false;
+    box_.close();
+    return;
+  }
+  switch (box_.key(k)) {
+    case Overlay::Result::None:
       break;
-    case Action::Down:
-      paletteList_.down();
-      break;
-    case Action::Back:
-    case Action::Left:
-    case Action::Palette:
+    case Overlay::Result::Closed:
       palette_ = false;
       break;
-    case Action::Select:
-    case Action::Right:
+    case Overlay::Result::Picked:
       palette_ = false;
-      switch (paletteList_.selected()) {
+      switch (box_.selected()) {
         case kNew:
           router::go(router::Id::Composer);
           break;
@@ -135,8 +141,6 @@ void FeedListScreen::paletteKey(const KeyEvent& k) {
           ui::setTextSize(compact() ? TextSize::Comfortable : TextSize::Compact);
           break;
       }
-      break;
-    default:
       break;
   }
 }
@@ -231,21 +235,7 @@ void FeedListScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
   }
 
   if (palette_) {
-    paletteList_.setItems({
-        ListItem{U"New entry", U""},
-        ListItem{U"Refresh", U""},
-        ListItem{U"Watched threads", U""},
-        ListItem{U"Bookmarks", U""},
-        ListItem{compact() ? U"Text size: Comfortable" : U"Text size: Compact", U""},
-    });
-    int n = int(paletteList_.size());
-    int h = std::min(n, bottom - 2);
-    int top = bottom - h - 1;
-    int width = std::min(g.cols() - 2, 30);
-    int left = std::max(1, g.cols() - width - 1);
-    for (int c = 0; c < width; ++c) g.put(left + c, top, U' ', t.barFg, t.barBg);
-    g.putText(left + 1, top, U"commands", t.barFg, t.barBg, width - 2);
-    paletteList_.render(g, top + 1, bottom, left, width, t);
+    box_.render(g, 1, bottom, 0, OverlayPlace::BottomRight, t);
     drawHint(g, t, U"\u2191\u2193 pick  \u25CF choose  back: close");
   } else if (asked_) {
     drawHint(g, t, U"loading more\u2026");

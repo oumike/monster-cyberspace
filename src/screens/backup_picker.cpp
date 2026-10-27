@@ -53,23 +53,15 @@ void BackupPicker::restore() {
 
 void BackupPicker::onKey(const KeyEvent& k) {
   if (confirming_) {
-    switch (k.action) {
-      case Action::Up:
-        confirmMenu_.up();
+    switch (confirmBox_.key(k)) {
+      case Overlay::Result::None:
         break;
-      case Action::Down:
-        confirmMenu_.down();
-        break;
-      case Action::Back:
-      case Action::Left:
+      case Overlay::Result::Closed:
         confirming_ = false;
         break;
-      case Action::Select:
-      case Action::Right:
-        if (confirmMenu_.selected() == 1) restore();
+      case Overlay::Result::Picked:
+        if (confirmBox_.selected() == 1) restore();
         else confirming_ = false;
-        break;
-      default:
         break;
     }
     return;
@@ -86,11 +78,13 @@ void BackupPicker::onKey(const KeyEvent& k) {
       close();
       break;
     case Action::Select:
-    case Action::Right:
-      confirmMenu_.setItems({ListItem{U"Cancel", U""}, ListItem{U"Restore", U""}});
-      confirmMenu_.setSelected(0);
+    case Action::Right: {
+      const int i = list_.selected();
+      const std::string name = (i >= 0 && size_t(i) < files_.size()) ? files_[size_t(i)].name : "";
+      confirmBox_.confirm(utf8ToU32("Restore " + name + " and restart?"), U"Restore");
       confirming_ = true;
       break;
+    }
     default:
       break;
   }
@@ -104,10 +98,7 @@ void BackupPicker::render(Grid& g, const Theme& t) {
   for (int row = top + 1; row < bottom; ++row)
     for (int c = 0; c < g.cols(); ++c) g.put(c, row, U' ', t.fg, t.bg);
   if (confirming_) {
-    const int i = list_.selected();
-    std::string name = (i >= 0 && size_t(i) < files_.size()) ? files_[size_t(i)].name : "";
-    putLine(g, 1, bottom - 3, "Restore " + name + " and restart?", t.fg, t.bg);
-    confirmMenu_.render(g, bottom - 2, bottom, 1, g.cols() - 2, t);
+    confirmBox_.render(g, top, bottom, 0, OverlayPlace::Bottom, t);
     drawHint(g, t, U"\u2191\u2193 pick  \u25CF confirm  back: cancel");
   } else {
     list_.render(g, top + 1, bottom, 1, g.cols() - 2, t);

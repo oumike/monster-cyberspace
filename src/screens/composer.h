@@ -6,6 +6,7 @@
 #include "screens/router.h"
 #include "ui/widgets/input_line.h"
 #include "ui/widgets/list_view.h"
+#include "ui/widgets/overlay.h"
 #include "ui/widgets/text_area.h"
 
 namespace rc {
@@ -20,7 +21,7 @@ class ComposerScreen : public Screen {
   void onEvent(const Event&) override;
   void render(Grid&, const Theme&, int64_t nowMs) override;
   bool hasOverlay() const override { return menu_ != Menu::None; }
-  void closeOverlays() override { menu_ = Menu::None; }
+  void closeOverlays() override { menu_ = Menu::None; box_.close(); }
 
  private:
   enum Field { kTitle, kBody, kTopics, kPublic, kNsfw, kCw, kFieldCount };
@@ -42,8 +43,7 @@ class ComposerScreen : public Screen {
   int focus_ = kTitle;
   int cols_ = 40;       // the body width, for moving by line
   Menu menu_ = Menu::None;
-  std::u32string menuTitle_;
-  ListView menuList_;
+  Overlay box_;
 };
 
 // Settles a post that finished while another screen was showing: a success

@@ -87,37 +87,45 @@ void SettingsScreen::zoneKey(const KeyEvent& k) {
   }
 }
 
+void SettingsScreen::confirmKey(const KeyEvent& k) {
+  const Confirm c = confirm_;
+  switch (confirmBox_.key(k)) {
+    case Overlay::Result::None:
+      break;
+    case Overlay::Result::Closed:
+      confirm_ = Confirm::None;
+      break;
+    case Overlay::Result::Picked:
+      confirm_ = Confirm::None;
+      if (confirmBox_.selected() != 1) break;
+      if (c == Confirm::Logout) {
+        chatSource().command(Command{CmdType::Logout});
+      } else {
+        settings::factoryReset();
+        delay(100);
+        ESP.restart();
+      }
+      break;
+  }
+}
+
 void SettingsScreen::onKey(const KeyEvent& k) {
   if (picker_.isOpen()) return picker_.onKey(k);
   if (picking_) return zoneKey(k);
-  ListView& m = confirm_ != Confirm::None ? confirmMenu_ : menu_;
+  if (confirm_ != Confirm::None) return confirmKey(k);
   switch (k.action) {
     case Action::Up:
-      m.up();
+      menu_.up();
       break;
     case Action::Down:
-      m.down();
+      menu_.down();
       break;
     case Action::Back:
     case Action::Left:
-      if (confirm_ != Confirm::None) confirm_ = Confirm::None;
-      else router::go(router::Id::Home);
+      router::go(router::Id::Home);
       break;
     case Action::Select:
     case Action::Right:
-      if (confirm_ != Confirm::None) {
-        Confirm c = confirm_;
-        confirm_ = Confirm::None;
-        if (confirmMenu_.selected() != 1) break;
-        if (c == Confirm::Logout) {
-          chatSource().command(Command{CmdType::Logout});
-        } else {
-          settings::factoryReset();
-          delay(100);
-          ESP.restart();
-        }
-        break;
-      }
       switch (menuItems()[menu_.selected()]) {
         case kTheme: {
           AppState& a = app();
@@ -144,11 +152,11 @@ void SettingsScreen::onKey(const KeyEvent& k) {
           break;
         case kLogout:
           confirm_ = Confirm::Logout;
-          confirmMenu_.setSelected(0);
+          confirmBox_.confirm(U"Log out of Cyberspace?", U"Log out");
           break;
         case kReset:
           confirm_ = Confirm::Reset;
-          confirmMenu_.setSelected(0);
+          confirmBox_.confirm(U"Erase Wi-Fi, account and settings?", U"Erase everything");
           break;
       }
       break;
@@ -228,13 +236,7 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
     zoneList_.render(g, top + 1, bottom, 1, g.cols() - 2, t);
     drawHint(g, t, U"\u2191\u2193 pick  \u25CF set  back: cancel");
   } else if (confirm_ != Confirm::None) {
-    bool reset = confirm_ == Confirm::Reset;
-    confirmMenu_.setItems({ListItem{U"Cancel", U""},
-                           ListItem{reset ? U"Erase everything" : U"Log out", U"", ItemTone::Error}});
-    putLine(g, 1, bottom - 3,
-            reset ? "Erase Wi-Fi, account and settings?" : "Log out of Cyberspace?", t.error,
-            t.bg);
-    confirmMenu_.render(g, bottom - 2, bottom, 1, g.cols() - 2, t);
+    confirmBox_.render(g, 1, bottom, 0, OverlayPlace::Bottom, t);
     drawHint(g, t, U"\u2191\u2193 pick  \u25CF confirm  back: cancel");
   } else {
     menu_.render(g, bottom - nItems, bottom, 1, g.cols() - 2, t);

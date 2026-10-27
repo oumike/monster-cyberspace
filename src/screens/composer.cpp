@@ -152,35 +152,29 @@ void ComposerScreen::discard() {
 
 void ComposerScreen::openMenu(Menu m, std::u32string title, std::vector<ListItem> items) {
   menu_ = m;
-  menuTitle_ = std::move(title);
-  menuList_.setItems(std::move(items));
-  menuList_.setSelected(0);  // Post in the actions menu; Cancel in a confirm
+  box_.open(std::move(title), std::move(items));  // Post in the actions menu; Cancel in a confirm
 }
 
 void ComposerScreen::menuKey(const KeyEvent& k) {
-  switch (k.action) {
-    case Action::Up:
-      menuList_.up();
-      break;
-    case Action::Down:
-      menuList_.down();
-      break;
-    case Action::Back:
-    case Action::Left:
-    case Action::Palette:
-      menu_ = Menu::None;
-      break;
-    case Action::Select:
-    case Action::Right:
+  if (k.action == Action::Palette) {
+    menu_ = Menu::None;
+    box_.close();
+    return;
+  }
+  switch (box_.key(k)) {
+    case Overlay::Result::Picked:
       pick();
       break;
-    default:
+    case Overlay::Result::Closed:
+      menu_ = Menu::None;
+      break;
+    case Overlay::Result::None:
       break;
   }
 }
 
 void ComposerScreen::pick() {
-  const int i = menuList_.selected();
+  const int i = box_.selected();
   const Menu m = menu_;
   menu_ = Menu::None;
   switch (m) {
@@ -280,15 +274,8 @@ void ComposerScreen::render(Grid& g, const Theme& t, int64_t) {
   cw_.setDisabled(focus_ != kCw || gPosting);
   cw_.render(g, cwRow, t, U"CW ");
 
-  if (menu_ != Menu::None) {
-    const int n = int(menuList_.size());
-    const int width = std::min(g.cols() - 2, std::max(20, int(menuTitle_.size()) + 2));
-    const int left = std::max(1, (g.cols() - width) / 2);
-    const int top = std::max(1, (rows - n - 1) / 2);
-    for (int c = 0; c < width; ++c) g.put(left + c, top, U' ', t.barFg, t.barBg);
-    g.putText(left + 1, top, menuTitle_, t.barFg, t.barBg, width - 2);
-    menuList_.render(g, top + 1, std::min(rows, top + 1 + n), left, width, t);
-  }
+  if (menu_ != Menu::None)
+    box_.render(g, 0, rows, 0, OverlayPlace::Centre, t);
 
   if (small) {
     const char32_t* hint;

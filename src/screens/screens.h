@@ -5,6 +5,7 @@
 #include "ui/widgets/entry_list.h"
 #include "ui/widgets/input_line.h"
 #include "ui/widgets/list_view.h"
+#include "ui/widgets/overlay.h"
 
 namespace rc {
 
@@ -75,8 +76,10 @@ class SettingsScreen : public Screen {
   enum class Confirm { None, Logout, Reset };
   void openZones();
   void zoneKey(const KeyEvent&);
+  void confirmKey(const KeyEvent&);
 
-  ListView menu_, confirmMenu_, zoneList_;
+  ListView menu_, zoneList_;
+  Overlay confirmBox_;
   BackupPicker picker_;
   Confirm confirm_ = Confirm::None;
   bool picking_ = false;  // the time zone list is open
@@ -135,7 +138,7 @@ class FeedListScreen : public Screen {
 
   const Kind kind_;
   EntryList list_;
-  ListView paletteList_;
+  Overlay box_;
   bool palette_ = false;
   std::vector<std::string> ids_;
   std::vector<std::string> replyIds_;  // Bookmarks: the bookmarked reply per row, or ""

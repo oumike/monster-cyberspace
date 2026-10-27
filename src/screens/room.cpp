@@ -48,7 +48,7 @@ void RoomScreen::enter(const std::string& slug) {
   slug_ = slug.empty() && !dm_ ? std::string("general") : slug;
   log_.follow();
   input_.clear();
-  overlay_ = Overlay::None;
+  view_ = View::None;
   reasonMode_ = false;
   pending_.clear();
   olderAsked_ = false;
@@ -104,11 +104,12 @@ void RoomScreen::stopTyping() {
 
 bool RoomScreen::hasOverlay() const {
   // The drawer is not an overlay: it persists across rooms.
-  return overlay_ != Overlay::None || reasonMode_ || !log_.following();
+  return view_ != View::None || reasonMode_ || !log_.following();
 }
 
 void RoomScreen::closeOverlays() {
-  overlay_ = Overlay::None;
+  view_ = View::None;
+  box_.close();
   if (reasonMode_) {
     reasonMode_ = false;
     input_.setText(savedInput_);
@@ -132,8 +133,8 @@ void RoomScreen::insertText(const std::u32string& s) {
 // ---- keys ----
 
 void RoomScreen::onKey(const KeyEvent& k) {
-  if (overlay_ == Overlay::Menu) return menuKey(k);
-  if (overlay_ != Overlay::None) return viewerKey(k);
+  if (view_ == View::Menu) return menuKey(k);
+  if (view_ != View::None) return viewerKey(k);
   if (reasonMode_) return reasonKey(k);
   typingKey(k);
 }
@@ -267,15 +268,15 @@ void RoomScreen::viewerKey(const KeyEvent& k) {
       ++viewTop_;  // clamped in render
       break;
     case Action::Left:
-      if (overlay_ == Overlay::Reader && viewLeft_ > 0) viewLeft_ = std::max(0, viewLeft_ - 8);
-      else overlay_ = Overlay::None;
+      if (view_ == View::Reader && viewLeft_ > 0) viewLeft_ = std::max(0, viewLeft_ - 8);
+      else view_ = View::None;
       break;
     case Action::Right:
       viewLeft_ += 8;  // clamped in render
       break;
     case Action::Back:
     case Action::Select:
-      overlay_ = Overlay::None;
+      view_ = View::None;
       break;
     default:
       break;
@@ -286,10 +287,8 @@ void RoomScreen::viewerKey(const KeyEvent& k) {
 
 void RoomScreen::openMenu(Menu m, std::u32string title, std::vector<ListItem> items) {
   menu_ = m;
-  menuTitle_ = std::move(title);
-  menuList_.setItems(std::move(items));
-  menuList_.setSelected(0);
-  overlay_ = Overlay::Menu;
+  box_.open(std::move(title), std::move(items));
+  view_ = View::Menu;
 }
 
 void RoomScreen::openRoomMenu() {
@@ -356,31 +355,23 @@ void RoomScreen::openMessageMenu() {
 }
 
 void RoomScreen::menuKey(const KeyEvent& k) {
-  switch (k.action) {
-    case Action::Up:
-      menuList_.up();
-      break;
-    case Action::Down:
-      menuList_.down();
-      break;
-    case Action::Back:
-    case Action::Left:
-      overlay_ = Overlay::None;
-      break;
-    case Action::Select:
-    case Action::Right:
+  switch (box_.key(k)) {
+    case Overlay::Result::Picked:
       pickMenu();
       break;
-    default:
+    case Overlay::Result::Closed:
+      view_ = View::None;
+      break;
+    case Overlay::Result::None:
       break;
   }
 }
 
 void RoomScreen::pickMenu() {
-  int i = menuList_.selected();
+  int i = box_.selected();
   if (i < 0 || i >= int(menuKeys_.size())) return;
   const std::string key = menuKeys_[i];
-  overlay_ = Overlay::None;
+  view_ = View::None;
   switch (menu_) {
     case Menu::Palette:
       if (key == "size") ui::setTextSize(compact() ? TextSize::Comfortable : TextSize::Compact);
@@ -508,12 +499,12 @@ void RoomScreen::openReader(const CircMessage& m) {
   }
   wrapView_ = art.empty();
   viewTop_ = viewLeft_ = 0;
-  overlay_ = Overlay::Reader;
+  view_ = View::Reader;
 }
 
 void RoomScreen::openLink(const std::string& url) {
   link_.open(url);
-  overlay_ = Overlay::Link;
+  view_ = View::Link;
 }
 
 // ---- events ----
@@ -577,7 +568,7 @@ void RoomScreen::render(Grid& g, const Theme& t, int64_t) {
       relayout_ = true;
     }
     // Mark read while the newest messages are on screen.
-    if (log_.following() && overlay_ == Overlay::None && !s.store.messages().empty()) {
+    if (log_.following() && view_ == View::None && !s.store.messages().empty()) {
       int64_t newest = s.store.newestTimestamp();
       auto it = s.readAt.find(slug_);
       bool behind = it == s.readAt.end() || newest > it->second;
@@ -617,11 +608,11 @@ void RoomScreen::render(Grid& g, const Theme& t, int64_t) {
   g.fill(t.bg);
   drawStatus(g, t, utf8ToU32(dm_ ? "@" + partner_ : "#" + slug_), dm_ ? -1 : online);
 
-  if (overlay_ == Overlay::Link) {
+  if (view_ == View::Link) {
     link_.render(g, t);
     return;
   }
-  if (overlay_ == Overlay::Reader) {
+  if (view_ == View::Reader) {
     // A full-screen viewer below the status bar.
     std::vector<std::u32string> rows =
         wrapView_ ? wrapText(viewLines_[0], g.cols() - 2, g.cols() - 2) : viewLines_;
@@ -652,26 +643,17 @@ void RoomScreen::render(Grid& g, const Theme& t, int64_t) {
   log_.render(g, 1, logBottom, reserve, t);
   if (drawer) drawer_.render(g, 1, logBottom, t);
 
-  if (overlay_ == Overlay::Menu) {
-    int n = int(menuList_.size());
-    int h = std::min(n, logBottom - 2);
-    int top = logBottom - h - 1;
-    int width = std::min(g.cols() - 2, 30);
-    int left = g.cols() - width - 1 - reserve;
-    if (left < 1) left = 1;
-    for (int c = 0; c < width; ++c) g.put(left + c, top, U' ', t.barFg, t.barBg);
-    g.putText(left + 1, top, menuTitle_, t.barFg, t.barBg, width - 2);
-    menuList_.render(g, top + 1, logBottom, left, width, t);
-  }
+  if (view_ == View::Menu)
+    box_.render(g, 1, logBottom, reserve, OverlayPlace::BottomRight, t);
 
   bool offline = app().conn == 0;
-  input_.setDisabled(offline || overlay_ != Overlay::None);
+  input_.setDisabled(offline || view_ != View::None);
   input_.render(g, inputRow, t, reasonMode_ ? U"reason> " : U"> ");
 
   if (small) {
     const char32_t* hint;
     if (reasonMode_) hint = U"type a reason (optional)  \u25CF report  back: cancel";
-    else if (overlay_ == Overlay::Menu) hint = U"\u2191\u2193 pick  \u25CF choose  back: close";
+    else if (view_ == View::Menu) hint = U"\u2191\u2193 pick  \u25CF choose  back: close";
     else if (drawer) hint = U"\u2191\u2193 pick  \u25CF menu  \u2190 close";
     else if (!log_.following()) hint = U"\u25CF actions  \u2193 back to typing";
     else if (offline) hint = U"offline: reading only";

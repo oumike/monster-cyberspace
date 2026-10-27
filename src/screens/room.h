@@ -11,6 +11,7 @@
 #include "ui/widgets/input_line.h"
 #include "ui/widgets/list_view.h"
 #include "ui/widgets/log_view.h"
+#include "ui/widgets/overlay.h"
 
 namespace rc {
 
@@ -31,7 +32,7 @@ class RoomScreen : public Screen {
   void closeOverlays() override;
 
  private:
-  enum class Overlay { None, Menu, Reader, Link };
+  enum class View { None, Menu, Reader, Link };
   enum class Menu { Room, Person, Message, MutePick, UnmutePick, Palette, ConfirmDelete, ConfirmReport };
 
   // Keys by mode.
@@ -64,10 +65,9 @@ class RoomScreen : public Screen {
   LogView log_;
   InputLine input_;
   Drawer drawer_;
-  ListView menuList_;
-  Overlay overlay_ = Overlay::None;
+  Overlay box_;
+  View view_ = View::None;
   Menu menu_ = Menu::Room;
-  std::u32string menuTitle_;
   std::vector<std::string> menuKeys_;  // the action or name behind each item
   std::string target_;                 // the person or message a menu acts on
 

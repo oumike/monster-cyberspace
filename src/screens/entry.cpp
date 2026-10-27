@@ -60,7 +60,7 @@ void EntryScreen::enter(const std::string& arg) {
   log_.setLines({});
   log_.follow();
   input_.clear();
-  overlay_ = Overlay::None;
+  view_ = View::None;
   reasonMode_ = false;
   loaded_ = hidden_ = revealed_ = sending_ = moreAsked_ = false;
   title_.clear();
@@ -70,7 +70,8 @@ void EntryScreen::enter(const std::string& arg) {
 }
 
 void EntryScreen::leave() {
-  overlay_ = Overlay::None;
+  view_ = View::None;
+  box_.close();
   reasonMode_ = false;
   sending_ = false;
   log_.setLines({});
@@ -79,11 +80,12 @@ void EntryScreen::leave() {
 }
 
 bool EntryScreen::hasOverlay() const {
-  return overlay_ != Overlay::None || reasonMode_ || !log_.following();
+  return view_ != View::None || reasonMode_ || !log_.following();
 }
 
 void EntryScreen::closeOverlays() {
-  overlay_ = Overlay::None;
+  view_ = View::None;
+  box_.close();
   if (reasonMode_) {
     reasonMode_ = false;
     input_.setText(savedInput_);
@@ -99,10 +101,10 @@ std::string EntryScreen::selectedReply() const {
 // ---- keys ----
 
 void EntryScreen::onKey(const KeyEvent& k) {
-  if (overlay_ == Overlay::Menu) return menuKey(k);
-  if (overlay_ == Overlay::Link) {
+  if (view_ == View::Menu) return menuKey(k);
+  if (view_ == View::Link) {
     if (k.action == Action::Back || k.action == Action::Select || k.action == Action::Left)
-      overlay_ = Overlay::None;
+      view_ = View::None;
     return;
   }
   if (reasonMode_) return reasonKey(k);
@@ -233,10 +235,8 @@ void EntryScreen::reasonKey(const KeyEvent& k) {
 
 void EntryScreen::openMenu(Menu m, std::u32string title, std::vector<ListItem> items) {
   menu_ = m;
-  menuTitle_ = std::move(title);
-  menuList_.setItems(std::move(items));
-  menuList_.setSelected(0);
-  overlay_ = Overlay::Menu;
+  box_.open(std::move(title), std::move(items));
+  view_ = View::Menu;
 }
 
 void EntryScreen::openEntryMenu() {
@@ -311,31 +311,23 @@ void EntryScreen::openReplyMenu(const std::string& replyId) {
 }
 
 void EntryScreen::menuKey(const KeyEvent& k) {
-  switch (k.action) {
-    case Action::Up:
-      menuList_.up();
-      break;
-    case Action::Down:
-      menuList_.down();
-      break;
-    case Action::Back:
-    case Action::Left:
-      overlay_ = Overlay::None;
-      break;
-    case Action::Select:
-    case Action::Right:
+  switch (box_.key(k)) {
+    case Overlay::Result::Picked:
       pickMenu();
       break;
-    default:
+    case Overlay::Result::Closed:
+      view_ = View::None;
+      break;
+    case Overlay::Result::None:
       break;
   }
 }
 
 void EntryScreen::pickMenu() {
-  int i = menuList_.selected();
+  int i = box_.selected();
   if (i < 0 || i >= int(menuKeys_.size())) return;
   const std::string key = menuKeys_[i];
-  overlay_ = Overlay::None;
+  view_ = View::None;
   switch (menu_) {
     case Menu::Entry:
     case Menu::Reply:
@@ -350,7 +342,7 @@ void EntryScreen::pickMenu() {
         feedSource().command(Command{key == "watch" ? CmdType::Watch : CmdType::Unwatch, postId_});
       } else if (key == "link") {
         link_.open(url_);
-        overlay_ = Overlay::Link;
+        view_ = View::Link;
       } else if (key == "report") {
         menuKeys_ = {"cancel", "report"};
         openMenu(Menu::ConfirmReport, targetReply_ ? U"report this reply?" : U"report this entry?",
@@ -492,7 +484,7 @@ void EntryScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
 
   g.fill(t.bg);
   drawStatus(g, t, title_.empty() ? std::u32string(U"entry") : title_, -1);
-  if (overlay_ == Overlay::Link) {
+  if (view_ == View::Link) {
     link_.render(g, t);
     return;
   }
@@ -510,24 +502,16 @@ void EntryScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
   if (loaded_) log_.render(g, 1, logBottom, 0, t);
   else putLine(g, 1, 2, offline ? "offline" : "loading\u2026", t.dim, t.bg);
 
-  if (overlay_ == Overlay::Menu) {
-    int n = int(menuList_.size());
-    int h = std::min(n, logBottom - 2);
-    int top = logBottom - h - 1;
-    int width = std::min(g.cols() - 2, 30);
-    int left = std::max(1, g.cols() - width - 1);
-    for (int c = 0; c < width; ++c) g.put(left + c, top, U' ', t.barFg, t.barBg);
-    g.putText(left + 1, top, menuTitle_, t.barFg, t.barBg, width - 2);
-    menuList_.render(g, top + 1, logBottom, left, width, t);
-  }
+  if (view_ == View::Menu)
+    box_.render(g, 1, logBottom, 0, OverlayPlace::BottomRight, t);
 
-  input_.setDisabled(offline || overlay_ != Overlay::None || sending_ || !loaded_);
+  input_.setDisabled(offline || view_ != View::None || sending_ || !loaded_);
   input_.render(g, inputRow, t, reasonMode_ ? U"reason> " : U"> ");
 
   if (small) {
     const char32_t* hint;
     if (reasonMode_) hint = U"type a reason (optional)  \u25CF report  back: cancel";
-    else if (overlay_ == Overlay::Menu) hint = U"\u2191\u2193 pick  \u25CF choose  back: close";
+    else if (view_ == View::Menu) hint = U"\u2191\u2193 pick  \u25CF choose  back: close";
     else if (sending_) hint = U"sending\u2026";
     else if (moreAsked_) hint = U"loading replies\u2026";
     else if (offline) hint = U"offline: reading only";

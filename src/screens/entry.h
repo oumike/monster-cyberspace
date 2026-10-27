@@ -11,6 +11,7 @@
 #include "ui/widgets/input_line.h"
 #include "ui/widgets/list_view.h"
 #include "ui/widgets/log_view.h"
+#include "ui/widgets/overlay.h"
 
 namespace rc {
 
@@ -31,7 +32,7 @@ class EntryScreen : public Screen {
   void closeOverlays() override;
 
  private:
-  enum class Overlay { None, Menu, Link };
+  enum class View { None, Menu, Link };
   enum class Menu { Entry, Reply, ConfirmDelete, ConfirmReport };
 
   void typingKey(const KeyEvent&);
@@ -55,11 +56,10 @@ class EntryScreen : public Screen {
   bool repliesArrived_ = false;
   LogView log_;
   InputLine input_;
-  ListView menuList_;
+  Overlay box_;
   LinkView link_;
-  Overlay overlay_ = Overlay::None;
+  View view_ = View::None;
   Menu menu_ = Menu::Entry;
-  std::u32string menuTitle_;
   std::vector<std::string> menuKeys_;
   std::string target_;        // the entry or reply a menu acts on
   bool targetReply_ = false;  // target_ is a reply

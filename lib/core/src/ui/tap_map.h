@@ -38,7 +38,7 @@ class TapMap {
   void addCells(int c0, int r0, int c1, int r1, const Target& t, int cellW = 0);
   // Re-places the rows of targets added with setOrigin(_, firstRow) by the
   // renderer's row spans (rowSpans), so taps land on RowKind::Big rows as
-  // drawn. Call once the grid is drawn; other grids' targets are left alone.
+  // drawn, and shifts them right by their first row's shift. Call once the grid is drawn; other grids' targets are left alone.
   void mapRows(int firstRow, const std::vector<RowSpan>& spans);
   void setList(ListId id, int selected, int count, bool wraps);
   const ListInfo* list(ListId id) const;  // null if not registered this frame

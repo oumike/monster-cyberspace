@@ -51,6 +51,10 @@ class Grid {
   // default, and after fill()) goes by the kind.
   void setRowPad(int row, int px);
   int rowPad(int row) const;
+  // Draws the row's cells px to the right (0 by default and after fill()),
+  // for centring to the pixel; the strip on the left takes cell 0's background.
+  void setRowShift(int row, int px);
+  int rowShift(int row) const;
   const Cell& at(int col, int row) const;
   bool rowDirty(int row) const;
   void clearDirty();
@@ -62,7 +66,7 @@ class Grid {
   std::vector<Cell> cells_, drawn_;
   std::vector<bool> forced_;  // rows dirty regardless of content (after resize)
   std::vector<RowKind> kinds_;
-  std::vector<int16_t> pads_;
+  std::vector<int16_t> pads_, shifts_;
 };
 
 enum class TextSize { Comfortable, Compact };
@@ -81,6 +85,7 @@ int bigCols(int panelW, TextSize s);
 // the hint keeps its place, and a row reaching past it is cut short.
 struct RowSpan {
   int y, h;
+  int x = 0;  // the row's shift (Grid::setRowShift)
 };
 std::vector<RowSpan> rowSpans(const Grid& g, int rowH, int bigH);
 

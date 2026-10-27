@@ -35,12 +35,21 @@ void Renderer::resize() {
 
 void Renderer::drawRow(const Grid& g, int r, const CellFont& font, RowSpan span) {
   const int cw = font.w, ch = std::min<int>(font.h, span.h), y0 = span.y;
+  const int ox = std::clamp(span.x, 0, w_);
   const int rb = rowBytes(font);
-  const int cols = std::min(g.cols(), w_ / cw);
-  const int used = cols * cw;
+  const int cols = std::min(g.cols(), (w_ - ox) / cw);
+  const int used = ox + cols * cw;
+  // A shifted row: the strip on the left takes cell 0's background.
+  if (ox > 0 && g.cols() > 0) {
+    const uint16_t bg = g.at(0, r).bg;
+    for (int y = 0; y < ch; ++y) {
+      uint16_t* px = frame_ + static_cast<size_t>(y0 + y) * w_;
+      for (int x = 0; x < ox; ++x) px[x] = bg;
+    }
+  }
   for (int c = 0; c < cols; ++c) {
     const Cell& cell = g.at(c, r);
-    const int x0 = c * cw;
+    const int x0 = ox + c * cw;
     const uint8_t* glyph = glyphFor(font, cell.cp);
     for (int y = 0; y < ch; ++y) {
       uint16_t bits = 0;
@@ -104,11 +113,12 @@ void Renderer::draw(Grid& g, TextSize s, int firstRow) {
   bool aboveGapChanged = false;
   for (int r = 0; r < n; ++r) {
     const RowSpan sp = spans[r];
-    const bool moved = !sameShape || layer.spans[r].y != sp.y || layer.spans[r].h != sp.h;
+    const bool moved = !sameShape || layer.spans[r].y != sp.y || layer.spans[r].h != sp.h ||
+                       layer.spans[r].x != sp.x;
     if (!moved && !g.rowDirty(r)) continue;
     if (r == n - 2) aboveGapChanged = true;
     if (sp.h <= 0 || top + sp.y + sp.h > h_) continue;
-    drawRow(g, r, g.rowKind(r) == RowKind::Big ? big : font, RowSpan{top + sp.y, sp.h});
+    drawRow(g, r, g.rowKind(r) == RowKind::Big ? big : font, RowSpan{top + sp.y, sp.h, sp.x});
   }
   // Rows of other heights can leave a gap above the last row; clear it.
   if (n >= 2) {

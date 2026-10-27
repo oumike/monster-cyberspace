@@ -893,20 +893,24 @@ void test_home_tiles_height_percent() {
   TEST_ASSERT_EQUAL(13, t[5].r1);
 }
 
-void test_tile_rows_centre() {
+void test_tile_span_centre() {
   // 208 px between the status bar and the hint, 18 px rows, 90%: 187 px is
   // 10 rows (180 px), leaving 14 px above and 14 below.
-  TileRows r = tileRows(208, 18, 90);
-  TEST_ASSERT_EQUAL(10, r.rows);
+  TileSpan r = tileSpan(208, 18, 90);
+  TEST_ASSERT_EQUAL(10, r.cells);
   TEST_ASSERT_EQUAL(14, r.padPx);
-  // An odd leftover puts the extra pixel below.
-  r = tileRows(209, 18, 90);
-  TEST_ASSERT_EQUAL(10, r.rows);
+  // An odd leftover puts the extra pixel after.
+  r = tileSpan(209, 18, 90);
+  TEST_ASSERT_EQUAL(10, r.cells);
   TEST_ASSERT_EQUAL(14, r.padPx);
-  // Never more rows than fit.
-  r = tileRows(36, 18, 100);
-  TEST_ASSERT_EQUAL(2, r.rows);
+  // Never more cells than fit.
+  r = tileSpan(36, 18, 100);
+  TEST_ASSERT_EQUAL(2, r.cells);
   TEST_ASSERT_EQUAL(0, r.padPx);
+  // Across: 320 px of 10 px cells at 90% is 29 cells, 15 px each side.
+  r = tileSpan(320, 10, 90);
+  TEST_ASSERT_EQUAL(29, r.cells);
+  TEST_ASSERT_EQUAL(15, r.padPx);
 }
 
 void test_tile_move() {
@@ -970,7 +974,7 @@ int main() {
   RUN_TEST(test_home_tiles_too_small);
   RUN_TEST(test_home_tiles_percent);
   RUN_TEST(test_home_tiles_height_percent);
-  RUN_TEST(test_tile_rows_centre);
+  RUN_TEST(test_tile_span_centre);
   RUN_TEST(test_tile_move);
   return UNITY_END();
 }

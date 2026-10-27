@@ -19,13 +19,13 @@ struct TileRect {
 std::vector<TileRect> homeTiles(int cols, int rows, int count, int percent = 100,
                                 int heightPercent = -1);
 
-// How many rows of rowH px make `percent` of an areaPx-tall space (rounded,
-// never more than fit), and the padding above them that centres them; the
-// rest, padPx or one more, goes below.
-struct TileRows {
-  int rows, padPx;
+// How many cells of unitPx make `percent` of an areaPx span (rounded, never
+// more than fit), and the padding before them that centres them; the rest,
+// padPx or one more, goes after.
+struct TileSpan {
+  int cells, padPx;
 };
-TileRows tileRows(int areaPx, int rowH, int percent);
+TileSpan tileSpan(int areaPx, int unitPx, int percent);
 
 // Moves the tile selection by one key in the two-column grid: Up/Down by a
 // row, Left/Right within a row. Clamps at the edges; never wraps.

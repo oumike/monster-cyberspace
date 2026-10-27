@@ -171,20 +171,21 @@ void HomeScreen::render(Grid& g, const Theme& t, int64_t) {
 
   // Touch boards: the tiles take kTilePercent of the space between the status
   // bar and the hint, on RowKind::Big rows (the next font up, +2 px) or, if
-  // those can't fit them, the grid's own rows. Row 1 is a blank pad row that
-  // makes the space above the tiles match the space below.
+  // those can't fit them, the grid's own rows. They're centred to the pixel:
+  // row 1 is a blank pad row above them, and their rows are shifted right.
   std::vector<TileRect> tiles;
   bool big = false;
-  TileRows tr{0, 0};
+  TileSpan down{0, 0}, across{0, 0};
   if (board::hasTouch() && g.rows() > 3) {
     const TextSize ts = a.cfg.textSize;
     const int areaPx = (g.rows() - 2) * cellSize(ts).h;
     for (bool tryBig : {true, false}) {
-      const int rowH = tryBig ? bigCellSize(ts).h : cellSize(ts).h;
-      const int cols = tryBig ? bigCols(board::panelWidth(), ts) : g.cols();
-      tr = tileRows(areaPx, rowH, kTilePercent);
-      // Tiles on rows 1..tr.rows, then shifted down past the pad row.
-      tiles = homeTiles(cols, std::min(tr.rows, g.rows() - 3) + 2, kTileCount, kTilePercent, 100);
+      const CellSize cell = tryBig ? bigCellSize(ts) : cellSize(ts);
+      down = tileSpan(areaPx, cell.h, kTilePercent);
+      across = tileSpan(board::panelWidth(), cell.w, kTilePercent);
+      down.cells = std::min(down.cells, g.rows() - 3);
+      // Tiles on rows 1..down.cells, then moved down past the pad row.
+      tiles = homeTiles(across.cells, down.cells + 2, kTileCount, 100);
       if (!tiles.empty()) {
         big = tryBig;
         break;
@@ -195,10 +196,14 @@ void HomeScreen::render(Grid& g, const Theme& t, int64_t) {
   const int cellW = big ? bigCellSize(a.cfg.textSize).w : 0;
   tileMode_ = !tiles.empty();
   if (tileMode_) {
-    g.setRowPad(1, tr.padPx);
+    g.setRowPad(1, down.padPx);
     for (int r = 2; r <= g.rows() - 2; ++r) {
-      if (r > tr.rows + 1) g.setRowKind(r, RowKind::Skip);
-      else if (big) g.setRowKind(r, RowKind::Big);
+      if (r > down.cells + 1) {
+        g.setRowKind(r, RowKind::Skip);
+        continue;
+      }
+      if (big) g.setRowKind(r, RowKind::Big);
+      g.setRowShift(r, across.padPx);
     }
     // @user stays in the status bar; the list-mode fields are dropped.
     drawStatus(g, t, a.user.empty() ? std::u32string(U"home") : utf8ToU32("@" + a.user), -1);

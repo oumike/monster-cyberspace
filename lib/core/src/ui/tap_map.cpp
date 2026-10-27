@@ -41,6 +41,8 @@ void TapMap::mapRows(int firstRow, const std::vector<RowSpan>& spans) {
     if (rc.firstRow != firstRow || rc.r0 < 0 || rc.r1 >= n || rc.r0 > rc.r1) continue;
     rc.y0 = top + spans[rc.r0].y;
     rc.y1 = top + spans[rc.r1].y + spans[rc.r1].h - 1;  // all-Skip rows: y1 < y0, never hit
+    rc.x0 += spans[rc.r0].x;
+    rc.x1 += spans[rc.r0].x;
   }
 }
 

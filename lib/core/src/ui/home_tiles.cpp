@@ -34,11 +34,11 @@ std::vector<TileRect> homeTiles(int cols, int rows, int count, int percent, int 
   return out;
 }
 
-TileRows tileRows(int areaPx, int rowH, int percent) {
-  if (areaPx <= 0 || rowH <= 0) return TileRows{0, 0};
-  int rows = (areaPx * percent / 100 + rowH / 2) / rowH;
-  rows = std::min(rows, areaPx / rowH);
-  return TileRows{rows, (areaPx - rows * rowH) / 2};
+TileSpan tileSpan(int areaPx, int unitPx, int percent) {
+  if (areaPx <= 0 || unitPx <= 0) return TileSpan{0, 0};
+  int cells = (areaPx * percent / 100 + unitPx / 2) / unitPx;
+  cells = std::min(cells, areaPx / unitPx);
+  return TileSpan{cells, (areaPx - cells * unitPx) / 2};
 }
 
 int tileMove(int selected, int count, Action a) {

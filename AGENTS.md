@@ -105,7 +105,7 @@ flashing; `PANEL_MADCTL` and `TOUCH_ROT` await the hardware check).
 `docs/TESTING.md` (themes, device Settings, touch UI, Wio L2, T-Deck Plus, GPS time, API
 assumptions, settings backup), then the human live checklist on the `m9` build.
 CI (`.github/workflows/build.yml`) runs on GitHub.
-The native suite is green: 357/357
+The native suite is green: 359/359
 (`pio test -e native`), and `scripts/build-upload-monitor.sh -B` builds all
 six firmware envs.
 

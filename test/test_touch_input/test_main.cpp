@@ -279,6 +279,21 @@ void test_tap_map_topmost_wins() {
   TEST_ASSERT_EQUAL(int(Action::Back), int(h.tap.action));
 }
 
+void test_tap_map_rows_follow_shift() {
+  // Row 1 is drawn 15 px to the right; its targets move with it.
+  Grid g(10, 3);
+  g.setRowShift(1, 15);
+  TapMap m;
+  m.setOrigin(CellSize{8, 16}, 0);
+  m.addCells(0, 1, 2, 1, rowTarget(ListId::Main, 4), 10);
+  m.addCells(0, 0, 2, 0, rowTarget(ListId::Main, 7));
+  m.mapRows(0, rowSpans(g, 16, 18));
+  TEST_ASSERT_EQUAL(4, m.hit(15, 16).index);
+  TEST_ASSERT_EQUAL(4, m.hit(44, 16).index);
+  TEST_ASSERT_EQUAL(int(TargetKind::None), int(m.hit(14, 16).kind));
+  TEST_ASSERT_EQUAL(7, m.hit(0, 0).index);  // unshifted rows stay put
+}
+
 void test_tap_map_rows_follow_spans() {
   // A Feed-like grid: row 0 bar, rows 1/3 Big entry heads (h 16), rows 2/4
   // bodies, row 5 Skip, row 6 the hint. Each entry is two rows.
@@ -570,6 +585,7 @@ int main() {
   RUN_TEST(test_tap_map_topmost_wins);
   RUN_TEST(test_tap_map_clear);
   RUN_TEST(test_tap_map_rows_follow_spans);
+  RUN_TEST(test_tap_map_rows_follow_shift);
   RUN_TEST(test_tap_map_rows_leave_other_grids);
   RUN_TEST(test_field_hit_position);
   RUN_TEST(test_resolve_row_tap_and_hold);

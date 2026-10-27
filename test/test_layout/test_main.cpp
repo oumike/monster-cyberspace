@@ -133,6 +133,16 @@ void test_row_spans_pad_rows() {
   TEST_ASSERT_EQUAL(24, rowSpans(g, 12, 14)[2].y);
 }
 
+void test_row_spans_shift() {
+  Grid g(5, 3);
+  g.setRowShift(1, 15);
+  std::vector<RowSpan> s = rowSpans(g, 12, 14);
+  TEST_ASSERT_EQUAL(0, s[0].x);
+  TEST_ASSERT_EQUAL(15, s[1].x);
+  g.fill(0);
+  TEST_ASSERT_EQUAL(0, rowSpans(g, 12, 14)[1].x);
+}
+
 void test_grid_add_edges() {
   Grid g(4, 2);
   g.put(1, 0, U'a', 1, 2);
@@ -620,6 +630,7 @@ int main() {
   RUN_TEST(test_grid_row_kinds);
   RUN_TEST(test_row_spans_cut_before_last_row);
   RUN_TEST(test_row_spans_pad_rows);
+  RUN_TEST(test_row_spans_shift);
   RUN_TEST(test_grid_add_edges);
   RUN_TEST(test_grid_dirty);
   RUN_TEST(test_grid_redraw_same_frame_not_dirty);

@@ -248,14 +248,14 @@ Task 7 writes both amendments into the spec.
   - a `--tdeck|-t` board flag (`BOARD=tdeck`), so `-t`, `-t -f` (→ `tdeck_fake`), `-t -E` and `-t -B` all work;
   - the usage text: the flag in the `Usage:` line and the board-flags list, and `-t -f` → `tdeck_fake` in the `--fake` example;
   - the `-B` sweep and the interactive picker read `platformio.ini`, so they need no change; confirm both list the two new envs.
-  - *Done ahead of the task (2026-10-27): the labels, the `-t` flag, the usage text and the BUILD.md/AGENTS.md mentions. Until the envs land, `-t` reports "Environment 'tdeck' not found". Still to do here: confirm `-B` and the picker list the new envs.*
+  - *Done ahead of the task (2026-10-27): the labels, the `-t` flag, the usage text and the BUILD.md/AGENTS.md mentions. Until the envs land, `-t` reports "Environment 'tdeck' not found". With the envs in, `-B` and the picker list all six (confirmed).*
 - Docs for the script: add the `--tdeck`/`-t` row to the options table in `docs/BUILD.md` (and the `-t -f` example in its `--fake` row), and mention `-t` beside `-w` in `AGENTS.md`'s Commands block.
 - CI: append `-e tdeck -e tdeck_fake`.
 
-- [ ] **Step 1: Implement** the above.
-- [ ] **Step 2: Run** `pio test -e native` and `scripts/build-upload-monitor.sh -B`. Expected: green, and **six** envs build.
-- [ ] **Step 3: Check** `pio run -e tdeck -t size` (or the build log) for no LovyanGFX in the link. Check that `grep -rn "BOARD_TDECK" src` shows only HAL selection guards and `src/hal/tdeck/`.
-- [ ] **Step 4: Commit** `feat(hal): T-Deck Plus board, panel, keyboard and touch`.
+- [x] **Step 1: Implement** the above.
+- [x] **Step 2: Run** `pio test -e native` and `scripts/build-upload-monitor.sh -B`. Expected: green, and **six** envs build.
+- [x] **Step 3: Check** `pio run -e tdeck -t size` (or the build log) for no LovyanGFX in the link. Check that `grep -rn "BOARD_TDECK" src` shows only HAL selection guards and `src/hal/tdeck/`.
+- [x] **Step 4: Commit** `feat(hal): T-Deck Plus board, panel, keyboard and touch`.
 
 ### Task 5: Trackball
 

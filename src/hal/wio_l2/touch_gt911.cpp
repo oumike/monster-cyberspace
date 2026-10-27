@@ -1,4 +1,4 @@
-#if defined(BOARD_WIO_L2)
+#if defined(BOARD_WIO_L2) || defined(BOARD_TDECK)
 
 #include "hal/wio_l2/touch_gt911.h"
 

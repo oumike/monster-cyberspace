@@ -1,4 +1,4 @@
-#if defined(BOARD_M9)
+#if defined(BOARD_M9) || defined(BOARD_TDECK)
 
 #include "hal/m9/panel_st7789.h"
 

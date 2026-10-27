@@ -6,7 +6,8 @@
   build downloads the pioarduino platform (Arduino core 3.3 / ESP-IDF 5.5)
   into `.pio-core/`, kept apart from the shared `~/.platformio`.
 - A USB data cable. The ThinkNode M9's console runs through its USB-to-UART
-  bridge at 115200 baud; the Wio Tracker L2's through the ESP32-S3's own USB.
+  bridge at 115200 baud; the Wio Tracker L2's and the T-Deck Plus's through
+  the ESP32-S3's own USB.
 
 ## Environments
 
@@ -14,14 +15,17 @@
 |---|---|
 | `m9` | The firmware for the Elecrow ThinkNode M9 |
 | `m9_fake` | The same firmware with a scripted fake Cyberspace API, for trying every screen without an account |
-| `wio_l2` | The firmware for the Seeed Wio Tracker L2 (hardware bring-up: the touch UI is still to come, so its two buttons stand in) |
+| `wio_l2` | The firmware for the Seeed Wio Tracker L2 (touch UI; not yet tried on hardware) |
 | `wio_l2_fake` | The Wio Tracker L2 firmware with the fake API |
+| `tdeck` | The firmware for the LilyGO T-Deck Plus (keyboard, trackball, touch; not yet tried on hardware) |
+| `tdeck_fake` | The T-Deck Plus firmware with the fake API |
 | `native` | Host unit tests for `lib/core` |
 
 ```sh
 pio test -e native                    # unit tests on your computer
 pio run -e m9                         # build
 pio run -e wio_l2                     # build for the Wio Tracker L2
+pio run -e tdeck                      # build for the T-Deck Plus
 scripts/build-upload-monitor.sh m9    # build, flash, then open the serial monitor
 ```
 

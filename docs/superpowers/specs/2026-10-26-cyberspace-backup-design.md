@@ -64,6 +64,7 @@ wifi:
   - ssid: "Phone"
     password: ""
 timezone: "EST5EDT,M3.2.0,M11.1.0"
+tzName: "America/New_York"
 ntpServer: "pool.ntp.org"
 pagePassword: ""
 apPassword: ""

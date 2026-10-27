@@ -32,7 +32,7 @@
 - A successful restore restarts the device after about 1 s (`1000` ms).
 - Never hold `lockedChat` or `lockedFeed` while calling the backup store.
 - Each task follows TDD where it has host tests and ends with a commit whose message ends with a blank line and `Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>`.
-- Verify: `pio test -e native` is green (195 tests before this plan); from Task 4 on, `pio run -e m9`, `-e m9_fake`, `-e wio_l2` and `-e wio_l2_fake` all build (`scripts/build-upload-monitor.sh -B`).
+- Verify: `pio test -e native` is green (244 tests before this plan); from Task 4 on, `pio run -e m9`, `-e m9_fake`, `-e wio_l2` and `-e wio_l2_fake` all build (`scripts/build-upload-monitor.sh -B`).
 
 ## Review Focus
 
@@ -70,7 +70,7 @@
 - Modify: `src/store/settings.h`
 
 **Interfaces:**
-- Produces, `settings_model.h` (namespace `rc`): `WifiNet`, `Settings` and `kMaxWifiNets` exactly as they are in `src/store/settings.h` today (same fields and defaults: `tz = "UTC0"`, `tzMode = TzMode::Manual`, `ntpServer = "pool.ntp.org"`, `TextSize::Compact`, `drawerOpen = false`, `buzzer = true`, `ThemeId::Default`, `lastRoom = "general"`). It includes `ui/grid.h` and `ui/theme.h`. `src/store/settings.h` drops those definitions and includes `config/settings_model.h`; the `settings::` declarations stay.
+- Produces, `settings_model.h` (namespace `rc`): `WifiNet`, `Settings` and `kMaxWifiNets` exactly as they are in `src/store/settings.h` today (same fields and defaults: `tz = "UTC0"`, `tzName = "Etc/UTC"`, `ntpServer = "pool.ntp.org"`, `TextSize::Compact`, `drawerOpen = false`, `buzzer = true`, `ThemeId::Default`, `lastRoom = "general"`). It includes `ui/grid.h` and `ui/theme.h`. `src/store/settings.h` drops those definitions and includes `config/settings_model.h`; the `settings::` declarations stay.
 - Produces, `yaml_scalar.h` (namespace `rc`):
   ```cpp
   // Double-quoted, with \\ \" \n \t and \uXXXX for other bytes < 0x20 and 0x7F.
@@ -125,7 +125,7 @@
 - Test: `test/test_backup_yaml/test_main.cpp`
 
 **Interfaces:**
-- Consumes: `Settings`, `WifiNet`, `kMaxWifiNets` (Task 1); `yamlQuote`, `yamlScalar` (Task 1); `themeKey`, `parseThemeId` (`ui/theme.h`); `validApPassword`, `validNtpServer` (`web/web_util.h`); `tzModeKey`, `parseTzMode` (`tz/tz_lookup.h`).
+- Consumes: `Settings`, `WifiNet`, `kMaxWifiNets` (Task 1); `yamlQuote`, `yamlScalar` (Task 1); `themeKey`, `parseThemeId` (`ui/theme.h`); `validApPassword`, `validNtpServer` (`web/web_util.h`); `validPosixTz`, `findZoneByPosix` (`tz/zones.h`).
 - Produces, `backup_yaml.h` (namespace `rc`):
   ```cpp
   constexpr size_t kMaxBackupBytes = 16384;
@@ -140,8 +140,8 @@
   ```
 
 **Writer.** Output is exactly the spec §3 example's layout: the three `#` header lines, then keys in that order, two-space indents, `- ssid:` items with `password:` under `ssid`.
-- Strings use `yamlQuote`: `board`, `firmware`, `created`, `ssid`, `password`, `timezone`, `ntpServer`, `pagePassword`, `apPassword`, `lastRoom`, `email`, `refreshToken`.
-- Plain values: `format`, `version`, `textSize`, booleans, `theme`, which is written as `theme: <key>  # default | bw | wb`, and `tzMode`, written as `tzMode: <key>  # auto | manual` right after `timezone`.
+- Strings use `yamlQuote`: `board`, `firmware`, `created`, `ssid`, `password`, `timezone`, `tzName` (written right after `timezone`), `ntpServer`, `pagePassword`, `apPassword`, `lastRoom`, `email`, `refreshToken`.
+- Plain values: `format`, `version`, `textSize`, booleans, `theme`, which is written as `theme: <key>  # default | bw | wb`. 
 - `created` is `"YYYY-MM-DDTHH:MM:SSZ"` (UTC, from `gmtime_r`), or `""` when `epochSec < 1700000000`.
 - `wifi: []` when the list is empty.
 
@@ -164,14 +164,14 @@
 - `line N: page password: up to 63 printable characters`;
 - `line N: text size: compact or comfortable`;
 - `line N: theme: default, bw or wb`;
-- `line N: time zone: 1-63 printable characters` (the web config rule);
-- `line N: zone mode: auto or manual`;
+- `line N: time zone: 1-63 printable characters` (`validPosixTz`, the web config rule);
+- `line N: time zone name: up to 63 printable characters` (any name is kept; one not in the zone list shows as Custom);
 - `line N: NTP server: a host name, 1-63 characters` (`validNtpServer`);
 - `line N: last room: 1-63 printable characters`.
 
 Networks after the fifth are dropped before validation and set `note`.
 
-**Merge:** each present key replaces the current value; a present `wifi` replaces the whole list; inside `account`, each present key replaces its own value.
+**Merge:** each present key replaces the current value; a backup with `timezone` but no `tzName` sets `tzName` to `findZoneByPosix(timezone)`'s name, or `""` when none matches; a present `wifi` replaces the whole list; inside `account`, each present key replaces its own value.
 
 - [ ] **Step 1: Write the failing tests.** A helper `full()` builds a `Settings` with every field non-default: 2 networks, one SSID `Café "📶"\\` with password `p@ss\nword` (10 bytes or more), `theme = WhiteBlack`, `textSize = Comfortable`, `drawerOpen = true`, `buzzer = false`, a token.
   ```cpp
@@ -224,8 +224,9 @@ Networks after the fifth are dropped before validation and set `note`.
     // note == "Kept the first 5 of 7 networks."
   }
   void test_backup_time_keys() {
-    // tzMode Manual + ntpServer "time.example.org" round-trip;
-    // a backup without tzMode and ntpServer keeps the current values;
+    // tzName "Europe/Paris" + ntpServer "time.example.org" round-trip; tzName "" round-trips (custom zone);
+    // a backup without timezone, tzName and ntpServer keeps the current values;
+    // timezone "EST5EDT,M3.2.0,M11.1.0" with no tzName → tzName "America/New_York"; timezone "XYZ3" with no tzName → "";
     // ntpServer: "a b" → false, err "line N: NTP server: a host name, 1-63 characters", inOut unchanged
   }
   void test_duplicate_key() { /* two "buzzer:" lines → "line N: duplicate key \"buzzer\"" */ }
@@ -312,7 +313,7 @@ Networks after the fifth are dropped before validation and set `note`.
   - Wio L2: power on (expander bit 14, through the existing expander lock), wait 10 ms, `SD_MMC.setPins(2, 3, 1)`, `SD_MMC.begin("/sdcard", true, false)`; unmount is `SD_MMC.end()` then power off. Add the pin constants to `pins_wio_l2.h`.
   - Either board: a mount that reports `cardType() == CARD_NONE` is ended and treated as no card.
 - Produces, `src/app/restart.h`: `namespace rc { void restartSoon(uint32_t delayMs); }`. This is the `restartTask` from `web_server.cpp`, with the delay as a parameter. Web config keeps its 600 ms.
-- Produces, `settings.h`: `void saveAll(const rc::Settings&);`. It calls `saveWifi`, `saveTz`, `saveSecurity`, `saveUiPrefs` and `saveAccount`. When `refreshToken` is empty it calls `clearToken()` in place of saving the token.
+- Produces, `settings.h`: `void saveAll(const rc::Settings&);`. It calls `saveWifi`, `saveTz(s.tz, s.tzName)`, `saveNtpServer`, `saveSecurity`, `saveUiPrefs` and `saveAccount`. When `refreshToken` is empty it calls `clearToken()` in place of saving the token.
 
 - [ ] **Step 1: Implement** the above. Remove `restartTask`/`restartSoon` from `web_server.cpp` and call `rc::restartSoon(600)`.
 - [ ] **Step 2: Run** `pio test -e native` (PASS) and `scripts/build-upload-monitor.sh -B`. Expected: all four firmware envs build.
@@ -400,7 +401,7 @@ Networks after the fifth are dropped before validation and set `note`.
 
 - [ ] **Step 1: Implement.**
 - [ ] **Step 2: Run** `scripts/build-upload-monitor.sh -B`. Expected: all envs build.
-- [ ] **Step 3: Flash `m9`** (stop any monitor first) with a FAT32 card in, and check:
+- [ ] **Step 3: Do not flash** (the USB port is in use). These checks go into `docs/TESTING.md` in Task 8:
   - Back up shows `Saved rc-backup-….yaml`;
   - Restore lists it newest first, and Cancel is preselected;
   - Restore restarts with the same settings;
@@ -446,7 +447,7 @@ Networks after the fifth are dropped before validation and set `note`.
 
 - [ ] **Step 1: Implement.**
 - [ ] **Step 2: Run** `pio test -e native` (PASS) and `scripts/build-upload-monitor.sh -B` (all envs build).
-- [ ] **Step 3: Flash `m9`** and check in a browser, with a page password set:
+- [ ] **Step 3: Do not flash** (the USB port is in use). These checks go into `docs/TESTING.md` in Task 8, with a page password set:
   - download, then upload-restore of that file (the device restarts with the same settings);
   - save to SD, then the list's download, restore and delete;
   - `curl -u admin:<pw> -X POST 'http://<ip>/api/backup/sd/delete?name=..%2Fx.yaml'` gives `Bad file name`;

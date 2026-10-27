@@ -166,6 +166,18 @@ BOOT tap = Down, BOOT hold (0.7 s) = Back, Wake tap = Select, Wake hold (1 s)
 - [ ] The GPS turns off afterwards: `[gps] off` once the time is set
 - [ ] No log line shows coordinates
 
+**Settings backup (`m9`, then `wio_l2`; FAT32 card):**
+
+- [ ] Settings → Back up to SD card shows `Saved rc-backup-….yaml`, and the file is in `/rhino-cyberspace/backups/`
+- [ ] The file opens on a computer and holds every setting (Wi-Fi, time zone, NTP server, passwords, preferences, account)
+- [ ] Settings → Restore from SD card… lists backups newest first, Cancel is preselected, and Restore restarts with the same settings
+- [ ] After a factory reset, with the card holding backups, Setup offers Restore from SD card and the device comes back signed in
+- [ ] Web config, with a page password set: Download backup, then Restore from file… with that file restarts with the same settings
+- [ ] Web config: Save backup to SD card, then the list's restore, download and delete each work (restore and delete confirm)
+- [ ] `curl -u admin:<pw> -X POST 'http://<ip>/api/backup/sd/delete?name=..%2Fx.yaml'` gives `Bad file name`
+- [ ] Uploading a 17 KB file gives `Backup is over 16 KB`
+- [ ] With the card out, every path (both Settings items and the web SD block) says `No SD card`; putting it back in works without a restart
+
 **API assumptions to confirm (watch the serial log during the live checklist):**
 
 - [ ] `GET /v1/users/me` shape: Home shows the right username and verified state

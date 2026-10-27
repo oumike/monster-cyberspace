@@ -12,6 +12,8 @@ features come later.
   plan `docs/superpowers/plans/2026-10-26-cyberspace-m9-feed.md`.
 - **GPS time:** spec `docs/superpowers/specs/2026-10-26-cyberspace-gps-time-design.md`,
   plan `docs/superpowers/plans/2026-10-26-cyberspace-gps-time.md`.
+- **Settings backup:** spec `docs/superpowers/specs/2026-10-26-cyberspace-backup-design.md`,
+  plan `docs/superpowers/plans/2026-10-26-cyberspace-backup.md`.
 - **User guide:** `docs/USE.md`. **Testing and the live checklist:** `docs/TESTING.md`.
 - **Implementation plan:** `docs/superpowers/plans/2026-10-25-cyberspace-m9-circ.md`.
   Work its tasks in order, tick each `- [ ]` box as you finish a step, and
@@ -28,7 +30,10 @@ features come later.
 - **No captive portal.** The setup AP (`Rhino-Cyberspace-<BOARD>-Setup`) is
   open unless a password is configured in web config. The page is served at
   `http://192.168.4.1`, with no DNS hijacking and nothing that pops up.
-- Never log or store passwords. Never log tokens.
+- Never log or store passwords, except that backup files
+  (`docs/superpowers/specs/2026-10-26-cyberspace-backup-design.md`) deliberately
+  contain the Wi-Fi, page and setup-AP passwords and the refresh token. Never
+  log them, or tokens.
 - **More boards are planned.** Keep Cyberspace logic board-agnostic: portable
   logic in `lib/core`, and hardware access outside `src/hal/` only through
   `src/hal/board.h`. Never include `src/hal/<board>/` headers elsewhere or
@@ -73,12 +78,15 @@ All 8 tasks of the GPS time plan are done and committed: NTP, GPS and RTC
 clock sources (`src/app/time_service.cpp`), the GPS powering itself off,
 the offline automatic time zone, the NTP server field, and the gps, time and
 zone lines in Settings and web config (built without flashing).
-Specs awaiting review: `docs/superpowers/specs/2026-10-26-cyberspace-{backup,touch}-design.md`.
+All 8 tasks of the backup plan are done and committed: backup YAML in
+`lib/core/src/config/`, SD access in the HAL (mounted per operation, the card
+is removable), `src/store/backup_store.cpp`, Settings/Setup items and the web
+Backup section (built without flashing). Next: the touch plan, then T-Deck Plus.
 **Still open:** the unticked items under "Open hardware checks" in
 `docs/TESTING.md` (themes, device Settings, Wio L2, GPS time, API
-assumptions), then the human live checklist on the `m9` build.
+assumptions, settings backup), then the human live checklist on the `m9` build.
 CI (`.github/workflows/build.yml`) runs on GitHub.
-The native suite is green: 244/244
+The native suite is green: 273/273
 (`pio test -e native`), and `scripts/build-upload-monitor.sh -B` builds all
 four firmware envs.
 

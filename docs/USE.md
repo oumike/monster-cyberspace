@@ -254,7 +254,8 @@ The serial log says only whether there's a fix and satellite counts.
 
 **Home** → **Settings** shows the account, the Wi-Fi network and IP, the web
 config address, the battery, the setup AP state and the gps, time and zone
-lines (see Time and time zone), with five actions:
+lines (see Time and time zone), with five actions, or seven on a board with
+an SD card slot:
 
 - **Theme: …** Centre moves to the next theme (Default, Black & white, White &
   black) and saves it.
@@ -264,12 +265,44 @@ lines (see Time and time zone), with five actions:
   and `http://192.168.4.1` are shown) while staying on your Wi-Fi, so you can
   reach web config when your network is unreachable. It stays on until you
   turn it off or restart.
+- **Back up to SD card** and **Restore from SD card…** (boards with a card
+  slot). See Backup and restore.
 - **Log out** (confirm with **Log out**). Signs out of Cyberspace and goes to
   the Setup screen. Wi-Fi and preferences are kept.
 - **Factory reset…** (confirm with **Erase everything**). See below.
 
 If the saved networks fail for 5 minutes, the setup AP comes up by itself.
 It goes away again once Wi-Fi is back and nobody is joined to it.
+
+## Backup and restore
+
+A backup is one YAML file holding every saved setting: Wi-Fi networks and
+their passwords, the time zone and NTP server, the page and setup-AP
+passwords, theme, text size and other preferences, and your Cyberspace email
+and sign-in token. Restoring it on a reset or new device brings it back
+signed in.
+
+**The file holds your passwords and a sign-in token.** Anyone who has it can
+use your Cyberspace account, so keep it private.
+
+- **On the device** (boards with an SD card slot): **Home** → **Settings** →
+  **Back up to SD card** writes `rc-backup-YYYYMMDD-HHMMSS.yaml` (or
+  `rc-backup-N.yaml` before the clock is set) to `/rhino-cyberspace/backups/`
+  on the card. **Restore from SD card…** lists the backups newest first;
+  pick one and confirm **Restore**.
+- **During setup**, when the card holds backups, the Setup screen offers
+  **Restore from SD card** below **Log in on this device**.
+- **In web config**, the **Backup** section has **Download backup**,
+  **Restore from file…** (an uploaded `.yaml`, at most 16 KB), and, on boards
+  with a slot, **Save backup to SD card** plus a list of the card's backups,
+  each with restore, download and delete.
+
+You can edit a backup in a text editor. Keys missing from a file keep the
+device's current values, and a file with any error is refused as a whole
+with the line number. A restore saves the settings and restarts the device.
+
+The card can be pulled out at any time between operations; with no card,
+each action says **No SD card**.
 
 ## Back to setup mode
 

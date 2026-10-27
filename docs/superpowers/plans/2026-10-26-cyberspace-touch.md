@@ -121,7 +121,7 @@
 
   The panel's rotation direction is checked on hardware in Task 11. If portrait comes out mirrored, swap the r1 and r3 formulas and their tests.
 
-- [ ] **Step 1: Write the failing tests.** Add a helper `feedAll` that feeds a list of `{down, x, y, ms}` samples and collects the gestures.
+- [x] **Step 1: Write the failing tests.** Add a helper `feedAll` that feeds a list of `{down, x, y, ms}` samples and collects the gestures.
   ```cpp
   void test_tap() {                       // down 100,100 @0; 104,103 @50; up @200
     // exactly one Tap{100,100}
@@ -163,10 +163,10 @@
     touchToFrame(300, -1, 240, 320, 1, x, y);  // x in [0,239], y in [0,319]
   }
   ```
-- [ ] **Step 2: Run** `pio test -e native -f test_touch_input`. Expected: the build fails because the headers are missing.
-- [ ] **Step 3: Implement** `Gestures` and `touchToFrame`. `Gestures` keeps the down point, the down time, the last y, a `moved` flag (past the slop in any axis), a `dragging` flag (past the slop vertically), `longFired`, and `armed` (`false` after `reset()` until a sample with `down == false`).
-- [ ] **Step 4: Run** `pio test -e native -f test_touch_input`, then `pio test -e native`. Expected: PASS.
-- [ ] **Step 5: Commit** `feat(core): touch gestures and touch transform`.
+- [x] **Step 2: Run** `pio test -e native -f test_touch_input`. Expected: the build fails because the headers are missing.
+- [x] **Step 3: Implement** `Gestures` and `touchToFrame`. `Gestures` keeps the down point, the down time, the last y, a `moved` flag (past the slop in any axis), a `dragging` flag (past the slop vertically), `longFired`, and `armed` (`false` after `reset()` until a sample with `down == false`).
+- [x] **Step 4: Run** `pio test -e native -f test_touch_input`, then `pio test -e native`. Expected: PASS.
+- [x] **Step 5: Commit** `feat(core): touch gestures and touch transform`.
 
 ### Task 2: Key events, the tap map and the touch resolver
 

@@ -1,9 +1,11 @@
 #include <unity.h>
 
 #include <cstdint>
+#include <cstdio>
 #include <initializer_list>
 
 #include "input/backspace.h"
+#include "input/click_timer.h"
 #include "input/key_event.h"
 #include "input/keymap_tdeck.h"
 
@@ -74,6 +76,67 @@ void test_any_input_wakes() {
   TEST_ASSERT_FALSE(wakesScreen(KeyEvent{}, true));
 }
 
+static void expectPoll(ClickTimer& t, uint32_t ms, Action a) {
+  char msg[24];
+  snprintf(msg, sizeof msg, "poll %u", (unsigned)ms);
+  TEST_ASSERT_EQUAL_MESSAGE(static_cast<int>(a), static_cast<int>(t.poll(ms)), msg);
+}
+
+void test_click_tap() {
+  ClickTimer t;
+  t.press(0);
+  t.release(100);
+  expectPoll(t, 100, Action::Select);
+  expectPoll(t, 120, Action::None);
+}
+
+void test_click_hold_screen_off() {
+  ClickTimer t;
+  t.press(0);
+  expectPoll(t, 1999, Action::None);
+  expectPoll(t, 2000, Action::ScreenOff);
+  expectPoll(t, 2500, Action::None);
+}
+
+void test_hold_no_select_on_release() {
+  ClickTimer t;
+  t.press(0);
+  expectPoll(t, 2000, Action::ScreenOff);
+  t.release(3000);
+  expectPoll(t, 3000, Action::None);
+  expectPoll(t, 4000, Action::None);
+}
+
+void test_click_during_motion_deferred() {
+  ClickTimer t;
+  t.motion(0);
+  t.press(50);
+  t.release(100);
+  expectPoll(t, 100, Action::None);
+  expectPoll(t, 159, Action::None);
+  expectPoll(t, 160, Action::Select);
+}
+
+void test_click_during_motion_extends() {
+  ClickTimer t;
+  t.motion(0);
+  t.press(50);
+  t.release(100);
+  t.motion(150);
+  expectPoll(t, 200, Action::None);
+  expectPoll(t, 310, Action::Select);
+}
+
+void test_motion_after_click_irrelevant() {
+  ClickTimer t;
+  t.press(0);
+  t.release(50);
+  expectPoll(t, 50, Action::Select);
+  t.motion(60);
+  expectPoll(t, 60, Action::None);
+  expectPoll(t, 300, Action::None);
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_tdeck_printable);
@@ -84,5 +147,11 @@ int main() {
   RUN_TEST(test_backspace_guard_399);
   RUN_TEST(test_backspace_guard_400);
   RUN_TEST(test_any_input_wakes);
+  RUN_TEST(test_click_tap);
+  RUN_TEST(test_click_hold_screen_off);
+  RUN_TEST(test_hold_no_select_on_release);
+  RUN_TEST(test_click_during_motion_deferred);
+  RUN_TEST(test_click_during_motion_extends);
+  RUN_TEST(test_motion_after_click_irrelevant);
   return UNITY_END();
 }

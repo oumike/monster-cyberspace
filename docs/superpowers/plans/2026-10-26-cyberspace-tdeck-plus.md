@@ -287,7 +287,7 @@ Task 7 writes both amendments into the spec.
   - The click is sampled by level each poll (LOW = pressed). Edges call `press` and `release`.
 - `board::pollKey`: the keyboard first, then `trackball::poll`.
 
-- [ ] **Step 1: Write the failing tests:**
+- [x] **Step 1: Write the failing tests:**
   ```cpp
   void test_click_tap()                     // press 0, release 100, poll 100 → Select; poll 120 → None
   void test_click_hold_screen_off()         // press 0; poll 1999 None; poll 2000 ScreenOff; poll 2500 None
@@ -296,10 +296,10 @@ Task 7 writes both amendments into the spec.
   void test_click_during_motion_extends()   // motion 0, press 50, release 100, motion 150: poll 200 None; poll 310 Select
   void test_motion_after_click_irrelevant() // press 0, release 50 → poll 50 Select; motion 60 changes nothing
   ```
-- [ ] **Step 2: Run** `pio test -e native -f test_tdeck_input`. Expected: it fails to compile.
-- [ ] **Step 3: Implement** `ClickTimer`, then the trackball HAL, then `pollKey`.
-- [ ] **Step 4: Run** `pio test -e native` and `scripts/build-upload-monitor.sh -B`. Expected: green, and six envs build.
-- [ ] **Step 5: Commit** `feat(hal): T-Deck trackball with click timing`.
+- [x] **Step 2: Run** `pio test -e native -f test_tdeck_input`. Expected: it fails to compile.
+- [x] **Step 3: Implement** `ClickTimer`, then the trackball HAL, then `pollKey`.
+- [x] **Step 4: Run** `pio test -e native` and `scripts/build-upload-monitor.sh -B`. Expected: green, and six envs build.
+- [x] **Step 5: Commit** `feat(hal): T-Deck trackball with click timing`.
 
 ### Task 6: GPS, battery, beep and SD
 

@@ -8,6 +8,7 @@
 #include "hal/m9/panel_st7789.h"
 #include "hal/tdeck/keyboard_tdeck.h"
 #include "hal/tdeck/pins_tdeck.h"
+#include "hal/tdeck/trackball_tdeck.h"
 #include "hal/wio_l2/touch_gt911.h"
 #include "input/keymap_tdeck.h"
 #include "input/touch_transform.h"
@@ -28,6 +29,7 @@ void begin() {
   backlight(false);
   Wire.begin(tdeck::I2C_SDA, tdeck::I2C_SCL);
   tdeck_kb::begin();
+  trackball::begin();
   // Only the UI task uses Wire on this board, so no lock.
   gt911::begin({&Wire, tdeck::TOUCH_ADDR, nullptr, nullptr});
 }
@@ -58,7 +60,7 @@ bool pollKey(rc::KeyEvent& key) {
     key = rc::mapTdeckKey(raw);
     if (key.action != rc::Action::None) return true;
   }
-  return false;
+  return trackball::poll(key);
 }
 
 int batteryPercent() { return -1; }

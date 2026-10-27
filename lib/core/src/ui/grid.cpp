@@ -124,7 +124,7 @@ int bigCols(int panelW, TextSize s) { return panelW / bigCellSize(s).w; }
 
 HeaderSize touchHeader(int panelW, TextSize s) {
   HeaderSize h;
-  h.px = (cellSize(s).h * 5 + 2) / 4;
+  h.px = (cellSize(s).h * 3 + 1) / 2;
   h.cellW = bigCellSize(s).w;
   h.cols = bigCols(panelW, s);
   return h;

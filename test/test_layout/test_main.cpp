@@ -88,26 +88,26 @@ void test_big_cells() {
 }
 
 void test_header_rows() {
-  // 1.25x a row in the big font; row 0 takes 20 px of 240, so 14 rows fit.
+  // 1.5x a row in the big font; row 0 takes 24 px of 240, so 14 rows fit.
   HeaderSize h = touchHeader(320, TextSize::Comfortable);
-  TEST_ASSERT_EQUAL(20, h.px);
+  TEST_ASSERT_EQUAL(24, h.px);
   TEST_ASSERT_EQUAL(10, h.cellW);
   TEST_ASSERT_EQUAL(32, h.cols);
-  TEST_ASSERT_EQUAL(15, touchHeader(320, TextSize::Compact).px);
+  TEST_ASSERT_EQUAL(18, touchHeader(320, TextSize::Compact).px);
   int c, r;
   gridDims(320, 240, TextSize::Comfortable, c, r, h.px);
   TEST_ASSERT_EQUAL(40, c);
   TEST_ASSERT_EQUAL(14, r);
   Grid g(c, r);
   g.setHeader(h);
-  g.setBottomPad(12);
+  g.setBottomPad(8);
   g.fill(0);  // keeps both
   std::vector<RowSpan> s = rowSpans(g, 16, 18);
-  TEST_ASSERT_EQUAL(20, s[0].h);
-  TEST_ASSERT_EQUAL(20, s[1].y);
+  TEST_ASSERT_EQUAL(24, s[0].h);
+  TEST_ASSERT_EQUAL(24, s[1].y);
   TEST_ASSERT_EQUAL(16, s[12].h);  // nothing cut before the last row
-  TEST_ASSERT_EQUAL(212, s[13].y);
-  TEST_ASSERT_EQUAL(28, s[13].h);  // to the panel's bottom edge
+  TEST_ASSERT_EQUAL(216, s[13].y);
+  TEST_ASSERT_EQUAL(24, s[13].h);  // to the panel's bottom edge
 }
 
 void test_grid_row_kinds() {

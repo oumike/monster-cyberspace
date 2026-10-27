@@ -96,7 +96,7 @@ void gridDims(int panelW, int panelH, TextSize s, int& cols, int& rows, int head
 // cells fit across the panel.
 CellSize bigCellSize(TextSize s);
 int bigCols(int panelW, TextSize s);
-// The status bar of keyboardless touch boards: 1.25x a row, in the big font,
+// The status bar of keyboardless touch boards: 1.5x a row, in the big font,
 // so it's easier to tap.
 HeaderSize touchHeader(int panelW, TextSize s);
 

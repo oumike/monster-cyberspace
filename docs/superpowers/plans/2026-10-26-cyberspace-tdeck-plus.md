@@ -153,7 +153,7 @@ Task 7 writes both amendments into the spec.
   ```
   The one-argument `wakesScreen` is removed. Existing tests call `wakesScreen(e, false)`.
 
-- [ ] **Step 1: Write the failing tests** in `test/test_tdeck_input/test_main.cpp`:
+- [x] **Step 1: Write the failing tests** in `test/test_tdeck_input/test_main.cpp`:
   ```cpp
   void test_tdeck_printable()      // mapTdeckKey('a') == Char 'a'; ' ' == Char ' '; '~' == Char '~'; 'Q' == Char 'Q'
   void test_tdeck_controls()       // 0x08 Backspace; 0x0D Select; 0x0A Select
@@ -165,10 +165,10 @@ Task 7 writes both amendments into the spec.
   void test_any_input_wakes()      // wakesScreen(Char 'a', true), (Select, true), (Up, true), (Backspace, true), (ScreenOff, true); !(None, true)
   ```
   In `test_keymap_web`, change the existing wake assertions to `wakesScreen(x, false)` and add `TEST_ASSERT_FALSE(wakesScreen(mapM9Key('a', false), false))`.
-- [ ] **Step 2: Run** `pio test -e native -f test_tdeck_input`. Expected: it fails to compile, because the headers are missing.
-- [ ] **Step 3: Implement** the three functions and update the `ui_task` call site.
-- [ ] **Step 4: Run** `pio test -e native` and `scripts/build-upload-monitor.sh -B`. Expected: green, and all four envs build.
-- [ ] **Step 5: Commit** `feat(input): T-Deck key map, Backspace-as-Back rule, any-input wake`.
+- [x] **Step 2: Run** `pio test -e native -f test_tdeck_input`. Expected: it fails to compile, because the headers are missing.
+- [x] **Step 3: Implement** the three functions and update the `ui_task` call site.
+- [x] **Step 4: Run** `pio test -e native` and `scripts/build-upload-monitor.sh -B`. Expected: green, and all four envs build.
+- [x] **Step 5: Commit** `feat(input): T-Deck key map, Backspace-as-Back rule, any-input wake`.
 
 ### Task 3: Screens consume Backspace; the UI loop applies the rules
 

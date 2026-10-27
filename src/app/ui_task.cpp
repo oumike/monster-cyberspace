@@ -182,7 +182,7 @@ void handleKey(const KeyEvent& k) {
   int64_t now = nowMs();
   if (power != Power::On) {
     // Only a centre hold wakes; only a centre tap peeks. Nothing else acts.
-    if (wakesScreen(k)) {
+    if (wakesScreen(k, board::anyInputWakes())) {
       bool wasDark = power == Power::Dark;
       power = Power::On;
       redrawAll();

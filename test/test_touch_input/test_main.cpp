@@ -518,7 +518,7 @@ void test_power_tap_peeks_not_wakes() {
   KeyEvent e;
   e.action = Action::PowerTap;
   TEST_ASSERT_TRUE(peeksScreen(e));
-  TEST_ASSERT_FALSE(wakesScreen(e));
+  TEST_ASSERT_FALSE(wakesScreen(e, false));
 }
 
 void test_rotation_labels_and_order() {

@@ -69,12 +69,12 @@ void test_keymap_chars() {
 }
 
 void test_wakes_screen() {
-  TEST_ASSERT_TRUE(wakesScreen(mapM9Key(0xA3, false)));
-  TEST_ASSERT_FALSE(wakesScreen(mapM9Key(0x0D, false)));
-  TEST_ASSERT_FALSE(wakesScreen(mapM9Key('a', false)));
-  TEST_ASSERT_FALSE(wakesScreen(mapM9Key(0xB5, false)));
-  TEST_ASSERT_FALSE(wakesScreen(mapM9Key(0x87, false)));
-  TEST_ASSERT_FALSE(wakesScreen(KeyEvent{}));
+  TEST_ASSERT_TRUE(wakesScreen(mapM9Key(0xA3, false), false));
+  TEST_ASSERT_FALSE(wakesScreen(mapM9Key(0x0D, false), false));
+  TEST_ASSERT_FALSE(wakesScreen(mapM9Key('a', false), false));
+  TEST_ASSERT_FALSE(wakesScreen(mapM9Key(0xB5, false), false));
+  TEST_ASSERT_FALSE(wakesScreen(mapM9Key(0x87, false), false));
+  TEST_ASSERT_FALSE(wakesScreen(KeyEvent{}, false));
   TEST_ASSERT_TRUE(peeksScreen(mapM9Key(0x0D, false)));
   TEST_ASSERT_FALSE(peeksScreen(mapM9Key(0xA3, false)));
   TEST_ASSERT_FALSE(peeksScreen(mapM9Key('a', false)));

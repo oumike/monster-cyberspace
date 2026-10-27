@@ -23,9 +23,10 @@ struct KeyEvent {
   Action then = Action::None;   // Activate: sent once the selection has moved
 };
 
-// Only a centre hold (ScreenOff) wakes a dark screen, so a stray press or tap
-// in a pocket can't light it or type into it.
-bool wakesScreen(const KeyEvent& e);
+// With anyInputWakes false, only a centre hold (ScreenOff) wakes a dark screen,
+// so a stray press or tap in a pocket can't light it or type into it. Boards
+// that set it (board::anyInputWakes) wake on any action except None.
+bool wakesScreen(const KeyEvent& e, bool anyInputWakes);
 
 // A centre tap on a dark screen shows the screensaver (the last few messages)
 // without waking.

@@ -2,6 +2,7 @@
 
 #include "screens/backup_picker.h"
 #include "screens/router.h"
+#include "ui/home_tiles.h"
 #include "ui/widgets/entry_list.h"
 #include "ui/widgets/input_line.h"
 #include "ui/widgets/list_view.h"
@@ -54,8 +55,13 @@ class HomeScreen : public Screen {
   void enter(const std::string&) override;
   void onKey(const KeyEvent&) override;
   void render(Grid&, const Theme&, int64_t nowMs) override;
+
  private:
+  void openItem(int item);
+  void renderTiles(Grid&, const Theme&, const std::vector<TileRect>&);
   ListView menu_;
+  int tileSel_ = 0;      // selected tile (touch boards)
+  bool tileMode_ = false;  // set each render: tiles shown this frame
 };
 
 // On-device settings: the setup AP, log out, factory reset.

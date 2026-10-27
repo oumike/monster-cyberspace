@@ -18,6 +18,7 @@
 #include "ui/widgets/status_bar.h"
 #include "ui/widgets/text_area.h"
 #include "ui/tap_map.h"
+#include "ui/home_tiles.h"
 #include "util/utf8.h"
 
 using namespace rc;
@@ -827,6 +828,54 @@ void test_no_registration_without_active_map() {
   TEST_ASSERT_NULL(activeTaps());
 }
 
+void test_home_tiles_fit() {
+  struct Case {
+    int cols, rows;
+  } cases[] = {{40, 15}, {53, 20}, {30, 20}};
+  for (const Case& c : cases) {
+    std::vector<TileRect> tiles = homeTiles(c.cols, c.rows, 6);
+    TEST_ASSERT_EQUAL(6, tiles.size());
+    for (const TileRect& r : tiles) {
+      TEST_ASSERT_TRUE(r.c0 >= 0 && r.c1 <= c.cols - 1);
+      TEST_ASSERT_TRUE(r.r0 >= 1 && r.r1 <= c.rows - 2);
+      TEST_ASSERT_TRUE(r.r1 - r.r0 + 1 >= 3);
+      TEST_ASSERT_TRUE(r.c1 - r.c0 + 1 >= 10);
+    }
+    // No two overlap.
+    for (size_t i = 0; i < tiles.size(); ++i)
+      for (size_t j = i + 1; j < tiles.size(); ++j) {
+        const TileRect& a = tiles[i];
+        const TileRect& b = tiles[j];
+        bool disjoint = a.c1 < b.c0 || b.c1 < a.c0 || a.r1 < b.r0 || b.r1 < a.r0;
+        TEST_ASSERT_TRUE(disjoint);
+      }
+    // Two columns, row-major: 0,2,4 share c0; 1,3,5 share c0.
+    TEST_ASSERT_EQUAL(tiles[0].c0, tiles[2].c0);
+    TEST_ASSERT_EQUAL(tiles[0].c0, tiles[4].c0);
+    TEST_ASSERT_EQUAL(tiles[1].c0, tiles[3].c0);
+    TEST_ASSERT_EQUAL(tiles[1].c0, tiles[5].c0);
+    TEST_ASSERT_TRUE(tiles[1].c0 > tiles[0].c0);
+    // Row-major: pairs share a row; the next row is lower.
+    TEST_ASSERT_EQUAL(tiles[0].r0, tiles[1].r0);
+    TEST_ASSERT_TRUE(tiles[2].r0 > tiles[0].r0);
+  }
+}
+
+void test_home_tiles_too_small() {
+  TEST_ASSERT_EQUAL(0, homeTiles(16, 8, 6).size());
+}
+
+void test_tile_move() {
+  TEST_ASSERT_EQUAL(2, tileMove(0, 6, Action::Down));
+  TEST_ASSERT_EQUAL(4, tileMove(4, 6, Action::Down));
+  TEST_ASSERT_EQUAL(0, tileMove(1, 6, Action::Left));
+  TEST_ASSERT_EQUAL(0, tileMove(0, 6, Action::Left));
+  TEST_ASSERT_EQUAL(1, tileMove(0, 6, Action::Right));
+  TEST_ASSERT_EQUAL(1, tileMove(1, 6, Action::Right));
+  TEST_ASSERT_EQUAL(1, tileMove(3, 6, Action::Up));
+  TEST_ASSERT_EQUAL(1, tileMove(1, 6, Action::Up));
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_input_insert_cursor);
@@ -873,5 +922,8 @@ int main() {
   RUN_TEST(test_overlay_registers_taps);
   RUN_TEST(test_banner_tap_target);
   RUN_TEST(test_no_registration_without_active_map);
+  RUN_TEST(test_home_tiles_fit);
+  RUN_TEST(test_home_tiles_too_small);
+  RUN_TEST(test_tile_move);
   return UNITY_END();
 }

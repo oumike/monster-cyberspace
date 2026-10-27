@@ -38,7 +38,12 @@ bool begin() {
   cfg.timings.vsync_front_porch = 8;
   cfg.timings.vsync_pulse_width = 4;
   cfg.timings.vsync_back_porch = 8;
-  cfg.timings.flags.pclk_idle_high = 1;
+  // LovyanGFX's hsync/vsync_polarity 0 is sync idle low, and its
+  // pclk_idle_high sets the out edge (esp_lcd's pclk_active_neg), not the
+  // idle level. Inverted syncs leave the panel cycling its self-test colours.
+  cfg.timings.flags.hsync_idle_low = 1;
+  cfg.timings.flags.vsync_idle_low = 1;
+  cfg.timings.flags.pclk_active_neg = 1;
   cfg.data_width = 16;
   cfg.bits_per_pixel = 16;
   cfg.num_fbs = 1;

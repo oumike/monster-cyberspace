@@ -1,6 +1,7 @@
 #if defined(BOARD_M9)
 
 #include <Arduino.h>
+#include <SD.h>
 #include <SPI.h>
 
 #include "hal/board.h"
@@ -81,6 +82,21 @@ void beep(int freqHz, int ms) { tone(m9::BUZZER, freqHz, ms); }
 
 bool hasTouch() { return false; }
 bool readTouch(int16_t&, int16_t&) { return false; }
+
+bool hasSdSlot() { return true; }
+
+// Shared SPI bus, already set up in begin(). A card reporting CARD_NONE is
+// treated as no card.
+fs::FS* sdMount() {
+  if (!SD.begin(m9::SD_CS, SPI, m9::SD_SPI_HZ)) return nullptr;
+  if (SD.cardType() == CARD_NONE) {
+    SD.end();
+    return nullptr;
+  }
+  return &SD;
+}
+
+void sdUnmount() { SD.end(); }
 
 }  // namespace board
 

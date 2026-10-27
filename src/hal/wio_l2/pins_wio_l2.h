@@ -33,6 +33,9 @@ constexpr uint8_t EXP_GNSS_POWER = 13;
 constexpr uint8_t EXP_SD_POWER = 14;
 constexpr uint8_t EXP_BATT_SENSE_EN = 15;
 
+// 1-bit SD_MMC: dedicated pins, no chip select. Power is EXP_SD_POWER.
+constexpr int SDMMC_CLK = 2, SDMMC_CMD = 3, SDMMC_D0 = 1;
+
 // GPS on Serial1; power and reset are expander bits.
 constexpr int GPS_RX = 18, GPS_TX = 17;
 constexpr uint32_t GPS_BAUD = 9600;

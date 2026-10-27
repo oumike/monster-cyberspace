@@ -15,6 +15,7 @@ constexpr int TFT_BL = 17;  // PNP, active LOW
 constexpr int TFT_BL_PWM_CH = 7;
 constexpr int TFT_BL_FREQ = 12000;
 constexpr int SD_CS = 48, LORA_CS = 39;
+constexpr uint32_t SD_SPI_HZ = 20000000;
 
 constexpr int KB_SDA = 20, KB_SCL = 21, KB_INT = 12;
 constexpr uint8_t KB_ADDRS[] = {0x6C, 0x6D};

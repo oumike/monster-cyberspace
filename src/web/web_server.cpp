@@ -11,6 +11,7 @@
 #include "app/messages.h"
 #include "app/net_worker.h"
 #include "app/queues.h"
+#include "app/restart.h"
 #include "app/time_service.h"
 #include "chat/chat_source.h"
 #include "core_version.h"
@@ -111,13 +112,6 @@ bool readJson(httpd_req_t* req, std::string& body, JsonDocument& doc) {
   return !deserializeJson(doc, &body[0], body.size());
 }
 
-void restartTask(void*) {
-  vTaskDelay(pdMS_TO_TICKS(600));  // let the response go out
-  ESP.restart();
-}
-
-void restartSoon() { xTaskCreate(restartTask, "restart", 2048, nullptr, 1, nullptr); }
-
 // ---- handlers ----
 
 esp_err_t getPage(httpd_req_t* req) {
@@ -196,7 +190,7 @@ esp_err_t postWifi(httpd_req_t* req) {
   for (auto& w : s.wifi) wipe(w.password);
   if (wifimgr::mode() == wifimgr::Mode::Setup) {
     okReply(req, "Saved. Restarting to join it\u2026");
-    restartSoon();
+    rc::restartSoon(600);
     return ESP_OK;
   }
   return okReply(req, "Saved. It is used after a restart, or when the current network drops.");
@@ -365,7 +359,7 @@ esp_err_t postSecurity(httpd_req_t* req) {
 esp_err_t postRestart(httpd_req_t* req) {
   if (!authorized(req)) return ESP_OK;
   okReply(req, "Restarting\u2026");
-  restartSoon();
+  rc::restartSoon(600);
   return ESP_OK;
 }
 
@@ -377,7 +371,7 @@ esp_err_t postFactoryReset(httpd_req_t* req) {
     return fail(req, "400 Bad Request", "Send {\"confirm\":true} to erase everything");
   settings::factoryReset();
   okReply(req, "Erased. Restarting into setup mode\u2026");
-  restartSoon();
+  rc::restartSoon(600);
   return ESP_OK;
 }
 

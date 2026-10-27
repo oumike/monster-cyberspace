@@ -133,6 +133,16 @@ void clearToken() {
   p.end();
 }
 
+void saveAll(const rc::Settings& s) {
+  saveWifi(s.wifi);
+  saveTz(s.tz, s.tzName);
+  saveNtpServer(s.ntpServer);
+  saveSecurity(s.pagePassword, s.apPassword);
+  saveUiPrefs(s);
+  saveAccount(s.email, s.refreshToken);
+  if (s.refreshToken.empty()) clearToken();
+}
+
 void factoryReset() {
   Preferences p;
   if (!p.begin(kNs, false)) return;

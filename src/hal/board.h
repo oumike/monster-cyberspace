@@ -5,6 +5,11 @@
 
 #include "input/key_event.h"
 
+// Forward-declared so this header stays free of FS.h.
+namespace fs {
+class FS;
+}
+
 // The hardware abstraction each board implements. One implementation is
 // compiled per firmware env (src/hal/<board>/).
 namespace board {
@@ -37,5 +42,14 @@ size_t gpsRead(uint8_t* buf, size_t n);
 // error, or a time the RTC flags as unreliable (lost power).
 bool rtcRead(int64_t& epochUtc);
 bool rtcWrite(int64_t epochUtc);
+
+// Removable SD card, mounted one operation at a time. hasSdSlot is a compile
+// -time property of the board. sdMount mounts the card and returns its
+// filesystem, or nullptr with no slot or no card (the card may have been
+// pulled since the last mount). Pair every non-null sdMount with sdUnmount.
+// Not thread-safe: only the backup store calls these.
+bool hasSdSlot();
+fs::FS* sdMount();
+void sdUnmount();
 
 }  // namespace board

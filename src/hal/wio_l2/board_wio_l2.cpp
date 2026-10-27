@@ -2,6 +2,7 @@
 
 #include <Arduino.h>
 #include <HWCDC.h>
+#include <SD_MMC.h>
 #include <Wire.h>
 
 #include "hal/board.h"
@@ -214,6 +215,32 @@ void beep(int freqHz, int ms) { es8311::beep(freqHz, ms); }
 
 bool hasTouch() { return gt911::present(); }
 bool readTouch(int16_t& x, int16_t& y) { return gt911::read(x, y); }
+
+bool hasSdSlot() { return true; }
+
+// 1-bit SD_MMC on a rail the expander gates. Power on through the I2C lock,
+// mount, and treat a CARD_NONE result as no card. Power stays on only while
+// the card is mounted.
+fs::FS* sdMount() {
+  if (!wio::ioSet(wio::EXP_SD_POWER, true)) return nullptr;
+  delay(10);
+  if (!SD_MMC.setPins(wio::SDMMC_CLK, wio::SDMMC_CMD, wio::SDMMC_D0)) {
+    wio::ioSet(wio::EXP_SD_POWER, false);
+    return nullptr;
+  }
+  if (!SD_MMC.begin("/sdcard", /*mode1bit=*/true, /*format_if_mount_failed=*/false) ||
+      SD_MMC.cardType() == CARD_NONE) {
+    SD_MMC.end();
+    wio::ioSet(wio::EXP_SD_POWER, false);
+    return nullptr;
+  }
+  return &SD_MMC;
+}
+
+void sdUnmount() {
+  SD_MMC.end();
+  wio::ioSet(wio::EXP_SD_POWER, false);
+}
 
 }  // namespace board
 

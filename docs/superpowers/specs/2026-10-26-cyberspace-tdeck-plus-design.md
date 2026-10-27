@@ -8,12 +8,21 @@ Run Rhino Cyberspace on the LilyGO T-Deck Plus. Its keyboard, trackball,
 touch panel, GPS and battery should all work. Shared behaviour stays shared,
 and the M9 and Wio L2 keep working exactly as they do today.
 
-Out of scope: LoRa (SX1262), the microSD card, the keyboard backlight, the
-microphone, and the original T-Deck without GPS. The original T-Deck is
+Out of scope: LoRa (SX1262), the keyboard backlight, the microphone, and the
+original T-Deck without GPS. The original T-Deck is
 likely to work, but it is not a target or tested.
 
-Hardware reference: `../camillia/camillia-mt/src/hal/hw_tdeck.h`, plus
+Hardware reference: `../../camillia/camillia-mt/src/hal/hw_tdeck.h`, plus
 `keyboard.cpp` (keyboard and trackball) and `gps.cpp` in the same project.
+
+**2026-10-26 amendments (from the user):**
+- **SD card in scope.** Backup runs on every hardware board, so the T-Deck's
+  microSD is supported through the backup HAL API (`hasSdSlot`, `sdMount`,
+  `sdUnmount`) on the shared SPI bus, CS 39 at 20 MHz, with LoRa CS 9 held
+  high. It is mounted per operation, so the card stays removable.
+- **External power.** `externalPower()` uses the Wio's rule,
+  `HWCDC::isPlugged() || volts > 4.25`: the T-Deck's USB goes to the S3's own
+  port, so a USB host is visible. This replaces "returns false" in §4.1.
 
 ## 2. Decisions (from the user)
 

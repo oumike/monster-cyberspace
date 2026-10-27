@@ -2,8 +2,9 @@
 
 Standalone ESP32 firmware client for [cyberspace.online](https://cyberspace.online),
 a retro text-only social network. Milestone 1 is cIRC chat plus a device-served
-web config page, on the Elecrow ThinkNode M9. More boards and Cyberspace
-features come later.
+web config page, on the Elecrow ThinkNode M9. The Seeed Wio Tracker L2 and
+the LilyGO T-Deck Plus followed (built, not yet tried on hardware). More
+boards and Cyberspace features come later.
 
 - **Design spec:** `docs/superpowers/specs/2026-10-25-cyberspace-m9-circ-design.md`
 - **Milestone 2 (C-Mail):** spec `docs/superpowers/specs/2026-10-25-cyberspace-m9-cmail-design.md`,
@@ -52,6 +53,7 @@ pio test -e native          # host unit tests (lib/core)
 pio run -e m9               # firmware
 pio run -e m9_fake          # firmware with the scripted fake API (no account needed)
 pio run -e wio_l2           # Seeed Wio Tracker L2 firmware (wio_l2_fake: with the fake API)
+pio run -e tdeck            # LilyGO T-Deck Plus firmware (tdeck_fake: with the fake API)
 scripts/build-upload-monitor.sh m9   # flash + serial monitor (115200); -w for the Wio L2, -t for the T-Deck Plus; --help for options
 scripts/build-upload-monitor.sh -B   # build every firmware env, no device needed
 ```
@@ -62,10 +64,14 @@ scripts/build-upload-monitor.sh -B   # build every firmware env, no device neede
 `src/` holds networking, tasks, screens, and the web server; each board's HAL
 sits behind `src/hal/board.h` in `src/hal/<board>/` (boards return portable
 keys from `board::pollKey`). M9 hardware references live in the sibling
-projects `../camillia/camillia-mt/src/hal/hw_m9.h` and `../rhino-moshi/firmware/`.
+projects `../../camillia/camillia-mt/src/hal/hw_m9.h` and `../../rhino-moshi/firmware/`.
 `src/hal/wio_l2/` is the Seeed Wio Tracker L2, ported from
-`../camillia/camillia-mt` (`src/hal/hw_wio_tracker_l2.h`, `wio_tracker_l2_io.cpp`)
+`../../camillia/camillia-mt` (`src/hal/hw_wio_tracker_l2.h`, `wio_tracker_l2_io.cpp`)
 and `../platy-aprs/src/hal/` (`pins_wio_l2.h`, `wio_l2_io.cpp`, `audio.cpp`).
+`src/hal/tdeck/` is the LilyGO T-Deck Plus (from camillia-mt's `hw_tdeck.h`). It
+reuses the M9's `st7789` and the Wio's `gt911` drivers through config structs,
+and sets the `hasKeyboard`, `backspaceIsBack` and `anyInputWakes` flags; its
+input rules (`keymap_tdeck`, `backspace`, `click_timer`) live in `lib/core`.
 Touch: `lib/core` turns samples into gestures and resolves them against the
 per-frame `TapMap` widgets fill as they draw (`input/gestures`, `ui/tap_map`,
 `input/touch_resolve`, the `Osk` keyboard); `ui_task` feeds `handleKey` and
@@ -90,15 +96,18 @@ is removable), `src/store/backup_store.cpp`, Settings/Setup items and the web
 Backup section (built without flashing).
 All 12 tasks of the touch plan are done and committed: gestures, tap map,
 `Overlay` menus, touch status bar and Home tiles, the docked on-screen
-keyboard and four orientations (built without flashing). Next: the T-Deck
-Plus plan.
+keyboard and four orientations (built without flashing).
+All 7 tasks of the T-Deck Plus plan are done and committed: shared panel and
+touch drivers, keyboard, Backspace-as-Back, any-input wake, trackball, GPS,
+battery, speaker and SD, with envs `tdeck` and `tdeck_fake` (built without
+flashing; `PANEL_MADCTL` and `TOUCH_ROT` await the hardware check).
 **Still open:** the unticked items under "Open hardware checks" in
-`docs/TESTING.md` (themes, device Settings, touch UI, Wio L2, GPS time, API
+`docs/TESTING.md` (themes, device Settings, touch UI, Wio L2, T-Deck Plus, GPS time, API
 assumptions, settings backup), then the human live checklist on the `m9` build.
 CI (`.github/workflows/build.yml`) runs on GitHub.
-The native suite is green: 337/337
+The native suite is green: 352/352
 (`pio test -e native`), and `scripts/build-upload-monitor.sh -B` builds all
-four firmware envs.
+six firmware envs.
 
 Notes for whoever continues:
 - Each task follows test-driven development: write the plan's tests first, run

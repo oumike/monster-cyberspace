@@ -1,12 +1,15 @@
 # Using Rhino Cyberspace
 
-On the Elecrow ThinkNode M9 (keyboard and d-pad) and the Seeed Wio Tracker L2
-(touch screen; see Touch below). Key names in this guide are the M9's.
+On the Elecrow ThinkNode M9 (keyboard and d-pad), the Seeed Wio Tracker L2
+(touch screen; see Touch below) and the LilyGO T-Deck Plus (keyboard,
+trackball and touch; see T-Deck Plus below). Key names in this guide are the
+M9's.
 
 ## First setup
 
 1. Power on. With no Wi-Fi saved, the device starts its setup access point,
-   **`Rhino-Cyberspace-M9-Setup`**, and the screen shows its name and the
+   **`Rhino-Cyberspace-M9-Setup`** (`…-WioL2-Setup` on the Wio Tracker L2,
+   `…-TDeck-Setup` on the T-Deck Plus), and the screen shows its name and the
    address to browse.
 2. Join that network from a phone or laptop. It is open unless you set a
    setup-AP password earlier, in which case the screen says a password is
@@ -86,6 +89,28 @@ above it gets shorter.
 turns the screen: Landscape, Landscape 180, Portrait or Portrait 180. It
 applies at once and is kept across restarts and in backups. In portrait, long
 lines on the Settings and Setup screens wrap.
+
+## T-Deck Plus
+
+The keyboard types, the trackball moves, and the touch screen works as on the
+Wio Tracker L2 (taps, `‹`, `⋯`, the edge swipe and the Home tiles), except
+that tapping a text field doesn't bring up the on-screen keyboard: you type
+on the real one.
+
+| Input | Action |
+|---|---|
+| Keys | Type. The keyboard handles Shift, Alt and Sym itself |
+| Enter, or a trackball click | Select (send, in a room) |
+| Backspace | Deletes while there's text to delete; otherwise Back. Holding it to clear a line stops at the empty line instead of leaving the screen |
+| Trackball roll | Up, Down, Left, Right (moves between Home tiles too) |
+| Hold the trackball click 2 s | Screen off |
+| `⋯`, or a long-press | The screen's menu or the command palette (there's no Ctrl key) |
+
+**Screen off:** any key, trackball roll or touch wakes the screen. The press
+that wakes it does nothing else, so it never types, selects or taps.
+
+The screen stays landscape (there is no Orientation item). The setup AP is
+**`Rhino-Cyberspace-TDeck-Setup`**.
 
 ## In a room
 
@@ -265,11 +290,13 @@ The clock sets itself from the best source it has:
 - **RTC** (M9 only; its PCF8563 chip keeps time while the device is off). The
   device writes it after an NTP or GPS sync, at most once an hour, and reads
   it at boot, so the clock is right before Wi-Fi or GPS. The Wio Tracker L2
-  has no RTC, so its clock is unset until NTP or GPS.
+  and the T-Deck Plus have no RTC, so their clocks are unset until NTP or GPS.
 
 The GPS powers itself on only while it's needed: when the clock is unset or
 its last sync is over 6 hours old. It turns off once the clock is set. A
 search with no fix gives up after 15 minutes and tries again an hour later.
+On the T-Deck Plus "off" only stops listening: the receiver shares the main
+power rail and stays powered (about 20 mA).
 For a first fix, take the device outdoors with a view of the sky.
 
 You set the time zone yourself; it never changes on its own. Pick it in

@@ -153,6 +153,27 @@ Buttons: BOOT tap = Back, BOOT hold (0.6 s) = Home; Wake tap = screen off
 - [ ] Orientation from Settings and from web config (Display) applies at once and survives a reboot; in portrait no screen has text cut or overlapping (Settings and Setup lines wrap)
 - [ ] Wi-Fi setup (`wio_l2`, nothing saved): the AP is named `Rhino-Cyberspace-WioL2-Setup` and `http://192.168.4.1` loads
 
+**T-Deck Plus (`tdeck_fake` then `tdeck`):**
+
+- [ ] Boots: the serial log shows `[boot] … on TDeck`, `[kb] keyboard found` and `[touch] GT911 … at 0x5D`
+- [ ] Splash shows `· TDeck`
+- [ ] Display: landscape with the keyboard below, right way up, nothing cut off; colours right. If it's mirrored or upside down, change `PANEL_MADCTL` in `src/hal/tdeck/pins_tdeck.h` (0x60 now; try 0xA0, 0x00 or 0xC0 with MV for landscape)
+- [ ] Touch: the `‹` (top-left), `⋯` (top-right, in a room) and the four corner Home tiles respond where tapped. If taps land mirrored or a half turn off, change `TOUCH_ROT` in `pins_tdeck.h` (2 now)
+- [ ] Every key types the right character, with Shift, Alt and Sym
+- [ ] Backspace deletes while typing; with nothing to delete it goes back; holding it in a room clears the input and then stays in the room
+- [ ] Trackball: each roll moves the matching way (lists and Home tiles); a click selects; rolling then clicking opens the tile it stopped on
+- [ ] Holding the click 2 s turns the screen off, and releasing it selects nothing
+- [ ] With the screen off, a key, a roll, a click and a touch each wake it, and none of them types, moves, selects or taps
+- [ ] Tapping a text field focuses it without the on-screen keyboard; there's no Orientation item in Settings
+- [ ] `⋯` and a long-press open the palette in a room
+- [ ] Beep: a mention or C-Mail alert in `tdeck_fake` plays a tone with the buzzer on
+- [ ] Battery %: Settings shows a sensible value; the charging state follows the USB cable
+- [ ] GPS: outdoors with Wi-Fi off, `[gps] fix, …` and `[time] set from GPS` within 15 min, then `[gps] off`; no log line shows coordinates
+- [ ] SD (FAT32 card): Settings → Back up to SD card, then Restore from SD card…, both work
+- [ ] Pulling the card mid-backup gives "SD write failed", and the panel keeps drawing
+- [ ] Wi-Fi setup (`tdeck`, nothing saved): the AP is named `Rhino-Cyberspace-TDeck-Setup` and `http://192.168.4.1` loads
+- [ ] Regression after the shared-driver change: the M9 panel, the Wio touch and both boards' battery % still work as before
+
 **GPS time, RTC and time zone (`m9`):**
 
 - [ ] With Wi-Fi in range, `[time] NTP sync` and `[time] RTC written` appear, then `[gps] off`

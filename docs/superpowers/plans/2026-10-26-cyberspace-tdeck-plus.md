@@ -349,7 +349,7 @@ Task 7 writes both amendments into the spec.
 **Files:**
 - Modify: `docs/USE.md`, `docs/TESTING.md`, `docs/BUILD.md`, `AGENTS.md`, `docs/superpowers/specs/2026-10-26-cyberspace-tdeck-plus-design.md`
 
-- [ ] **Step 1: `USE.md`.** Add a T-Deck Plus controls section:
+- [x] **Step 1: `USE.md`.** Add a T-Deck Plus controls section:
   - keys type;
   - Enter or a trackball click selects;
   - Backspace deletes while typing and goes back otherwise;
@@ -359,15 +359,15 @@ Task 7 writes both amendments into the spec.
   - `⋯` or a long-press opens the Palette;
   - the setup AP name;
   - GPS power behaviour (the receiver stays powered).
-- [ ] **Step 2: `TESTING.md`.** Add a "T-Deck Plus" section, unticked, with the spec §5 hardware list plus:
+- [x] **Step 2: `TESTING.md`.** Add a "T-Deck Plus" section, unticked, with the spec §5 hardware list plus:
   - confirm `PANEL_MADCTL` and `TOUCH_ROT`;
   - SD backup and restore;
   - pull the card mid-backup: "SD write failed", and the panel keeps drawing.
 
   Stage only these hunks (`git apply --cached`), because the user's own ticks in that file stay unstaged.
-- [ ] **Step 3: `BUILD.md` and `AGENTS.md`.**
+- [x] **Step 3: `BUILD.md` and `AGENTS.md`.**
   - Add the `tdeck` and `tdeck_fake` envs and the `-t` flag.
   - Add the T-Deck to the board list.
   - Update the native test count.
-- [ ] **Step 4: Spec.** Add a "2026-10-26 amendments" note covering SD in scope and `externalPower`, and drop "the microSD card" from §1 Out of scope.
-- [ ] **Step 5: Commit** `docs: T-Deck Plus controls, checks and build`.
+- [x] **Step 4: Spec.** Add a "2026-10-26 amendments" note covering SD in scope and `externalPower`, and drop "the microSD card" from §1 Out of scope.
+- [x] **Step 5: Commit** `docs: T-Deck Plus controls, checks and build`.

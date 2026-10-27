@@ -1,5 +1,6 @@
 #pragma once
 
+#include "screens/backup_picker.h"
 #include "screens/router.h"
 #include "ui/widgets/entry_list.h"
 #include "ui/widgets/input_line.h"
@@ -22,9 +23,13 @@ class SetupScreen : public Screen {
   void enter(const std::string&) override;
   void onKey(const KeyEvent&) override;
   void render(Grid&, const Theme&, int64_t nowMs) override;
+  bool hasOverlay() const override { return picker_.isOpen(); }
+  void closeOverlays() override { picker_.close(); }
 
  private:
   ListView menu_;
+  BackupPicker picker_;
+  bool hasRestore_ = false;  // the SD list held backups on enter
 };
 
 class LoginFormScreen : public Screen {
@@ -57,10 +62,13 @@ class SettingsScreen : public Screen {
   void enter(const std::string&) override;
   void onKey(const KeyEvent&) override;
   void render(Grid&, const Theme&, int64_t nowMs) override;
-  bool hasOverlay() const override { return confirm_ != Confirm::None || picking_; }
+  bool hasOverlay() const override {
+    return confirm_ != Confirm::None || picking_ || picker_.isOpen();
+  }
   void closeOverlays() override {
     confirm_ = Confirm::None;
     picking_ = false;
+    picker_.close();
   }
 
  private:
@@ -69,6 +77,7 @@ class SettingsScreen : public Screen {
   void zoneKey(const KeyEvent&);
 
   ListView menu_, confirmMenu_, zoneList_;
+  BackupPicker picker_;
   Confirm confirm_ = Confirm::None;
   bool picking_ = false;  // the time zone list is open
 };

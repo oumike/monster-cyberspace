@@ -2,18 +2,32 @@
 
 #include "app/app_state.h"
 #include "app/time_service.h"
+#include "app/ui_task.h"
 #include "chat/chat_source.h"
 #include "hal/board.h"
 #include "screens/draw.h"
 #include "screens/screens.h"
+#include "store/backup_store.h"
 #include "store/settings.h"
 #include "tz/zones.h"
 
 namespace rc {
 
 namespace {
-enum Item { kTheme, kZone, kSetupAp, kLogout, kReset };
-constexpr int kItems = 5;
+enum Item { kTheme, kZone, kSetupAp, kBackup, kRestore, kLogout, kReset };
+
+// The visible menu, in order. The SD-card items appear only on a board with a
+// slot, so item indices and the menu height follow from this.
+std::vector<Item> menuItems() {
+  std::vector<Item> v{kTheme, kZone, kSetupAp};
+  if (board::hasSdSlot()) {
+    v.push_back(kBackup);
+    v.push_back(kRestore);
+  }
+  v.push_back(kLogout);
+  v.push_back(kReset);
+  return v;
+}
 
 std::u32string widen(const char* s) {
   std::u32string out;
@@ -74,6 +88,7 @@ void SettingsScreen::zoneKey(const KeyEvent& k) {
 }
 
 void SettingsScreen::onKey(const KeyEvent& k) {
+  if (picker_.isOpen()) return picker_.onKey(k);
   if (picking_) return zoneKey(k);
   ListView& m = confirm_ != Confirm::None ? confirmMenu_ : menu_;
   switch (k.action) {
@@ -101,19 +116,40 @@ void SettingsScreen::onKey(const KeyEvent& k) {
           delay(100);
           ESP.restart();
         }
-      } else if (menu_.selected() == kTheme) {
-        AppState& a = app();
-        a.cfg.theme = nextTheme(a.cfg.theme);
-        settings::saveUiPrefs(a.cfg);
-      } else if (menu_.selected() == kZone) {
-        openZones();
-      } else if (menu_.selected() == kSetupAp) {
-        Command c{CmdType::SetupAp};
-        c.n = setupApUp() ? 0 : 1;
-        chatSource().command(c);
-      } else {
-        confirm_ = menu_.selected() == kLogout ? Confirm::Logout : Confirm::Reset;
-        confirmMenu_.setSelected(0);
+        break;
+      }
+      switch (menuItems()[menu_.selected()]) {
+        case kTheme: {
+          AppState& a = app();
+          a.cfg.theme = nextTheme(a.cfg.theme);
+          settings::saveUiPrefs(a.cfg);
+          break;
+        }
+        case kZone:
+          openZones();
+          break;
+        case kSetupAp: {
+          Command c{CmdType::SetupAp};
+          c.n = setupApUp() ? 0 : 1;
+          chatSource().command(c);
+          break;
+        }
+        case kBackup: {
+          const backupstore::Result r = backupstore::saveToSd();
+          ui::banner(r.message, !r.ok);
+          break;
+        }
+        case kRestore:
+          picker_.open();
+          break;
+        case kLogout:
+          confirm_ = Confirm::Logout;
+          confirmMenu_.setSelected(0);
+          break;
+        case kReset:
+          confirm_ = Confirm::Reset;
+          confirmMenu_.setSelected(0);
+          break;
       }
       break;
     default:
@@ -124,12 +160,15 @@ void SettingsScreen::onKey(const KeyEvent& k) {
 void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
   g.fill(t.bg);
   drawStatus(g, t, U"settings", -1);
+  if (picker_.isOpen()) return picker_.render(g, t);
   const AppState& a = app();
   int r = 1;
   const int bottom = g.rows() - 1;
+  const std::vector<Item> items = menuItems();
+  const int nItems = int(items.size());
   // Status lines stop above the menu.
   auto field = [&](const char* label, const std::string& value, uint16_t fg) {
-    if (r >= bottom - kItems) return;
+    if (r >= bottom - nItems) return;
     putLine(g, 1, r, label, t.dim, t.bg);
     putLine(g, 11, r++, value, fg, t.bg);
   };
@@ -150,13 +189,35 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
   field("time", ts.time, t.fg);
   field("zone", ts.zone, t.fg);
 
-  menu_.setItems({
-      ListItem{U"Theme: " + widen(themeLabel(a.cfg.theme)), U""},
-      ListItem{U"Time zone: " + widen(zoneLabel(ts.tzName)), U""},
-      ListItem{ap ? U"Turn setup AP off" : U"Turn setup AP on", U""},
-      ListItem{U"Log out", U""},
-      ListItem{U"Factory reset\u2026", U"", ItemTone::Error},
-  });
+  menu_.setItems([&] {
+    std::vector<ListItem> rows;
+    for (Item it : items) {
+      switch (it) {
+        case kTheme:
+          rows.push_back(ListItem{U"Theme: " + widen(themeLabel(a.cfg.theme)), U""});
+          break;
+        case kZone:
+          rows.push_back(ListItem{U"Time zone: " + widen(zoneLabel(ts.tzName)), U""});
+          break;
+        case kSetupAp:
+          rows.push_back(ListItem{ap ? U"Turn setup AP off" : U"Turn setup AP on", U""});
+          break;
+        case kBackup:
+          rows.push_back(ListItem{U"Back up to SD card", U""});
+          break;
+        case kRestore:
+          rows.push_back(ListItem{U"Restore from SD card\u2026", U""});
+          break;
+        case kLogout:
+          rows.push_back(ListItem{U"Log out", U""});
+          break;
+        case kReset:
+          rows.push_back(ListItem{U"Factory reset\u2026", U"", ItemTone::Error});
+          break;
+      }
+    }
+    return rows;
+  }());
   if (picking_) {
     // Drawn over the status lines and the menu, below the status bar.
     const int top = 1;
@@ -176,7 +237,7 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
     confirmMenu_.render(g, bottom - 2, bottom, 1, g.cols() - 2, t);
     drawHint(g, t, U"\u2191\u2193 pick  \u25CF confirm  back: cancel");
   } else {
-    menu_.render(g, bottom - kItems, bottom, 1, g.cols() - 2, t);
+    menu_.render(g, bottom - nItems, bottom, 1, g.cols() - 2, t);
     drawHint(g, t, U"\u2191\u2193 pick  \u25CF select  back: home");
   }
 }

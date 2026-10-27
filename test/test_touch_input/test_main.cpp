@@ -258,6 +258,17 @@ void test_tap_map_cells_to_px() {
   TEST_ASSERT_EQUAL(int(TargetKind::None), int(m.hit(30, 120).kind));
 }
 
+void test_tap_map_wide_cells() {
+  // Cells of a RowKind::Big row are wider than the grid's (10 px, not 8).
+  TapMap m;
+  m.setOrigin(CellSize{8, 16}, 0);
+  m.addCells(3, 1, 5, 1, rowTarget(ListId::Main, 2), 10);
+  TEST_ASSERT_EQUAL(2, m.hit(30, 16).index);
+  TEST_ASSERT_EQUAL(2, m.hit(59, 16).index);
+  TEST_ASSERT_EQUAL(int(TargetKind::None), int(m.hit(29, 16).kind));
+  TEST_ASSERT_EQUAL(int(TargetKind::None), int(m.hit(60, 16).kind));
+}
+
 void test_tap_map_topmost_wins() {
   TapMap m;
   m.setOrigin(CellSize{6, 12}, 0);
@@ -555,6 +566,7 @@ int main() {
   RUN_TEST(test_transform_rotations_corners);
   RUN_TEST(test_transform_clamps);
   RUN_TEST(test_tap_map_cells_to_px);
+  RUN_TEST(test_tap_map_wide_cells);
   RUN_TEST(test_tap_map_topmost_wins);
   RUN_TEST(test_tap_map_clear);
   RUN_TEST(test_tap_map_rows_follow_spans);

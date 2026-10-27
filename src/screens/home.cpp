@@ -16,6 +16,7 @@ namespace {
 enum Item { kMessages, kRooms, kCmail, kFeed, kSettings, kMentions };
 constexpr int kItems = 5;      // the list (keyed boards)
 constexpr int kTileCount = 6;  // the tiles (touch boards)
+constexpr int kTilePercent = 90;  // of the area between the status bar and the hint
 
 // The newest unread Feed notice as an Entry arg ("postId\nnoticeId"), or "".
 std::string newestNotice() {
@@ -113,7 +114,8 @@ void HomeScreen::onKey(const KeyEvent& k) {
   }
 }
 
-void HomeScreen::renderTiles(Grid& g, const Theme& t, const std::vector<TileRect>& tiles) {
+void HomeScreen::renderTiles(Grid& g, const Theme& t, const std::vector<TileRect>& tiles,
+                             int cellW) {
   const AppState& a = app();
   if (tileSel_ < 0 || tileSel_ >= kTileCount) tileSel_ = 0;
 
@@ -157,7 +159,7 @@ void HomeScreen::renderTiles(Grid& g, const Theme& t, const std::vector<TileRect
       tt.kind = TargetKind::Row;
       tt.list = ListId::Main;
       tt.index = static_cast<int16_t>(i);
-      activeTaps()->addCells(r.c0, r.r0, r.c1, r.r1, tt);
+      activeTaps()->addCells(r.c0, r.r0, r.c1, r.r1, tt, cellW);
     }
   }
   drawHint(g, t, U"\u2191\u2193 pick  \u25CF open", U"tap to open");
@@ -167,12 +169,29 @@ void HomeScreen::render(Grid& g, const Theme& t, int64_t) {
   g.fill(t.bg);
   const AppState& a = app();
 
-  std::vector<TileRect> tiles = homeTiles(g.cols(), g.rows(), kTileCount);
-  tileMode_ = board::hasTouch() && !tiles.empty();
+  // Touch boards: the tiles are drawn on RowKind::Big rows (the next font up,
+  // +2 px) as many as fit between the status bar and the hint, falling back to
+  // the grid's own rows when the bigger cells can't fit them.
+  std::vector<TileRect> tiles;
+  int bigRows = 0, cellW = 0;
+  if (board::hasTouch()) {
+    const TextSize ts = a.cfg.textSize;
+    bigRows = (g.rows() - 2) * cellSize(ts).h / bigCellSize(ts).h;
+    tiles = homeTiles(bigCols(board::panelWidth(), ts), bigRows + 2, kTileCount, kTilePercent);
+    if (!tiles.empty()) {
+      cellW = bigCellSize(ts).w;
+    } else {
+      bigRows = 0;
+      tiles = homeTiles(g.cols(), g.rows(), kTileCount, kTilePercent);
+    }
+  }
+  tileMode_ = !tiles.empty();
   if (tileMode_) {
+    for (int r = 1; r <= g.rows() - 2; ++r)
+      if (bigRows > 0) g.setRowKind(r, r <= bigRows ? RowKind::Big : RowKind::Skip);
     // @user stays in the status bar; the list-mode fields are dropped.
     drawStatus(g, t, a.user.empty() ? std::u32string(U"home") : utf8ToU32("@" + a.user), -1);
-    renderTiles(g, t, tiles);
+    renderTiles(g, t, tiles, cellW);
     return;
   }
 

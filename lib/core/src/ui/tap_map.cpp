@@ -20,10 +20,11 @@ void TapMap::setOrigin(CellSize cell, int firstRow) {
   firstRow_ = firstRow;
 }
 
-void TapMap::addCells(int c0, int r0, int c1, int r1, const Target& t) {
+void TapMap::addCells(int c0, int r0, int c1, int r1, const Target& t, int cellW) {
+  const int w = cellW > 0 ? cellW : cell_.w;
   Rect rc;
-  rc.x0 = c0 * cell_.w;
-  rc.x1 = (c1 + 1) * cell_.w - 1;
+  rc.x0 = c0 * w;
+  rc.x1 = (c1 + 1) * w - 1;
   rc.y0 = (firstRow_ + r0) * cell_.h;
   rc.y1 = (firstRow_ + r1 + 1) * cell_.h - 1;
   rc.firstRow = firstRow_;

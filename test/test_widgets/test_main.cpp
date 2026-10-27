@@ -866,6 +866,25 @@ void test_home_tiles_too_small() {
   TEST_ASSERT_EQUAL(0, homeTiles(16, 8, 6).size());
 }
 
+void test_home_tiles_percent() {
+  // 90% of 40 cols is 36, centred; 90% of rows 1..13 (13 rows) is 12 (rounded).
+  std::vector<TileRect> t = homeTiles(40, 15, 6, 90);
+  TEST_ASSERT_EQUAL(6, t.size());
+  TEST_ASSERT_EQUAL(2, t[0].c0);
+  TEST_ASSERT_EQUAL(37, t[1].c1);
+  TEST_ASSERT_EQUAL(1, t[0].r0);
+  TEST_ASSERT_EQUAL(12, t[5].r1);
+  // 100% fills the area, as before.
+  std::vector<TileRect> full = homeTiles(40, 15, 6, 100);
+  TEST_ASSERT_EQUAL(0, full[0].c0);
+  TEST_ASSERT_EQUAL(39, full[1].c1);
+  TEST_ASSERT_EQUAL(13, full[5].r1);
+  // The minimum size applies after the shrink: 21 cols fits at 100%
+  // (10 per tile) but not at 90% (19 cols, 9 per tile).
+  TEST_ASSERT_EQUAL(6, homeTiles(21, 15, 6, 100).size());
+  TEST_ASSERT_EQUAL(0, homeTiles(21, 15, 6, 90).size());
+}
+
 void test_tile_move() {
   TEST_ASSERT_EQUAL(2, tileMove(0, 6, Action::Down));
   TEST_ASSERT_EQUAL(4, tileMove(4, 6, Action::Down));
@@ -925,6 +944,7 @@ int main() {
   RUN_TEST(test_no_registration_without_active_map);
   RUN_TEST(test_home_tiles_fit);
   RUN_TEST(test_home_tiles_too_small);
+  RUN_TEST(test_home_tiles_percent);
   RUN_TEST(test_tile_move);
   return UNITY_END();
 }

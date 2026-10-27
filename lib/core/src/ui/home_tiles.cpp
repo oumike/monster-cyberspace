@@ -2,17 +2,20 @@
 
 namespace rc {
 
-std::vector<TileRect> homeTiles(int cols, int rows, int count) {
+std::vector<TileRect> homeTiles(int cols, int rows, int count, int percent) {
   std::vector<TileRect> out;
-  if (count <= 0 || cols <= 0) return out;
+  if (count <= 0 || cols <= 0 || rows - 2 <= 0) return out;
   const int numCols = 2;
   const int numRows = (count + numCols - 1) / numCols;
-  const int firstRow = 1;
-  const int availH = rows - 2;  // rows 1..rows-2
-  if (availH <= 0) return out;
+  const int areaH = rows - 2;  // rows 1..rows-2
+  const int availH = (areaH * percent + 50) / 100;
+  const int availW = (cols * percent + 50) / 100;
+  const int firstRow = 1 + (areaH - availH) / 2;
+  const int firstCol = (cols - availW) / 2;
+  if (availH <= 0 || availW <= 0) return out;
   // Every tile must be at least 3 rows tall and 10 cols wide.
   if (availH / numRows < 3) return out;
-  if (cols / numCols < 10) return out;
+  if (availW / numCols < 10) return out;
   out.reserve(count);
   for (int i = 0; i < numRows; ++i) {
     const int r0 = firstRow + availH * i / numRows;
@@ -20,8 +23,8 @@ std::vector<TileRect> homeTiles(int cols, int rows, int count) {
     for (int j = 0; j < numCols; ++j) {
       const int idx = i * numCols + j;
       if (idx >= count) break;
-      const int c0 = cols * j / numCols;
-      const int c1 = cols * (j + 1) / numCols - 1;
+      const int c0 = firstCol + availW * j / numCols;
+      const int c1 = firstCol + availW * (j + 1) / numCols - 1;
       out.push_back(TileRect{c0, r0, c1, r1});
     }
   }

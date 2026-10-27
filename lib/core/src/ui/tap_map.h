@@ -33,7 +33,9 @@ class TapMap {
  public:
   void clear();                                 // targets and list infos
   void setOrigin(CellSize cell, int firstRow);  // for the addCells calls that follow
-  void addCells(int c0, int r0, int c1, int r1, const Target& t);  // inclusive, stored in px
+  // Inclusive, stored in px. cellW > 0 overrides the cell width, for the wider
+  // cells of RowKind::Big rows.
+  void addCells(int c0, int r0, int c1, int r1, const Target& t, int cellW = 0);
   // Re-places the rows of targets added with setOrigin(_, firstRow) by the
   // renderer's row spans (rowSpans), so taps land on RowKind::Big rows as
   // drawn. Call once the grid is drawn; other grids' targets are left alone.

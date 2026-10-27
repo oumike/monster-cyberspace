@@ -61,7 +61,8 @@ class HomeScreen : public Screen {
 
  private:
   void openItem(int item);
-  void renderTiles(Grid&, const Theme&, const std::vector<TileRect>&);
+  // cellW: the tiles' cell width in px when drawn on RowKind::Big rows, else 0.
+  void renderTiles(Grid&, const Theme&, const std::vector<TileRect>&, int cellW);
   ListView menu_;
   int tileSel_ = 0;      // selected tile (touch boards)
   bool tileMode_ = false;  // set each render: tiles shown this frame

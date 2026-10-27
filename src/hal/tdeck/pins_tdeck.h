@@ -31,9 +31,9 @@ constexpr int KB_INT = 46;  // unused: polled
 constexpr uint8_t TOUCH_ADDR = 0x5D;
 constexpr int TOUCH_INT = 16;  // unused: polled
 
-// Trackball, active low. Physical rolls per camillia: right → 2, left → 1,
-// up → 15, down → 3.
-constexpr int TB_RIGHT = 2, TB_LEFT = 1, TB_UP = 15, TB_DOWN = 3, TB_CLICK = 0;
+// Trackball, active low: right → 2, left → 1, up → 3, down → 15. Up and down
+// are the reverse of camillia's map, confirmed on hardware (2026-10-27).
+constexpr int TB_RIGHT = 2, TB_LEFT = 1, TB_UP = 3, TB_DOWN = 15, TB_CLICK = 0;
 
 // L76K GPS on Serial1.
 constexpr int GPS_RX = 44, GPS_TX = 43;

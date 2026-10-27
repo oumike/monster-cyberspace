@@ -49,6 +49,7 @@ a{color:#6cf}
 <h2>Display</h2>
 <label>Text size<select id="tsize"><option value="compact">Compact (6×12, 53×20)</option><option value="comfortable">Comfortable (8×16, 40×15)</option></select></label>
 <label>Theme<select id="theme"><option value="default">Default (terminal green)</option><option value="bw">Black &amp; white (white on black)</option><option value="wb">White &amp; black (black on white)</option></select></label>
+<label id="rotrow" hidden>Orientation<select id="rot"><option value="0">Landscape</option><option value="2">Landscape 180</option><option value="1">Portrait</option><option value="3">Portrait 180</option></select></label>
 <label><input id="buzzer" type="checkbox" style="width:auto"> Buzzer on mentions</label>
 <button onclick="savePrefs()">Save display</button>
 <div id="prefmsg" class="msg"></div>
@@ -122,6 +123,7 @@ function fillZones(sel,custom){sel.innerHTML='';
 async function loadZones(){const r=await call('GET','/api/zones');zones=Array.isArray(r)?r:[];fillZones($('tzpick'),true);fillZones($('wtz'),true);}
 async function loadPrefs(){const p=await call('GET','/api/prefs');if(p.tz===undefined)return;
   $('tsize').value=p.textSize;if(p.theme)$('theme').value=p.theme;$('buzzer').checked=p.buzzer;$('tz').value=p.tz;
+  if(p.rotation!==undefined){$('rotrow').hidden=false;$('rot').value=String(p.rotation);}
   $('tzpick').value=listed(p.tzName)?p.tzName:'';tzCustom();$('ntp').value=p.ntpServer;
   // Setup mode keeps a zone already set; only the factory default takes the browser's.
   savedTzName=p.tzName;const keep=$('wtz').querySelector('option[value=""]');
@@ -138,7 +140,8 @@ async function addWifi(){
   const r=await post('/api/wifi',{ssid:$('ssid').value,password:$('wpass').value},'wifimsg');if(r.ok)$('wpass').value='';}
 async function login(){$('acctmsg').textContent='Signing in…';$('acctmsg').className='msg dim';
   const r=await call('POST','/api/login',{email:$('email').value,password:$('cpass').value});$('cpass').value='';show('acctmsg',r);load();}
-function savePrefs(){post('/api/prefs',{textSize:$('tsize').value,theme:$('theme').value,buzzer:$('buzzer').checked},'prefmsg');}
+function savePrefs(){const b={textSize:$('tsize').value,theme:$('theme').value,buzzer:$('buzzer').checked};
+  if(!$('rotrow').hidden)b.rotation=parseInt($('rot').value,10);post('/api/prefs',b,'prefmsg');}
 function saveTime(){post('/api/prefs',{tzName:$('tzpick').value,tz:$('tz').value,ntpServer:$('ntp').value},'timemsg');}
 async function saveSec(){const b={pagePassword:$('pagepw').value,apPassword:$('appw').value};
   if(!b.pagePassword&&!confirm('Leave the page password empty (no password)?'))return;

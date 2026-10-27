@@ -14,6 +14,7 @@
 #include "store/locked_chat.h"
 #include "ui/renderer.h"
 #include "ui/room_layout.h"
+#include "ui/rotation.h"
 #include "ui/tap_map.h"
 #include "ui/theme.h"
 #include "ui/widgets/banner.h"
@@ -101,6 +102,17 @@ void drawSaver(const Theme& t) {
   grid.putText(0, bottom, utf8ToU32(board::wakeHint()), t.dim, t.bg, grid.cols());
 }
 
+void applyRotation(uint8_t r) {
+  if (!board::canRotate()) return;
+  app().cfg.rotation = rotationFromIndex(r);
+  settings::saveUiPrefs(app().cfg);
+  board::setRotation(app().cfg.rotation);
+  renderer.resize();
+  gestures.reset();
+  resolver.reset();
+  needResize = true;
+}
+
 void goDark() {
   showOsk(false);
   power = Power::Dark;
@@ -137,6 +149,9 @@ void handleEvent(const Event& e) {
       else settings::saveUiPrefs(app().cfg);
       break;
     }
+    case EvtType::RotationChanged:
+      applyRotation(uint8_t(e.code));
+      break;
     case EvtType::Banner:
       banner(e.text, !e.ok);
       break;
@@ -275,6 +290,7 @@ void taskMain(void*) {
 }  // namespace
 
 void start() {
+  if (board::canRotate()) board::setRotation(app().cfg.rotation);
   if (!renderer.begin()) Serial.println("[ui] no memory for the frame buffer");
   setActiveTaps(board::hasTouch() ? &taps : nullptr);
   resizeGrid();
@@ -288,6 +304,8 @@ void setTextSize(TextSize s) {
   settings::saveUiPrefs(app().cfg);
   needResize = true;
 }
+
+void setRotation(uint8_t r) { applyRotation(r); }
 
 void banner(const std::string& text, bool error) {
   topBanner.show(utf8ToU32(text), nowMs(), error ? 6000 : 4000, error);

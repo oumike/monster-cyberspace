@@ -646,7 +646,7 @@ void RoomScreen::render(Grid& g, const Theme& t, int64_t) {
     return;
   }
 
-  int reserve = drawer ? Drawer::width(app().cfg.textSize) : 0;
+  int reserve = drawer ? Drawer::width(g.cols()) : 0;
   if (!typers.empty()) {
     // One row above the input for "name is typing…".
     --logBottom;
@@ -672,7 +672,7 @@ void RoomScreen::render(Grid& g, const Theme& t, int64_t) {
       touch = U"type a reason (optional)  enter: report";
     } else if (view_ == View::Menu) {
       hint = U"\u2191\u2193 pick  \u25CF choose  back: close";
-      touch = U"tap to choose  tap outside: close";
+      touch = U"tap: choose  outside: close";
     } else if (drawer) {
       hint = U"\u2191\u2193 pick  \u25CF menu  \u2190 close";
       touch = U"tap a name for actions";

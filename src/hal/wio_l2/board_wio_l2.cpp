@@ -11,12 +11,16 @@
 #include "hal/wio_l2/panel_nv3031b.h"
 #include "hal/wio_l2/pins_wio_l2.h"
 #include "hal/wio_l2/touch_gt911.h"
+#include "input/touch_transform.h"
+#include "ui/rotation.h"
 
 namespace board {
 namespace {
 
 using rc::Action;
 using rc::KeyEvent;
+
+uint8_t rotation = 0;
 
 bool i2cWrite(uint8_t addr, uint8_t reg, uint8_t v) {
   Wire.beginTransmission(addr);
@@ -148,11 +152,11 @@ void begin() {
 }
 
 const char* name() { return "WioL2"; }
-int panelWidth() { return wio::PANEL_W; }
-int panelHeight() { return wio::PANEL_H; }
+int panelWidth() { return rc::rotationPortrait(rotation) ? wio::PANEL_H : wio::PANEL_W; }
+int panelHeight() { return rc::rotationPortrait(rotation) ? wio::PANEL_W : wio::PANEL_H; }
 
 void pushRows(const uint16_t* frame, int y0, int y1) {
-  nv3031b::pushRows(frame, wio::PANEL_W, y0, y1);
+  nv3031b::pushRows(frame, panelWidth(), y0, y1);
 }
 
 void backlight(bool on) {
@@ -199,7 +203,19 @@ void beep(int freqHz, int ms) { es8311::beep(freqHz, ms); }
 const char* wakeHint() { return "hold Wake to wake"; }
 
 bool hasTouch() { return gt911::present(); }
-bool readTouch(int16_t& x, int16_t& y) { return gt911::read(x, y); }
+bool readTouch(int16_t& x, int16_t& y) {
+  int16_t rx = 0, ry = 0;
+  const bool down = gt911::read(rx, ry);
+  rc::touchToFrame(rx, ry, wio::PANEL_NATIVE_W, wio::PANEL_NATIVE_H, rotation, x, y);
+  return down;
+}
+
+bool canRotate() { return true; }
+
+void setRotation(uint8_t r) {
+  rotation = rc::rotationFromIndex(r);
+  nv3031b::setRotation(rotation);
+}
 
 bool hasSdSlot() { return true; }
 

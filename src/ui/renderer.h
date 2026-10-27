@@ -13,6 +13,9 @@ struct CellFont;
 class Renderer {
  public:
   bool begin();
+  // Re-reads the panel size after a rotation; reallocates only if it grew.
+  // The caller redraws everything.
+  void resize();
   // Draws every dirty row of g with the font for s (RowKind::Big rows with
   // the next font up), placed by rowSpans, then clears g's dirty flags. A row
   // that moved or changed height is redrawn even if its cells didn't change.

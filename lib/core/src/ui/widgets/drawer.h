@@ -20,8 +20,9 @@ class Drawer {
   std::string selectedUsername() const;
   // Draws rows [top, bottom) in the rightmost width() columns.
   void render(Grid& g, int top, int bottom, const Theme& t) const;
-  // 15 cols: 120 px in Comfortable, 90 px in Compact.
-  static int width(TextSize s);
+  // 15 cols (120 px in Comfortable, 90 px in Compact), capped at half of a
+  // narrow (portrait) grid of `cols` columns.
+  static int width(int cols);
 
  private:
   struct Person {

@@ -20,6 +20,19 @@ bool Renderer::begin() {
   return frame_ != nullptr;
 }
 
+void Renderer::resize() {
+  const int w = board::panelWidth(), h = board::panelHeight();
+  if (static_cast<size_t>(w) * h > static_cast<size_t>(w_) * h_) {
+    heap_caps_free(frame_);
+    frame_ = static_cast<uint16_t*>(
+        heap_caps_calloc(static_cast<size_t>(w) * h, sizeof(uint16_t), MALLOC_CAP_SPIRAM));
+  }
+  w_ = w;
+  h_ = h;
+  main_ = Layer{0};
+  docked_ = Layer{};
+}
+
 void Renderer::drawRow(const Grid& g, int r, const CellFont& font, RowSpan span) {
   const int cw = font.w, ch = std::min<int>(font.h, span.h), y0 = span.y;
   const int rb = rowBytes(font);

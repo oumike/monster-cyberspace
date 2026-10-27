@@ -84,6 +84,7 @@ Settings full() {
   s.drawerOpen = true;
   s.buzzer = false;
   s.theme = ThemeId::WhiteBlack;
+  s.rotation = 3;
   s.lastRoom = "random";
   return s;
 }
@@ -111,6 +112,7 @@ void expectSame(const Settings& a, const Settings& b) {
   TEST_ASSERT_EQUAL(a.drawerOpen, b.drawerOpen);
   TEST_ASSERT_EQUAL(a.buzzer, b.buzzer);
   TEST_ASSERT_TRUE(a.theme == b.theme);
+  TEST_ASSERT_EQUAL(a.rotation, b.rotation);
   TEST_ASSERT_EQUAL_STRING(a.lastRoom.c_str(), b.lastRoom.c_str());
 }
 
@@ -133,7 +135,7 @@ void test_round_trip_every_field() {
   TEST_ASSERT_EQUAL_STRING("", err.c_str());
   TEST_ASSERT_EQUAL_STRING("", note.c_str());
   TEST_ASSERT_NOT_NULL(strstr(y.c_str(), "created: \"2026-10-26T18:30:00Z\""));
-  TEST_ASSERT_NOT_NULL(strstr(y.c_str(), "theme: wb  # default | bw | wb"));
+  TEST_ASSERT_NOT_NULL(strstr(y.c_str(), "theme: wb  # default | bw | wb\nrotation: 3  # 0 landscape, 1 portrait, 2 landscape 180, 3 portrait 180\n"));
   TEST_ASSERT_EQUAL(0, y.rfind("# Rhino Cyberspace settings backup.\n", 0));
 }
 
@@ -295,6 +297,7 @@ void test_bad_values_rejected() {
       {"pagePassword: \"a\\nb\"\n", "line 3: page password: up to 63 printable characters"},
       {"textSize: huge\n", "line 3: text size: compact or comfortable"},
       {"theme: pink\n", "line 3: theme: default, bw or wb"},
+      {"rotation: up\n", "line 3: orientation: 0 to 3"},
       {"buzzer: maybe\n", "line 3: expected true or false"},
       {"wifi:\n  - ssid: A\n    password: \"\"\n  - ssid: A\n    password: \"\"\n",
        "line 6: duplicate network \"A\""},
@@ -344,6 +347,21 @@ void test_backup_time_keys() {
 
   expectFail(std::string(kHead) + "ntpServer: \"a b\"\n",
              "line 3: NTP server: a host name, 1-63 characters");
+}
+
+void test_backup_rotation() {
+  Settings s = full();
+  std::string err, note;
+  TEST_ASSERT_TRUE(run(std::string(kHead) + "buzzer: true\n", s, err, note));
+  TEST_ASSERT_EQUAL(3, s.rotation);  // missing: kept
+  TEST_ASSERT_TRUE_MESSAGE(run(std::string(kHead) + "rotation: 1\n", s, err, note), err.c_str());
+  TEST_ASSERT_EQUAL(1, s.rotation);
+  for (const char* v : {"4", "-1", "255"}) {
+    s.rotation = 2;
+    TEST_ASSERT_TRUE_MESSAGE(run(std::string(kHead) + "rotation: " + v + "\n", s, err, note),
+                             err.c_str());
+    TEST_ASSERT_EQUAL(0, s.rotation);  // out of range: Landscape
+  }
 }
 
 void test_duplicate_key() {
@@ -416,6 +434,7 @@ int main(int, char**) {
   RUN_TEST(test_bad_values_rejected);
   RUN_TEST(test_more_than_five_networks_truncated);
   RUN_TEST(test_backup_time_keys);
+  RUN_TEST(test_backup_rotation);
   RUN_TEST(test_duplicate_key);
   RUN_TEST(test_oversize_refused);
   RUN_TEST(test_failure_leaves_settings_unchanged);

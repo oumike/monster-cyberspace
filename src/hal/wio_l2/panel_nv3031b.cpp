@@ -81,6 +81,8 @@ void pushRows(const uint16_t* frame, int width, int y0, int y1) {
   lcd.endWrite();
 }
 
+void setRotation(uint8_t r) { lcd.setRotation(r & 3); }
+
 void sleep(bool on) {
   if (on) lcd.sleep();
   else lcd.wakeup();

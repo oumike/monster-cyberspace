@@ -270,8 +270,9 @@ void test_drawer_idle_marker() {
   b.lastActivity = -1;
   Drawer d;
   d.setPeople({a, b}, 1000 + 600000, 300000);
-  TEST_ASSERT_EQUAL(15, Drawer::width(TextSize::Compact));
-  TEST_ASSERT_EQUAL(15, Drawer::width(TextSize::Comfortable));
+  TEST_ASSERT_EQUAL(15, Drawer::width(53));
+  TEST_ASSERT_EQUAL(15, Drawer::width(30));
+  TEST_ASSERT_EQUAL(12, Drawer::width(24));  // capped at half the grid
   Grid g(40, 6);
   d.render(g, 1, 6, T());
   int x = 40 - 15;
@@ -684,7 +685,7 @@ void test_drawer_registers_people() {
   setActiveTaps(&m);
   Grid g(40, 6);
   d.render(g, 1, 6, T());  // people at rows 2, 3
-  int x = 40 - Drawer::width(TextSize::Compact);
+  int x = 40 - Drawer::width(40);
   Target t = m.hit(x + 1, 3);
   TEST_ASSERT_EQUAL(int(TargetKind::Row), int(t.kind));
   TEST_ASSERT_EQUAL(int(ListId::Drawer), int(t.list));

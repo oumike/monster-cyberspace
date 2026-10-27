@@ -68,6 +68,7 @@ enum class EvtType {
   SendDone,         // ok; text = error message when !ok
   OlderLoaded,      // code = messages added
   PrefsChanged,     // from the web page: code = 0 Comfortable, 1 Compact; ok = buzzer; text = theme key
+  RotationChanged,  // from the web page: code = rotation 0-3 (ui/rotation.h)
   ConversationsUpdated,
   ConversationStarted,  // ok: text = conversation id; else text = error
   TypingChanged,

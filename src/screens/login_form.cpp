@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "app/app_state.h"
 #include "chat/chat_source.h"
 #include "screens/draw.h"
@@ -86,10 +88,11 @@ void LoginFormScreen::render(Grid& g, const Theme& t, int64_t) {
   mask.setCursor(password_.cursor());
   mask.setDisabled(focus_ != 1 || busy_);
   mask.render(g, 6, t);
-  if (!note_.empty()) putLine(g, 1, 8, note_, busy_ ? t.fg : t.error, t.bg);
-  putLine(g, 1, 10, "The password is sent once and never stored.", t.dim, t.bg);
+  int r = 8;
+  if (!note_.empty()) r = putWrapped(g, 1, r, note_, busy_ ? t.fg : t.error, t.bg) + 1;
+  putWrapped(g, 1, std::max(r, 10), "The password is sent once and never stored.", t.dim, t.bg);
   drawHint(g, t, U"\u2191\u2193 field  \u25CF next/sign in  back: cancel",
-           U"tap a field  enter: next/sign in");
+           U"tap field  enter: next/sign in");
 }
 
 }  // namespace rc

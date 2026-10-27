@@ -80,7 +80,7 @@ class SettingsScreen : public Screen {
   }
 
  private:
-  enum class Confirm { None, Logout, Reset };
+  enum class Confirm { None, Logout, Reset, Rotation };
   void openZones();
   void zoneKey(const KeyEvent&);
   void confirmKey(const KeyEvent&);

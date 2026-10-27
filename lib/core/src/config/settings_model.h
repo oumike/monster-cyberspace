@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -18,6 +19,7 @@ struct Settings {
   TextSize textSize = TextSize::Compact;
   bool drawerOpen = false, buzzer = true;
   ThemeId theme = ThemeId::Default;
+  uint8_t rotation = 0;  // touch boards: see ui/rotation.h
   std::string lastRoom = "general";
   // tz is the POSIX string applied; tzName its IANA name from the zone list,
   // empty for a custom string.

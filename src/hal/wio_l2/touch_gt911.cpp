@@ -40,18 +40,6 @@ bool writeReg(uint16_t reg, uint8_t v) {
   return Wire.endTransmission() == 0;
 }
 
-// The controller reports portrait 240x320. The panel runs at LovyanGFX
-// rotation 1 and the touch at offset rotation 2 (camillia-mt, platy-aprs);
-// LovyanGFX's convertRawXY turns that into rotation 3: swap, then mirror x.
-void toLandscape(int16_t rx, int16_t ry, int16_t& x, int16_t& y) {
-  if (rx < 0) rx = 0;
-  if (rx >= wio::PANEL_NATIVE_W) rx = wio::PANEL_NATIVE_W - 1;
-  if (ry < 0) ry = 0;
-  if (ry >= wio::PANEL_NATIVE_H) ry = wio::PANEL_NATIVE_H - 1;
-  x = (int16_t)(wio::PANEL_W - 1 - ry);
-  y = rx;
-}
-
 }  // namespace
 
 bool begin() {
@@ -89,7 +77,8 @@ bool read(int16_t& x, int16_t& y) {
       uint8_t n = status & 0x0F;
       uint8_t p[7];
       if (n > 0 && n <= 5 && readRegs(kRegPoint1, p, sizeof p)) {
-        toLandscape((int16_t)(p[1] | (p[2] << 8)), (int16_t)(p[3] | (p[4] << 8)), lastX, lastY);
+        lastX = (int16_t)(p[1] | (p[2] << 8));
+        lastY = (int16_t)(p[3] | (p[4] << 8));
         down = true;
       } else if (n == 0) {
         down = false;

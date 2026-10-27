@@ -525,7 +525,7 @@ void EntryScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
       touch = U"type a reason (optional)  enter: report";
     } else if (view_ == View::Menu) {
       hint = U"\u2191\u2193 pick  \u25CF choose  back: close";
-      touch = U"tap to choose  tap outside: close";
+      touch = U"tap: choose  outside: close";
     } else if (sending_) {
       hint = touch = U"sending\u2026";
     } else if (moreAsked_) {

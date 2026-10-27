@@ -7,6 +7,7 @@
 
 #include "config/yaml_scalar.h"
 #include "tz/zones.h"
+#include "ui/rotation.h"
 #include "ui/theme.h"
 #include "web/web_util.h"
 
@@ -54,7 +55,7 @@ struct Item {
 
 struct Staged {
   Str format, version, timezone, tzName, ntpServer, pagePassword, apPassword, textSize, theme,
-      lastRoom, email, refreshToken;
+      rotation, lastRoom, email, refreshToken;
   Bool drawerOpen, buzzer;
   bool hasWifi = false;
   std::vector<Item> wifi;
@@ -242,6 +243,7 @@ bool parse(std::string_view yaml, Staged& st, std::string& err) {
              : key == "apPassword"   ? &st.apPassword
              : key == "textSize"     ? &st.textSize
              : key == "theme"        ? &st.theme
+             : key == "rotation"     ? &st.rotation
              : key == "lastRoom"     ? &st.lastRoom
                                      : nullptr;
     Str ignored;
@@ -301,6 +303,20 @@ bool positiveInt(const Str& s, int& out) {
   out = n;
   return n > 0;
 }
+
+// A plain integer, optionally negative.
+bool plainInt(const Str& s, int& out) {
+  if (s.kind != ScalarKind::Plain || s.v.empty() || s.v.size() > 6) return false;
+  size_t i = s.v[0] == '-' ? 1 : 0;
+  if (i == s.v.size()) return false;
+  int n = 0;
+  for (; i < s.v.size(); ++i) {
+    if (s.v[i] < '0' || s.v[i] > '9') return false;
+    n = n * 10 + (s.v[i] - '0');
+  }
+  out = s.v[0] == '-' ? -n : n;
+  return true;
+}
 }  // namespace
 
 std::string backupToYaml(const Settings& s, const BackupMeta& m) {
@@ -329,6 +345,8 @@ std::string backupToYaml(const Settings& s, const BackupMeta& m) {
   o += "apPassword: " + yamlQuote(s.apPassword) + "\n";
   o += std::string("textSize: ") + (s.textSize == TextSize::Compact ? "compact" : "comfortable") + "\n";
   o += std::string("theme: ") + themeKey(s.theme) + "  # default | bw | wb\n";
+  o += "rotation: " + std::to_string(s.rotation) +
+       "  # 0 landscape, 1 portrait, 2 landscape 180, 3 portrait 180\n";
   o += std::string("drawerOpen: ") + boolStr(s.drawerOpen) + "\n";
   o += std::string("buzzer: ") + boolStr(s.buzzer) + "\n";
   o += "lastRoom: " + yamlQuote(s.lastRoom) + "\n";
@@ -384,6 +402,7 @@ bool backupFromYaml(std::string_view yaml, Settings& inOut, std::string& err, st
   }
 
   ThemeId theme = inOut.theme;
+  int rotation = 0;
   if (st.apPassword.has && !validApPassword(st.apPassword.v)) {
     err = at(st.apPassword.line, "setup-AP password: 8-63 printable characters, or empty");
   } else if (st.pagePassword.has &&
@@ -393,6 +412,8 @@ bool backupFromYaml(std::string_view yaml, Settings& inOut, std::string& err, st
     err = at(st.textSize.line, "text size: compact or comfortable");
   } else if (st.theme.has && !parseThemeId(st.theme.v, theme)) {
     err = at(st.theme.line, "theme: default, bw or wb");
+  } else if (st.rotation.has && !plainInt(st.rotation, rotation)) {
+    err = at(st.rotation.line, "orientation: 0 to 3");
   } else if (st.timezone.has && !validPosixTz(st.timezone.v)) {
     err = at(st.timezone.line, "time zone: 1-63 printable characters");
   } else if (st.tzName.has && (st.tzName.v.size() > 63 || !printable(st.tzName.v))) {
@@ -423,6 +444,7 @@ bool backupFromYaml(std::string_view yaml, Settings& inOut, std::string& err, st
   if (st.textSize.has)
     inOut.textSize = st.textSize.v == "compact" ? TextSize::Compact : TextSize::Comfortable;
   if (st.theme.has) inOut.theme = theme;
+  if (st.rotation.has) inOut.rotation = rotationFromIndex(rotation);
   if (st.drawerOpen.has) inOut.drawerOpen = st.drawerOpen.v;
   if (st.buzzer.has) inOut.buzzer = st.buzzer.v;
   if (st.lastRoom.has) inOut.lastRoom = st.lastRoom.v;

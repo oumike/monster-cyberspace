@@ -8,7 +8,7 @@
 
 namespace rc {
 
-int Drawer::width(TextSize) { return 15; }
+int Drawer::width(int cols) { return std::min(15, cols / 2); }
 
 void Drawer::setPeople(std::vector<PresenceEntry> people, int64_t nowMs, int64_t idleAfterMs) {
   std::string keep = selectedUsername();
@@ -40,7 +40,7 @@ bool Drawer::select(int i) {
 }
 
 void Drawer::render(Grid& g, int top, int bottom, const Theme& t) const {
-  const int x = std::max(0, g.cols() - width(TextSize::Compact));
+  const int x = std::max(0, g.cols() - width(g.cols()));
   const int inner = g.cols() - x - 1;
   const int height = bottom - top;
   if (height <= 0 || inner <= 0) return;

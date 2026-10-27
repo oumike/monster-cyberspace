@@ -34,6 +34,12 @@ void beep(int freqHz, int ms);
 // is down, with x, y in the panelWidth() x panelHeight() frame.
 bool hasTouch();
 bool readTouch(int16_t& x, int16_t& y);
+// Boards that can turn the panel: canRotate is a compile-time property.
+// setRotation turns the panel scan and the touch transform together, and
+// panelWidth/panelHeight follow (rotation r as in ui/rotation.h). A no-op on
+// boards that can't rotate.
+bool canRotate();
+void setRotation(uint8_t r);
 // GPS receiver. On: power, a 10 ms reset pulse, then the UART up. Off: the
 // UART down, then power off.
 bool hasGps();

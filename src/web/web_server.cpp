@@ -306,6 +306,7 @@ esp_err_t getPrefs(httpd_req_t* req) {
   d["tz"] = s.tz;
   d["tzName"] = s.tzName;
   d["ntpServer"] = s.ntpServer;
+  if (board::canRotate()) d["rotation"] = s.rotation;
   return sendJson(req, d);
 }
 
@@ -335,6 +336,12 @@ esp_err_t postPrefs(httpd_req_t* req) {
   rc::ThemeId theme = s.theme;
   if (doc["theme"].is<const char*>() && !rc::parseThemeId(doc["theme"].as<const char*>(), theme))
     return fail(req, "400 Bad Request", "Theme: default, bw or wb");
+  int rotation = -1;
+  if (!doc["rotation"].isNull()) {
+    if (!doc["rotation"].is<int>() || doc["rotation"].as<int>() < 0 || doc["rotation"].as<int>() > 3)
+      return fail(req, "400 Bad Request", "Orientation: 0 to 3");
+    rotation = doc["rotation"].as<int>();
+  }
   std::string ntp = s.ntpServer;
   if (doc["ntpServer"].is<const char*>()) {
     ntp = doc["ntpServer"].as<const char*>();
@@ -366,6 +373,8 @@ esp_err_t postPrefs(httpd_req_t* req) {
   // The UI task owns text size, theme and buzzer; it applies and saves them.
   if (!doc["textSize"].isNull() || !doc["buzzer"].isNull() || !doc["theme"].isNull())
     rc::postEvent(rc::Event{rc::EvtType::PrefsChanged, rc::themeKey(theme), compact ? 1 : 0, buzzer});
+  if (rotation >= 0 && board::canRotate() && rotation != s.rotation)
+    rc::postEvent(rc::Event{rc::EvtType::RotationChanged, "", rotation, true});
   return okReply(req, "Saved");
 }
 

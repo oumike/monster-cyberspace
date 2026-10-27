@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <string>
 
 #include "ui/grid.h"
@@ -10,6 +11,9 @@ namespace rc::ui {
 void start();
 // Switches the text size, saves it and redraws everything.
 void setTextSize(TextSize s);
+// Turns the panel (rotation r, ui/rotation.h) at once, saves it and reflows
+// the grid. Only on boards that can rotate.
+void setRotation(uint8_t r);
 // A one-row banner on the bottom row, above whatever the screen drew.
 void banner(const std::string& text, bool error);
 // Forces every row to be redrawn on the next frame.

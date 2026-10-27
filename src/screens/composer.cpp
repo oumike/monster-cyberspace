@@ -316,7 +316,7 @@ void ComposerScreen::render(Grid& g, const Theme& t, int64_t) {
     const char32_t* touch;
     if (menu_ != Menu::None) {
       hint = U"\u2191\u2193 pick  \u25CF choose  back: close";
-      touch = U"tap to choose  tap outside: close";
+      touch = U"tap: choose  outside: close";
     } else if (gPosting) {
       hint = touch = U"posting\u2026";
     } else if (focus_ == kBody) {

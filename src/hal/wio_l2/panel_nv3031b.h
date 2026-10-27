@@ -11,5 +11,7 @@ bool begin();
 // Sends rows [y0, y1) of a full-width frame of host-order RGB565.
 void pushRows(const uint16_t* frame, int width, int y0, int y1);
 void sleep(bool on);
+// LovyanGFX rotation r (quarter turns from landscape, on top of offset 1).
+void setRotation(uint8_t r);
 
 }  // namespace nv3031b

@@ -52,26 +52,29 @@ void SetupScreen::render(Grid& g, const Theme& t, int64_t) {
   drawStatus(g, t, U"setup", -1);
   if (picker_.isOpen()) return picker_.render(g, t);
   int r = 2;
+  auto line = [&](int col, const std::string& text, uint16_t fg) {
+    if (narrowGrid(g)) r = putWrapped(g, col, r, text, fg, t.bg);
+    else putLine(g, col, r++, text, fg, t.bg);
+  };
 #if !RC_FAKE_API
   if (wifimgr::mode() == wifimgr::Mode::Setup) {
-    putLine(g, 1, r++, "Join this Wi-Fi network:", t.fg, t.bg);
-    putLine(g, 3, r++, wifimgr::apSsid(), t.selectBg, t.bg);
-    putLine(g, 3, r++, wifimgr::apHasPassword() ? "password required" : "open network", t.dim,
-            t.bg);
-    putLine(g, 1, r++, "then browse to:", t.fg, t.bg);
-    putLine(g, 3, r++, "http://192.168.4.1", t.selectBg, t.bg);
+    line(1, "Join this Wi-Fi network:", t.fg);
+    line(3, wifimgr::apSsid(), t.selectBg);
+    line(3, wifimgr::apHasPassword() ? "password required" : "open network", t.dim);
+    line(1, "then browse to:", t.fg);
+    line(3, "http://192.168.4.1", t.selectBg);
     ++r;
   }
 #endif
   if (wifiUp()) {
-    putLine(g, 1, r++, "On " + wifiSsid() + ", browse to:", t.fg, t.bg);
-    putLine(g, 3, r++, "http://rhino-cyberspace.local", t.selectBg, t.bg);
-    putLine(g, 3, r++, "http://" + wifiIp(), t.selectBg, t.bg);
+    line(1, "On " + wifiSsid() + ", browse to:", t.fg);
+    line(3, "http://rhino-cyberspace.local", t.selectBg);
+    line(3, "http://" + wifiIp(), t.selectBg);
     ++r;
   }
   if (!app().cfg.wifi.empty() && app().auth != 1 && app().auth != 2) {
-    putLine(g, 1, r++, "Sign in at rhino-cyberspace.local", t.fg, t.bg);
-    putLine(g, 1, r++, "or on this device.", t.fg, t.bg);
+    line(1, "Sign in at rhino-cyberspace.local", t.fg);
+    line(1, "or on this device.", t.fg);
   }
   int bottom = g.rows() - 1;
   const int n = int(menu_.size());

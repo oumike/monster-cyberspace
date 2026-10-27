@@ -70,6 +70,7 @@ pagePassword: ""
 apPassword: ""
 textSize: compact
 theme: default        # default | bw | wb
+rotation: 0  # 0 landscape, 1 portrait, 2 landscape 180, 3 portrait 180
 drawerOpen: false
 buzzer: true
 lastRoom: "general"
@@ -108,6 +109,9 @@ Anything else is an error that names the line, for example `line 12: expected
   backup" or "Backup version N is newer than this firmware".
 - **Missing keys** keep the device's current value. A backup that has
   `wifi:` replaces the whole saved list.
+- **`rotation`** (touch UI, 2026-10-26): an integer; one outside 0–3 restores
+  as 0 (Landscape), and anything else is an error, `orientation: 0 to 3`.
+  Boards that can't rotate keep the value but never apply it.
 - **Validation matches web config:**
   - at most 5 networks; extra networks are dropped, and the result message
     says so;

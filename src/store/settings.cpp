@@ -3,6 +3,7 @@
 #include <Preferences.h>
 
 #include "tz/zones.h"
+#include "ui/rotation.h"
 
 namespace {
 
@@ -55,6 +56,7 @@ void load(rc::Settings& s) {
   s.drawerOpen = p.getBool("drawer", false);
   s.buzzer = p.getBool("buzz", true);
   s.theme = rc::themeFromIndex(p.getUChar("theme", 0));
+  s.rotation = rc::rotationFromIndex(p.getUChar("rot", 0));
   s.lastRoom = getStr(p, "room", s.lastRoom);
   p.end();
 }
@@ -66,6 +68,7 @@ void saveUiPrefs(const rc::Settings& s) {
   p.putBool("drawer", s.drawerOpen);
   p.putBool("buzz", s.buzzer);
   p.putUChar("theme", static_cast<uint8_t>(s.theme));
+  p.putUChar("rot", s.rotation);
   p.putString("room", s.lastRoom.c_str());
   p.end();
 }

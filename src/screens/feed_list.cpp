@@ -245,7 +245,7 @@ void FeedListScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
 
   if (palette_) {
     box_.render(g, 1, bottom, 0, OverlayPlace::BottomRight, t);
-    drawHint(g, t, U"\u2191\u2193 pick  \u25CF choose  back: close", U"tap to choose  tap outside: close");
+    drawHint(g, t, U"\u2191\u2193 pick  \u25CF choose  back: close", U"tap: choose  outside: close");
   } else if (asked_) {
     drawHint(g, t, U"loading more\u2026", U"loading more\u2026");
   } else {

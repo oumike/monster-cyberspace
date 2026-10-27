@@ -10,16 +10,20 @@
 #include "store/backup_store.h"
 #include "store/settings.h"
 #include "tz/zones.h"
+#include "ui/rotation.h"
 
 namespace rc {
 
 namespace {
-enum Item { kTheme, kZone, kSetupAp, kBackup, kRestore, kLogout, kReset };
+enum Item { kTheme, kZone, kRotation, kSetupAp, kBackup, kRestore, kLogout, kReset };
 
-// The visible menu, in order. The SD-card items appear only on a board with a
-// slot, so item indices and the menu height follow from this.
+// The visible menu, in order. Orientation appears only on a board that can
+// rotate and the SD-card items only on a board with a slot, so item indices and
+// the menu height follow from this.
 std::vector<Item> menuItems() {
-  std::vector<Item> v{kTheme, kZone, kSetupAp};
+  std::vector<Item> v{kTheme, kZone};
+  if (board::canRotate()) v.push_back(kRotation);
+  v.push_back(kSetupAp);
   if (board::hasSdSlot()) {
     v.push_back(kBackup);
     v.push_back(kRestore);
@@ -100,6 +104,11 @@ void SettingsScreen::confirmKey(const KeyEvent& k) {
       break;
     case Overlay::Result::Picked:
       confirm_ = Confirm::None;
+      if (c == Confirm::Rotation) {
+        const int i = confirmBox_.selected();
+        if (i >= 0 && i < 4) ui::setRotation(kRotationOrder[i]);
+        break;
+      }
       if (confirmBox_.selected() != 1) break;
       if (c == Confirm::Logout) {
         chatSource().command(Command{CmdType::Logout});
@@ -142,6 +151,21 @@ void SettingsScreen::onKey(const KeyEvent& k) {
         case kZone:
           openZones();
           break;
+        case kRotation: {
+          std::vector<ListItem> rows;
+          int sel = 0;
+          for (int i = 0; i < 4; ++i) {
+            ListItem it{widen(rotationLabel(kRotationOrder[i])), U""};
+            if (kRotationOrder[i] == app().cfg.rotation) {
+              it.marker = true;
+              sel = i;
+            }
+            rows.push_back(std::move(it));
+          }
+          confirm_ = Confirm::Rotation;
+          confirmBox_.open(U"orientation", std::move(rows), sel);
+          break;
+        }
         case kSetupAp: {
           Command c{CmdType::SetupAp};
           c.n = setupApUp() ? 0 : 1;
@@ -181,10 +205,19 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
   const std::vector<Item> items = menuItems();
   const int nItems = int(items.size());
   // Status lines stop above the menu.
+  // On a narrow grid a value too long for its row continues on the next rows.
+  const bool narrow = narrowGrid(g);
   auto field = [&](const char* label, const std::string& value, uint16_t fg) {
     if (r >= bottom - nItems) return;
     putLine(g, 1, r, label, t.dim, t.bg);
-    putLine(g, 11, r++, value, fg, t.bg);
+    if (!narrow) {
+      putLine(g, 11, r++, value, fg, t.bg);
+      return;
+    }
+    for (const std::u32string& line : wrapText(utf8ToU32(value), g.cols() - 11, g.cols() - 11)) {
+      if (r >= bottom - nItems) break;
+      g.putText(11, r++, line, fg, t.bg, g.cols() - 11);
+    }
   };
   field("account", a.user.empty() ? "not signed in" : "@" + a.user, t.fg);
   field("wi-fi", wifiUp() ? wifiSsid() + "  " + wifiIp() : "not connected", t.fg);
@@ -212,6 +245,9 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
           break;
         case kZone:
           rows.push_back(ListItem{U"Time zone: " + widen(zoneLabel(ts.tzName)), U""});
+          break;
+        case kRotation:
+          rows.push_back(ListItem{U"Orientation: " + widen(rotationLabel(a.cfg.rotation)), U""});
           break;
         case kSetupAp:
           rows.push_back(ListItem{ap ? U"Turn setup AP off" : U"Turn setup AP on", U""});
@@ -243,8 +279,12 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
     drawHint(g, t, U"\u2191\u2193 pick  \u25CF set  back: cancel", U"tap to select");
   } else if (confirm_ != Confirm::None) {
     confirmBox_.render(g, 1, bottom, 0, OverlayPlace::Bottom, t);
-    drawHint(g, t, U"\u2191\u2193 pick  \u25CF confirm  back: cancel",
-             U"tap to confirm  tap outside: cancel");
+    if (confirm_ == Confirm::Rotation)
+      drawHint(g, t, U"\u2191\u2193 pick  \u25CF set  back: cancel",
+               U"tap: select  outside: cancel");
+    else
+      drawHint(g, t, U"\u2191\u2193 pick  \u25CF confirm  back: cancel",
+               U"tap: confirm  outside: cancel");
   } else {
     menu_.render(g, bottom - nItems, bottom, 1, g.cols() - 2, t);
     drawHint(g, t, U"\u2191\u2193 pick  \u25CF select  back: home", U"tap to select");

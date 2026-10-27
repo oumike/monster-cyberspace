@@ -8,6 +8,7 @@
 #include "input/touch_resolve.h"
 #include "ui/tap_map.h"
 #include "ui/grid.h"
+#include "ui/rotation.h"
 
 using namespace rc;
 
@@ -520,6 +521,23 @@ void test_power_tap_peeks_not_wakes() {
   TEST_ASSERT_FALSE(wakesScreen(e));
 }
 
+void test_rotation_labels_and_order() {
+  const char* want[4] = {"Landscape", "Landscape 180", "Portrait", "Portrait 180"};
+  for (int i = 0; i < 4; ++i) TEST_ASSERT_EQUAL_STRING(want[i], rotationLabel(kRotationOrder[i]));
+  TEST_ASSERT_FALSE(rotationPortrait(0));
+  TEST_ASSERT_TRUE(rotationPortrait(1));
+  TEST_ASSERT_FALSE(rotationPortrait(2));
+  TEST_ASSERT_TRUE(rotationPortrait(3));
+}
+
+void test_rotation_from_index_out_of_range() {
+  TEST_ASSERT_EQUAL(0, rotationFromIndex(-1));
+  TEST_ASSERT_EQUAL(0, rotationFromIndex(4));
+  TEST_ASSERT_EQUAL(0, rotationFromIndex(255));
+  TEST_ASSERT_EQUAL(3, rotationFromIndex(3));
+  TEST_ASSERT_EQUAL(1, rotationFromIndex(1));
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_tap);
@@ -553,5 +571,7 @@ int main() {
   RUN_TEST(test_resolve_edge_back);
   RUN_TEST(test_resolve_nothing_hit);
   RUN_TEST(test_power_tap_peeks_not_wakes);
+  RUN_TEST(test_rotation_labels_and_order);
+  RUN_TEST(test_rotation_from_index_out_of_range);
   return UNITY_END();
 }

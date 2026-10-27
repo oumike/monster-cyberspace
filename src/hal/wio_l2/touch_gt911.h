@@ -7,7 +7,8 @@ namespace gt911 {
 
 bool begin();
 bool present();
-// True while a finger is down; x, y in the landscape 320x240 frame.
+// True while a finger is down; x, y raw, in the controller's native portrait
+// PANEL_NATIVE_W x PANEL_NATIVE_H (rc::touchToFrame maps them to the frame).
 bool read(int16_t& x, int16_t& y);
 
 }  // namespace gt911

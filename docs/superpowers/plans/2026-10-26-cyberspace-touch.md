@@ -768,23 +768,25 @@
   - `page.h` adds an Orientation `<select>` (values 0, 2, 1, 3 in that order), shown only when `p.rotation` is present.
 - Backups (landed): `Settings::rotation` lives in `settings_model.h`. The YAML writes `rotation: <0-3>  # 0 landscape, 1 portrait, 2 landscape 180, 3 portrait 180` right after `theme`; on read an integer goes through `rotationFromIndex`, and a missing key keeps the current value. Add a round-trip and out-of-range test to `test_backup_yaml`, and add the key to the backup spec §3.
 
-- [ ] **Step 1: Write the failing tests.**
+- [x] **Step 1: Write the failing tests.**
   ```cpp
   void test_rotation_labels_and_order() {
     // rotationLabel(kRotationOrder[i]) for i 0..3 == "Landscape","Landscape 180","Portrait","Portrait 180"
   }
   void test_rotation_from_index_out_of_range() // -1, 4, 255 → 0; 3 → 3
   ```
-- [ ] **Step 2: Run** `pio test -e native -f test_touch_input`. Expected: the build fails because `rotation.h` is missing.
-- [ ] **Step 3: Implement** `rotation.{h,cpp}`, then the HAL, settings, `ui_task`, `Renderer`, Settings screen and web config changes.
-- [ ] **Step 4: Audit portrait.** On `wio_l2_fake` (or by reading each `render` at a 30×20 and a 40×26 grid), every screen must size from `g.cols()`/`g.rows()`. Known risks:
+- [x] **Step 2: Run** `pio test -e native -f test_touch_input`. Expected: the build fails because `rotation.h` is missing.
+- [x] **Step 3: Implement** `rotation.{h,cpp}`, then the HAL, settings, `ui_task`, `Renderer`, Settings screen and web config changes.
+- [x] **Step 4: Audit portrait.** On `wio_l2_fake` (or by reading each `render` at a 30×20 and a 40×26 grid), every screen must size from `g.cols()`/`g.rows()`. Known risks:
   - LoginForm's 44-character note: wrap it with `wrapText`.
   - Settings' value column at col 11.
   - `Drawer::width` (15 cols) at 30 cols: cap it at `cols / 2`.
 
   Fix any text that is cut or overlaps.
-- [ ] **Step 5: Run** `pio test -e native`, then `scripts/build-upload-monitor.sh -B`. Expected: green, and all four envs build. **M9:** `canRotate()` is false, so the Orientation row and the web field are hidden and `setRotation` is never applied. The extra NVS key `rot` is read as 0.
-- [ ] **Step 6: Commit** `feat: selectable orientation on touch boards`.
+
+  Done by reading each `render`: the drawer caps at `cols / 2`; LoginForm's notes wrap; on narrow grids (`narrowGrid`, under 40 cols) Settings values and Setup lines wrap instead of being cut; five touch hints were shortened to fit 30 cols.
+- [x] **Step 5: Run** `pio test -e native`, then `scripts/build-upload-monitor.sh -B`. Expected: green, and all four envs build. **M9:** `canRotate()` is false, so the Orientation row and the web field are hidden and `setRotation` is never applied. The extra NVS key `rot` is read as 0.
+- [x] **Step 6: Commit** `feat: selectable orientation on touch boards`.
 
 ### Task 12: Docs
 

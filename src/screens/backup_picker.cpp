@@ -103,7 +103,7 @@ void BackupPicker::render(Grid& g, const Theme& t) {
   if (confirming_) {
     confirmBox_.render(g, top, bottom, 0, OverlayPlace::Bottom, t);
     drawHint(g, t, U"\u2191\u2193 pick  \u25CF confirm  back: cancel",
-             U"tap to confirm  tap outside: cancel");
+             U"tap: confirm  outside: cancel");
   } else {
     list_.render(g, top + 1, bottom, 1, g.cols() - 2, t);
     drawHint(g, t, U"\u2191\u2193 pick  \u25CF restore  back: cancel",

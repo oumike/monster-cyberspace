@@ -769,6 +769,7 @@ void test_status_bar_touch_layout() {
   TEST_ASSERT_EQUAL_HEX32(0x2039, g.at(0, 0).cp);                     // ‹
   TEST_ASSERT_EQUAL_STRING("#general", rowText(g, 0, 2, 10).c_str());  // title from col 2
   TEST_ASSERT_EQUAL_HEX32(0x22EF, g.at(38, 0).cp);                    // ⋯ before the trailing space
+  TEST_ASSERT_EQUAL_STRING("14:02", rowText(g, 0, 32, 37).c_str());    // the clock keeps every digit
   Target back = m.hit(1, 0);
   TEST_ASSERT_EQUAL(int(TargetKind::Fixed), int(back.kind));
   TEST_ASSERT_EQUAL(int(Action::Back), int(back.tap.action));

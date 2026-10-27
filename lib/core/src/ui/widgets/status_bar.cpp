@@ -22,6 +22,7 @@ void renderStatusBar(Grid& g, const Theme& t, std::u32string_view title, int cou
   for (int i = 0; i < 4; ++i) right += i < bars ? kBars[i] : U'\u00b7';
   if (batteryPct >= 0) right += U" " + utf8ToU32(std::to_string(std::min(batteryPct, 100)) + "%");
   if (!clock.empty()) right += U" " + utf8ToU32(clock);
+  if (touch.on && touch.menu) right += U" \u22ef";  // ⋯, its own cell after the clock
   right += U' ';
 
   int rightStart = std::max(0, g.cols() - static_cast<int>(right.size()));
@@ -42,9 +43,6 @@ void renderStatusBar(Grid& g, const Theme& t, std::u32string_view title, int cou
   if (static_cast<int>(left.size()) > leftMax && leftMax > 0)
     left = left.substr(0, leftMax - 1) + U"\u2026";
   g.putText(titleCol, row, left, t.barFg, t.barBg, leftMax);
-
-  if (touch.on && touch.menu && g.cols() >= 2)
-    g.put(g.cols() - 2, row, U'\u22ef', t.barFg, t.barBg);  // ⋯
 
   if (touch.on && activeTaps()) {
     if (touch.back) {

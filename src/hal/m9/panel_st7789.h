@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-// Just enough ST7789 for a landscape 320x240 panel on a shared SPI bus.
+// Just enough ST7789 (or ST7796) for a landscape panel on a shared SPI bus.
 namespace st7789 {
 
 struct Config {
@@ -10,6 +10,10 @@ struct Config {
   uint32_t hz;
   uint8_t madctl;
   bool invert;
+  // Where the visible area starts in the controller's memory.
+  uint16_t colOffset = 0, rowOffset = 0;
+  // Extra commands sent after the reset: {cmd, n, n data bytes}..., then 0xFF.
+  const uint8_t* init = nullptr;
 };
 
 // Starts the SPI bus on the given pins (a no-op if it's already up). With no

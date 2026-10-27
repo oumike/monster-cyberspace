@@ -1,4 +1,4 @@
-#if defined(BOARD_WIO_L2)
+#if defined(BOARD_WIO_L2) || defined(BOARD_PAGER)
 
 #include "hal/wio_l2/audio_es8311.h"
 
@@ -10,12 +10,10 @@
 #include <freertos/queue.h>
 #include <math.h>
 
-#include "hal/wio_l2/io_pca9555.h"
-#include "hal/wio_l2/pins_wio_l2.h"
 
 // Ported from platy-aprs's src/hal/audio.cpp (itself from camillia-mt's
 // pager/T-Deck tone players), on Arduino 3's ESP_I2S instead of the legacy
-// I2S driver.
+// I2S driver. Shared by the Wio Tracker L2 and the T-LoRa Pager.
 
 namespace es8311 {
 namespace {
@@ -24,6 +22,17 @@ constexpr uint32_t kRate = 44100;
 constexpr int kChunk = 128;  // frames per write
 constexpr float kAmplitude = 7800.0f;
 constexpr uint8_t kVolActive = 50, kVolIdle = 10;
+
+Config cfg{};
+
+struct Guard {
+  Guard() {
+    if (cfg.lock) cfg.lock();
+  }
+  ~Guard() {
+    if (cfg.unlock) cfg.unlock();
+  }
+};
 
 struct Job {
   uint16_t hz, ms;
@@ -40,30 +49,29 @@ bool codecBegin() {
   static bool pinsSet = false;
   if (!pinsSet) {
     pins.addI2C(audio_driver::PinFunction::CODEC, Wire);
-    pins.addI2S(audio_driver::PinFunction::CODEC, wio::I2S_MCLK, wio::I2S_BCK, wio::I2S_WS,
-                wio::I2S_DOUT, -1);
-    (void)codec.driver().setI2CAddress(wio::CODEC_ADDR);
+    pins.addI2S(audio_driver::PinFunction::CODEC, cfg.mclk, cfg.bck, cfg.ws, cfg.dout, -1);
+    (void)codec.driver().setI2CAddress(cfg.addr);
     pinsSet = true;
   }
-  audio_driver::CodecConfig cfg;
-  cfg.input_device = audio_driver::ADC_INPUT_NONE;
-  cfg.output_device = audio_driver::DAC_OUTPUT_ALL;
-  cfg.i2s.bits = audio_driver::BIT_LENGTH_16BITS;
-  cfg.i2s.rate = audio_driver::RATE_44K;
-  cfg.i2s.channels = audio_driver::CHANNELS2;
-  cfg.i2s.fmt = audio_driver::I2S_NORMAL;
-  cfg.i2s.mode = audio_driver::MODE_SLAVE;
-  wio::I2cGuard g;
-  if (!codec.begin(cfg)) return false;
+  audio_driver::CodecConfig c;
+  c.input_device = audio_driver::ADC_INPUT_NONE;
+  c.output_device = audio_driver::DAC_OUTPUT_ALL;
+  c.i2s.bits = audio_driver::BIT_LENGTH_16BITS;
+  c.i2s.rate = audio_driver::RATE_44K;
+  c.i2s.channels = audio_driver::CHANNELS2;
+  c.i2s.fmt = audio_driver::I2S_NORMAL;
+  c.i2s.mode = audio_driver::MODE_SLAVE;
+  Guard g;
+  if (!codec.begin(c)) return false;
   codec.setVolume(kVolIdle);
   // Muted and unpowered between sounds: an idle DAC and amp click.
   codec.setMute(true);
-  wio::ioSet(wio::EXP_AUDIO_PA, false);
+  cfg.amp(false);
   return true;
 }
 
 bool i2sBegin() {
-  i2s.setPins(wio::I2S_BCK, wio::I2S_WS, wio::I2S_DOUT, -1, wio::I2S_MCLK);
+  i2s.setPins(cfg.bck, cfg.ws, cfg.dout, -1, cfg.mclk);
   if (!i2s.begin(I2S_MODE_STD, kRate, I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_STEREO)) {
     Serial.println("[audio] i2s setup failed");
     return false;
@@ -123,25 +131,25 @@ void writeTone(uint16_t hz, uint16_t ms) {
 }
 
 void play(const Job& job) {
-  wio::ioSet(wio::EXP_AUDIO_PA, true);
-  delay(wio::AMP_SETTLE_MS);
+  cfg.amp(true);
+  delay(cfg.ampSettleMs);
   {
-    wio::I2cGuard g;
+    Guard g;
     codec.setVolume(kVolActive);  // raised while still muted: inaudible
   }
   writeSilence(6);  // prime the DMA so the start isn't clipped
   {
-    wio::I2cGuard g;
+    Guard g;
     codec.setMute(false);
   }
   writeTone(job.hz, job.ms);
   writeSilence(20);
   {
-    wio::I2cGuard g;
+    Guard g;
     codec.setMute(true);
     codec.setVolume(kVolIdle);
   }
-  wio::ioSet(wio::EXP_AUDIO_PA, false);
+  cfg.amp(false);
 }
 
 void task(void*) {
@@ -154,8 +162,9 @@ void task(void*) {
 
 }  // namespace
 
-void begin() {
+void begin(const Config& c) {
   if (queue) return;
+  cfg = c;
   queue = xQueueCreate(1, sizeof(Job));
   xTaskCreatePinnedToCore(task, "audio", 6144, nullptr, 1, nullptr, 0);
 }

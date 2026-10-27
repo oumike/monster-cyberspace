@@ -128,6 +128,31 @@ that wakes it does nothing else, so it never types, selects or taps.
 The screen stays landscape (there is no Orientation item). The setup AP is
 **`Monster-Cyberspace-TDeck-Setup`**.
 
+## T-LoRa Pager
+
+The Pager has a keyboard and a scroll wheel on its side, and no touch screen,
+so it works like the M9 with a keyboard: Home is a menu, and lists move with
+the wheel.
+
+| Input | Action |
+|---|---|
+| Keys | Type. Shift and Sym apply to the next key (press twice to cancel; they lapse after 1.5 s) |
+| Wheel turn | Up and Down |
+| Wheel click, or Enter | Select (send, in a room) |
+| Backspace | Deletes while there's text to delete; otherwise Back. Hold it to repeat |
+| Sym + Backspace, or hold BOOT | Home |
+| Sym + Enter | The command palette |
+| BOOT tap | Back |
+| Hold the wheel click 2 s | Screen off |
+
+**Screen off:** any key, wheel turn or click wakes the screen. The input that
+wakes it does nothing else.
+
+The screen stays landscape (there is no Orientation item). The Pager has an
+RTC, a GPS that powers off fully once the time is set, a microSD slot for
+backups and a speaker for beeps. The setup AP is
+**`Monster-Cyberspace-Pager-Setup`**.
+
 ## CrowPanel
 
 The CrowPanel Advance 3.5" and 5.0" work by touch alone, as described under

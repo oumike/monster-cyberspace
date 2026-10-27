@@ -154,6 +154,24 @@ Buttons: BOOT tap = Back, BOOT hold (0.6 s) = Home; Wake tap = screen off
 - [ ] 3.5" GPS (module on UART1, optional): `[time] set from GPS` outdoors with Wi-Fi off
 - [ ] Wi-Fi setup (nothing saved): the AP is named `Monster-Cyberspace-CrowPanel35` / `…-CrowPanel50` and `http://192.168.4.1` loads
 
+**T-LoRa Pager (`pager`):**
+
+- [ ] Boots: the serial log (USB) shows `[boot] … on Pager`, `[pager-io] 0x…` (the expander) and `[kb] keyboard found`
+- [ ] Display: landscape, right way up, colours right, nothing cut off or shifted. Mirrored or upside down: `PANEL_MADCTL` in `src/hal/pager/pins_pager.h` (0xB8 now); a band of noise or a cut edge: `PANEL_ROW_OFFSET` (49 now)
+- [ ] Wheel: turning it up moves the selection up, one row per detent, in lists and on Home. If reversed, flip `kPositiveIsUp` in `src/hal/pager/wheel_pager.cpp`
+- [ ] Wheel click selects; holding it 2 s turns the screen off and selects nothing
+- [ ] Every key types the right character, with Shift and Sym; Space, Enter and Backspace work; holding Backspace repeats
+- [ ] Sym + Backspace goes Home; Sym + Enter opens the palette in a room
+- [ ] BOOT: a tap goes back, a hold goes Home
+- [ ] With the screen off, a key, a wheel turn and a click each wake it, and none of them types, moves or selects
+- [ ] Beep: a mention or C-Mail alert plays a tone on the speaker with the buzzer on
+- [ ] Battery %: Settings shows a sensible value; the charging state follows the USB cable
+- [ ] RTC: after a reboot with Wi-Fi off, the clock is right at once (`[time] set from RTC`)
+- [ ] GPS: outdoors with Wi-Fi off, `[time] set from GPS` within 15 min, then `[gps] off`; no log line shows coordinates
+- [ ] SD (FAT32 card): Back up to SD card, then Restore from SD card…, both work
+- [ ] Wi-Fi setup (`pager`, nothing saved): the AP is named `Monster-Cyberspace-Pager-Setup` and `http://192.168.4.1` loads
+- [ ] Regression after the shared-driver change: the Wio L2 speaker and the M9/T-Deck panels still work as before
+
 **GPS time, RTC and time zone (`m9`):**
 
 - [ ] With Wi-Fi in range, `[time] NTP sync` and `[time] RTC written` appear, then `[gps] off`

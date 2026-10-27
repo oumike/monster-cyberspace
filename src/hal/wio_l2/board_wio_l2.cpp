@@ -149,7 +149,9 @@ void begin() {
   gt911::begin({&Wire, wio::TOUCH_ADDR, wio::i2cLock, wio::i2cUnlock});
   pinMode(wio::BOOT_BUTTON, INPUT_PULLUP);
   batteryVolts();
-  es8311::begin();
+  es8311::begin({wio::CODEC_ADDR, wio::I2S_MCLK, wio::I2S_BCK, wio::I2S_WS, wio::I2S_DOUT,
+                 wio::AMP_SETTLE_MS, [](bool on) { wio::ioSet(wio::EXP_AUDIO_PA, on); },
+                 wio::i2cLock, wio::i2cUnlock});
 }
 
 const char* name() { return "WioL2"; }

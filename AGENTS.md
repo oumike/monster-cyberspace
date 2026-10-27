@@ -4,7 +4,7 @@ Standalone ESP32 firmware client for [cyberspace.online](https://cyberspace.onli
 a retro text-only social network. Milestone 1 is cIRC chat plus a device-served
 web config page, on the Elecrow ThinkNode M9. The Seeed Wio Tracker L2 and
 the LilyGO T-Deck Plus followed, then the Elecrow CrowPanel Advance 3.5" and
-5.0" (all built, not yet tried on hardware). More
+5.0" and the LilyGO T-LoRa Pager (all built, not yet tried on hardware). More
 boards and Cyberspace features come later.
 
 - **Design spec:** `docs/superpowers/specs/2026-10-25-cyberspace-m9-circ-design.md`
@@ -56,7 +56,8 @@ pio run -e m9               # firmware
 pio run -e wio_l2           # Seeed Wio Tracker L2 firmware
 pio run -e tdeck            # LilyGO T-Deck Plus firmware
 pio run -e crowpanel35      # Elecrow CrowPanel Advance 3.5" (crowpanel50: the 5.0")
-scripts/build-upload-monitor.sh m9   # flash + serial monitor (115200); -w for the Wio L2, -t for the T-Deck Plus, -3/-5 for the CrowPanels; --help for options
+pio run -e pager            # LilyGO T-LoRa Pager
+scripts/build-upload-monitor.sh m9   # flash + serial monitor (115200); -w for the Wio L2, -t for the T-Deck Plus, -3/-5 for the CrowPanels, -P for the Pager; --help for options
 scripts/build-upload-monitor.sh -B   # build every firmware env, no device needed
 ```
 
@@ -80,6 +81,12 @@ LovyanGFX, SD, optional GPS) and 5.0" (800x480 RGB through ESP-IDF's
 board MCU, probed at boot), from camillia-mt's `hw_crowpanel_35.h`,
 `hw_crowpanel_50.h` and `crowpanel_50_display.h`. Both reuse the `gt911`
 driver and are touch only, with no buttons, battery sense, buzzer or RTC.
+`src/hal/pager/` is the LilyGO T-LoRa Pager (from camillia-mt's pager HAL):
+an ST7796 480x222 through the shared `st7789` driver (offsets and an init
+list in its `Config`), an XL9555 expander for power rails, a TCA8418
+keyboard, the side wheel as Up/Down, the Wio's `es8311` speaker driver,
+BQ25896 battery, PCF85063 RTC, GPS and SD. No touch; its input rules
+(`keymap_pager`, `rotary`) live in `lib/core`.
 Touch: `lib/core` turns samples into gestures and resolves them against the
 per-frame `TapMap` widgets fill as they draw (`input/gestures`, `ui/tap_map`,
 `input/touch_resolve`, the `Osk` keyboard); `ui_task` feeds `handleKey` and
@@ -114,13 +121,16 @@ were added on 2026-10-27 (built without flashing; the 5.0"'s portrait
 direction and both touch mappings await the hardware check).
 The scripted fake-API builds (`*_fake`, `RC_FAKE_API`) were removed on
 2026-10-27 at the user's request; every firmware env talks to the real API.
+The LilyGO T-LoRa Pager HAL (env `pager`) was added on 2026-10-27 (built
+without flashing; `PANEL_MADCTL`, the row offset and the wheel direction
+await the hardware check).
 **Still open:** the unticked items under "Open hardware checks" in
-`docs/TESTING.md` (themes, device Settings, touch UI, Wio L2, T-Deck Plus, CrowPanels, GPS time, API
+`docs/TESTING.md` (themes, device Settings, touch UI, Wio L2, T-Deck Plus, CrowPanels, Pager, GPS time, API
 assumptions, settings backup), then the human live checklist on the `m9` build.
 CI (`.github/workflows/build.yml`) runs on GitHub.
-The native suite is green: 361/361
+The native suite is green: 384/384
 (`pio test -e native`), and `scripts/build-upload-monitor.sh -B` builds all
-five firmware envs.
+six firmware envs.
 
 Notes for whoever continues:
 - Each task follows test-driven development: write the plan's tests first, run

@@ -61,7 +61,7 @@ Every screen works by touch. Touch never wakes a dark screen.
 - **Scrolling views** (room and conversation messages, the Feed list, an
   entry's replies) on boards with no keys (the Wio Tracker L2 and the
   CrowPanels): a tap does nothing, so scrolling never acts by accident. Hold
-  an item still for **2 seconds** to act on it (a message's menu, open an
+  an item still for **1 second** to act on it (a message's menu, open an
   entry).
 - **Status bar:** `‹` at the left goes back; holding it goes Home. `⋯` at the
   right opens the screen's menu (the palette in a room, Post/Discard in the

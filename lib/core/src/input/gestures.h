@@ -7,7 +7,7 @@ namespace rc {
 // Gesture thresholds (spec §3.2).
 constexpr int kTapSlopPx = 10;
 constexpr uint32_t kLongPressMs = 500;
-constexpr uint32_t kHoldMs = 2000;     // a Hold follows the LongPress of a still finger
+constexpr uint32_t kHoldMs = 1000;     // a Hold follows the LongPress of a still finger
 constexpr int kSwipeMinPx = 40;        // travel must exceed this…
 constexpr uint32_t kSwipeMaxMs = 300;  // …in less than this
 constexpr int kEdgeBackPx = 16;        // the narrowest edge zone, and the zone before setWidth

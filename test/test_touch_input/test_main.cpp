@@ -192,10 +192,10 @@ void test_hold_follows_long_press() {
   Gestures g;
   auto gs = feedAll(g, {{true, 100, 100, 0},
                         {true, 100, 100, 500},
-                        {true, 100, 100, 1999},
-                        {true, 100, 100, 2000},
-                        {true, 100, 100, 2600},
-                        {false, 100, 100, 2700}});
+                        {true, 100, 100, 999},
+                        {true, 100, 100, 1000},
+                        {true, 100, 100, 1600},
+                        {false, 100, 100, 1700}});
   TEST_ASSERT_EQUAL(2u, gs.size());
   TEST_ASSERT_EQUAL(int(GestureKind::LongPress), int(gs[0].kind));
   TEST_ASSERT_EQUAL(int(GestureKind::Hold), int(gs[1].kind));

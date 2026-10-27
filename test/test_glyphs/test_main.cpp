@@ -96,6 +96,13 @@ void test_missing_falls_back() {
   TEST_ASSERT_FALSE(glyphPixel(two, &wide[2], 8, 0));
 }
 
+void test_touch_glyphs_present() {
+  for (const CellFont* f : kFonts)
+    for (char32_t c : {char32_t(0x2039), char32_t(0x22EF), char32_t(0x25BC), char32_t(0x21E7),
+                       char32_t(0x232B)})
+      TEST_ASSERT_NOT_NULL(findGlyph(*f, c));
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_dims);
@@ -103,5 +110,6 @@ int main() {
   RUN_TEST(test_box_drawing_present);
   RUN_TEST(test_feed_marks_use_runtime_aliases);
   RUN_TEST(test_missing_falls_back);
+  RUN_TEST(test_touch_glyphs_present);
   return UNITY_END();
 }

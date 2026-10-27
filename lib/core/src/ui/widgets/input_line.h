@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <string>
 #include <string_view>
 
@@ -27,6 +28,10 @@ class InputLine {
   std::u32string text() const { return text_; }
   std::string utf8() const;
   size_t cursor() const { return cursor_; }
+  // Moves the cursor to `pos`, clamped to the text length.
+  void setCursor(size_t pos);
+  // The screen's field id, carried in the tap Field target.
+  void setFieldId(uint8_t id) { fieldId_ = id; }
   // While disabled the text is kept but drawn dim, with no cursor.
   void setDisabled(bool d) { disabled_ = d; }
   bool disabled() const { return disabled_; }
@@ -36,6 +41,7 @@ class InputLine {
   std::u32string text_;
   size_t cursor_ = 0, bytes_ = 0;
   bool disabled_ = false;
+  uint8_t fieldId_ = 0;
 };
 
 }  // namespace rc

@@ -2,6 +2,8 @@
 
 #include <algorithm>
 
+#include "ui/tap_map.h"
+
 namespace rc {
 
 void ListView::setItems(std::vector<ListItem> items) {
@@ -12,6 +14,12 @@ void ListView::setItems(std::vector<ListItem> items) {
 void ListView::setSelected(int i) {
   int n = static_cast<int>(items_.size());
   sel_ = n == 0 ? 0 : std::clamp(i, 0, n - 1);
+}
+
+bool ListView::select(int i) {
+  if (i < 0 || i >= static_cast<int>(items_.size())) return false;
+  sel_ = i;
+  return true;
 }
 
 void ListView::up() {
@@ -28,12 +36,20 @@ void ListView::render(Grid& g, int top, int bottom, int left, int width, const T
   const int height = bottom - top;
   if (height <= 0 || width <= 0) return;
   int first = std::max(0, sel_ - height + 1);
+  if (activeTaps()) activeTaps()->setList(listId_, sel_, static_cast<int>(items_.size()), true);
   for (int r = 0; r < height; ++r) {
     int row = top + r;
     int idx = first + r;
     bool sel = idx == sel_ && idx < static_cast<int>(items_.size());
     for (int c = 0; c < width; ++c) g.put(left + c, row, U' ', t.fg, t.bg);
     if (idx >= static_cast<int>(items_.size())) continue;
+    if (activeTaps()) {
+      Target tt;
+      tt.kind = TargetKind::Row;
+      tt.list = listId_;
+      tt.index = static_cast<int16_t>(idx);
+      activeTaps()->addCells(left, row, left + width - 1, row, tt);
+    }
     const ListItem& it = items_[idx];
     uint16_t fg = it.tone == ItemTone::Error ? t.error : t.fg, bg = t.bg;
     int rw = static_cast<int>(it.right.size());

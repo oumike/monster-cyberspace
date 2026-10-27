@@ -3,6 +3,7 @@
 #include <algorithm>
 
 #include "ui/nick_color.h"
+#include "ui/tap_map.h"
 #include "util/utf8.h"
 
 namespace rc {
@@ -32,6 +33,12 @@ std::string Drawer::selectedUsername() const {
   return sel_ < static_cast<int>(people_.size()) ? people_[sel_].username : std::string();
 }
 
+bool Drawer::select(int i) {
+  if (i < 0 || i >= static_cast<int>(people_.size())) return false;
+  sel_ = i;
+  return true;
+}
+
 void Drawer::render(Grid& g, int top, int bottom, const Theme& t) const {
   const int x = std::max(0, g.cols() - width(TextSize::Compact));
   const int inner = g.cols() - x - 1;
@@ -48,11 +55,20 @@ void Drawer::render(Grid& g, int top, int bottom, const Theme& t) const {
 
   const int listRows = height - 1;
   if (listRows <= 0) return;
+  if (activeTaps())
+    activeTaps()->setList(ListId::Drawer, sel_, static_cast<int>(people_.size()), true);
   int first = std::max(0, sel_ - listRows + 1);
   for (int r = 0; r < listRows; ++r) {
     int idx = first + r;
     if (idx >= static_cast<int>(people_.size())) break;
     int row = top + 1 + r;
+    if (activeTaps()) {
+      Target tt;
+      tt.kind = TargetKind::Row;
+      tt.list = ListId::Drawer;
+      tt.index = static_cast<int16_t>(idx);
+      activeTaps()->addCells(x, row, g.cols() - 1, row, tt);
+    }
     const Person& p = people_[idx];
     bool sel = idx == sel_;
     uint16_t bg = t.drawerBg;

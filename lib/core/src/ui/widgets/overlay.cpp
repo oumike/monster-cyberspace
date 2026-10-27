@@ -3,10 +3,13 @@
 #include <algorithm>
 #include <utility>
 
+#include "ui/tap_map.h"
+
 namespace rc {
 
 void Overlay::open(std::u32string title, std::vector<ListItem> items, int selected) {
   title_ = std::move(title);
+  list_.setListId(ListId::Menu);
   list_.setItems(std::move(items));
   list_.setSelected(selected);
   open_ = true;
@@ -52,6 +55,12 @@ Overlay::Result Overlay::key(const KeyEvent& k) {
 
 void Overlay::render(Grid& g, int top, int bottom, int rightReserve, OverlayPlace p,
                      const Theme& t) const {
+  if (activeTaps()) {
+    Target back;
+    back.kind = TargetKind::Fixed;
+    back.tap.action = Action::Back;
+    activeTaps()->addCells(0, 0, g.cols() - 1, g.rows() - 1, back);
+  }
   const int n = static_cast<int>(list_.size());
   switch (p) {
     case OverlayPlace::BottomRight: {

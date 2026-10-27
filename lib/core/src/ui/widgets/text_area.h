@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -23,6 +24,10 @@ class TextArea {
   size_t length() const { return text_.size(); }
   std::string utf8() const;
   void clear();
+  // Moves the cursor to `pos`, clamped to the text length.
+  void setCursor(size_t pos);
+  // The screen's field id, carried in each tap Field target.
+  void setFieldId(uint8_t id) { fieldId_ = id; }
   // Draws rows [top, bottom) across the grid width, keeping the cursor visible.
   void render(Grid& g, int top, int bottom, const Theme& t, bool focused) const;
 
@@ -36,6 +41,7 @@ class TextArea {
 
   std::u32string text_;
   size_t cursor_ = 0, max_;
+  uint8_t fieldId_ = 0;
 };
 
 }  // namespace rc

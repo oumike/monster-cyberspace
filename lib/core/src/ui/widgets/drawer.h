@@ -16,6 +16,7 @@ class Drawer {
   void setPeople(std::vector<PresenceEntry> people, int64_t nowMs, int64_t idleAfterMs);
   void up();
   void down();
+  bool select(int i);  // false when out of range
   std::string selectedUsername() const;
   // Draws rows [top, bottom) in the rightmost width() columns.
   void render(Grid& g, int top, int bottom, const Theme& t) const;

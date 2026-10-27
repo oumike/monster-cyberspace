@@ -24,12 +24,18 @@ class LogView {
   bool following() const { return selected_.empty(); }
   void follow() { selected_.clear(); }
   std::string selectedId() const { return selected_; }
+  // The number of distinct message ids (dividers aside).
+  int messageCount() const;
+  // Selects the message at `ordinal` among distinct ids, oldest first; false
+  // when out of range.
+  bool selectMessage(int ordinal);
   // Draws rows [top, bottom), leaving rightReserve columns on the right alone.
   void render(Grid& g, int top, int bottom, int rightReserve, const Theme& t) const;
 
  private:
   int firstLineOf(const std::string& id) const;
   int lastLineOf(const std::string& id) const;
+  int ordinalOf(const std::string& id) const;
 
   std::vector<DisplayLine> lines_;
   std::string selected_;

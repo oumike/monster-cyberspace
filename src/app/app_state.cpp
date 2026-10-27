@@ -4,6 +4,7 @@
 
 #include "hal/board.h"
 #include "net/wifi_mgr.h"
+#include "screens/router.h"
 #include "ui/timefmt.h"
 #include "ui/widgets/status_bar.h"
 
@@ -45,9 +46,11 @@ std::string setupApSsid() { return wifimgr::apSsid(); }
 bool setupApHasPassword() { return wifimgr::apHasPassword(); }
 #endif
 
-void drawStatus(Grid& g, const Theme& t, std::u32string_view title, int count) {
+void drawStatus(Grid& g, const Theme& t, std::u32string_view title, int count, bool menu) {
   char32_t marker = app().conn == 2 ? U'\u25CF' : app().conn == 1 ? U'\u25CC' : U'\u2715';
-  renderStatusBar(g, t, title, count, marker, wifiBars(), board::batteryPercent(), clockText());
+  StatusTouch touch{board::hasTouch(), router::current() != router::Id::Home, menu};
+  renderStatusBar(g, t, title, count, marker, wifiBars(), board::batteryPercent(), clockText(),
+                  touch);
 }
 
 }  // namespace rc

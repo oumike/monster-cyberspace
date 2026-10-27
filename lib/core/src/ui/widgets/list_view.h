@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+#include "input/key_event.h"
 #include "ui/grid.h"
 #include "ui/theme.h"
 
@@ -27,6 +28,10 @@ class ListView {
   void down();
   int selected() const { return sel_; }
   void setSelected(int i);
+  // Picks item `i`; refuses (and returns false) when out of range.
+  bool select(int i);
+  // The list a tap Row target belongs to. Default Main; Overlay uses Menu.
+  void setListId(ListId id) { listId_ = id; }
   size_t size() const { return items_.size(); }
   // Draws rows [top, bottom) in columns [left, left + width).
   void render(Grid& g, int top, int bottom, int left, int width, const Theme& t) const;
@@ -34,6 +39,7 @@ class ListView {
  private:
   std::vector<ListItem> items_;
   int sel_ = 0;
+  ListId listId_ = ListId::Main;
 };
 
 }  // namespace rc

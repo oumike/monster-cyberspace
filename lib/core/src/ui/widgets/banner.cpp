@@ -1,5 +1,7 @@
 #include "ui/widgets/banner.h"
 
+#include "ui/tap_map.h"
+
 namespace rc {
 
 void Banner::show(std::u32string text, int64_t nowMs, int64_t durationMs, bool error) {
@@ -10,6 +12,11 @@ void Banner::show(std::u32string text, int64_t nowMs, int64_t durationMs, bool e
 
 void Banner::render(Grid& g, int row, const Theme& t, int64_t nowMs) const {
   if (!visible(nowMs)) return;
+  if (activeTaps()) {
+    Target tt;
+    tt.kind = TargetKind::Banner;
+    activeTaps()->addCells(0, row, g.cols() - 1, row, tt);
+  }
   uint16_t bg = error_ ? t.error : t.hintBg;
   uint16_t fg = error_ ? t.bg : t.hintFg;
   g.fillRow(row, bg);

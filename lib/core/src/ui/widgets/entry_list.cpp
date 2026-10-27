@@ -2,6 +2,8 @@
 
 #include <algorithm>
 
+#include "ui/tap_map.h"
+
 namespace rc {
 
 void EntryList::setRows(std::vector<FeedRow> rows) {
@@ -26,6 +28,12 @@ void EntryList::down() {
 
 bool EntryList::atEnd() const { return !rows_.empty() && sel_ == static_cast<int>(rows_.size()) - 1; }
 
+bool EntryList::select(int i) {
+  if (i < 0 || i >= static_cast<int>(rows_.size())) return false;
+  sel_ = i;
+  return true;
+}
+
 void EntryList::setBigHeads(int rowH, int bigH, int headCols) {
   rowH_ = rowH;
   bigH_ = bigH;
@@ -46,11 +54,19 @@ void EntryList::render(Grid& g, int top, int bottom, const Theme& t) const {
     for (int r = top + 2 * visible; r < bottom; ++r) g.setRowKind(r, RowKind::Skip);
   }
   const int first = std::max(0, sel_ - visible + 1);
+  if (activeTaps()) activeTaps()->setList(ListId::Main, sel_, static_cast<int>(rows_.size()), true);
   for (int k = 0; k < visible; ++k) {
     int idx = first + k;
     if (idx >= static_cast<int>(rows_.size())) break;
     const FeedRow& fr = rows_[idx];
     int row = top + 2 * k;
+    if (activeTaps()) {
+      Target tt;
+      tt.kind = TargetKind::Row;
+      tt.list = ListId::Main;
+      tt.index = static_cast<int16_t>(idx);
+      activeTaps()->addCells(0, row, width - 1, std::min(row + 1, bottom - 1), tt);
+    }
     g.putText(0, row, fr.line1, fr.fg1, t.bg, headW);
     if (row + 1 < bottom) g.putText(0, row + 1, fr.line2, fr.fg2, t.bg, width);
     if (idx != sel_) continue;

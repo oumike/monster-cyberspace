@@ -1,5 +1,8 @@
 #include "ui/widgets/input_line.h"
 
+#include <algorithm>
+
+#include "ui/tap_map.h"
 #include "util/utf8.h"
 
 namespace rc {
@@ -47,6 +50,8 @@ void InputLine::setText(std::u32string_view s) {
 
 std::string InputLine::utf8() const { return u32ToUtf8(text_); }
 
+void InputLine::setCursor(size_t pos) { cursor_ = std::min(pos, text_.size()); }
+
 void InputLine::render(Grid& g, int row, const Theme& t, std::u32string_view prompt) const {
   const uint16_t fg = disabled_ ? t.dim : t.fg;
   g.fillRow(row, t.inputBg);
@@ -54,6 +59,14 @@ void InputLine::render(Grid& g, int row, const Theme& t, std::u32string_view pro
   int avail = g.cols() - col;
   if (avail <= 0) return;
   size_t start = cursor_ >= static_cast<size_t>(avail) ? cursor_ - avail + 1 : 0;
+  if (activeTaps()) {
+    Target tt;
+    tt.kind = TargetKind::Field;
+    tt.field = fieldId_;
+    tt.first = static_cast<int16_t>(start);
+    tt.len = static_cast<int16_t>(std::min<size_t>(avail, text_.size() - start));
+    activeTaps()->addCells(col, row, col + avail - 1, row, tt);
+  }
   for (int i = 0; i < avail; ++i) {
     size_t idx = start + i;
     char32_t cp = idx < text_.size() ? text_[idx] : U' ';

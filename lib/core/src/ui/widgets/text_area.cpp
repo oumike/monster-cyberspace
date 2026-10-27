@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include "ui/tap_map.h"
 #include "util/utf8.h"
 
 namespace rc {
@@ -36,6 +37,8 @@ void TextArea::clear() {
   text_.clear();
   cursor_ = 0;
 }
+
+void TextArea::setCursor(size_t pos) { cursor_ = std::min(pos, text_.size()); }
 
 // Each logical line splits into len / width + 1 segments, so a line that
 // exactly fills the width gets an empty segment for the cursor after it.
@@ -101,6 +104,14 @@ void TextArea::render(Grid& g, int top, int bottom, const Theme& t, bool focused
     const size_t li = first + r;
     if (li >= segs.size()) continue;
     const Segment& s = segs[li];
+    if (activeTaps()) {
+      Target tt;
+      tt.kind = TargetKind::Field;
+      tt.field = fieldId_;
+      tt.first = static_cast<int16_t>(s.start);
+      tt.len = static_cast<int16_t>(s.len);
+      activeTaps()->addCells(0, row, width - 1, row, tt);
+    }
     g.putText(0, row, std::u32string_view(text_).substr(s.start, s.len), t.fg, t.inputBg, width);
     if (focused && li == cur) {
       int col = static_cast<int>(cursor_ - s.start);

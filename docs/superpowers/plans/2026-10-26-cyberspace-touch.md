@@ -336,7 +336,7 @@
     - the title goes in `t.error` on `t.bg` at col 1, row `bottom-3`;
     - the list is `[bottom-2, bottom)` in cols `1 … cols-2`.
 
-- [ ] **Step 1: Write the failing tests.**
+- [x] **Step 1: Write the failing tests.**
   ```cpp
   void test_overlay_confirm_defaults_cancel_and_wraps() {
     Overlay o; o.confirm(U"Log out?", U"Log out");
@@ -355,10 +355,10 @@
   }
   void test_overlay_render_centre_and_bottom() // title cells at the formulas above
   ```
-- [ ] **Step 2: Run** `pio test -e native -f test_widgets`. Expected: the build fails because `overlay.h` is missing.
-- [ ] **Step 3: Implement** `Overlay`. It holds a `ListView`, the title, `open_`, and the label list.
-- [ ] **Step 4: Run** `pio test -e native`. Expected: PASS.
-- [ ] **Step 5: Commit** `feat(ui): shared Overlay menu and confirm box`.
+- [x] **Step 2: Run** `pio test -e native -f test_widgets`. Expected: the build fails because `overlay.h` is missing.
+- [x] **Step 3: Implement** `Overlay`. It holds a `ListView`, the title, `open_`, and the label list.
+- [x] **Step 4: Run** `pio test -e native`. Expected: PASS.
+- [x] **Step 5: Commit** `feat(ui): shared Overlay menu and confirm box`.
 
 ### Task 4: Screens use `Overlay` (M9 behaviour unchanged)
 
@@ -428,7 +428,7 @@
 - `drawStatus` passes `StatusTouch{board::hasTouch(), router::current() != router::Id::Home, menu}`.
 - Glyphs: add `0x2039 ‹`, `0x22EF ⋯`, `0x25BC ▼`, `0x21E7 ⇧` and `0x232B ⌫` to `kExtraGlyphs`. Regenerate `src/ui/fonts/cell*.h` with `scripts/bdf2cells.py` from Terminus 4.49.1, downloaded outside the repo and run with `python3 -I`. For any of these that Terminus lacks, add a `kGlyphAliases` entry: `⋯→… (0x2026)`, `⇧→↑ (0x2191)`, `⌫→← (0x2190)`.
 
-- [ ] **Step 1: Write the failing tests.** In each one, `setActiveTaps(&m)` first and `setActiveTaps(nullptr)` in `tearDown`.
+- [x] **Step 1: Write the failing tests.** In each one, `setActiveTaps(&m)` first and `setActiveTaps(nullptr)` in `tearDown`.
   ```cpp
   void test_list_registers_rows() {
     // spec §5: 5 items, sel 0, render rows 1..5 → a tap on the fourth row (row 4) → Row{Main, 3}
@@ -456,10 +456,10 @@
   void test_no_registration_without_active_map() // activeTaps()==nullptr: render, no crash, map untouched
   ```
   `test_status_bar_layout` (`touch` defaulted off) must keep passing unchanged. In `test_glyphs`, add `test_touch_glyphs_present`: each new code point has a bitmap or an alias in both fonts.
-- [ ] **Step 2: Run** `pio test -e native -f test_widgets`. Expected: the build fails because the new methods are missing.
-- [ ] **Step 3: Implement** the registrations, the `select*`/`setCursor`/`setFieldId` methods, `StatusTouch`, `drawStatus`, and the glyph set and fonts.
-- [ ] **Step 4: Run** `pio test -e native`, then `scripts/build-upload-monitor.sh -B`. Expected: green, and all four envs build. **M9:** with `hasTouch()` false, `StatusTouch.on` is false and nothing registers. The status bar row matches today's (`test_status_bar_layout`).
-- [ ] **Step 5: Commit** `feat(ui): widgets register tap targets; touch status bar`.
+- [x] **Step 2: Run** `pio test -e native -f test_widgets`. Expected: the build fails because the new methods are missing.
+- [x] **Step 3: Implement** the registrations, the `select*`/`setCursor`/`setFieldId` methods, `StatusTouch`, `drawStatus`, and the glyph set and fonts.
+- [x] **Step 4: Run** `pio test -e native`, then `scripts/build-upload-monitor.sh -B`. Expected: green, and all four envs build. **M9:** with `hasTouch()` false, `StatusTouch.on` is false and nothing registers. The status bar row matches today's (`test_status_bar_layout`).
+- [x] **Step 5: Commit** `feat(ui): widgets register tap targets; touch status bar`.
 
 ### Task 6: Screens handle `Activate` and `Focus`; touch hints
 

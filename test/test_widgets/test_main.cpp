@@ -17,12 +17,13 @@
 #include "ui/widgets/palette.h"
 #include "ui/widgets/status_bar.h"
 #include "ui/widgets/text_area.h"
+#include "ui/tap_map.h"
 #include "util/utf8.h"
 
 using namespace rc;
 
 void setUp() {}
-void tearDown() {}
+void tearDown() { setActiveTaps(nullptr); }
 
 static const Theme& T() { return defaultTheme(); }
 
@@ -602,6 +603,229 @@ void test_text_area_render_cursor_visible() {
   TEST_ASSERT_TRUE(g2.at(1, 3).bg != T().cursorBg);
 }
 
+static TapMap makeTaps() {
+  TapMap m;
+  m.setOrigin({1, 1}, 0);
+  return m;
+}
+
+void test_list_registers_rows() {
+  ListView v;
+  std::vector<ListItem> items;
+  for (int i = 0; i < 5; ++i) items.push_back(ListItem{U"x", U""});
+  v.setItems(items);
+  v.setSelected(0);
+  TapMap m = makeTaps();
+  setActiveTaps(&m);
+  Grid g(10, 7);
+  v.render(g, 1, 6, 0, 10, T());  // rows 1..5 show items 0..4
+  Target t = m.hit(0, 4);         // the fourth drawn row
+  TEST_ASSERT_EQUAL(int(TargetKind::Row), int(t.kind));
+  TEST_ASSERT_EQUAL(int(ListId::Main), int(t.list));
+  TEST_ASSERT_EQUAL(3, t.index);
+  const ListInfo* li = m.list(ListId::Main);
+  TEST_ASSERT_NOT_NULL(li);
+  TEST_ASSERT_EQUAL(0, li->selected);
+  TEST_ASSERT_EQUAL(5, li->count);
+  TEST_ASSERT_TRUE(li->wraps);
+
+  ListView v2;
+  std::vector<ListItem> items2;
+  for (int i = 0; i < 10; ++i) items2.push_back(ListItem{U"y", U""});
+  v2.setItems(items2);
+  v2.setSelected(7);
+  TapMap m2 = makeTaps();
+  setActiveTaps(&m2);
+  Grid g2(10, 8);
+  v2.render(g2, 2, 7, 0, 10, T());  // height 5, first shown is 3
+  TEST_ASSERT_EQUAL(3, m2.hit(0, 2).index);
+  const ListInfo* li2 = m2.list(ListId::Main);
+  TEST_ASSERT_EQUAL(7, li2->selected);
+  TEST_ASSERT_EQUAL(10, li2->count);
+}
+
+void test_list_select_out_of_range_refused() {
+  ListView v;
+  v.setItems({ListItem{U"a", U""}, ListItem{U"b", U""}, ListItem{U"c", U""}});
+  v.setSelected(1);
+  TEST_ASSERT_FALSE(v.select(10));
+  TEST_ASSERT_FALSE(v.select(-1));
+  TEST_ASSERT_EQUAL(1, v.selected());
+  TEST_ASSERT_TRUE(v.select(2));
+  TEST_ASSERT_EQUAL(2, v.selected());
+}
+
+void test_entry_list_row_spans_two_rows() {
+  EntryList el;
+  el.setRows(feedRows(3));
+  TapMap m = makeTaps();
+  setActiveTaps(&m);
+  Grid g(20, 8);
+  el.render(g, 0, 8, T());  // entry 1 at rows 2..3
+  TEST_ASSERT_EQUAL(1, m.hit(0, 2).index);
+  Target t = m.hit(0, 3);
+  TEST_ASSERT_EQUAL(int(TargetKind::Row), int(t.kind));
+  TEST_ASSERT_EQUAL(int(ListId::Main), int(t.list));
+  TEST_ASSERT_EQUAL(1, t.index);
+  const ListInfo* li = m.list(ListId::Main);
+  TEST_ASSERT_NOT_NULL(li);
+  TEST_ASSERT_EQUAL(3, li->count);
+  TEST_ASSERT_TRUE(li->wraps);
+}
+
+void test_drawer_registers_people() {
+  PresenceEntry a, b;
+  a.username = "rain";
+  b.username = "tardibyte";
+  Drawer d;
+  d.setPeople({a, b}, 0, 300000);
+  TapMap m = makeTaps();
+  setActiveTaps(&m);
+  Grid g(40, 6);
+  d.render(g, 1, 6, T());  // people at rows 2, 3
+  int x = 40 - Drawer::width(TextSize::Compact);
+  Target t = m.hit(x + 1, 3);
+  TEST_ASSERT_EQUAL(int(TargetKind::Row), int(t.kind));
+  TEST_ASSERT_EQUAL(int(ListId::Drawer), int(t.list));
+  TEST_ASSERT_EQUAL(1, t.index);
+  TEST_ASSERT_TRUE(d.select(1));
+  TEST_ASSERT_EQUAL_STRING("tardibyte", d.selectedUsername().c_str());
+  TEST_ASSERT_FALSE(d.select(5));
+}
+
+void test_log_registers_messages() {
+  LogView v;
+  v.setLines({line("a", "a1"), line("a", "a2"), line("x", "-", true), line("b", "b1")});
+  TEST_ASSERT_EQUAL(2, v.messageCount());
+  TapMap m = makeTaps();
+  setActiveTaps(&m);
+  Grid g(10, 6);
+  v.render(g, 0, 4, 0, T());  // following: rows a1, a2, divider, b1
+  TEST_ASSERT_EQUAL(0, m.hit(0, 0).index);
+  TEST_ASSERT_EQUAL(0, m.hit(0, 1).index);
+  TEST_ASSERT_EQUAL(int(TargetKind::None), int(m.hit(0, 2).kind));  // divider
+  Target tb = m.hit(0, 3);
+  TEST_ASSERT_EQUAL(int(TargetKind::Row), int(tb.kind));
+  TEST_ASSERT_EQUAL(int(ListId::Log), int(tb.list));
+  TEST_ASSERT_EQUAL(1, tb.index);
+  const ListInfo* li = m.list(ListId::Log);
+  TEST_ASSERT_NOT_NULL(li);
+  TEST_ASSERT_EQUAL(-1, li->selected);
+  TEST_ASSERT_EQUAL(2, li->count);
+  TEST_ASSERT_FALSE(li->wraps);
+  TEST_ASSERT_TRUE(v.selectMessage(1));
+  TEST_ASSERT_EQUAL_STRING("b", v.selectedId().c_str());
+  TEST_ASSERT_FALSE(v.selectMessage(2));
+}
+
+void test_input_field_hit_scrolled() {
+  InputLine in;
+  in.setFieldId(7);
+  in.setText(std::u32string(60, U'x'));  // cursor at end
+  TapMap m = makeTaps();
+  setActiveTaps(&m);
+  Grid g(40, 2);
+  in.render(g, 0, T());  // prompt "> ", avail 38, first = 23
+  Target t = m.hit(2, 0);
+  TEST_ASSERT_EQUAL(int(TargetKind::Field), int(t.kind));
+  TEST_ASSERT_EQUAL(7, t.field);
+  TEST_ASSERT_EQUAL(23, t.index);
+  // A disabled line still registers, because a tap focuses it.
+  in.setDisabled(true);
+  TapMap m2 = makeTaps();
+  setActiveTaps(&m2);
+  in.render(g, 0, T());
+  TEST_ASSERT_EQUAL(int(TargetKind::Field), int(m2.hit(2, 0).kind));
+  // setCursor clamps to the text length.
+  in.setCursor(999);
+  TEST_ASSERT_EQUAL(60, in.cursor());
+  in.setCursor(5);
+  TEST_ASSERT_EQUAL(5, in.cursor());
+}
+
+void test_text_area_field_rows() {
+  TextArea ta;
+  ta.setFieldId(3);
+  for (char32_t c : std::u32string(U"ab\ncd")) ta.insert(c);
+  TapMap m = makeTaps();
+  setActiveTaps(&m);
+  Grid g(10, 5);
+  ta.render(g, 1, 4, T(), true);  // row 1: seg {0,2}; row 2: seg {3,2}
+  Target t = m.hit(1, 2);
+  TEST_ASSERT_EQUAL(int(TargetKind::Field), int(t.kind));
+  TEST_ASSERT_EQUAL(3, t.field);
+  TEST_ASSERT_EQUAL(4, t.index);
+  TEST_ASSERT_EQUAL(2, m.hit(5, 1).index);  // past the end of row 1 caps at 2
+  ta.setCursor(999);
+  TEST_ASSERT_EQUAL(5, ta.length());
+}
+
+void test_status_bar_touch_layout() {
+  Grid g(40, 2);
+  TapMap m = makeTaps();
+  setActiveTaps(&m);
+  renderStatusBar(g, T(), U"#general", 12, U'\u25cf', 3, 87, "14:02",
+                  StatusTouch{true, true, true});
+  TEST_ASSERT_EQUAL_HEX32(0x2039, g.at(0, 0).cp);                     // ‹
+  TEST_ASSERT_EQUAL_STRING("#general", rowText(g, 0, 2, 10).c_str());  // title from col 2
+  TEST_ASSERT_EQUAL_HEX32(0x22EF, g.at(38, 0).cp);                    // ⋯ before the trailing space
+  Target back = m.hit(1, 0);
+  TEST_ASSERT_EQUAL(int(TargetKind::Fixed), int(back.kind));
+  TEST_ASSERT_EQUAL(int(Action::Back), int(back.tap.action));
+  TEST_ASSERT_EQUAL(int(Action::OpenHome), int(back.hold.action));
+  Target menu = m.hit(38, 0);
+  TEST_ASSERT_EQUAL(int(TargetKind::Fixed), int(menu.kind));
+  TEST_ASSERT_EQUAL(int(Action::Palette), int(menu.tap.action));
+
+  Grid g2(40, 2);
+  TapMap m2 = makeTaps();
+  setActiveTaps(&m2);
+  renderStatusBar(g2, T(), U"#general", 12, U'\u25cf', 3, 87, "14:02",
+                  StatusTouch{true, false, false});
+  TEST_ASSERT_NOT_EQUAL(0x2039, g2.at(0, 0).cp);   // no back arrow
+  TEST_ASSERT_NOT_EQUAL(0x22EF, g2.at(38, 0).cp);  // no menu dots
+  TEST_ASSERT_EQUAL(int(TargetKind::None), int(m2.hit(1, 0).kind));
+}
+
+void test_overlay_registers_taps() {
+  Overlay o;
+  o.open(U"menu", {ListItem{U"a", U""}, ListItem{U"b", U""}, ListItem{U"c", U""}});
+  TapMap m = makeTaps();
+  setActiveTaps(&m);
+  Grid g(40, 20);
+  o.render(g, 0, 20, 0, OverlayPlace::Centre, T());  // items at rows 9, 10, 11
+  Target in = m.hit(12, 10);
+  TEST_ASSERT_EQUAL(int(TargetKind::Row), int(in.kind));
+  TEST_ASSERT_EQUAL(int(ListId::Menu), int(in.list));
+  TEST_ASSERT_EQUAL(1, in.index);
+  Target out = m.hit(0, 0);  // outside the box closes it
+  TEST_ASSERT_EQUAL(int(TargetKind::Fixed), int(out.kind));
+  TEST_ASSERT_EQUAL(int(Action::Back), int(out.tap.action));
+}
+
+void test_banner_tap_target() {
+  Banner b;
+  b.show(U"hi", 1000, 2000, false);
+  TapMap m = makeTaps();
+  setActiveTaps(&m);
+  Grid g(20, 3);
+  b.render(g, 2, T(), 1500);  // visible
+  TEST_ASSERT_EQUAL(int(TargetKind::Banner), int(m.hit(0, 2).kind));
+  TapMap m2 = makeTaps();
+  setActiveTaps(&m2);
+  b.render(g, 2, T(), 4000);  // expired
+  TEST_ASSERT_EQUAL(int(TargetKind::None), int(m2.hit(0, 2).kind));
+}
+
+void test_no_registration_without_active_map() {
+  setActiveTaps(nullptr);
+  ListView v;
+  v.setItems({ListItem{U"a", U""}});
+  Grid g(10, 3);
+  v.render(g, 0, 3, 0, 10, T());  // must not crash
+  TEST_ASSERT_NULL(activeTaps());
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_input_insert_cursor);
@@ -637,5 +861,16 @@ int main() {
   RUN_TEST(test_overlay_render_bottom_right);
   RUN_TEST(test_overlay_render_centre_and_bottom);
   RUN_TEST(test_text_area_render_cursor_visible);
+  RUN_TEST(test_list_registers_rows);
+  RUN_TEST(test_list_select_out_of_range_refused);
+  RUN_TEST(test_entry_list_row_spans_two_rows);
+  RUN_TEST(test_drawer_registers_people);
+  RUN_TEST(test_log_registers_messages);
+  RUN_TEST(test_input_field_hit_scrolled);
+  RUN_TEST(test_text_area_field_rows);
+  RUN_TEST(test_status_bar_touch_layout);
+  RUN_TEST(test_overlay_registers_taps);
+  RUN_TEST(test_banner_tap_target);
+  RUN_TEST(test_no_registration_without_active_map);
   return UNITY_END();
 }

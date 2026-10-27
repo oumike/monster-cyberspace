@@ -25,8 +25,9 @@ AppState& app();
 // The theme the user picked (Settings or web config).
 const Theme& currentTheme();
 
-// Row 0 with the connection marker, Wi-Fi bars, battery and clock.
-void drawStatus(Grid& g, const Theme& t, std::u32string_view title, int count);
+// Row 0 with the connection marker, Wi-Fi bars, battery and clock. `menu` means
+// the screen has a Ctrl menu, so a touch board draws a `⋯` at the right.
+void drawStatus(Grid& g, const Theme& t, std::u32string_view title, int count, bool menu = false);
 
 // Wi-Fi and address details that differ in the m9_fake build.
 bool wifiUp();

@@ -2,7 +2,60 @@
 
 #include <algorithm>
 
+#include "ui/tap_map.h"
+
 namespace rc {
+
+int LogView::ordinalOf(const std::string& id) const {
+  int n = -1;
+  std::string last;
+  bool any = false;
+  for (const auto& l : lines_) {
+    if (l.divider) continue;
+    if (!any || l.messageId != last) {
+      ++n;
+      last = l.messageId;
+      any = true;
+    }
+    if (l.messageId == id) return n;
+  }
+  return -1;
+}
+
+int LogView::messageCount() const {
+  int n = 0;
+  std::string last;
+  bool any = false;
+  for (const auto& l : lines_) {
+    if (l.divider) continue;
+    if (!any || l.messageId != last) {
+      ++n;
+      last = l.messageId;
+      any = true;
+    }
+  }
+  return n;
+}
+
+bool LogView::selectMessage(int ordinal) {
+  if (ordinal < 0) return false;
+  int n = 0;
+  std::string last;
+  bool any = false;
+  for (const auto& l : lines_) {
+    if (l.divider) continue;
+    if (!any || l.messageId != last) {
+      if (n == ordinal) {
+        selected_ = l.messageId;
+        return true;
+      }
+      ++n;
+      last = l.messageId;
+      any = true;
+    }
+  }
+  return false;
+}
 
 int LogView::firstLineOf(const std::string& id) const {
   for (size_t i = 0; i < lines_.size(); ++i)
@@ -66,6 +119,7 @@ void LogView::render(Grid& g, int top, int bottom, int rightReserve, const Theme
   }
 
   int selTop = -1, selBottom = -1;
+  if (activeTaps()) activeTaps()->setList(ListId::Log, -1, messageCount(), false);
   for (int r = 0; r < height; ++r) {
     int row = top + r;
     int idx = start + r;
@@ -74,6 +128,13 @@ void LogView::render(Grid& g, int top, int bottom, int rightReserve, const Theme
       continue;
     }
     const DisplayLine& l = lines_[idx];
+    if (activeTaps() && !l.divider) {
+      Target tt;
+      tt.kind = TargetKind::Row;
+      tt.list = ListId::Log;
+      tt.index = static_cast<int16_t>(ordinalOf(l.messageId));
+      activeTaps()->addCells(0, row, width - 1, row, tt);
+    }
     bool sel = !following() && !l.divider && l.messageId == selected_;
     if (sel) {
       if (selTop < 0) selTop = row;

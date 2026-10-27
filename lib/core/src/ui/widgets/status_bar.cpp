@@ -3,12 +3,14 @@
 #include <algorithm>
 #include <string>
 
+#include "ui/tap_map.h"
 #include "util/utf8.h"
 
 namespace rc {
 
 void renderStatusBar(Grid& g, const Theme& t, std::u32string_view title, int count,
-                     char32_t connMarker, int wifiBars, int batteryPct, std::string_view clock) {
+                     char32_t connMarker, int wifiBars, int batteryPct, std::string_view clock,
+                     StatusTouch touch) {
   const int row = 0;
   g.fillRow(row, t.barBg);
 
@@ -25,13 +27,40 @@ void renderStatusBar(Grid& g, const Theme& t, std::u32string_view title, int cou
   int rightStart = std::max(0, g.cols() - static_cast<int>(right.size()));
   g.putText(rightStart, row, right, t.barFg, t.barBg, g.cols() - rightStart);
 
-  std::u32string left = U" ";
-  left += title;
+  int titleCol = 0;
+  std::u32string left;
+  if (touch.on && touch.back) {
+    g.put(0, row, U'\u2039', t.barFg, t.barBg);  // ‹
+    titleCol = 2;
+    left = std::u32string(title);
+  } else {
+    left = U" ";
+    left += title;
+  }
   if (count >= 0) left += U" " + utf8ToU32(std::to_string(count));
-  int leftMax = std::max(0, rightStart - 1);
+  int leftMax = std::max(0, rightStart - 1 - titleCol);
   if (static_cast<int>(left.size()) > leftMax && leftMax > 0)
     left = left.substr(0, leftMax - 1) + U"\u2026";
-  g.putText(0, row, left, t.barFg, t.barBg, leftMax);
+  g.putText(titleCol, row, left, t.barFg, t.barBg, leftMax);
+
+  if (touch.on && touch.menu && g.cols() >= 2)
+    g.put(g.cols() - 2, row, U'\u22ef', t.barFg, t.barBg);  // ⋯
+
+  if (touch.on && activeTaps()) {
+    if (touch.back) {
+      Target b;
+      b.kind = TargetKind::Fixed;
+      b.tap.action = Action::Back;
+      b.hold.action = Action::OpenHome;
+      activeTaps()->addCells(0, row, 3, row, b);
+    }
+    if (touch.menu) {
+      Target m;
+      m.kind = TargetKind::Fixed;
+      m.tap.action = Action::Palette;
+      activeTaps()->addCells(g.cols() - 4, row, g.cols() - 1, row, m);
+    }
+  }
 }
 
 }  // namespace rc

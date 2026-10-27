@@ -18,6 +18,7 @@ class EntryList {
   void down();
   int selected() const { return sel_; }
   void setSelected(int i);  // clamps
+  bool select(int i);       // false when out of range
   size_t size() const { return rows_.size(); }
   bool atEnd() const;  // the last row is selected
   // Draws each entry's first line as a RowKind::Big row cut to headCols, and

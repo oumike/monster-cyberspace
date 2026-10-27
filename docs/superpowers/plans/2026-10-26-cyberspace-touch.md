@@ -594,6 +594,7 @@
 
     Touch comes before buttons so a gesture always resolves against the map of the frame on screen.
   - Before `router::screen().render`: `taps.clear(); taps.setOrigin(cellSize(textSize), 0)`.
+  - After the screen, banner and status bar are drawn into the grid (before `renderer.draw`): `taps.mapRows(0, rowSpans(grid, cellSize(textSize).h, bigCellSize(textSize).h))`, so taps on the Feed's Big rows land where they are drawn.
   - `gestures.reset()` and `resolver.reset()` when going dark, entering the saver, waking, and on every `router` screen change (compare `router::current()` before and after the handled keys and events).
   - `PowerTap` while lit acts as `ScreenOff` (it turns the screen off). While dark, `peeksScreen` already makes it peek.
   - `drawSaver` draws `board::wakeHint()` instead of the literal.

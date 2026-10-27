@@ -267,6 +267,39 @@ void test_tap_map_topmost_wins() {
   TEST_ASSERT_EQUAL(int(Action::Back), int(h.tap.action));
 }
 
+void test_tap_map_rows_follow_spans() {
+  // A Feed-like grid: row 0 bar, rows 1/3 Big entry heads (h 16), rows 2/4
+  // bodies, row 5 Skip, row 6 the hint. Each entry is two rows.
+  Grid g(20, 7);
+  g.setRowKind(1, RowKind::Big);
+  g.setRowKind(3, RowKind::Big);
+  g.setRowKind(5, RowKind::Skip);
+  TapMap m;
+  m.setOrigin(CellSize{6, 12}, 0);
+  m.addCells(0, 1, 19, 2, rowTarget(ListId::Main, 0));
+  m.addCells(0, 3, 19, 4, rowTarget(ListId::Main, 1));
+  m.addCells(0, 6, 19, 6, fixedTarget(ev(Action::Back)));
+  m.mapRows(0, rowSpans(g, 12, 16));
+  // Spans: 0 [0,12) 1 [12,28) 2 [28,40) 3 [40,56) 4 [56,68) 5 empty 6 [72,84).
+  TEST_ASSERT_EQUAL(0, m.hit(5, 39).index);
+  TEST_ASSERT_EQUAL(1, m.hit(5, 40).index);  // uniform rows would still say entry 0
+  TEST_ASSERT_EQUAL(1, m.hit(5, 67).index);
+  TEST_ASSERT_EQUAL(int(TargetKind::None), int(m.hit(5, 68).kind));
+  TEST_ASSERT_EQUAL(int(TargetKind::Fixed), int(m.hit(5, 72).kind));
+}
+
+void test_tap_map_rows_leave_other_grids() {
+  // The keyboard grid below the screen keeps its uniform rows.
+  Grid g(20, 3);
+  g.setRowKind(0, RowKind::Big);
+  TapMap m;
+  m.setOrigin(CellSize{6, 12}, 3);
+  m.addCells(0, 0, 19, 0, rowTarget(ListId::Main, 7));
+  m.mapRows(0, rowSpans(g, 12, 16));
+  TEST_ASSERT_EQUAL(7, m.hit(5, 36).index);
+  TEST_ASSERT_EQUAL(int(TargetKind::None), int(m.hit(5, 35).kind));
+}
+
 void test_tap_map_clear() {
   TapMap m;
   m.setOrigin(CellSize{6, 12}, 0);
@@ -506,6 +539,8 @@ int main() {
   RUN_TEST(test_tap_map_cells_to_px);
   RUN_TEST(test_tap_map_topmost_wins);
   RUN_TEST(test_tap_map_clear);
+  RUN_TEST(test_tap_map_rows_follow_spans);
+  RUN_TEST(test_tap_map_rows_leave_other_grids);
   RUN_TEST(test_field_hit_position);
   RUN_TEST(test_resolve_row_tap_and_hold);
   RUN_TEST(test_resolve_fixed);

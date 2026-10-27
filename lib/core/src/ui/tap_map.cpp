@@ -26,8 +26,21 @@ void TapMap::addCells(int c0, int r0, int c1, int r1, const Target& t) {
   rc.x1 = (c1 + 1) * cell_.w - 1;
   rc.y0 = (firstRow_ + r0) * cell_.h;
   rc.y1 = (firstRow_ + r1 + 1) * cell_.h - 1;
+  rc.firstRow = firstRow_;
+  rc.r0 = r0;
+  rc.r1 = r1;
   rc.t = t;
   rects_.push_back(rc);
+}
+
+void TapMap::mapRows(int firstRow, const std::vector<RowSpan>& spans) {
+  const int n = static_cast<int>(spans.size());
+  const int top = firstRow * cell_.h;
+  for (auto& rc : rects_) {
+    if (rc.firstRow != firstRow || rc.r0 < 0 || rc.r1 >= n || rc.r0 > rc.r1) continue;
+    rc.y0 = top + spans[rc.r0].y;
+    rc.y1 = top + spans[rc.r1].y + spans[rc.r1].h - 1;  // all-Skip rows: y1 < y0, never hit
+  }
 }
 
 void TapMap::setList(ListId id, int selected, int count, bool wraps) {

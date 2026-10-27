@@ -34,6 +34,10 @@ class TapMap {
   void clear();                                 // targets and list infos
   void setOrigin(CellSize cell, int firstRow);  // for the addCells calls that follow
   void addCells(int c0, int r0, int c1, int r1, const Target& t);  // inclusive, stored in px
+  // Re-places the rows of targets added with setOrigin(_, firstRow) by the
+  // renderer's row spans (rowSpans), so taps land on RowKind::Big rows as
+  // drawn. Call once the grid is drawn; other grids' targets are left alone.
+  void mapRows(int firstRow, const std::vector<RowSpan>& spans);
   void setList(ListId id, int selected, int count, bool wraps);
   const ListInfo* list(ListId id) const;  // null if not registered this frame
   int visibleRows(ListId id) const;       // Row targets registered for id
@@ -46,6 +50,7 @@ class TapMap {
  private:
   struct Rect {
     int x0, y0, x1, y1;
+    int firstRow, r0, r1;  // the cells the rect was added from
     Target t;
   };
   std::vector<Rect> rects_;

@@ -1,8 +1,10 @@
 #pragma once
 
+#include <utility>
 #include <vector>
 
 #include "input/key_event.h"
+#include "ui/grid.h"
 
 namespace rc {
 
@@ -11,13 +13,21 @@ struct TileRect {
   int c0, r0, c1, r1;
 };
 
-// Lays out `count` tiles in two columns, row-major, in the rows between the
-// status bar (row 0) and the hint (the last row): rows 1..rows-2. The tiles
-// take `percent` of that area's width and `heightPercent` (-1: `percent`) of
-// its height, rounded to whole cells and centred. Returns an empty vector when
-// a tile would be under 3 rows tall or 10 cols wide.
-std::vector<TileRect> homeTiles(int cols, int rows, int count, int percent = 100,
-                                int heightPercent = -1);
+// The Home tiles of a touch board: `count` tiles in two columns, row-major,
+// taking `percent` of the panel's width and of the areaPx between the status
+// bar (row 0) and the hint (the last of gridRows), in cells of `cell`.
+// Centred to the pixel: row 1 is a blank pad row above the tiles, and the
+// tile rows are drawn shiftPx to the right. A blank cell column separates the
+// columns, and a pad row as tall as a cell is wide separates the tile rows.
+// tiles is empty when a tile would be under 3 rows tall or 10 cols wide.
+struct HomeLayout {
+  std::vector<TileRect> tiles;
+  std::vector<std::pair<int, int>> pads;  // (grid row, px), row 1 first
+  int lastRow = 0;                        // rows after it are unused
+  int shiftPx = 0;
+};
+HomeLayout homeLayout(int panelW, int areaPx, int gridRows, CellSize cell, int count,
+                      int percent);
 
 // How many cells of unitPx make `percent` of an areaPx span (rounded, never
 // more than fit), and the padding before them that centres them; the rest,

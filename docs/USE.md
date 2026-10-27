@@ -64,8 +64,9 @@ Every screen works by touch. Touch never wakes a dark screen.
 - **Scroll:** drag a list or log to move line by line; swipe up or down to
   move a page. Dragging past the end of a list stops there.
 - **Home** shows six large tiles: messages, rooms, c-mail, feed, settings and
-  mentions. They fill about 90% of the space below the status bar, centred,
-  with their labels in a larger font.
+  mentions. They fill about 90% of the space below the status bar, centred
+  and spaced apart, with their labels in a larger font. The selected tile has
+  a highlighted outline.
 
 **Keyboard.** Tapping a text field docks a keyboard at the bottom; the screen
 above it gets shorter.

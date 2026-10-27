@@ -4,31 +4,35 @@
 
 namespace rc {
 
-std::vector<TileRect> homeTiles(int cols, int rows, int count, int percent, int heightPercent) {
-  if (heightPercent < 0) heightPercent = percent;
-  std::vector<TileRect> out;
-  if (count <= 0 || cols <= 0 || rows - 2 <= 0) return out;
-  const int numCols = 2;
-  const int numRows = (count + numCols - 1) / numCols;
-  const int areaH = rows - 2;  // rows 1..rows-2
-  const int availH = (areaH * heightPercent + 50) / 100;
-  const int availW = (cols * percent + 50) / 100;
-  const int firstRow = 1 + (areaH - availH) / 2;
-  const int firstCol = (cols - availW) / 2;
-  if (availH <= 0 || availW <= 0) return out;
-  // Every tile must be at least 3 rows tall and 10 cols wide.
-  if (availH / numRows < 3) return out;
-  if (availW / numCols < 10) return out;
-  out.reserve(count);
+HomeLayout homeLayout(int panelW, int areaPx, int gridRows, CellSize cell, int count,
+                      int percent) {
+  HomeLayout out;
+  if (count <= 0 || cell.w <= 0 || cell.h <= 0 || areaPx <= 0) return out;
+  // Across: an odd number of cells, so the gap column leaves equal halves.
+  TileSpan across = tileSpan(panelW, cell.w, percent);
+  if (across.cells % 2 == 0) --across.cells;
+  const int tileW = (across.cells - 1) / 2;
+  if (tileW < 10) return out;
+  // Down: numRows tiles of h rows with gap px between them.
+  const int numRows = (count + 1) / 2;
+  const int gap = cell.w;
+  const int avail = areaPx * percent / 100 - (numRows - 1) * gap;
+  int h = avail > 0 ? (avail / numRows + cell.h / 2) / cell.h : 0;
+  auto totalPx = [&](int rows) { return numRows * rows * cell.h + (numRows - 1) * gap; };
+  auto lastRow = [&](int rows) { return 1 + numRows * rows + (numRows - 1); };
+  while (h >= 3 && (totalPx(h) > areaPx || lastRow(h) > gridRows - 2)) --h;
+  if (h < 3) return out;
+
+  out.shiftPx = (panelW - across.cells * cell.w) / 2;
+  out.lastRow = lastRow(h);
+  out.pads.emplace_back(1, (areaPx - totalPx(h)) / 2);
+  out.tiles.reserve(count);
   for (int i = 0; i < numRows; ++i) {
-    const int r0 = firstRow + availH * i / numRows;
-    const int r1 = firstRow + availH * (i + 1) / numRows - 1;
-    for (int j = 0; j < numCols; ++j) {
-      const int idx = i * numCols + j;
-      if (idx >= count) break;
-      const int c0 = firstCol + availW * j / numCols;
-      const int c1 = firstCol + availW * (j + 1) / numCols - 1;
-      out.push_back(TileRect{c0, r0, c1, r1});
+    const int r0 = 2 + i * (h + 1);
+    if (i + 1 < numRows) out.pads.emplace_back(r0 + h, gap);
+    for (int j = 0; j < 2 && i * 2 + j < count; ++j) {
+      const int c0 = j * (tileW + 1);
+      out.tiles.push_back(TileRect{c0, r0, c0 + tileW - 1, r0 + h - 1});
     }
   }
   return out;

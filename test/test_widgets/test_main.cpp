@@ -1,3 +1,4 @@
+#include <cstdlib>
 #include <unity.h>
 
 #include <string>
@@ -829,68 +830,78 @@ void test_no_registration_without_active_map() {
   TEST_ASSERT_NULL(activeTaps());
 }
 
-void test_home_tiles_fit() {
+// Every row's height in px under the layout, rows 1..rows-2 (tile rows rowH).
+int layoutPx(const HomeLayout& l, int rowH) {
+  int px = 0;
+  for (int r = 1; r <= l.lastRow; ++r) {
+    int h = rowH;
+    for (const auto& p : l.pads)
+      if (p.first == r) h = p.second;
+    px += h;
+  }
+  return px;
+}
+
+void test_home_layout_fits() {
+  // Panel width, grid rows, cell (tile rows' font): landscape and portrait,
+  // both text sizes, Big cells.
   struct Case {
-    int cols, rows;
-  } cases[] = {{40, 15}, {53, 20}, {30, 20}};
+    int panelW, rows, rowH;
+    CellSize cell;
+  } cases[] = {{320, 15, 16, {10, 18}}, {320, 20, 12, {8, 14}},
+               {240, 20, 16, {10, 18}}, {240, 26, 12, {8, 14}}};
   for (const Case& c : cases) {
-    std::vector<TileRect> tiles = homeTiles(c.cols, c.rows, 6);
-    TEST_ASSERT_EQUAL(6, tiles.size());
-    for (const TileRect& r : tiles) {
-      TEST_ASSERT_TRUE(r.c0 >= 0 && r.c1 <= c.cols - 1);
-      TEST_ASSERT_TRUE(r.r0 >= 1 && r.r1 <= c.rows - 2);
+    const int areaPx = (c.rows - 2) * c.rowH;
+    HomeLayout l = homeLayout(c.panelW, areaPx, c.rows, c.cell, 6, 90);
+    TEST_ASSERT_EQUAL(6, l.tiles.size());
+    TEST_ASSERT_TRUE(l.lastRow <= c.rows - 2);
+    const int used = layoutPx(l, c.cell.h);
+    TEST_ASSERT_TRUE(used <= areaPx);
+    // Centred: the pad above (row 1) and the space below differ by at most 1.
+    TEST_ASSERT_EQUAL(1, l.pads[0].first);
+    const int below = areaPx - used;
+    TEST_ASSERT_TRUE(below - l.pads[0].second >= 0 && below - l.pads[0].second <= 1);
+    // Centred across, to within one px.
+    const int width = (l.tiles[1].c1 + 1) * c.cell.w;
+    TEST_ASSERT_TRUE(std::abs((c.panelW - width - l.shiftPx) - l.shiftPx) <= 1);
+    for (const TileRect& r : l.tiles) {
+      TEST_ASSERT_TRUE(r.r0 >= 2 && r.r1 <= l.lastRow);
       TEST_ASSERT_TRUE(r.r1 - r.r0 + 1 >= 3);
       TEST_ASSERT_TRUE(r.c1 - r.c0 + 1 >= 10);
+      for (const auto& p : l.pads) TEST_ASSERT_TRUE(p.first < r.r0 || p.first > r.r1);
     }
-    // No two overlap.
-    for (size_t i = 0; i < tiles.size(); ++i)
-      for (size_t j = i + 1; j < tiles.size(); ++j) {
-        const TileRect& a = tiles[i];
-        const TileRect& b = tiles[j];
-        bool disjoint = a.c1 < b.c0 || b.c1 < a.c0 || a.r1 < b.r0 || b.r1 < a.r0;
-        TEST_ASSERT_TRUE(disjoint);
-      }
-    // Two columns, row-major: 0,2,4 share c0; 1,3,5 share c0.
-    TEST_ASSERT_EQUAL(tiles[0].c0, tiles[2].c0);
-    TEST_ASSERT_EQUAL(tiles[0].c0, tiles[4].c0);
-    TEST_ASSERT_EQUAL(tiles[1].c0, tiles[3].c0);
-    TEST_ASSERT_EQUAL(tiles[1].c0, tiles[5].c0);
-    TEST_ASSERT_TRUE(tiles[1].c0 > tiles[0].c0);
-    // Row-major: pairs share a row; the next row is lower.
-    TEST_ASSERT_EQUAL(tiles[0].r0, tiles[1].r0);
-    TEST_ASSERT_TRUE(tiles[2].r0 > tiles[0].r0);
+    // A blank column between the two columns, a pad row between tile rows,
+    // equal sizes, row-major.
+    for (int i = 0; i < 6; i += 2) {
+      TEST_ASSERT_EQUAL(l.tiles[i].c1 + 2, l.tiles[i + 1].c0);
+      TEST_ASSERT_EQUAL(l.tiles[i].r0, l.tiles[i + 1].r0);
+      TEST_ASSERT_EQUAL(l.tiles[0].c1 - l.tiles[0].c0, l.tiles[i + 1].c1 - l.tiles[i + 1].c0);
+    }
+    for (int i = 0; i + 2 < 6; i += 2) TEST_ASSERT_EQUAL(l.tiles[i].r1 + 2, l.tiles[i + 2].r0);
   }
 }
 
-void test_home_tiles_too_small() {
-  TEST_ASSERT_EQUAL(0, homeTiles(16, 8, 6).size());
+void test_home_layout_landscape() {
+  // T-Deck/Wio landscape, Comfortable: 208 px between bar and hint, 10x18 cells.
+  HomeLayout l = homeLayout(320, 208, 15, CellSize{10, 18}, 6, 90);
+  TEST_ASSERT_EQUAL(15, l.shiftPx);  // 29 cells across
+  TEST_ASSERT_EQUAL(0, l.tiles[0].c0);
+  TEST_ASSERT_EQUAL(13, l.tiles[0].c1);
+  TEST_ASSERT_EQUAL(15, l.tiles[1].c0);
+  TEST_ASSERT_EQUAL(28, l.tiles[1].c1);
+  TEST_ASSERT_EQUAL(2, l.tiles[0].r0);  // 3 rows each, gaps at rows 5 and 9
+  TEST_ASSERT_EQUAL(4, l.tiles[0].r1);
+  TEST_ASSERT_EQUAL(6, l.tiles[2].r0);
+  TEST_ASSERT_EQUAL(12, l.tiles[5].r1);
+  TEST_ASSERT_EQUAL(12, l.lastRow);
+  TEST_ASSERT_EQUAL(3, l.pads.size());
+  TEST_ASSERT_EQUAL(13, l.pads[0].second);  // (208 - 162 - 20) / 2
+  TEST_ASSERT_EQUAL(5, l.pads[1].first);
+  TEST_ASSERT_EQUAL(10, l.pads[1].second);  // a gap as wide as a cell
 }
 
-void test_home_tiles_percent() {
-  // 90% of 40 cols is 36, centred; 90% of rows 1..13 (13 rows) is 12 (rounded).
-  std::vector<TileRect> t = homeTiles(40, 15, 6, 90);
-  TEST_ASSERT_EQUAL(6, t.size());
-  TEST_ASSERT_EQUAL(2, t[0].c0);
-  TEST_ASSERT_EQUAL(37, t[1].c1);
-  TEST_ASSERT_EQUAL(1, t[0].r0);
-  TEST_ASSERT_EQUAL(12, t[5].r1);
-  // 100% fills the area, as before.
-  std::vector<TileRect> full = homeTiles(40, 15, 6, 100);
-  TEST_ASSERT_EQUAL(0, full[0].c0);
-  TEST_ASSERT_EQUAL(39, full[1].c1);
-  TEST_ASSERT_EQUAL(13, full[5].r1);
-  // The minimum size applies after the shrink: 21 cols fits at 100%
-  // (10 per tile) but not at 90% (19 cols, 9 per tile).
-  TEST_ASSERT_EQUAL(6, homeTiles(21, 15, 6, 100).size());
-  TEST_ASSERT_EQUAL(0, homeTiles(21, 15, 6, 90).size());
-}
-
-void test_home_tiles_height_percent() {
-  // Width at 90%, height at 100%: rows 1..13 filled.
-  std::vector<TileRect> t = homeTiles(40, 15, 6, 90, 100);
-  TEST_ASSERT_EQUAL(2, t[0].c0);
-  TEST_ASSERT_EQUAL(1, t[0].r0);
-  TEST_ASSERT_EQUAL(13, t[5].r1);
+void test_home_layout_too_small() {
+  TEST_ASSERT_EQUAL(0, homeLayout(160, 100, 8, CellSize{10, 18}, 6, 90).tiles.size());
 }
 
 void test_tile_span_centre() {
@@ -970,10 +981,9 @@ int main() {
   RUN_TEST(test_overlay_registers_taps);
   RUN_TEST(test_banner_tap_target);
   RUN_TEST(test_no_registration_without_active_map);
-  RUN_TEST(test_home_tiles_fit);
-  RUN_TEST(test_home_tiles_too_small);
-  RUN_TEST(test_home_tiles_percent);
-  RUN_TEST(test_home_tiles_height_percent);
+  RUN_TEST(test_home_layout_fits);
+  RUN_TEST(test_home_layout_landscape);
+  RUN_TEST(test_home_layout_too_small);
   RUN_TEST(test_tile_span_centre);
   RUN_TEST(test_tile_move);
   return UNITY_END();

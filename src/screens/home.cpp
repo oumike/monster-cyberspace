@@ -138,17 +138,18 @@ void HomeScreen::renderTiles(Grid& g, const Theme& t, const std::vector<TileRect
     const TileRect& r = tiles[i];
     const TileInfo& it = info[i];
     const bool sel = i == tileSel_;
-    const uint16_t bg = sel ? t.selectBg : t.bg;
+    // The cursor is the outline alone: the selected tile's in the accent.
+    const uint16_t bg = t.bg;
     for (int row = r.r0; row <= r.r1; ++row)
       for (int c = r.c0; c <= r.c1; ++c) g.put(c, row, U' ', bg, bg);
 
     const int mid = (r.r0 + r.r1) / 2;
     const int inW = r.c1 - r.c0 - 1;  // inside the outline
-    const uint16_t labelFg = sel ? t.selectFg : (it.unread ? t.selectBg : t.fg);
+    const uint16_t labelFg = it.unread ? t.selectBg : t.fg;
     int lw = std::min<int>(int(it.label.size()), inW);
     g.putText(r.c0 + 1 + std::max(0, (inW - lw) / 2), mid, it.label, labelFg, bg, lw);
     if (!it.sub.empty() && mid + 1 <= r.r1 - 1) {
-      const uint16_t subFg = sel ? t.selectFg : t.dim;
+      const uint16_t subFg = t.dim;
       int sw = std::min<int>(int(it.sub.size()), inW);
       g.putText(r.c0 + 1 + std::max(0, (inW - sw) / 2), mid + 1, it.sub, subFg, bg, sw);
     }
@@ -169,45 +170,37 @@ void HomeScreen::render(Grid& g, const Theme& t, int64_t) {
   g.fill(t.bg);
   const AppState& a = app();
 
-  // Touch boards: the tiles take kTilePercent of the space between the status
-  // bar and the hint, on RowKind::Big rows (the next font up, +2 px) or, if
-  // those can't fit them, the grid's own rows. They're centred to the pixel:
-  // row 1 is a blank pad row above them, and their rows are shifted right.
-  std::vector<TileRect> tiles;
+  // Touch boards: the tiles (ui/home_tiles.h), on RowKind::Big rows (the next
+  // font up, +2 px) or, if those can't fit them, the grid's own rows.
+  HomeLayout lay;
   bool big = false;
-  TileSpan down{0, 0}, across{0, 0};
-  if (board::hasTouch() && g.rows() > 3) {
+  if (board::hasTouch()) {
     const TextSize ts = a.cfg.textSize;
     const int areaPx = (g.rows() - 2) * cellSize(ts).h;
     for (bool tryBig : {true, false}) {
-      const CellSize cell = tryBig ? bigCellSize(ts) : cellSize(ts);
-      down = tileSpan(areaPx, cell.h, kTilePercent);
-      across = tileSpan(board::panelWidth(), cell.w, kTilePercent);
-      down.cells = std::min(down.cells, g.rows() - 3);
-      // Tiles on rows 1..down.cells, then moved down past the pad row.
-      tiles = homeTiles(across.cells, down.cells + 2, kTileCount, 100);
-      if (!tiles.empty()) {
+      lay = homeLayout(board::panelWidth(), areaPx, g.rows(), tryBig ? bigCellSize(ts) : cellSize(ts),
+                       kTileCount, kTilePercent);
+      if (!lay.tiles.empty()) {
         big = tryBig;
         break;
       }
     }
-    for (TileRect& r : tiles) ++r.r0, ++r.r1;
   }
   const int cellW = big ? bigCellSize(a.cfg.textSize).w : 0;
-  tileMode_ = !tiles.empty();
+  tileMode_ = !lay.tiles.empty();
   if (tileMode_) {
-    g.setRowPad(1, down.padPx);
     for (int r = 2; r <= g.rows() - 2; ++r) {
-      if (r > down.cells + 1) {
+      if (r > lay.lastRow) {
         g.setRowKind(r, RowKind::Skip);
         continue;
       }
       if (big) g.setRowKind(r, RowKind::Big);
-      g.setRowShift(r, across.padPx);
+      g.setRowShift(r, lay.shiftPx);
     }
+    for (const auto& p : lay.pads) g.setRowPad(p.first, p.second);
     // @user stays in the status bar; the list-mode fields are dropped.
     drawStatus(g, t, a.user.empty() ? std::u32string(U"home") : utf8ToU32("@" + a.user), -1);
-    renderTiles(g, t, tiles, cellW);
+    renderTiles(g, t, lay.tiles, cellW);
     return;
   }
 

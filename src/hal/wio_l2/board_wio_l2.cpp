@@ -145,7 +145,7 @@ void begin() {
   wio::ioBegin();
   lp5814Begin();
   if (!nv3031b::begin()) Serial.println("[wio] panel init failed");
-  gt911::begin();
+  gt911::begin({&Wire, wio::TOUCH_ADDR, wio::i2cLock, wio::i2cUnlock});
   pinMode(wio::BOOT_BUTTON, INPUT_PULLUP);
   batteryVolts();
   es8311::begin();
@@ -203,6 +203,9 @@ void beep(int freqHz, int ms) { es8311::beep(freqHz, ms); }
 const char* wakeHint() { return "hold Wake to wake"; }
 
 bool hasTouch() { return gt911::present(); }
+bool hasKeyboard() { return false; }
+bool backspaceIsBack() { return false; }
+bool anyInputWakes() { return false; }
 bool readTouch(int16_t& x, int16_t& y) {
   int16_t rx = 0, ry = 0;
   const bool down = gt911::read(rx, ry);

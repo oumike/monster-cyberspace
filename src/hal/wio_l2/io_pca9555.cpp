@@ -54,13 +54,17 @@ void input(uint8_t bit) { cfg[bit >> 3] |= (uint8_t)(1u << (bit & 7)); }
 
 }  // namespace
 
-I2cGuard::I2cGuard() {
+void i2cLock() {
   if (busLock) xSemaphoreTakeRecursive(busLock, portMAX_DELAY);
 }
 
-I2cGuard::~I2cGuard() {
+void i2cUnlock() {
   if (busLock) xSemaphoreGiveRecursive(busLock);
 }
+
+I2cGuard::I2cGuard() { i2cLock(); }
+
+I2cGuard::~I2cGuard() { i2cUnlock(); }
 
 bool ioBegin() {
   ready = false;

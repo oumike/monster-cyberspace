@@ -125,13 +125,13 @@ Task 7 writes both amendments into the spec.
   The Wio passes `{&Wire, <today's address>, …}`, with lock and unlock wrapping its `I2cGuard`. `read` keeps returning raw native coordinates; the touch plan's Task 11 moved the transform into `board::readTouch`.
 - The touch plan's on-screen keyboard is shown only when `board::hasTouch() && !board::hasKeyboard()`. Add `!board::hasKeyboard()` to the Focus → show condition in `ui_task`.
 
-- [ ] **Step 1: Implement** the changes above. There is no host test, because this is wiring. Behaviour is pinned by the M9 and Wio values staying exactly as they are today.
-- [ ] **Step 2: Run** `pio test -e native` and `scripts/build-upload-monitor.sh -B`. Expected: green, and all four envs build.
-- [ ] **Step 3: Check that M9 and Wio behaviour is unchanged.**
+- [x] **Step 1: Implement** the changes above. There is no host test, because this is wiring. Behaviour is pinned by the M9 and Wio values staying exactly as they are today.
+- [x] **Step 2: Run** `pio test -e native` and `scripts/build-upload-monitor.sh -B`. Expected: green, and all four envs build.
+- [x] **Step 3: Check that M9 and Wio behaviour is unchanged.**
   - `git diff` shows the same MADCTL (`0xA0`), invert, reset pulse and SPI rate on the M9.
   - The Wio shows the same GT911 address and lock.
   - Both boards return the flag values in Global Constraints.
-- [ ] **Step 4: Commit** `refactor(hal): st7789 and gt911 take a config; keyboard, Backspace and wake flags`.
+- [x] **Step 4: Commit** `refactor(hal): st7789 and gt911 take a config; keyboard, Backspace and wake flags`.
 
 ### Task 2: The T-Deck key map, Backspace-as-Back and the any-input wake (lib/core)
 

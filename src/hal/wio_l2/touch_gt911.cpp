@@ -5,9 +5,6 @@
 #include <Arduino.h>
 #include <Wire.h>
 
-#include "hal/wio_l2/io_pca9555.h"
-#include "hal/wio_l2/pins_wio_l2.h"
-
 // Register reads follow LovyanGFX's Touch_GT911. It's read over Wire here, not
 // by LovyanGFX, so only one driver owns the I2C peripheral.
 
@@ -17,36 +14,51 @@ namespace {
 constexpr uint16_t kRegStatus = 0x814E, kRegPoint1 = 0x814F;
 constexpr uint32_t kPollMs = 15;
 
+Config cfg{};
 uint8_t addr = 0;
 bool down = false;
 int16_t lastX = 0, lastY = 0;
 uint32_t lastPollMs = 0;
 
 bool readRegs(uint16_t reg, uint8_t* buf, uint8_t n) {
-  Wire.beginTransmission(addr);
-  Wire.write((uint8_t)(reg >> 8));
-  Wire.write((uint8_t)reg);
-  if (Wire.endTransmission(false) != 0) return false;
-  if (Wire.requestFrom(addr, n) != n) return false;
-  for (uint8_t i = 0; i < n; ++i) buf[i] = Wire.read();
+  cfg.bus->beginTransmission(addr);
+  cfg.bus->write((uint8_t)(reg >> 8));
+  cfg.bus->write((uint8_t)reg);
+  if (cfg.bus->endTransmission(false) != 0) return false;
+  if (cfg.bus->requestFrom(addr, n) != n) return false;
+  for (uint8_t i = 0; i < n; ++i) buf[i] = cfg.bus->read();
   return true;
 }
 
+struct Lock {
+  Lock() {
+    if (cfg.lock) cfg.lock();
+  }
+  ~Lock() {
+    if (cfg.unlock) cfg.unlock();
+  }
+  Lock(const Lock&) = delete;
+  Lock& operator=(const Lock&) = delete;
+};
+
 bool writeReg(uint16_t reg, uint8_t v) {
-  Wire.beginTransmission(addr);
-  Wire.write((uint8_t)(reg >> 8));
-  Wire.write((uint8_t)reg);
-  Wire.write(v);
-  return Wire.endTransmission() == 0;
+  cfg.bus->beginTransmission(addr);
+  cfg.bus->write((uint8_t)(reg >> 8));
+  cfg.bus->write((uint8_t)reg);
+  cfg.bus->write(v);
+  return cfg.bus->endTransmission() == 0;
 }
 
 }  // namespace
 
-bool begin() {
-  wio::I2cGuard g;
-  for (uint8_t a : {wio::TOUCH_ADDR, wio::TOUCH_ADDR_ALT}) {
-    Wire.beginTransmission(a);
-    if (Wire.endTransmission() == 0) {
+bool begin(const Config& c) {
+  cfg = c;
+  addr = 0;
+  Lock g;
+  const uint8_t other = cfg.addr == 0x5D ? 0x14 : 0x5D;
+  for (uint8_t a : {cfg.addr, other}) {
+    cfg.bus->beginTransmission(a);
+    if (cfg.bus->endTransmission() == 0) {
       addr = a;
       break;
     }
@@ -69,7 +81,7 @@ bool read(int16_t& x, int16_t& y) {
   uint32_t now = millis();
   if (now - lastPollMs >= kPollMs) {
     lastPollMs = now;
-    wio::I2cGuard g;
+    Lock g;
     uint8_t status = 0;
     // Bit 7: a new report is ready. Until it's cleared the GT911 keeps the old
     // one, so a status with bit 7 clear means "no change".

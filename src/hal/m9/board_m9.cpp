@@ -26,7 +26,9 @@ void begin() {
     digitalWrite(cs, HIGH);
   }
   SPI.begin(m9::SPI_SCK, m9::SPI_MISO, m9::SPI_MOSI);
-  st7789::begin();
+  // MADCTL 0xA0: landscape, keyboard below the screen. Inverted, as this panel needs.
+  st7789::begin({m9::SPI_SCK, m9::SPI_MOSI, m9::SPI_MISO, m9::TFT_CS, m9::TFT_DC, m9::TFT_RST,
+                 m9::TFT_SPI_HZ, 0xA0, true});
   // Channel 7, not 0: tone() allocates from 0 upward, and losing the drive on
   // this active-LOW pin would light the backlight.
   ledcAttachChannel(m9::TFT_BL, m9::TFT_BL_FREQ, 8, m9::TFT_BL_PWM_CH);
@@ -83,6 +85,9 @@ void beep(int freqHz, int ms) { tone(m9::BUZZER, freqHz, ms); }
 const char* wakeHint() { return "hold \xE2\x97\x8F to wake"; }
 
 bool hasTouch() { return false; }
+bool hasKeyboard() { return true; }
+bool backspaceIsBack() { return false; }
+bool anyInputWakes() { return false; }
 bool readTouch(int16_t&, int16_t&) { return false; }
 bool canRotate() { return false; }
 void setRotation(uint8_t) {}

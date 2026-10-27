@@ -10,6 +10,10 @@ bool ioBegin();
 bool ioSet(uint8_t bit, bool high);
 bool ioWakePressed();
 
+// The bus lock as plain calls, for drivers that take lock/unlock functions.
+void i2cLock();
+void i2cUnlock();
+
 // Held across multi-transfer I2C sequences (the UI and audio tasks share the
 // bus). Recursive, so helpers can nest.
 class I2cGuard {

@@ -39,6 +39,12 @@ bool readTouch(int16_t& x, int16_t& y);
 // panelWidth/panelHeight follow (rotation r as in ui/rotation.h). A no-op on
 // boards that can't rotate.
 bool canRotate();
+// A physical keyboard (the on-screen one is shown only without it).
+bool hasKeyboard();
+// Backspace means Back when nothing on screen consumes it.
+bool backspaceIsBack();
+// Any key, roll or touch wakes a dark screen, not only the board's wake key.
+bool anyInputWakes();
 void setRotation(uint8_t r);
 // GPS receiver. On: power, a 10 ms reset pulse, then the UART up. Off: the
 // UART down, then power off.

@@ -232,7 +232,7 @@ void taskMain(void*) {
         if (out.hideBanner) topBanner.hide();
         for (const KeyEvent& k : out.keys) {
           handleKey(k);
-          if (k.action == Action::Focus && power == Power::On &&
+          if (k.action == Action::Focus && power == Power::On && !board::hasKeyboard() &&
               router::screen().acceptsText())
             showOsk(true);
         }

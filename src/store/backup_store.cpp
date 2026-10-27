@@ -18,8 +18,8 @@ namespace backupstore {
 
 namespace {
 
-constexpr const char* kRoot = "/platy-cyberspace";
-constexpr const char* kDir = "/platy-cyberspace/backups";
+constexpr const char* kRoot = "/monster-cyberspace";
+constexpr const char* kDir = "/monster-cyberspace/backups";
 
 SemaphoreHandle_t gMutex = nullptr;
 

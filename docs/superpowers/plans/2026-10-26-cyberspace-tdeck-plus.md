@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Run Platy Cyberspace on the LilyGO T-Deck Plus, with its keyboard, trackball, touch panel, GPS, battery, speaker and SD card working, and the M9 and Wio L2 unchanged.
+**Goal:** Run Monster Cyberspace on the LilyGO T-Deck Plus, with its keyboard, trackball, touch panel, GPS, battery, speaker and SD card working, and the M9 and Wio L2 unchanged.
 
 **Architecture:**
 - A new HAL in `src/hal/tdeck/` implements `src/hal/board.h`.
@@ -64,7 +64,7 @@ Task 7 writes both amendments into the spec.
 
 **Names**
 - `board::name()` returns `"TDeck"`.
-- The setup AP is `Platy-Cyberspace-TDeck-Setup`.
+- The setup AP is `Monster-Cyberspace-TDeck-Setup`.
 - `wakeHint()` returns `"press any key to wake"`.
 
 ## Review Focus

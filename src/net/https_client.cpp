@@ -77,7 +77,7 @@ HttpResult HttpsClient::request(const char* method, const std::string& path,
   esp_http_client_set_url(h, url.c_str());
   esp_http_client_set_method(h, methodOf(method));
   esp_http_client_set_user_data(h, &sink);
-  esp_http_client_set_header(h, "User-Agent", "platy-cyberspace/" RC_VERSION);
+  esp_http_client_set_header(h, "User-Agent", "monster-cyberspace/" RC_VERSION);
   esp_http_client_set_header(h, "Accept", "application/json");
   if (jsonBody.empty()) {
     esp_http_client_delete_header(h, "Content-Type");

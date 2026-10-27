@@ -5,7 +5,7 @@
 
 namespace rc {
 
-// "Platy-Cyberspace-<board>-Setup".
+// "Monster-Cyberspace-<board>-Setup".
 std::string setupApSsid(std::string_view boardName);
 
 // Empty means an open AP. Otherwise WPA2 rules: 8-63 printable ASCII.

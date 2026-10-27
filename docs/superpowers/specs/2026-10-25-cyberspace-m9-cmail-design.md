@@ -1,4 +1,4 @@
-# Platy Cyberspace — milestone 2: C-Mail on the ThinkNode M9
+# Monster Cyberspace — milestone 2: C-Mail on the ThinkNode M9
 
 Date: 2026-10-25 · Status: approved direction ("cmail"), builds on milestone 1
 

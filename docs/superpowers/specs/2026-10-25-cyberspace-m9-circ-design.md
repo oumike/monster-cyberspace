@@ -1,4 +1,4 @@
-# Platy Cyberspace — milestone 1: cIRC + web config on the ThinkNode M9
+# Monster Cyberspace — milestone 1: cIRC + web config on the ThinkNode M9
 
 Date: 2026-10-25 · Status: design approved in brainstorming, awaiting spec review
 
@@ -105,7 +105,7 @@ Events flow net → UI (`RoomChanged`, `RoomListUpdated`, `PresenceUpdated`,
 | `cs/ratelimit` | Client-side mirror of the documented per-minute, hourly and daily write limits | — |
 | `net/https` | One kept-alive TLS connection to `api.cyberspace.online`; JSON in/out; error mapping | IDF |
 | `net/sse` | RTDB Server-Sent Events: line parser, `put`/`patch`/`keep-alive`/`cancel`/`auth_revoked`, reconnect with backoff | IDF |
-| `net/wifi` | STA with saved networks, setup AP (open, or WPA2 if a password is configured), mDNS `platy-cyberspace.local`, SNTP | IDF |
+| `net/wifi` | STA with saved networks, setup AP (open, or WPA2 if a password is configured), mDNS `monster-cyberspace.local`, SNTP | IDF |
 | `web/` | Config pages and JSON endpoints | `esp_http_server`, settings, `cs/auth` |
 
 Each module has a header that states its contract. Files stay small and focused.
@@ -202,12 +202,12 @@ factory reset each ask for confirmation (default "Cancel"); factory reset does
 the same as the web config one.
 
 **Setup screen** (no Wi-Fi saved: first boot, or after a factory reset; there is no boot-time gesture. The setup AP also comes up from Settings, or by itself after the saved networks fail for 5 minutes, dropping once Wi-Fi is back with nobody joined): the AP name,
-which includes the board (`Platy-Cyberspace-<BOARD>-Setup`, so
-`Platy-Cyberspace-M9-Setup` on this board, from the board's `BOARD_NAME`),
+which includes the board (`Monster-Cyberspace-<BOARD>-Setup`, so
+`Monster-Cyberspace-M9-Setup` on this board, from the board's `BOARD_NAME`),
 and `http://192.168.4.1`. The AP is **open by default**. If a setup-AP
 password has been set in web config, the AP uses WPA2 with it, and the screen
 says a password is required without displaying it. Once on Wi-Fi it
-also shows `http://platy-cyberspace.local` and the IP. A fallback "Log in on
+also shows `http://monster-cyberspace.local` and the IP. A fallback "Log in on
 device" form takes email and password on the M9 keyboard.
 
 ## 7. Data flow
@@ -266,7 +266,7 @@ re-checked every 10 s.
 ## 8. Web config
 
 Served by `esp_http_server` on the network task: at `http://192.168.4.1` in
-setup mode, and at `http://platy-cyberspace.local` or the device IP on the LAN.
+setup mode, and at `http://monster-cyberspace.local` or the device IP on the LAN.
 It is plain HTML, CSS and JS, inline, with no external requests.
 
 - **Wi-Fi:** scan, add, remove saved networks.

@@ -1,4 +1,4 @@
-# Platy Cyberspace — agent instructions
+# Monster Cyberspace — agent instructions
 
 Standalone ESP32 firmware client for [cyberspace.online](https://cyberspace.online),
 a retro text-only social network. Milestone 1 is cIRC chat plus a device-served
@@ -33,8 +33,9 @@ boards and Cyberspace features come later.
   runs the live checklist in `docs/TESTING.md`.
 - Every write the firmware makes must come from a user's key press. No
   automation, and no automatic retries of sends.
-- **No captive portal.** The setup AP (`Platy-Cyberspace-<BOARD>-Setup`) is
-  open unless a password is configured in web config. The page is served at
+- **No captive portal.** The setup AP (`Monster-Cyberspace-<BOARD>-Setup`,
+  without `-Setup` when that passes 32 characters) is open unless a password
+  is configured in web config. The page is served at
   `http://192.168.4.1`, with no DNS hijacking and nothing that pops up.
 - Never log or store passwords, except that backup files
   (`docs/superpowers/specs/2026-10-26-cyberspace-backup-design.md`) deliberately
@@ -68,7 +69,7 @@ keys from `board::pollKey`). M9 hardware references live in the sibling
 projects `../../camillia/camillia-mt/src/hal/hw_m9.h` and `../../rhino-moshi/firmware/`.
 `src/hal/wio_l2/` is the Seeed Wio Tracker L2, ported from
 `../../camillia/camillia-mt` (`src/hal/hw_wio_tracker_l2.h`, `wio_tracker_l2_io.cpp`)
-and `../platy-aprs/src/hal/` (`pins_wio_l2.h`, `wio_l2_io.cpp`, `audio.cpp`).
+and `../../platy/platy-aprs/src/hal/` (`pins_wio_l2.h`, `wio_l2_io.cpp`, `audio.cpp`).
 `src/hal/tdeck/` is the LilyGO T-Deck Plus (from camillia-mt's `hw_tdeck.h`). It
 reuses the M9's `st7789` and the Wio's `gt911` drivers through config structs,
 and sets the `hasKeyboard`, `backspaceIsBack` and `anyInputWakes` flags; its
@@ -86,7 +87,7 @@ docks the keyboard. Boards without touch register nothing.
 
 ## Progress (hand-off from Claude Code, 2026-10-25)
 
-Work is on **`main`** at https://github.com/oumike/platy-cyberspace. All 22 tasks of the M1 plan, all 6 of the
+Work is on **`main`** at https://github.com/oumike/monster-cyberspace. All 22 tasks of the M1 plan, all 6 of the
 M2 (C-Mail) plan and all 12 of the M3 (Feed) plan are done and committed, with
 their boxes ticked. The room-screen, C-Mail, web config and Feed (`m9_fake`)
 hardware checks passed on the device (2026-10-26).

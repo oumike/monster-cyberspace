@@ -81,7 +81,11 @@ void test_wakes_screen() {
 }
 
 void test_ap_ssid() {
-  TEST_ASSERT_EQUAL_STRING("Platy-Cyberspace-M9-Setup", setupApSsid("M9").c_str());
+  TEST_ASSERT_EQUAL_STRING("Monster-Cyberspace-M9-Setup", setupApSsid("M9").c_str());
+  TEST_ASSERT_EQUAL_STRING("Monster-Cyberspace-WioL2-Setup", setupApSsid("WioL2").c_str());
+  // Over the 32-byte SSID limit with "-Setup": dropped, then truncated.
+  TEST_ASSERT_EQUAL_STRING("Monster-Cyberspace-CrowPanel35", setupApSsid("CrowPanel35").c_str());
+  TEST_ASSERT_EQUAL_STRING("Monster-Cyberspace-ABCDEFGHIJKLM", setupApSsid("ABCDEFGHIJKLMNOP").c_str());
 }
 
 void test_ap_password() {

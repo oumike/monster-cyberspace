@@ -1,4 +1,4 @@
-# Platy Cyberspace GPS Time, RTC and Automatic Time Zone Implementation Plan
+# Monster Cyberspace GPS Time, RTC and Automatic Time Zone Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 

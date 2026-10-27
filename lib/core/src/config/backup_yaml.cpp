@@ -14,9 +14,10 @@
 namespace rc {
 
 namespace {
-constexpr const char* kFormat = "platy-cyberspace-backup";
-// Written before the project was renamed; still read.
-constexpr const char* kOldFormat = "rhino-cyberspace-backup";
+constexpr const char* kFormat = "monster-cyberspace-backup";
+// Written under the project's earlier names; still read.
+constexpr const char* kOldFormat = "platy-cyberspace-backup";
+constexpr const char* kOlderFormat = "rhino-cyberspace-backup";
 constexpr int kVersion = 1;
 constexpr int64_t kMinClock = 1700000000;
 
@@ -323,7 +324,7 @@ bool plainInt(const Str& s, int& out) {
 
 std::string backupToYaml(const Settings& s, const BackupMeta& m) {
   std::string o =
-      "# Platy Cyberspace settings backup.\n"
+      "# Monster Cyberspace settings backup.\n"
       "# Contains Wi-Fi and device passwords and a Cyberspace sign-in token.\n"
       "# Anyone with this file can use your account: keep it private.\n";
   o += std::string("format: ") + kFormat + "\n";
@@ -369,8 +370,8 @@ bool backupFromYaml(std::string_view yaml, Settings& inOut, std::string& err, st
   if (!parse(yaml, st, err)) return false;
 
   int version = 0;
-  if (!st.format.has || (st.format.v != kFormat && st.format.v != kOldFormat) || !positiveInt(st.version, version)) {
-    err = "Not a Platy Cyberspace backup";
+  if (!st.format.has || (st.format.v != kFormat && st.format.v != kOldFormat && st.format.v != kOlderFormat) || !positiveInt(st.version, version)) {
+    err = "Not a Monster Cyberspace backup";
     return false;
   }
   if (version > kVersion) {

@@ -1,4 +1,4 @@
-# Platy Cyberspace M2 (C-Mail) Implementation Plan
+# Monster Cyberspace M2 (C-Mail) Implementation Plan
 
 > Work the tasks in order, tick the boxes, and commit once per task. Follow
 > test-driven development wherever a step has host tests. M1's Global

@@ -4,10 +4,16 @@
 
 namespace rc {
 
+namespace {
+constexpr size_t kMaxSsid = 32;
+}  // namespace
+
 std::string setupApSsid(std::string_view boardName) {
-  std::string s = "Platy-Cyberspace-";
+  std::string s = "Monster-Cyberspace-";
   s.append(boardName);
-  s += "-Setup";
+  // An SSID is at most 32 bytes: long board names drop "-Setup".
+  if (s.size() + 6 <= kMaxSsid) s += "-Setup";
+  if (s.size() > kMaxSsid) s.resize(kMaxSsid);
   return s;
 }
 

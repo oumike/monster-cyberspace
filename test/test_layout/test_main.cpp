@@ -650,7 +650,7 @@ static void checkSplashFits(int cols, int rows) {
   TEST_ASSERT_TRUE(std::abs(top - (rows - 1 - bottom)) <= 1);
   const SplashLine* title = findRole(v, SplashRole::Title);
   TEST_ASSERT_NOT_NULL(title);
-  TEST_ASSERT_EQUAL_STRING("Platy for Cyberspace", title->text.c_str());
+  TEST_ASSERT_EQUAL_STRING("Monster for Cyberspace", title->text.c_str());
   int w = static_cast<int>(utf8Length(title->text));
   TEST_ASSERT_TRUE(std::abs(title->col - (cols - w - title->col)) <= 1);
   TEST_ASSERT_NOT_NULL(findRole(v, SplashRole::Detail));

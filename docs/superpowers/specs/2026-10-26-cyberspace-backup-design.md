@@ -1,11 +1,11 @@
-# Platy Cyberspace — settings backup and restore
+# Monster Cyberspace — settings backup and restore
 
 Status: approved design (2026-10-26). Built after Feed (M3) Tasks 10–12.
 
 ## 1. Goal
 
 Save every device setting to a YAML file, and restore it later on this or
-another Platy Cyberspace device. A backup can be kept on the board's SD card
+another Monster Cyberspace device. A backup can be kept on the board's SD card
 or downloaded through web config. A restored device rejoins Wi-Fi and is
 still signed in to Cyberspace, with no setup needed.
 
@@ -50,10 +50,10 @@ setup-AP passwords and the refresh token. They are still never logged.
 A backup is UTF-8 YAML, and the device writes it in this form:
 
 ```yaml
-# Platy Cyberspace settings backup.
+# Monster Cyberspace settings backup.
 # Contains Wi-Fi and device passwords and a Cyberspace sign-in token.
 # Anyone with this file can use your account: keep it private.
-format: platy-cyberspace-backup
+format: monster-cyberspace-backup
 version: 1
 board: "M9"
 firmware: "0.3.0"
@@ -104,8 +104,8 @@ Anything else is an error that names the line, for example `line 12: expected
 
 ### Restore rules
 
-- **Format and version:** `format` must be `platy-cyberspace-backup` and
-  `version` must be 1. Otherwise the error reads "Not a Platy Cyberspace
+- **Format and version:** `format` must be `monster-cyberspace-backup` and
+  `version` must be 1. Otherwise the error reads "Not a Monster Cyberspace
   backup" or "Backup version N is newer than this firmware".
 - **Missing keys** keep the device's current value. A backup that has
   `wifi:` replaces the whole saved list.
@@ -135,7 +135,7 @@ Anything else is an error that names the line, for example `line 12: expected
 | Backup codec | `lib/core/src/config/backup_yaml.{h,cpp}` | `std::string backupToYaml(const Settings&, const BackupMeta&)`; `bool backupFromYaml(std::string_view, Settings& inOut, std::string& err, std::string& note)`, which merges per §3; the YAML scalar quoting and unquoting helpers. Arduino-free and host-tested. |
 | Backup names | the same file | `backupFileName(epochSec, existingNames)` gives `rc-backup-YYYYMMDD-HHMMSS.yaml`, or `rc-backup-N.yaml` without a clock, with no clash. `validBackupName(name)` accepts only `[A-Za-z0-9._-]`, ending in `.yaml`, with no leading dot, at most 64 bytes. |
 | SD access | `src/hal/board.h` and each board's HAL | `bool board::hasSdSlot()`. `fs::FS* board::sdMount()` mounts the card and returns its file system, or `nullptr` with no slot or no card; `board::sdUnmount()` releases it. Nothing stays mounted between operations. M9: `SD` on the shared SPI bus, CS 48, 20 MHz. Wio L2: `SD_MMC` 1-bit on CLK 2 / CMD 3 / D0 1, with the card's power switched on through expander bit 14 before mounting and off after unmounting. T-Deck Plus: `SD` on the shared SPI bus, CS 39. |
-| Backup store | `src/store/backup_store.{h,cpp}` | Under one mutex: `saveToSd`, `listSd` (newest first), `readSd`, `deleteSd`, and `applyAndRestart(yaml)`. Files live in `/platy-cyberspace/backups/`. `applyAndRestart` parses into a copy of the settings, saves it with the existing savers plus a new `settings::saveAll`, then calls `restartSoon()`. |
+| Backup store | `src/store/backup_store.{h,cpp}` | Under one mutex: `saveToSd`, `listSd` (newest first), `readSd`, `deleteSd`, and `applyAndRestart(yaml)`. Files live in `/monster-cyberspace/backups/`. `applyAndRestart` parses into a copy of the settings, saves it with the existing savers plus a new `settings::saveAll`, then calls `restartSoon()`. |
 | Settings screen | `src/screens/settings.cpp` | Adds two items, Back up to SD card and Restore from SD card…. The restore item opens a list overlay, then the confirm "Restore <name> and restart?" (Cancel / Restore). Results show in the banner, for example "Saved rc-backup-….yaml", "No SD card" or "Restore failed: …". |
 | Setup screen | `src/screens/setup.cpp` | Lists the SD backups once on `enter`. If any exist, it adds **Restore from SD card**, which uses the same list and confirm. |
 | Web | `src/web/web_server.cpp`, `page.h` | A **Backup** section with the routes below. The page notes that the file contains passwords and a sign-in token, and travels over plain HTTP unless you use the setup AP with a password. |

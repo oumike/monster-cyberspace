@@ -14,7 +14,7 @@ struct SplashLine {
   SplashRole role;
 };
 
-// The boot splash: a text-art platypus over the name, `detail` (version and
+// The boot splash: a text-art monster over the name, `detail` (version and
 // board) and a "> booting" prompt, centred in a cols x rows grid. The art is
 // left out when it doesn't fit; text is clipped to the width.
 std::vector<SplashLine> splashLayout(int cols, int rows, std::string_view detail);

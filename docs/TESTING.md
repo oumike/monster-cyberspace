@@ -77,7 +77,7 @@ on 2026-10-27; the sections marked `m9_fake` passed on it before then.
 
 - [x] With no Wi-Fi saved: the setup AP appears, `http://192.168.4.1` loads, and nothing pops up
 - [x] Scan lists networks; saving one restarts the device onto it
-- [x] `http://platy-cyberspace.local` and the IP both load the page
+- [x] `http://monster-cyberspace.local` and the IP both load the page
 - [x] Status shows the version, IP, signal, battery and chat state
 - [x] Removing a saved network works; with five saved, adding a sixth is refused
 - [x] Display: text size and buzzer change on the device at once; the time zone changes the clock
@@ -117,7 +117,7 @@ Buttons: BOOT tap = Back, BOOT hold (0.6 s) = Home; Wake tap = screen off
 - [ ] `‹` tap goes back and hold goes Home; `⋯` opens the screen menu; a swipe right from the left edge goes back; a tap on a banner dismisses it; tapping outside a menu closes it
 - [ ] Touch never wakes a dark screen, and a finger left down across a screen change fires nothing on the new screen
 - [ ] Orientation from Settings and from web config (Display) applies at once and survives a reboot; in portrait no screen has text cut or overlapping (Settings and Setup lines wrap)
-- [ ] Wi-Fi setup (`wio_l2`, nothing saved): the AP is named `Platy-Cyberspace-WioL2-Setup` and `http://192.168.4.1` loads
+- [ ] Wi-Fi setup (`wio_l2`, nothing saved): the AP is named `Monster-Cyberspace-WioL2-Setup` and `http://192.168.4.1` loads
 
 **T-Deck Plus (`tdeck`):**
 
@@ -137,7 +137,7 @@ Buttons: BOOT tap = Back, BOOT hold (0.6 s) = Home; Wake tap = screen off
 - [ ] GPS: outdoors with Wi-Fi off, `[gps] fix, …` and `[time] set from GPS` within 15 min, then `[gps] off`; no log line shows coordinates
 - [ ] SD (FAT32 card): Settings → Back up to SD card, then Restore from SD card…, both work
 - [ ] Pulling the card mid-backup gives "SD write failed", and the panel keeps drawing
-- [ ] Wi-Fi setup (`tdeck`, nothing saved): the AP is named `Platy-Cyberspace-TDeck-Setup` and `http://192.168.4.1` loads
+- [ ] Wi-Fi setup (`tdeck`, nothing saved): the AP is named `Monster-Cyberspace-TDeck-Setup` and `http://192.168.4.1` loads
 - [ ] Regression after the shared-driver change: the M9 panel, the Wio touch and both boards' battery % still work as before
 
 **CrowPanel Advance 3.5" (`crowpanel35`) and 5.0" (`crowpanel50`):**
@@ -152,7 +152,7 @@ Buttons: BOOT tap = Back, BOOT hold (0.6 s) = Home; Wake tap = screen off
 - [ ] 5.0": scrolling a long room log redraws without tearing or stale rows
 - [ ] 3.5" SD (FAT32 card): Back up to SD card, then Restore from SD card…, both work
 - [ ] 3.5" GPS (module on UART1, optional): `[time] set from GPS` outdoors with Wi-Fi off
-- [ ] Wi-Fi setup (nothing saved): the AP is named `Platy-Cyberspace-CrowPanel35-Setup` / `…-CrowPanel50-Setup` and `http://192.168.4.1` loads
+- [ ] Wi-Fi setup (nothing saved): the AP is named `Monster-Cyberspace-CrowPanel35` / `…-CrowPanel50` and `http://192.168.4.1` loads
 
 **GPS time, RTC and time zone (`m9`):**
 
@@ -178,7 +178,7 @@ Buttons: BOOT tap = Back, BOOT hold (0.6 s) = Home; Wake tap = screen off
 
 **Settings backup (`m9`, then `wio_l2`; FAT32 card):**
 
-- [ ] Settings → Back up to SD card shows `Saved rc-backup-….yaml`, and the file is in `/platy-cyberspace/backups/`
+- [ ] Settings → Back up to SD card shows `Saved rc-backup-….yaml`, and the file is in `/monster-cyberspace/backups/`
 - [ ] The file opens on a computer and holds every setting (Wi-Fi, time zone, NTP server, passwords, preferences, account)
 - [ ] Settings → Restore from SD card… lists backups newest first, Cancel is preselected, and Restore restarts with the same settings
 - [ ] After a factory reset, with the card holding backups, Setup offers Restore from SD card and the device comes back signed in

@@ -224,7 +224,7 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
   };
   field("account", a.user.empty() ? "not signed in" : "@" + a.user, t.fg);
   field("wi-fi", wifiUp() ? wifiSsid() + "  " + wifiIp() : "not connected", t.fg);
-  field("config", "http://platy-cyberspace.local", t.fg);
+  field("config", "http://monster-cyberspace.local", t.fg);
   int bat = board::batteryPercent();
   field("battery", bat < 0 ? "unknown" : std::to_string(bat) + "%", t.fg);
   bool ap = setupApUp();

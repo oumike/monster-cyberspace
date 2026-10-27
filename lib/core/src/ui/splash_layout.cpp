@@ -10,12 +10,12 @@ namespace {
 
 // Lines share a left edge, so pad nothing on the right.
 const char* const kArt[] = {
-    R"(            .--''''''--.)",
-    R"( _______  .'    o       '.   ______)",
-    R"((_______'-'               '-'      '.)",
-    R"( '-------.                .-.______.')",
-    R"(          '--.._ .-. _..-')",
-    R"(             /_/   \_\)",
+    R"( /\       /\)",
+    R"(/  '-----'  \)",
+    R"(|  (o) (o)  |)",
+    R"(|   .VVV.   |)",
+    R"( \  '^^^'  /)",
+    R"(  '-.___.-')",
 };
 constexpr int kArtRows = sizeof(kArt) / sizeof(kArt[0]);
 
@@ -48,7 +48,7 @@ std::vector<SplashLine> splashLayout(int cols, int rows, std::string_view detail
     std::string t = clip(s, cols);
     out.push_back({(cols - width(t)) / 2, row++, t, role});
   };
-  centred("Platy for Cyberspace", SplashRole::Title);
+  centred("Monster for Cyberspace", SplashRole::Title);
   centred(detail, SplashRole::Detail);
   ++row;
   centred("> booting", SplashRole::Prompt);

@@ -78,7 +78,7 @@ void SseClient::run() {
   int status = 0;
   if (h) {
     esp_http_client_set_header(h, "Accept", "text/event-stream");
-    esp_http_client_set_header(h, "User-Agent", "platy-cyberspace/" RC_VERSION);
+    esp_http_client_set_header(h, "User-Agent", "monster-cyberspace/" RC_VERSION);
     for (int hop = 0; hop <= kMaxRedirects && !stopping_; ++hop) {
       esp_http_client_set_timeout_ms(h, kConnectTimeoutMs);
       if (esp_http_client_open(h, 0) != ESP_OK) {

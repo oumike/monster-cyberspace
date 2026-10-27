@@ -1,4 +1,4 @@
-# Platy Cyberspace — milestone 3: Feed on the ThinkNode M9
+# Monster Cyberspace — milestone 3: Feed on the ThinkNode M9
 
 Date: 2026-10-26 · Status: approved design ("feed"), builds on milestones 1 and 2
 

@@ -1,4 +1,4 @@
-# Rhino Cyberspace M1 (cIRC + web config on ThinkNode M9) Implementation Plan
+# Platy Cyberspace M1 (cIRC + web config on ThinkNode M9) Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. Non-Claude agents (Copilot etc.): work the tasks in order, tick the boxes, and commit after each task.
 
@@ -18,7 +18,7 @@
 - Client-side write limits: cIRC message 15/min, 150/hour, 1000/day. Presence heartbeat or leave 15/min per room. Delete message 5/min, 30/day. Flag 5/min, 20/hour, 50/day. Mark room read 60/min.
 - Message content max 2,048 characters (cIRC). Flag reason max 500. `/art` canvas 80×25.
 - Never log `idToken`, `refreshToken`, `rtdbToken` or passwords. Never store the password.
-- Setup AP SSID `Rhino-Cyberspace-<BOARD_NAME>-Setup` (`Rhino-Cyberspace-M9-Setup`). **Open unless** a setup-AP password (8–63 chars) is configured. **No captive portal, no DNS hijack.** Page at `http://192.168.4.1`, and on the LAN at `http://rhino-cyberspace.local`.
+- Setup AP SSID `Platy-Cyberspace-<BOARD_NAME>-Setup` (`Platy-Cyberspace-M9-Setup`). **Open unless** a setup-AP password (8–63 chars) is configured. **No captive portal, no DNS hijack.** Page at `http://192.168.4.1`, and on the LAN at `http://platy-cyberspace.local`.
 - M9 console is the external UART bridge: `-DARDUINO_USB_CDC_ON_BOOT=0`, 115200 baud.
 - Keyboard I2C pins 20/21 are the S3's USB pads. Release the USB-Serial-JTAG pad claim before `Wire.begin(20, 21)`. Never drive GPIO46. Never touch GPIO35–37 (octal PSRAM).
 - Panel: ST7789, native 240×320, landscape rotation MADCTL `0xA0`, inverted (`0x21`), SPI SCLK 40 / MOSI 47 / MISO 38, CS 16, DC 15, RST 14, SPI 40 MHz. Backlight GPIO17 **active LOW**, LEDC channel 7. VEXT GPIO18 **active LOW** (powers panel and keyboard). SD CS 48 and LoRa CS 39 must be driven HIGH before using SPI.
@@ -103,7 +103,7 @@ docs/{BUILD.md,USE.md,TESTING.md}  .github/workflows/build.yml  AGENTS.md
 - [x] **Step 2: Write `lib/core/library.json`** as `{"name":"core","version":"0.1.0","build":{"flags":"-std=gnu++17"}}`, plus `core_version.h`.
 - [x] **Step 3: Write the smoke test** `test/test_smoke/test_main.cpp`, asserting `TEST_ASSERT_EQUAL_STRING("0.1.0", RC_VERSION)` with a Unity `main()`.
 - [x] **Step 4: Run** `pio test -e native`. Expected: `test_smoke … PASSED`.
-- [x] **Step 5: Write `src/main.cpp`**: `setup()` calls `heap_caps_malloc_extmem_enable(64)`, `Serial.begin(115200)`, and prints `[boot] rhino-cyberspace <RC_VERSION> board=M9`. `loop()` does `delay(1000)`.
+- [x] **Step 5: Write `src/main.cpp`**: `setup()` calls `heap_caps_malloc_extmem_enable(64)`, `Serial.begin(115200)`, and prints `[boot] platy-cyberspace <RC_VERSION> board=M9`. `loop()` does `delay(1000)`.
 - [x] **Step 6: Run** `pio run -e m9 && pio run -e m9_fake`. Expected: both `SUCCESS`.
 - [x] **Step 7:** Copy `../rhino-moshi/scripts/build-upload-monitor.sh` (or write an equivalent: `pio run -e "${1:-m9}" -t upload && pio device monitor -b 115200`). Write `docs/BUILD.md` covering prerequisites (PlatformIO Core ≥ 6.1), the three envs, the upload command, and the serial monitor.
 - [x] **Step 8: Amend the spec.**
@@ -340,14 +340,14 @@ docs/{BUILD.md,USE.md,TESTING.md}  .github/workflows/build.yml  AGENTS.md
 
 - `bool wakesScreen(const KeyEvent& e);` True only for `ScreenOff` (centre hold).
 - `bool peeksScreen(const KeyEvent& e);` True only for `Select` (centre tap): shows the screensaver while dark (spec §5).
-- `std::string setupApSsid(std::string_view boardName);` Returns `"Rhino-Cyberspace-" + boardName + "-Setup"`.
+- `std::string setupApSsid(std::string_view boardName);` Returns `"Platy-Cyberspace-" + boardName + "-Setup"`.
 - `bool validApPassword(std::string_view pw);` Empty → true (open AP). Otherwise 8–63 printable ASCII.
 - `bool checkBasicAuth(std::string_view authorizationHeader, std::string_view password);` Empty password → true. Otherwise requires `Basic base64("admin:" + password)`.
 
 - [x] **Step 1: Write failing tests:**
   - Every row of the table, for both `early = true` and `false` where it matters.
   - `wakesScreen` is true only for ScreenOff (centre hold).
-  - `setupApSsid("M9") == "Rhino-Cyberspace-M9-Setup"`.
+  - `setupApSsid("M9") == "Platy-Cyberspace-M9-Setup"`.
   - Passwords: `""` true, `"short"` false, 8 chars true, 64 chars false.
   - `checkBasicAuth("Basic YWRtaW46cGFzcw==", "pass")` true, the wrong password false, `""` password → true.
 - [x] **Step 2: Run** `pio test -e native -f test_keymap_web`. Expected: FAIL.
@@ -521,7 +521,7 @@ docs/{BUILD.md,USE.md,TESTING.md}  .github/workflows/build.yml  AGENTS.md
   - Setup mode runs when there are no saved networks (first boot, or after a factory reset). There is no boot-time gesture.
   - The SoftAP is `setupApSsid(board::name())`, open unless `apPassword` is non-empty (then WPA2), at 192.168.4.1. **No DNS server.**
   - In station mode it tries saved networks in order.
-  - It starts mDNS `rhino-cyberspace` with `_http._tcp` port 80.
+  - It starts mDNS `platy-cyberspace` with `_http._tcp` port 80.
   - It runs `configTzTime(tz, "pool.ntp.org", "time.google.com")`.
   - Reconnect backoff is 1, 2, 4 … 60 s.
 
@@ -529,7 +529,7 @@ docs/{BUILD.md,USE.md,TESTING.md}  .github/workflows/build.yml  AGENTS.md
 - [x] **Step 2: Wire into `main.cpp`** temporarily: load settings, then `wifimgr::begin`. Print the mode, the AP SSID (and whether a password is set, never the password itself), and the IP.
 - [x] **Step 3: Run** `pio run -e m9`. Expected: SUCCESS.
 - [x] **Step 4: Hardware check (human):**
-  - first boot shows an open `Rhino-Cyberspace-M9-Setup` that a phone can join, with nothing popping up automatically;
+  - first boot shows an open `Platy-Cyberspace-M9-Setup` that a phone can join, with nothing popping up automatically;
   - (user decision) no boot gesture forces setup; a factory reset (Tasks 19 and 21) does.
 - [x] **Step 5: Commit** `feat: NVS settings and Wi-Fi manager (open setup AP, no captive portal)`.
 
@@ -541,7 +541,7 @@ docs/{BUILD.md,USE.md,TESTING.md}  .github/workflows/build.yml  AGENTS.md
 - `struct HttpResult { int status = 0; std::string body; bool transportError = false; };`
 - `class HttpsClient { public: HttpResult request(const char* method, const std::string& path, const std::string& jsonBody, const std::string& bearer); void close(); };`
   - Base `https://api.cyberspace.online`, using `esp_http_client` with `crt_bundle_attach = esp_crt_bundle_attach`, keep-alive, a 15 s timeout, and a 256 KB body cap.
-  - It sends `Content-Type: application/json` and `User-Agent: rhino-cyberspace/<RC_VERSION>`.
+  - It sends `Content-Type: application/json` and `User-Agent: platy-cyberspace/<RC_VERSION>`.
 - `class CsApi { public: explicit CsApi(HttpsClient&); … };` The token methods are:
 
   | Method | Behaviour |
@@ -683,14 +683,14 @@ docs/{BUILD.md,USE.md,TESTING.md}  .github/workflows/build.yml  AGENTS.md
   - Centre tap while dark → the **Screensaver** for 10 s, drawn from the stored messages of the current room (no command, no network), then dark again. Replaces the Task 14 placeholder.
 - Screens:
   - **Splash:** name, version, "connecting…".
-  - **Setup:** the AP SSID, "open network" or "password required", `http://192.168.4.1`, and once on Wi-Fi `http://rhino-cyberspace.local` plus the IP. Entry "Log in on this device" → LoginForm.
+  - **Setup:** the AP SSID, "open network" or "password required", `http://192.168.4.1`, and once on Wi-Fi `http://platy-cyberspace.local` plus the IP. Entry "Log in on this device" → LoginForm.
   - **LoginForm:** email field, then password field (masked `•`). Select submits a `Login` command and shows the result.
   - **Home:** user, Wi-Fi SSID and IP, the settings URL, unread mentions count, rooms with new activity, battery, and a last entry **Factory reset…**: a confirm menu ("Cancel" default, "Erase everything") that calls `settings::factoryReset()` and restarts.
   - **RoomList:** `ListView` of rooms sorted by `sortOrder` then `lastMessageAt`, with a `•` marker when `lastMessageAt > readAt[slug]` and the online count on the right. Select/Right opens the room; Left/Back goes Home.
   - **ComingSoon:** the feature name and "coming in a later version".
 - Boot flow:
   - no Wi-Fi saved → Setup;
-  - else signed out → Setup with a "Sign in at rhino-cyberspace.local or on this device" line;
+  - else signed out → Setup with a "Sign in at platy-cyberspace.local or on this device" line;
   - else → Home.
 
 - [x] **Step 1: Implement** the router, ui_task and the screens above.
@@ -748,7 +748,7 @@ docs/{BUILD.md,USE.md,TESTING.md}  .github/workflows/build.yml  AGENTS.md
 **Files:** Create `src/web/web_server.{h,cpp}`, `src/web/page.h`
 
 **Interfaces:**
-- `namespace web { void begin(); void stop(); }` uses `esp_http_server` on port 80, started in both Wi-Fi modes. Every handler checks `checkBasicAuth(header, settings.pagePassword)` and returns 401 with `WWW-Authenticate: Basic realm="rhino-cyberspace"` on failure.
+- `namespace web { void begin(); void stop(); }` uses `esp_http_server` on port 80, started in both Wi-Fi modes. Every handler checks `checkBasicAuth(header, settings.pagePassword)` and returns 401 with `WWW-Authenticate: Basic realm="platy-cyberspace"` on failure.
 - Routes (JSON bodies):
 
   | Route | Behaviour |
@@ -771,7 +771,7 @@ docs/{BUILD.md,USE.md,TESTING.md}  .github/workflows/build.yml  AGENTS.md
 
 - [x] **Step 1: Implement.**
 - [x] **Step 2: Run** `pio run -e m9`. Expected: SUCCESS.
-- [ ] **Step 3: Hardware check (human):** join the open setup AP, browse to `http://192.168.4.1` (no popup appears), add Wi-Fi, and confirm the device restarts onto it. Then check `http://rhino-cyberspace.local` loads, setting a page password triggers Basic auth, and setting and clearing an AP password works (WPA2 when set, open when cleared).
+- [ ] **Step 3: Hardware check (human):** join the open setup AP, browse to `http://192.168.4.1` (no popup appears), add Wi-Fi, and confirm the device restarts onto it. Then check `http://platy-cyberspace.local` loads, setting a page password triggers Basic auth, and setting and clearing an AP password works (WPA2 when set, open when cleared).
 - [x] **Step 4: Commit** `feat: device web config (Wi-Fi, login, prefs, security)`.
 
 > **As built:** the settings writes are scoped (`saveUiPrefs`, `saveWifi`, `saveTz`, `saveSecurity`), so the web server never overwrites UI-owned keys. Text size and buzzer changes reach the UI task as an `EvtType::PrefsChanged` event. Web sign-in waits up to 20 s for the net worker's result through a login ticket. Step 3 is still open: it was built without flashing.

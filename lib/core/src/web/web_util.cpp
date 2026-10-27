@@ -5,7 +5,7 @@
 namespace rc {
 
 std::string setupApSsid(std::string_view boardName) {
-  std::string s = "Rhino-Cyberspace-";
+  std::string s = "Platy-Cyberspace-";
   s.append(boardName);
   s += "-Setup";
   return s;

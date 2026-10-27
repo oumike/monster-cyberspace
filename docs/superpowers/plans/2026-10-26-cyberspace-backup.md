@@ -1,4 +1,4 @@
-# Rhino Cyberspace settings backup and restore Implementation Plan
+# Platy Cyberspace settings backup and restore Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -24,11 +24,11 @@
 - Every backup and restore comes from a key press or a web action. Nothing is automatic or scheduled, and nothing is retried.
 - Backup files deliberately contain the Wi-Fi, page and setup-AP passwords and the refresh token. They are **never logged**: no `Serial` output of YAML, field values or parse input. Buffers that held a backup are wiped (zero-filled) after use, like `wipe()` in `web_server.cpp`.
 - The Cyberspace password is never stored, so it is never in a backup.
-- Format: `format: rhino-cyberspace-backup`, `version: 1`. Files over 16 KB (`16384` bytes) are refused from their size.
+- Format: `format: platy-cyberspace-backup`, `version: 1`. Files over 16 KB (`16384` bytes) are refused from their size.
 - At most `rc::kMaxWifiNets` (5) networks. SSID 1–32 bytes; Wi-Fi password empty or 8–63 characters; setup-AP password passes `rc::validApPassword`; page password at most 63 printable characters; text size `compact` or `comfortable`; theme `default`, `bw` or `wb`.
-- Files live in `/rhino-cyberspace/backups/`. Names are `rc-backup-YYYYMMDD-HHMMSS.yaml`, or `rc-backup-N.yaml` without a clock. A valid name is only `[A-Za-z0-9._-]`, ends in `.yaml`, has no leading dot, and is at most 64 bytes.
+- Files live in `/platy-cyberspace/backups/`. Names are `rc-backup-YYYYMMDD-HHMMSS.yaml`, or `rc-backup-N.yaml` without a clock. A valid name is only `[A-Za-z0-9._-]`, ends in `.yaml`, has no leading dot, and is at most 64 bytes.
 - SD on every hardware board, and the card is removable: nothing stays mounted between operations. Each backup-store operation calls `board::sdMount()`, works, then `board::sdUnmount()`. M9: `SD`, shared SPI, CS 48, 20 MHz. Wio L2: `SD_MMC` 1-bit, CLK 2 / CMD 3 / D0 1, power on expander bit 14 (on before mounting, off after unmounting). T-Deck Plus gets its SD code in the T-Deck plan.
-- User-facing copy (exact): `Back up to SD card`, `Restore from SD card…`, `Restore <name> and restart?` with `Cancel` / `Restore`, `Saved <name>`, `No SD card`, `SD write failed`, `SD read failed`, `Restore failed: <error>`, `Restored. Restarting…`, `Not a Rhino Cyberspace backup`, `Backup version N is newer than this firmware`.
+- User-facing copy (exact): `Back up to SD card`, `Restore from SD card…`, `Restore <name> and restart?` with `Cancel` / `Restore`, `Saved <name>`, `No SD card`, `SD write failed`, `SD read failed`, `Restore failed: <error>`, `Restored. Restarting…`, `Not a Platy Cyberspace backup`, `Backup version N is newer than this firmware`.
 - A successful restore restarts the device after about 1 s (`1000` ms).
 - Never hold `lockedChat` or `lockedFeed` while calling the backup store.
 - Each task follows TDD where it has host tests and ends with a commit whose message ends with a blank line and `Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>`.
@@ -154,7 +154,7 @@
 - A key repeated at the same level is `duplicate key "<key>"`.
 - `version` is a plain integer. Booleans are plain `true`/`false`, else `expected true or false`.
 - Over `kMaxBackupBytes` → `Backup is over 16 KB` (no line).
-- After parsing: `format` ≠ `rhino-cyberspace-backup`, or `version` missing or not a positive integer → `Not a Rhino Cyberspace backup`. A version above 1 → `Backup version N is newer than this firmware`. These are checked before field validation and carry no line.
+- After parsing: `format` ≠ `platy-cyberspace-backup`, or `version` missing or not a positive integer → `Not a Platy Cyberspace backup`. A version above 1 → `Backup version N is newer than this firmware`. These are checked before field validation and carry no line.
 
 **Validation** names the field's line:
 - `line N: network name: 1-32 bytes`;
@@ -179,7 +179,7 @@ Networks after the fifth are dropped before validation and set `note`.
     // y = backupToYaml(full(), {"M9","0.1.0",1793039400}); Settings d{}; ok;
     // every field of d equals full(); err == "" and note == ""
     // y contains "created: \"2026-10-26T18:30:00Z\"" and "theme: wb  # default | bw | wb"
-    // y starts with "# Rhino Cyberspace settings backup.\n"
+    // y starts with "# Platy Cyberspace settings backup.\n"
   }
   void test_writer_no_clock_no_wifi() {   // epochSec 0, wifi empty
     // contains "created: \"\"\n" and "wifi: []\n"; and it parses back with wifi empty
@@ -204,7 +204,7 @@ Networks after the fifth are dropped before validation and set `note`.
     // "gps:\n  enabled: true\n  fix:\n    - a\n" then "buzzer: false" → ok, buzzer false
   }
   void test_wrong_format_and_version() {
-    // format: other → "Not a Rhino Cyberspace backup"; no format → same
+    // format: other → "Not a Platy Cyberspace backup"; no format → same
     // version: 2 → "Backup version 2 is newer than this firmware"; version: x → "Not a…"
   }
   void test_bad_indent() {
@@ -352,7 +352,7 @@ Networks after the fifth are dropped before validation and set `note`.
   - Every function takes the mutex for its whole body, mounts with `board::sdMount()`, and calls `board::sdUnmount()` before returning on every path (an RAII guard).
   - `sdMount()` null gives `"No SD card"`.
   - Each name passes `validBackupName`, else `"Bad file name"`.
-  - The directory is `/rhino-cyberspace/backups`; create both levels on save.
+  - The directory is `/platy-cyberspace/backups`; create both levels on save.
   - A short write or failed open gives `"SD write failed"`, and the partial file is removed. A failed read gives `"SD read failed"`. Over the size gives `"Restore failed: Backup is over 16 KB"`.
   - Local YAML strings are wiped before return.
   - `restartSoon` is called only after the settings are saved.

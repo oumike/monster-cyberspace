@@ -4,7 +4,7 @@ Status: approved in conversation 2026-10-26; awaiting written-spec review.
 
 ## 1. Goal
 
-Run Rhino Cyberspace on the LilyGO T-Deck Plus. Its keyboard, trackball,
+Run Platy Cyberspace on the LilyGO T-Deck Plus. Its keyboard, trackball,
 touch panel, GPS and battery should all work. Shared behaviour stays shared,
 and the M9 and Wio L2 keep working exactly as they do today.
 
@@ -63,7 +63,7 @@ These files implement `src/hal/board.h`:
 - `pins_tdeck.h`: the pin table above.
 - `board_tdeck.cpp`:
   - `begin()` order: `POWERON`, the SPI chip selects, the panel, the I2C bus, the keyboard probe, the trackball, the touch panel.
-  - `name()` returns `"TDeck"`, so the setup AP is `Rhino-Cyberspace-TDeck-Setup`.
+  - `name()` returns `"TDeck"`, so the setup AP is `Platy-Cyberspace-TDeck-Setup`.
   - `hasTouch()` is true and `canRotate()` is false.
 - **Panel:** the M9's `st7789` driver takes a config struct: SPI host and pins, CS, DC, RST (−1 for none), MADCTL and invert. The M9 passes its current values, so its behaviour doesn't change.
 - **Touch:** the Wio's `gt911` driver takes the `TwoWire&` bus, the address and a transform. The Wio passes its current values.

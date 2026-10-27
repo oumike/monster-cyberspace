@@ -89,7 +89,7 @@ Settings full() {
   return s;
 }
 
-const char* kHead = "format: rhino-cyberspace-backup\nversion: 1\n";
+const char* kHead = "format: platy-cyberspace-backup\nversion: 1\n";
 
 bool run(const std::string& y, Settings& s, std::string& err, std::string& note) {
   return backupFromYaml(y, s, err, note);
@@ -136,7 +136,7 @@ void test_round_trip_every_field() {
   TEST_ASSERT_EQUAL_STRING("", note.c_str());
   TEST_ASSERT_NOT_NULL(strstr(y.c_str(), "created: \"2026-10-26T18:30:00Z\""));
   TEST_ASSERT_NOT_NULL(strstr(y.c_str(), "theme: wb  # default | bw | wb\nrotation: 3  # 0 landscape, 1 portrait, 2 landscape 180, 3 portrait 180\n"));
-  TEST_ASSERT_EQUAL(0, y.rfind("# Rhino Cyberspace settings backup.\n", 0));
+  TEST_ASSERT_EQUAL(0, y.rfind("# Platy Cyberspace settings backup.\n", 0));
 }
 
 void test_writer_no_clock_no_wifi() {
@@ -158,7 +158,7 @@ void test_hand_edits() {
       "  email: me@x.org   # mine\n"
       "  refreshToken: 'tok''en'\n"
       "\n"
-      "format: rhino-cyberspace-backup\r\n"
+      "format: platy-cyberspace-backup\r\n"
       "version: 1\n"
       "wifi:\n"
       "  - ssid: Home\n"
@@ -195,7 +195,7 @@ void test_nul_rejected() {
 }
 
 void test_bom_crlf_no_final_newline() {
-  std::string y = "\xEF\xBB\xBF" "format: rhino-cyberspace-backup\r\nversion: 1\r\nbuzzer: false";
+  std::string y = "\xEF\xBB\xBF" "format: platy-cyberspace-backup\r\nversion: 1\r\nbuzzer: false";
   Settings s;
   std::string err, note;
   TEST_ASSERT_TRUE_MESSAGE(run(y, s, err, note), err.c_str());
@@ -260,17 +260,20 @@ void test_wrong_format_and_version() {
   Settings s = full();
   std::string err, note;
   TEST_ASSERT_FALSE(run("format: other\nversion: 1\n", s, err, note));
-  TEST_ASSERT_EQUAL_STRING("Not a Rhino Cyberspace backup", err.c_str());
+  TEST_ASSERT_EQUAL_STRING("Not a Platy Cyberspace backup", err.c_str());
   TEST_ASSERT_FALSE(run("version: 1\n", s, err, note));
-  TEST_ASSERT_EQUAL_STRING("Not a Rhino Cyberspace backup", err.c_str());
-  TEST_ASSERT_FALSE(run("format: rhino-cyberspace-backup\nversion: 2\n", s, err, note));
+  TEST_ASSERT_EQUAL_STRING("Not a Platy Cyberspace backup", err.c_str());
+  TEST_ASSERT_FALSE(run("format: platy-cyberspace-backup\nversion: 2\n", s, err, note));
   TEST_ASSERT_EQUAL_STRING("Backup version 2 is newer than this firmware", err.c_str());
-  TEST_ASSERT_FALSE(run("format: rhino-cyberspace-backup\nversion: x\n", s, err, note));
-  TEST_ASSERT_EQUAL_STRING("Not a Rhino Cyberspace backup", err.c_str());
-  TEST_ASSERT_FALSE(run("format: rhino-cyberspace-backup\nversion: 0\n", s, err, note));
-  TEST_ASSERT_EQUAL_STRING("Not a Rhino Cyberspace backup", err.c_str());
-  TEST_ASSERT_FALSE(run("format: rhino-cyberspace-backup\n", s, err, note));
-  TEST_ASSERT_EQUAL_STRING("Not a Rhino Cyberspace backup", err.c_str());
+  TEST_ASSERT_FALSE(run("format: platy-cyberspace-backup\nversion: x\n", s, err, note));
+  TEST_ASSERT_EQUAL_STRING("Not a Platy Cyberspace backup", err.c_str());
+  TEST_ASSERT_FALSE(run("format: platy-cyberspace-backup\nversion: 0\n", s, err, note));
+  TEST_ASSERT_EQUAL_STRING("Not a Platy Cyberspace backup", err.c_str());
+  TEST_ASSERT_FALSE(run("format: platy-cyberspace-backup\n", s, err, note));
+  TEST_ASSERT_EQUAL_STRING("Not a Platy Cyberspace backup", err.c_str());
+  // Backups from before the rename (Rhino Cyberspace) still restore.
+  TEST_ASSERT_TRUE_MESSAGE(run("format: rhino-cyberspace-backup\nversion: 1\n", s, err, note),
+                           err.c_str());
 }
 
 void test_bad_indent() {

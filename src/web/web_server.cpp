@@ -70,7 +70,7 @@ bool authorized(httpd_req_t* req) {
   wipe(s.apPassword);
   if (ok) return true;
   httpd_resp_set_status(req, "401 Unauthorized");
-  httpd_resp_set_hdr(req, "WWW-Authenticate", "Basic realm=\"rhino-cyberspace\"");
+  httpd_resp_set_hdr(req, "WWW-Authenticate", "Basic realm=\"platy-cyberspace\"");
   httpd_resp_set_type(req, "text/plain");
   httpd_resp_sendstr(req, "Password required");
   return false;

@@ -1,6 +1,6 @@
 {
   "name": "core",
   "version": "0.1.0",
-  "description": "Portable, Arduino-free logic for rhino-cyberspace",
+  "description": "Portable, Arduino-free logic for platy-cyberspace",
   "build": { "flags": "-std=gnu++17" }
 }

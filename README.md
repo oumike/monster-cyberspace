@@ -1,4 +1,4 @@
-# Rhino Cyberspace
+# Platy Cyberspace
 
 Standalone ESP32 firmware client for [cyberspace.online](https://cyberspace.online),
 a retro text-only social network. It runs on the Elecrow ThinkNode M9, with

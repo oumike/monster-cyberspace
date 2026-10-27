@@ -15,7 +15,7 @@ namespace wifimgr {
 
 namespace {
 
-constexpr const char* kHost = "rhino-cyberspace";
+constexpr const char* kHost = "platy-cyberspace";
 constexpr uint32_t kAttemptMs = 12000;  // per network before trying the next
 constexpr uint32_t kMaxBackoffMs = 60000;
 

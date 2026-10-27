@@ -81,7 +81,7 @@ void test_wakes_screen() {
 }
 
 void test_ap_ssid() {
-  TEST_ASSERT_EQUAL_STRING("Rhino-Cyberspace-M9-Setup", setupApSsid("M9").c_str());
+  TEST_ASSERT_EQUAL_STRING("Platy-Cyberspace-M9-Setup", setupApSsid("M9").c_str());
 }
 
 void test_ap_password() {

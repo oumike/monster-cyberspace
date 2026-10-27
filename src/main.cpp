@@ -16,7 +16,7 @@ void setup() {
   // Large allocations (the message store, buffers) go to PSRAM.
   heap_caps_malloc_extmem_enable(64);
   Serial.begin(115200);
-  Serial.printf("[boot] rhino-cyberspace %s on %s\n", RC_VERSION, board::name());
+  Serial.printf("[boot] platy-cyberspace %s on %s\n", RC_VERSION, board::name());
   board::begin();
   backupstore::begin();
   settings::load(app().cfg);

@@ -1,4 +1,4 @@
-# Using Rhino Cyberspace
+# Using Platy Cyberspace
 
 On the Elecrow ThinkNode M9 (keyboard and d-pad), the Seeed Wio Tracker L2
 (touch screen; see Touch below) and the LilyGO T-Deck Plus (keyboard,
@@ -9,7 +9,7 @@ M9's.
 ## First setup
 
 1. Power on. With no Wi-Fi saved, the device starts its setup access point,
-   **`Rhino-Cyberspace-M9-Setup`** (`…-WioL2-Setup` on the Wio Tracker L2,
+   **`Platy-Cyberspace-M9-Setup`** (`…-WioL2-Setup` on the Wio Tracker L2,
    `…-TDeck-Setup` on the T-Deck Plus, `…-CrowPanel35-Setup` and
    `…-CrowPanel50-Setup` on the CrowPanels), and the screen shows its name and the
    address to browse.
@@ -20,7 +20,7 @@ M9's.
    captive portal, so type the address in.
 4. Under **Wi-Fi**, scan or type your network name, enter its password,
    check the **Time zone** (it starts on your browser's zone) and save. The device restarts and joins that network.
-5. On your LAN, open **`http://rhino-cyberspace.local`** (or the IP shown on the
+5. On your LAN, open **`http://platy-cyberspace.local`** (or the IP shown on the
    Home screen). Under **Cyberspace account**, sign in with your email and
    password. The device signs in, keeps only a refresh token, and discards the
    password.
@@ -116,7 +116,7 @@ on the real one.
 that wakes it does nothing else, so it never types, selects or taps.
 
 The screen stays landscape (there is no Orientation item). The setup AP is
-**`Rhino-Cyberspace-TDeck-Setup`**.
+**`Platy-Cyberspace-TDeck-Setup`**.
 
 ## CrowPanel
 
@@ -133,8 +133,8 @@ Touch above, but with no buttons:
 - **5.0":** no SD slot (its pins belong to the wireless-module slot) and no GPS.
 
 Neither has a battery gauge or an RTC; the clock is unset until NTP or GPS.
-The setup AP is **`Rhino-Cyberspace-CrowPanel35-Setup`** or
-**`Rhino-Cyberspace-CrowPanel50-Setup`**.
+The setup AP is **`Platy-Cyberspace-CrowPanel35-Setup`** or
+**`Platy-Cyberspace-CrowPanel50-Setup`**.
 
 ## In a room
 
@@ -280,7 +280,7 @@ them as Feed unread. An entry held for review shows a banner only.
 
 ## Web config
 
-At `http://rhino-cyberspace.local`, or the device IP, on your LAN:
+At `http://platy-cyberspace.local`, or the device IP, on your LAN:
 
 - Status
 - Wi-Fi: scan, add, and remove saved networks (up to 5)
@@ -384,9 +384,11 @@ use your Cyberspace account, so keep it private.
 
 - **On the device** (boards with an SD card slot): **Home** → **Settings** →
   **Back up to SD card** writes `rc-backup-YYYYMMDD-HHMMSS.yaml` (or
-  `rc-backup-N.yaml` before the clock is set) to `/rhino-cyberspace/backups/`
+  `rc-backup-N.yaml` before the clock is set) to `/platy-cyberspace/backups/`
   on the card. **Restore from SD card…** lists the backups newest first;
-  pick one and confirm **Restore**.
+  pick one and confirm **Restore**. Backups made before the rename to Platy
+  Cyberspace sit in `/rhino-cyberspace/backups/`; move them across to restore
+  them.
 - **During setup**, when the card holds backups, the Setup screen offers
   **Restore from SD card** below **Log in on this device**.
 - **In web config**, the **Backup** section has **Download backup**,

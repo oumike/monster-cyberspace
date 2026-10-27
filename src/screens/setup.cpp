@@ -66,12 +66,12 @@ void SetupScreen::render(Grid& g, const Theme& t, int64_t) {
   }
   if (wifiUp()) {
     line(1, "On " + wifiSsid() + ", browse to:", t.fg);
-    line(3, "http://rhino-cyberspace.local", t.selectBg);
+    line(3, "http://platy-cyberspace.local", t.selectBg);
     line(3, "http://" + wifiIp(), t.selectBg);
     ++r;
   }
   if (!app().cfg.wifi.empty() && app().auth != 1 && app().auth != 2) {
-    line(1, "Sign in at rhino-cyberspace.local", t.fg);
+    line(1, "Sign in at platy-cyberspace.local", t.fg);
     line(1, "or on this device.", t.fg);
   }
   int bottom = g.rows() - 1;

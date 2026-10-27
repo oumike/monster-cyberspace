@@ -1,4 +1,4 @@
-# Rhino Cyberspace — agent instructions
+# Platy Cyberspace — agent instructions
 
 Standalone ESP32 firmware client for [cyberspace.online](https://cyberspace.online),
 a retro text-only social network. Milestone 1 is cIRC chat plus a device-served
@@ -33,7 +33,7 @@ boards and Cyberspace features come later.
   runs the live checklist in `docs/TESTING.md`.
 - Every write the firmware makes must come from a user's key press. No
   automation, and no automatic retries of sends.
-- **No captive portal.** The setup AP (`Rhino-Cyberspace-<BOARD>-Setup`) is
+- **No captive portal.** The setup AP (`Platy-Cyberspace-<BOARD>-Setup`) is
   open unless a password is configured in web config. The page is served at
   `http://192.168.4.1`, with no DNS hijacking and nothing that pops up.
 - Never log or store passwords, except that backup files

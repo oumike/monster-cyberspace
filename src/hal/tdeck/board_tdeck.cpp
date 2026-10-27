@@ -1,17 +1,20 @@
 #if defined(BOARD_TDECK)
 
 #include <Arduino.h>
+#include <HWCDC.h>
 #include <SPI.h>
 #include <Wire.h>
 
 #include "hal/board.h"
 #include "hal/m9/panel_st7789.h"
+#include "hal/tdeck/audio_tdeck.h"
 #include "hal/tdeck/keyboard_tdeck.h"
 #include "hal/tdeck/pins_tdeck.h"
 #include "hal/tdeck/trackball_tdeck.h"
 #include "hal/wio_l2/touch_gt911.h"
 #include "input/keymap_tdeck.h"
 #include "input/touch_transform.h"
+#include "power/battery.h"
 
 namespace board {
 
@@ -32,6 +35,9 @@ void begin() {
   trackball::begin();
   // Only the UI task uses Wire on this board, so no lock.
   gt911::begin({&Wire, tdeck::TOUCH_ADDR, nullptr, nullptr});
+  analogReadResolution(12);
+  analogSetPinAttenuation(tdeck::BATT_ADC, ADC_11db);
+  tdeck_audio::begin();
 }
 
 const char* name() { return "TDeck"; }
@@ -63,9 +69,19 @@ bool pollKey(rc::KeyEvent& key) {
   return trackball::poll(key);
 }
 
-int batteryPercent() { return -1; }
-bool externalPower() { return false; }
-void beep(int, int) {}
+static float batteryVolts() {
+  uint32_t mv = 0;
+  for (int i = 0; i < 8; ++i) mv += analogReadMilliVolts(tdeck::BATT_ADC);
+  return mv / 8.0f * tdeck::BATT_DIV * tdeck::BATT_CAL / 1000.0f;
+}
+
+int batteryPercent() { return rc::batteryPercentFromVolts(batteryVolts()); }
+
+// No charger status on this board. A USB host seen on the S3's own USB port
+// means USB power; otherwise a cell held above its resting maximum is charging.
+bool externalPower() { return HWCDC::isPlugged() || batteryVolts() > 4.25f; }
+
+void beep(int freqHz, int ms) { tdeck_audio::beep(freqHz, ms); }
 
 const char* wakeHint() { return "press any key to wake"; }
 
@@ -83,16 +99,6 @@ bool readTouch(int16_t& x, int16_t& y) {
 
 bool canRotate() { return false; }
 void setRotation(uint8_t) {}
-
-bool hasGps() { return false; }
-void gpsPower(bool) {}
-size_t gpsRead(uint8_t*, size_t) { return 0; }
-bool rtcRead(int64_t&) { return false; }
-bool rtcWrite(int64_t) { return false; }
-
-bool hasSdSlot() { return false; }
-fs::FS* sdMount() { return nullptr; }
-void sdUnmount() {}
 
 }  // namespace board
 

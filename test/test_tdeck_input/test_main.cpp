@@ -8,6 +8,7 @@
 #include "input/click_timer.h"
 #include "input/key_event.h"
 #include "input/keymap_tdeck.h"
+#include "power/battery.h"
 
 using namespace rc;
 
@@ -137,6 +138,15 @@ void test_motion_after_click_irrelevant() {
   expectPoll(t, 300, Action::None);
 }
 
+void test_battery_percent() {
+  TEST_ASSERT_EQUAL(-1, batteryPercentFromVolts(2.49f));
+  TEST_ASSERT_EQUAL(0, batteryPercentFromVolts(3.0f));
+  TEST_ASSERT_EQUAL(0, batteryPercentFromVolts(3.3f));
+  TEST_ASSERT_EQUAL(50, batteryPercentFromVolts(3.725f));
+  TEST_ASSERT_EQUAL(100, batteryPercentFromVolts(4.15f));
+  TEST_ASSERT_EQUAL(100, batteryPercentFromVolts(4.4f));
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_tdeck_printable);
@@ -153,5 +163,6 @@ int main() {
   RUN_TEST(test_click_during_motion_deferred);
   RUN_TEST(test_click_during_motion_extends);
   RUN_TEST(test_motion_after_click_irrelevant);
+  RUN_TEST(test_battery_percent);
   return UNITY_END();
 }

@@ -335,14 +335,14 @@ Task 7 writes both amendments into the spec.
   - `sdMount()` does `SD.begin(39, SPI, 20000000)`. If that fails, or `SD.cardType() == CARD_NONE`, it calls `SD.end()` and returns `nullptr`; otherwise it returns `&SD`.
   - `sdUnmount()` does `SD.end()`. LoRa CS 9 stays HIGH throughout.
 
-- [ ] **Step 1: Write the failing test:**
+- [x] **Step 1: Write the failing test:**
   ```cpp
   void test_battery_percent()  // 2.49 → -1; 3.0 → 0; 3.3 → 0; 3.725 → 50; 4.15 → 100; 4.4 → 100
   ```
-- [ ] **Step 2: Run** `pio test -e native -f test_tdeck_input`. Expected: it fails to compile.
-- [ ] **Step 3: Implement** `batteryPercentFromVolts`, switch the M9 and Wio to it, then add the T-Deck GPS, battery, beep and SD.
-- [ ] **Step 4: Run** `pio test -e native` and `scripts/build-upload-monitor.sh -B`. Expected: green, and six envs build.
-- [ ] **Step 5: Commit** `feat(hal): T-Deck GPS, battery, speaker and SD`.
+- [x] **Step 2: Run** `pio test -e native -f test_tdeck_input`. Expected: it fails to compile.
+- [x] **Step 3: Implement** `batteryPercentFromVolts`, switch the M9 and Wio to it, then add the T-Deck GPS, battery, beep and SD.
+- [x] **Step 4: Run** `pio test -e native` and `scripts/build-upload-monitor.sh -B`. Expected: green, and six envs build.
+- [x] **Step 5: Commit** `feat(hal): T-Deck GPS, battery, speaker and SD`.
 
 ### Task 7: Docs
 

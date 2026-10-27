@@ -12,6 +12,7 @@
 #include "hal/wio_l2/pins_wio_l2.h"
 #include "hal/wio_l2/touch_gt911.h"
 #include "input/touch_transform.h"
+#include "power/battery.h"
 #include "ui/rotation.h"
 
 namespace board {
@@ -186,12 +187,7 @@ bool pollKey(rc::KeyEvent& key) {
   return true;
 }
 
-int batteryPercent() {
-  float v = batteryVolts();
-  if (v < 2.5f) return -1;  // no battery reading
-  int pct = (int)((v - 3.3f) / (4.15f - 3.3f) * 100.0f + 0.5f);
-  return pct < 0 ? 0 : pct > 100 ? 100 : pct;
-}
+int batteryPercent() { return rc::batteryPercentFromVolts(batteryVolts()); }
 
 // No charger status on this board. A USB host seen on the S3's own USB port
 // means USB power; otherwise, as on the M9, a cell held above its resting

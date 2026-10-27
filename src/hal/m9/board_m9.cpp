@@ -9,6 +9,7 @@
 #include "hal/m9/panel_st7789.h"
 #include "hal/m9/pins_m9.h"
 #include "input/keymap_m9.h"
+#include "power/battery.h"
 
 namespace board {
 
@@ -69,12 +70,7 @@ static float batteryVolts() {
   return analogReadMilliVolts(m9::BATT_ADC) * m9::BATT_DIV / 1000.0f;
 }
 
-int batteryPercent() {
-  float v = batteryVolts();
-  if (v < 2.5f) return -1;  // no battery reading
-  int pct = (int)((v - 3.3f) / (4.15f - 3.3f) * 100.0f + 0.5f);
-  return pct < 0 ? 0 : pct > 100 ? 100 : pct;
-}
+int batteryPercent() { return rc::batteryPercentFromVolts(batteryVolts()); }
 
 // No VBUS sense on this board: a cell held above its resting maximum means
 // it's on the charger.

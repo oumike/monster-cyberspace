@@ -86,7 +86,7 @@
   ```
   Double-quoted input accepts `\\ \" \n \t \r` and `\uXXXX` (encoded to UTF-8; a surrogate is an error). Single-quoted input reads `''` as `'` and has no escapes.
 
-- [ ] **Step 1: Write the failing tests** in `test/test_backup_yaml/test_main.cpp` (Unity, `setUp`/`tearDown` empty, `RUN_TEST` each in `main`, like `test/test_theme`):
+- [x] **Step 1: Write the failing tests** in `test/test_backup_yaml/test_main.cpp` (Unity, `setUp`/`tearDown` empty, `RUN_TEST` each in `main`, like `test/test_theme`):
   ```cpp
   void test_quote_escapes() {
     TEST_ASSERT_EQUAL_STRING("\"a\\\\b\\\"c\\nd\\te\"", yamlQuote("a\\b\"c\nd\te").c_str());
@@ -109,10 +109,10 @@
     // false for: "\"open", "'open", "\"x\" junk", "\"\\q\"", "\"\\uD83D\""
   }
   ```
-- [ ] **Step 2: Run** `pio test -e native -f test_backup_yaml`. Expected: FAIL (headers missing).
-- [ ] **Step 3: Implement** `settings_model.h`, the `settings.h` change, and `yaml_scalar.cpp`. Use `lib/core/src/util/utf8.h` to encode `\uXXXX`.
-- [ ] **Step 4: Run** `pio test -e native` (all PASS) and `pio run -e m9` (SUCCESS: the move changes no behaviour).
-- [ ] **Step 5: Commit**
+- [x] **Step 2: Run** `pio test -e native -f test_backup_yaml`. Expected: FAIL (headers missing).
+- [x] **Step 3: Implement** `settings_model.h`, the `settings.h` change, and `yaml_scalar.cpp`. Use `lib/core/src/util/utf8.h` to encode `\uXXXX`.
+- [x] **Step 4: Run** `pio test -e native` (all PASS) and `pio run -e m9` (SUCCESS: the move changes no behaviour).
+- [x] **Step 5: Commit**
   ```bash
   git add lib/core/src/config test/test_backup_yaml src/store/settings.h
   git commit -m "feat(core): settings model in lib/core, YAML scalars" -m "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
@@ -173,7 +173,7 @@ Networks after the fifth are dropped before validation and set `note`.
 
 **Merge:** each present key replaces the current value; a backup with `timezone` but no `tzName` sets `tzName` to `findZoneByPosix(timezone)`'s name, or `""` when none matches; a present `wifi` replaces the whole list; inside `account`, each present key replaces its own value.
 
-- [ ] **Step 1: Write the failing tests.** A helper `full()` builds a `Settings` with every field non-default: 2 networks, one SSID `Café "📶"\\` with password `p@ss\nword` (10 bytes or more), `theme = WhiteBlack`, `textSize = Comfortable`, `drawerOpen = true`, `buzzer = false`, a token.
+- [x] **Step 1: Write the failing tests.** A helper `full()` builds a `Settings` with every field non-default: 2 networks, one SSID `Café "📶"\\` with password `p@ss\nword` (10 bytes or more), `theme = WhiteBlack`, `textSize = Comfortable`, `drawerOpen = true`, `buzzer = false`, a token.
   ```cpp
   void test_round_trip_every_field() {
     // y = backupToYaml(full(), {"M9","0.1.0",1793039400}); Settings d{}; ok;
@@ -235,10 +235,10 @@ Networks after the fifth are dropped before validation and set `note`.
     // valid wifi list, then "textSize: huge" on the last line → false; inOut equals full()
   }
   ```
-- [ ] **Step 2: Run** `pio test -e native -f test_backup_yaml`. Expected: FAIL.
-- [ ] **Step 3: Implement** `backup_yaml.cpp`. Parse into a staging struct that marks each field present, with its line number. Validate it. Only then copy the present fields into `inOut`.
-- [ ] **Step 4: Run** `pio test -e native -f test_backup_yaml`. Expected: PASS.
-- [ ] **Step 5: Commit**
+- [x] **Step 2: Run** `pio test -e native -f test_backup_yaml`. Expected: FAIL.
+- [x] **Step 3: Implement** `backup_yaml.cpp`. Parse into a staging struct that marks each field present, with its line number. Validate it. Only then copy the present fields into `inOut`.
+- [x] **Step 4: Run** `pio test -e native -f test_backup_yaml`. Expected: PASS.
+- [x] **Step 5: Commit**
   ```bash
   git add lib/core/src/config/backup_yaml.h lib/core/src/config/backup_yaml.cpp test/test_backup_yaml
   git commit -m "feat(core): settings backup YAML codec with merge and validation" -m "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
@@ -263,7 +263,7 @@ Networks after the fifth are dropped before validation and set `note`.
   void sortBackupNames(std::vector<std::string>& names);
   ```
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
   ```cpp
   void test_file_name_with_clock() {
     // 1793039400, {} → "rc-backup-20261026-183000.yaml"
@@ -284,10 +284,10 @@ Networks after the fifth are dropped before validation and set `note`.
     //  "rc-backup-10.yaml","rc-backup-2.yaml","old.yaml"}
   }
   ```
-- [ ] **Step 2: Run** `pio test -e native -f test_backup_yaml`. Expected: FAIL.
-- [ ] **Step 3: Implement** the three functions.
-- [ ] **Step 4: Run** `pio test -e native`. Expected: all PASS.
-- [ ] **Step 5: Commit**
+- [x] **Step 2: Run** `pio test -e native -f test_backup_yaml`. Expected: FAIL.
+- [x] **Step 3: Implement** the three functions.
+- [x] **Step 4: Run** `pio test -e native`. Expected: all PASS.
+- [x] **Step 5: Commit**
   ```bash
   git add lib/core/src/config/backup_yaml.h lib/core/src/config/backup_yaml.cpp test/test_backup_yaml
   git commit -m "feat(core): backup file names" -m "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
@@ -315,9 +315,9 @@ Networks after the fifth are dropped before validation and set `note`.
 - Produces, `src/app/restart.h`: `namespace rc { void restartSoon(uint32_t delayMs); }`. This is the `restartTask` from `web_server.cpp`, with the delay as a parameter. Web config keeps its 600 ms.
 - Produces, `settings.h`: `void saveAll(const rc::Settings&);`. It calls `saveWifi`, `saveTz(s.tz, s.tzName)`, `saveNtpServer`, `saveSecurity`, `saveUiPrefs` and `saveAccount`. When `refreshToken` is empty it calls `clearToken()` in place of saving the token.
 
-- [ ] **Step 1: Implement** the above. Remove `restartTask`/`restartSoon` from `web_server.cpp` and call `rc::restartSoon(600)`.
-- [ ] **Step 2: Run** `pio test -e native` (PASS) and `scripts/build-upload-monitor.sh -B`. Expected: all four firmware envs build.
-- [ ] **Step 3: Commit**
+- [x] **Step 1: Implement** the above. Remove `restartTask`/`restartSoon` from `web_server.cpp` and call `rc::restartSoon(600)`.
+- [x] **Step 2: Run** `pio test -e native` (PASS) and `scripts/build-upload-monitor.sh -B`. Expected: all four firmware envs build.
+- [x] **Step 3: Commit**
   ```bash
   git add src/hal src/app/restart.h src/app/restart.cpp src/store/settings.h src/store/settings.cpp src/web/web_server.cpp
   git commit -m "feat(hal): SD card access, shared restart, settings::saveAll" -m "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
@@ -357,9 +357,9 @@ Networks after the fifth are dropped before validation and set `note`.
   - Local YAML strings are wiped before return.
   - `restartSoon` is called only after the settings are saved.
 
-- [ ] **Step 1: Implement** `backup_store.cpp`.
-- [ ] **Step 2: Run** `scripts/build-upload-monitor.sh -B`. Expected: all envs build.
-- [ ] **Step 3: Commit**
+- [x] **Step 1: Implement** `backup_store.cpp`.
+- [x] **Step 2: Run** `scripts/build-upload-monitor.sh -B`. Expected: all envs build.
+- [x] **Step 3: Commit**
   ```bash
   git add src/store/backup_store.h src/store/backup_store.cpp src/main.cpp
   git commit -m "feat(store): backup store for the SD card and restore" -m "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
@@ -399,14 +399,14 @@ Networks after the fifth are dropped before validation and set `note`.
   - When `hasSdSlot()` and the list is non-empty, it adds `Restore from SD card` after `Log in on this device`.
   - `onKey` dispatches by the selected index, and to the picker while it is open.
 
-- [ ] **Step 1: Implement.**
-- [ ] **Step 2: Run** `scripts/build-upload-monitor.sh -B`. Expected: all envs build.
-- [ ] **Step 3: Do not flash** (the USB port is in use). These checks go into `docs/TESTING.md` in Task 8:
+- [x] **Step 1: Implement.**
+- [x] **Step 2: Run** `scripts/build-upload-monitor.sh -B`. Expected: all envs build.
+- [x] **Step 3: Do not flash** (the USB port is in use). These checks go into `docs/TESTING.md` in Task 8:
   - Back up shows `Saved rc-backup-….yaml`;
   - Restore lists it newest first, and Cancel is preselected;
   - Restore restarts with the same settings;
   - with the card out, both items say `No SD card`.
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
   ```bash
   git add src/screens/backup_picker.h src/screens/backup_picker.cpp src/screens/screens.h src/screens/settings.cpp src/screens/setup.cpp
   git commit -m "feat(ui): back up and restore from the SD card in Settings and Setup" -m "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
@@ -445,15 +445,15 @@ Networks after the fifth are dropped before validation and set `note`.
     - `No SD card` when `card` is false.
   - Results go to `backupmsg` via `show()`.
 
-- [ ] **Step 1: Implement.**
-- [ ] **Step 2: Run** `pio test -e native` (PASS) and `scripts/build-upload-monitor.sh -B` (all envs build).
-- [ ] **Step 3: Do not flash** (the USB port is in use). These checks go into `docs/TESTING.md` in Task 8, with a page password set:
+- [x] **Step 1: Implement.**
+- [x] **Step 2: Run** `pio test -e native` (PASS) and `scripts/build-upload-monitor.sh -B` (all envs build).
+- [x] **Step 3: Do not flash** (the USB port is in use). These checks go into `docs/TESTING.md` in Task 8, with a page password set:
   - download, then upload-restore of that file (the device restarts with the same settings);
   - save to SD, then the list's download, restore and delete;
   - `curl -u admin:<pw> -X POST 'http://<ip>/api/backup/sd/delete?name=..%2Fx.yaml'` gives `Bad file name`;
   - a 17 KB upload gives the 16 KB error;
   - with the card out, the SD block says `No SD card`.
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
   ```bash
   git add src/web/web_server.cpp src/web/page.h
   git commit -m "feat(web): settings backup download, upload restore and SD backups" -m "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
@@ -464,24 +464,24 @@ Networks after the fifth are dropped before validation and set `note`.
 **Files:**
 - Modify: `docs/USE.md`, `docs/TESTING.md`, `AGENTS.md`
 
-- [ ] **Step 1: `USE.md`.** Add a "Backup and restore" section:
+- [x] **Step 1: `USE.md`.** Add a "Backup and restore" section:
   - the Settings items, the Setup screen item and the web Backup section;
   - where the files live;
   - that the file holds passwords and a sign-in token, so keep it private;
   - that missing keys keep the current values;
   - that a restore restarts the device.
-- [ ] **Step 2: `TESTING.md`.** Under "Open hardware checks", add the spec §7 hardware list:
+- [x] **Step 2: `TESTING.md`.** Under "Open hardware checks", add the spec §7 hardware list:
   - Settings → Back up to SD card writes the file;
   - the file opens on a computer and holds everything;
   - Restore from SD card restarts with the same settings;
   - after a factory reset, with the card holding backups, Setup offers a restore and the device comes back signed in;
   - web download, upload-restore, save to SD, then restore, download and delete from the SD list;
   - with no card, every path says `No SD card`.
-- [ ] **Step 3: `AGENTS.md`.**
+- [x] **Step 3: `AGENTS.md`.**
   - Replace the hard rule with: "Never log or store passwords, except that backup files (`docs/superpowers/specs/2026-10-26-cyberspace-backup-design.md`) deliberately contain the Wi-Fi, page and setup-AP passwords and the refresh token. Never log them, or tokens."
   - Add a line with the backup spec and this plan.
   - Update the progress section and the native test count from `pio test -e native`.
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
   ```bash
   git add docs/USE.md docs/TESTING.md AGENTS.md
   git commit -m "docs: settings backup guide, checks and rule change" -m "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"

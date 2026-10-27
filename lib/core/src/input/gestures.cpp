@@ -1,5 +1,6 @@
 #include "input/gestures.h"
 
+#include <algorithm>
 #include <cstdlib>
 
 namespace rc {
@@ -26,6 +27,11 @@ bool Gestures::feed(bool down, int16_t x, int16_t y, uint32_t ms, Gesture& out) 
       moved_ = false;
       dragging_ = false;
       longFired_ = false;
+      holdFired_ = false;
+      {
+        const int zone = width_ > 0 ? std::max(kEdgeBackPx, width_ / 8) : kEdgeBackPx;
+        edge_ = x < zone ? -1 : (width_ > 0 && x >= width_ - zone ? 1 : 0);
+      }
       downX_ = x;
       downY_ = y;
       dragAnchor_ = y;
@@ -36,7 +42,8 @@ bool Gestures::feed(bool down, int16_t x, int16_t y, uint32_t ms, Gesture& out) 
     int dxT = x - downX_;
     int dyT = y - downY_;
     if (std::abs(dxT) > kTapSlopPx || std::abs(dyT) > kTapSlopPx) moved_ = true;
-    if (!dragging_ && std::abs(dyT) > kTapSlopPx) {
+    // From an edge, a mostly sideways move stays a swipe, not a drag.
+    if (!dragging_ && std::abs(dyT) > kTapSlopPx && (edge_ == 0 || std::abs(dyT) > std::abs(dxT))) {
       dragging_ = true;
       dragAnchor_ = downY_;
     }
@@ -58,6 +65,14 @@ bool Gestures::feed(bool down, int16_t x, int16_t y, uint32_t ms, Gesture& out) 
       out.y = downY_;
       return true;
     }
+    if (!moved_ && longFired_ && !holdFired_ && (ms - downMs_) >= kHoldMs) {
+      holdFired_ = true;
+      out = Gesture{};
+      out.kind = GestureKind::Hold;
+      out.x = downX_;
+      out.y = downY_;
+      return true;
+    }
     return false;
   }
 
@@ -72,6 +87,15 @@ bool Gestures::feed(bool down, int16_t x, int16_t y, uint32_t ms, Gesture& out) 
   uint32_t dur = ms - downMs_;
   bool horizontal = std::abs(dx) >= std::abs(dy);
   int travel = horizontal ? std::abs(dx) : std::abs(dy);
+  if (horizontal && travel > kSwipeMinPx && dur < kEdgeSwipeMaxMs &&
+      ((edge_ < 0 && dx > 0) || (edge_ > 0 && dx < 0))) {
+    out = Gesture{};
+    out.kind = edge_ < 0 ? GestureKind::EdgeBack : GestureKind::EdgeOptions;
+    out.x = downX_;
+    out.y = downY_;
+    out.dir = dx > 0 ? SwipeDir::Right : SwipeDir::Left;
+    return true;
+  }
   if (dur < kSwipeMaxMs && travel > kSwipeMinPx) {
     SwipeDir dir = horizontal ? (dx > 0 ? SwipeDir::Right : SwipeDir::Left)
                               : (dy > 0 ? SwipeDir::Down : SwipeDir::Up);
@@ -79,11 +103,7 @@ bool Gestures::feed(bool down, int16_t x, int16_t y, uint32_t ms, Gesture& out) 
     out.x = downX_;
     out.y = downY_;
     out.dir = dir;
-    if (dir == SwipeDir::Right && downX_ < kEdgeBackPx) {
-      out.kind = GestureKind::EdgeBack;
-    } else {
-      out.kind = GestureKind::Swipe;
-    }
+    out.kind = GestureKind::Swipe;
     return true;
   }
 

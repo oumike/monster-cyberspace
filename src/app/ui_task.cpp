@@ -65,6 +65,7 @@ void resizeGrid() {
                             ? touchHeader(board::panelWidth(), ts)
                             : HeaderSize{};
   gridDims(board::panelWidth(), board::panelHeight(), ts, cols, rows, hd.px);
+  gestures.setWidth(board::panelWidth());
   oskOffsetPx = hd.px > 0 ? std::max(0, hd.px - rowH) : 0;
   const int slack = std::max(0, board::panelHeight() - rows * rowH - oskOffsetPx);
   grid.setHeader(hd);
@@ -345,6 +346,7 @@ void start() {
   if (!renderer.begin()) Serial.println("[ui] no memory for the frame buffer");
   setActiveTaps(board::hasTouch() ? &taps : nullptr);
   setCursorShown(board::hasKeys());
+  resolver.setTouchOnly(!board::hasKeys());
   resizeGrid();
   router::go(router::Id::Splash);
   board::backlight(true);

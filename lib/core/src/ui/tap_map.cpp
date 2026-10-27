@@ -47,16 +47,17 @@ void TapMap::mapRows(int firstRow, const std::vector<RowSpan>& spans) {
   }
 }
 
-void TapMap::setList(ListId id, int selected, int count, bool wraps) {
+void TapMap::setList(ListId id, int selected, int count, bool wraps, bool holdToAct) {
   for (auto& li : lists_) {
     if (li.list == id) {
       li.selected = selected;
       li.count = count;
       li.wraps = wraps;
+      li.holdToAct = holdToAct;
       return;
     }
   }
-  lists_.push_back(ListInfo{id, selected, count, wraps});
+  lists_.push_back(ListInfo{id, selected, count, wraps, holdToAct});
 }
 
 const ListInfo* TapMap::list(ListId id) const {

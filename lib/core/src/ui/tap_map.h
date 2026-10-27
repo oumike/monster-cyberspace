@@ -25,6 +25,9 @@ struct ListInfo {
   ListId list;
   int selected, count;
   bool wraps;
+  // A scrolling list (messages, feed entries): on touch-only boards a tap
+  // there does nothing and a Hold acts on the item.
+  bool holdToAct;
 };
 
 // Per-frame hit targets. Widgets fill it as they draw; the touch resolver reads
@@ -42,7 +45,7 @@ class TapMap {
   // renderer's row spans (rowSpans), so taps land on RowKind::Big rows as
   // drawn, and shifts them right by their first row's shift. Call once the grid is drawn; other grids' targets are left alone.
   void mapRows(int firstRow, const std::vector<RowSpan>& spans);
-  void setList(ListId id, int selected, int count, bool wraps);
+  void setList(ListId id, int selected, int count, bool wraps, bool holdToAct = false);
   const ListInfo* list(ListId id) const;  // null if not registered this frame
   int visibleRows(ListId id) const;       // Row targets registered for id
   CellSize cell() const { return cell_; }

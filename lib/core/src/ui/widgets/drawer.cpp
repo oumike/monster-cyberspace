@@ -13,7 +13,9 @@ int Drawer::width(int cols, bool docked) {
   return std::min(15, cols / 2);
 }
 
-bool Drawer::docks(int panelWidthPx) { return panelWidthPx >= 640; }
+bool Drawer::docks(int panelWidthPx, int panelHeightPx) {
+  return panelWidthPx >= 480 && panelWidthPx > panelHeightPx;
+}
 
 void Drawer::setPeople(std::vector<PresenceEntry> people, int64_t nowMs, int64_t idleAfterMs) {
   std::string keep = selectedUsername();

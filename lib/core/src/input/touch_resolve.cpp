@@ -40,9 +40,9 @@ void TouchResolver::resolve(const Gesture& g, const TapMap& m, TouchOutput& out)
   out.oskKey = -1;
   out.hideBanner = false;
 
-  if (g.kind == GestureKind::EdgeBack) {
+  if (g.kind == GestureKind::EdgeBack || g.kind == GestureKind::EdgeOptions) {
     KeyEvent e;
-    e.action = Action::Back;
+    e.action = g.kind == GestureKind::EdgeBack ? Action::Back : Action::Options;
     out.keys.push_back(e);
     return;
   }
@@ -50,11 +50,26 @@ void TouchResolver::resolve(const Gesture& g, const TapMap& m, TouchOutput& out)
   Target t = m.hit(g.x, g.y);
 
   switch (g.kind) {
+    case GestureKind::Hold: {
+      if (!touchOnly_ || t.kind != TargetKind::Row) return;
+      const ListInfo* li = m.list(t.list);
+      if (!li || !li->holdToAct) return;
+      KeyEvent e;
+      e.action = Action::Activate;
+      e.index = t.index;
+      e.target = (uint8_t)t.list;
+      e.then = Action::Select;
+      out.keys.push_back(e);
+      return;
+    }
+
     case GestureKind::Tap:
     case GestureKind::LongPress: {
       bool hold = g.kind == GestureKind::LongPress;
       switch (t.kind) {
         case TargetKind::Row: {
+          const ListInfo* li = m.list(t.list);
+          if (touchOnly_ && li && li->holdToAct) break;
           KeyEvent e;
           e.action = Action::Activate;
           e.index = t.index;

@@ -19,11 +19,16 @@ class TouchResolver {
  public:
   void resolve(const Gesture& g, const TapMap& m, TouchOutput& out);
   void reset();  // drops the drag carry
+  // Touch-only boards: in a holdToAct list a tap or long press does nothing
+  // and a Hold acts on the item. Elsewhere, and on boards with keys, a Hold
+  // does nothing.
+  void setTouchOnly(bool on) { touchOnly_ = on; }
 
  private:
   void stepList(const TapMap& m, ListId list, int steps, bool towardLater,
                 TouchOutput& out);
   int carry_ = 0;
+  bool touchOnly_ = false;
 };
 
 }  // namespace rc

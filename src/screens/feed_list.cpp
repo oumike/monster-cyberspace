@@ -101,6 +101,7 @@ void FeedListScreen::onKey(const KeyEvent& k) {
       router::go(kind_ == Kind::Feed ? router::Id::Home : router::Id::FeedList);
       break;
     case Action::Palette:
+    case Action::Options:
       palette_ = true;
       box_.open(U"commands", {
                                  ListItem{U"New entry", U""},

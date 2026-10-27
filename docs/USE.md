@@ -40,7 +40,7 @@ Dedicated buttons work from anywhere and close whatever is open first.
 | Fn under Back | Feed: the entry list. Press it again anywhere in the Feed for the list |
 | Map | Unassigned |
 | Back | Up one level, or closes a menu or drawer. It never deletes text |
-| Ctrl | In a room or conversation: the command palette (slash commands and text size) |
+| Ctrl | In a room or conversation: the command palette (slash commands) |
 | Hold Back/Del | Clear the input line |
 | Hold d-pad centre | Screen off; with the screen off, screen on |
 
@@ -58,12 +58,21 @@ Every screen works by touch. Touch never wakes a dark screen.
 
 - **Tap** a row to open it, or a field to type in it. **Hold** a row (half a
   second) to select it and open the screen's menu, as `⋯` does.
+- **Scrolling views** (room and conversation messages, the Feed list, an
+  entry's replies) on boards with no keys (the Wio Tracker L2 and the
+  CrowPanels): a tap does nothing, so scrolling never acts by accident. Hold
+  an item still for **2 seconds** to act on it (a message's menu, open an
+  entry).
 - **Status bar:** `‹` at the left goes back; holding it goes Home. `⋯` at the
   right opens the screen's menu (the palette in a room, Post/Discard in the
   Composer).
   On boards without a keyboard the status bar is 1.5 times a row's height,
   in a bigger font, so it's easier to tap.
-- **Back:** a swipe right that starts at the left edge also goes back. Tapping
+- **Edge swipes:** a swipe towards the centre from the left eighth of the
+  screen goes back. One from the right eighth brings up options: in a room it
+  slides in the who's here list (or the room menu when the list is already
+  showing), elsewhere the screen's menu. Edge swipes may be slower than other
+  swipes (up to 0.8 s). Tapping
   outside an open menu or confirm closes it. A tap on a banner dismisses it.
 - **Scroll:** drag a list or log to move line by line; swipe up or down to
   move a page. Dragging past the end of a list stops there.
@@ -126,7 +135,7 @@ Touch above, but with no buttons:
 - **Screen off:** there's no button to turn the screen off, so it stays on.
   If it does go dark, a tap wakes it (that tap does nothing else).
 - **Orientation:** pick it in Settings or web config, as on the Wio Tracker L2.
-- **No cursor:** with no keys to move it, lists and Home tiles draw no
+- **No cursor:** as on the Wio Tracker L2, lists and Home tiles draw no
   selection outline; a tap opens what's under the finger.
 - **3.5":** the microSD slot takes settings backups; a GPS module on the UART1
   connector, if fitted, sets the clock.
@@ -144,7 +153,7 @@ The keyboard always types into the input line at the bottom.
   *sending…* until the server echoes it back. If the send fails, the text
   returns to the line and a banner explains why.
 - **Room menu:** Centre on an empty line. It has Who's here, Mute…, Unmute…,
-  Mark read, Text size and Leave room.
+  Mark read and Leave room.
 - **Scroll:** Up/Down highlight messages. Up at the top loads older history.
   Down past the newest message returns you to typing.
 - **Message menu:** Centre on a highlighted message. It has Reply (`@name `),
@@ -155,8 +164,8 @@ The keyboard always types into the input line at the bottom.
 - **Who's here drawer:** Right with the cursor at the end of the line opens
   it. Up/Down pick a person, Centre opens their menu (mention, mute or
   unmute), and Left or Back closes it. The drawer stays open or closed as you
-  move between rooms. On the CrowPanel 5.0" the list is always docked on the
-  right; tap a name for their menu.
+  move between rooms. On the CrowPanels in landscape the list is always docked
+  on the right; tap a name for their menu.
 - **Commands:** type slash commands such as `/me`, `/dice` and `/mute name`,
   or pick them from the Ctrl palette.
 
@@ -175,8 +184,8 @@ C-Mail is private, one-to-one messaging. Open it with Fn under Home, or
   such user). Back cancels.
 - **A conversation** works like a room, titled `@name`: type and press Centre
   to send. Scrolling, the reader and links work the same way. There is no
-  drawer. Its menu (Centre on an empty line) has Mark read, Text size and
-  Close conversation. The message menu has Reveal, Show full and Show link;
+  drawer. Its menu (Centre on an empty line) has Mark read and Close
+  conversation. The message menu has Reveal, Show full and Show link;
   C-Mail has no reply, delete or report.
 - **Typing:** while you type, the other person sees "…is typing". The device
   tells the server only as you press keys, and clears it when you empty the
@@ -243,8 +252,8 @@ reply selected. Left or Back returns to the Feed list.
 
 ## Text sizes
 
-Switch from the palette, the room menu or the web page; each switch steps
-Compact → Comfortable → Large. The choice is saved.
+Switch in **Settings** → **Text size**, the Feed palette, an entry's menu or
+the web page; each switch steps Compact → Comfortable → Large. The choice is saved.
 
 - **Comfortable:** larger 8×16 text, `nick message`, with a time divider when
   the minute changes.
@@ -352,14 +361,16 @@ The serial log says only whether there's a fix and satellite counts.
 
 **Home** → **Settings** shows the account, the Wi-Fi network and IP, the web
 config address, the battery, the setup AP state and the gps, time and zone
-lines (see Time and time zone), with five actions, plus Orientation on a
+lines (see Time and time zone), with six actions, plus Orientation on a
 touch board and two more on a board with an SD card slot:
 
 - **Theme: …** Centre moves to the next theme (Default, Black & white, White &
   black) and saves it.
+- **Text size: …** Centre steps to the next size (Compact, Comfortable,
+  Large) and saves it.
 - **Time zone: …** Opens the zone list; Centre picks one and saves it, Back
   closes the list unchanged.
-- **Orientation: …** (touch boards) Opens the four orientations; picking one
+- **Orientation: …** (touch boards) Opens a box with the four orientations; picking one
   turns the screen at once and saves it.
 - **Turn setup AP on / off.** Brings up the setup AP (its name, password state
   and `http://192.168.4.1` are shown) while staying on your Wi-Fi, so you can

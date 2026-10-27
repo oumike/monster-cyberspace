@@ -54,7 +54,7 @@ void EntryList::render(Grid& g, int top, int bottom, const Theme& t) const {
     for (int r = top + 2 * visible; r < bottom; ++r) g.setRowKind(r, RowKind::Skip);
   }
   const int first = std::max(0, sel_ - visible + 1);
-  if (activeTaps()) activeTaps()->setList(ListId::Main, sel_, static_cast<int>(rows_.size()), true);
+  if (activeTaps()) activeTaps()->setList(ListId::Main, sel_, static_cast<int>(rows_.size()), true, true);
   for (int k = 0; k < visible; ++k) {
     int idx = first + k;
     if (idx >= static_cast<int>(rows_.size())) break;

@@ -292,8 +292,12 @@ void test_drawer_idle_marker() {
   TEST_ASSERT_EQUAL(15, Drawer::width(30));
   TEST_ASSERT_EQUAL(12, Drawer::width(24));  // capped at half the grid
   // Docked on a wide panel: a fifth of the grid, at least 15.
-  TEST_ASSERT_FALSE(Drawer::docks(480));
-  TEST_ASSERT_TRUE(Drawer::docks(800));
+  TEST_ASSERT_TRUE(Drawer::docks(480, 320));   // CrowPanel 3.5" landscape
+  TEST_ASSERT_FALSE(Drawer::docks(320, 480));  // and portrait
+  TEST_ASSERT_TRUE(Drawer::docks(800, 480));
+  TEST_ASSERT_FALSE(Drawer::docks(480, 800));
+  TEST_ASSERT_FALSE(Drawer::docks(320, 240));  // T-Deck
+  TEST_ASSERT_EQUAL(15, Drawer::width(48, true));
   TEST_ASSERT_EQUAL(26, Drawer::width(133, true));
   TEST_ASSERT_EQUAL(16, Drawer::width(80, true));
   TEST_ASSERT_EQUAL(15, Drawer::width(53, true));
@@ -336,17 +340,15 @@ void test_banner_expires() {
   TEST_ASSERT_EQUAL_HEX16(T().error, g.at(19, 2).bg);
 }
 
-void test_palette_first_is_text_size() {
+void test_palette_lists_commands() {
   const auto& p = paletteEntries();
-  TEST_ASSERT_TRUE(p[0].isTextSize);
-  TEST_ASSERT_EQUAL(26, p.size());
-  TEST_ASSERT_EQUAL_STRING("/me ", u32ToUtf8(p[1].insert).c_str());
+  TEST_ASSERT_EQUAL(25, p.size());
+  TEST_ASSERT_EQUAL_STRING("/me ", u32ToUtf8(p[0].insert).c_str());
   TEST_ASSERT_EQUAL_STRING("/muted ", u32ToUtf8(p.back().insert).c_str());
 }
 
 void test_palette_cmail_drops_circ_only() {
   const auto& p = paletteEntries(PaletteKind::Cmail);
-  TEST_ASSERT_TRUE(p[0].isTextSize);
   bool art = false, muted = false, me = false;
   for (const auto& e : p) {
     std::string s = u32ToUtf8(e.insert);
@@ -992,7 +994,7 @@ int main() {
   RUN_TEST(test_drawer_idle_marker);
   RUN_TEST(test_status_bar_layout);
   RUN_TEST(test_banner_expires);
-  RUN_TEST(test_palette_first_is_text_size);
+  RUN_TEST(test_palette_lists_commands);
   RUN_TEST(test_palette_cmail_drops_circ_only);
   RUN_TEST(test_qr_small_url);
   RUN_TEST(test_entry_list_outline);

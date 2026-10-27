@@ -81,7 +81,7 @@ void RoomScreen::leave() {
 
 bool RoomScreen::drawerOpen() const { return !dm_ && app().cfg.drawerOpen; }
 
-bool RoomScreen::drawerDocked() const { return !dm_ && Drawer::docks(board::panelWidth()); }
+bool RoomScreen::drawerDocked() const { return !dm_ && Drawer::docks(board::panelWidth(), board::panelHeight()); }
 
 void RoomScreen::noteTyping() {
   if (!dm_) return;
@@ -162,14 +162,21 @@ void RoomScreen::typingKey(const KeyEvent& k) {
       std::vector<ListItem> items;
       menuKeys_.clear();
       for (const auto& e : paletteEntries(dm_ ? PaletteKind::Cmail : PaletteKind::Circ)) {
-        std::u32string label = e.label;
-        if (e.isTextSize) label = ui::textSizeItem();
-        items.push_back(ListItem{label, U""});
-        menuKeys_.push_back(e.isTextSize ? std::string("size") : u32ToUtf8(e.insert));
+        items.push_back(ListItem{e.label, U""});
+        menuKeys_.push_back(u32ToUtf8(e.insert));
       }
       openMenu(Menu::Palette, U"commands", std::move(items));
       break;
     }
+    case Action::Options:
+      // An edge swipe from the right: the user list first, then the menu.
+      if (!dm_ && !drawer && !drawerDocked()) {
+        log_.follow();
+        setDrawer(true);
+      } else {
+        openRoomMenu();
+      }
+      break;
     case Action::Up:
       if (drawer) {
         drawer_.up();
@@ -314,18 +321,15 @@ void RoomScreen::openMenu(Menu m, std::u32string title, std::vector<ListItem> it
 
 void RoomScreen::openRoomMenu() {
   if (dm_) {
-    menuKeys_ = {"read", "size", "close"};
+    menuKeys_ = {"read", "close"};
     openMenu(Menu::Room, utf8ToU32("@" + partner_),
-             {ListItem{U"Mark read", U""},
-              ListItem{ui::textSizeItem(), U""},
-              ListItem{U"Close conversation", U""}});
+             {ListItem{U"Mark read", U""}, ListItem{U"Close conversation", U""}});
     return;
   }
-  menuKeys_ = {"who", "mute", "unmute", "read", "size", "leave"};
+  menuKeys_ = {"who", "mute", "unmute", "read", "leave"};
   openMenu(Menu::Room, utf8ToU32("#" + slug_),
            {ListItem{U"Who's here", U""}, ListItem{U"Mute\u2026", U""},
             ListItem{U"Unmute\u2026", U""}, ListItem{U"Mark read", U""},
-            ListItem{ui::textSizeItem(), U""},
             ListItem{U"Leave room", U""}});
 }
 
@@ -395,8 +399,7 @@ void RoomScreen::pickMenu() {
   view_ = View::None;
   switch (menu_) {
     case Menu::Palette:
-      if (key == "size") ui::cycleTextSize();
-      else insertText(utf8ToU32(key));
+      insertText(utf8ToU32(key));
       break;
     case Menu::Room:
       if (key == "who") {
@@ -426,8 +429,6 @@ void RoomScreen::pickMenu() {
       } else if (key == "read") {
         chatSource().command(Command{CmdType::MarkRead, slug_});
         lastMarkRead_ = nowEpochMs();
-      } else if (key == "size") {
-        ui::cycleTextSize();
       } else if (key == "leave") {
         router::go(router::Id::RoomList);
       } else if (key == "close") {

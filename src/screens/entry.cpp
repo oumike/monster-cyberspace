@@ -143,6 +143,9 @@ void EntryScreen::typingKey(const KeyEvent& k) {
     case Action::Select:
       select();
       break;
+    case Action::Options:
+      openEntryMenu();
+      break;
     case Action::Back:
       if (!log_.following()) log_.follow();
       else router::go(router::Id::FeedList);

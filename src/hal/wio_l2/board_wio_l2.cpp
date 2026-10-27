@@ -200,7 +200,8 @@ const char* wakeHint() { return "hold Wake to wake"; }
 
 bool hasTouch() { return gt911::present(); }
 bool hasKeyboard() { return false; }
-bool hasKeys() { return true; }
+// Its two buttons only stand in; it counts as touch-only (no cursor).
+bool hasKeys() { return false; }
 bool backspaceIsBack() { return false; }
 bool anyInputWakes() { return false; }
 bool readTouch(int16_t& x, int16_t& y) {

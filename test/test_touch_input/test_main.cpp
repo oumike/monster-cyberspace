@@ -152,6 +152,55 @@ void test_edge_swipe_back() {
   }
 }
 
+void test_edge_zones_scale_with_width() {
+  {  // left eighth of 480 px, slower than a plain swipe, a little diagonal
+    Gestures g;
+    g.setWidth(480);
+    auto gs = feedAll(g, {{true, 50, 100, 0}, {true, 90, 115, 200}, {false, 150, 120, 600}});
+    TEST_ASSERT_EQUAL(1u, gs.size());
+    TEST_ASSERT_EQUAL(int(GestureKind::EdgeBack), int(gs[0].kind));
+  }
+  {  // right eighth, leftwards
+    Gestures g;
+    g.setWidth(480);
+    auto gs = feedAll(g, {{true, 450, 100, 0}, {false, 380, 100, 500}});
+    TEST_ASSERT_EQUAL(1u, gs.size());
+    TEST_ASSERT_EQUAL(int(GestureKind::EdgeOptions), int(gs[0].kind));
+  }
+  {  // from the right edge but rightwards: an ordinary swipe
+    Gestures g;
+    g.setWidth(480);
+    auto gs = feedAll(g, {{true, 300, 100, 0}, {false, 360, 100, 200}});
+    TEST_ASSERT_EQUAL(int(GestureKind::Swipe), int(gs[0].kind));
+  }
+  {  // too slow even for an edge
+    Gestures g;
+    g.setWidth(480);
+    auto gs = feedAll(g, {{true, 450, 100, 0}, {false, 380, 100, 900}});
+    TEST_ASSERT_EQUAL(0u, gs.size());
+  }
+  {  // a mostly vertical move from an edge still drags
+    Gestures g;
+    g.setWidth(480);
+    auto gs = feedAll(g, {{true, 470, 100, 0}, {true, 472, 140, 100}});
+    TEST_ASSERT_EQUAL(1u, gs.size());
+    TEST_ASSERT_EQUAL(int(GestureKind::Drag), int(gs[0].kind));
+  }
+}
+
+void test_hold_follows_long_press() {
+  Gestures g;
+  auto gs = feedAll(g, {{true, 100, 100, 0},
+                        {true, 100, 100, 500},
+                        {true, 100, 100, 1999},
+                        {true, 100, 100, 2000},
+                        {true, 100, 100, 2600},
+                        {false, 100, 100, 2700}});
+  TEST_ASSERT_EQUAL(2u, gs.size());
+  TEST_ASSERT_EQUAL(int(GestureKind::LongPress), int(gs[0].kind));
+  TEST_ASSERT_EQUAL(int(GestureKind::Hold), int(gs[1].kind));
+}
+
 void test_reset_ignores_finger_already_down() {
   Gestures g;
   Gesture gg;
@@ -529,6 +578,49 @@ void test_resolve_swipe_pages() {
   TEST_ASSERT_EQUAL(5, out.keys[0].index);
 }
 
+void test_resolve_hold_to_act() {
+  TapMap m;
+  m.setOrigin(CellSize{6, 12}, 0);
+  m.addCells(0, 0, 9, 0, rowTarget(ListId::Log, 3));
+  m.setList(ListId::Log, -1, 5, false, true);
+  m.addCells(0, 1, 9, 1, rowTarget(ListId::Menu, 1));
+  m.setList(ListId::Menu, 0, 2, true);
+  TouchResolver r;
+  r.setTouchOnly(true);
+  TouchOutput out;
+  r.resolve(mkG(GestureKind::Tap, 2, 6), m, out);  // a scrolling list: taps do nothing
+  TEST_ASSERT_EQUAL(0u, out.keys.size());
+  r.resolve(mkG(GestureKind::LongPress, 2, 6), m, out);
+  TEST_ASSERT_EQUAL(0u, out.keys.size());
+  r.resolve(mkG(GestureKind::Hold, 2, 6), m, out);
+  TEST_ASSERT_EQUAL(1u, out.keys.size());
+  TEST_ASSERT_EQUAL(int(Action::Activate), int(out.keys[0].action));
+  TEST_ASSERT_EQUAL(3, out.keys[0].index);
+  TEST_ASSERT_EQUAL(int(Action::Select), int(out.keys[0].then));
+  r.resolve(mkG(GestureKind::Tap, 2, 18), m, out);  // a menu: taps still pick
+  TEST_ASSERT_EQUAL(1u, out.keys.size());
+  r.resolve(mkG(GestureKind::Hold, 2, 18), m, out);
+  TEST_ASSERT_EQUAL(0u, out.keys.size());
+  r.setTouchOnly(false);  // with keys, taps in the log work as before
+  r.resolve(mkG(GestureKind::Tap, 2, 6), m, out);
+  TEST_ASSERT_EQUAL(1u, out.keys.size());
+  r.resolve(mkG(GestureKind::Hold, 2, 6), m, out);
+  TEST_ASSERT_EQUAL(0u, out.keys.size());
+}
+
+void test_resolve_edge_options() {
+  TapMap m;
+  m.setOrigin(CellSize{6, 12}, 0);
+  TouchResolver r;
+  TouchOutput out;
+  Gesture g;
+  g.kind = GestureKind::EdgeOptions;
+  g.x = 470;
+  r.resolve(g, m, out);
+  TEST_ASSERT_EQUAL(1u, out.keys.size());
+  TEST_ASSERT_EQUAL(int(Action::Options), int(out.keys[0].action));
+}
+
 void test_resolve_edge_back() {
   TapMap m;
   m.setOrigin(CellSize{6, 12}, 0);
@@ -608,6 +700,10 @@ int main() {
   RUN_TEST(test_resolve_drag_wrapping_list_clamps);
   RUN_TEST(test_resolve_swipe_pages);
   RUN_TEST(test_resolve_edge_back);
+  RUN_TEST(test_edge_zones_scale_with_width);
+  RUN_TEST(test_resolve_edge_options);
+  RUN_TEST(test_hold_follows_long_press);
+  RUN_TEST(test_resolve_hold_to_act);
   RUN_TEST(test_resolve_nothing_hit);
   RUN_TEST(test_power_tap_peeks_not_wakes);
   RUN_TEST(test_rotation_labels_and_order);

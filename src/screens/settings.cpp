@@ -15,13 +15,13 @@
 namespace rc {
 
 namespace {
-enum Item { kTheme, kZone, kRotation, kSetupAp, kBackup, kRestore, kLogout, kReset };
+enum Item { kTheme, kTextSize, kZone, kRotation, kSetupAp, kBackup, kRestore, kLogout, kReset };
 
 // The visible menu, in order. Orientation appears only on a board that can
 // rotate and the SD-card items only on a board with a slot, so item indices and
 // the menu height follow from this.
 std::vector<Item> menuItems() {
-  std::vector<Item> v{kTheme, kZone};
+  std::vector<Item> v{kTheme, kTextSize, kZone};
   if (board::canRotate()) v.push_back(kRotation);
   v.push_back(kSetupAp);
   if (board::hasSdSlot()) {
@@ -148,6 +148,9 @@ void SettingsScreen::onKey(const KeyEvent& k) {
           settings::saveUiPrefs(a.cfg);
           break;
         }
+        case kTextSize:
+          ui::cycleTextSize();
+          break;
         case kZone:
           openZones();
           break;
@@ -243,6 +246,9 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
         case kTheme:
           rows.push_back(ListItem{U"Theme: " + widen(themeLabel(a.cfg.theme)), U""});
           break;
+        case kTextSize:
+          rows.push_back(ListItem{U"Text size: " + textSizeLabel(a.cfg.textSize), U""});
+          break;
         case kZone:
           rows.push_back(ListItem{U"Time zone: " + widen(zoneLabel(ts.tzName)), U""});
           break;
@@ -278,7 +284,10 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
     zoneList_.render(g, top + 1, bottom, 1, g.cols() - 2, t);
     drawHint(g, t, U"\u2191\u2193 pick  \u25CF set  back: cancel", U"tap to select");
   } else if (confirm_ != Confirm::None) {
-    confirmBox_.render(g, 1, bottom, 0, OverlayPlace::Bottom, t);
+    // The orientation picker is a centred box with all four; the bottom
+    // strip only has room for a two-row confirm.
+    confirmBox_.render(g, 1, bottom, 0,
+                       confirm_ == Confirm::Rotation ? OverlayPlace::Centre : OverlayPlace::Bottom, t);
     if (confirm_ == Confirm::Rotation)
       drawHint(g, t, U"\u2191\u2193 pick  \u25CF set  back: cancel",
                U"tap: select  outside: cancel");

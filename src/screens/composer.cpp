@@ -140,7 +140,8 @@ void ComposerScreen::fieldKey(const KeyEvent& k) {
         ++focus_;
       }
       break;
-    case Action::Palette: {
+    case Action::Palette:
+    case Action::Options: {
       openMenu(Menu::Actions, U"entry",
                {ListItem{U"Post\u2026", U""}, ListItem{U"Discard\u2026", U"", ItemTone::Error}});
       break;

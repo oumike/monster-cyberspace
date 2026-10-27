@@ -119,7 +119,7 @@ void LogView::render(Grid& g, int top, int bottom, int rightReserve, const Theme
   }
 
   int selTop = -1, selBottom = -1;
-  if (activeTaps()) activeTaps()->setList(ListId::Log, -1, messageCount(), false);
+  if (activeTaps()) activeTaps()->setList(ListId::Log, -1, messageCount(), false, true);
   for (int r = 0; r < height; ++r) {
     int row = top + r;
     int idx = start + r;

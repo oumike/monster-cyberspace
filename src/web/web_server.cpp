@@ -17,6 +17,7 @@
 #include "hal/board.h"
 #include "net/wifi_mgr.h"
 #include "store/settings.h"
+#include "tz/zones.h"
 #include "web/page.h"
 #include "web/web_util.h"
 
@@ -270,9 +271,22 @@ esp_err_t getPrefs(httpd_req_t* req) {
   d["buzzer"] = s.buzzer;
   d["theme"] = rc::themeKey(s.theme);
   d["tz"] = s.tz;
-  d["tzMode"] = rc::tzModeKey(s.tzMode);
+  d["tzName"] = s.tzName;
   d["ntpServer"] = s.ntpServer;
-  d["hasGps"] = board::hasGps();
+  return sendJson(req, d);
+}
+
+esp_err_t getZones(httpd_req_t* req) {
+  if (!authorized(req)) return ESP_OK;
+  JsonDocument d;
+  JsonArray a = d.to<JsonArray>();
+  for (size_t i = 0; i < rc::zoneCount(); ++i) {
+    const rc::Zone& z = rc::zoneAt(i);
+    JsonObject o = a.add<JsonObject>();
+    o["iana"] = z.iana;
+    o["label"] = z.label;
+    o["posix"] = z.posix;
+  }
   return sendJson(req, d);
 }
 
@@ -288,30 +302,34 @@ esp_err_t postPrefs(httpd_req_t* req) {
   rc::ThemeId theme = s.theme;
   if (doc["theme"].is<const char*>() && !rc::parseThemeId(doc["theme"].as<const char*>(), theme))
     return fail(req, "400 Bad Request", "Theme: default, bw or wb");
-  rc::TzMode tzMode = s.tzMode;
-  if (doc["tzMode"].is<const char*>()) {
-    if (!rc::parseTzMode(doc["tzMode"].as<const char*>(), tzMode))
-      return fail(req, "400 Bad Request", "Zone mode: auto or manual");
-    if (tzMode == rc::TzMode::Automatic && !board::hasGps())
-      return fail(req, "400 Bad Request", "This board has no GPS");
-  }
   std::string ntp = s.ntpServer;
   if (doc["ntpServer"].is<const char*>()) {
     ntp = doc["ntpServer"].as<const char*>();
     if (!rc::validNtpServer(ntp))
       return fail(req, "400 Bad Request", "NTP server: a host name, 1-63 characters");
   }
-  std::string tz = s.tz;
-  if (doc["tz"].is<const char*>()) {
+  // A listed zone name brings its own POSIX string. An empty name (custom)
+  // takes "tz" as sent; "tz" alone is named from the list when it matches.
+  std::string tz = s.tz, tzName = s.tzName;
+  const bool named = doc["tzName"].is<const char*>();
+  if (named) tzName = doc["tzName"].as<const char*>();
+  if (named && !tzName.empty()) {
+    const rc::Zone* z = rc::findZoneByIana(tzName);
+    if (!z) return fail(req, "400 Bad Request", "Time zone: not in the list");
+    tz = z->posix;
+  } else if (doc["tz"].is<const char*>()) {
     tz = doc["tz"].as<const char*>();
-    if (tz.empty() || tz.size() > 63 || !printable(tz))
+    if (!rc::validPosixTz(tz))
       return fail(req, "400 Bad Request", "Time zone: a POSIX TZ string such as UTC0");
+    if (!named) {
+      const rc::Zone* z = rc::findZoneByPosix(tz);
+      tzName = z ? z->iana : "";
+    }
   }
   // The time service owns the TZ and SNTP; it reloads the saved values.
-  if (tzMode != s.tzMode) settings::saveTzMode(tzMode);
   if (ntp != s.ntpServer) settings::saveNtpServer(ntp);
-  if (tz != s.tz) settings::saveTz(tz);
-  if (tzMode != s.tzMode || ntp != s.ntpServer || tz != s.tz) rc::timesvc::settingsChanged();
+  if (tz != s.tz || tzName != s.tzName) settings::saveTz(tz, tzName);
+  if (ntp != s.ntpServer || tz != s.tz || tzName != s.tzName) rc::timesvc::settingsChanged();
   // The UI task owns text size, theme and buzzer; it applies and saves them.
   if (!doc["textSize"].isNull() || !doc["buzzer"].isNull() || !doc["theme"].isNull())
     rc::postEvent(rc::Event{rc::EvtType::PrefsChanged, rc::themeKey(theme), compact ? 1 : 0, buzzer});
@@ -394,6 +412,7 @@ void begin() {
       {"/api/resend", HTTP_POST, postResend},
       {"/api/prefs", HTTP_GET, getPrefs},
       {"/api/prefs", HTTP_POST, postPrefs},
+      {"/api/zones", HTTP_GET, getZones},
       {"/api/security", HTTP_POST, postSecurity},
       {"/api/restart", HTTP_POST, postRestart},
       {"/api/factory-reset", HTTP_POST, postFactoryReset},

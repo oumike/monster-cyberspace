@@ -2,7 +2,7 @@
 
 #include <Preferences.h>
 
-#include "hal/board.h"
+#include "tz/zones.h"
 
 namespace {
 
@@ -13,13 +13,8 @@ std::string getStr(Preferences& p, const char* key, const std::string& def) {
   return p.getString(key, def.c_str()).c_str();
 }
 
-// NVS "tzmode": 0 Automatic, 1 Manual. Unset: Automatic with a GPS. A board
-// without a GPS is always Manual.
-rc::TzMode loadTzMode(Preferences* p) {
-  if (!board::hasGps()) return rc::TzMode::Manual;
-  if (!p || !p->isKey("tzmode")) return rc::TzMode::Automatic;
-  return p->getUChar("tzmode", 0) == 1 ? rc::TzMode::Manual : rc::TzMode::Automatic;
-}
+// Left by the automatic time zone, which is gone; erased on the first load.
+constexpr const char* kStaleKeys[] = {"tzmode", "tzaname", "tzaposix"};
 
 // Keys must be at most 15 characters.
 void ssidKey(char* buf, size_t n, size_t i) { snprintf(buf, n, "ws%u", unsigned(i)); }
@@ -32,10 +27,7 @@ namespace settings {
 void load(rc::Settings& s) {
   s = rc::Settings{};
   Preferences p;
-  if (!p.begin(kNs, true)) {  // nothing saved yet
-    s.tzMode = loadTzMode(nullptr);
-    return;
-  }
+  if (!p.begin(kNs, true)) return;  // nothing saved yet
   size_t n = p.getUChar("wn", 0);
   if (n > rc::kMaxWifiNets) n = rc::kMaxWifiNets;
   char k[8];
@@ -50,9 +42,12 @@ void load(rc::Settings& s) {
   s.email = getStr(p, "email", "");
   s.refreshToken = getStr(p, "rtok", "");
   s.tz = getStr(p, "tz", s.tz);
-  s.tzMode = loadTzMode(&p);
-  s.tzAutoName = getStr(p, "tzaname", "");
-  s.tzAutoPosix = getStr(p, "tzaposix", "");
+  if (p.isKey("tzname")) {
+    s.tzName = getStr(p, "tzname", "");
+  } else {  // saved before zone names: name it from the list when it matches
+    const rc::Zone* z = rc::findZoneByPosix(s.tz);
+    s.tzName = z ? z->iana : "";
+  }
   s.ntpServer = getStr(p, "ntp", s.ntpServer);
   s.pagePassword = getStr(p, "pagepw", "");
   s.apPassword = getStr(p, "appw", "");
@@ -90,17 +85,14 @@ void saveWifi(const std::vector<rc::WifiNet>& nets) {
   p.end();
 }
 
-void saveTz(const std::string& tz) {
+void saveTz(const std::string& tz, const std::string& tzName) {
   Preferences p;
   if (!p.begin(kNs, false)) return;
   p.putString("tz", tz.c_str());
-  p.end();
-}
-
-void saveTzMode(rc::TzMode mode) {
-  Preferences p;
-  if (!p.begin(kNs, false)) return;
-  p.putUChar("tzmode", mode == rc::TzMode::Manual ? 1 : 0);
+  p.putString("tzname", tzName.c_str());
+  // Left over from the automatic zone; unread, cleared on the next zone save.
+  for (const char* k : kStaleKeys)
+    if (p.isKey(k)) p.remove(k);
   p.end();
 }
 
@@ -108,14 +100,6 @@ void saveNtpServer(const std::string& host) {
   Preferences p;
   if (!p.begin(kNs, false)) return;
   p.putString("ntp", host.c_str());
-  p.end();
-}
-
-void saveTzAuto(const std::string& name, const std::string& posix) {
-  Preferences p;
-  if (!p.begin(kNs, false)) return;
-  p.putString("tzaname", name.c_str());
-  p.putString("tzaposix", posix.c_str());
   p.end();
 }
 

@@ -16,7 +16,6 @@ constexpr int64_t kMaxPlausibleSec = 4102444800;  // 2100-01-01, exclusive
 
 struct ClockInputs {
   bool hasGps = false;
-  bool autoZone = false;        // zone mode Automatic
   bool ntpSynced = false;       // the SNTP callback fired since the last tick
   int64_t systemEpochMs = 0;    // the system clock now
   const GpsState* gps = nullptr;
@@ -52,7 +51,6 @@ class ClockPolicy {
   ClockStatus status_;
   int64_t lastNtpMs_ = -1;
   int64_t lastGpsSampleMs_ = -1;  // utcAtMs of the latest GPS sample used
-  int64_t lastPosMs_ = -1;        // Automatic mode only; survives the parser reset
   int64_t lastRtcWriteMs_ = -1;
   int64_t retryAtMs_ = -1;        // after a failed search, no search before this
 };

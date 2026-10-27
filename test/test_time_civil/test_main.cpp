@@ -50,11 +50,28 @@ void test_pcf_bad_bcd() {
   TEST_ASSERT_FALSE(pcf8563Decode(r, e));
 }
 
+void test_pcf_day_past_month_end() {
+  uint8_t r[7];
+  int64_t e;
+  pcf8563Encode(1793039400, r);
+  r[5] = 0x04;  // April
+  r[3] = 0x31;  // the 31st
+  TEST_ASSERT_FALSE(pcf8563Decode(r, e));
+  r[3] = 0x30;
+  TEST_ASSERT_TRUE(pcf8563Decode(r, e));
+  r[5] = 0x02;  // 2026 is not a leap year
+  r[3] = 0x29;
+  TEST_ASSERT_FALSE(pcf8563Decode(r, e));
+  r[6] = 0x28;  // 2028 is
+  TEST_ASSERT_TRUE(pcf8563Decode(r, e));
+}
+
 int main(int, char**) {
   UNITY_BEGIN();
   RUN_TEST(test_days_from_civil);
   RUN_TEST(test_pcf_encode_decode);
   RUN_TEST(test_pcf_vl_flag);
   RUN_TEST(test_pcf_bad_bcd);
+  RUN_TEST(test_pcf_day_past_month_end);
   return UNITY_END();
 }

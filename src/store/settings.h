@@ -3,7 +3,6 @@
 #include <string>
 #include <vector>
 
-#include "tz/tz_lookup.h"
 #include "ui/grid.h"
 #include "ui/theme.h"
 
@@ -20,9 +19,9 @@ struct Settings {
   bool drawerOpen = false, buzzer = true;
   ThemeId theme = ThemeId::Default;
   std::string lastRoom = "general";
-  // tz is the manual zone. Automatic uses the zone of the last GPS lookup.
-  rc::TzMode tzMode = rc::TzMode::Manual;
-  std::string tzAutoName, tzAutoPosix;
+  // tz is the POSIX string applied; tzName its IANA name from the zone list,
+  // empty for a custom string.
+  std::string tzName = "Etc/UTC";
   std::string ntpServer = "pool.ntp.org";  // SNTP server 0; time.google.com is server 1
 };
 
@@ -39,11 +38,9 @@ void load(rc::Settings&);
 void saveUiPrefs(const rc::Settings&);
 // Web config only. Networks beyond kMaxWifiNets are dropped.
 void saveWifi(const std::vector<rc::WifiNet>&);
-void saveTz(const std::string& tz);
-void saveTzMode(rc::TzMode mode);
+// The device's Settings and web config. tzName is empty for a custom string.
+void saveTz(const std::string& tz, const std::string& tzName);
 void saveNtpServer(const std::string& host);
-// The time service calls this only when the looked-up zone changes.
-void saveTzAuto(const std::string& name, const std::string& posix);
 void saveSecurity(const std::string& pagePassword, const std::string& apPassword);
 void saveToken(const std::string& refreshToken);
 void clearToken();

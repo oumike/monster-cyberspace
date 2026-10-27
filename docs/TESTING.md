@@ -149,21 +149,21 @@ BOOT tap = Down, BOOT hold (0.7 s) = Back, Wake tap = Select, Wake hold (1 s)
 - [ ] A Wi-Fi drop and rejoin logs a fresh `[time] NTP sync`
 - [ ] After a reboot with the saved network switched off, the status-bar clock is right at once (`[time] set from RTC`), and `[gps] on` follows
 - [ ] Outdoors with Wi-Fi off, a GPS fix sets the clock: `[gps] fix, …` and `[time] set from GPS` within 15 min
-- [ ] Automatic zone: `[tz] zone <name>` matches the location and the status-bar clock shows local time; after a reboot, local time is right before any fix
-- [ ] The GPS turns off afterwards: `[gps] off` once both the time and the position are fresh
+- [ ] Setup page: the Wi-Fi section's Time zone starts on the browser's zone; saving Wi-Fi saves it, and the clock shows local time after the restart
+- [ ] Settings → Time zone: the list opens on the current zone; Centre picks another and the status-bar clock changes at once; Back leaves it unchanged
+- [ ] A Wi-Fi network that only appears after boot (switch it on 2 min in): `[wifi] connected` is followed by `[time] NTP sync`
+- [ ] The GPS turns off afterwards: `[gps] off` once the time is set
 - [ ] No log line shows coordinates
 - [ ] The Settings screen shows gps, time and zone in both text sizes; with the setup AP on at Comfortable size nothing overlaps the menu
 - [ ] The web Status page shows the same three lines
-- [ ] Web config Time: switching to Manual applies the picked TZ at once
+- [ ] Web config Time: picking a zone applies it at once; Custom shows the POSIX field and a typed string applies
 - [ ] NTP server field: a bad server shows the error; `time.cloudflare.com` logs `[time] NTP sync` after a Wi-Fi rejoin
-- [ ] The web config footer shows `Time zone boundaries © OpenStreetMap contributors (ODbL), from timezone-boundary-builder.`
 - [ ] `m9_fake`: Settings shows the canned gps, time and zone lines
 
 **GPS time and time zone (`wio_l2`, no RTC):**
 
 - [ ] Outdoors with Wi-Fi off, a GPS fix sets the clock: `[gps] fix, …` and `[time] set from GPS` within 15 min
-- [ ] Automatic zone: `[tz] zone <name>` matches the location and the status-bar clock shows local time
-- [ ] The GPS turns off afterwards: `[gps] off` once both the time and the position are fresh
+- [ ] The GPS turns off afterwards: `[gps] off` once the time is set
 - [ ] No log line shows coordinates
 
 **API assumptions to confirm (watch the serial log during the live checklist):**

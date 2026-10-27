@@ -4,7 +4,7 @@
 #include <cstdint>
 
 // A streaming NMEA 0183 parser for the sentences the clock needs: RMC (time,
-// date, fix, position), GGA (satellites used) and GSV (satellites in view).
+// date, fix), GGA (satellites used) and GSV (satellites in view).
 namespace rc {
 
 struct GpsState {
@@ -14,9 +14,7 @@ struct GpsState {
   bool utcValid = false;    // an 'A' RMC with both time and date has been seen
   int64_t utcEpochMs = 0;   // that RMC's UTC
   int64_t utcAtMs = -1;     // monotonic ms when it was parsed
-  double lat = 0, lon = 0;  // degrees, south and west negative; valid once posAtMs >= 0
   int64_t lastFixMs = -1;   // monotonic ms of the latest 'A' RMC
-  int64_t posAtMs = -1;     // monotonic ms of the latest 'A' RMC that carried lat/lon
 };
 
 class NmeaParser {

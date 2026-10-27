@@ -11,9 +11,10 @@ namespace rc::timesvc {
 
 struct Snapshot {
   std::string gps, time, zone;  // ready-made status lines
+  std::string tzName, tz;       // the zone applied (Settings::tzName, Settings::tz)
 };
 
-// Applies the TZ, sets the clock from the RTC, configures SNTP and starts the
+// Applies the zone (Settings::tz), sets the clock from the RTC, configures SNTP and starts the
 // "time" task. SNTP itself starts on the first restartNtp().
 void start(const Settings& s);
 // Called on every Wi-Fi station connect.

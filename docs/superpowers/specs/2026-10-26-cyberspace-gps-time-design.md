@@ -2,6 +2,14 @@
 
 Status: approved in conversation 2026-10-26; awaiting written-spec review.
 
+**Amendment (2026-10-26, from the user): the time zone is manual only.** The
+automatic zone from GPS is removed: the boundary data (§5), the lookup, the
+zone mode and the saved automatic zone are gone. The user picks the zone from
+a curated list (`lib/core/src/tz/zones.cpp`) on the setup page, in web config
+and in device Settings, or types a POSIX string in web config. GPS still sets
+the clock, and the GPS powers on only for the time. Sections below that
+describe the automatic zone are superseded.
+
 ## 1. Goal
 
 Keep the clock right on every board with or without Wi-Fi, and set the time

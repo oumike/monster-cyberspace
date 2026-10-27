@@ -38,24 +38,6 @@ bool parseInt(const char* s, int& out) {
   return true;
 }
 
-// "ddmm.mmmm" (degDigits 2) or "dddmm.mmmm" (degDigits 3) as degrees.
-bool parseCoord(const char* s, int degDigits, double& out) {
-  int deg;
-  if (!digits(s, degDigits, deg)) return false;
-  s += degDigits;
-  int whole;
-  if (!digits(s, 2, whole)) return false;
-  s += 2;
-  double minutes = whole;
-  if (*s == '.') {
-    double scale = 0.1;
-    for (++s; isDigit(*s); ++s, scale /= 10) minutes += (*s - '0') * scale;
-  }
-  if (*s || minutes >= 60) return false;
-  out = deg + minutes / 60.0;
-  return true;
-}
-
 // "hhmmss[.fff]" as ms since midnight.
 bool parseTime(const char* s, int64_t& out) {
   int h, m, sec;
@@ -155,14 +137,6 @@ void NmeaParser::handleRmc(char** f, int nf, int64_t nowMs) {
   if (strcmp(f[2], "A") != 0) return;
   state_.fix = true;
   state_.lastFixMs = nowMs;
-
-  double lat, lon;
-  if (parseCoord(f[3], 2, lat) && parseCoord(f[5], 3, lon) &&
-      (f[4][0] == 'N' || f[4][0] == 'S') && (f[6][0] == 'E' || f[6][0] == 'W')) {
-    state_.lat = f[4][0] == 'S' ? -lat : lat;
-    state_.lon = f[6][0] == 'W' ? -lon : lon;
-    state_.posAtMs = nowMs;
-  }
 
   int64_t timeMs, days;
   if (parseTime(f[1], timeMs) && parseDate(f[9], days)) {

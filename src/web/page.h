@@ -31,6 +31,7 @@ ul{padding-left:1.2em;margin:.3em 0}li button{padding:.1em .4em;font-size:.85em}
 <select id="ssidpick" onchange="ssid.value=this.value" hidden></select>
 <label>Network name<input id="ssid" autocomplete="off"></label>
 <label>Password (empty for an open network)<input id="wpass" type="password" autocomplete="off"></label>
+<label id="wtzrow" hidden>Time zone<select id="wtz"></select></label>
 <button onclick="addWifi()">Save network</button>
 <div id="wifimsg" class="msg"></div>
 
@@ -52,20 +53,8 @@ ul{padding-left:1.2em;margin:.3em 0}li button{padding:.1em .4em;font-size:.85em}
 <div id="prefmsg" class="msg"></div>
 
 <h2>Time</h2>
-<label>Time zone<select id="tzmode" onchange="tzNote()"><option value="auto">Automatic, from GPS</option><option value="manual">Manual</option></select></label>
-<label>Zone<select id="tzpick" onchange="if(this.value)tz.value=this.value">
-<option value="">(type below)</option>
-<option>UTC0</option>
-<option>EST5EDT,M3.2.0,M11.1.0</option>
-<option>CST6CDT,M3.2.0,M11.1.0</option>
-<option>MST7MDT,M3.2.0,M11.1.0</option>
-<option>PST8PDT,M3.2.0,M11.1.0</option>
-<option>GMT0BST,M3.5.0/1,M10.5.0</option>
-<option>CET-1CEST,M3.5.0,M10.5.0/3</option>
-<option>AEST-10AEDT,M10.1.0,M4.1.0/3</option>
-</select></label>
-<label>POSIX TZ string<input id="tz" autocomplete="off"></label>
-<div id="tznote" class="dim" hidden>Used until GPS finds the zone</div>
+<label>Time zone<select id="tzpick" onchange="tzCustom()"></select></label>
+<label id="tzrow" hidden>POSIX TZ string<input id="tz" autocomplete="off"></label>
 <label>NTP server<input id="ntp" autocomplete="off"></label>
 <button onclick="saveTime()">Save time</button>
 <div id="timemsg" class="msg"></div>
@@ -82,7 +71,6 @@ ul{padding-left:1.2em;margin:.3em 0}li button{padding:.1em .4em;font-size:.85em}
 <button class="danger" onclick="reset()">Factory reset…</button>
 <div id="devmsg" class="msg"></div>
 
-<footer class="dim">Time zone boundaries © OpenStreetMap contributors (ODbL), from timezone-boundary-builder.</footer>
 <script>
 const $=id=>document.getElementById(id);
 function show(id,r){const e=$(id);e.textContent=r.message||(r.ok?'Done':'Failed');e.className='msg '+(r.ok?'ok':'err');}
@@ -93,8 +81,10 @@ async function call(method,url,body){
 }
 async function post(url,body,msg){const r=await call('POST',url,body);show(msg,r);setTimeout(load,800);return r;}
 const conn=['offline','reconnecting','live'];
+let setupMode=false,zones=[],savedTzName=null;
 async function load(){
   const s=await call('GET','/api/status');if(s.version===undefined)return;
+  setupMode=s.mode==='setup';$('wtzrow').hidden=!setupMode;
   const rows=[['firmware','v'+s.version+' on '+s.board],['mode',s.mode==='setup'?'setup (AP '+s.apSsid+')':'station'],
     ['wi-fi',s.ssid?s.ssid+' ('+s.rssiBars+'/4)':'not connected'],['ip',s.ip||'-'],
     ['battery',s.battery<0?'unknown':s.battery+'%'],['chat',conn[s.conn]||'-'],
@@ -109,25 +99,41 @@ async function load(){
   if(!$('email').value&&s.email)$('email').value=s.email;
   $('pagestate').textContent=s.pagePasswordSet?'(set)':'(off)';$('apstate').textContent=s.apPasswordSet?'(set)':'(open)';
 }
+const listed=n=>zones.some(z=>z.iana===n);
+// Browsers may report an older name for a listed zone.
+const tzAlias={'Asia/Calcutta':'Asia/Kolkata','Asia/Saigon':'Asia/Ho_Chi_Minh','Asia/Katmandu':'Asia/Kathmandu',
+  'Asia/Rangoon':'Asia/Yangon','Europe/Kiev':'Europe/Kyiv','America/Buenos_Aires':'America/Argentina/Buenos_Aires',
+  'Pacific/Samoa':'Pacific/Pago_Pago','UTC':'Etc/UTC','Etc/GMT':'Etc/UTC','Etc/UCT':'Etc/UTC','GMT':'Etc/UTC'};
+function browserZone(){try{const n=Intl.DateTimeFormat().resolvedOptions().timeZone;return tzAlias[n]||n;}catch(e){return '';}}
+function fillZones(sel,custom){sel.innerHTML='';
+  for(const z of zones){const o=document.createElement('option');o.value=z.iana;o.textContent=z.label+' \u2014 '+z.iana;sel.appendChild(o);}
+  if(custom){const o=document.createElement('option');o.value='';o.textContent='Custom (POSIX)';sel.appendChild(o);}}
+async function loadZones(){const r=await call('GET','/api/zones');zones=Array.isArray(r)?r:[];fillZones($('tzpick'),true);fillZones($('wtz'),true);}
 async function loadPrefs(){const p=await call('GET','/api/prefs');if(p.tz===undefined)return;
   $('tsize').value=p.textSize;if(p.theme)$('theme').value=p.theme;$('buzzer').checked=p.buzzer;$('tz').value=p.tz;
-  $('tzpick').value=[...$('tzpick').options].some(o=>o.value===p.tz)?p.tz:'';
-  {const o=$('tzmode').options[0];o.hidden=o.disabled=!p.hasGps;}$('tzmode').value=p.tzMode;$('ntp').value=p.ntpServer;tzNote();}
-function tzNote(){$('tznote').hidden=$('tzmode').value!=='auto';}
+  $('tzpick').value=listed(p.tzName)?p.tzName:'';tzCustom();$('ntp').value=p.ntpServer;
+  // Setup mode keeps a zone already set; only the factory default takes the browser's.
+  savedTzName=p.tzName;const keep=$('wtz').querySelector('option[value=""]');
+  if(keep)keep.textContent='Keep current ('+p.tz+')';
+  const b=browserZone();$('wtz').value=p.tz==='UTC0'&&listed(b)?b:listed(p.tzName)?p.tzName:p.tz==='UTC0'?'Etc/UTC':'';}
+function tzCustom(){const n=$('tzpick').value;$('tzrow').hidden=n!=='';const z=zones.find(z=>z.iana===n);if(z)$('tz').value=z.posix;}
 async function scan(){$('scanmsg').textContent='scanning…';const r=await call('GET','/api/wifi/scan');
   const sel=$('ssidpick');sel.innerHTML='<option value="">pick a network…</option>';
   for(const n of r.networks||[]){const o=document.createElement('option');o.value=o.textContent=n;sel.appendChild(o);}
   sel.hidden=false;$('scanmsg').textContent=(r.networks||[]).length+' found';}
-async function addWifi(){const r=await post('/api/wifi',{ssid:$('ssid').value,password:$('wpass').value},'wifimsg');if(r.ok)$('wpass').value='';}
+async function addWifi(){
+  // In setup mode the zone is saved first: saving the network restarts the device.
+  if(setupMode&&$('wtz').value&&$('wtz').value!==savedTzName){const z=await call('POST','/api/prefs',{tzName:$('wtz').value});if(!z.ok){show('wifimsg',z);return;}}
+  const r=await post('/api/wifi',{ssid:$('ssid').value,password:$('wpass').value},'wifimsg');if(r.ok)$('wpass').value='';}
 async function login(){$('acctmsg').textContent='Signing in…';$('acctmsg').className='msg dim';
   const r=await call('POST','/api/login',{email:$('email').value,password:$('cpass').value});$('cpass').value='';show('acctmsg',r);load();}
 function savePrefs(){post('/api/prefs',{textSize:$('tsize').value,theme:$('theme').value,buzzer:$('buzzer').checked},'prefmsg');}
-function saveTime(){post('/api/prefs',{tzMode:$('tzmode').value,tz:$('tz').value,ntpServer:$('ntp').value},'timemsg');}
+function saveTime(){post('/api/prefs',{tzName:$('tzpick').value,tz:$('tz').value,ntpServer:$('ntp').value},'timemsg');}
 async function saveSec(){const b={pagePassword:$('pagepw').value,apPassword:$('appw').value};
   if(!b.pagePassword&&!confirm('Leave the page password empty (no password)?'))return;
   const r=await post('/api/security',b,'secmsg');if(r.ok){$('pagepw').value='';$('appw').value='';}}
 function reset(){if(confirm('Erase Wi-Fi, account and all settings, then restart into setup mode?')&&confirm('Really erase everything?'))post('/api/factory-reset',{confirm:true},'devmsg');}
-load();loadPrefs();setInterval(load,10000);
+load();loadZones().then(loadPrefs);setInterval(load,10000);
 </script></body></html>)HTML";
 
 }  // namespace web

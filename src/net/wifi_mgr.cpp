@@ -29,6 +29,7 @@ rc::ApFallback gFallback;
 
 size_t gNext = 0;          // index of the next network to try
 bool gTrying = false;
+bool gWasConnected = false;  // connected at the last reconnectWithBackoff()
 uint32_t gAttemptStart = 0;
 uint32_t gBackoffMs = 1000;
 uint32_t gWaitUntil = 0;   // millis() before which no new pass starts
@@ -104,6 +105,7 @@ void begin(const rc::Settings& s) {
   gBackoffMs = 1000;
   gWaitUntil = 0;
   gTrying = false;
+  gWasConnected = false;
   if (!gNets.empty()) tryNext();
 }
 
@@ -170,12 +172,15 @@ void reconnectWithBackoff() {
     default:
       break;
   }
-  if (connected()) {
-    if (gTrying) {
-      Serial.printf("[wifi] connected, ip %s\n", WiFi.localIP().toString().c_str());
-      rc::timesvc::restartNtp();
-      gTrying = false;
-    }
+  const bool up = connected();
+  // Every join restarts SNTP, including one that lands after its attempt timed out.
+  if (up && !gWasConnected) {
+    Serial.printf("[wifi] connected, ip %s\n", WiFi.localIP().toString().c_str());
+    rc::timesvc::restartNtp();
+  }
+  gWasConnected = up;
+  if (up) {
+    gTrying = false;
     gBackoffMs = 1000;
     gNext = 0;
     gWaitUntil = millis();  // a later drop retries at once

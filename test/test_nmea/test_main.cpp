@@ -1,6 +1,5 @@
 #include <unity.h>
 
-#include <cmath>
 #include <cstdio>
 #include <cstring>
 #include <string>
@@ -31,7 +30,7 @@ static std::string replace(std::string s, const char* from, const char* to) {
 
 const char* kRmc = "GNRMC,183000.00,A,4042.768,N,07400.360,W,0.0,0.0,261026,,,A";
 
-void test_rmc_sets_time_and_position() {
+void test_rmc_sets_time() {
   NmeaParser p;
   feed(p, nmea(kRmc), 5000);
   const GpsState& s = p.state();
@@ -40,8 +39,6 @@ void test_rmc_sets_time_and_position() {
   TEST_ASSERT_EQUAL_INT64(5000, s.utcAtMs);
   TEST_ASSERT_TRUE(s.fix);
   TEST_ASSERT_EQUAL_INT64(5000, s.lastFixMs);
-  TEST_ASSERT_TRUE(std::fabs(s.lat - 40.7128) < 1e-4);  // Unity double support is off
-  TEST_ASSERT_TRUE(std::fabs(s.lon - -74.006) < 1e-4);
 }
 
 void test_rmc_fraction_ms() {
@@ -96,16 +93,10 @@ void test_rmc_void_not_valid() {
 
 void test_rmc_without_position() {
   NmeaParser p;
-  const std::string noPos = nmea(replace(kRmc, "4042.768,N,07400.360,W", ",,,").c_str());
-  feed(p, noPos, 1);
+  feed(p, nmea(replace(kRmc, "4042.768,N,07400.360,W", ",,,").c_str()), 1);
   TEST_ASSERT_TRUE(p.state().fix);
-  TEST_ASSERT_EQUAL_INT64(-1, p.state().posAtMs);
-  feed(p, nmea(kRmc), 2);
-  TEST_ASSERT_EQUAL_INT64(2, p.state().posAtMs);
-  // A later fix without a position leaves the old one marked as old.
-  feed(p, noPos, 3);
-  TEST_ASSERT_TRUE(p.state().fix);
-  TEST_ASSERT_EQUAL_INT64(2, p.state().posAtMs);
+  TEST_ASSERT_TRUE(p.state().utcValid);
+  TEST_ASSERT_EQUAL_INT64(1793039400000LL, p.state().utcEpochMs);
 }
 
 void test_rmc_empty_date_not_valid() {
@@ -126,8 +117,6 @@ void test_split_across_reads() {
   TEST_ASSERT_EQUAL_INT64(whole.state().utcEpochMs, split.state().utcEpochMs);
   TEST_ASSERT_EQUAL_INT64(whole.state().utcAtMs, split.state().utcAtMs);
   TEST_ASSERT_EQUAL(whole.state().fix, split.state().fix);
-  TEST_ASSERT_TRUE(whole.state().lat == split.state().lat);
-  TEST_ASSERT_TRUE(whole.state().lon == split.state().lon);
 }
 
 void test_unknown_and_talkers() {
@@ -169,7 +158,7 @@ void test_reset_clears() {
 
 int main(int, char**) {
   UNITY_BEGIN();
-  RUN_TEST(test_rmc_sets_time_and_position);
+  RUN_TEST(test_rmc_sets_time);
   RUN_TEST(test_rmc_fraction_ms);
   RUN_TEST(test_gga_sats_used);
   RUN_TEST(test_gsv_summed_over_talkers);

@@ -7,7 +7,7 @@ namespace {
 constexpr int64_t kHourMs = 3600000;
 constexpr int64_t kResyncMs = kHourMs;           // GPS may correct a sync this old
 constexpr int64_t kRtcWriteGapMs = kHourMs;
-constexpr int64_t kStaleMs = 6 * kHourMs;        // sync or position older than this needs the GPS
+constexpr int64_t kStaleMs = 6 * kHourMs;        // a sync older than this needs the GPS
 constexpr int64_t kSearchLimitMs = 15 * 60000;
 constexpr int64_t kRetryWaitMs = kHourMs;
 
@@ -38,9 +38,7 @@ void ClockPolicy::maybeWriteRtc(int64_t nowMs, int64_t epochMs, ClockActions& a)
 }
 
 bool ClockPolicy::gpsNeeded(int64_t nowMs, const ClockInputs& in) const {
-  if (!in.hasGps) return false;
-  if (olderThan(status_.lastSyncMs, nowMs, kStaleMs)) return true;
-  return in.autoZone && olderThan(lastPosMs_, nowMs, kStaleMs);
+  return in.hasGps && olderThan(status_.lastSyncMs, nowMs, kStaleMs);
 }
 
 ClockActions ClockPolicy::tick(int64_t nowMs, const ClockInputs& in) {
@@ -55,8 +53,6 @@ ClockActions ClockPolicy::tick(int64_t nowMs, const ClockInputs& in) {
 
   const GpsState* g = in.gps;
   if (g) {
-    // Only a position seen in Automatic mode was given to the zone lookup.
-    if (in.autoZone && g->posAtMs > lastPosMs_) lastPosMs_ = g->posAtMs;
     if (g->utcValid && g->utcAtMs > lastGpsSampleMs_) {
       const int64_t epochMs = g->utcEpochMs + (nowMs - g->utcAtMs);
       // An RTC boot leaves lastSyncMs at -1, so GPS may still set the clock.

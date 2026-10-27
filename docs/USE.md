@@ -10,8 +10,8 @@
    required.
 3. Browse to **`http://192.168.4.1`**. Nothing pops up on its own: there is no
    captive portal, so type the address in.
-4. Under **Wi-Fi**, scan or type your network name, enter its password and
-   save. The device restarts and joins that network.
+4. Under **Wi-Fi**, scan or type your network name, enter its password,
+   check the **Time zone** (it starts on your browser's zone) and save. The device restarts and joins that network.
 5. On your LAN, open **`http://rhino-cyberspace.local`** (or the IP shown on the
    Home screen). Under **Cyberspace account**, sign in with your email and
    password. The device signs in, keeps only a refresh token, and discards the
@@ -194,13 +194,9 @@ At `http://rhino-cyberspace.local`, or the device IP, on your LAN:
 - Wi-Fi: scan, add, and remove saved networks (up to 5)
 - Cyberspace account: sign in, sign out, resend verification
 - Display: text size, theme, buzzer
-- Time: zone mode, zone and NTP server (see Time and time zone below)
+- Time: zone and NTP server (see Time and time zone below)
 - Security: page password and setup-AP password
 - Restart and factory reset
-
-The page footer carries the attribution for the bundled zone data:
-
-Time zone boundaries © OpenStreetMap contributors (ODbL), from timezone-boundary-builder.
 
 ### Security notes
 
@@ -228,25 +224,20 @@ The clock sets itself from the best source it has:
   has no RTC, so its clock is unset until NTP or GPS.
 
 The GPS powers itself on only while it's needed: when the clock is unset or
-its last sync is over 6 hours old, or, in Automatic zone mode, when there's
-no position from the last 6 hours. It turns off once those needs are met. A
+its last sync is over 6 hours old. It turns off once the clock is set. A
 search with no fix gives up after 15 minutes and tries again an hour later.
 For a first fix, take the device outdoors with a view of the sky.
 
-Pick the zone mode in web config under **Time**:
+You set the time zone yourself; it never changes on its own. Pick it in
+any of three places:
 
-- **Automatic, from GPS** (the default on boards with GPS). The zone comes
-  from the GPS position, looked up offline in zone boundaries stored on the
-  device. It's found on the first fix after boot and again after moving more
-  than 10 km, and it's saved, so the clock shows local time after a reboot
-  even before a fix. Until the first fix, the **Zone** below is used. Out at
-  sea, with no zone, the clock uses whole hours from the longitude
-  (`Etc/GMT±n`).
-- **Manual.** The **Zone** you pick (or the POSIX TZ string you type) applies
-  at once.
+- the setup page's **Wi-Fi** section, during first setup;
+- web config under **Time**: pick a **Zone**, or **Custom** to type a POSIX
+  TZ string (1–63 characters);
+- **Home** → **Settings** → **Time zone: …**, which opens the list of zones.
 
-**NTP server** takes a host name (1–63 characters). **Save time** saves all
-three fields.
+The zone applies at once. **NTP server** takes a host name (1–63
+characters). **Save time** saves the zone and the server.
 
 **Home** → **Settings** and the web Status page show three lines:
 
@@ -254,21 +245,21 @@ three fields.
   `fix, N of M satellites`.
 - **time:** the source and age of the last sync, such as `NTP, just now` or
   `GPS, 12 min ago`; `RTC, at boot`; or `not set`.
-- **zone:** the zone name with `(auto)` or `(manual)`, or the manual zone with
-  `(auto, no fix yet)` before the first fix.
+- **zone:** the zone name, or the POSIX string with `(custom)`.
 
 Privacy: your position is never sent anywhere, never stored and never logged.
-The serial log says only whether there's a fix, satellite counts and the zone
-name. Only the zone name and its POSIX string are saved.
+The serial log says only whether there's a fix and satellite counts.
 
 ## Settings
 
 **Home** → **Settings** shows the account, the Wi-Fi network and IP, the web
 config address, the battery, the setup AP state and the gps, time and zone
-lines (see Time and time zone), with four actions:
+lines (see Time and time zone), with five actions:
 
 - **Theme: …** Centre moves to the next theme (Default, Black & white, White &
   black) and saves it.
+- **Time zone: …** Opens the zone list; Centre picks one and saves it, Back
+  closes the list unchanged.
 - **Turn setup AP on / off.** Brings up the setup AP (its name, password state
   and `http://192.168.4.1` are shown) while staying on your Wi-Fi, so you can
   reach web config when your network is unreachable. It stays on until you

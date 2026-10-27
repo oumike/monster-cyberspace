@@ -57,13 +57,20 @@ class SettingsScreen : public Screen {
   void enter(const std::string&) override;
   void onKey(const KeyEvent&) override;
   void render(Grid&, const Theme&, int64_t nowMs) override;
-  bool hasOverlay() const override { return confirm_ != Confirm::None; }
-  void closeOverlays() override { confirm_ = Confirm::None; }
+  bool hasOverlay() const override { return confirm_ != Confirm::None || picking_; }
+  void closeOverlays() override {
+    confirm_ = Confirm::None;
+    picking_ = false;
+  }
 
  private:
   enum class Confirm { None, Logout, Reset };
-  ListView menu_, confirmMenu_;
+  void openZones();
+  void zoneKey(const KeyEvent&);
+
+  ListView menu_, confirmMenu_, zoneList_;
   Confirm confirm_ = Confirm::None;
+  bool picking_ = false;  // the time zone list is open
 };
 
 class RoomListScreen : public Screen {

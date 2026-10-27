@@ -7,20 +7,74 @@
 #include "screens/draw.h"
 #include "screens/screens.h"
 #include "store/settings.h"
+#include "tz/zones.h"
 
 namespace rc {
 
 namespace {
-enum Item { kTheme, kSetupAp, kLogout, kReset };
-constexpr int kItems = 4;
+enum Item { kTheme, kZone, kSetupAp, kLogout, kReset };
+constexpr int kItems = 5;
+
+std::u32string widen(const char* s) {
+  std::u32string out;
+  for (; *s; ++s) out += static_cast<char32_t>(static_cast<unsigned char>(*s));
+  return out;
 }
+}  // namespace
 
 void SettingsScreen::enter(const std::string&) {
   confirm_ = Confirm::None;
+  picking_ = false;
   menu_.setSelected(0);
 }
 
+void SettingsScreen::openZones() {
+  const std::string current = timesvc::snapshot().tzName;
+  std::vector<ListItem> items;
+  int sel = 0;
+  for (size_t i = 0; i < zoneCount(); ++i) {
+    const Zone& z = zoneAt(i);
+    ListItem it{widen(z.label), U""};
+    if (current == z.iana) {
+      it.marker = true;
+      sel = int(i);
+    }
+    items.push_back(std::move(it));
+  }
+  zoneList_.setItems(std::move(items));
+  zoneList_.setSelected(sel);
+  picking_ = true;
+}
+
+void SettingsScreen::zoneKey(const KeyEvent& k) {
+  switch (k.action) {
+    case Action::Up:
+      zoneList_.up();
+      break;
+    case Action::Down:
+      zoneList_.down();
+      break;
+    case Action::Back:
+    case Action::Left:
+      picking_ = false;
+      break;
+    case Action::Select:
+    case Action::Right: {
+      picking_ = false;
+      const int i = zoneList_.selected();
+      if (i < 0 || size_t(i) >= zoneCount()) break;
+      const Zone& z = zoneAt(size_t(i));
+      settings::saveTz(z.posix, z.iana);
+      timesvc::settingsChanged();
+      break;
+    }
+    default:
+      break;
+  }
+}
+
 void SettingsScreen::onKey(const KeyEvent& k) {
+  if (picking_) return zoneKey(k);
   ListView& m = confirm_ != Confirm::None ? confirmMenu_ : menu_;
   switch (k.action) {
     case Action::Up:
@@ -51,6 +105,8 @@ void SettingsScreen::onKey(const KeyEvent& k) {
         AppState& a = app();
         a.cfg.theme = nextTheme(a.cfg.theme);
         settings::saveUiPrefs(a.cfg);
+      } else if (menu_.selected() == kZone) {
+        openZones();
       } else if (menu_.selected() == kSetupAp) {
         Command c{CmdType::SetupAp};
         c.n = setupApUp() ? 0 : 1;
@@ -94,15 +150,23 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
   field("time", ts.time, t.fg);
   field("zone", ts.zone, t.fg);
 
-  std::u32string themeItem = U"Theme: ";
-  for (const char* c = themeLabel(a.cfg.theme); *c; ++c) themeItem += static_cast<char32_t>(*c);
   menu_.setItems({
-      ListItem{themeItem, U""},
+      ListItem{U"Theme: " + widen(themeLabel(a.cfg.theme)), U""},
+      ListItem{U"Time zone: " + widen(zoneLabel(ts.tzName)), U""},
       ListItem{ap ? U"Turn setup AP off" : U"Turn setup AP on", U""},
       ListItem{U"Log out", U""},
       ListItem{U"Factory reset\u2026", U"", ItemTone::Error},
   });
-  if (confirm_ != Confirm::None) {
+  if (picking_) {
+    // Drawn over the status lines and the menu, below the status bar.
+    const int top = 1;
+    for (int c = 0; c < g.cols(); ++c) g.put(c, top, U' ', t.barFg, t.barBg);
+    g.putText(1, top, U"time zone", t.barFg, t.barBg, g.cols() - 2);
+    for (int row = top + 1; row < bottom; ++row)
+      for (int c = 0; c < g.cols(); ++c) g.put(c, row, U' ', t.fg, t.bg);
+    zoneList_.render(g, top + 1, bottom, 1, g.cols() - 2, t);
+    drawHint(g, t, U"\u2191\u2193 pick  \u25CF set  back: cancel");
+  } else if (confirm_ != Confirm::None) {
     bool reset = confirm_ == Confirm::Reset;
     confirmMenu_.setItems({ListItem{U"Cancel", U""},
                            ListItem{reset ? U"Erase everything" : U"Log out", U"", ItemTone::Error}});

@@ -2,14 +2,16 @@
 
 On the Elecrow ThinkNode M9 (keyboard and d-pad), the Seeed Wio Tracker L2
 (touch screen; see Touch below) and the LilyGO T-Deck Plus (keyboard,
-trackball and touch; see T-Deck Plus below). Key names in this guide are the
+trackball and touch; see T-Deck Plus below), and the Elecrow CrowPanel
+Advance 3.5" and 5.0" (touch only; see CrowPanel below). Key names in this guide are the
 M9's.
 
 ## First setup
 
 1. Power on. With no Wi-Fi saved, the device starts its setup access point,
    **`Rhino-Cyberspace-M9-Setup`** (`…-WioL2-Setup` on the Wio Tracker L2,
-   `…-TDeck-Setup` on the T-Deck Plus), and the screen shows its name and the
+   `…-TDeck-Setup` on the T-Deck Plus, `…-CrowPanel35-Setup` and
+   `…-CrowPanel50-Setup` on the CrowPanels), and the screen shows its name and the
    address to browse.
 2. Join that network from a phone or laptop. It is open unless you set a
    setup-AP password earlier, in which case the screen says a password is
@@ -115,6 +117,22 @@ that wakes it does nothing else, so it never types, selects or taps.
 
 The screen stays landscape (there is no Orientation item). The setup AP is
 **`Rhino-Cyberspace-TDeck-Setup`**.
+
+## CrowPanel
+
+The CrowPanel Advance 3.5" and 5.0" work by touch alone, as described under
+Touch above, but with no buttons:
+
+- **Screen off:** there's no button to turn the screen off, so it stays on.
+  If it does go dark, a tap wakes it (that tap does nothing else).
+- **Orientation:** pick it in Settings or web config, as on the Wio Tracker L2.
+- **3.5":** the microSD slot takes settings backups; a GPS module on the UART1
+  connector, if fitted, sets the clock.
+- **5.0":** no SD slot (its pins belong to the wireless-module slot) and no GPS.
+
+Neither has a battery gauge or an RTC; the clock is unset until NTP or GPS.
+The setup AP is **`Rhino-Cyberspace-CrowPanel35-Setup`** or
+**`Rhino-Cyberspace-CrowPanel50-Setup`**.
 
 ## In a room
 

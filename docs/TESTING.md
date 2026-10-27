@@ -140,6 +140,20 @@ Buttons: BOOT tap = Back, BOOT hold (0.6 s) = Home; Wake tap = screen off
 - [ ] Wi-Fi setup (`tdeck`, nothing saved): the AP is named `Rhino-Cyberspace-TDeck-Setup` and `http://192.168.4.1` loads
 - [ ] Regression after the shared-driver change: the M9 panel, the Wio touch and both boards' battery % still work as before
 
+**CrowPanel Advance 3.5" (`crowpanel35`) and 5.0" (`crowpanel50`):**
+
+- [ ] Boots: the serial log (115200, the CH340 port) shows `[boot] … on CrowPanel35` / `CrowPanel50` and `[touch] GT911 … at 0x5D` (or 0x14)
+- [ ] 5.0": the log names the board revision (`V1.0 board (PCA9557)` or `V1.1+ board (MCU)`) and the backlight comes on
+- [ ] Display: landscape, right way up, colours right, nothing cut off. On the 3.5" a wrong half turn is `offset_rotation` in `src/hal/crowpanel/panel_ili9488.cpp` (3 now)
+- [ ] Touch: `‹`, `⋯` and the four corner Home tiles respond where tapped, in every orientation. 3.5": `readTouch` in `board_crowpanel35.cpp`; 5.0": `readTouch` in `board_crowpanel50.cpp` and the rotate-copy in `panel_rgb800.cpp`
+- [ ] Settings → Orientation: all four turns draw upright and full size (on the 5.0", note which portrait is the right way up)
+- [ ] The status bar is taller, with bigger text and icons, and easy to tap
+- [ ] The on-screen keyboard docks and types in every orientation
+- [ ] 5.0": scrolling a long room log redraws without tearing or stale rows
+- [ ] 3.5" SD (FAT32 card): Back up to SD card, then Restore from SD card…, both work
+- [ ] 3.5" GPS (module on UART1, optional): `[time] set from GPS` outdoors with Wi-Fi off
+- [ ] Wi-Fi setup (nothing saved): the AP is named `Rhino-Cyberspace-CrowPanel35-Setup` / `…-CrowPanel50-Setup` and `http://192.168.4.1` loads
+
 **GPS time, RTC and time zone (`m9`):**
 
 - [ ] With Wi-Fi in range, `[time] NTP sync` and `[time] RTC written` appear, then `[gps] off`

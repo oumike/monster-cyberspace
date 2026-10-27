@@ -3,7 +3,8 @@
 Standalone ESP32 firmware client for [cyberspace.online](https://cyberspace.online),
 a retro text-only social network. Milestone 1 is cIRC chat plus a device-served
 web config page, on the Elecrow ThinkNode M9. The Seeed Wio Tracker L2 and
-the LilyGO T-Deck Plus followed (built, not yet tried on hardware). More
+the LilyGO T-Deck Plus followed, then the Elecrow CrowPanel Advance 3.5" and
+5.0" (all built, not yet tried on hardware). More
 boards and Cyberspace features come later.
 
 - **Design spec:** `docs/superpowers/specs/2026-10-25-cyberspace-m9-circ-design.md`
@@ -53,7 +54,8 @@ pio test -e native          # host unit tests (lib/core)
 pio run -e m9               # firmware
 pio run -e wio_l2           # Seeed Wio Tracker L2 firmware
 pio run -e tdeck            # LilyGO T-Deck Plus firmware
-scripts/build-upload-monitor.sh m9   # flash + serial monitor (115200); -w for the Wio L2, -t for the T-Deck Plus; --help for options
+pio run -e crowpanel35      # Elecrow CrowPanel Advance 3.5" (crowpanel50: the 5.0")
+scripts/build-upload-monitor.sh m9   # flash + serial monitor (115200); -w for the Wio L2, -t for the T-Deck Plus, -3/-5 for the CrowPanels; --help for options
 scripts/build-upload-monitor.sh -B   # build every firmware env, no device needed
 ```
 
@@ -71,6 +73,12 @@ and `../platy-aprs/src/hal/` (`pins_wio_l2.h`, `wio_l2_io.cpp`, `audio.cpp`).
 reuses the M9's `st7789` and the Wio's `gt911` drivers through config structs,
 and sets the `hasKeyboard`, `backspaceIsBack` and `anyInputWakes` flags; its
 input rules (`keymap_tdeck`, `backspace`, `click_timer`) live in `lib/core`.
+`src/hal/crowpanel/` is the Elecrow CrowPanel Advance 3.5" (ILI9488 through
+LovyanGFX, SD, optional GPS) and 5.0" (800x480 RGB through ESP-IDF's
+`esp_lcd`, rotated in software; backlight and touch reset on a PCA9557 or a
+board MCU, probed at boot), from camillia-mt's `hw_crowpanel_35.h`,
+`hw_crowpanel_50.h` and `crowpanel_50_display.h`. Both reuse the `gt911`
+driver and are touch only, with no buttons, battery sense, buzzer or RTC.
 Touch: `lib/core` turns samples into gestures and resolves them against the
 per-frame `TapMap` widgets fill as they draw (`input/gestures`, `ui/tap_map`,
 `input/touch_resolve`, the `Osk` keyboard); `ui_task` feeds `handleKey` and
@@ -100,15 +108,18 @@ All 7 tasks of the T-Deck Plus plan are done and committed: shared panel and
 touch drivers, keyboard, Backspace-as-Back, any-input wake, trackball, GPS,
 battery, speaker and SD, with env `tdeck` (built without flashing;
 `PANEL_MADCTL` and `TOUCH_ROT` await the hardware check).
+The CrowPanel Advance 3.5" and 5.0" HALs (envs `crowpanel35`, `crowpanel50`)
+were added on 2026-10-27 (built without flashing; the 5.0"'s portrait
+direction and both touch mappings await the hardware check).
 The scripted fake-API builds (`*_fake`, `RC_FAKE_API`) were removed on
 2026-10-27 at the user's request; every firmware env talks to the real API.
 **Still open:** the unticked items under "Open hardware checks" in
-`docs/TESTING.md` (themes, device Settings, touch UI, Wio L2, T-Deck Plus, GPS time, API
+`docs/TESTING.md` (themes, device Settings, touch UI, Wio L2, T-Deck Plus, CrowPanels, GPS time, API
 assumptions, settings backup), then the human live checklist on the `m9` build.
 CI (`.github/workflows/build.yml`) runs on GitHub.
-The native suite is green: 358/358
+The native suite is green: 361/361
 (`pio test -e native`), and `scripts/build-upload-monitor.sh -B` builds all
-three firmware envs.
+five firmware envs.
 
 Notes for whoever continues:
 - Each task follows test-driven development: write the plan's tests first, run

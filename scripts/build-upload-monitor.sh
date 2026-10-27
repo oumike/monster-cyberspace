@@ -28,6 +28,8 @@ env_label() {
 		m9)     echo "Elecrow ThinkNode M9" ;;
 		wio_l2) echo "Seeed Wio Tracker L2" ;;
 		tdeck)  echo "LilyGO T-Deck Plus" ;;
+		crowpanel35) echo "Elecrow CrowPanel Advance 3.5\"" ;;
+		crowpanel50) echo "Elecrow CrowPanel Advance 5.0\"" ;;
 		*)      echo "$1" ;;
 	esac
 }
@@ -75,12 +77,14 @@ prompt_for_device() {
 
 show_usage() {
 	cat <<USAGE
-Usage: $0 [ENV] [--m9|-9] [--wio-l2|-w] [--tdeck|-t] [--port|-p PORT] [--erase|-E] [--fullclean|-F] [--just-build|-B]
+Usage: $0 [ENV] [--m9|-9] [--wio-l2|-w] [--tdeck|-t] [--crowpanel35|-3] [--crowpanel50|-5] [--port|-p PORT] [--erase|-E] [--fullclean|-F] [--just-build|-B]
   ENV               Any firmware environment in platformio.ini (e.g. m9, tdeck).
   Board flags (one per supported board):
   --m9, -9          Elecrow ThinkNode M9 (m9)
   --wio-l2, -w      Seeed Wio Tracker L2 (wio_l2)
   --tdeck, -t       LilyGO T-Deck Plus (tdeck)
+  --crowpanel35, -3 Elecrow CrowPanel Advance 3.5" (crowpanel35)
+  --crowpanel50, -5 Elecrow CrowPanel Advance 5.0" (crowpanel50)
                     With no board or environment given, you'll be prompted.
   --port, -p PORT   Serial port for upload and monitor (default: auto-detect)
   --erase, -E       Erase the whole flash while uploading (wipes saved settings)
@@ -107,6 +111,8 @@ while [ "$#" -gt 0 ]; do
 		--m9|-9)         BOARD=m9 ;;
 		--wio-l2|-w)     BOARD=wio_l2 ;;
 		--tdeck|-t)      BOARD=tdeck ;;
+		--crowpanel35|-3) BOARD=crowpanel35 ;;
+		--crowpanel50|-5) BOARD=crowpanel50 ;;
 		--port|-p)
 			[ "$#" -ge 2 ] || { echo "--port needs a value"; exit 1; }
 			PORT="$2"

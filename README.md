@@ -34,3 +34,11 @@ After that, updates come over the air (Settings → Firmware, or web config). Th
   and [plan](docs/superpowers/plans/2026-10-25-cyberspace-m9-cmail.md)
 
 Contributors and coding agents: read [AGENTS.md](AGENTS.md) first.
+
+## License
+
+[GPL-3.0](LICENSE). Board code is ported from the GPL-3.0 projects camillia-mt
+and platy-aprs. The cell fonts are derived from Terminus Font under the SIL Open
+Font License 1.1 ([src/ui/fonts/OFL-Terminus.txt](src/ui/fonts/OFL-Terminus.txt)).
+Cyberspace itself is a separate service with its own terms; this project is not
+affiliated with it.

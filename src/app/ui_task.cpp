@@ -327,6 +327,7 @@ void handleKey(const KeyEvent& key) {
   // palette elsewhere.
   if (k.action == Action::Symbols || k.action == Action::Emoji) {
     if (router::screen().acceptsText()) {
+      symbols.setBackspaceCloses(board::backspaceIsBack());
       if (k.action == Action::Symbols)
         symbols.open(router::screen().paletteLabel(), SymbolTable::Set::Symbols, board::upDownOnly());
       else

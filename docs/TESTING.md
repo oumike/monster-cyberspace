@@ -29,6 +29,11 @@ on 2026-10-27; the sections marked `m9_fake` passed on it before then.
 - [ ] In both mono themes: Home, room, drawer, menus, palette, Feed list, Entry, Composer, login and Settings are readable; nicks use the text colour
 - [ ] Link view QR stays black on white
 
+**Room list filter (`m9`, `tdeck`, `pager`):**
+
+- [ ] Typing on the room list narrows it to matching rooms (any case), the filter shows on the bottom line, Backspace erases a letter, Back clears it, and Enter opens the selected match
+- [ ] With the filter empty, Back still goes Home (and Backspace does on the T-Deck and Pager); leaving and returning clears the filter
+
 **Room screen (`m9_fake`):**
 
 - [x] Typing never stalls or freezes, including fast typing while messages arrive
@@ -162,7 +167,7 @@ Buttons: BOOT tap = Back, BOOT hold (0.6 s) = Home; Wake tap = screen off
 - [ ] Wheel click selects; holding it 2 s turns the screen off and selects nothing
 - [ ] Every key types the right character, with Shift and Sym; Space, Enter and Backspace work; holding Backspace repeats
 - [ ] Sym + Backspace goes Home; Sym + Enter opens the palette on the Feed list
-- [ ] While typing, Sym opens the symbol table: the wheel steps one symbol at a time and wraps, a click inserts, a letter types its Sym character and closes it; Sym again switches to the emoji tray, where a click inserts and a BOOT tap closes it
+- [ ] While typing, Sym opens the symbol table: the wheel steps one symbol at a time and wraps, a click inserts, a letter types its Sym character and closes it; Sym again switches to the emoji tray, where a click inserts; Backspace or a BOOT tap closes either
 - [ ] BOOT: a tap goes back, a hold goes Home
 - [ ] With the screen off, a key, a wheel turn and a click each wake it, and none of them types, moves or selects
 - [ ] Beep: a mention or C-Mail alert plays a tone on the speaker with the buzzer on

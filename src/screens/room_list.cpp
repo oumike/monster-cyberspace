@@ -10,6 +10,7 @@
 namespace rc {
 
 void RoomListScreen::enter(const std::string&) {
+  filter_.clear();
   chatSource().command(Command{CmdType::RefreshRooms});
 }
 
@@ -22,6 +23,10 @@ void RoomListScreen::open(int index) {
 
 void RoomListScreen::onKey(const KeyEvent& k) {
   if (buttons_ && k.action != Action::Left && k.action != Action::Back) return open(pad_.key(k));
+  if (filter_.key(k)) {
+    list_.setSelected(0);
+    return;
+  }
   switch (k.action) {
     case Action::Up:
       list_.up();
@@ -55,6 +60,7 @@ void RoomListScreen::render(Grid& g, const Theme& t, int64_t) {
       return a.lastMessageAt > b.lastMessageAt;
     });
     for (const auto& r : rooms) {
+      if (!filter_.matches(utf8ToU32(r.slug))) continue;
       auto it = s.readAt.find(r.slug);
       bool unread = it == s.readAt.end() ? r.lastMessageAt > 0 : r.lastMessageAt > it->second;
       items.push_back(ListItem{utf8ToU32("#" + r.slug), utf8ToU32(std::to_string(r.onlineCount)),
@@ -64,7 +70,8 @@ void RoomListScreen::render(Grid& g, const Theme& t, int64_t) {
   });
   g.fill(t.bg);
   drawStatus(g, t, U"rooms", int(items.size()));
-  if (items.empty()) putLine(g, 1, 2, "loading rooms\u2026", t.dim, t.bg);
+  if (items.empty())
+    putLine(g, 1, 2, filter_.active() ? "no rooms match" : "loading rooms\u2026", t.dim, t.bg);
   buttons_ = ButtonPad::active();
   if (buttons_) {
     pad_.render(g, t, items, 2, g.rows() - 1, false);
@@ -72,6 +79,8 @@ void RoomListScreen::render(Grid& g, const Theme& t, int64_t) {
   }
   list_.setItems(std::move(items));
   list_.render(g, 1, g.rows() - 1, 0, g.cols(), t);
+  if (filter_.active())
+    return drawHint(g, t, U"filter: " + filter_.text() + U"\u2581  \u232B erase  back clears");
   drawHint(g, t, U"\u2191\u2193 pick  \u25CF open  \u2190 home", U"tap to open  swipe to scroll");
 }
 

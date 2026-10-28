@@ -147,7 +147,7 @@ the wheel.
 
 | Input | Action |
 |---|---|
-| Keys | Type. Shift and Sym apply to the next key (press twice to cancel; they lapse after 1.5 s). While typing, Sym also opens the symbol table: turn the wheel to step through it and click or Enter to insert, or type a key to get its Sym character. Sym again switches to the emoji tray |
+| Keys | Type. Shift and Sym apply to the next key (press twice to cancel; they lapse after 1.5 s). While typing, Sym also opens the symbol table: turn the wheel to step through it and click or Enter to insert, or type a key to get its Sym character. Sym again switches to the emoji tray. Backspace closes either |
 | Wheel turn | Up and Down |
 | Wheel click, or Enter | Select (send, in a room) |
 | Backspace | Deletes while there's text to delete; otherwise Back. Hold it to repeat |
@@ -191,6 +191,13 @@ Neither has a battery gauge or an RTC; the clock is unset until NTP or GPS.
 The setup AP is **`Monster-Cyberspace-CrowPanel35`** or
 **`Monster-Cyberspace-CrowPanel50`** (no `-Setup`: Wi-Fi names stop at 32
 characters).
+
+## Room list
+
+On boards with a keyboard (M9, T-Deck Plus, Pager), typing on the room list
+filters it to rooms whose names contain what you typed, ignoring case. The
+filter shows on the bottom line; Backspace erases a letter, Back clears it,
+and it clears whenever you return to the list.
 
 ## In a room
 

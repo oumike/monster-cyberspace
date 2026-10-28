@@ -38,6 +38,8 @@ class SymbolTable {
   // commands: the label of the palette row, or empty for none.
   // linear: Up/Down step one cell, wrapping, for boards with only a wheel.
   void open(std::u32string commands, Set set = Set::Symbols, bool linear = false);
+  // Boards where Backspace doubles as Back: Backspace closes the table.
+  void setBackspaceCloses(bool on) { backspaceCloses_ = on; }
   void close() { open_ = false; }
   bool isOpen() const { return open_; }
   int selected() const { return sel_; }
@@ -61,6 +63,7 @@ class SymbolTable {
   std::u32string commands_;
   Set set_ = Set::Symbols;
   bool linear_ = false;
+  bool backspaceCloses_ = false;
   int sel_ = 0;
   mutable int emojiCols_ = kEmojiCols;  // set by render to fit the screen
   bool open_ = false;

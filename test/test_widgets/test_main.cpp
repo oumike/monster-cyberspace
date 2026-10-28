@@ -19,6 +19,7 @@
 #include "ui/widgets/status_bar.h"
 #include "ui/widgets/symbol_table.h"
 #include "ui/widgets/text_area.h"
+#include "input/type_filter.h"
 #include "ui/tap_map.h"
 #include "ui/emoji_set.h"
 #include "ui/text_width.h"
@@ -821,6 +822,52 @@ void test_emoji_tray_taps() {
   TEST_ASSERT_EQUAL(int(SymbolTable::Kind::Closed), int(s.key(out.tap).kind));
 }
 
+static KeyEvent ch(char32_t c) {
+  KeyEvent k;
+  k.action = Action::Char;
+  k.ch = c;
+  return k;
+}
+
+void test_symbol_table_backspace_closes() {
+  SymbolTable s;
+  s.setBackspaceCloses(true);
+  for (auto set : {SymbolTable::Set::Symbols, SymbolTable::Set::Emoji}) {
+    s.open(U"", set, true);
+    TEST_ASSERT_EQUAL(int(SymbolTable::Kind::Closed), int(s.key(KeyEvent{Action::Backspace}).kind));
+    TEST_ASSERT_FALSE(s.isOpen());
+  }
+  // Without it, the emoji tray swallows Backspace.
+  s.setBackspaceCloses(false);
+  s.open(U"", SymbolTable::Set::Emoji);
+  s.key(KeyEvent{Action::Backspace});
+  TEST_ASSERT_TRUE(s.isOpen());
+}
+
+void test_type_filter() {
+  TypeFilter f;
+  TEST_ASSERT_FALSE(f.active());
+  TEST_ASSERT_TRUE(f.matches(U"#general"));
+  // Back and Backspace pass through while nothing is typed.
+  TEST_ASSERT_FALSE(f.key(KeyEvent{Action::Back}));
+  TEST_ASSERT_FALSE(f.key(KeyEvent{Action::Backspace}));
+  TEST_ASSERT_FALSE(f.key(KeyEvent{Action::Down}));
+  TEST_ASSERT_TRUE(f.key(ch(U'G')));
+  TEST_ASSERT_TRUE(f.key(ch(U'e')));
+  TEST_ASSERT_TRUE(f.active());
+  TEST_ASSERT_TRUE(f.matches(U"general"));    // case-insensitive
+  TEST_ASSERT_TRUE(f.matches(U"BigEvents"));  // anywhere in the name
+  TEST_ASSERT_FALSE(f.matches(U"random"));
+  TEST_ASSERT_TRUE(f.key(KeyEvent{Action::Backspace}));
+  TEST_ASSERT_EQUAL(1, int(f.text().size()));
+  TEST_ASSERT_TRUE(f.key(KeyEvent{Action::Back}));  // Back clears it all
+  TEST_ASSERT_FALSE(f.active());
+  // A leading space is ignored; control characters never count.
+  TEST_ASSERT_FALSE(f.key(ch(U' ')));
+  TEST_ASSERT_FALSE(f.key(ch(U'\n')));
+  TEST_ASSERT_FALSE(f.active());
+}
+
 void test_text_area_field_rows() {
   TextArea ta;
   ta.setFieldId(3);
@@ -1327,6 +1374,8 @@ int main() {
   RUN_TEST(test_emoji_tray_spaced_out);
   RUN_TEST(test_input_emoji_button_on_touch);
   RUN_TEST(test_emoji_tray_taps);
+  RUN_TEST(test_type_filter);
+  RUN_TEST(test_symbol_table_backspace_closes);
   RUN_TEST(test_emoji_tray_render_draws_both_halves);
   RUN_TEST(test_put_text_wide_emoji);
   RUN_TEST(test_input_line_renders_wide_emoji);

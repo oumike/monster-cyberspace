@@ -1,5 +1,6 @@
 #pragma once
 
+#include "input/type_filter.h"
 #include "screens/backup_picker.h"
 #include "screens/button_pad.h"
 #include "screens/router.h"
@@ -107,11 +108,13 @@ class RoomListScreen : public Screen {
   void enter(const std::string&) override;
   void onKey(const KeyEvent&) override;
   void render(Grid&, const Theme&, int64_t nowMs) override;
+  bool consumesBackspace() const override { return filter_.active(); }
 
  private:
   void open(int index);
   ListView list_;
   std::vector<std::string> slugs_;
+  TypeFilter filter_;  // keyboards: typing narrows the rooms
   ButtonPad pad_;  // touch-only boards: rooms as buttons
   bool buttons_ = false;
 };

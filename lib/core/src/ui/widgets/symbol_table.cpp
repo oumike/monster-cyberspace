@@ -43,7 +43,8 @@ SymbolTable::Out SymbolTable::key(const KeyEvent& k) {
   auto at = [&](int r, int c) { return r >= rows ? n : std::min(n - 1, r * kc + c); };
   // The Pager's Sym stays armed after opening the table, so its Enter arrives
   // as Sym+Enter (Palette): inside the table it picks.
-  const Action a = k.action == Action::Palette ? Action::Select : k.action;
+  Action a = k.action == Action::Palette ? Action::Select : k.action;
+  if (a == Action::Backspace && backspaceCloses_) a = Action::Back;
   if (linear_ && (a == Action::Up || a == Action::Down)) {
     sel_ = (sel_ + (a == Action::Down ? 1 : count() - 1)) % count();
     return o;

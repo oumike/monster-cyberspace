@@ -122,8 +122,8 @@ direction and both touch mappings await the hardware check).
 The scripted fake-API builds (`*_fake`, `RC_FAKE_API`) were removed on
 2026-10-27 at the user's request; every firmware env talks to the real API.
 The LilyGO T-LoRa Pager HAL (env `pager`) was added on 2026-10-27 (built
-without flashing; `PANEL_MADCTL`, the row offset and the wheel direction
-await the hardware check).
+without flashing; `PANEL_MADCTL` and the row offset await the hardware
+check; the wheel direction was flipped after a hardware check on 2026-10-28).
 **Still open:** the unticked items under "Open hardware checks" in
 `docs/TESTING.md` (themes, device Settings, touch UI, Wio L2, T-Deck Plus, CrowPanels, Pager, GPS time, API
 assumptions, settings backup), then the human live checklist on the `m9` build.

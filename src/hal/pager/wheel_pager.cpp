@@ -18,7 +18,7 @@ namespace {
 using rc::Action;
 
 // LilyGO's direction: a positive detent (camillia-mt's ScrollUp) is Up.
-constexpr bool kPositiveIsUp = true;  // confirm on hardware (TESTING.md)
+constexpr bool kPositiveIsUp = false;  // checked on hardware 2026-10-28
 constexpr uint32_t kBootHoldMs = 600;
 
 // The ISR only records line states; decoding happens in poll().

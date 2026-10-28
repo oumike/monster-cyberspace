@@ -2,6 +2,8 @@
 
 #include <algorithm>
 
+#include "ui/text_width.h"
+
 namespace rc {
 
 Grid::Grid(int cols, int rows) { resize(cols, rows); }
@@ -81,9 +83,12 @@ int Grid::putText(int col, int row, std::u32string_view s, uint16_t fg, uint16_t
                   int maxCols) {
   int n = 0;
   for (char32_t cp : s) {
-    if (n >= maxCols || col + n >= cols_) break;
+    const int w = cellWidth(cp);
+    if (w == 0) continue;
+    if (n + w > maxCols || col + n + w > cols_) break;
     put(col + n, row, cp, fg, bg);
-    ++n;
+    if (w == 2) put(col + n + 1, row, wideTail(cp), fg, bg);
+    n += w;
   }
   return n;
 }

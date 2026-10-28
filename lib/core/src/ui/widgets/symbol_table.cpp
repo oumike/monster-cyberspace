@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <utility>
 
+#include "ui/emoji_set.h"
+
 namespace rc {
 
 const std::u32string& SymbolTable::symbols() {
@@ -11,25 +13,40 @@ const std::u32string& SymbolTable::symbols() {
   return s;
 }
 
-void SymbolTable::open(std::u32string commands) {
-  commands_ = std::move(commands);
+const std::u32string& SymbolTable::emoji() {
+  static const std::u32string s(std::begin(kTrayEmoji), std::end(kTrayEmoji));
+  return s;
+}
+
+void SymbolTable::open(std::u32string commands, Set set, bool linear) {
+  set_ = set;
+  linear_ = linear;
+  commands_ = set == Set::Emoji ? std::u32string() : std::move(commands);
   sel_ = 0;
   open_ = true;
 }
 
 int SymbolTable::count() const {
-  return static_cast<int>(symbols().size()) + (commands_.empty() ? 0 : 1);
+  return static_cast<int>(items().size()) + (commands_.empty() ? 0 : 1);
 }
 
 SymbolTable::Out SymbolTable::key(const KeyEvent& k) {
   Out o;
-  const int n = static_cast<int>(symbols().size());
+  const bool emojiSet = set_ == Set::Emoji;
+  const int n = static_cast<int>(items().size());
   const int rows = (n + kCols - 1) / kCols;
   const bool onCommands = sel_ >= n;
   const int col = onCommands ? 0 : sel_ % kCols, row = onCommands ? rows : sel_ / kCols;
   const int lastRow = commands_.empty() ? rows - 1 : rows;
   auto at = [&](int r, int c) { return r >= rows ? n : std::min(n - 1, r * kCols + c); };
-  switch (k.action) {
+  // The Pager's Sym stays armed after opening the table, so its Enter arrives
+  // as Sym+Enter (Palette): inside the table it picks.
+  const Action a = k.action == Action::Palette ? Action::Select : k.action;
+  if (linear_ && (a == Action::Up || a == Action::Down)) {
+    sel_ = (sel_ + (a == Action::Down ? 1 : count() - 1)) % count();
+    return o;
+  }
+  switch (a) {
     case Action::Left:
       sel_ = (sel_ + count() - 1) % count();
       if (!commands_.empty() && sel_ == n) sel_ = n - 1;  // the arrows skip the commands row
@@ -44,15 +61,13 @@ SymbolTable::Out SymbolTable::key(const KeyEvent& k) {
     case Action::Down:
       sel_ = at(row == lastRow ? 0 : row + 1, col);
       return o;
-    case Action::Symbols:
-      return o;
     case Action::Select:
-      open_ = false;
+      if (!emojiSet) open_ = false;
       if (onCommands) {
         o.kind = Kind::Commands;
       } else {
         o.kind = Kind::Insert;
-        o.ch = symbols()[sel_];
+        o.ch = items()[sel_];
       }
       return o;
     case Action::Back:
@@ -60,6 +75,7 @@ SymbolTable::Out SymbolTable::key(const KeyEvent& k) {
       o.kind = Kind::Closed;
       return o;
     default:
+      if (emojiSet || a == Action::Symbols) return o;  // swallowed, or a repeat
       open_ = false;
       o.kind = Kind::PassThrough;
       return o;
@@ -68,7 +84,8 @@ SymbolTable::Out SymbolTable::key(const KeyEvent& k) {
 
 void SymbolTable::render(Grid& g, int bottom, const Theme& t) const {
   if (!open_) return;
-  const int n = static_cast<int>(symbols().size());
+  const bool emojiSet = set_ == Set::Emoji;
+  const int n = static_cast<int>(items().size());
   const int rows = (n + kCols - 1) / kCols;
   const int width = kCols * 3 + 2;
   const int height = 1 + rows + (commands_.empty() ? 0 : 1);
@@ -77,14 +94,15 @@ void SymbolTable::render(Grid& g, int bottom, const Theme& t) const {
   for (int r = 0; r < height; ++r)
     for (int c = 0; c < width; ++c) g.put(left + c, top + r, U' ', t.fg, t.bg);
   for (int c = 0; c < width; ++c) g.put(left + c, top, U' ', t.barFg, t.barBg);
-  g.putText(left + 1, top, U"symbols", t.barFg, t.barBg, width - 2);
+  g.putText(left + 1, top, emojiSet ? U"emoji" : U"symbols", t.barFg, t.barBg, width - 2);
   for (int i = 0; i < n; ++i) {
     const int col = left + 1 + (i % kCols) * 3, row = top + 1 + i / kCols;
     const bool sel = i == sel_;
     const uint16_t fg = sel ? t.selectFg : t.fg, bg = sel ? t.selectBg : t.bg;
+    // A symbol sits between two spaces; an emoji fills the last two cells.
     g.put(col, row, U' ', fg, bg);
-    g.put(col + 1, row, symbols()[i], fg, bg);
     g.put(col + 2, row, U' ', fg, bg);
+    g.putText(col + 1, row, items().substr(i, 1), fg, bg, emojiSet ? 2 : 1);
   }
   if (!commands_.empty()) {
     const int row = top + 1 + rows;

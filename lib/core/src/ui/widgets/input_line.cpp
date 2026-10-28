@@ -3,6 +3,7 @@
 #include <algorithm>
 
 #include "ui/tap_map.h"
+#include "ui/text_width.h"
 #include "util/utf8.h"
 
 namespace rc {
@@ -58,7 +59,15 @@ void InputLine::render(Grid& g, int row, const Theme& t, std::u32string_view pro
   int col = g.putText(0, row, prompt, fg, t.inputBg, g.cols());
   int avail = g.cols() - col;
   if (avail <= 0) return;
-  size_t start = cursor_ >= static_cast<size_t>(avail) ? cursor_ - avail + 1 : 0;
+  // Scroll so the text up to the cursor, and the cursor's own cell, fit.
+  auto widthAt = [&](size_t i) { return i < text_.size() ? std::max(cellWidth(text_[i]), 1) : 1; };
+  size_t start = cursor_;
+  for (int used = widthAt(cursor_); start > 0;) {
+    const int w = cellWidth(text_[start - 1]);
+    if (used + w > avail) break;
+    used += w;
+    --start;
+  }
   if (activeTaps()) {
     Target tt;
     tt.kind = TargetKind::Field;
@@ -67,13 +76,17 @@ void InputLine::render(Grid& g, int row, const Theme& t, std::u32string_view pro
     tt.len = static_cast<int16_t>(std::min<size_t>(avail, text_.size() - start));
     activeTaps()->addCells(col, row, col + avail - 1, row, tt);
   }
-  for (int i = 0; i < avail; ++i) {
-    size_t idx = start + i;
-    char32_t cp = idx < text_.size() ? text_[idx] : U' ';
-    if (!disabled_ && idx == cursor_)
-      g.put(col + i, row, cp, t.cursorFg, t.cursorBg);
-    else
-      g.put(col + i, row, cp, fg, t.inputBg);
+  for (int used = 0, idx = static_cast<int>(start); used < avail; ++idx) {
+    const size_t i = static_cast<size_t>(idx);
+    char32_t cp = i < text_.size() ? text_[i] : U' ';
+    int w = cellWidth(cp);
+    if (w == 0) continue;
+    if (used + w > avail) break;
+    const bool cur = !disabled_ && i == cursor_;
+    const uint16_t f = cur ? t.cursorFg : fg, b = cur ? t.cursorBg : t.inputBg;
+    g.put(col + used, row, cp, f, b);
+    if (w == 2) g.put(col + used + 1, row, wideTail(cp), f, b);
+    used += w;
   }
 }
 

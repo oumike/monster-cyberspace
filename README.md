@@ -39,6 +39,8 @@ Contributors and coding agents: read [AGENTS.md](AGENTS.md) first.
 
 [GPL-3.0](LICENSE). Board code is ported from the GPL-3.0 projects camillia-mt
 and platy-aprs. The cell fonts are derived from Terminus Font under the SIL Open
-Font License 1.1 ([src/ui/fonts/OFL-Terminus.txt](src/ui/fonts/OFL-Terminus.txt)).
+Font License 1.1 ([src/ui/fonts/OFL-Terminus.txt](src/ui/fonts/OFL-Terminus.txt)),
+and the emoji are rendered from Noto Emoji under the same licence
+([src/ui/fonts/OFL-NotoEmoji.txt](src/ui/fonts/OFL-NotoEmoji.txt)).
 Cyberspace itself is a separate service with its own terms; this project is not
 affiliated with it.

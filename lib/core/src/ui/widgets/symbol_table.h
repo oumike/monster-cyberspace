@@ -9,10 +9,11 @@
 
 namespace rc {
 
-// The symbol table a keyed board opens while typing (Action::Symbols), after
-// camillia-mt's symbol tray: a grid of punctuation picked with the d-pad that
-// inserts one symbol and closes. An optional last row hands over to the
-// screen's own palette, which shares the key on the M9. Board-agnostic.
+// The pickers a keyed board opens while typing, after camillia-mt's trays.
+// Symbols (Action::Symbols): a grid of punctuation picked with the d-pad that
+// inserts one symbol and closes; an optional last row hands over to the
+// screen's own palette. Emoji (Action::Emoji): the tray emoji, two cells wide;
+// a pick inserts and stays open, and only Back closes it. Board-agnostic.
 class SymbolTable {
  public:
   static constexpr int kCols = 8;
@@ -23,22 +24,26 @@ class SymbolTable {
     Closed,       // Back: the table closed
     PassThrough,  // the table closed; hand the key on as usual
   };
+  enum class Set : uint8_t { Symbols, Emoji };
   struct Out {
     Kind kind = Kind::None;
     char32_t ch = 0;
   };
 
   static const std::u32string& symbols();
+  static const std::u32string& emoji();
 
-  // commands: the label of the palette row, or empty for none.
-  void open(std::u32string commands);
+  // commands: the label of the palette row, or empty for none (Symbols only).
+  // linear: Up/Down step one cell, wrapping, for boards with only a wheel.
+  void open(std::u32string commands, Set set = Set::Symbols, bool linear = false);
   void close() { open_ = false; }
   bool isOpen() const { return open_; }
   int selected() const { return sel_; }
 
-  // Arrows move (wrapping), Select picks, Back closes, a repeated Symbols is
-  // ignored (the M9 reports its key more than once per press); any other key
-  // closes the table and passes through.
+  // Arrows move (wrapping), Select picks, Back closes, a repeat of the opening
+  // key is ignored (the M9 reports its keys more than once per press). Any
+  // other key closes the symbol table and passes through; the emoji tray
+  // swallows it.
   Out key(const KeyEvent& k);
 
   // Centred above row `bottom`.
@@ -46,7 +51,10 @@ class SymbolTable {
 
  private:
   int count() const;  // cells, the commands row included
+  const std::u32string& items() const { return set_ == Set::Emoji ? emoji() : symbols(); }
   std::u32string commands_;
+  Set set_ = Set::Symbols;
+  bool linear_ = false;
   int sel_ = 0;
   bool open_ = false;
 };

@@ -79,6 +79,17 @@ void test_pager_enter_backspace() {
   expectAction(k.key(30, true, 0), Action::Backspace);
 }
 
+void test_pager_sym_opens_symbols() {
+  PagerKeys k;
+  // Arming Sym also asks for the symbol table (typing only: it is a modifier).
+  KeyEvent e = k.key(21, true, 0);
+  expectAction(e, Action::Symbols);
+  TEST_ASSERT_TRUE(e.modifier);
+  // Disarming it asks for nothing.
+  expectAction(k.key(21, true, 10), Action::None);
+  expectAction(k.key(29, true, 20), Action::None);  // Shift does not
+}
+
 void test_pager_sym_shortcuts() {
   PagerKeys k;
   k.key(21, true, 0);
@@ -177,6 +188,7 @@ int main() {
   RUN_TEST(test_pager_modifier_times_out);
   RUN_TEST(test_pager_enter_backspace);
   RUN_TEST(test_pager_sym_shortcuts);
+  RUN_TEST(test_pager_sym_opens_symbols);
   RUN_TEST(test_pager_backspace_repeats_while_held);
   RUN_TEST(test_pager_home_does_not_repeat);
   RUN_TEST(test_rotary_detents);

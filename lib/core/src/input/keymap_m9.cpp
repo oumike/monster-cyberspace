@@ -14,9 +14,10 @@ KeyEvent mapM9Key(uint8_t raw, bool earlyController) {
     case 0x85: e.action = Action::OpenMap; break;
     case 0x86: if (earlyController) e.action = Action::Back; break;
     case 0x87: if (!earlyController) e.action = Action::Back; break;
-    // The symbol key (camillia-mt maps both codes and calls it Ctrl): it
-    // opens the symbol table while typing.
-    case 0x88: case 0x90: e.action = Action::Symbols; break;
+    // The triangle key opens the symbol table while typing, Ctrl the emoji
+    // tray (wadamesh's M9Keyboard.h; Shift, Sym and Alt never reach the host).
+    case 0x88: e.action = Action::Symbols; break;
+    case 0x90: e.action = Action::Emoji; break;
     case 0x89: e.action = Action::ClearLine; break;
     case 0xA3: e.action = Action::ScreenOff; break;
     case 0xB4: e.action = Action::Left; break;

@@ -10,6 +10,7 @@
 #include "ui/fonts/cell6x12.h"
 #include "ui/fonts/cell8x14.h"
 #include "ui/fonts/cell8x16.h"
+#include "ui/fonts/emoji_cells.h"
 
 namespace rc {
 
@@ -59,7 +60,7 @@ void Renderer::drawRow(const Grid& g, int r, const CellFont& font, RowSpan span,
   for (int c = 0; c < cols; ++c) {
     const Cell& cell = g.at(c, r);
     const int x0 = ox + c * cw;
-    const uint8_t* glyph = glyphFor(font, cell.cp);
+    const uint8_t* glyph = cellGlyph(font, cell.cp);
     for (int y = 0; y < ch; ++y) {
       uint16_t bits = 0;
       if (glyph) bits = rb == 1 ? glyph[y] << 8 : (glyph[y * 2] << 8) | glyph[y * 2 + 1];

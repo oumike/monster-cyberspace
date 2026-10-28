@@ -6,6 +6,7 @@
 #include "chat/mention.h"
 #include "ui/nick_color.h"
 #include "ui/timefmt.h"
+#include "ui/text_width.h"
 #include "ui/wrap.h"
 #include "util/base64.h"
 #include "util/utf8.h"
@@ -30,15 +31,15 @@ bool hasStyle(const CircMessage& m, const char* s) {
 
 int lineWidth(const DisplayLine& l) {
   int n = 0;
-  for (const auto& s : l.spans) n += static_cast<int>(s.text.size());
+  for (const auto& s : l.spans) n += textWidth(s.text);
   return n;
 }
 
 void clipLine(DisplayLine& l, int cols) {
   int left = cols;
   for (auto& s : l.spans) {
-    if (static_cast<int>(s.text.size()) > left) s.text.resize(std::max(left, 0));
-    left -= static_cast<int>(s.text.size());
+    s.text.resize(fitChars(s.text, std::max(left, 0)));
+    left -= textWidth(s.text);
   }
 }
 

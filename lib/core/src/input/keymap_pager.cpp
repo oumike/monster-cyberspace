@@ -32,7 +32,10 @@ KeyEvent PagerKeys::key(uint8_t keyNum, bool pressed, uint32_t ms) {
   if (keyNum == kShift || keyNum == kSym) {
     mods_ ^= keyNum == kShift ? kShiftBit : kSymBit;
     modMs_ = ms;
-    return {};
+    if (keyNum != kSym || !(mods_ & kSymBit)) return {};
+    KeyEvent e = action(Action::Symbols);
+    e.modifier = true;
+    return e;
   }
   if (keyNum < 1 || keyNum > kSpace) return {};
   const uint8_t mods = mods_;

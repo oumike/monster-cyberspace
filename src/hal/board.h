@@ -56,6 +56,9 @@ bool anyInputWakes();
 // With anyInputWakes on a touch board: only a double tap wakes the screen,
 // so a brush against the panel doesn't.
 bool doubleTapWakes();
+// True when the only arrows are Up/Down (a wheel): pickers then step one cell
+// at a time instead of moving in two dimensions.
+bool upDownOnly();
 void setRotation(uint8_t r);
 // GPS receiver. On: power, a 10 ms reset pulse, then the UART up. Off: the
 // UART down, then power off.

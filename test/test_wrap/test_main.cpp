@@ -3,6 +3,8 @@
 #include <string>
 #include <vector>
 
+#include "ui/emoji_set.h"
+#include "ui/text_width.h"
 #include "ui/wrap.h"
 #include "util/utf8.h"
 
@@ -55,6 +57,25 @@ void test_empty() {
   assertLines({""}, wrapText(U"", 20, 20));
 }
 
+void test_emoji_counts_two_cells() {
+  std::u32string s = U"ab";
+  s += kTrayEmoji[0];
+  s += U"cd";
+  TEST_ASSERT_EQUAL(6, textWidth(s));
+  TEST_ASSERT_EQUAL(2, int(fitChars(s, 3)));
+  TEST_ASSERT_EQUAL(3, int(fitChars(s, 4)));
+  TEST_ASSERT_EQUAL(0, cellWidth(0xFE0F));
+  TEST_ASSERT_EQUAL(1, cellWidth(0x1F3B2));  // not a tray emoji: one cell
+  const std::u32string a = U"ab", b = std::u32string(1, kTrayEmoji[0]) + U"c";
+  auto lines = wrapText(s, 3, 3);
+  TEST_ASSERT_EQUAL(3, int(lines.size()));
+  TEST_ASSERT_TRUE(lines[0] == a);
+  TEST_ASSERT_TRUE(lines[1] == b);
+  TEST_ASSERT_TRUE(lines[2] == U"d");
+  // A wide emoji in a one-cell width still moves on.
+  TEST_ASSERT_EQUAL(1, int(wrapText(std::u32string(1, kTrayEmoji[0]), 1, 1).size()));
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_fits);
@@ -63,5 +84,6 @@ int main() {
   RUN_TEST(test_newline);
   RUN_TEST(test_multibyte_unsplit);
   RUN_TEST(test_empty);
+  RUN_TEST(test_emoji_counts_two_cells);
   return UNITY_END();
 }

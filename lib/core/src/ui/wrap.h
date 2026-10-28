@@ -7,7 +7,8 @@
 namespace rc {
 
 // Wraps text into lines of at most firstWidth cells for the first line and
-// contWidth cells after that (hanging indent). Each code point is one cell.
+// contWidth cells after that (hanging indent), measured with cellWidth (tray
+// emoji take two cells).
 // Breaks after spaces, hard-splits words longer than the width, and forces a
 // break at '\n'. Trailing spaces at a break are dropped. Empty text yields
 // one empty line. Widths below 1 are treated as 1.

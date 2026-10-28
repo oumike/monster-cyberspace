@@ -45,7 +45,9 @@ class Grid {
   void fill(uint16_t bg);
   void fillRow(int row, uint16_t bg);
   void put(int col, int row, char32_t cp, uint16_t fg, uint16_t bg);
-  // Writes up to maxCols cells of s from col; returns the number written.
+  // Writes up to maxCols cells of s from col; returns the number written. A
+  // tray emoji takes two cells (its tail code point fills the second), and is
+  // left out whole when it does not fit.
   int putText(int col, int row, std::u32string_view s, uint16_t fg, uint16_t bg, int maxCols);
   // Draws a box on the edges of cells [c0..c1] x [r0..r1] (inclusive). Call it
   // after writing the cells: put() clears a cell's edges.

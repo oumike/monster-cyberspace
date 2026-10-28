@@ -6,6 +6,9 @@
 #include "cell6x12.h"
 #include "cell8x14.h"
 #include "cell8x16.h"
+#include "cell12x24.h"
+#include "emoji_cells.h"
+#include "ui/emoji_set.h"
 #include "ui/glyph_set.h"
 
 using namespace rc;
@@ -103,6 +106,25 @@ void test_touch_glyphs_present() {
       TEST_ASSERT_NOT_NULL(findGlyph(*f, c));
 }
 
+void test_tray_emoji_have_both_halves() {
+  for (const CellFont* f : {&cell6x12, &cell8x14, &cell8x16, &cell10x18, &cell12x24}) {
+    const CellFont* e = emojiCellsFor(*f);
+    TEST_ASSERT_NOT_NULL(e);
+    TEST_ASSERT_EQUAL(f->w, e->w);
+    TEST_ASSERT_EQUAL(f->h, e->h);
+    for (int i = 1; i < e->count; ++i) TEST_ASSERT_TRUE(e->codepoints[i - 1] < e->codepoints[i]);
+    int i = 0;
+    for (char32_t cp : kTrayEmoji) {
+      const uint8_t* left = cellGlyph(*f, cp);
+      const uint8_t* right = cellGlyph(*f, kWideTailBase + i++);
+      TEST_ASSERT_EQUAL_PTR(findGlyph(*e, cp), left);
+      TEST_ASSERT_NOT_NULL(right);
+      TEST_ASSERT_TRUE(inked(*e, left) || inked(*e, right));
+    }
+    TEST_ASSERT_EQUAL_PTR(findGlyph(*f, U'A'), cellGlyph(*f, U'A'));
+  }
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_dims);
@@ -111,5 +133,6 @@ int main() {
   RUN_TEST(test_feed_marks_use_runtime_aliases);
   RUN_TEST(test_missing_falls_back);
   RUN_TEST(test_touch_glyphs_present);
+  RUN_TEST(test_tray_emoji_have_both_halves);
   return UNITY_END();
 }

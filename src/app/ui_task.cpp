@@ -323,12 +323,17 @@ void handleKey(const KeyEvent& key) {
     }
     if (o.kind != SymbolTable::Kind::PassThrough) return;
   }
-  // The symbol key opens the table while typing, and is the palette elsewhere.
-  if (k.action == Action::Symbols) {
+  // The symbol and emoji keys open their pickers while typing, and are the
+  // palette elsewhere.
+  if (k.action == Action::Symbols || k.action == Action::Emoji) {
     if (router::screen().acceptsText()) {
-      symbols.open(router::screen().paletteLabel());
+      if (k.action == Action::Symbols)
+        symbols.open(router::screen().paletteLabel(), SymbolTable::Set::Symbols, board::upDownOnly());
+      else
+        symbols.open(U"", SymbolTable::Set::Emoji, board::upDownOnly());
       return;
     }
+    if (k.modifier) return;
     k.action = Action::Palette;
   }
   if (k.action == Action::Backspace && board::backspaceIsBack()) {

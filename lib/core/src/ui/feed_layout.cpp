@@ -7,6 +7,7 @@
 #include "chat/message.h"
 #include "feed/markdown_text.h"
 #include "ui/nick_color.h"
+#include "ui/text_width.h"
 #include "ui/wrap.h"
 #include "util/utf8.h"
 
@@ -18,7 +19,7 @@ constexpr char32_t kSep[] = U" \u00b7 ";
 constexpr char32_t kReadMore[] = U"\u2026 read the rest on the web";
 
 std::u32string cut(std::u32string s, int cols) {
-  if (static_cast<int>(s.size()) > cols) s.resize(std::max(cols, 0));
+  s.resize(fitChars(s, std::max(cols, 0)));
   return s;
 }
 
@@ -31,8 +32,8 @@ std::u32string warningText(const Entry& e) {
 void clip(DisplayLine& l, int cols) {
   int left = cols;
   for (auto& s : l.spans) {
-    if (static_cast<int>(s.text.size()) > left) s.text.resize(std::max(left, 0));
-    left -= static_cast<int>(s.text.size());
+    s.text.resize(fitChars(s.text, std::max(left, 0)));
+    left -= textWidth(s.text);
   }
 }
 

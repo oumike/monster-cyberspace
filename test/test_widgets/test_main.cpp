@@ -20,6 +20,8 @@
 #include "ui/widgets/symbol_table.h"
 #include "ui/widgets/text_area.h"
 #include "ui/tap_map.h"
+#include "ui/emoji_set.h"
+#include "ui/text_width.h"
 #include "ui/home_tiles.h"
 #include "util/utf8.h"
 
@@ -1052,6 +1054,99 @@ void test_symbols_render_highlights_selection() {
   TEST_ASSERT_TRUE(found);
 }
 
+void test_emoji_tray_inserts_and_stays_open() {
+  SymbolTable s;
+  s.open(U"", SymbolTable::Set::Emoji);
+  TEST_ASSERT_EQUAL(40, int(SymbolTable::emoji().size()));
+  s.key(K(Action::Right));
+  auto o = s.key(K(Action::Select));
+  TEST_ASSERT_EQUAL(int(SymbolTable::Kind::Insert), int(o.kind));
+  TEST_ASSERT_EQUAL(int(SymbolTable::emoji()[1]), int(o.ch));
+  TEST_ASSERT_TRUE(s.isOpen());  // camillia-mt's tray stays open for more
+  // Repeats of its key and other keys are swallowed; only Back closes it.
+  TEST_ASSERT_EQUAL(int(SymbolTable::Kind::None), int(s.key(K(Action::Emoji)).kind));
+  KeyEvent c = K(Action::Char);
+  c.ch = U'a';
+  TEST_ASSERT_EQUAL(int(SymbolTable::Kind::None), int(s.key(c).kind));
+  TEST_ASSERT_TRUE(s.isOpen());
+  TEST_ASSERT_EQUAL(1, s.selected());
+  TEST_ASSERT_EQUAL(int(SymbolTable::Kind::Closed), int(s.key(K(Action::Back)).kind));
+  TEST_ASSERT_FALSE(s.isOpen());
+}
+
+void test_symbols_linear_steps_one_cell_and_wraps() {
+  SymbolTable s;
+  s.open(U"Commands\u2026", SymbolTable::Set::Symbols, true);
+  const int n = int(SymbolTable::symbols().size());
+  s.key(K(Action::Down));
+  TEST_ASSERT_EQUAL(1, s.selected());
+  s.key(K(Action::Up));
+  s.key(K(Action::Up));  // wraps backwards onto the commands row
+  TEST_ASSERT_EQUAL(n, s.selected());
+  s.key(K(Action::Down));
+  TEST_ASSERT_EQUAL(0, s.selected());
+  // Sym+Enter (Palette) picks while the table is open.
+  TEST_ASSERT_EQUAL(int(SymbolTable::Kind::Insert), int(s.key(K(Action::Palette)).kind));
+}
+
+void test_emoji_tray_render_draws_both_halves() {
+  Grid g(40, 13);
+  g.fill(T().bg);
+  SymbolTable s;
+  s.open(U"", SymbolTable::Set::Emoji);
+  s.render(g, g.rows() - 1, T());
+  bool found = false;
+  for (int r = 0; r < g.rows() && !found; ++r)
+    for (int c = 0; c + 1 < g.cols(); ++c)
+      if (g.at(c, r).cp == SymbolTable::emoji()[0] && g.at(c + 1, r).cp == wideTail(g.at(c, r).cp) &&
+          g.at(c, r).bg == T().selectBg)
+        found = true;
+  TEST_ASSERT_TRUE(found);
+}
+
+void test_put_text_wide_emoji() {
+  Grid g(5, 1);
+  g.fill(0);
+  const char32_t e = kTrayEmoji[0];
+  std::u32string s = U"a";
+  s += e;
+  s += U'\uFE0F';  // a variation selector takes no cell
+  s += U"b";
+  TEST_ASSERT_EQUAL(4, g.putText(0, 0, s, 1, 0, 5));
+  TEST_ASSERT_EQUAL(int(e), int(g.at(1, 0).cp));
+  TEST_ASSERT_EQUAL(int(wideTail(e)), int(g.at(2, 0).cp));
+  TEST_ASSERT_EQUAL(int(U'b'), int(g.at(3, 0).cp));
+  // Half an emoji is never drawn: with one cell left it stops.
+  Grid h(2, 1);
+  h.fill(0);
+  TEST_ASSERT_EQUAL(1, h.putText(0, 0, s, 1, 0, 2));
+  TEST_ASSERT_EQUAL(int(U' '), int(h.at(1, 0).cp));
+}
+
+void test_input_line_renders_wide_emoji() {
+  Grid g(10, 1);
+  InputLine in;
+  in.insert(kTrayEmoji[0]);
+  in.insert(U'x');
+  in.render(g, 0, T());
+  TEST_ASSERT_EQUAL(int(kTrayEmoji[0]), int(g.at(2, 0).cp));
+  TEST_ASSERT_EQUAL(int(wideTail(kTrayEmoji[0])), int(g.at(3, 0).cp));
+  TEST_ASSERT_EQUAL(int(U'x'), int(g.at(4, 0).cp));
+  TEST_ASSERT_EQUAL(T().cursorBg, g.at(5, 0).bg);  // the cursor sits after x
+}
+
+void test_text_area_wraps_by_width() {
+  Grid g(4, 3);
+  TextArea a(100);
+  for (char32_t c : std::u32string(U"abc")) a.insert(c);
+  a.insert(kTrayEmoji[0]);  // does not fit after "abc": it starts row 2
+  a.render(g, 0, 3, T(), true);
+  TEST_ASSERT_EQUAL(int(U'c'), int(g.at(2, 0).cp));
+  TEST_ASSERT_EQUAL(int(kTrayEmoji[0]), int(g.at(0, 1).cp));
+  TEST_ASSERT_EQUAL(int(wideTail(kTrayEmoji[0])), int(g.at(1, 1).cp));
+  TEST_ASSERT_EQUAL(T().cursorBg, g.at(2, 1).bg);
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_input_insert_cursor);
@@ -1110,5 +1205,11 @@ int main() {
   RUN_TEST(test_symbols_commands_row);
   RUN_TEST(test_symbols_repeat_ignored_back_closes_other_passes);
   RUN_TEST(test_symbols_render_highlights_selection);
+  RUN_TEST(test_emoji_tray_inserts_and_stays_open);
+  RUN_TEST(test_symbols_linear_steps_one_cell_and_wraps);
+  RUN_TEST(test_emoji_tray_render_draws_both_halves);
+  RUN_TEST(test_put_text_wide_emoji);
+  RUN_TEST(test_input_line_renders_wide_emoji);
+  RUN_TEST(test_text_area_wraps_by_width);
   return UNITY_END();
 }

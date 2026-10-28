@@ -11,7 +11,8 @@ enum class Action {
   OpenCirc, OpenHome, OpenCmail, OpenFeed, OpenMap, Palette, ClearLine, ScreenOff,
   Activate, Focus, PowerTap,
   Options,  // an edge swipe from the right: the screen's options
-  Symbols   // the symbol table while typing; the palette elsewhere
+  Symbols,  // the symbol table while typing; the palette elsewhere
+  Emoji     // the emoji tray while typing; the palette elsewhere
 };
 
 // A list a touch Row target belongs to.
@@ -23,6 +24,8 @@ struct KeyEvent {
   int16_t index = -1;           // Activate: the row; Focus: the text position
   uint8_t target = 0;           // Activate: a ListId; Focus: the screen's field id
   Action then = Action::None;   // Activate: sent once the selection has moved
+  bool modifier = false;        // Symbols from a key that is also a modifier
+                                // (the Pager's Sym): ignored outside typing
 };
 
 // With anyInputWakes false, only a centre hold (ScreenOff) wakes a dark screen,

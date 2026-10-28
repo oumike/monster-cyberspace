@@ -161,7 +161,8 @@ Buttons: BOOT tap = Back, BOOT hold (0.6 s) = Home; Wake tap = screen off
 - [ ] Wheel: turning it up moves the selection up, one row per detent, in lists and on Home. If reversed, flip `kPositiveIsUp` in `src/hal/pager/wheel_pager.cpp`
 - [ ] Wheel click selects; holding it 2 s turns the screen off and selects nothing
 - [ ] Every key types the right character, with Shift and Sym; Space, Enter and Backspace work; holding Backspace repeats
-- [ ] Sym + Backspace goes Home; Sym + Enter opens the palette in a room
+- [ ] Sym + Backspace goes Home; Sym + Enter opens the palette on the Feed list
+- [ ] While typing, Sym opens the symbol table: the wheel steps one symbol at a time and wraps, a click inserts, a letter types its Sym character and closes it
 - [ ] BOOT: a tap goes back, a hold goes Home
 - [ ] With the screen off, a key, a wheel turn and a click each wake it, and none of them types, moves or selects
 - [ ] Beep: a mention or C-Mail alert plays a tone on the speaker with the buzzer on
@@ -221,6 +222,12 @@ Buttons: BOOT tap = Back, BOOT hold (0.6 s) = Home; Wake tap = screen off
 **CrowPanel double-tap wake (`crowpanel35`, `crowpanel50`):**
 
 - [ ] With the screen locked or off, one tap does nothing; two taps within half a second wake it, and neither tap acts on the screen
+
+**M9 symbol table and emoji tray (`m9`):**
+
+- [ ] While typing, the triangle key opens the symbol table and Ctrl the emoji tray; on the Feed list either opens the palette
+- [ ] Emoji tray: Centre inserts and the tray stays open, Back closes it, other keys do nothing; emoji are legible at each text size and fill two cells in the input line, the log and the composer
+- [ ] A received message with tray emoji (and with `❤️`, which carries a variation selector) shows them; other emoji show as `�`
 
 **Screen timeout and screensaver (each board):**
 

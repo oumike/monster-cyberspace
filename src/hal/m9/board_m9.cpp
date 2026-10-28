@@ -87,6 +87,7 @@ bool hasKeyboard() { return true; }
 bool hasKeys() { return true; }
 bool backspaceIsBack() { return false; }
 bool anyInputWakes() { return false; }
+bool upDownOnly() { return false; }
 bool doubleTapWakes() { return false; }
 bool readTouch(int16_t&, int16_t&) { return false; }
 bool canRotate() { return false; }

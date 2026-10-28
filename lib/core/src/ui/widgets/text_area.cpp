@@ -3,6 +3,7 @@
 #include <algorithm>
 
 #include "ui/tap_map.h"
+#include "ui/text_width.h"
 #include "util/utf8.h"
 
 namespace rc {
@@ -49,10 +50,17 @@ std::vector<TextArea::Segment> TextArea::segments(int width) const {
   while (true) {
     size_t nl = text_.find(U'\n', start);
     size_t end = nl == std::u32string::npos ? text_.size() : nl;
-    size_t len = end - start;
-    for (size_t k = 0; k <= len / w; ++k) {
-      size_t s = start + k * w;
-      segs.push_back({s, std::min(w, end - s)});
+    for (size_t s = start;;) {
+      const std::u32string_view rest(text_.data() + s, end - s);
+      const size_t n = rest.empty() ? 0 : std::max<size_t>(fitChars(rest, static_cast<int>(w)), 1);
+      segs.push_back({s, n});
+      s += n;
+      // A segment that ends the line short of the width holds the cursor.
+      if (s == end && textWidth(rest.substr(0, n)) < static_cast<int>(w)) break;
+      if (s == end) {
+        segs.push_back({end, 0});
+        break;
+      }
     }
     if (nl == std::u32string::npos) break;
     start = nl + 1;
@@ -114,9 +122,10 @@ void TextArea::render(Grid& g, int top, int bottom, const Theme& t, bool focused
     }
     g.putText(0, row, std::u32string_view(text_).substr(s.start, s.len), t.fg, t.inputBg, width);
     if (focused && li == cur) {
-      int col = static_cast<int>(cursor_ - s.start);
+      int col = textWidth(std::u32string_view(text_).substr(s.start, cursor_ - s.start));
       char32_t cp = cursor_ < text_.size() && text_[cursor_] != U'\n' ? text_[cursor_] : U' ';
       g.put(col, row, cp, t.cursorFg, t.cursorBg);
+      if (cellWidth(cp) == 2) g.put(col + 1, row, wideTail(cp), t.cursorFg, t.cursorBg);
     }
   }
 }

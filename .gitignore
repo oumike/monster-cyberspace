@@ -5,3 +5,7 @@
 .DS_Store
 .pio-core/
 dist/
+
+# OTA signing key: never commit (see BUILD.md, Releases)
+ota_signing_key.pem
+*.pem

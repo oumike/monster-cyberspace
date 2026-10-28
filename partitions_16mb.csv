@@ -1,0 +1,10 @@
+# Name,   Type, SubType, Offset,   Size,     Flags
+# Settings live past both app slots, so writing a factory image at 0x0 never
+# reaches them. nvs_old is where default_16MB.csv kept them; the firmware
+# moves anything found there into nvs at boot (src/store/nvs_migrate.cpp).
+nvs_old,  data, nvs,     0x9000,   0x5000,
+otadata,  data, ota,     0xe000,   0x2000,
+app0,     app,  ota_0,   0x10000,  0x640000,
+app1,     app,  ota_1,   0x650000, 0x640000,
+nvs,      data, nvs,     0xc90000, 0x20000,
+coredump, data, coredump,0xff0000, 0x10000,

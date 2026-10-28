@@ -16,6 +16,8 @@ namespace board {
 
 void begin();
 const char* name();  // "M9", "WioL2"; also used in the setup AP name
+// The release asset slug (scripts/release.sh env_out_name): "m9", "wio-l2", ...
+const char* otaSlug();
 int panelWidth();
 int panelHeight();
 // Sends rows [y0, y1) of a full panelWidth() x panelHeight() RGB565 frame.

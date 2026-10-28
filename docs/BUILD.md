@@ -53,7 +53,7 @@ one-off PlatformIO install error has been seen on the first run.
 
 ## Releases
 
-Ported from platy-aprs, without OTA signing (this firmware has no over-the-air updates).
+Ported from platy-aprs, with its OTA signing.
 
 ```sh
 scripts/release.sh                             # help: every mode and option
@@ -66,9 +66,9 @@ scripts/release.sh --release --version 0.2.0   # release an exact version
 
 `VERSION` (e.g. `v0.1.0`) is baked into every firmware build as `RC_VERSION` by
 `tools/set_app_version.py`. `dist/` holds, per board,
-`monster-cyberspace-<board>-vX.Y.Z.bin` (factory image, flash at `0x0`; wipes
-settings), `-app.bin` (app image, flash at `0x10000`; keeps settings) and `.elf`
-(symbols), plus `flash.sh`, `BUILD-INFO.txt` and `SHA256SUMS`. A dist-only build
+`monster-cyberspace-<board>-vX.Y.Z.bin` (factory image, flash at `0x0`; keeps
+settings), `-ota.bin` (the app image devices download), `-ota.bin.sig` (its
+signature) and `.elf` (symbols), plus `flash.sh`, `BUILD-INFO.txt` and `SHA256SUMS`. A dist-only build
 is versioned from `VERSION`, with `+<commit>` (and `.custom` for uncommitted
 changes) unless it is the tagged release commit.
 
@@ -79,7 +79,41 @@ keeps the `.elf` files as a workflow artifact. `--build-local` does the same on
 your machine. `.github/workflows/build.yml` builds every board from a clean
 checkout on each push and pull request and runs the unit tests; it publishes
 nothing. A new firmware env must be added to `RELEASE_ENVS` in
-`scripts/release.sh` and run `tools/set_app_version.py`; CI checks both.
+`scripts/release.sh` and run `tools/set_app_version.py`; CI checks both. Its
+`board::otaSlug()` must match the release's file name (`env_out_name`: the env
+name with `_` turned into `-`), or its devices find no update.
+
+### Flash layout
+
+Every env uses `partitions_16mb.csv`: two 6.25 MB app slots at `0x10000` and
+`0x650000`, and the settings (`nvs`) at `0xC90000`, past anything a factory
+image writes. `0x9000` is `nvs_old`, where the stock `default_16MB.csv` kept
+them; `src/store/nvs_migrate.cpp` moves anything there into `nvs` at boot and
+erases it. Keep the app slots where they are: the OTA code refuses to update a
+board whose layout differs (`layoutSupportsUpdate`).
+
+### OTA signing
+
+Devices fetch `https://github.com/oumike/monster-cyberspace/releases/latest`
+(the tag comes from its redirect), then `-ota.bin` and `-ota.bin.sig` from that
+release, over HTTPS with the certificate bundle. The image is SHA-256'd as it
+streams and its ECDSA P-256 signature checked against
+`src/app/ota_signing_pubkey.h` before the slot is made bootable. A new image
+that crashes before 30 s of uptime is rolled back by the bootloader.
+
+The private key is `ota_signing_key.pem` (git-ignored) at the repo root, and
+the `OTA_SIGNING_KEY` secret of the `release` environment for the workflow.
+A release refuses to run without it, and `release.sh` and the workflow both
+check it matches the committed header. **Keep a copy somewhere safe:** without
+it no device in the field accepts another update until reflashed over USB. A
+new key means a new header, and devices running the old one only take a USB
+install. To make one:
+
+```sh
+openssl ecparam -name prime256v1 -genkey -noout -out ota_signing_key.pem
+openssl ec -in ota_signing_key.pem -pubout   # paste into src/app/ota_signing_pubkey.h
+gh secret set OTA_SIGNING_KEY --env release < ota_signing_key.pem
+```
 
 ## Time zones
 

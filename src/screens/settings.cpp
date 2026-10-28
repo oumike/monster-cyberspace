@@ -1,9 +1,11 @@
 #include <Arduino.h>
 
 #include "app/app_state.h"
+#include "app/ota_service.h"
 #include "app/time_service.h"
 #include "app/ui_task.h"
 #include "chat/chat_source.h"
+#include "core_version.h"
 #include "hal/board.h"
 #include "screens/draw.h"
 #include "screens/screens.h"
@@ -15,7 +17,19 @@
 namespace rc {
 
 namespace {
-enum Item { kTheme, kTextSize, kZone, kRotation, kSetupAp, kBackup, kRestore, kLogout, kReset };
+enum Item {
+  kTheme,
+  kTextSize,
+  kZone,
+  kRotation,
+  kSetupAp,
+  kFirmware,
+  kAutoUpdate,
+  kBackup,
+  kRestore,
+  kLogout,
+  kReset
+};
 
 // The visible menu, in order. Orientation appears only on a board that can
 // rotate and the SD-card items only on a board with a slot, so item indices and
@@ -24,6 +38,8 @@ std::vector<Item> menuItems() {
   std::vector<Item> v{kTheme, kTextSize, kZone};
   if (board::canRotate()) v.push_back(kRotation);
   v.push_back(kSetupAp);
+  v.push_back(kFirmware);
+  v.push_back(kAutoUpdate);
   if (board::hasSdSlot()) {
     v.push_back(kBackup);
     v.push_back(kRestore);
@@ -37,6 +53,29 @@ std::u32string widen(const char* s) {
   std::u32string out;
   for (; *s; ++s) out += static_cast<char32_t>(static_cast<unsigned char>(*s));
   return out;
+}
+
+// The Firmware item's value: the running version, or what an update is doing.
+std::u32string firmwareValue(const ota::Status& s) {
+  switch (s.state) {
+    case ota::State::Checking:
+      return U"checking\u2026";
+    case ota::State::UpToDate:
+      return widen("v" RC_VERSION " up to date");
+    case ota::State::Available:
+      return widen((s.latest + " available").c_str());
+    case ota::State::Installing: {
+      const int p = ota::percent(s);
+      return p < 0 ? U"installing\u2026" : widen(("installing " + std::to_string(p) + "%").c_str());
+    }
+    case ota::State::Done:
+      return U"restarting\u2026";
+    case ota::State::Failed:
+      return U"update failed";
+    case ota::State::Idle:
+      break;
+  }
+  return widen("v" RC_VERSION);
 }
 
 // The text size picker's rows, in size order.
@@ -119,6 +158,10 @@ void SettingsScreen::confirmKey(const KeyEvent& k) {
         break;
       }
       if (confirmBox_.selected() != 1) break;
+      if (c == Confirm::Update) {
+        if (!ota::startInstall()) ui::banner("Can't update now: is Wi-Fi up?", true);
+        break;
+      }
       if (c == Confirm::Logout) {
         chatSource().command(Command{CmdType::Logout});
       } else {
@@ -210,6 +253,29 @@ void SettingsScreen::activate(int item) {
       chatSource().command(c);
       break;
     }
+    case kFirmware: {
+      const ota::Status st = ota::status();
+      if (!st.layoutOk) {
+        ui::banner("Updates need a USB install of a release first", true);
+        break;
+      }
+      if (st.state == ota::State::Checking || st.state == ota::State::Installing ||
+          st.state == ota::State::Done)
+        break;
+      if (st.state == ota::State::Available) {
+        confirm_ = Confirm::Update;
+        confirmBox_.confirm(widen(("Install " + st.latest + "? The device restarts.").c_str()), U"Install");
+        break;
+      }
+      if (!ota::startCheck()) ui::banner("Can't check now: is Wi-Fi up?", true);
+      break;
+    }
+    case kAutoUpdate: {
+      AppState& a = app();
+      a.cfg.autoUpdate = !a.cfg.autoUpdate;
+      settings::saveAutoUpdate(a.cfg.autoUpdate);
+      break;
+    }
     case kBackup: {
       const backupstore::Result r = backupstore::saveToSd();
       ui::banner(r.message, !r.ok);
@@ -263,6 +329,17 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
           rows.push_back(ListItem{U"Setup AP", ap ? U"on" : U"off", ItemTone::Normal, ap});
         else
           rows.push_back(ListItem{ap ? U"Turn setup AP off" : U"Turn setup AP on", U""});
+        break;
+      case kFirmware: {
+        const ota::Status st = ota::status();
+        rows.push_back(ListItem{U"Firmware", firmwareValue(st),
+                                st.state == ota::State::Failed ? ItemTone::Error : ItemTone::Normal,
+                                st.state == ota::State::Available});
+        break;
+      }
+      case kAutoUpdate:
+        rows.push_back(ListItem{U"Auto-update", a.cfg.autoUpdate ? U"on" : U"off", ItemTone::Normal,
+                                a.cfg.autoUpdate});
         break;
       case kBackup:
         rows.push_back(ListItem{U"Back up to SD card", U""});

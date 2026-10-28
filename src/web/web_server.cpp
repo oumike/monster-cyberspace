@@ -8,8 +8,10 @@
 #include <cstdlib>
 #include <string>
 
+#include "app/app_state.h"
 #include "app/messages.h"
 #include "app/net_worker.h"
+#include "app/ota_service.h"
 #include "app/queues.h"
 #include "app/restart.h"
 #include "app/time_service.h"
@@ -405,6 +407,46 @@ esp_err_t postSecurity(httpd_req_t* req) {
   return okReply(req, "Saved. The setup-AP password applies the next time setup mode runs.");
 }
 
+esp_err_t getOta(httpd_req_t* req) {
+  if (!authorized(req)) return ESP_OK;
+  const ota::Status st = ota::status();
+  JsonDocument d;
+  d["version"] = RC_VERSION;
+  d["state"] = ota::stateName(st.state);
+  d["latest"] = st.latest;
+  d["error"] = st.error;
+  d["percent"] = ota::percent(st);
+  d["supported"] = st.layoutOk;
+  d["auto"] = rc::app().cfg.autoUpdate;
+  return sendJson(req, d);
+}
+
+esp_err_t postOtaCheck(httpd_req_t* req) {
+  if (!authorized(req)) return ESP_OK;
+  if (!ota::startCheck()) return fail(req, "409 Conflict", "Can't check now: busy, or no Wi-Fi");
+  return okReply(req, "Checking\u2026");
+}
+
+esp_err_t postOtaInstall(httpd_req_t* req) {
+  if (!authorized(req)) return ESP_OK;
+  if (ota::status().state != ota::State::Available)
+    return fail(req, "409 Conflict", "No update to install: check first");
+  if (!ota::startInstall()) return fail(req, "409 Conflict", "Can't install now: busy, or no Wi-Fi");
+  return okReply(req, "Installing: the device restarts when it is done");
+}
+
+esp_err_t postOtaAuto(httpd_req_t* req) {
+  if (!authorized(req)) return ESP_OK;
+  std::string body;
+  JsonDocument doc;
+  if (!readJson(req, body, doc) || !doc["auto"].is<bool>())
+    return fail(req, "400 Bad Request", "Send {\"auto\":true} or {\"auto\":false}");
+  const bool on = doc["auto"].as<bool>();
+  settings::saveAutoUpdate(on);
+  rc::app().cfg.autoUpdate = on;
+  return okReply(req, on ? "Updates install on their own" : "Updates wait for you");
+}
+
 esp_err_t postRestart(httpd_req_t* req) {
   if (!authorized(req)) return ESP_OK;
   okReply(req, "Restarting\u2026");
@@ -513,7 +555,7 @@ void begin() {
   if (server) return;
   httpd_config_t cfg = HTTPD_DEFAULT_CONFIG();
   cfg.server_port = 80;
-  cfg.max_uri_handlers = 24;
+  cfg.max_uri_handlers = 28;
   cfg.stack_size = 8192;
   cfg.core_id = 0;
   cfg.lru_purge_enable = true;
@@ -549,6 +591,10 @@ void begin() {
       {"/api/backup/sd/restore", HTTP_POST, postBackupSdRestore},
       {"/api/backup/sd/download", HTTP_GET, getBackupSdDownload},
       {"/api/backup/sd/delete", HTTP_POST, postBackupSdDelete},
+      {"/api/ota", HTTP_GET, getOta},
+      {"/api/ota/check", HTTP_POST, postOtaCheck},
+      {"/api/ota/install", HTTP_POST, postOtaInstall},
+      {"/api/ota/auto", HTTP_POST, postOtaAuto},
   };
   for (const Route& r : routes) {
     httpd_uri_t u = {};

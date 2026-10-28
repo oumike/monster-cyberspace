@@ -59,7 +59,7 @@ struct Item {
 struct Staged {
   Str format, version, timezone, tzName, ntpServer, pagePassword, apPassword, textSize, theme,
       rotation, lastRoom, email, refreshToken;
-  Bool drawerOpen, buzzer;
+  Bool drawerOpen, buzzer, autoUpdate;
   bool hasWifi = false;
   std::vector<Item> wifi;
 };
@@ -250,7 +250,7 @@ bool parse(std::string_view yaml, Staged& st, std::string& err) {
              : key == "lastRoom"     ? &st.lastRoom
                                      : nullptr;
     Str ignored;
-    bool isBool = key == "drawerOpen" || key == "buzzer";
+    bool isBool = key == "drawerOpen" || key == "buzzer" || key == "autoUpdate";
     bool known = s || isBool;
     if (key == "board" || key == "firmware" || key == "created") {
       s = &ignored;
@@ -262,7 +262,8 @@ bool parse(std::string_view yaml, Staged& st, std::string& err) {
         return false;
       }
       if (isBool) {
-        if (!readBool(rest, l.no, key == "buzzer" ? st.buzzer : st.drawerOpen, err)) return false;
+        Bool& dst = key == "buzzer" ? st.buzzer : key == "autoUpdate" ? st.autoUpdate : st.drawerOpen;
+        if (!readBool(rest, l.no, dst, err)) return false;
       } else {
         bool empty;
         if (!readValue(rest, l.no, *s, empty, err)) return false;
@@ -352,6 +353,7 @@ std::string backupToYaml(const Settings& s, const BackupMeta& m) {
        "  # 0 landscape, 1 portrait, 2 landscape 180, 3 portrait 180\n";
   o += std::string("drawerOpen: ") + boolStr(s.drawerOpen) + "\n";
   o += std::string("buzzer: ") + boolStr(s.buzzer) + "\n";
+  o += std::string("autoUpdate: ") + boolStr(s.autoUpdate) + "  # install firmware updates on its own\n";
   o += "lastRoom: " + yamlQuote(s.lastRoom) + "\n";
   o += "account:\n";
   o += "  email: " + yamlQuote(s.email) + "\n";
@@ -450,6 +452,7 @@ bool backupFromYaml(std::string_view yaml, Settings& inOut, std::string& err, st
   if (st.rotation.has) inOut.rotation = rotationFromIndex(rotation);
   if (st.drawerOpen.has) inOut.drawerOpen = st.drawerOpen.v;
   if (st.buzzer.has) inOut.buzzer = st.buzzer.v;
+  if (st.autoUpdate.has) inOut.autoUpdate = st.autoUpdate.v;
   if (st.lastRoom.has) inOut.lastRoom = st.lastRoom.v;
   if (st.email.has) inOut.email = st.email.v;
   if (st.refreshToken.has) inOut.refreshToken = st.refreshToken.v;

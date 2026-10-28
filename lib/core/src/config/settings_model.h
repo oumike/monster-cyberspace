@@ -18,6 +18,7 @@ struct Settings {
   std::string email, refreshToken, tz = "UTC0", pagePassword, apPassword;
   TextSize textSize = TextSize::Compact;
   bool drawerOpen = false, buzzer = true;
+  bool autoUpdate = false;  // install a newer release without asking
   ThemeId theme = ThemeId::Default;
   uint8_t rotation = 0;  // touch boards: see ui/rotation.h
   std::string lastRoom = "general";

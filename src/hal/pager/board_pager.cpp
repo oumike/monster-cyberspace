@@ -104,6 +104,7 @@ void begin() {
 }
 
 const char* name() { return "Pager"; }
+const char* otaSlug() { return "pager"; }
 int panelWidth() { return pager::PANEL_W; }
 int panelHeight() { return pager::PANEL_H; }
 

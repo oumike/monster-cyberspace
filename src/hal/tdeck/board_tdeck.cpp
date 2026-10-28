@@ -41,6 +41,7 @@ void begin() {
 }
 
 const char* name() { return "TDeck"; }
+const char* otaSlug() { return "tdeck"; }
 int panelWidth() { return tdeck::PANEL_W; }
 int panelHeight() { return tdeck::PANEL_H; }
 

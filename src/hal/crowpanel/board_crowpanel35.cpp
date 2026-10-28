@@ -53,6 +53,7 @@ void begin() {
 }
 
 const char* name() { return "CrowPanel35"; }
+const char* otaSlug() { return "crowpanel35"; }
 int panelWidth() { return rc::rotationPortrait(rotation) ? PANEL_H : PANEL_W; }
 int panelHeight() { return rc::rotationPortrait(rotation) ? PANEL_W : PANEL_H; }
 

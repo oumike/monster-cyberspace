@@ -8,18 +8,20 @@ web config page served by the device. No phone app or companion is needed.
 
 ## Install
 
-Download the image for your board from [Releases](../../releases):
+Download `monster-cyberspace-<board>-<version>.bin` for your board from
+[Releases](../../releases) and flash it at `0x0` with the `flash.sh` attached to
+each release (`./flash.sh monster-cyberspace-<board>-<version>.bin /dev/ttyUSB0`;
+on macOS, `/dev/cu.usbmodem*` or `/dev/cu.wchusbserial*`). Installs keep your
+Wi-Fi, sign-in and preferences: they live past the end of the image.
 
-- **First install:** `monster-cyberspace-<board>-<version>.bin`, flashed at `0x0`.
-  It wipes saved settings.
-- **Update:** `monster-cyberspace-<board>-<version>-app.bin`, flashed at
-  `0x10000`. It keeps your Wi-Fi and sign-in.
+Boards installed before over-the-air updates arrived kept their settings at
+`0x9000`. `flash.sh` skips that area and the firmware moves them on its first
+boot; other tools ([esptool-js](https://espressif.github.io/esptool-js/),
+`esptool.py --chip esp32s3 write_flash 0x0 <file>`) write over it, so for those
+take a backup first (Settings → Back up to SD card, or web config).
 
-Flash either one with the `flash.sh` attached to each release
-(`./flash.sh monster-cyberspace-<board>-<version>.bin /dev/ttyUSB0`; on macOS,
-`/dev/cu.usbmodem*` or `/dev/cu.wchusbserial*`), with
-[esptool-js](https://espressif.github.io/esptool-js/) in Chrome or Edge, or with
-`esptool.py --chip esp32s3 write_flash <address> <file>`.
+After that, updates come over the air (Settings → Firmware, or web config). The
+`-ota.bin` files are for that and are not flashed by hand.
 
 ## Docs
 

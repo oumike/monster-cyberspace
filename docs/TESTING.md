@@ -206,6 +206,18 @@ Buttons: BOOT tap = Back, BOOT hold (0.6 s) = Home; Wake tap = screen off
 - [ ] Uploading a 17 KB file gives `Backup is over 16 KB`
 - [ ] With the card out, every path (both Settings items and the web SD block) says `No SD card`; putting it back in works without a restart
 
+**OTA updates and the flash layout (`m9`, then each board):**
+
+- [ ] A board on the old layout (flashed with `pio run -t upload` before this change) keeps Wi-Fi, sign-in and preferences after `pio run -t upload` of this build; the log shows `[nvs] moved N settings`, and the next boot does not
+- [ ] The same with a release's factory image through `flash.sh`
+- [ ] A factory image through `flash.sh` on a board already on the new layout keeps the settings
+- [ ] Settings → Firmware: `checking…`, then `vX up to date` (or `vX available` with a newer release), and the log shows `[ota] latest …`
+- [ ] With a newer release published: Install shows `installing N%`, restarts into it, settings kept, and the log shows `[ota] new firmware is running fine` after 30 s
+- [ ] A release whose `.sig` does not match (edit one byte locally and host it, or test against a release with the `.sig` removed) fails with `signature check failed` / `signature: HTTP 404`, and the device keeps running the old firmware
+- [ ] Auto-update on: the daily check (or 20 s after joining Wi-Fi) installs by itself; off: it only shows `available`
+- [ ] Web config Firmware: Check, Install and the auto-update checkbox work and match the device
+- [ ] Off Wi-Fi, Settings → Firmware says `Can't check now: is Wi-Fi up?`
+
 **API assumptions to confirm (watch the serial log during the live checklist):**
 
 - [ ] `GET /v1/users/me` shape: Home shows the right username and verified state

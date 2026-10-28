@@ -78,6 +78,14 @@ a{color:#6cf}
 </div>
 <div id="backupmsg" class="msg"></div>
 
+<h2>Firmware</h2>
+<div id="otastate" class="dim"></div>
+<button onclick="otaCheck()">Check for updates</button>
+<button id="otainst" hidden onclick="otaInstall()">Install</button>
+<label><input id="otaauto" type="checkbox" style="width:auto" onchange="post('/api/ota/auto',{auto:this.checked},'otamsg')"> Install updates automatically</label>
+<div class="dim">Updates come from this project's GitHub releases over HTTPS and are signature-checked before the device boots them. Settings are kept.</div>
+<div id="otamsg" class="msg"></div>
+
 <h2>Device</h2>
 <button onclick="if(confirm('Restart the device?'))post('/api/restart',{},'devmsg')">Restart</button>
 <button class="danger" onclick="reset()">Factory reset…</button>
@@ -176,7 +184,20 @@ async function loadBackup(){
     li.appendChild(rb);li.appendChild(db);li.appendChild(xb);ul.appendChild(li);
   }
 }
-load();loadZones().then(loadPrefs);loadBackup();setInterval(load,10000);
+let otaTimer=0;
+async function loadOta(){const o=await call('GET','/api/ota');if(o.state===undefined)return;
+  const t={idle:'v'+o.version,checking:'checking\u2026','up-to-date':'v'+o.version+', up to date',
+    available:o.latest+' available (running v'+o.version+')',
+    installing:'installing '+(o.latest||'')+(o.percent>=0?' '+o.percent+'%':'\u2026'),
+    done:'installed, restarting\u2026',failed:'v'+o.version+'; update failed: '+o.error}[o.state]||o.state;
+  $('otastate').textContent=o.supported?t:'v'+o.version+'; updates need a USB install of a release first';
+  $('otainst').hidden=o.state!=='available';$('otainst').textContent='Install '+(o.latest||'');
+  $('otaauto').checked=o.auto;
+  clearTimeout(otaTimer);if(o.state==='checking'||o.state==='installing')otaTimer=setTimeout(loadOta,1500);}
+async function otaCheck(){await post('/api/ota/check',{},'otamsg');loadOta();}
+async function otaInstall(){if(!confirm('Install '+$('otainst').textContent.slice(8)+'? The device restarts.'))return;
+  await post('/api/ota/install',{},'otamsg');loadOta();}
+load();loadZones().then(loadPrefs);loadBackup();loadOta();setInterval(load,10000);
 </script></body></html>)HTML";
 
 }  // namespace web

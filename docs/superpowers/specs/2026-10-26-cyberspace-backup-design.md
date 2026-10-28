@@ -73,6 +73,7 @@ theme: default        # default | bw | wb
 rotation: 0  # 0 landscape, 1 portrait, 2 landscape 180, 3 portrait 180
 drawerOpen: false
 buzzer: true
+autoUpdate: false  # install firmware updates on its own
 lastRoom: "general"
 account:
   email: "me@example.com"

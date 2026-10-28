@@ -16,6 +16,8 @@ void saveWifi(const std::vector<rc::WifiNet>&);
 void saveTz(const std::string& tz, const std::string& tzName);
 void saveNtpServer(const std::string& host);
 void saveSecurity(const std::string& pagePassword, const std::string& apPassword);
+// The device's Settings and web config: install updates without asking.
+void saveAutoUpdate(bool on);
 void saveToken(const std::string& refreshToken);
 void clearToken();
 // Saves the email and refresh token after a login.

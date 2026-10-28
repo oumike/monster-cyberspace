@@ -55,6 +55,7 @@ void load(rc::Settings& s) {
   s.textSize = rc::textSizeFromIndex(p.getUChar("tsize", 1));
   s.drawerOpen = p.getBool("drawer", false);
   s.buzzer = p.getBool("buzz", true);
+  s.autoUpdate = p.getBool("otaauto", false);
   s.theme = rc::themeFromIndex(p.getUChar("theme", 0));
   s.rotation = rc::rotationFromIndex(p.getUChar("rot", 0));
   s.lastRoom = getStr(p, "room", s.lastRoom);
@@ -114,6 +115,13 @@ void saveSecurity(const std::string& pagePassword, const std::string& apPassword
   p.end();
 }
 
+void saveAutoUpdate(bool on) {
+  Preferences p;
+  if (!p.begin(kNs, false)) return;
+  p.putBool("otaauto", on);
+  p.end();
+}
+
 void saveToken(const std::string& refreshToken) {
   Preferences p;
   if (!p.begin(kNs, false)) return;
@@ -142,6 +150,7 @@ void saveAll(const rc::Settings& s) {
   saveNtpServer(s.ntpServer);
   saveSecurity(s.pagePassword, s.apPassword);
   saveUiPrefs(s);
+  saveAutoUpdate(s.autoUpdate);
   saveAccount(s.email, s.refreshToken);
   if (s.refreshToken.empty()) clearToken();
 }

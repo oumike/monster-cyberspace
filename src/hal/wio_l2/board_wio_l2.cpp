@@ -155,6 +155,7 @@ void begin() {
 }
 
 const char* name() { return "WioL2"; }
+const char* otaSlug() { return "wio-l2"; }
 int panelWidth() { return rc::rotationPortrait(rotation) ? wio::PANEL_H : wio::PANEL_W; }
 int panelHeight() { return rc::rotationPortrait(rotation) ? wio::PANEL_W : wio::PANEL_H; }
 

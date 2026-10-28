@@ -40,6 +40,7 @@ void begin() {
 }
 
 const char* name() { return "M9"; }
+const char* otaSlug() { return "m9"; }
 int panelWidth() { return m9::PANEL_W; }
 int panelHeight() { return m9::PANEL_H; }
 

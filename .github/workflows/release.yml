@@ -13,7 +13,12 @@ name: Release
 # your editor; commit it and choose `committed`, and this job publishes it
 # verbatim. `generate` publishes GitHub's generated notes instead.
 #
-# Ported from platy-aprs, minus OTA signing (this firmware has no OTA).
+# The OTA signing key lives in the `release` environment as the
+# OTA_SIGNING_KEY secret. That environment is the gate on who can sign
+# firmware: add required reviewers or a branch rule to it under Settings ->
+# Environments, and do not reference OTA_SIGNING_KEY from any other job.
+#
+# Ported from platy-aprs.
 
 on:
   workflow_dispatch:
@@ -42,6 +47,7 @@ jobs:
     name: Build and publish
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    environment: release
 
     steps:
       - name: Checkout
@@ -81,6 +87,37 @@ jobs:
       - name: Unit tests
         run: pio test -e native
 
+      - name: Install OTA signing key
+        env:
+          OTA_SIGNING_KEY: ${{ secrets.OTA_SIGNING_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${OTA_SIGNING_KEY:-}" ]; then
+            echo "::error::OTA_SIGNING_KEY is not set on the 'release' environment."
+            echo "::error::Add the contents of ota_signing_key.pem as that secret."
+            exit 1
+          fi
+          printf '%s\n' "$OTA_SIGNING_KEY" > ota_signing_key.pem
+          chmod 600 ota_signing_key.pem
+          if ! openssl ec -in ota_signing_key.pem -noout 2>/dev/null; then
+            echo "::error::OTA_SIGNING_KEY is not a readable EC private key."
+            exit 1
+          fi
+
+      - name: Verify the key matches the one devices already trust
+        # A wrong key would still produce a self-consistent signature -- and
+        # every device in the field, holding the committed public key, would
+        # reject the update and need a USB reflash. Catch that here.
+        run: |
+          set -euo pipefail
+          fresh=$(openssl ec -in ota_signing_key.pem -pubout 2>/dev/null | grep -v -- '-----' | tr -d '\n')
+          baked=$(grep -oE '"[A-Za-z0-9+/=]+' src/app/ota_signing_pubkey.h | tr -d '"' | tr -d '\n')
+          if [ -z "$fresh" ] || [ "$fresh" != "$baked" ]; then
+            echo "::error::OTA_SIGNING_KEY does not match src/app/ota_signing_pubkey.h."
+            exit 1
+          fi
+          echo "Signing key matches the public key baked into the firmware."
+
       - name: Cut the release
         id: cut
         env:
@@ -109,3 +146,7 @@ jobs:
           name: debug-symbols-${{ steps.cut.outputs.tag }}
           path: dist/*.elf
           retention-days: 90
+
+      - name: Remove the signing key from the workspace
+        if: always()
+        run: rm -f ota_signing_key.pem

@@ -398,7 +398,7 @@ The serial log says only whether there's a fix and satellite counts.
 
 **Home** → **Settings** shows the account, the Wi-Fi network and IP, the web
 config address, the battery, the setup AP state and the gps, time and zone
-lines (see Time and time zone), with six actions, plus Orientation on a
+lines (see Time and time zone), with eight actions, plus Orientation on a
 touch board and two more on a board with an SD card slot:
 
 - **Theme: …** Centre moves to the next theme (Default, Black & white, White &
@@ -413,6 +413,11 @@ touch board and two more on a board with an SD card slot:
   and `http://192.168.4.1` are shown) while staying on your Wi-Fi, so you can
   reach web config when your network is unreachable. It stays on until you
   turn it off or restart.
+- **Firmware: …** Shows the running version. Select it to check for an update;
+  when one is found it reads `vX.Y.Z available`, and selecting it again asks
+  **Install vX.Y.Z? The device restarts.** See Firmware updates.
+- **Auto-update: on / off.** When on, an update found by the daily check
+  installs and restarts by itself. Off by default.
 - **Back up to SD card** and **Restore from SD card…** (boards with a card
   slot). See Backup and restore.
 - **Log out** (confirm with **Log out**). Signs out of Cyberspace and goes to
@@ -421,6 +426,23 @@ touch board and two more on a board with an SD card slot:
 
 If the saved networks fail for 5 minutes, the setup AP comes up by itself.
 It goes away again once Wi-Fi is back and nobody is joined to it.
+
+## Firmware updates
+
+The device looks for a new release 20 seconds after joining Wi-Fi and then
+once a day, straight from this project's GitHub releases over HTTPS. It only
+asks GitHub which release is newest; nothing else is sent. When one is
+found, **Settings → Firmware** says so. Installing downloads the image,
+checks its signature, and restarts into it (`installing N%` shows progress).
+Your settings are kept. If the new firmware fails to start, the device goes
+back to the previous one by itself.
+
+Web config's **Firmware** section does the same: **Check for updates**,
+**Install**, and **Install updates automatically**.
+
+A board installed with an image from before over-the-air updates arrived
+needs one USB install of a release first (see the README); until then
+Firmware says updates need it.
 
 ## Backup and restore
 

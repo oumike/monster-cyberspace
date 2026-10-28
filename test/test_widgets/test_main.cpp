@@ -1151,10 +1151,9 @@ void test_emoji_tray_spaced_out() {
     for (int c = 0; c < g.cols(); ++c)
       if (g.at(c, r).cp == SymbolTable::emoji()[0]) { c0 = c; r0 = r; break; }
   TEST_ASSERT_TRUE(c0 >= 0);
-  // Two blank cells between neighbours, and a blank row between rows.
-  TEST_ASSERT_EQUAL(int(SymbolTable::emoji()[1]), int(g.at(c0 + 4, r0).cp));
+  // One blank cell between neighbours, and a blank row between rows.
+  TEST_ASSERT_EQUAL(int(SymbolTable::emoji()[1]), int(g.at(c0 + 3, r0).cp));
   TEST_ASSERT_EQUAL(int(U' '), int(g.at(c0 + 2, r0).cp));
-  TEST_ASSERT_EQUAL(int(U' '), int(g.at(c0 + 3, r0).cp));
   TEST_ASSERT_EQUAL(int(U' '), int(g.at(c0, r0 + 1).cp));
   TEST_ASSERT_EQUAL(int(SymbolTable::emoji()[SymbolTable::kEmojiCols]), int(g.at(c0, r0 + 2).cp));
   // The commands row sits below the last emoji row, apart from it.
@@ -1169,7 +1168,19 @@ void test_emoji_tray_spaced_out() {
       if (k.at(c, r).cp == U'c' && k.at(c + 1, r).cp == U'm') cmdRow = r;
     }
   TEST_ASSERT_EQUAL(lastRow + 2, cmdRow);
-  // Too short for the blank rows: the rows close up instead of clipping.
+  // A shorter screen puts more on a row to keep the blank rows.
+  Grid m(40, 13);
+  m.fill(T().bg);
+  s.open(U"", SymbolTable::Set::Emoji);
+  s.render(m, m.rows() - 1, T());
+  TEST_ASSERT_EQUAL(8, s.cols());
+  int mc = -1, mr = -1;
+  for (int r = 0; r < m.rows() && mc < 0; ++r)
+    for (int c = 0; c < m.cols(); ++c)
+      if (m.at(c, r).cp == SymbolTable::emoji()[0]) { mc = c; mr = r; break; }
+  TEST_ASSERT_EQUAL(int(U' '), int(m.at(mc, mr + 1).cp));
+  TEST_ASSERT_EQUAL(int(SymbolTable::emoji()[8]), int(m.at(mc, mr + 2).cp));
+  // Too short even then: the rows close up instead of clipping.
   Grid h(40, 10);
   h.fill(T().bg);
   s.render(h, h.rows() - 1, T());

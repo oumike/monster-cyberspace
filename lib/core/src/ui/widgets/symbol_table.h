@@ -18,7 +18,7 @@ namespace rc {
 class SymbolTable {
  public:
   static constexpr int kCols = 8;       // symbols a row
-  static constexpr int kEmojiCols = 6;  // emoji a row, spaced out
+  static constexpr int kEmojiCols = 6;  // emoji a row, at least; more when short
   enum class Kind : uint8_t {
     None,         // the table used the key (or ignored it) and is still open
     Insert,       // type `ch`; the table closed
@@ -42,7 +42,7 @@ class SymbolTable {
   bool isOpen() const { return open_; }
   int selected() const { return sel_; }
   Set set() const { return set_; }
-  int cols() const { return set_ == Set::Emoji ? kEmojiCols : kCols; }
+  int cols() const { return set_ == Set::Emoji ? emojiCols_ : kCols; }
 
   // Arrows move (wrapping), Select picks, Back closes. Symbols in the symbol
   // table switches to the emoji tray (the Pager's Sym pressed again); a repeat
@@ -62,6 +62,7 @@ class SymbolTable {
   Set set_ = Set::Symbols;
   bool linear_ = false;
   int sel_ = 0;
+  mutable int emojiCols_ = kEmojiCols;  // set by render to fit the screen
   bool open_ = false;
 };
 

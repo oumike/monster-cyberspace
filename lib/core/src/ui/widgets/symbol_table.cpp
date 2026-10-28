@@ -101,15 +101,22 @@ void SymbolTable::render(Grid& g, int bottom, const Theme& t) const {
   if (!open_) return;
   const bool emojiSet = set_ == Set::Emoji;
   const int n = static_cast<int>(items().size());
+  const int extra = commands_.empty() ? 0 : 1;
+  // Title, [blank], the rows with a blank row between each, [blank], [commands].
+  auto gapsFit = [&](int c) { return 2 * ((n + c - 1) / c) + 2 + extra <= bottom; };
+  if (emojiSet) {
+    // Emoji sit one blank cell apart with a blank row between rows; on a
+    // short screen, more go on a row so the blank rows still fit.
+    const int maxCols = std::max(kEmojiCols, std::min(n, (g.cols() - 1) / 3));
+    int c = kEmojiCols;
+    while (c < maxCols && !gapsFit(c)) ++c;
+    emojiCols_ = c;
+  }
   const int kc = cols();
   const int rows = (n + kc - 1) / kc;
-  // Emoji get four cells each (two blank between neighbours) and a blank row
-  // between rows when the screen is tall enough.
-  const int pitch = emojiSet ? 4 : 3;
-  const int width = kc * pitch + (emojiSet ? 0 : 2);
-  const int extra = commands_.empty() ? 0 : 1;
-  // Title, [blank], the rows, [blank], [commands].
-  const bool gaps = emojiSet && 1 + 2 * rows + 1 + extra <= bottom;
+  const int pitch = 3;
+  const int width = emojiSet ? kc * pitch + 1 : kc * pitch + 2;
+  const bool gaps = emojiSet && gapsFit(kc);
   const int rowStep = gaps ? 2 : 1;
   const int gridRows = rows * rowStep - (gaps ? 1 : 0);
   const int height = 1 + gridRows + (gaps ? 2 : 0) + extra;
@@ -139,10 +146,16 @@ void SymbolTable::render(Grid& g, int bottom, const Theme& t) const {
     const int col = left + 1 + (i % kc) * pitch, row = top + 1 + (gaps ? 1 : 0) + (i / kc) * rowStep;
     const bool sel = i == sel_;
     const uint16_t fg = sel ? t.selectFg : t.fg, bg = sel ? t.selectBg : t.bg;
-    // A symbol sits between two spaces; an emoji in the middle two of four.
-    for (int c = 0; c < pitch; ++c) g.put(col + c, row, U' ', fg, bg);
-    g.putText(col + 1, row, items().substr(i, 1), fg, bg, emojiSet ? 2 : 1);
-    cellTap(col, row, col + pitch - 1, i);
+    if (emojiSet) {
+      // An emoji fills two cells, with one blank cell before the next.
+      g.putText(col, row, items().substr(i, 1), fg, bg, 2);
+      cellTap(col, row, col + 2, i);
+    } else {
+      // A symbol sits between two spaces.
+      for (int c = 0; c < pitch; ++c) g.put(col + c, row, U' ', fg, bg);
+      g.putText(col + 1, row, items().substr(i, 1), fg, bg, 1);
+      cellTap(col, row, col + pitch - 1, i);
+    }
   }
   if (!commands_.empty()) {
     const int row = top + height - 1;

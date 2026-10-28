@@ -23,6 +23,7 @@ class ComposerScreen : public Screen {
   bool hasOverlay() const override { return menu_ != Menu::None; }
   void closeOverlays() override { menu_ = Menu::None; box_.close(); }
   bool acceptsText() const override;
+  std::u32string paletteLabel() const override { return U"post or discard\u2026"; }
   bool consumesBackspace() const override;
 
  private:

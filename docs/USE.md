@@ -41,9 +41,15 @@ Dedicated buttons work from anywhere and close whatever is open first.
 | Fn under Back | Feed: the entry list. Press it again anywhere in the Feed for the list |
 | Map | Unassigned |
 | Back | Up one level, or closes a menu or drawer. It never deletes text |
-| Ctrl | In a room or conversation: the command palette (slash commands) |
+| Ctrl | While typing: the symbol table. Elsewhere (the Feed list): the palette |
 | Hold Back/Del | Clear the input line |
 | Hold d-pad centre | Screen off; with the screen off, screen on |
+
+**Symbol table:** the keyboard's own Sym key types its symbols directly.
+Ctrl, while you're typing, opens a table of punctuation: the d-pad moves,
+Centre inserts one and closes it, Back closes it, and typing anything closes it
+and types as usual. In a room, a conversation or the Feed composer its last
+row, **commands…** or **post or discard…**, opens the palette.
 
 **Screen off:** only holding the d-pad centre wakes the screen. A centre tap
 while it's dark shows the last few messages for 10 s, then goes dark again.
@@ -202,7 +208,7 @@ The keyboard always types into the input line at the bottom.
   move between rooms. On the CrowPanels in landscape the list is always docked
   on the right; tap a name for their menu.
 - **Commands:** type slash commands such as `/me`, `/dice` and `/mute name`,
-  or pick them from the Ctrl palette.
+  or pick them from the palette (on the M9, Ctrl, then **commands…**).
 
 Sending is disabled while offline; nothing is queued or retried for you.
 
@@ -275,7 +281,7 @@ Feed alerts; with one waiting, **Feed** opens its entry instead of the list.
 - Up/Down move between fields. In Body they move by line first, and Centre
   adds a new line; the counter shows `n/4096`. On a checkbox, Centre toggles
   it.
-- **Ctrl** opens **Post…** and **Discard…**. Post checks the draft, then asks
+- **Ctrl**, then **post or discard…** (on the M9), opens **Post…** and **Discard…**. Post checks the draft, then asks
   "Post entry? (2 per minute, 24 per day)". A posted entry opens at once; a
   failed one keeps the draft.
 - Back (or Fn under Back) with any text asks "Discard draft?". The draft

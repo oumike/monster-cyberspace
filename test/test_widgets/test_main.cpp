@@ -17,6 +17,7 @@
 #include "ui/widgets/log_view.h"
 #include "ui/widgets/palette.h"
 #include "ui/widgets/status_bar.h"
+#include "ui/widgets/symbol_table.h"
 #include "ui/widgets/text_area.h"
 #include "ui/tap_map.h"
 #include "ui/home_tiles.h"
@@ -974,6 +975,83 @@ void test_tile_move() {
   TEST_ASSERT_EQUAL(1, tileMove(1, 6, Action::Up));
 }
 
+
+static KeyEvent K(Action a) {
+  KeyEvent k;
+  k.action = a;
+  return k;
+}
+
+void test_symbols_pick_inserts_and_closes() {
+  SymbolTable s;
+  s.open(U"");
+  TEST_ASSERT_TRUE(s.isOpen());
+  auto o = s.key(K(Action::Select));
+  TEST_ASSERT_EQUAL(int(SymbolTable::Kind::Insert), int(o.kind));
+  TEST_ASSERT_EQUAL(int(SymbolTable::symbols()[0]), int(o.ch));
+  TEST_ASSERT_FALSE(s.isOpen());
+}
+
+void test_symbols_move_wraps_in_two_dimensions() {
+  SymbolTable s;
+  s.open(U"");
+  const int cols = SymbolTable::kCols, n = int(SymbolTable::symbols().size());
+  s.key(K(Action::Left));  // wraps to the last symbol
+  TEST_ASSERT_EQUAL(n - 1, s.selected());
+  s.key(K(Action::Right));
+  TEST_ASSERT_EQUAL(0, s.selected());
+  s.key(K(Action::Down));
+  TEST_ASSERT_EQUAL(cols, s.selected());
+  s.key(K(Action::Up));
+  s.key(K(Action::Up));  // from the top row to the bottom row, same column
+  TEST_ASSERT_EQUAL(n - cols, s.selected());
+}
+
+void test_symbols_commands_row() {
+  SymbolTable s;
+  s.open(U"Commands\u2026");
+  const int n = int(SymbolTable::symbols().size());
+  s.key(K(Action::Up));  // top row up lands on the commands row
+  TEST_ASSERT_EQUAL(n, s.selected());
+  s.key(K(Action::Down));  // and down from it wraps to the top
+  TEST_ASSERT_EQUAL(0, s.selected());
+  s.key(K(Action::Up));
+  auto o = s.key(K(Action::Select));
+  TEST_ASSERT_EQUAL(int(SymbolTable::Kind::Commands), int(o.kind));
+  TEST_ASSERT_FALSE(s.isOpen());
+}
+
+void test_symbols_repeat_ignored_back_closes_other_passes() {
+  SymbolTable s;
+  s.open(U"");
+  s.key(K(Action::Right));
+  // The M9 reports Ctrl more than once per press: a repeat changes nothing.
+  TEST_ASSERT_EQUAL(int(SymbolTable::Kind::None), int(s.key(K(Action::Symbols)).kind));
+  TEST_ASSERT_TRUE(s.isOpen());
+  TEST_ASSERT_EQUAL(1, s.selected());
+  TEST_ASSERT_EQUAL(int(SymbolTable::Kind::Closed), int(s.key(K(Action::Back)).kind));
+  TEST_ASSERT_FALSE(s.isOpen());
+  s.open(U"");
+  TEST_ASSERT_EQUAL(0, s.selected());  // each opening starts at the first symbol
+  KeyEvent c = K(Action::Char);
+  c.ch = U'a';
+  TEST_ASSERT_EQUAL(int(SymbolTable::Kind::PassThrough), int(s.key(c).kind));
+  TEST_ASSERT_FALSE(s.isOpen());
+}
+
+void test_symbols_render_highlights_selection() {
+  Grid g(40, 13);
+  g.fill(T().bg);
+  SymbolTable s;
+  s.open(U"Commands\u2026");
+  s.render(g, g.rows() - 1, T());
+  bool found = false;
+  for (int r = 0; r < g.rows() && !found; ++r)
+    for (int c = 0; c < g.cols(); ++c)
+      if (g.at(c, r).cp == SymbolTable::symbols()[0] && g.at(c, r).bg == T().selectBg) found = true;
+  TEST_ASSERT_TRUE(found);
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_input_insert_cursor);
@@ -1027,5 +1105,10 @@ int main() {
   RUN_TEST(test_home_layout_too_small);
   RUN_TEST(test_tile_span_centre);
   RUN_TEST(test_tile_move);
+  RUN_TEST(test_symbols_pick_inserts_and_closes);
+  RUN_TEST(test_symbols_move_wraps_in_two_dimensions);
+  RUN_TEST(test_symbols_commands_row);
+  RUN_TEST(test_symbols_repeat_ignored_back_closes_other_passes);
+  RUN_TEST(test_symbols_render_highlights_selection);
   return UNITY_END();
 }

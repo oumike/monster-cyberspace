@@ -10,7 +10,8 @@ enum class Action {
   None, Char, Backspace, Select, Back, Up, Down, Left, Right,
   OpenCirc, OpenHome, OpenCmail, OpenFeed, OpenMap, Palette, ClearLine, ScreenOff,
   Activate, Focus, PowerTap,
-  Options  // an edge swipe from the right: the screen's options
+  Options,  // an edge swipe from the right: the screen's options
+  Symbols   // the symbol table while typing; the palette elsewhere
 };
 
 // A list a touch Row target belongs to.

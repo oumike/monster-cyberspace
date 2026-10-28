@@ -31,6 +31,7 @@ class RoomScreen : public Screen {
   bool hasOverlay() const override;
   void closeOverlays() override;
   bool acceptsText() const override { return view_ == View::None; }
+  std::u32string paletteLabel() const override { return U"commands\u2026"; }
   bool consumesBackspace() const override {
     return view_ == View::None && !input_.text().empty();
   }

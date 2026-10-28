@@ -22,6 +22,7 @@
 #include "ui/theme.h"
 #include "ui/widgets/banner.h"
 #include "ui/widgets/osk.h"
+#include "ui/widgets/symbol_table.h"
 #include "util/utf8.h"
 
 namespace rc::ui {
@@ -48,6 +49,7 @@ TapMap taps;
 Osk osk;
 Grid oskGrid(1, 1);
 bool oskShown = false;
+SymbolTable symbols;
 Power power = Power::On;
 int64_t saverUntil = 0, lastActivitySent = -kActivityMs;
 bool needResize = true;
@@ -244,6 +246,26 @@ void handleKey(const KeyEvent& key) {
     goDark();
     return;
   }
+  if (symbols.isOpen()) {
+    SymbolTable::Out o = symbols.key(k);
+    if (o.kind == SymbolTable::Kind::Insert) {
+      KeyEvent c;
+      c.action = Action::Char;
+      c.ch = o.ch;
+      router::screen().onKey(c);
+    } else if (o.kind == SymbolTable::Kind::Commands) {
+      router::screen().onKey(KeyEvent{Action::Palette});
+    }
+    if (o.kind != SymbolTable::Kind::PassThrough) return;
+  }
+  // The symbol key opens the table while typing, and is the palette elsewhere.
+  if (k.action == Action::Symbols) {
+    if (router::screen().acceptsText()) {
+      symbols.open(router::screen().paletteLabel());
+      return;
+    }
+    k.action = Action::Palette;
+  }
   if (k.action == Action::Backspace && board::backspaceIsBack()) {
     uint32_t ms = millis();
     switch (resolveBackspace(router::screen().consumesBackspace(),
@@ -317,6 +339,9 @@ void taskMain(void*) {
       if (router::current() != beforeScreen) showOsk(false);
     }
     if (oskShown && !router::screen().acceptsText()) showOsk(false);
+    if (symbols.isOpen() && (router::current() != beforeScreen || power != Power::On ||
+                             !router::screen().acceptsText()))
+      symbols.close();
     // Settings and web config change the theme between frames; repaint it all.
     if (app().cfg.theme != shown) {
       shown = app().cfg.theme;
@@ -329,6 +354,7 @@ void taskMain(void*) {
       taps.clear();
       taps.setOrigin(cellSize(gridSize), 0);
       router::screen().render(grid, t, now);
+      symbols.render(grid, grid.rows() - 1, t);
       topBanner.render(grid, grid.rows() - 1, t, now);
       taps.mapRows(0, rowSpans(grid, cellSize(gridSize).h, bigCellSize(gridSize).h));
       renderer.draw(grid, gridSize);

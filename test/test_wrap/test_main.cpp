@@ -50,7 +50,7 @@ void test_newline() {
 void test_multibyte_unsplit() {
   std::u32string dice = utf8ToU32("\xf0\x9f\x8e\xb2\xf0\x9f\x8e\xb2\xf0\x9f\x8e\xb2");
   assertLines({"\xf0\x9f\x8e\xb2\xf0\x9f\x8e\xb2", "\xf0\x9f\x8e\xb2"},
-              wrapText(dice, 2, 2));
+              wrapText(dice, 4, 4));  // each die is two cells
 }
 
 void test_empty() {
@@ -65,7 +65,14 @@ void test_emoji_counts_two_cells() {
   TEST_ASSERT_EQUAL(2, int(fitChars(s, 3)));
   TEST_ASSERT_EQUAL(3, int(fitChars(s, 4)));
   TEST_ASSERT_EQUAL(0, cellWidth(0xFE0F));
-  TEST_ASSERT_EQUAL(1, cellWidth(0x1F3B2));  // not a tray emoji: one cell
+  TEST_ASSERT_EQUAL(2, cellWidth(0x1F680));  // 🚀: any emoji, not just the tray's
+  TEST_ASSERT_EQUAL(2, cellWidth(0x1F3B2));  // 🎲
+  TEST_ASSERT_EQUAL(0, cellWidth(0x1F3FD));  // skin tone modifier
+  TEST_ASSERT_EQUAL(0, cellWidth(0xE0067));  // tag
+  TEST_ASSERT_EQUAL(0, cellWidth(0x20E3));   // keycap
+  TEST_ASSERT_EQUAL(1, cellWidth(0x263A));   // ☺: Terminus draws it, one cell
+  TEST_ASSERT_EQUAL(1, cellWidth(0x21A9));   // ↩: a UI mark, kept narrow
+  TEST_ASSERT_EQUAL(1, cellWidth(0x03B1));   // α
   const std::u32string a = U"ab", b = std::u32string(1, kTrayEmoji[0]) + U"c";
   auto lines = wrapText(s, 3, 3);
   TEST_ASSERT_EQUAL(3, int(lines.size()));

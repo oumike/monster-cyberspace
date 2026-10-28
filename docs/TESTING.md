@@ -238,7 +238,8 @@ Buttons: BOOT tap = Back, BOOT hold (0.6 s) = Home; Wake tap = screen off
 - [ ] Sym opens the command palette everywhere, as before
 - [ ] While typing, Ctrl opens the emoji tray (six or more a row, one blank cell apart, a blank row between rows); on the Feed list Ctrl opens the palette
 - [ ] Emoji tray: Centre inserts and the tray stays open, Back closes it, other keys do nothing; emoji are legible at each text size and fill two cells in the input line, the log and the composer
-- [ ] A received message with tray emoji (and with `❤️`, which carries a variation selector) shows them; other emoji show as `�`
+- [ ] A received message with tray emoji (and with `❤️`, which carries a variation selector) shows them; so do others (🚀 🎉 🐱 🍕), and skin-toned ones (👍🏽) show plain
+- [ ] Received Greek, Cyrillic, accented Latin and symbols (α Ж ő ↔ ♥ ☺ ≈) show; CJK shows as `�`
 
 **Screen timeout and screensaver (each board):**
 

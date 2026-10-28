@@ -1,18 +1,21 @@
 #include "ui/text_width.h"
 
+#include <algorithm>
+#include <iterator>
+
 #include "ui/emoji_set.h"
+#include "ui/emoji_wide.h"
 
 namespace rc {
 
 namespace {
-constexpr int kEmojiCount = static_cast<int>(sizeof(kTrayEmoji) / sizeof(kTrayEmoji[0]));
+constexpr int kEmojiCount = static_cast<int>(std::size(kWideEmoji));
 }
 
 int emojiIndex(char32_t cp) {
-  if (cp < 0x2700) return -1;
-  for (int i = 0; i < kEmojiCount; ++i)
-    if (kTrayEmoji[i] == cp) return i;
-  return -1;
+  if (cp < kWideEmoji[0]) return -1;
+  const char32_t* e = std::lower_bound(std::begin(kWideEmoji), std::end(kWideEmoji), cp);
+  return e != std::end(kWideEmoji) && *e == cp ? static_cast<int>(e - std::begin(kWideEmoji)) : -1;
 }
 
 char32_t wideTail(char32_t cp) {
@@ -23,7 +26,9 @@ char32_t wideTail(char32_t cp) {
 bool isWideTail(char32_t cp) { return cp >= kWideTailBase && cp < kWideTailBase + kEmojiCount; }
 
 int cellWidth(char32_t cp) {
-  if (cp == 0x200D || cp == 0xFE0E || cp == 0xFE0F) return 0;
+  // ZWJ, variation selectors, the keycap mark, skin tones and tags.
+  if (cp == 0x200D || cp == 0xFE0E || cp == 0xFE0F || cp == 0x20E3) return 0;
+  if ((cp >= 0x1F3FB && cp <= 0x1F3FF) || (cp >= 0xE0000 && cp <= 0xE007F)) return 0;
   return emojiIndex(cp) >= 0 ? 2 : 1;
 }
 

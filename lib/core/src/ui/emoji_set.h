@@ -1,7 +1,7 @@
 #pragma once
 
-// The emoji the tray offers and the cell fonts draw, two cells wide: the first
-// 40 of camillia-mt's kEmojiTray, in its order. scripts/emoji2cells.py parses
+// The emoji the tray offers: the first 40 of camillia-mt's kEmojiTray, in its
+// order. All emoji the fonts draw are in emoji_wide.h. scripts/emoji2cells.py parses
 // this file: keep one hex literal per entry.
 
 namespace rc {
@@ -14,7 +14,7 @@ constexpr char32_t kTrayEmoji[] = {
     0x1F91D, 0x0270C, 0x1F44A, 0x1F595, 0x02764, 0x1F494, 0x1F525, 0x02B50,
 };
 
-// The right half of kTrayEmoji[i] is drawn from code point kWideTailBase + i,
+// The right half of kWideEmoji[i] is drawn from code point kWideTailBase + i,
 // in a private use plane.
 constexpr char32_t kWideTailBase = 0xF0000;
 

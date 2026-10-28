@@ -3,7 +3,9 @@
 
     python3 -I scripts/bdf2cells.py ter-u12n.bdf cell6x12 > src/ui/fonts/cell6x12.h
 
-Emits 0x20-0x7E, 0xA0-0xFF and every code point in lib/core/src/ui/glyph_set.h,
+Emits every printable glyph the BDF has (all of Terminus but the C0/C1
+controls and the private use area) and every code point in
+lib/core/src/ui/glyph_set.h,
 each padded to the font bounding box, one byte per row (two when wider than
 8 px), MSB first. Aliased
 code points (kGlyphAliases) reuse their stand-in's bitmap. Terminus is under
@@ -77,7 +79,9 @@ def main():
     if fw > 16:
         sys.exit("cells wider than 16 px are not supported")
     extra, aliases = glyph_set()
-    wanted = sorted(set(range(0x20, 0x7F)) | set(range(0xA0, 0x100)) | set(extra))
+    printable = {cp for cp in glyphs
+                 if 0x20 <= cp <= 0x7E or (cp >= 0xA0 and not 0xE000 <= cp <= 0xF8FF)}
+    wanted = sorted(printable | set(extra))
     table = []
     for cp in wanted:
         src = aliases.get(cp, cp) if cp not in glyphs else cp

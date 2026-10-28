@@ -1,6 +1,7 @@
 #pragma once
 
-// Code points beyond 0x20–0x7E and 0xA0–0xFF that the cell fonts must carry.
+// Code points the cell fonts must carry beyond Terminus's own glyphs (which
+// bdf2cells.py takes whole), drawn through the aliases below.
 // scripts/bdf2cells.py parses this file: keep one hex literal per entry.
 
 namespace rc {
@@ -13,7 +14,6 @@ constexpr char32_t kExtraGlyphs[] = {
     0x00B7, 0x2026, 0x2190, 0x2191, 0x2192, 0x2193, 0x2022, 0x007A,          // ·…←↑→↓•z
     0x25B6, 0x2713,                                                          // ▶ ✓
     0x2039, 0x22EF, 0x25BC, 0x21E7, 0x232B,                                  // ‹ ⋯ ▼ ⇧ ⌫
-    0x1F3B2, 0x1F3B1, 0x1F960,                                               // 🎲 🎱 🥠
     0xFFFD,
 };
 
@@ -26,16 +26,11 @@ struct GlyphAlias {
 constexpr GlyphAlias kGlyphAliases[] = {
     {0x25CC, 0x25CB},  // ◌ → ○
     {0x2715, 0x00D7},  // ✕ → ×
-    {0x1F3B2, 0x002A},  // 🎲 → *
-    {0x1F3B1, 0x0038},  // 🎱 → 8
-    {0x1F960, 0x0066},  // 🥠 → f
     {0x21A9, 0x2190},  // ↩ → ←
     {0x22EF, 0x2026},  // ⋯ → …
     {0x21E7, 0x2191},  // ⇧ → ↑
     {0x232B, 0x2190},  // ⌫ → ←
     {0x2605, 0x002A},  // ★ → *
-    {0x21B3, 0x2514},  // ↳ → └
-    {0x21BB, 0x007E},  // ↻ → ~
 };
 
 }  // namespace rc

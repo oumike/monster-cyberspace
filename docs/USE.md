@@ -48,8 +48,7 @@ Dedicated buttons work from anywhere and close whatever is open first.
 
 **Emoji tray:** Ctrl, while you're typing, opens 40 emoji (camillia-mt's tray):
 the d-pad moves, Centre inserts one and keeps the tray open for more, and Back
-closes it; other keys do nothing while it's open. Emoji take two cells, and the
-same 40 show in received messages; others show as `�`.
+closes it; other keys do nothing while it's open. Emoji take two cells.
 
 **Screen off:** only holding the d-pad centre wakes the screen. A centre tap
 while it's dark shows the last few messages for 10 s, then goes dark again.
@@ -303,6 +302,15 @@ Feed alerts; with one waiting, **Feed** opens its entry instead of the list.
 **Watched threads and Bookmarks** are lists in the same style, from the
 palette. Centre opens the entry; a bookmarked reply opens its entry with that
 reply selected. Left or Back returns to the Feed list.
+
+## Characters and emoji
+
+Every board draws all of Terminus's characters (Latin with accents, Greek,
+Cyrillic, arrows, maths, box drawing, card suits and the like) and every
+emoji in Noto Emoji, one colour and two cells wide. Skin tones are dropped,
+showing the plain emoji; a flag shows as its two letters; a combined emoji
+(family, profession) shows its parts side by side. Anything else, such as
+Chinese or Japanese, shows as `�`.
 
 ## Text sizes
 

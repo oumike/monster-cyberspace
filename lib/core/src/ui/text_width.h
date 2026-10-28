@@ -5,10 +5,11 @@
 
 namespace rc {
 
-// Cell widths: the tray emoji take two cells, variation selectors and the
-// zero width joiner none, everything else one.
+// Cell widths: emoji (kWideEmoji) take two cells; variation selectors, the
+// zero width joiner, the keycap mark, skin tone modifiers and tags none;
+// everything else one.
 
-// The index of cp in kTrayEmoji, or -1.
+// The index of cp in kWideEmoji, or -1.
 int emojiIndex(char32_t cp);
 // The code point that draws the right half of wide cp (kWideTailBase + index).
 char32_t wideTail(char32_t cp);

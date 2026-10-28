@@ -9,6 +9,7 @@
 #include "cell12x24.h"
 #include "emoji_cells.h"
 #include "ui/emoji_set.h"
+#include "ui/emoji_wide.h"
 #include "ui/glyph_set.h"
 
 using namespace rc;
@@ -66,8 +67,10 @@ void test_box_drawing_present() {
       found |= full;
     }
     TEST_ASSERT_TRUE(found);
-    // Aliased emoji use their stand-in's bitmap.
-    TEST_ASSERT_EQUAL_MEMORY(findGlyph(*f, U'8'), findGlyph(*f, 0x1F3B1), f->h * rowBytes(*f));
+    // All of Terminus: Greek, Cyrillic, Latin Extended, arrows, card suits.
+    for (char32_t c : {char32_t(0x03B1), char32_t(0x0416), char32_t(0x0151), char32_t(0x2194),
+                       char32_t(0x2665), char32_t(0x263A), char32_t(0x2248)})
+      TEST_ASSERT_NOT_NULL(findGlyph(*f, c));
   }
 }
 
@@ -75,7 +78,8 @@ void test_feed_marks_use_runtime_aliases() {
   for (const CellFont* f : kFonts) {
     TEST_ASSERT_EQUAL_PTR(findGlyph(*f, 0x2190), glyphFor(*f, 0x21A9));  // ↩ → ←
     TEST_ASSERT_EQUAL_PTR(findGlyph(*f, U'*'), glyphFor(*f, 0x2605));   // ★ → *
-    TEST_ASSERT_EQUAL_PTR(findGlyph(*f, 0x2514), glyphFor(*f, 0x21B3));  // ↳ → └
+    TEST_ASSERT_NOT_NULL(findGlyph(*f, 0x21B3));  // ↳ and ↻: Terminus's own
+    TEST_ASSERT_NOT_NULL(findGlyph(*f, 0x21BB));
   }
 }
 
@@ -106,6 +110,19 @@ void test_touch_glyphs_present() {
       TEST_ASSERT_NOT_NULL(findGlyph(*f, c));
 }
 
+void test_wide_emoji_have_both_halves() {
+  TEST_ASSERT_TRUE(sizeof(kWideEmoji) / sizeof(kWideEmoji[0]) > 1000);
+  for (const CellFont* f : {&cell6x12, &cell8x14, &cell8x16, &cell10x18, &cell12x24}) {
+    const CellFont* e = emojiCellsFor(*f);
+    int i = 0;
+    for (char32_t cp : kWideEmoji) {
+      TEST_ASSERT_EQUAL(i, emojiIndex(cp));
+      TEST_ASSERT_EQUAL_PTR(findGlyph(*e, cp), cellGlyph(*f, cp));
+      TEST_ASSERT_NOT_NULL(findGlyph(*e, kWideTailBase + i++));
+    }
+  }
+}
+
 void test_tray_emoji_have_both_halves() {
   for (const CellFont* f : {&cell6x12, &cell8x14, &cell8x16, &cell10x18, &cell12x24}) {
     const CellFont* e = emojiCellsFor(*f);
@@ -113,10 +130,9 @@ void test_tray_emoji_have_both_halves() {
     TEST_ASSERT_EQUAL(f->w, e->w);
     TEST_ASSERT_EQUAL(f->h, e->h);
     for (int i = 1; i < e->count; ++i) TEST_ASSERT_TRUE(e->codepoints[i - 1] < e->codepoints[i]);
-    int i = 0;
     for (char32_t cp : kTrayEmoji) {
       const uint8_t* left = cellGlyph(*f, cp);
-      const uint8_t* right = cellGlyph(*f, kWideTailBase + i++);
+      const uint8_t* right = cellGlyph(*f, wideTail(cp));
       TEST_ASSERT_EQUAL_PTR(findGlyph(*e, cp), left);
       TEST_ASSERT_NOT_NULL(right);
       TEST_ASSERT_TRUE(inked(*e, left) || inked(*e, right));
@@ -134,5 +150,6 @@ int main() {
   RUN_TEST(test_missing_falls_back);
   RUN_TEST(test_touch_glyphs_present);
   RUN_TEST(test_tray_emoji_have_both_halves);
+  RUN_TEST(test_wide_emoji_have_both_halves);
   return UNITY_END();
 }

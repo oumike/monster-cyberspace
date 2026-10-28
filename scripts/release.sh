@@ -280,6 +280,7 @@ VERSION_ARG=""
 NO_CLEAN=false
 BUILD_LOCAL=false
 USE_COMMITTED_NOTES=false
+FROM_MAIN=false
 ONLY_ARG=""
 
 usage() {
@@ -290,6 +291,7 @@ ${b}monster-cyberspace release tool${r}
 
 ${b}USAGE${r}
   ./scripts/release.sh --release [-y] [--version V] [--use-committed-notes] [--build-local] [--no-clean]
+  ./scripts/release.sh --from-main [-y] [--version V] [--use-committed-notes]
   ./scripts/release.sh --dist-only [--only ENVS] [--version V] [--no-clean]
   ./scripts/release.sh --notes-only
   ./scripts/release.sh --check-targets
@@ -302,6 +304,13 @@ ${b}MODES${r}
       which builds every board, commits VERSION, tags v<version> and publishes
       the images. Nothing is compiled on this machine. -y or --version on
       their own imply --release.
+
+  ${u}--from-main${r}
+      Release origin/main as it stands on GitHub, whatever this clone has
+      checked out: another branch, uncommitted changes or unpushed commits are
+      all fine and none of them ship. Fetches origin, picks the version from
+      its tags, and dispatches the workflow on main. Takes the release
+      options except --build-local and --no-clean.
 
   ${u}--dist-only${r}
       Build the release images into dist/ and release nothing: no commit, tag,
@@ -354,12 +363,13 @@ ${b}EXAMPLES${r}
   ./scripts/release.sh --notes-only && git commit -am "Release notes"
   ./scripts/release.sh -y --use-committed-notes
   ./scripts/release.sh --release --version 0.2.0
+  ./scripts/release.sh --from-main -y
 EOF
 }
 
 set_mode() {
     if [[ -n "$MODE" && "$MODE" != "$1" ]]; then
-        echo "Choose one of --release, --dist-only, --notes-only, --check-targets." >&2
+        echo "Choose one of --release (or --from-main), --dist-only, --notes-only, --check-targets." >&2
         exit 1
     fi
     MODE="$1"
@@ -370,6 +380,7 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         -h|--help) usage; exit 0 ;;
         --release) set_mode release ;;
+        --from-main) set_mode release; FROM_MAIN=true ;;
         --dist-only) set_mode dist ;;
         --notes-only) set_mode notes ;;
         --check-targets) set_mode check ;;
@@ -409,6 +420,10 @@ case "$MODE" in
         ;;
     release)
         if [[ -n "$ONLY_ARG" ]]; then reject --release --only; fi
+        if [[ "$FROM_MAIN" == true ]]; then
+            if [[ "$BUILD_LOCAL" == true ]]; then reject --from-main --build-local; fi
+            if [[ "$NO_CLEAN" == true ]]; then reject --from-main --no-clean; fi
+        fi
         ;;
     notes|check)
         if [[ "$ASSUME_YES" == true || -n "$VERSION_ARG" || "$NO_CLEAN" == true || "$BUILD_LOCAL" == true \
@@ -534,7 +549,18 @@ fi
 
 command -v gh >/dev/null 2>&1 || { echo "Error: the GitHub CLI (gh) is required to release." >&2; exit 1; }
 
-if [[ "${GITHUB_ACTIONS:-}" != "true" ]]; then
+if [[ "$FROM_MAIN" == true ]]; then
+    # origin/main is what the workflow checks out; this clone's state is moot.
+    BRANCH=main
+    git fetch -q --tags origin main
+    echo "Releasing origin/main at $(git log -1 --format='%h %s' origin/main)"
+    if git rev-parse -q --verify refs/heads/main >/dev/null; then
+        unpushed="$(git rev-list --count origin/main..main)"
+        if [[ "$unpushed" -gt 0 ]]; then
+            echo "Note: local main has $unpushed unpushed commit(s); they are not in this release."
+        fi
+    fi
+elif [[ "${GITHUB_ACTIONS:-}" != "true" ]]; then
     # A release ships only committed work.
     dirty="$(git status --porcelain)"
     if [[ -n "$dirty" ]]; then
@@ -550,14 +576,27 @@ if [[ "${GITHUB_ACTIONS:-}" != "true" ]]; then
         exit 1
     fi
 fi
-if [[ "$USE_COMMITTED_NOTES" == true && ! -s RELEASE_NOTES.md ]]; then
+if [[ "$FROM_MAIN" == true && "$USE_COMMITTED_NOTES" == true ]]; then
+    if [[ -z "$(git show origin/main:RELEASE_NOTES.md 2>/dev/null)" ]]; then
+        echo "--use-committed-notes: RELEASE_NOTES.md is missing or empty on origin/main." >&2
+        exit 1
+    fi
+elif [[ "$USE_COMMITTED_NOTES" == true && ! -s RELEASE_NOTES.md ]]; then
     echo "--use-committed-notes: RELEASE_NOTES.md is missing or empty (draft it with --notes-only)." >&2
     exit 1
 fi
 
 # Newest well-formed tag, in version order.
 PREV_TAG="$(git tag --list 'v*' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1 || true)"
-CURRENT="$(tr -d '[:space:]' < VERSION)"
+if [[ "$FROM_MAIN" == true ]]; then
+    if ! CURRENT="$(git show origin/main:VERSION 2>/dev/null | tr -d '[:space:]')" || [[ -z "$CURRENT" ]] \
+          || ! git cat-file -e origin/main:.github/workflows/release.yml 2>/dev/null; then
+        echo "origin/main has no release tooling (VERSION, release.yml) yet. Push it first." >&2
+        exit 1
+    fi
+else
+    CURRENT="$(tr -d '[:space:]' < VERSION)"
+fi
 echo "VERSION:     $CURRENT"
 echo "Latest tag:  ${PREV_TAG:-none}"
 

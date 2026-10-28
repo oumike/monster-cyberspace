@@ -62,6 +62,7 @@ scripts/release.sh --dist-only --only m9,pager --no-clean
 scripts/release.sh --notes-only                # draft RELEASE_NOTES.md from the commits since the last tag
 scripts/release.sh -y --use-committed-notes    # release: bump the patch version, dispatch the Release workflow
 scripts/release.sh --release --version 0.2.0   # release an exact version
+scripts/release.sh --from-main -y              # release origin/main as it is on GitHub, from any local state
 ```
 
 `VERSION` (e.g. `v0.1.0`) is baked into every firmware build as `RC_VERSION` by
@@ -76,7 +77,9 @@ A release ships only committed work on a branch in sync with origin. The script
 picks the version and dispatches `.github/workflows/release.yml`, which builds
 every board, commits `VERSION`, tags `v<version>`, publishes the images, and
 keeps the `.elf` files as a workflow artifact. `--build-local` does the same on
-your machine. `.github/workflows/build.yml` builds every board from a clean
+your machine. `--from-main` skips the local checks and releases `origin/main`
+as pushed, whatever branch or changes this clone has; unpushed commits are not
+included. `.github/workflows/build.yml` builds every board from a clean
 checkout on each push and pull request and runs the unit tests; it publishes
 nothing. A new firmware env must be added to `RELEASE_ENVS` in
 `scripts/release.sh` and run `tools/set_app_version.py`; CI checks both. Its

@@ -4,6 +4,7 @@
 
 #include "tz/zones.h"
 #include "ui/rotation.h"
+#include "ui/screen_timeout.h"
 
 namespace {
 
@@ -56,6 +57,9 @@ void load(rc::Settings& s) {
   s.drawerOpen = p.getBool("drawer", false);
   s.buzzer = p.getBool("buzz", true);
   s.autoUpdate = p.getBool("otaauto", false);
+  s.screenOnSecs = p.getUInt("scrsecs", 30);
+  if (!rc::validScreenTimeout(s.screenOnSecs)) s.screenOnSecs = 30;
+  s.screenSaver = p.getBool("scrsaver", true);
   s.theme = rc::themeFromIndex(p.getUChar("theme", 0));
   s.rotation = rc::rotationFromIndex(p.getUChar("rot", 0));
   s.lastRoom = getStr(p, "room", s.lastRoom);
@@ -122,6 +126,14 @@ void saveAutoUpdate(bool on) {
   p.end();
 }
 
+void saveScreen(uint32_t onSecs, bool saver) {
+  Preferences p;
+  if (!p.begin(kNs, false)) return;
+  p.putUInt("scrsecs", onSecs);
+  p.putBool("scrsaver", saver);
+  p.end();
+}
+
 void saveToken(const std::string& refreshToken) {
   Preferences p;
   if (!p.begin(kNs, false)) return;
@@ -151,6 +163,7 @@ void saveAll(const rc::Settings& s) {
   saveSecurity(s.pagePassword, s.apPassword);
   saveUiPrefs(s);
   saveAutoUpdate(s.autoUpdate);
+  saveScreen(s.screenOnSecs, s.screenSaver);
   saveAccount(s.email, s.refreshToken);
   if (s.refreshToken.empty()) clearToken();
 }

@@ -49,7 +49,8 @@ void pushRows(const uint16_t* frame, int y0, int y1) {
   st7789::pushRows(frame, tdeck::PANEL_W, y0, y1);
 }
 
-void backlight(bool on) { ledcWrite(tdeck::TFT_BL, on ? 255 : 0); }
+void backlight(bool on) { backlightLevel(on ? 255 : 0); }
+void backlightLevel(uint8_t level) { ledcWrite(tdeck::TFT_BL, level); }
 
 void displaySleep(bool sleep) {
   if (sleep) {

@@ -13,11 +13,14 @@
 #include "input/key_event.h"
 #include "input/touch_resolve.h"
 #include "screens/composer.h"
+#include "screens/draw.h"
 #include "screens/router.h"
 #include "store/locked_chat.h"
 #include "ui/renderer.h"
 #include "ui/room_layout.h"
 #include "ui/rotation.h"
+#include "ui/screen_timeout.h"
+#include "ui/splash_layout.h"
 #include "ui/tap_map.h"
 #include "ui/theme.h"
 #include "ui/widgets/banner.h"
@@ -32,8 +35,12 @@ namespace {
 constexpr uint32_t kFrameMs = 33;
 constexpr int64_t kSaverMs = 10000;
 constexpr int64_t kActivityMs = 5000;
+constexpr int64_t kLockQuietMs = 3000;  // input ignored just after the screen locks
+constexpr int64_t kBounceStepMs = 250;
 
-enum class Power { On, Dark, Saver };
+// On; Dark (screen off); Saver, the 10 s peek at recent messages; Bounce, the
+// screensaver the screen timeout locks into.
+enum class Power { On, Dark, Saver, Bounce };
 
 Renderer renderer;
 Grid grid(1, 1);
@@ -52,6 +59,10 @@ bool oskShown = false;
 SymbolTable symbols;
 Power power = Power::On;
 int64_t saverUntil = 0, lastActivitySent = -kActivityMs;
+int64_t lastInputMs = 0, lockedAt = INT64_MIN / 2, nextBounce = 0;
+Power lockedTo = Power::Dark;  // where a peek returns to
+uint8_t lit = 255;             // the backlight level set while the screen is lit
+Bouncer bouncer;
 bool needResize = true;
 // The text size the grid was last sized for: the saved one, or Compact on a
 // screen that asks for it.
@@ -144,10 +155,54 @@ void applyRotation(uint8_t r) {
   needResize = true;
 }
 
+void setLit(uint8_t level) {
+  if (level == lit) return;
+  lit = level;
+  board::backlightLevel(level);
+}
+
 void goDark() {
   showOsk(false);
-  power = Power::Dark;
+  power = lockedTo = Power::Dark;
+  lit = 255;
   board::displaySleep(true);
+}
+
+// The splash monster and name, bouncing slowly around a black screen.
+void drawBounce(const Theme& t) {
+  std::vector<SplashLine> ls = splashLayout(grid.cols(), grid.rows(), "");
+  int minC = grid.cols(), minR = grid.rows(), maxC = 0, maxR = 0;
+  ls.erase(std::remove_if(ls.begin(), ls.end(),
+                          [](const SplashLine& l) {
+                            return l.role != SplashRole::Art && l.role != SplashRole::Title;
+                          }),
+           ls.end());
+  for (const SplashLine& l : ls) {
+    minC = std::min(minC, l.col);
+    minR = std::min(minR, l.row);
+    maxC = std::max(maxC, l.col + int(utf8ToU32(l.text).size()));
+    maxR = std::max(maxR, l.row + 1);
+  }
+  grid.fill(t.bg);
+  if (ls.empty()) return;
+  const int w = maxC - minC, h = maxR - minR;
+  bouncer.step(std::max(0, grid.cols() - w), std::max(0, grid.rows() - h));
+  for (const SplashLine& l : ls)
+    putLine(grid, bouncer.x + l.col - minC, bouncer.y + l.row - minR, l.text,
+            l.role == SplashRole::Art ? t.selectBg : t.fg, t.bg);
+}
+
+// The screen timeout ran out: lock into the screensaver or screen off.
+void lockScreen(int64_t now) {
+  chatSource().command(Command{CmdType::ScreenOff});
+  lockedAt = now;
+  if (!app().cfg.screenSaver) return goDark();
+  showOsk(false);
+  power = lockedTo = Power::Bounce;
+  bouncer = Bouncer{int(random(0, 1000)), int(random(0, 1000)), random(0, 2) ? 1 : -1,
+                    random(0, 2) ? 1 : -1};
+  nextBounce = now;
+  setLit(kSaverLevel);
 }
 
 void handleEvent(const Event& e) {
@@ -212,31 +267,39 @@ void handleEvent(const Event& e) {
 void wake() {
   bool wasDark = power == Power::Dark;
   power = Power::On;
+  lastInputMs = nowMs();
   redrawAll();
   chatSource().command(Command{CmdType::ScreenOn});
   if (wasDark) board::displaySleep(false);
+  setLit(255);
 }
 
 void handleKey(const KeyEvent& key) {
   int64_t now = nowMs();
   KeyEvent k = key;
   if (power != Power::On) {
+    // Just after the timeout locks the screen, input is ignored.
+    if (now - lockedAt < kLockQuietMs) return;
     // Only a centre hold wakes (any input, on boards that ask); only a centre
     // tap peeks. The waking press does nothing else.
     if (wakesScreen(k, board::anyInputWakes())) {
       wake();
     } else if (peeksScreen(k)) {
       saverUntil = now + kSaverMs;
-      if (power == Power::Dark) {
+      if (power != Power::Saver) {
+        const bool wasDark = power == Power::Dark;
         power = Power::Saver;
         grid.fill(currentTheme().bg);
         drawSaver(currentTheme());
         renderer.draw(grid, gridSize);
-        board::displaySleep(false);
+        if (wasDark) board::displaySleep(false);
+        setLit(255);
       }
     }
     return;
   }
+  lastInputMs = now;
+  setLit(255);
   if (now - lastActivitySent >= kActivityMs) {
     lastActivitySent = now;
     chatSource().command(Command{CmdType::Activity, "", "", nowEpochMs()});
@@ -297,7 +360,7 @@ void taskMain(void*) {
     // nothing until it lifts).
     if (power != Power::On && board::hasTouch() && board::anyInputWakes()) {
       int16_t tx, ty;
-      if (board::readTouch(tx, ty)) {
+      if (board::readTouch(tx, ty) && nowMs() - lockedAt >= kLockQuietMs) {
         wake();
         touchSwallow = true;
         gestures.reset();
@@ -306,6 +369,10 @@ void taskMain(void*) {
       int16_t tx, ty;
       bool down = board::readTouch(tx, ty);
       if (touchSwallow && !down) touchSwallow = false;
+      if (down) {
+        lastInputMs = nowMs();
+        setLit(255);
+      }
       Gesture g;
       if (!touchSwallow && gestures.feed(down, tx, ty, millis(), g)) {
         TouchOutput out;
@@ -330,7 +397,24 @@ void taskMain(void*) {
     while (nextEvent(e)) handleEvent(e);
 
     int64_t now = nowMs();
-    if (power == Power::Saver && now >= saverUntil) goDark();
+    if (power == Power::Saver && now >= saverUntil) {
+      if (lockedTo == Power::Bounce) {
+        power = Power::Bounce;
+        nextBounce = now;
+        setLit(kSaverLevel);
+      } else {
+        goDark();
+      }
+    }
+    // The screen timeout: dim for the last seconds, then lock. Incoming
+    // messages neither wake the screen nor restart the timeout.
+    if (power == Power::On) {
+      switch (idlePhase(now - lastInputMs, app().cfg.screenOnSecs)) {
+        case IdlePhase::Active: setLit(255); break;
+        case IdlePhase::Dim: setLit(kDimLevel); break;
+        case IdlePhase::Lock: lockScreen(now); break;
+      }
+    }
     // A gesture in progress is dropped whenever the screen or power state
     // changes under it (screen change, going dark, the saver, waking).
     if (router::current() != beforeScreen || power != beforePower) {
@@ -365,6 +449,10 @@ void taskMain(void*) {
       }
     } else if (power == Power::Saver) {
       drawSaver(t);
+      renderer.draw(grid, gridSize);
+    } else if (power == Power::Bounce && now >= nextBounce) {
+      nextBounce = now + kBounceStepMs;
+      drawBounce(t);
       renderer.draw(grid, gridSize);
     }
     uint32_t spent = millis() - start;

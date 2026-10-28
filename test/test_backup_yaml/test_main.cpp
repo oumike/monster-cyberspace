@@ -84,6 +84,8 @@ Settings full() {
   s.drawerOpen = true;
   s.buzzer = false;
   s.autoUpdate = true;
+  s.screenOnSecs = 300;
+  s.screenSaver = false;
   s.theme = ThemeId::WhiteBlack;
   s.rotation = 3;
   s.lastRoom = "random";
@@ -113,6 +115,8 @@ void expectSame(const Settings& a, const Settings& b) {
   TEST_ASSERT_EQUAL(a.drawerOpen, b.drawerOpen);
   TEST_ASSERT_EQUAL(a.buzzer, b.buzzer);
   TEST_ASSERT_EQUAL(a.autoUpdate, b.autoUpdate);
+  TEST_ASSERT_EQUAL_UINT32(a.screenOnSecs, b.screenOnSecs);
+  TEST_ASSERT_EQUAL(a.screenSaver, b.screenSaver);
   TEST_ASSERT_TRUE(a.theme == b.theme);
   TEST_ASSERT_EQUAL(a.rotation, b.rotation);
   TEST_ASSERT_EQUAL_STRING(a.lastRoom.c_str(), b.lastRoom.c_str());
@@ -170,6 +174,8 @@ void test_hand_edits() {
       "textSize: comfortable # big\n"
       "buzzer: false\n"
       "autoUpdate: true\n"
+      "screenOnSecs: 0\n"
+      "screenSaver: false\n"
       "lastRoom: lobby\n";
   Settings s;
   std::string err, note;
@@ -182,6 +188,8 @@ void test_hand_edits() {
   TEST_ASSERT_TRUE(s.textSize == TextSize::Comfortable);
   TEST_ASSERT_FALSE(s.buzzer);
   TEST_ASSERT_TRUE(s.autoUpdate);
+  TEST_ASSERT_EQUAL_UINT32(0, s.screenOnSecs);
+  TEST_ASSERT_FALSE(s.screenSaver);
   TEST_ASSERT_TRUE(run(std::string(kHead) + "textSize: large\n", s, err, note));
   TEST_ASSERT_TRUE(s.textSize == TextSize::Large);
   TEST_ASSERT_NOT_EQUAL(std::string::npos, backupToYaml(s, {"M9", "0.1.0", 0}).find("textSize: large\n"));
@@ -291,6 +299,8 @@ void test_bad_indent() {
                  "wifi:\n  - ssid: A\n    password: \"\"\n   - ssid: B\n     password: \"\"\n",
              "line 6: bad indent");
   expectFail(std::string(kHead) + "account:\n\temail: x\n", "line 4: bad indent");
+  expectFail(std::string(kHead) + "screenOnSecs: 45\n",
+             "line 3: screen timeout: 15, 30, 60, 120, 300, 600, 1800, 3600 or 0 (never)");
   expectFail(std::string(kHead) + "  buzzer: true\n", "line 3: bad indent");
 }
 

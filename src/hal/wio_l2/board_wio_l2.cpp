@@ -163,10 +163,12 @@ void pushRows(const uint16_t* frame, int y0, int y1) {
   nv3031b::pushRows(frame, panelWidth(), y0, y1);
 }
 
-void backlight(bool on) {
+void backlight(bool on) { backlightLevel(on ? 255 : 0); }
+
+void backlightLevel(uint8_t level) {
+  const uint8_t v = uint32_t(level) * wio::BACKLIGHT_ON / 255;
   wio::I2cGuard g;
-  for (uint8_t ch = 0; ch < 4; ++ch)
-    i2cWrite(wio::LP5814_ADDR, 0x18 + ch, on ? wio::BACKLIGHT_ON : 0);
+  for (uint8_t ch = 0; ch < 4; ++ch) i2cWrite(wio::LP5814_ADDR, 0x18 + ch, v);
 }
 
 void displaySleep(bool sleep) {

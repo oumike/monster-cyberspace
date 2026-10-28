@@ -61,7 +61,8 @@ void pushRows(const uint16_t* frame, int y0, int y1) {
   ili9488::pushRows(frame, panelWidth(), y0, y1);
 }
 
-void backlight(bool on) { ledcWrite(TFT_BL, on ? BACKLIGHT_ON : 0); }
+void backlight(bool on) { backlightLevel(on ? 255 : 0); }
+void backlightLevel(uint8_t level) { ledcWrite(TFT_BL, uint32_t(level) * BACKLIGHT_ON / 255); }
 
 void displaySleep(bool sleep) {
   if (sleep) {

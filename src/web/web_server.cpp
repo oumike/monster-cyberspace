@@ -23,6 +23,7 @@
 #include "store/backup_store.h"
 #include "store/settings.h"
 #include "tz/zones.h"
+#include "ui/screen_timeout.h"
 #include "web/page.h"
 #include "web/web_util.h"
 
@@ -304,6 +305,8 @@ esp_err_t getPrefs(httpd_req_t* req) {
   JsonDocument d;
   d["textSize"] = rc::textSizeKey(s.textSize);
   d["buzzer"] = s.buzzer;
+  d["screenOnSecs"] = s.screenOnSecs;
+  d["screenSaver"] = s.screenSaver;
   d["theme"] = rc::themeKey(s.theme);
   d["tz"] = s.tz;
   d["tzName"] = s.tzName;
@@ -345,6 +348,14 @@ esp_err_t postPrefs(httpd_req_t* req) {
       return fail(req, "400 Bad Request", "Orientation: 0 to 3");
     rotation = doc["rotation"].as<int>();
   }
+  uint32_t screenOnSecs = s.screenOnSecs;
+  if (!doc["screenOnSecs"].isNull()) {
+    if (!doc["screenOnSecs"].is<int>() || doc["screenOnSecs"].as<int>() < 0 ||
+        !rc::validScreenTimeout(doc["screenOnSecs"].as<uint32_t>()))
+      return fail(req, "400 Bad Request", "Screen timeout: 15, 30, 60, 120, 300, 600, 1800, 3600 or 0");
+    screenOnSecs = doc["screenOnSecs"].as<uint32_t>();
+  }
+  const bool screenSaver = doc["screenSaver"].is<bool>() ? doc["screenSaver"].as<bool>() : s.screenSaver;
   std::string ntp = s.ntpServer;
   if (doc["ntpServer"].is<const char*>()) {
     ntp = doc["ntpServer"].as<const char*>();
@@ -373,6 +384,11 @@ esp_err_t postPrefs(httpd_req_t* req) {
   if (ntp != s.ntpServer) settings::saveNtpServer(ntp);
   if (tz != s.tz || tzName != s.tzName) settings::saveTz(tz, tzName);
   if (ntp != s.ntpServer || tz != s.tz || tzName != s.tzName) rc::timesvc::settingsChanged();
+  if (screenOnSecs != s.screenOnSecs || screenSaver != s.screenSaver) {
+    rc::app().cfg.screenOnSecs = screenOnSecs;
+    rc::app().cfg.screenSaver = screenSaver;
+    settings::saveScreen(screenOnSecs, screenSaver);
+  }
   // The UI task owns text size, theme and buzzer; it applies and saves them.
   if (!doc["textSize"].isNull() || !doc["buzzer"].isNull() || !doc["theme"].isNull())
     rc::postEvent(rc::Event{rc::EvtType::PrefsChanged, rc::themeKey(theme), static_cast<int>(size), buzzer});

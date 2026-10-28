@@ -87,7 +87,7 @@ class SettingsScreen : public Screen {
   bool compactText() const override { return true; }
 
  private:
-  enum class Confirm { None, Logout, Reset, Rotation, TextSize, Update };
+  enum class Confirm { None, Logout, Reset, Rotation, TextSize, Timeout, Update };
   void activate(int item);
   void openZones();
   void zoneKey(const KeyEvent&);

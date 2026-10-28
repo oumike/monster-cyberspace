@@ -18,6 +18,8 @@ void saveNtpServer(const std::string& host);
 void saveSecurity(const std::string& pagePassword, const std::string& apPassword);
 // The device's Settings and web config: install updates without asking.
 void saveAutoUpdate(bool on);
+// The device's Settings and web config: the screen timeout and what it does.
+void saveScreen(uint32_t onSecs, bool saver);
 void saveToken(const std::string& refreshToken);
 void clearToken();
 // Saves the email and refresh token after a login.

@@ -218,6 +218,16 @@ Buttons: BOOT tap = Back, BOOT hold (0.6 s) = Home; Wake tap = screen off
 - [ ] Web config Firmware: Check, Install and the auto-update checkbox work and match the device
 - [ ] Off Wi-Fi, Settings → Firmware says `Can't check now: is Wi-Fi up?`
 
+**Screen timeout and screensaver (each board):**
+
+- [ ] With a 15 s timeout and no input, the backlight dims at 5 s and the screensaver (bouncing monster, dim) starts at 15 s; a key or touch during the dim brings full brightness back
+- [ ] Input in the first 3 s after the lock is ignored; after that the board's wake input wakes, and does nothing else
+- [ ] On the M9 and Wio L2, a centre/Wake tap on the screensaver shows the last messages for 10 s, then the screensaver comes back
+- [ ] At timeout: screen off goes dark instead; Never keeps the screen on
+- [ ] An incoming message does not wake the screen or restart the timeout
+- [ ] Settings and web config show and save both settings; a backup holds `screenOnSecs` and `screenSaver`
+- [ ] Dimming works on each board (the CrowPanel 5.0" V1.0 PCA9557 is on/off only, so it doesn't dim)
+
 **API assumptions to confirm (watch the serial log during the live checklist):**
 
 - [ ] `GET /v1/users/me` shape: Home shows the right username and verified state

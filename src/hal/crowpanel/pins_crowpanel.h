@@ -48,7 +48,7 @@ constexpr uint8_t IOEX_ADDR = 0x18;
 constexpr uint8_t IOEX_BL = 1, IOEX_TP_RST = 2, IOEX_AMP_MUTE = 3, IOEX_AMP_SHUT = 4;
 constexpr uint8_t MCU_ADDR = 0x30;
 // MCU commands (V1.2/V1.3): 0 brightest .. 244 dimmest, 245 off, 250 touch on.
-constexpr uint8_t MCU_BL_MAX = 0, MCU_BL_OFF = 245, MCU_TOUCH_ON = 250;
+constexpr uint8_t MCU_BL_MAX = 0, MCU_BL_MIN = 244, MCU_BL_OFF = 245, MCU_TOUCH_ON = 250;
 }  // namespace p50
 
 }  // namespace crowpanel

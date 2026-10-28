@@ -13,6 +13,7 @@
 #include "store/settings.h"
 #include "tz/zones.h"
 #include "ui/rotation.h"
+#include "ui/screen_timeout.h"
 
 namespace rc {
 
@@ -22,6 +23,8 @@ enum Item {
   kTextSize,
   kZone,
   kRotation,
+  kScreenTimeout,
+  kAtTimeout,
   kSetupAp,
   kFirmware,
   kAutoUpdate,
@@ -37,6 +40,8 @@ enum Item {
 std::vector<Item> menuItems() {
   std::vector<Item> v{kTheme, kTextSize, kZone};
   if (board::canRotate()) v.push_back(kRotation);
+  v.push_back(kScreenTimeout);
+  v.push_back(kAtTimeout);
   v.push_back(kSetupAp);
   v.push_back(kFirmware);
   v.push_back(kAutoUpdate);
@@ -152,6 +157,14 @@ void SettingsScreen::confirmKey(const KeyEvent& k) {
         if (i >= 0 && i < 4) ui::setRotation(kRotationOrder[i]);
         break;
       }
+      if (c == Confirm::Timeout) {
+        const int i = confirmBox_.selected();
+        if (i >= 0 && i < int(std::size(kScreenTimeoutSecs))) {
+          app().cfg.screenOnSecs = kScreenTimeoutSecs[i];
+          settings::saveScreen(app().cfg.screenOnSecs, app().cfg.screenSaver);
+        }
+        break;
+      }
       if (c == Confirm::TextSize) {
         const int i = confirmBox_.selected();
         if (i >= 0 && i < 3 && kSizeOrder[i] != app().cfg.textSize) ui::setTextSize(kSizeOrder[i]);
@@ -247,6 +260,27 @@ void SettingsScreen::activate(int item) {
       confirmBox_.open(U"orientation", std::move(rows), sel);
       break;
     }
+    case kScreenTimeout: {
+      std::vector<ListItem> rows;
+      int sel = 0;
+      for (size_t i = 0; i < std::size(kScreenTimeoutSecs); ++i) {
+        ListItem it{widen(screenTimeoutLabel(kScreenTimeoutSecs[i]).c_str()), U""};
+        if (kScreenTimeoutSecs[i] == app().cfg.screenOnSecs) {
+          it.marker = true;
+          sel = int(i);
+        }
+        rows.push_back(std::move(it));
+      }
+      confirm_ = Confirm::Timeout;
+      confirmBox_.open(U"screen timeout", std::move(rows), sel);
+      break;
+    }
+    case kAtTimeout: {
+      AppState& a = app();
+      a.cfg.screenSaver = !a.cfg.screenSaver;
+      settings::saveScreen(a.cfg.screenOnSecs, a.cfg.screenSaver);
+      break;
+    }
     case kSetupAp: {
       Command c{CmdType::SetupAp};
       c.n = setupApUp() ? 0 : 1;
@@ -323,6 +357,12 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
         break;
       case kRotation:
         rows.push_back(ListItem{U"Orientation", widen(rotationLabel(a.cfg.rotation))});
+        break;
+      case kScreenTimeout:
+        rows.push_back(ListItem{U"Screen timeout", widen(screenTimeoutLabel(a.cfg.screenOnSecs).c_str())});
+        break;
+      case kAtTimeout:
+        rows.push_back(ListItem{U"At timeout", a.cfg.screenSaver ? U"screensaver" : U"screen off"});
         break;
       case kSetupAp:
         if (buttons_)
@@ -409,7 +449,8 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
   } else if (confirm_ != Confirm::None) {
     // The orientation and text size pickers are centred boxes; the bottom
     // strip only has room for a two-row confirm.
-    const bool pick = confirm_ == Confirm::Rotation || confirm_ == Confirm::TextSize;
+    const bool pick = confirm_ == Confirm::Rotation || confirm_ == Confirm::TextSize ||
+                      confirm_ == Confirm::Timeout;
     confirmBox_.render(g, 1, bottom, 0, pick ? OverlayPlace::Centre : OverlayPlace::Bottom, t);
     if (pick)
       drawHint(g, t, U"\u2191\u2193 pick  \u25CF set  back: cancel",

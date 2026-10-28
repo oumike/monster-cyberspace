@@ -23,6 +23,9 @@ int panelHeight();
 // Sends rows [y0, y1) of a full panelWidth() x panelHeight() RGB565 frame.
 void pushRows(const uint16_t* frame, int y0, int y1);
 void backlight(bool on);
+// Dims the backlight: 255 is the board's normal on level, 0 off. Boards with
+// an on/off backlight treat any level above 0 as on.
+void backlightLevel(uint8_t level);
 void displaySleep(bool sleep);
 // The last line of the screensaver, telling the user how to wake the screen.
 const char* wakeHint();

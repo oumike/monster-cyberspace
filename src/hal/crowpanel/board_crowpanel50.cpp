@@ -114,9 +114,16 @@ void pushRows(const uint16_t* frame, int y0, int y1) {
   rgb800::pushRows(frame, panelWidth(), y0, y1, rotation);
 }
 
-void backlight(bool on) {
-  if (ctl == Ctl::Pca9557) pcaSet(IOEX_BL, on);
-  else if (ctl == Ctl::Mcu) mcuSend(on ? MCU_BL_MAX : MCU_BL_OFF);
+void backlight(bool on) { backlightLevel(on ? 255 : 0); }
+
+// The MCU takes MCU_BL_MAX (brightest) to MCU_BL_MIN, or MCU_BL_OFF.
+void backlightLevel(uint8_t level) {
+  if (ctl == Ctl::Pca9557) {
+    pcaSet(IOEX_BL, level > 0);
+  } else if (ctl == Ctl::Mcu) {
+    const uint32_t span = MCU_BL_MIN - MCU_BL_MAX;
+    mcuSend(level == 0 ? MCU_BL_OFF : uint8_t(MCU_BL_MIN - uint32_t(level - 1) * span / 254));
+  }
 }
 
 // The RGB peripheral keeps scanning the framebuffer; dark is backlight off.

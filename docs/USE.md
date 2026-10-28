@@ -164,8 +164,9 @@ backups and a speaker for beeps. The setup AP is
 The CrowPanel Advance 3.5" and 5.0" work by touch alone, as described under
 Touch above, but with no buttons:
 
-- **Screen off:** there's no button to turn the screen off, so it stays on.
-  If it does go dark, a tap wakes it (that tap does nothing else).
+- **Screen off:** there's no button to turn the screen off; the screen
+  timeout (see Screen timeout) locks it. A tap wakes it (that tap does
+  nothing else).
 - **Orientation:** pick it in Settings or web config, as on the Wio Tracker L2.
 - **No cursor:** as on the Wio Tracker L2, lists and Home tiles draw no
   selection outline; a tap opens what's under the finger.
@@ -400,11 +401,27 @@ characters). **Save time** saves the zone and the server.
 Privacy: your position is never sent anywhere, never stored and never logged.
 The serial log says only whether there's a fix and satellite counts.
 
+## Screen timeout
+
+After the screen timeout (Settings or web config, 30 s by default) with no
+key press or touch, the backlight dims for the last 10 seconds and then the
+screen locks: either the **screensaver**, the monster bouncing slowly round a
+dim screen, or **screen off**, as set by **At timeout**. Any input during the
+dim wakes it back to full. Incoming messages neither wake the screen nor
+restart the timeout.
+
+For 3 s after the screen locks every input is ignored. After that the screen
+wakes just as it does from screen off on that board (hold centre on the M9,
+Wake hold on the Wio Tracker L2, any input on the T-Deck Plus, the Pager and
+the CrowPanels), and the waking input does nothing else. A peek (a centre or
+Wake tap) shows the last few messages for 10 s and then returns to the
+screensaver. **Never** keeps the screen on.
+
 ## Settings
 
 **Home** → **Settings** shows the account, the Wi-Fi network and IP, the web
 config address, the battery, the setup AP state and the gps, time and zone
-lines (see Time and time zone), with eight actions, plus Orientation on a
+lines (see Time and time zone), with ten actions, plus Orientation on a
 touch board and two more on a board with an SD card slot:
 
 - **Theme: …** Centre moves to the next theme (Default, Black & white, White &
@@ -415,6 +432,10 @@ touch board and two more on a board with an SD card slot:
   closes the list unchanged.
 - **Orientation: …** (touch boards) Opens a box with the four orientations; picking one
   turns the screen at once and saves it.
+- **Screen timeout: …** Opens a box with 15 s, 30 s, 1, 2, 5, 10, 30 and
+  60 min, and Never; picking one saves it. 30 s by default. See Screen timeout.
+- **At timeout: screensaver / screen off.** Centre switches what the screen
+  timeout does and saves it.
 - **Turn setup AP on / off.** Brings up the setup AP (its name, password state
   and `http://192.168.4.1` are shown) while staying on your Wi-Fi, so you can
   reach web config when your network is unreachable. It stays on until you

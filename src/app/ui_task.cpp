@@ -9,6 +9,7 @@
 #include "chat/chat_source.h"
 #include "hal/board.h"
 #include "input/backspace.h"
+#include "input/double_tap.h"
 #include "input/gestures.h"
 #include "input/key_event.h"
 #include "input/touch_resolve.h"
@@ -46,6 +47,7 @@ Renderer renderer;
 Grid grid(1, 1);
 Banner topBanner;
 Gestures gestures;
+DoubleTap doubleTap;  // wakes boards with doubleTapWakes
 // Set by a touch that woke the screen: that finger is ignored until it lifts.
 bool touchSwallow = false;
 // The last Backspace that deleted text (backspaceIsBack boards).
@@ -360,7 +362,9 @@ void taskMain(void*) {
     // nothing until it lifts).
     if (power != Power::On && board::hasTouch() && board::anyInputWakes()) {
       int16_t tx, ty;
-      if (board::readTouch(tx, ty) && nowMs() - lockedAt >= kLockQuietMs) {
+      const bool down = board::readTouch(tx, ty);
+      const bool waking = board::doubleTapWakes() ? doubleTap.feed(down, millis()) : down;
+      if (waking && nowMs() - lockedAt >= kLockQuietMs) {
         wake();
         touchSwallow = true;
         gestures.reset();
@@ -419,6 +423,7 @@ void taskMain(void*) {
     // changes under it (screen change, going dark, the saver, waking).
     if (router::current() != beforeScreen || power != beforePower) {
       gestures.reset();
+      doubleTap.reset();
       resolver.reset();
       if (router::current() != beforeScreen) showOsk(false);
     }

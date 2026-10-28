@@ -147,6 +147,7 @@ bool hasKeyboard() { return true; }
 bool hasKeys() { return true; }
 bool backspaceIsBack() { return true; }
 bool anyInputWakes() { return true; }
+bool doubleTapWakes() { return false; }
 
 bool canRotate() { return false; }
 void setRotation(uint8_t) {}

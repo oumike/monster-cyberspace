@@ -41,12 +41,11 @@ Dedicated buttons work from anywhere and close whatever is open first.
 | Fn under Back | Feed: the entry list. Press it again anywhere in the Feed for the list |
 | Map | Unassigned |
 | Back | Up one level, or closes a menu or drawer. It never deletes text |
-| Ctrl | While typing: the symbol table. Elsewhere (the Feed list): the palette |
+| Sym | While typing: the symbol table. Elsewhere (the Feed list): the palette |
 | Hold Back/Del | Clear the input line |
 | Hold d-pad centre | Screen off; with the screen off, screen on |
 
-**Symbol table:** the keyboard's own Sym key types its symbols directly.
-Ctrl, while you're typing, opens a table of punctuation: the d-pad moves,
+**Symbol table:** Sym, while you're typing, opens a table of punctuation: the d-pad moves,
 Centre inserts one and closes it, Back closes it, and typing anything closes it
 and types as usual. In a room, a conversation or the Feed composer its last
 row, **commands…** or **post or discard…**, opens the palette.
@@ -126,7 +125,7 @@ on the real one.
 | Backspace | Deletes while there's text to delete; otherwise Back. Holding it to clear a line stops at the empty line instead of leaving the screen |
 | Trackball roll | Up, Down, Left, Right (moves between Home tiles too) |
 | Hold the trackball click 2 s | Screen off |
-| `⋯`, or a long-press | The screen's menu or the command palette (there's no Ctrl key) |
+| `⋯`, or a long-press | The screen's menu or the command palette (there's no Sym key) |
 
 **Screen off:** any key, trackball roll or touch wakes the screen. The press
 that wakes it does nothing else, so it never types, selects or taps.
@@ -165,8 +164,8 @@ The CrowPanel Advance 3.5" and 5.0" work by touch alone, as described under
 Touch above, but with no buttons:
 
 - **Screen off:** there's no button to turn the screen off; the screen
-  timeout (see Screen timeout) locks it. A tap wakes it (that tap does
-  nothing else).
+  timeout (see Screen timeout) locks it. A double tap wakes it (those taps
+  do nothing else), so brushing the panel doesn't.
 - **Orientation:** pick it in Settings or web config, as on the Wio Tracker L2.
 - **No cursor:** as on the Wio Tracker L2, lists and Home tiles draw no
   selection outline; a tap opens what's under the finger.
@@ -209,7 +208,7 @@ The keyboard always types into the input line at the bottom.
   move between rooms. On the CrowPanels in landscape the list is always docked
   on the right; tap a name for their menu.
 - **Commands:** type slash commands such as `/me`, `/dice` and `/mute name`,
-  or pick them from the palette (on the M9, Ctrl, then **commands…**).
+  or pick them from the palette (on the M9, Sym, then **commands…**).
 
 Sending is disabled while offline; nothing is queued or retried for you.
 
@@ -250,7 +249,7 @@ Feed alerts; with one waiting, **Feed** opens its entry instead of the list.
 - Up/Down select. Down on the last entry loads the next page; once every page
   is loaded it wraps to the top, and Up on the first wraps to the last.
 - Centre or Right opens the entry. Left or Back goes Home.
-- **Ctrl** opens the palette: **New entry**, **Refresh**, **Watched
+- **Sym** (on the M9) opens the palette: **New entry**, **Refresh**, **Watched
   threads**, **Bookmarks** and **Text size**.
 - **Auto-refresh:** while the list is on screen and the screen is on, it
   re-fetches the first page every 2 minutes (the title reads `Feed ↻ 2m`).
@@ -282,7 +281,7 @@ Feed alerts; with one waiting, **Feed** opens its entry instead of the list.
 - Up/Down move between fields. In Body they move by line first, and Centre
   adds a new line; the counter shows `n/4096`. On a checkbox, Centre toggles
   it.
-- **Ctrl**, then **post or discard…** (on the M9), opens **Post…** and **Discard…**. Post checks the draft, then asks
+- **Sym**, then **post or discard…** (on the M9), opens **Post…** and **Discard…**. Post checks the draft, then asks
   "Post entry? (2 per minute, 24 per day)". A posted entry opens at once; a
   failed one keeps the draft.
 - Back (or Fn under Back) with any text asks "Discard draft?". The draft
@@ -412,8 +411,8 @@ restart the timeout.
 
 For 3 s after the screen locks every input is ignored. After that the screen
 wakes just as it does from screen off on that board (hold centre on the M9,
-Wake hold on the Wio Tracker L2, any input on the T-Deck Plus, the Pager and
-the CrowPanels), and the waking input does nothing else. A peek (a centre or
+Wake hold on the Wio Tracker L2, any input on the T-Deck Plus and the Pager,
+a double tap on the CrowPanels), and the waking input does nothing else. A peek (a centre or
 Wake tap) shows the last few messages for 10 s and then returns to the
 screensaver. **Never** keeps the screen on.
 

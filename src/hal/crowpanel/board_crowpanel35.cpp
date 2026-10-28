@@ -83,13 +83,14 @@ bool externalPower() { return true; }
 // GPIO8 drives the I2S amplifier's MCLK, not a buzzer: no beeps.
 void beep(int, int) {}
 
-const char* wakeHint() { return "tap to wake"; }
+const char* wakeHint() { return "double-tap to wake"; }
 
 bool hasTouch() { return gt911::present(); }
 bool hasKeyboard() { return false; }
 bool hasKeys() { return false; }
 bool backspaceIsBack() { return false; }
 bool anyInputWakes() { return true; }
+bool doubleTapWakes() { return true; }
 
 bool readTouch(int16_t& x, int16_t& y) {
   int16_t rx = 0, ry = 0;

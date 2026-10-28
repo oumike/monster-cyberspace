@@ -218,6 +218,10 @@ Buttons: BOOT tap = Back, BOOT hold (0.6 s) = Home; Wake tap = screen off
 - [ ] Web config Firmware: Check, Install and the auto-update checkbox work and match the device
 - [ ] Off Wi-Fi, Settings → Firmware says `Can't check now: is Wi-Fi up?`
 
+**CrowPanel double-tap wake (`crowpanel35`, `crowpanel50`):**
+
+- [ ] With the screen locked or off, one tap does nothing; two taps within half a second wake it, and neither tap acts on the screen
+
 **Screen timeout and screensaver (each board):**
 
 - [ ] With a 15 s timeout and no input, the backlight dims at 5 s and the screensaver (bouncing monster, dim) starts at 15 s; a key or touch during the dim brings full brightness back

@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "input/double_tap.h"
 #include "input/gestures.h"
 #include "input/touch_transform.h"
 #include "input/key_event.h"
@@ -666,6 +667,30 @@ void test_rotation_from_index_out_of_range() {
   TEST_ASSERT_EQUAL(1, rotationFromIndex(1));
 }
 
+void test_double_tap_wakes() {
+  using namespace rc;
+  DoubleTap d;
+  // One tap, held or not, isn't enough.
+  TEST_ASSERT_FALSE(d.feed(true, 1000));
+  TEST_ASSERT_FALSE(d.feed(true, 1100));
+  TEST_ASSERT_FALSE(d.feed(false, 1150));
+  // The second touch within kDoubleTapMs of the first wakes.
+  TEST_ASSERT_TRUE(d.feed(true, 1300));
+  TEST_ASSERT_FALSE(d.feed(false, 1350));
+  // Too slow: the late tap counts as a new first tap.
+  TEST_ASSERT_FALSE(d.feed(true, 3000));
+  TEST_ASSERT_FALSE(d.feed(false, 3050));
+  TEST_ASSERT_FALSE(d.feed(true, 3000 + kDoubleTapMs + 1));
+  TEST_ASSERT_FALSE(d.feed(false, 3600));
+  TEST_ASSERT_TRUE(d.feed(true, 3700));
+  // reset forgets the first tap.
+  d.feed(false, 3750);
+  d.feed(true, 5000);
+  d.feed(false, 5050);
+  d.reset();
+  TEST_ASSERT_FALSE(d.feed(true, 5100));
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_tap);
@@ -708,5 +733,6 @@ int main() {
   RUN_TEST(test_power_tap_peeks_not_wakes);
   RUN_TEST(test_rotation_labels_and_order);
   RUN_TEST(test_rotation_from_index_out_of_range);
+  RUN_TEST(test_double_tap_wakes);
   return UNITY_END();
 }

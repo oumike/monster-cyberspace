@@ -209,6 +209,7 @@ bool hasKeyboard() { return false; }
 bool hasKeys() { return false; }
 bool backspaceIsBack() { return false; }
 bool anyInputWakes() { return false; }
+bool doubleTapWakes() { return false; }
 bool readTouch(int16_t& x, int16_t& y) {
   int16_t rx = 0, ry = 0;
   const bool down = gt911::read(rx, ry);

@@ -135,13 +135,14 @@ int batteryPercent() { return -1; }
 bool externalPower() { return true; }
 void beep(int, int) {}
 
-const char* wakeHint() { return "tap to wake"; }
+const char* wakeHint() { return "double-tap to wake"; }
 
 bool hasTouch() { return gt911::present(); }
 bool hasKeyboard() { return false; }
 bool hasKeys() { return false; }
 bool backspaceIsBack() { return false; }
 bool anyInputWakes() { return true; }
+bool doubleTapWakes() { return true; }
 
 // Raw touch is the panel's native landscape 800x480; turn it into the frame
 // as panel_rgb800.cpp turns the frame into the framebuffer.

@@ -53,6 +53,9 @@ bool hasKeys();
 bool backspaceIsBack();
 // Any key, roll or touch wakes a dark screen, not only the board's wake key.
 bool anyInputWakes();
+// With anyInputWakes on a touch board: only a double tap wakes the screen,
+// so a brush against the panel doesn't.
+bool doubleTapWakes();
 void setRotation(uint8_t r);
 // GPS receiver. On: power, a 10 ms reset pulse, then the UART up. Off: the
 // UART down, then power off.

@@ -88,10 +88,10 @@ on 2026-10-27; the sections marked `m9_fake` passed on it before then.
 
 **Device Settings (`m9`):**
 
-- [ ] Home → Settings: Turn setup AP on → the AP appears with `http://192.168.4.1` while Wi-Fi stays up; Turn off removes it
-- [ ] Log out → confirm → Setup screen; Wi-Fi kept; signing in again works
-- [ ] Factory reset… → Erase everything → setup mode with everything erased
-- [ ] With the saved network switched off for 5 minutes, the setup AP comes up; when the network returns (nobody joined) it goes away
+- [x] Home → Settings: Turn setup AP on → the AP appears with `http://192.168.4.1` while Wi-Fi stays up; Turn off removes it
+- [x] Log out → confirm → Setup screen; Wi-Fi kept; signing in again works
+- [x] Factory reset… → Erase everything → setup mode with everything erased
+- [x] With the saved network switched off for 5 minutes, the setup AP comes up; when the network returns (nobody joined) it goes away
 
 **Touch UI regression (`m9`):**
 

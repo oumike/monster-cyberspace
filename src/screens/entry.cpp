@@ -519,6 +519,7 @@ void EntryScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
     box_.render(g, 1, logBottom, 0, OverlayPlace::BottomRight, t);
 
   input_.setDisabled(offline || view_ != View::None || sending_ || !loaded_);
+  input_.setEmojiButton(true);
   input_.render(g, inputRow, t, reasonMode_ ? U"reason> " : U"> ");
 
   if (small) {

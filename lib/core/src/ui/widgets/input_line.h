@@ -35,12 +35,16 @@ class InputLine {
   // While disabled the text is kept but drawn dim, with no cursor.
   void setDisabled(bool d) { disabled_ = d; }
   bool disabled() const { return disabled_; }
+  // On touch boards, an emoji button left of the prompt that sends
+  // Action::Emoji (the emoji tray).
+  void setEmojiButton(bool on) { emojiButton_ = on; }
   void render(Grid& g, int row, const Theme& t, std::u32string_view prompt = U"> ") const;
 
  private:
   std::u32string text_;
   size_t cursor_ = 0, bytes_ = 0;
   bool disabled_ = false;
+  bool emojiButton_ = false;
   uint8_t fieldId_ = 0;
 };
 

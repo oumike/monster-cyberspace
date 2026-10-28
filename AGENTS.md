@@ -133,7 +133,7 @@ OTA updates were added on 2026-10-28 (built without flashing): signed images
 straight from GitHub releases over HTTPS (`src/app/ota_service.cpp`,
 `lib/core/src/ota/`), and `partitions_16mb.csv` moves NVS past the app slots
 so installs keep settings (`src/store/nvs_migrate.cpp`; docs/BUILD.md).
-The native suite is green: 409/409
+The native suite is green: 411/411
 (`pio test -e native`), and `scripts/build-upload-monitor.sh -B` builds all
 six firmware envs.
 

@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include "ui/emoji_set.h"
 #include "ui/tap_map.h"
 #include "ui/text_width.h"
 #include "util/utf8.h"
@@ -56,7 +57,15 @@ void InputLine::setCursor(size_t pos) { cursor_ = std::min(pos, text_.size()); }
 void InputLine::render(Grid& g, int row, const Theme& t, std::u32string_view prompt) const {
   const uint16_t fg = disabled_ ? t.dim : t.fg;
   g.fillRow(row, t.inputBg);
-  int col = g.putText(0, row, prompt, fg, t.inputBg, g.cols());
+  int col = 0;
+  if (emojiButton_ && activeTaps() && g.cols() >= 12) {
+    Target b;
+    b.kind = TargetKind::Fixed;
+    b.tap.action = Action::Emoji;
+    activeTaps()->addCells(0, row, 2, row, b);
+    col = g.putText(0, row, std::u32string_view(&kTrayEmoji[0], 1), t.fg, t.inputBg, 2) + 1;
+  }
+  col += g.putText(col, row, prompt, fg, t.inputBg, g.cols() - col);
   int avail = g.cols() - col;
   if (avail <= 0) return;
   // Scroll so the text up to the cursor, and the cursor's own cell, fit.

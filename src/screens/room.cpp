@@ -674,6 +674,7 @@ void RoomScreen::render(Grid& g, const Theme& t, int64_t) {
 
   bool offline = app().conn == 0;
   input_.setDisabled(offline || view_ != View::None);
+  input_.setEmojiButton(true);
   input_.render(g, inputRow, t, reasonMode_ ? U"reason> " : U"> ");
 
   if (small) {

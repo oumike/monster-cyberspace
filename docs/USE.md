@@ -100,6 +100,11 @@ above it gets shorter.
 - `▼` hides the keyboard; tap the field to bring it back. It also goes away
   when you leave the screen or the screen turns off.
 
+**Emoji.** On touch screens (Wio Tracker L2, T-Deck Plus, CrowPanels) the
+message input in rooms, C-Mail conversations and Feed replies has an emoji
+button to the left of the prompt. Tap it for the emoji tray, tap an emoji to
+insert it (the tray stays open), and tap outside the tray to close it.
+
 **Buttons.**
 
 | Button | Tap | Hold |

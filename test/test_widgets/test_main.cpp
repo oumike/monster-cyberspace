@@ -774,6 +774,53 @@ void test_input_field_hit_scrolled() {
   TEST_ASSERT_EQUAL(5, in.cursor());
 }
 
+void test_input_emoji_button_on_touch() {
+  InputLine in;
+  in.setEmojiButton(true);
+  in.insert(U'a');
+  Grid g(20, 1);
+  setActiveTaps(nullptr);  // no touch: no button
+  in.render(g, 0, T());
+  TEST_ASSERT_EQUAL(int(U'>'), int(g.at(0, 0).cp));
+  TapMap m = makeTaps();
+  setActiveTaps(&m);
+  in.render(g, 0, T());
+  TEST_ASSERT_EQUAL(int(kTrayEmoji[0]), int(g.at(0, 0).cp));
+  TEST_ASSERT_EQUAL(int(wideTail(kTrayEmoji[0])), int(g.at(1, 0).cp));
+  TEST_ASSERT_EQUAL(int(U'>'), int(g.at(3, 0).cp));
+  TEST_ASSERT_EQUAL(int(U'a'), int(g.at(5, 0).cp));
+  Target b = m.hit(1, 0);
+  TEST_ASSERT_EQUAL(int(TargetKind::Fixed), int(b.kind));
+  TEST_ASSERT_EQUAL(int(Action::Emoji), int(b.tap.action));
+  TEST_ASSERT_EQUAL(int(TargetKind::Field), int(m.hit(5, 0).kind));
+  setActiveTaps(nullptr);
+}
+
+void test_emoji_tray_taps() {
+  SymbolTable s;
+  s.open(U"", SymbolTable::Set::Emoji);
+  TapMap m = makeTaps();
+  setActiveTaps(&m);
+  Grid g(40, 30);
+  g.fill(T().bg);
+  s.render(g, g.rows() - 1, T());
+  setActiveTaps(nullptr);
+  int c3 = -1, r3 = -1;
+  for (int r = 0; r < g.rows() && c3 < 0; ++r)
+    for (int c = 0; c < g.cols(); ++c)
+      if (g.at(c, r).cp == SymbolTable::emoji()[3]) { c3 = c; r3 = r; break; }
+  Target t = m.hit(c3 + 1, r3);
+  TEST_ASSERT_EQUAL(int(TargetKind::Fixed), int(t.kind));
+  auto o = s.key(t.tap);  // a tap picks that emoji, and the tray stays open
+  TEST_ASSERT_EQUAL(int(SymbolTable::Kind::Insert), int(o.kind));
+  TEST_ASSERT_EQUAL(int(SymbolTable::emoji()[3]), int(o.ch));
+  TEST_ASSERT_TRUE(s.isOpen());
+  // A tap outside the tray closes it.
+  Target out = m.hit(0, 0);
+  TEST_ASSERT_EQUAL(int(Action::Back), int(out.tap.action));
+  TEST_ASSERT_EQUAL(int(SymbolTable::Kind::Closed), int(s.key(out.tap).kind));
+}
+
 void test_text_area_field_rows() {
   TextArea ta;
   ta.setFieldId(3);
@@ -1267,6 +1314,8 @@ int main() {
   RUN_TEST(test_symbols_linear_steps_one_cell_and_wraps);
   RUN_TEST(test_emoji_tray_grid_and_commands_row);
   RUN_TEST(test_emoji_tray_spaced_out);
+  RUN_TEST(test_input_emoji_button_on_touch);
+  RUN_TEST(test_emoji_tray_taps);
   RUN_TEST(test_emoji_tray_render_draws_both_halves);
   RUN_TEST(test_put_text_wide_emoji);
   RUN_TEST(test_input_line_renders_wide_emoji);

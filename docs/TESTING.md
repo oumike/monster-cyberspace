@@ -223,6 +223,11 @@ Buttons: BOOT tap = Back, BOOT hold (0.6 s) = Home; Wake tap = screen off
 
 - [ ] With the screen locked or off, one tap does nothing; two taps within half a second wake it, and neither tap acts on the screen
 
+**Touch emoji button (`wio_l2`, `tdeck`, `crowpanel35`, `crowpanel50`):**
+
+- [ ] The room, conversation and Feed reply inputs show an emoji button left of the prompt; tapping it opens the emoji tray
+- [ ] Tapping an emoji inserts it and the tray stays open; tapping outside the tray closes it; the C-Mail "to>" line and the M9/Pager inputs show no button
+
 **M9 emoji tray (`m9`):**
 
 - [ ] Sym opens the command palette everywhere, as before

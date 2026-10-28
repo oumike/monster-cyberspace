@@ -4,6 +4,7 @@
 #include <utility>
 
 #include "ui/emoji_set.h"
+#include "ui/tap_map.h"
 
 namespace rc {
 
@@ -46,6 +47,14 @@ SymbolTable::Out SymbolTable::key(const KeyEvent& k) {
   if (linear_ && (a == Action::Up || a == Action::Down)) {
     sel_ = (sel_ + (a == Action::Down ? 1 : count() - 1)) % count();
     return o;
+  }
+  // A tap on a cell (render's Fixed targets): pick it.
+  if (a == Action::Activate && k.target == static_cast<uint8_t>(ListId::Menu)) {
+    if (k.index < 0 || k.index >= count()) return o;
+    sel_ = k.index;
+    KeyEvent pick;
+    pick.action = Action::Select;
+    return key(pick);
   }
   if (a == Action::Symbols && !emojiSet) {
     set_ = Set::Emoji;
@@ -106,6 +115,22 @@ void SymbolTable::render(Grid& g, int bottom, const Theme& t) const {
   const int height = 1 + gridRows + (gaps ? 2 : 0) + extra;
   const int left = std::max(0, (g.cols() - width) / 2);
   const int top = std::max(0, (bottom - height) / 2);
+  auto cellTap = [&](int c0, int r0, int c1, int i) {
+    if (!activeTaps()) return;
+    Target tt;
+    tt.kind = TargetKind::Fixed;
+    tt.tap.action = Action::Activate;
+    tt.tap.index = static_cast<int16_t>(i);
+    tt.tap.target = static_cast<uint8_t>(ListId::Menu);
+    activeTaps()->addCells(c0, r0, c1, r0, tt);
+  };
+  if (activeTaps()) {
+    // A tap outside the table closes it.
+    Target back;
+    back.kind = TargetKind::Fixed;
+    back.tap.action = Action::Back;
+    activeTaps()->addCells(0, 0, g.cols() - 1, g.rows() - 1, back);
+  }
   for (int r = 0; r < height; ++r)
     for (int c = 0; c < width; ++c) g.put(left + c, top + r, U' ', t.fg, t.bg);
   for (int c = 0; c < width; ++c) g.put(left + c, top, U' ', t.barFg, t.barBg);
@@ -117,6 +142,7 @@ void SymbolTable::render(Grid& g, int bottom, const Theme& t) const {
     // A symbol sits between two spaces; an emoji in the middle two of four.
     for (int c = 0; c < pitch; ++c) g.put(col + c, row, U' ', fg, bg);
     g.putText(col + 1, row, items().substr(i, 1), fg, bg, emojiSet ? 2 : 1);
+    cellTap(col, row, col + pitch - 1, i);
   }
   if (!commands_.empty()) {
     const int row = top + height - 1;
@@ -124,6 +150,7 @@ void SymbolTable::render(Grid& g, int bottom, const Theme& t) const {
     const uint16_t fg = sel ? t.selectFg : t.fg, bg = sel ? t.selectBg : t.bg;
     for (int c = 1; c < width - 1; ++c) g.put(left + c, row, U' ', fg, bg);
     g.putText(left + 2, row, commands_, fg, bg, width - 4);
+    cellTap(left + 1, row, left + width - 2, n);
   }
   g.outline(left, top, left + width - 1, top + height - 1, t.drawerEdge);
 }

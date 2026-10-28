@@ -85,8 +85,9 @@ void test_pager_sym_opens_symbols() {
   KeyEvent e = k.key(21, true, 0);
   expectAction(e, Action::Symbols);
   TEST_ASSERT_TRUE(e.modifier);
-  // Disarming it asks for nothing.
-  expectAction(k.key(21, true, 10), Action::None);
+  // So does disarming it: a second press in the table opens the emoji tray.
+  expectAction(k.key(21, true, 10), Action::Symbols);
+  expectChar(k.key(1, true, 15), 'q');  // and the layer is off
   expectAction(k.key(29, true, 20), Action::None);  // Shift does not
 }
 

@@ -36,8 +36,8 @@ void test_keymap_table() {
   expect(0x86, Action::None, false);
   expect(0x87, Action::Back, false);
   expect(0x87, Action::None, true);
-  expectBoth(0x88, Action::Symbols);  // the triangle key
-  expectBoth(0x90, Action::Emoji);    // Ctrl
+  expectBoth(0x88, Action::Palette);
+  expectBoth(0x90, Action::Emoji);  // Ctrl
   expectBoth(0x89, Action::ClearLine);
   expectBoth(0xA3, Action::ScreenOff);
   expectBoth(0xB4, Action::Left);

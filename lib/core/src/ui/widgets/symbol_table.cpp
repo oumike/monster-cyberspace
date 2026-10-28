@@ -21,7 +21,7 @@ const std::u32string& SymbolTable::emoji() {
 void SymbolTable::open(std::u32string commands, Set set, bool linear) {
   set_ = set;
   linear_ = linear;
-  commands_ = set == Set::Emoji ? std::u32string() : std::move(commands);
+  commands_ = std::move(commands);
   sel_ = 0;
   open_ = true;
 }
@@ -34,16 +34,22 @@ SymbolTable::Out SymbolTable::key(const KeyEvent& k) {
   Out o;
   const bool emojiSet = set_ == Set::Emoji;
   const int n = static_cast<int>(items().size());
-  const int rows = (n + kCols - 1) / kCols;
+  const int kc = cols();
+  const int rows = (n + kc - 1) / kc;
   const bool onCommands = sel_ >= n;
-  const int col = onCommands ? 0 : sel_ % kCols, row = onCommands ? rows : sel_ / kCols;
+  const int col = onCommands ? 0 : sel_ % kc, row = onCommands ? rows : sel_ / kc;
   const int lastRow = commands_.empty() ? rows - 1 : rows;
-  auto at = [&](int r, int c) { return r >= rows ? n : std::min(n - 1, r * kCols + c); };
+  auto at = [&](int r, int c) { return r >= rows ? n : std::min(n - 1, r * kc + c); };
   // The Pager's Sym stays armed after opening the table, so its Enter arrives
   // as Sym+Enter (Palette): inside the table it picks.
   const Action a = k.action == Action::Palette ? Action::Select : k.action;
   if (linear_ && (a == Action::Up || a == Action::Down)) {
     sel_ = (sel_ + (a == Action::Down ? 1 : count() - 1)) % count();
+    return o;
+  }
+  if (a == Action::Symbols && !emojiSet) {
+    set_ = Set::Emoji;
+    sel_ = 0;
     return o;
   }
   switch (a) {
@@ -62,7 +68,7 @@ SymbolTable::Out SymbolTable::key(const KeyEvent& k) {
       sel_ = at(row == lastRow ? 0 : row + 1, col);
       return o;
     case Action::Select:
-      if (!emojiSet) open_ = false;
+      if (!emojiSet || onCommands) open_ = false;
       if (onCommands) {
         o.kind = Kind::Commands;
       } else {
@@ -86,9 +92,18 @@ void SymbolTable::render(Grid& g, int bottom, const Theme& t) const {
   if (!open_) return;
   const bool emojiSet = set_ == Set::Emoji;
   const int n = static_cast<int>(items().size());
-  const int rows = (n + kCols - 1) / kCols;
-  const int width = kCols * 3 + 2;
-  const int height = 1 + rows + (commands_.empty() ? 0 : 1);
+  const int kc = cols();
+  const int rows = (n + kc - 1) / kc;
+  // Emoji get four cells each (two blank between neighbours) and a blank row
+  // between rows when the screen is tall enough.
+  const int pitch = emojiSet ? 4 : 3;
+  const int width = kc * pitch + (emojiSet ? 0 : 2);
+  const int extra = commands_.empty() ? 0 : 1;
+  // Title, [blank], the rows, [blank], [commands].
+  const bool gaps = emojiSet && 1 + 2 * rows + 1 + extra <= bottom;
+  const int rowStep = gaps ? 2 : 1;
+  const int gridRows = rows * rowStep - (gaps ? 1 : 0);
+  const int height = 1 + gridRows + (gaps ? 2 : 0) + extra;
   const int left = std::max(0, (g.cols() - width) / 2);
   const int top = std::max(0, (bottom - height) / 2);
   for (int r = 0; r < height; ++r)
@@ -96,16 +111,15 @@ void SymbolTable::render(Grid& g, int bottom, const Theme& t) const {
   for (int c = 0; c < width; ++c) g.put(left + c, top, U' ', t.barFg, t.barBg);
   g.putText(left + 1, top, emojiSet ? U"emoji" : U"symbols", t.barFg, t.barBg, width - 2);
   for (int i = 0; i < n; ++i) {
-    const int col = left + 1 + (i % kCols) * 3, row = top + 1 + i / kCols;
+    const int col = left + 1 + (i % kc) * pitch, row = top + 1 + (gaps ? 1 : 0) + (i / kc) * rowStep;
     const bool sel = i == sel_;
     const uint16_t fg = sel ? t.selectFg : t.fg, bg = sel ? t.selectBg : t.bg;
-    // A symbol sits between two spaces; an emoji fills the last two cells.
-    g.put(col, row, U' ', fg, bg);
-    g.put(col + 2, row, U' ', fg, bg);
+    // A symbol sits between two spaces; an emoji in the middle two of four.
+    for (int c = 0; c < pitch; ++c) g.put(col + c, row, U' ', fg, bg);
     g.putText(col + 1, row, items().substr(i, 1), fg, bg, emojiSet ? 2 : 1);
   }
   if (!commands_.empty()) {
-    const int row = top + 1 + rows;
+    const int row = top + height - 1;
     const bool sel = sel_ >= n;
     const uint16_t fg = sel ? t.selectFg : t.fg, bg = sel ? t.selectBg : t.bg;
     for (int c = 1; c < width - 1; ++c) g.put(left + c, row, U' ', fg, bg);

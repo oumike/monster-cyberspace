@@ -13,10 +13,12 @@ namespace rc {
 // Symbols (Action::Symbols): a grid of punctuation picked with the d-pad that
 // inserts one symbol and closes; an optional last row hands over to the
 // screen's own palette. Emoji (Action::Emoji): the tray emoji, two cells wide;
-// a pick inserts and stays open, and only Back closes it. Board-agnostic.
+// a pick inserts and stays open, Back closes it, and it has the same palette
+// row. Board-agnostic.
 class SymbolTable {
  public:
-  static constexpr int kCols = 8;
+  static constexpr int kCols = 8;       // symbols a row
+  static constexpr int kEmojiCols = 6;  // emoji a row, spaced out
   enum class Kind : uint8_t {
     None,         // the table used the key (or ignored it) and is still open
     Insert,       // type `ch`; the table closed
@@ -33,15 +35,19 @@ class SymbolTable {
   static const std::u32string& symbols();
   static const std::u32string& emoji();
 
-  // commands: the label of the palette row, or empty for none (Symbols only).
+  // commands: the label of the palette row, or empty for none.
   // linear: Up/Down step one cell, wrapping, for boards with only a wheel.
   void open(std::u32string commands, Set set = Set::Symbols, bool linear = false);
   void close() { open_ = false; }
   bool isOpen() const { return open_; }
   int selected() const { return sel_; }
+  Set set() const { return set_; }
+  int cols() const { return set_ == Set::Emoji ? kEmojiCols : kCols; }
 
-  // Arrows move (wrapping), Select picks, Back closes, a repeat of the opening
-  // key is ignored (the M9 reports its keys more than once per press). Any
+  // Arrows move (wrapping), Select picks, Back closes. Symbols in the symbol
+  // table switches to the emoji tray (the Pager's Sym pressed again); a repeat
+  // of the opening key is ignored (the M9 reports its keys more than once per
+  // press). Any
   // other key closes the symbol table and passes through; the emoji tray
   // swallows it.
   Out key(const KeyEvent& k);

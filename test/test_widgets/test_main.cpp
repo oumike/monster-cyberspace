@@ -1027,9 +1027,15 @@ void test_symbols_repeat_ignored_back_closes_other_passes() {
   SymbolTable s;
   s.open(U"");
   s.key(K(Action::Right));
-  // The M9 reports Ctrl more than once per press: a repeat changes nothing.
+  // Symbols again switches to the emoji tray, at its first emoji.
   TEST_ASSERT_EQUAL(int(SymbolTable::Kind::None), int(s.key(K(Action::Symbols)).kind));
   TEST_ASSERT_TRUE(s.isOpen());
+  TEST_ASSERT_EQUAL(int(SymbolTable::Set::Emoji), int(s.set()));
+  TEST_ASSERT_EQUAL(0, s.selected());
+  // There a further Symbols changes nothing.
+  s.key(K(Action::Right));
+  s.key(K(Action::Symbols));
+  TEST_ASSERT_EQUAL(int(SymbolTable::Set::Emoji), int(s.set()));
   TEST_ASSERT_EQUAL(1, s.selected());
   TEST_ASSERT_EQUAL(int(SymbolTable::Kind::Closed), int(s.key(K(Action::Back)).kind));
   TEST_ASSERT_FALSE(s.isOpen());
@@ -1072,6 +1078,58 @@ void test_emoji_tray_inserts_and_stays_open() {
   TEST_ASSERT_EQUAL(1, s.selected());
   TEST_ASSERT_EQUAL(int(SymbolTable::Kind::Closed), int(s.key(K(Action::Back)).kind));
   TEST_ASSERT_FALSE(s.isOpen());
+}
+
+void test_emoji_tray_grid_and_commands_row() {
+  SymbolTable s;
+  s.open(U"Commands\u2026", SymbolTable::Set::Emoji);
+  TEST_ASSERT_EQUAL(SymbolTable::kEmojiCols, s.cols());
+  s.key(K(Action::Down));
+  TEST_ASSERT_EQUAL(SymbolTable::kEmojiCols, s.selected());
+  s.key(K(Action::Up));
+  s.key(K(Action::Up));  // the top row up lands on the commands row
+  TEST_ASSERT_EQUAL(int(SymbolTable::emoji().size()), s.selected());
+  TEST_ASSERT_EQUAL(int(SymbolTable::Kind::Commands), int(s.key(K(Action::Select)).kind));
+  TEST_ASSERT_FALSE(s.isOpen());
+}
+
+void test_emoji_tray_spaced_out() {
+  Grid g(40, 30);
+  g.fill(T().bg);
+  SymbolTable s;
+  s.open(U"", SymbolTable::Set::Emoji);
+  s.render(g, g.rows() - 1, T());
+  int c0 = -1, r0 = -1;
+  for (int r = 0; r < g.rows() && c0 < 0; ++r)
+    for (int c = 0; c < g.cols(); ++c)
+      if (g.at(c, r).cp == SymbolTable::emoji()[0]) { c0 = c; r0 = r; break; }
+  TEST_ASSERT_TRUE(c0 >= 0);
+  // Two blank cells between neighbours, and a blank row between rows.
+  TEST_ASSERT_EQUAL(int(SymbolTable::emoji()[1]), int(g.at(c0 + 4, r0).cp));
+  TEST_ASSERT_EQUAL(int(U' '), int(g.at(c0 + 2, r0).cp));
+  TEST_ASSERT_EQUAL(int(U' '), int(g.at(c0 + 3, r0).cp));
+  TEST_ASSERT_EQUAL(int(U' '), int(g.at(c0, r0 + 1).cp));
+  TEST_ASSERT_EQUAL(int(SymbolTable::emoji()[SymbolTable::kEmojiCols]), int(g.at(c0, r0 + 2).cp));
+  // The commands row sits below the last emoji row, apart from it.
+  Grid k(40, 30);
+  k.fill(T().bg);
+  s.open(U"cmds", SymbolTable::Set::Emoji);
+  s.render(k, k.rows() - 1, T());
+  int lastRow = -1, cmdRow = -1;
+  for (int r = 0; r < k.rows(); ++r)
+    for (int c = 0; c < k.cols(); ++c) {
+      if (k.at(c, r).cp == SymbolTable::emoji().back()) lastRow = r;
+      if (k.at(c, r).cp == U'c' && k.at(c + 1, r).cp == U'm') cmdRow = r;
+    }
+  TEST_ASSERT_EQUAL(lastRow + 2, cmdRow);
+  // Too short for the blank rows: the rows close up instead of clipping.
+  Grid h(40, 10);
+  h.fill(T().bg);
+  s.render(h, h.rows() - 1, T());
+  bool last = false;
+  for (int r = 0; r < h.rows(); ++r)
+    for (int c = 0; c < h.cols(); ++c) last |= h.at(c, r).cp == SymbolTable::emoji().back();
+  TEST_ASSERT_TRUE(last);
 }
 
 void test_symbols_linear_steps_one_cell_and_wraps() {
@@ -1207,6 +1265,8 @@ int main() {
   RUN_TEST(test_symbols_render_highlights_selection);
   RUN_TEST(test_emoji_tray_inserts_and_stays_open);
   RUN_TEST(test_symbols_linear_steps_one_cell_and_wraps);
+  RUN_TEST(test_emoji_tray_grid_and_commands_row);
+  RUN_TEST(test_emoji_tray_spaced_out);
   RUN_TEST(test_emoji_tray_render_draws_both_halves);
   RUN_TEST(test_put_text_wide_emoji);
   RUN_TEST(test_input_line_renders_wide_emoji);

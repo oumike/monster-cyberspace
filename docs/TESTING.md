@@ -162,7 +162,7 @@ Buttons: BOOT tap = Back, BOOT hold (0.6 s) = Home; Wake tap = screen off
 - [ ] Wheel click selects; holding it 2 s turns the screen off and selects nothing
 - [ ] Every key types the right character, with Shift and Sym; Space, Enter and Backspace work; holding Backspace repeats
 - [ ] Sym + Backspace goes Home; Sym + Enter opens the palette on the Feed list
-- [ ] While typing, Sym opens the symbol table: the wheel steps one symbol at a time and wraps, a click inserts, a letter types its Sym character and closes it
+- [ ] While typing, Sym opens the symbol table: the wheel steps one symbol at a time and wraps, a click inserts, a letter types its Sym character and closes it; Sym again switches to the emoji tray, where a click inserts and a BOOT tap closes it
 - [ ] BOOT: a tap goes back, a hold goes Home
 - [ ] With the screen off, a key, a wheel turn and a click each wake it, and none of them types, moves or selects
 - [ ] Beep: a mention or C-Mail alert plays a tone on the speaker with the buzzer on
@@ -223,9 +223,10 @@ Buttons: BOOT tap = Back, BOOT hold (0.6 s) = Home; Wake tap = screen off
 
 - [ ] With the screen locked or off, one tap does nothing; two taps within half a second wake it, and neither tap acts on the screen
 
-**M9 symbol table and emoji tray (`m9`):**
+**M9 emoji tray (`m9`):**
 
-- [ ] While typing, the triangle key opens the symbol table and Ctrl the emoji tray; on the Feed list either opens the palette
+- [ ] Sym opens the command palette everywhere, as before
+- [ ] While typing, Ctrl opens the emoji tray (six a row, spaced out); on the Feed list Ctrl opens the palette
 - [ ] Emoji tray: Centre inserts and the tray stays open, Back closes it, other keys do nothing; emoji are legible at each text size and fill two cells in the input line, the log and the composer
 - [ ] A received message with tray emoji (and with `❤️`, which carries a variation selector) shows them; other emoji show as `�`
 

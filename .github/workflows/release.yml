@@ -1,0 +1,111 @@
+name: Release
+
+# Cuts a release end to end: picks the version, builds every board, merges the
+# factory images, commits VERSION, tags, and publishes. This is the job behind
+# `./scripts/release.sh --release`, which checks the tree on the maintainer's
+# machine and dispatches it.
+#
+# Deliberately manual-only. Nothing here fires on a push or a tag, so a release
+# is always something a human asked for (the script, or the Actions tab).
+#
+# Release notes are written and reviewed locally, not here:
+# `./scripts/release.sh --notes-only` drafts RELEASE_NOTES.md and opens it in
+# your editor; commit it and choose `committed`, and this job publishes it
+# verbatim. `generate` publishes GitHub's generated notes instead.
+#
+# Ported from platy-aprs, minus OTA signing (this firmware has no OTA).
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Exact version, e.g. 0.2.0 (blank = bump the latest tag)'
+        type: string
+        default: ''
+      notes:
+        description: 'Release notes source'
+        type: choice
+        options: [generate, committed]
+        default: generate
+
+# One release at a time. Two concurrent runs would race on the tag, the release
+# commit and dist/ -- and never cancel a run mid-publish.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write        # push the release commit and tag, create the release
+
+jobs:
+  release:
+    name: Build and publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # release.sh derives the next version from the full tag list, so a
+          # shallow clone would pick the wrong one (or none at all).
+          fetch-depth: 0
+
+      - name: Configure git for the release commit
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Cache PlatformIO toolchains
+        # Only .pio-core (compilers, frameworks, libraries; platformio.ini's
+        # core_dir) is cached. The build output in .pio/ deliberately is not: a
+        # release image must never be able to pick up an object file from an
+        # earlier run.
+        uses: actions/cache@v4
+        with:
+          path: .pio-core
+          key: pio-${{ runner.os }}-${{ hashFiles('platformio.ini') }}
+          restore-keys: pio-${{ runner.os }}-
+
+      - name: Install PlatformIO and esptool
+        # esptool is pinned, not floated: esptool 5 renamed merge_bin and its
+        # flags, and an unpinned upgrade could break the merge or quietly
+        # change the layout of a published factory image.
+        run: pip install platformio 'esptool==4.11.0'
+
+      - name: Unit tests
+        run: pio test -e native
+
+      - name: Cut the release
+        id: cut
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Read through the environment rather than interpolated into the
+          # script, so a dispatch input can never inject shell.
+          REQ_VERSION: ${{ inputs.version }}
+          NOTES_SOURCE: ${{ inputs.notes }}
+        run: |
+          set -euo pipefail
+          # --no-clean is safe here and nowhere else: this is a fresh checkout
+          # with no .pio/ at all.
+          args=(--release -y --no-clean)
+          if [ -n "$REQ_VERSION" ]; then args+=(--version "$REQ_VERSION"); fi
+          if [ "$NOTES_SOURCE" = "committed" ]; then args+=(--use-committed-notes); fi
+          ./scripts/release.sh "${args[@]}"
+          echo "tag=$(cat VERSION)" >> "$GITHUB_OUTPUT"
+
+      - name: Archive debug symbols
+        # The only copy. release.sh keeps .elf files out of the published
+        # release; they match the shipped images exactly, so they are what a
+        # crash backtrace decodes against.
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-symbols-${{ steps.cut.outputs.tag }}
+          path: dist/*.elf
+          retention-days: 90

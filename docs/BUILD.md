@@ -51,6 +51,36 @@ scripts/build-upload-monitor.sh m9    # build, flash, then open the serial monit
 If a first build fails while installing a tool package, run it again. A
 one-off PlatformIO install error has been seen on the first run.
 
+## Releases
+
+Ported from platy-aprs, without OTA signing (this firmware has no over-the-air updates).
+
+```sh
+scripts/release.sh                             # help: every mode and option
+scripts/release.sh --dist-only                 # build release images for every board into dist/, release nothing
+scripts/release.sh --dist-only --only m9,pager --no-clean
+scripts/release.sh --notes-only                # draft RELEASE_NOTES.md from the commits since the last tag
+scripts/release.sh -y --use-committed-notes    # release: bump the patch version, dispatch the Release workflow
+scripts/release.sh --release --version 0.2.0   # release an exact version
+```
+
+`VERSION` (e.g. `v0.1.0`) is baked into every firmware build as `RC_VERSION` by
+`tools/set_app_version.py`. `dist/` holds, per board,
+`monster-cyberspace-<board>-vX.Y.Z.bin` (factory image, flash at `0x0`; wipes
+settings), `-app.bin` (app image, flash at `0x10000`; keeps settings) and `.elf`
+(symbols), plus `flash.sh`, `BUILD-INFO.txt` and `SHA256SUMS`. A dist-only build
+is versioned from `VERSION`, with `+<commit>` (and `.custom` for uncommitted
+changes) unless it is the tagged release commit.
+
+A release ships only committed work on a branch in sync with origin. The script
+picks the version and dispatches `.github/workflows/release.yml`, which builds
+every board, commits `VERSION`, tags `v<version>`, publishes the images, and
+keeps the `.elf` files as a workflow artifact. `--build-local` does the same on
+your machine. `.github/workflows/build.yml` builds every board from a clean
+checkout on each push and pull request and runs the unit tests; it publishes
+nothing. A new firmware env must be added to `RELEASE_ENVS` in
+`scripts/release.sh` and run `tools/set_app_version.py`; CI checks both.
+
 ## Time zones
 
 The time zone is set by hand. The zone list (`lib/core/src/tz/zones.cpp`) is

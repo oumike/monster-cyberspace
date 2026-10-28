@@ -6,6 +6,23 @@ builds for the Seeed Wio Tracker L2, the LilyGO T-Deck Plus, the Elecrow
 CrowPanel Advance 3.5" and 5.0" and the LilyGO T-LoRa Pager (not yet tried on hardware), and offers cIRC chat (milestone 1), C-Mail private messages (milestone 2), and a
 web config page served by the device. No phone app or companion is needed.
 
+## Install
+
+Download the image for your board from [Releases](../../releases):
+
+- **First install:** `monster-cyberspace-<board>-<version>.bin`, flashed at `0x0`.
+  It wipes saved settings.
+- **Update:** `monster-cyberspace-<board>-<version>-app.bin`, flashed at
+  `0x10000`. It keeps your Wi-Fi and sign-in.
+
+Flash either one with the `flash.sh` attached to each release
+(`./flash.sh monster-cyberspace-<board>-<version>.bin /dev/ttyUSB0`; on macOS,
+`/dev/cu.usbmodem*` or `/dev/cu.wchusbserial*`), with
+[esptool-js](https://espressif.github.io/esptool-js/) in Chrome or Edge, or with
+`esptool.py --chip esp32s3 write_flash <address> <file>`.
+
+## Docs
+
 - [Using it](docs/USE.md): setup, buttons, rooms, C-Mail, web config
 - [Building](docs/BUILD.md)
 - [Testing](docs/TESTING.md): unit tests, hardware checks and the live checklist

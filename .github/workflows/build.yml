@@ -1,22 +1,67 @@
-name: build
+name: Build
 
 on:
   push:
+    branches: [ main ]          # catch breakage while it's cheap to fix
+    # Skip the build for pushes that cannot change a binary.
+    paths-ignore:
+      - 'docs/**'
+      - 'README.md'
+      - 'AGENTS.md'
+      - 'RELEASE_NOTES.md'
+      - '.gitignore'
   pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+# Only the newest push on a ref is worth checking.
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+# What this job is for: building from a CLEAN CHECKOUT.
+#
+# A local `pio run` reuses .pio caches and can see untracked files, so it cannot
+# catch an uncommitted header or a .gitignore'd dependency. This job can.
+#
+# It is a breakage check on ordinary work, not a release gate. Releases are cut
+# by .github/workflows/release.yml, which does its own clean build of every
+# board. Release commits carry [skip ci] and do not run this, so a release's
+# build log is in its release.yml run, not here.
+#
+# This workflow must NOT publish release assets; release.yml is the single
+# source of truth for them. For images of an unreleased tree, run
+# `./scripts/release.sh --dist-only` locally.
 
 jobs:
   build:
+    name: PlatformIO build
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate release target contract
+        run: ./scripts/release.sh --check-targets
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
-      - uses: actions/cache@v4
+          python-version: '3.12'
+
+      - name: Cache PlatformIO toolchains
+        uses: actions/cache@v4
         with:
           path: .pio-core
           key: pio-${{ runner.os }}-${{ hashFiles('platformio.ini') }}
           restore-keys: pio-${{ runner.os }}-
-      - run: pip install platformio
-      - run: pio test -e native
-      - run: pio run -e m9 -e wio_l2 -e tdeck -e crowpanel35 -e crowpanel50 -e pager
+
+      - name: Install PlatformIO
+        run: pip install platformio
+
+      - name: Unit tests
+        run: pio test -e native
+
+      - name: Build firmware (verify all environments compile)
+        run: pio run -e m9 -e wio_l2 -e tdeck -e crowpanel35 -e crowpanel50 -e pager

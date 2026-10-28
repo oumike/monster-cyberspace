@@ -59,6 +59,7 @@ pio run -e crowpanel35      # Elecrow CrowPanel Advance 3.5" (crowpanel50: the 5
 pio run -e pager            # LilyGO T-LoRa Pager
 scripts/build-upload-monitor.sh m9   # flash + serial monitor (115200); -w for the Wio L2, -t for the T-Deck Plus, -3/-5 for the CrowPanels, -P for the Pager; --help for options
 scripts/build-upload-monitor.sh -B   # build every firmware env, no device needed
+scripts/release.sh --dist-only       # release images into dist/; releasing itself is the user's call (docs/BUILD.md)
 ```
 
 ## Layout

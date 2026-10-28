@@ -567,6 +567,9 @@ void RoomScreen::render(Grid& g, const Theme& t, int64_t) {
   const bool drawer = drawerOpen();
   const bool docked = drawerDocked();
   const bool shown = drawer || docked;
+  // Messages wrap to the width left of the member list, so none run under it.
+  const int reserve = shown ? Drawer::width(g.cols(), docked) : 0;
+  const int logCols = std::max(1, g.cols() - reserve);
   int online = 0;
   bool markRead = false;
   std::vector<std::string> typers;
@@ -602,22 +605,22 @@ void RoomScreen::render(Grid& g, const Theme& t, int64_t) {
         markRead = true;
       }
     }
-    if (!relayout_ && s.store.version() == version_ && g.cols() == cols_ && &t == theme_)
+    if (!relayout_ && s.store.version() == version_ && logCols == cols_ && &t == theme_)
       return;
     relayout_ = false;
     theme_ = &t;
     version_ = s.store.version();
-    cols_ = g.cols();
+    cols_ = logCols;
     LayoutOptions o;
     o.size = app().cfg.textSize;
-    o.cols = g.cols();
+    o.cols = logCols;
     o.selfUsername = s.self;
     o.muted = &muted_;
     o.revealed = &s.revealed;
     o.theme = &t;
     std::vector<DisplayLine> lines = layoutRoom(s.store.messages(), o);
     if (!pending_.empty()) {
-      for (const auto& w : wrapText(U"sending\u2026 " + pending_, g.cols(), g.cols())) {
+      for (const auto& w : wrapText(U"sending\u2026 " + pending_, logCols, logCols)) {
         DisplayLine l;
         l.spans.push_back({w, t.dim});
         lines.push_back(std::move(l));
@@ -656,7 +659,6 @@ void RoomScreen::render(Grid& g, const Theme& t, int64_t) {
     return;
   }
 
-  int reserve = shown ? Drawer::width(g.cols(), docked) : 0;
   if (!typers.empty()) {
     // One row above the input for "name is typing…".
     --logBottom;

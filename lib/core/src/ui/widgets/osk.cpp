@@ -1,6 +1,10 @@
 #include "ui/widgets/osk.h"
 
+#include <algorithm>
+
+#include "ui/emoji_set.h"
 #include "ui/tap_map.h"
+#include "ui/text_width.h"
 
 namespace rc {
 
@@ -43,7 +47,8 @@ std::vector<Row> pageRows(OskPage p) {
       addChars(r1.keys, U"asdfghjkl");
       r2.keys.push_back(Spec{OskKind::Shift, 0, U"\u21E7", 1, OskPage::Letters});
       addChars(r2.keys, U"zxcvbnm,.");
-      r3.keys.push_back(Spec{OskKind::Page, 0, U"?123", 2, OskPage::Symbols});
+      r3.keys.push_back(Spec{OskKind::Page, 0, U"?123", 1, OskPage::Symbols});
+      r3.keys.push_back(Spec{OskKind::Emoji, 0, std::u32string(1, kTrayEmoji[0]), 1, OskPage::Letters});
       break;
     case OskPage::Symbols:
       addChars(r0.keys, U"1234567890");
@@ -130,6 +135,9 @@ OskOutput Osk::press(int i, uint32_t nowMs) {
     case OskKind::Hide:
       o.hide = true;
       break;
+    case OskKind::Emoji:
+      o.key.action = Action::Emoji;
+      break;
     case OskKind::Shift:
       if (caps_) {
         caps_ = false;
@@ -161,7 +169,7 @@ void Osk::render(Grid& g, const Theme& t) const {
     const int c1 = k.col + k.w - 1, r1 = k.row + k.h - 1;
     for (int r = k.row; r <= r1; ++r)
       for (int c = k.col; c <= c1; ++c) g.put(c, r, U' ', fg, bg);
-    const int lc = k.col + (k.w - int(k.label.size())) / 2;
+    const int lc = k.col + std::max(0, k.w - textWidth(k.label)) / 2;
     g.putText(lc, k.row + k.h / 2, k.label, fg, bg, k.w);
     g.outline(k.col, k.row, c1, r1, t.dim);
     if (activeTaps()) {

@@ -158,7 +158,7 @@ Buttons: BOOT tap = Back, BOOT hold (0.6 s) = Home; Wake tap = screen off
 - [ ] Buttons: BOOT tap goes back, BOOT hold goes Home; Wake tap turns the screen off, a Wake tap while dark shows the screensaver for 10 s, Wake hold wakes it
 - [ ] Tap accuracy: in each of the four orientations, the `‹` (top-left), `⋯` (top-right, in a room) and the bottom-left and bottom-right Home tiles or keyboard keys respond where tapped (this confirms the Portrait and Portrait 180 touch direction)
 - [ ] Every screen by touch: Home tiles, Rooms, Room (tap a message, hold for the menu, the drawer, the menus), C-Mail, Feed (drag, swipe a page, load more at the end), Entry, Composer (fields, checkboxes, `⋯` Post/Discard), Settings, Login
-- [ ] Keyboard: tapping a field docks it and hides it again with `▼`; all three pages (`?123`, `#+=`, `ABC`); `⇧` one-shot and double-tap caps lock; `⌫`; enter sends in a room and makes a new line in the Composer Body; keys are about 32 px wide in landscape and 24 px in portrait
+- [ ] Keyboard: tapping a field docks it and hides it again with `▼`; all three pages (`?123`, `#+=`, `ABC`); the emoji key beside `?123` opens the emoji tray; `⇧` one-shot and double-tap caps lock; `⌫`; enter sends in a room and makes a new line in the Composer Body; keys are about 32 px wide in landscape and 24 px in portrait
 - [ ] Keyboard goes away on Back out of a room, on a screen change and when the screen turns off
 - [ ] `‹` tap goes back and hold goes Home; `⋯` opens the screen menu; a swipe right from the left edge goes back; a tap on a banner dismisses it; tapping outside a menu closes it
 - [ ] Touch never wakes a dark screen, and a finger left down across a screen change fires nothing on the new screen

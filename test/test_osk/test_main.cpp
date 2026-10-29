@@ -82,6 +82,20 @@ void test_osk_page_switching() {
   TEST_ASSERT_EQUAL(int(OskPage::Letters), int(k.page()));
 }
 
+void test_osk_emoji_key_beside_numbers() {
+  Osk k;
+  k.layout(40, TextSize::Compact);
+  const int num = findLabel(k, U"?123");
+  const int emoji = findKind(k, OskKind::Emoji);
+  TEST_ASSERT_TRUE(num >= 0 && emoji >= 0);
+  TEST_ASSERT_EQUAL(k.keys()[num].w, k.keys()[emoji].w);
+  TEST_ASSERT_EQUAL(k.keys()[num].col + k.keys()[num].w, k.keys()[emoji].col);
+  const OskOutput o = k.press(emoji, 0);
+  TEST_ASSERT_EQUAL(int(Action::Emoji), int(o.key.action));
+  TEST_ASSERT_FALSE(o.hide);
+  TEST_ASSERT_EQUAL(int(OskPage::Letters), int(k.page()));
+}
+
 void test_osk_shift_one_shot_and_lock() {
   Osk k;
   k.layout(40, TextSize::Compact);
@@ -171,6 +185,7 @@ int main() {
   RUN_TEST(test_osk_layout_landscape_compact);
   RUN_TEST(test_osk_layout_portrait);
   RUN_TEST(test_osk_page_switching);
+  RUN_TEST(test_osk_emoji_key_beside_numbers);
   RUN_TEST(test_osk_shift_one_shot_and_lock);
   RUN_TEST(test_osk_key_events);
   RUN_TEST(test_osk_covers_printable_ascii);

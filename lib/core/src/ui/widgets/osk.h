@@ -11,7 +11,7 @@
 namespace rc {
 
 enum class OskPage : uint8_t { Letters, Symbols, More };
-enum class OskKind : uint8_t { Char, Shift, Page, Space, Backspace, Enter, Hide };
+enum class OskKind : uint8_t { Char, Shift, Page, Space, Backspace, Enter, Hide, Emoji };
 
 struct OskKey {
   OskKind kind;
@@ -22,7 +22,7 @@ struct OskKey {
 };
 
 struct OskOutput {
-  KeyEvent key;       // key.action None: nothing for the screen
+  KeyEvent key;       // key.action None: nothing for the screen; Emoji: the tray
   bool hide = false;
 };
 

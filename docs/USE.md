@@ -195,8 +195,8 @@ updates a moment after you stop typing, and redraws fully now and then to
 clear ghosting.
 
 Navigation works as on the touch-only boards: the room list and Settings are
-buttons, the status bar has `‹` and `⋯`, and log and Feed rows act on a hold
-rather than a tap. Screens with a list (a room or conversation, C-Mail, the
+buttons, the status bar has `‹` and `⋯`, log rows act on a hold rather
+than a tap, and a tap on a Feed row opens it. Screens with a list (a room or conversation, C-Mail, the
 Feed and an entry) also show a narrow strip of three buttons on the right: ▲ and ▼
 move up and down, and ● between them acts as Enter on the selected item, so
 on a message in a room it opens the reply/report menu. Nicks in the room

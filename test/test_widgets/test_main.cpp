@@ -466,6 +466,21 @@ void test_entry_list_big_heads() {
   TEST_ASSERT_EQUAL_STRING("nick4", rowText(g, 1, 0, 5).c_str());
 }
 
+// A tap opens a Feed entry: its rows aren't hold-to-act.
+void test_entry_list_rows_act_on_tap() {
+  TapMap m;
+  m.setOrigin({1, 1}, 0);
+  setActiveTaps(&m);
+  EntryList el;
+  el.setRows(feedRows(3));
+  Grid g(20, 8);
+  el.render(g, 0, 8, T());
+  setActiveTaps(nullptr);
+  const ListInfo* li = m.list(ListId::Main);
+  TEST_ASSERT_NOT_NULL(li);
+  TEST_ASSERT_FALSE(li->holdToAct);
+}
+
 void test_entry_list_wraps() {
   EntryList el;
   el.up();
@@ -1498,6 +1513,7 @@ int main() {
   RUN_TEST(test_palette_cmail_drops_circ_only);
   RUN_TEST(test_qr_small_url);
   RUN_TEST(test_entry_list_outline);
+  RUN_TEST(test_entry_list_rows_act_on_tap);
   RUN_TEST(test_entry_list_scrolls);
   RUN_TEST(test_entry_list_big_heads);
   RUN_TEST(test_entry_list_wraps);

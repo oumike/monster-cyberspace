@@ -5,7 +5,7 @@
 namespace rc {
 
 HomeLayout homeLayout(int panelW, int areaPx, int gridRows, CellSize cell, int count,
-                      int percent) {
+                      int percent, bool gaps) {
   HomeLayout out;
   if (count <= 0 || cell.w <= 0 || cell.h <= 0 || areaPx <= 0) return out;
   // Across: an odd number of cells, so the gap column leaves equal halves.
@@ -15,11 +15,12 @@ HomeLayout homeLayout(int panelW, int areaPx, int gridRows, CellSize cell, int c
   if (tileW < 10) return out;
   // Down: numRows tiles of h rows with gap px between them.
   const int numRows = (count + 1) / 2;
-  const int gap = cell.w;
+  const int gap = gaps ? cell.w : 0;
+  const int gapRows = gaps ? 1 : 0;
   const int avail = areaPx * percent / 100 - (numRows - 1) * gap;
   int h = avail > 0 ? (avail / numRows + cell.h / 2) / cell.h : 0;
   auto totalPx = [&](int rows) { return numRows * rows * cell.h + (numRows - 1) * gap; };
-  auto lastRow = [&](int rows) { return 1 + numRows * rows + (numRows - 1); };
+  auto lastRow = [&](int rows) { return 1 + numRows * rows + (numRows - 1) * gapRows; };
   while (h >= 3 && (totalPx(h) > areaPx || lastRow(h) > gridRows - 2)) --h;
   if (h < 3) return out;
 
@@ -28,8 +29,8 @@ HomeLayout homeLayout(int panelW, int areaPx, int gridRows, CellSize cell, int c
   out.pads.emplace_back(1, (areaPx - totalPx(h)) / 2);
   out.tiles.reserve(count);
   for (int i = 0; i < numRows; ++i) {
-    const int r0 = 2 + i * (h + 1);
-    if (i + 1 < numRows) out.pads.emplace_back(r0 + h, gap);
+    const int r0 = 2 + i * (h + gapRows);
+    if (gaps && i + 1 < numRows) out.pads.emplace_back(r0 + h, gap);
     for (int j = 0; j < 2 && i * 2 + j < count; ++j) {
       const int c0 = j * (tileW + 1);
       out.tiles.push_back(TileRect{c0, r0, c0 + tileW - 1, r0 + h - 1});

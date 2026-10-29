@@ -180,13 +180,18 @@ void HomeScreen::render(Grid& g, const Theme& t, int64_t) {
   if (board::hasTouch()) {
     const TextSize ts = a.cfg.textSize;
     const int areaPx = (g.rows() - 2) * cellSize(ts).h;
-    for (bool tryBig : {true, false}) {
-      lay = homeLayout(board::panelWidth(), areaPx, g.rows(), tryBig ? bigCellSize(ts) : cellSize(ts),
-                       kTileCount, kTilePercent);
-      if (!lay.tiles.empty()) {
-        big = tryBig;
-        break;
+    // Gapped tiles first, big then normal rows; touching tiles only when no
+    // gapped layout fits (the Wio Tracker L2 at Large).
+    for (bool gaps : {true, false}) {
+      for (bool tryBig : {true, false}) {
+        lay = homeLayout(board::panelWidth(), areaPx, g.rows(), tryBig ? bigCellSize(ts) : cellSize(ts),
+                         kTileCount, kTilePercent, gaps);
+        if (!lay.tiles.empty()) {
+          big = tryBig;
+          break;
+        }
       }
+      if (!lay.tiles.empty()) break;
     }
   }
   const int cellW = big ? bigCellSize(a.cfg.textSize).w : 0;

@@ -1042,6 +1042,22 @@ void test_home_layout_too_small() {
   TEST_ASSERT_EQUAL(0, homeLayout(160, 100, 8, CellSize{10, 18}, 6, 90).tiles.size());
 }
 
+// The Wio Tracker L2 at Large: 320x240 with a 12-row grid has no rows to
+// spare for gaps, so the tiles stack edge to edge rather than not at all.
+void test_home_layout_without_gaps() {
+  const CellSize large{10, 18};
+  TEST_ASSERT_EQUAL(0, homeLayout(320, 180, 12, large, 6, 90).tiles.size());
+  HomeLayout l = homeLayout(320, 180, 12, large, 6, 90, false);
+  TEST_ASSERT_EQUAL(6, l.tiles.size());
+  TEST_ASSERT_EQUAL(1, l.pads.size());  // only the centring pad above
+  TEST_ASSERT_EQUAL(2, l.tiles[0].r0);
+  TEST_ASSERT_EQUAL(4, l.tiles[0].r1);
+  TEST_ASSERT_EQUAL(5, l.tiles[2].r0);
+  TEST_ASSERT_EQUAL(10, l.tiles[5].r1);
+  TEST_ASSERT_EQUAL(10, l.lastRow);
+  TEST_ASSERT_EQUAL(9, l.pads[0].second);  // (180 - 162) / 2
+}
+
 void test_tile_span_centre() {
   // 208 px between the status bar and the hint, 18 px rows, 90%: 187 px is
   // 10 rows (180 px), leaving 14 px above and 14 below.
@@ -1500,6 +1516,7 @@ int main() {
   RUN_TEST(test_home_layout_fits);
   RUN_TEST(test_home_layout_landscape);
   RUN_TEST(test_home_layout_too_small);
+  RUN_TEST(test_home_layout_without_gaps);
   RUN_TEST(test_tile_span_centre);
   RUN_TEST(test_tile_move);
   RUN_TEST(test_symbols_pick_inserts_and_closes);

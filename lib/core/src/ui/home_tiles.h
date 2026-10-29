@@ -19,7 +19,9 @@ struct TileRect {
 // Centred to the pixel: row 1 is a blank pad row above the tiles, and the
 // tile rows are drawn shiftPx to the right. A blank cell column separates the
 // columns, and a pad row as tall as a cell is wide separates the tile rows.
-// tiles is empty when a tile would be under 3 rows tall or 10 cols wide.
+// With gaps false the tile rows touch, for a grid with no rows to spare for
+// the pads. tiles is empty when a tile would be under 3 rows tall or 10 cols
+// wide.
 struct HomeLayout {
   std::vector<TileRect> tiles;
   std::vector<std::pair<int, int>> pads;  // (grid row, px), row 1 first
@@ -27,7 +29,7 @@ struct HomeLayout {
   int shiftPx = 0;
 };
 HomeLayout homeLayout(int panelW, int areaPx, int gridRows, CellSize cell, int count,
-                      int percent);
+                      int percent, bool gaps = true);
 
 // How many cells of unitPx make `percent` of an areaPx span (rounded, never
 // more than fit), and the padding before them that centres them; the rest,

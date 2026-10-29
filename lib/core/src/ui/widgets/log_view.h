@@ -13,6 +13,7 @@ namespace rc {
 // message is selected and the view keeps it on screen.
 class LogView {
  public:
+  static constexpr int kBarCols = 1;
   // Keeps the selected message if it is still present, else follows.
   void setLines(std::vector<DisplayLine> lines);
   // From following, selects the newest message; then steps to older ones.
@@ -30,6 +31,8 @@ class LogView {
   // when out of range.
   bool selectMessage(int ordinal);
   // Draws rows [top, bottom), leaving rightReserve columns on the right alone.
+  // The last kBarCols columns before those hold the scroll bar, so lines are
+  // laid out that much narrower.
   void render(Grid& g, int top, int bottom, int rightReserve, const Theme& t) const;
 
  private:

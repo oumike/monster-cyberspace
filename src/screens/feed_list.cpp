@@ -199,7 +199,7 @@ void FeedListScreen::rebuild(int cols, const Theme& t) {
   replyIds_ = std::move(replyIds);
   for (size_t i = 0; i < entries.size(); ++i) {
     // With the side strip, the head lines stay in the plain font (FeedList render).
-    rows.push_back(layoutFeedRow(entries[i], marked[i], now, cols, t, board::sideNav() ? cols : headCols()));
+    rows.push_back(layoutFeedRow(entries[i], marked[i], now, cols, t, board::sideNav() ? cols : headCols() - EntryList::kBarCols));
     ids_.push_back(entries[i].id);
     if (side && sel < 0 && entries[i].id == selId_) sel = int(i);
   }
@@ -212,7 +212,7 @@ void FeedListScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
   // Big rows draw fewer, wider cells, which would push the side strip off the
   // panel; with it, every row stays plain.
   const int nav = sideNavWidth(g);
-  const int listCols = g.cols() - nav;
+  const int listCols = g.cols() - nav - EntryList::kBarCols;
   if (dirty_ || listCols != cols_ || &t != theme_ || nowMs - builtAt_ >= kAgeRefreshMs) {
     rebuild(listCols, t);
     theme_ = &t;

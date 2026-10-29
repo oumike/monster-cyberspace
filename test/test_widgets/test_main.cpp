@@ -15,6 +15,7 @@
 #include "ui/widgets/entry_list.h"
 #include "ui/widgets/input_line.h"
 #include "ui/widgets/list_view.h"
+#include "ui/widgets/scroll_bar.h"
 #include "ui/widgets/log_view.h"
 #include "ui/widgets/palette.h"
 #include "ui/widgets/side_nav.h"
@@ -139,11 +140,13 @@ void test_log_render_follow_and_select() {
   LogView v;
   v.setLines(ls);
   Grid g(12, 5);
-  v.render(g, 1, 4, 2, T());  // rows 1..3, 10 cols wide
+  v.render(g, 1, 4, 2, T());  // rows 1..3, 9 cols wide and the bar at col 9
   TEST_ASSERT_EQUAL_STRING("line7", rowText(g, 1, 0, 5).c_str());
   TEST_ASSERT_EQUAL_STRING("line9", rowText(g, 3, 0, 5).c_str());
   TEST_ASSERT_EQUAL_HEX16(T().mentionBg, g.at(0, 3).bg);
-  TEST_ASSERT_EQUAL_HEX16(T().mentionBg, g.at(9, 3).bg);
+  TEST_ASSERT_EQUAL_HEX16(T().mentionBg, g.at(8, 3).bg);
+  TEST_ASSERT_EQUAL(kScrollBarCp, g.at(9, 3).cp);  // at the bottom: the thumb
+  TEST_ASSERT_EQUAL_HEX16(T().fg, g.at(9, 3).fg);
   TEST_ASSERT_NOT_EQUAL(T().mentionBg, g.at(10, 3).bg);  // right reserve untouched
   for (int i = 0; i < 5; ++i) v.up();  // selects m5
   v.render(g, 1, 4, 2, T());
@@ -152,7 +155,7 @@ void test_log_render_follow_and_select() {
   TEST_ASSERT_EQUAL_HEX16(T().bg, g.at(0, 3).bg);
   TEST_ASSERT_EQUAL_HEX16(1, g.at(0, 3).fg);
   TEST_ASSERT_EQUAL(kEdgeTop | kEdgeBottom | kEdgeLeft, g.at(0, 3).edges);
-  TEST_ASSERT_EQUAL(kEdgeTop | kEdgeBottom | kEdgeRight, g.at(9, 3).edges);
+  TEST_ASSERT_EQUAL(kEdgeTop | kEdgeBottom | kEdgeRight, g.at(8, 3).edges);
   TEST_ASSERT_EQUAL_HEX16(T().selectBg, g.at(0, 3).edgeColor);
   TEST_ASSERT_EQUAL(0, g.at(10, 3).edges);  // right reserve untouched
   TEST_ASSERT_EQUAL(0, g.at(0, 2).edges);
@@ -168,8 +171,9 @@ void test_log_outlines_whole_message() {
   v.render(g, 0, 4, 0, T());
   TEST_ASSERT_EQUAL(kEdgeTop | kEdgeLeft, g.at(0, 1).edges);
   TEST_ASSERT_EQUAL(kEdgeBottom | kEdgeLeft, g.at(0, 2).edges);
-  TEST_ASSERT_EQUAL(kEdgeBottom | kEdgeRight, g.at(9, 2).edges);
+  TEST_ASSERT_EQUAL(kEdgeBottom | kEdgeRight, g.at(8, 2).edges);  // the last column is the bar's
   TEST_ASSERT_EQUAL(0, g.at(0, 3).edges);
+  TEST_ASSERT_EQUAL(U' ', g.at(9, 1).cp);  // it all fits: no bar
 }
 
 void test_grid_outline() {
@@ -214,10 +218,13 @@ void test_list_scrolls() {
   Grid g(20, 6);
   lv.render(g, 1, 5, 0, 20, T());  // 4 rows
   TEST_ASSERT_EQUAL_STRING("\xe2\x80\xa2 item7", rowText(g, 4, 0, 7).c_str());
-  TEST_ASSERT_EQUAL_HEX32(U'3', g.at(18, 4).cp);
+  // Ten items in four rows: the last column holds the scroll bar.
+  TEST_ASSERT_EQUAL_HEX32(U'3', g.at(17, 4).cp);
   TEST_ASSERT_EQUAL_HEX16(T().bg, g.at(0, 4).bg);
   TEST_ASSERT_EQUAL(kEdgeTop | kEdgeBottom | kEdgeLeft, g.at(0, 4).edges);
-  TEST_ASSERT_EQUAL(kEdgeTop | kEdgeBottom | kEdgeRight, g.at(19, 4).edges);
+  TEST_ASSERT_EQUAL(kEdgeTop | kEdgeBottom | kEdgeRight, g.at(18, 4).edges);
+  TEST_ASSERT_EQUAL(kScrollBarCp, g.at(19, 1).cp);
+  TEST_ASSERT_EQUAL(kScrollBarCp, g.at(19, 4).cp);
   TEST_ASSERT_EQUAL(0, g.at(0, 3).edges);
   TEST_ASSERT_EQUAL_STRING("  item4", rowText(g, 1, 0, 7).c_str());
 }
@@ -403,7 +410,7 @@ void test_entry_list_outline() {
   TEST_ASSERT_EQUAL(kEdgeTop | kEdgeLeft, g.at(0, 2).edges);
   TEST_ASSERT_EQUAL(kEdgeBottom | kEdgeLeft, g.at(0, 3).edges);
   TEST_ASSERT_EQUAL(kEdgeTop, g.at(5, 2).edges);
-  TEST_ASSERT_EQUAL(kEdgeBottom | kEdgeRight, g.at(19, 3).edges);
+  TEST_ASSERT_EQUAL(kEdgeBottom | kEdgeRight, g.at(18, 3).edges);  // col 19 is the bar's
   TEST_ASSERT_EQUAL(0, g.at(0, 1).edges);
   TEST_ASSERT_EQUAL(0, g.at(0, 4).edges);
   TEST_ASSERT_EQUAL_HEX16(T().bg, g.at(0, 2).bg);
@@ -438,18 +445,20 @@ void test_entry_list_big_heads() {
   TEST_ASSERT_TRUE(g.rowKind(19) == RowKind::Normal);
   TEST_ASSERT_EQUAL_STRING("nick1", rowText(g, 3, 0, 5).c_str());
   TEST_ASSERT_EQUAL_STRING("title1", rowText(g, 4, 0, 6).c_str());
-  // The head's outline ends at its last column; the text row's at the grid's.
+  // The head's outline ends before its last column, the text row's before
+  // the grid's: those hold the scroll bar.
   TEST_ASSERT_EQUAL(kEdgeTop | kEdgeLeft, g.at(0, 3).edges);
-  TEST_ASSERT_EQUAL(kEdgeTop | kEdgeRight, g.at(7, 3).edges);
-  TEST_ASSERT_EQUAL(0, g.at(8, 3).edges);
+  TEST_ASSERT_EQUAL(kEdgeTop | kEdgeRight, g.at(6, 3).edges);
+  TEST_ASSERT_EQUAL(kScrollBarCp, g.at(7, 3).cp);
   TEST_ASSERT_EQUAL(kEdgeBottom | kEdgeLeft, g.at(0, 4).edges);
-  TEST_ASSERT_EQUAL(kEdgeBottom | kEdgeRight, g.at(9, 4).edges);
-  // Heads are cut to their own width.
+  TEST_ASSERT_EQUAL(kEdgeBottom | kEdgeRight, g.at(8, 4).edges);
+  TEST_ASSERT_EQUAL(kScrollBarCp, g.at(9, 4).cp);
+  // Heads are cut to their own width, less the bar's column.
   el.setRows({{U"abcdefghijk", U"x", 1, 2}});
   g.fill(0);
   el.render(g, 1, 19, T());
-  TEST_ASSERT_EQUAL_STRING("abcdefgh", rowText(g, 1, 0, 8).c_str());
-  TEST_ASSERT_TRUE(g.at(8, 1).cp == U' ');
+  TEST_ASSERT_EQUAL_STRING("abcdefg", rowText(g, 1, 0, 7).c_str());
+  TEST_ASSERT_TRUE(g.at(7, 1).cp == U' ');
   // Scrolling keeps the selection in the 8 visible entries.
   el.setRows(feedRows(12));
   el.setSelected(11);

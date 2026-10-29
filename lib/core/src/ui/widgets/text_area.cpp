@@ -3,6 +3,7 @@
 #include <algorithm>
 
 #include "ui/tap_map.h"
+#include "ui/widgets/scroll_bar.h"
 #include "ui/text_width.h"
 #include "util/utf8.h"
 
@@ -109,7 +110,7 @@ bool TextArea::down(int width) {
 }
 
 void TextArea::render(Grid& g, int top, int bottom, const Theme& t, bool focused) const {
-  const int width = g.cols();
+  const int width = g.cols() - kBarCols;
   const int height = bottom - top;
   if (height <= 0 || width <= 0) return;
   auto segs = segments(width);
@@ -137,6 +138,8 @@ void TextArea::render(Grid& g, int top, int bottom, const Theme& t, bool focused
       if (cellWidth(cp) == 2) g.put(col + 1, row, wideTail(cp), t.cursorFg, t.cursorBg);
     }
   }
+  drawScrollBar(g, width, top, bottom, static_cast<int>(segs.size()), height, static_cast<int>(first), t,
+                t.inputBg);
 }
 
 }  // namespace rc

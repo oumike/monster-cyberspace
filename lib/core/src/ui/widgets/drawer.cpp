@@ -4,6 +4,7 @@
 
 #include "ui/nick_color.h"
 #include "ui/tap_map.h"
+#include "ui/widgets/scroll_bar.h"
 #include "util/utf8.h"
 
 namespace rc {
@@ -48,7 +49,7 @@ bool Drawer::select(int i) {
 
 void Drawer::render(Grid& g, int top, int bottom, const Theme& t, bool docked) const {
   const int x = std::max(0, g.cols() - width(g.cols(), docked));
-  const int inner = g.cols() - x - 1;
+  int inner = g.cols() - x - 1;
   const int height = bottom - top;
   if (height <= 0 || inner <= 0) return;
 
@@ -65,6 +66,11 @@ void Drawer::render(Grid& g, int top, int bottom, const Theme& t, bool docked) c
   if (activeTaps())
     activeTaps()->setList(ListId::Drawer, sel_, static_cast<int>(people_.size()), true);
   int first = std::max(0, sel_ - listRows + 1);
+  const int total = static_cast<int>(people_.size());
+  // A longer list keeps the last column for the scroll bar.
+  const bool bar = needsScrollBar(total, listRows) && inner > 3;
+  const int right = g.cols() - (bar ? 1 : 0);  // one past the last list column
+  if (bar) inner -= 1;
   for (int r = 0; r < listRows; ++r) {
     int idx = first + r;
     if (idx >= static_cast<int>(people_.size())) break;
@@ -74,21 +80,22 @@ void Drawer::render(Grid& g, int top, int bottom, const Theme& t, bool docked) c
       tt.kind = TargetKind::Row;
       tt.list = ListId::Drawer;
       tt.index = static_cast<int16_t>(idx);
-      activeTaps()->addCells(x, row, g.cols() - 1, row, tt);
+      activeTaps()->addCells(x, row, right - 1, row, tt);
     }
     const Person& p = people_[idx];
     bool sel = idx == sel_;
     uint16_t bg = t.drawerBg;
     uint16_t fg = nickColor(t, p.username, false);
-    for (int c = x + 1; c < g.cols(); ++c) g.put(c, row, U' ', fg, bg);
+    for (int c = x + 1; c < right; ++c) g.put(c, row, U' ', fg, bg);
     std::u32string name = utf8ToU32(p.username);
     int nameMax = inner - (p.idle ? 2 : 0);
     if (static_cast<int>(name.size()) > nameMax)
       name = name.substr(0, std::max(nameMax - 1, 0)) + U"\u2026";
     int n = g.putText(x + 1, row, name, fg, bg, nameMax);
     if (p.idle) g.putText(x + 1 + n, row, U" z", t.dim, bg, 2);
-    if (sel && cursorShown()) g.outline(x + 1, row, g.cols() - 1, row, t.selectBg);
+    if (sel && cursorShown()) g.outline(x + 1, row, right - 1, row, t.selectBg);
   }
+  if (bar) drawScrollBar(g, right, top + 1, bottom, total, listRows, first, t, t.drawerBg);
 }
 
 }  // namespace rc

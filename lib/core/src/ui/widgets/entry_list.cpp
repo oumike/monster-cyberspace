@@ -3,6 +3,7 @@
 #include <algorithm>
 
 #include "ui/tap_map.h"
+#include "ui/widgets/scroll_bar.h"
 
 namespace rc {
 
@@ -41,12 +42,14 @@ void EntryList::setBigHeads(int rowH, int bigH, int headCols) {
 }
 
 void EntryList::render(Grid& g, int top, int bottom, const Theme& t, int rightReserve) const {
-  const int width = g.cols() - rightReserve;
+  const int barCol = g.cols() - rightReserve - kBarCols;
+  const int width = barCol;
   const int height = bottom - top;
   if (height <= 0 || width <= 0) return;
   for (int r = top; r < bottom; ++r) g.fillRow(r, t.bg);
   const bool big = bigH_ > 0 && rowH_ > 0;
-  const int headW = big ? std::clamp(headCols_, 1, width) : width;
+  const int headBar = big ? std::clamp(headCols_ - kBarCols, 1, barCol) : barCol;
+  const int headW = headBar;
   const int visible =
       big ? std::max(height * rowH_ / (bigH_ + rowH_), 1) : std::max(height / 2, 1);
   if (big) {
@@ -84,6 +87,14 @@ void EntryList::render(Grid& g, int top, int bottom, const Theme& t, int rightRe
                    kEdgeBottom | (c == 0 ? kEdgeLeft : 0) | (c == width - 1 ? kEdgeRight : 0),
                    t.selectBg);
   }
+  const int total = static_cast<int>(rows_.size());
+  const int barBottom = big ? std::min(bottom, top + 2 * visible) : bottom;
+  drawScrollBar(g, barCol, top, barBottom, total, visible, first, t, t.bg);
+  if (big && needsScrollBar(total, visible))
+    for (int k = 0; k < visible; ++k) {
+      const Cell& c = g.at(barCol, top + 2 * k);
+      g.put(headBar, top + 2 * k, c.cp, c.fg, c.bg);
+    }
 }
 
 }  // namespace rc

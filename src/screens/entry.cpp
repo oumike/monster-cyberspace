@@ -489,7 +489,7 @@ void EntryScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
   const int inputRow = small ? g.rows() - 2 : g.rows() - 1;
   const int logRows = inputRow - 1;
   const int nav = sideNavWidth(g);
-  const int logCols = g.cols() - nav;
+  const int logCols = g.cols() - nav - LogView::kBarCols;
   if (dirty_ || logCols != cols_ || logRows != logRows_ || app().cfg.textSize != size_ ||
       &t != theme_ || nowMs - builtAt_ >= kAgeRefreshMs) {
     rebuild(logCols, logRows, t);

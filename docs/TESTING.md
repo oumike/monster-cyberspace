@@ -22,6 +22,14 @@ These were built without flashing and still need a run on the device. The
 scripted fake-API builds (`m9_fake`, `wio_l2_fake`, `tdeck_fake`) were removed
 on 2026-10-27; the sections marked `m9_fake` passed on it before then.
 
+**Scroll bars (any board):**
+
+- [ ] A list, room log, Feed list, entry, composer body, member drawer or
+      button grid longer than the screen shows a thin bar on the right edge;
+      the thumb moves as it scrolls and reaches the ends at the top and bottom.
+- [ ] The bar never covers text, outlines or the side strip; screens that
+      fit show none.
+
 **Wi-Fi on the device (any board):**
 
 - [ ] Settings → Wi-Fi lists the networks in range with bars, the joined one

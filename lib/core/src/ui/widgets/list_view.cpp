@@ -1,5 +1,7 @@
 #include "ui/widgets/list_view.h"
 
+#include "ui/widgets/scroll_bar.h"
+
 #include <algorithm>
 
 #include "ui/tap_map.h"
@@ -36,6 +38,10 @@ void ListView::render(Grid& g, int top, int bottom, int left, int width, const T
   const int height = bottom - top;
   if (height <= 0 || width <= 0) return;
   int first = std::max(0, sel_ - height + 1);
+  const int total = static_cast<int>(items_.size());
+  // A list longer than the rows keeps its last column for the scroll bar.
+  const bool bar = needsScrollBar(total, height) && width > 3;
+  if (bar) --width;
   if (activeTaps()) activeTaps()->setList(listId_, sel_, static_cast<int>(items_.size()), true);
   for (int r = 0; r < height; ++r) {
     int row = top + r;
@@ -59,6 +65,7 @@ void ListView::render(Grid& g, int top, int bottom, int left, int width, const T
     if (rw && rw + 1 <= width) g.putText(left + width - 1 - rw, row, it.right, fg, bg, rw);
     if (sel && cursorShown()) g.outline(left, row, left + width - 1, row, t.selectBg);
   }
+  if (bar) drawScrollBar(g, left + width, top, bottom, total, height, first, t, t.bg);
 }
 
 }  // namespace rc

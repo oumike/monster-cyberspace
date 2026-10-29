@@ -1,5 +1,7 @@
 #include "ui/widgets/log_view.h"
 
+#include "ui/widgets/scroll_bar.h"
+
 #include <algorithm>
 
 #include "ui/tap_map.h"
@@ -103,7 +105,8 @@ bool LogView::atTop() const {
 
 void LogView::render(Grid& g, int top, int bottom, int rightReserve, const Theme& t) const {
   const int height = bottom - top;
-  const int width = g.cols() - rightReserve;
+  const int barCol = g.cols() - rightReserve - kBarCols;
+  const int width = barCol;
   if (height <= 0 || width <= 0) return;
 
   int start, end;
@@ -150,6 +153,8 @@ void LogView::render(Grid& g, int top, int bottom, int rightReserve, const Theme
     for (; col < width; ++col) g.put(col, row, U' ', t.fg, bg);
   }
   if (selTop >= 0 && width > 0 && cursorShown()) g.outline(0, selTop, width - 1, selBottom, t.selectBg);
+  for (int r = top; r < bottom; ++r) g.put(barCol, r, U' ', t.fg, t.bg);
+  drawScrollBar(g, barCol, top, bottom, static_cast<int>(lines_.size()), height, start, t, t.bg);
 }
 
 }  // namespace rc

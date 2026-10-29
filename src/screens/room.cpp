@@ -10,6 +10,7 @@
 #include "screens/draw.h"
 #include "store/locked_chat.h"
 #include "ui/widgets/palette.h"
+#include "ui/widgets/scroll_bar.h"
 #include "ui/wrap.h"
 #include "util/base64.h"
 
@@ -574,7 +575,7 @@ void RoomScreen::render(Grid& g, const Theme& t, int64_t) {
   // Or left of the side strip, which steps aside for the member list.
   const int nav = shown ? 0 : sideNavWidth(g);
   const int reserve = shown ? Drawer::width(g.cols(), docked) : nav;
-  const int logCols = std::max(1, g.cols() - reserve);
+  const int logCols = std::max(1, g.cols() - reserve - LogView::kBarCols);
   int online = 0;
   bool markRead = false;
   std::vector<std::string> typers;
@@ -658,12 +659,14 @@ void RoomScreen::render(Grid& g, const Theme& t, int64_t) {
     viewTop_ = std::min(viewTop_, maxTop);
     int widest = 0;
     for (const auto& l : rows) widest = std::max(widest, int(l.size()));
-    viewLeft_ = std::min(viewLeft_, std::max(0, widest - g.cols()));
+    const int textCols = g.cols() - 1;  // the last column holds the scroll bar
+    viewLeft_ = std::min(viewLeft_, std::max(0, widest - textCols));
     for (int i = 0; i < avail && viewTop_ + i < int(rows.size()); ++i) {
       const auto& line = rows[viewTop_ + i];
       if (int(line.size()) > viewLeft_)
-        g.putText(0, 1 + i, std::u32string_view(line).substr(viewLeft_), t.fg, t.bg, g.cols());
+        g.putText(0, 1 + i, std::u32string_view(line).substr(viewLeft_), t.fg, t.bg, textCols);
     }
+    drawScrollBar(g, textCols, 1, bottom, int(rows.size()), avail, viewTop_, t, t.bg);
     drawHint(g, t, U"\u2191\u2193\u2190\u2192 scroll  back: close", U"swipe to scroll  \u2039 close");
     return;
   }

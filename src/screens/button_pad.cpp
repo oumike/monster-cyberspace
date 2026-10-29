@@ -5,6 +5,7 @@
 #include "hal/board.h"
 #include "ui/button_grid.h"
 #include "ui/tap_map.h"
+#include "ui/widgets/scroll_bar.h"
 
 namespace rc {
 
@@ -66,6 +67,7 @@ void ButtonPad::render(Grid& g, const Theme& t, const std::vector<ListItem>& ite
       activeTaps()->addCells(r.c0, r.r0, r.c1, r.r1, tt);
     }
   }
+  drawScrollBar(g, g.cols() - 1, top, bottom, b.totalRows, b.visibleRows, b.scrollRow, t, t.bg);
 }
 
 }  // namespace rc

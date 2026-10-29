@@ -34,7 +34,10 @@ class TextArea {
   void setCursor(size_t pos);
   // The screen's field id, carried in each tap Field target.
   void setFieldId(uint8_t id) { fieldId_ = id; }
-  // Draws rows [top, bottom) across the grid width, keeping the cursor visible.
+  // Draws rows [top, bottom) across the grid width, keeping the cursor
+  // visible. The last kBarCols columns hold the scroll bar, so callers pass
+  // up() and down() the grid width less kBarCols.
+  static constexpr int kBarCols = 1;
   void render(Grid& g, int top, int bottom, const Theme& t, bool focused) const;
 
  private:

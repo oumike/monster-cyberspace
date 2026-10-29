@@ -13,6 +13,9 @@ namespace rc {
 // and outlines both rows of the selection (like ListView). Up and Down wrap.
 class EntryList {
  public:
+  // The last column of each row (head rows too) holds the scroll bar, so
+  // rows are laid out this much narrower.
+  static constexpr int kBarCols = 1;
   void setRows(std::vector<FeedRow> rows);
   void up();
   void down();

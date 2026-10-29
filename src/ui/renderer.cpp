@@ -11,6 +11,7 @@
 #include "ui/fonts/cell8x14.h"
 #include "ui/fonts/cell8x16.h"
 #include "ui/fonts/emoji_cells.h"
+#include "ui/widgets/scroll_bar.h"
 
 namespace rc {
 
@@ -57,10 +58,18 @@ void Renderer::drawRow(const Grid& g, int r, const CellFont& font, RowSpan span,
       for (int x = 0; x < ox; ++x) px[x] = bg;
     }
   }
+  int barX = -1;  // a scroll bar's left px in this row
+  uint16_t barColor = 0;
+  const int barW = std::max(2, cw / 4);
   for (int c = 0; c < cols; ++c) {
     const Cell& cell = g.at(c, r);
     const int x0 = ox + c * cw;
-    const uint8_t* glyph = cellGlyph(font, cell.cp);
+    if (cell.cp == kScrollBarCp) {
+      // The last cell's bar goes on the panel edge, as its right edge does.
+      barX = (c == cols - 1 ? w_ : x0 + cw) - barW;
+      barColor = cell.fg;
+    }
+    const uint8_t* glyph = cell.cp == kScrollBarCp ? nullptr : cellGlyph(font, cell.cp);
     for (int y = 0; y < ch; ++y) {
       uint16_t bits = 0;
       if (glyph) bits = rb == 1 ? glyph[y] << 8 : (glyph[y * 2] << 8) | glyph[y * 2 + 1];
@@ -108,6 +117,13 @@ void Renderer::drawRow(const Grid& g, int r, const CellFont& font, RowSpan span,
       for (int x = 0; x < w_; ++x) px[x] = bg;
     }
   }
+  // Drawn last, over the cell's blank and any padding, the whole row tall so
+  // a bar down several rows is unbroken.
+  if (barX >= 0)
+    for (int y = span.y; y < span.y + span.h && y < h_; ++y) {
+      uint16_t* px = frame_ + static_cast<size_t>(y) * w_;
+      for (int x = std::max(barX, 0); x < barX + barW && x < w_; ++x) px[x] = barColor;
+    }
   board::pushRows(frame_, span.y, span.y + span.h);
 }
 

@@ -277,7 +277,7 @@ void ComposerScreen::onEvent(const Event& e) {
 void ComposerScreen::render(Grid& g, const Theme& t, int64_t) {
   const bool small = app().cfg.textSize == TextSize::Compact;
   const int rows = g.rows();
-  cols_ = g.cols();
+  cols_ = g.cols() - TextArea::kBarCols;
   g.fill(t.bg);
   drawStatus(g, t, U"new entry", -1, true);
 

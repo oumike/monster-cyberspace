@@ -13,6 +13,8 @@ ButtonGrid buttonGrid(int cols, int top, int bottom, int count, int columns, int
   if (width < 3 || visibleRows == 0 || count <= 0) return out;
   const int totalRows = (count + columns - 1) / columns;
   out.maxScroll = std::max(0, totalRows - visibleRows);
+  out.visibleRows = visibleRows;
+  out.totalRows = totalRows;
   out.scrollRow = std::min(std::max(0, scrollRow), out.maxScroll);
   out.first = out.scrollRow * columns;
   // Centre the columns: the spare columns split before and after.

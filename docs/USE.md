@@ -243,8 +243,8 @@ Touch above, but with no buttons:
   how many are online (the name in the accent colour when unread). Tap one to
   open it; drag up or down to scroll.
 - **Settings:** the actions are buttons in the same grid, each showing its
-  current value at the right (Setup AP shows on or off; tap to switch). The
-  status lines (account, Wi-Fi, battery, time) are left out.
+  current value at the right (Setup AP shows on or off; tap to switch), under
+  the same status lines as other boards (account, Wi-Fi, battery, time).
 - **3.5":** the microSD slot takes settings backups; a GPS module on the UART1
   connector, if fitted, sets the clock.
 - **5.0":** no SD slot (its pins belong to the wireless-module slot) and no GPS.

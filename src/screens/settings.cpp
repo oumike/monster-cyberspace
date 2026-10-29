@@ -472,23 +472,23 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
   constexpr int kStatusRows = 3;
   const int menuRows = std::clamp(bottom - 1 - kStatusRows, std::min(nItems, 4), nItems);
   const int menuTop = bottom - menuRows;
-  if (buttons_) {
-    // Touch-only boards: the menu as buttons, without the status lines.
-    if (!picking_) pad_.render(g, t, rows, 2, bottom, true);
-  } else {
+  // Touch-only boards keep at least one row of buttons (three rows tall)
+  // under the status lines.
+  const int statusEnd = buttons_ ? bottom - 4 : menuTop;
+  {
     int r = 1;
     // Status lines stop above the menu.
     // On a narrow grid a value too long for its row continues on the next rows.
     const bool narrow = narrowGrid(g);
     auto field = [&](const char* label, const std::string& value, uint16_t fg) {
-      if (r >= menuTop) return;
+      if (r >= statusEnd) return;
       putLine(g, 1, r, label, t.dim, t.bg);
       if (!narrow) {
         putLine(g, 11, r++, value, fg, t.bg);
         return;
       }
       for (const std::u32string& line : wrapText(utf8ToU32(value), g.cols() - 11, g.cols() - 11)) {
-        if (r >= menuTop) break;
+        if (r >= statusEnd) break;
         g.putText(11, r++, line, fg, t.bg, g.cols() - 11);
       }
     };
@@ -506,11 +506,15 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
     field("gps", ts.gps, t.fg);
     field("time", ts.time, t.fg);
     field("zone", ts.zone, t.fg);
-    for (ListItem& it : rows) {
-      if (!it.right.empty()) it.label += U": " + it.right;
-      it.right.clear();
+    if (buttons_) {
+      if (!picking_) pad_.render(g, t, rows, r + 1, bottom, true);
+    } else {
+      for (ListItem& it : rows) {
+        if (!it.right.empty()) it.label += U": " + it.right;
+        it.right.clear();
+      }
+      menu_.setItems(std::move(rows));
     }
-    menu_.setItems(std::move(rows));
   }
 
   if (picking_) {

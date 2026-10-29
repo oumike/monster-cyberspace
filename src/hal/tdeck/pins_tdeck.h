@@ -27,7 +27,7 @@ constexpr uint8_t TOUCH_ROT = 2;  // confirm on hardware (TESTING.md)
 // Keyboard (ESP32-C3) and GT911 on Wire.
 constexpr int I2C_SDA = 18, I2C_SCL = 8;
 constexpr uint8_t KB_ADDR = 0x55;
-constexpr int KB_INT = 46;  // unused: polled
+constexpr int KB_INT = 46;  // low: a character is waiting (read before the raw matrix)
 constexpr uint8_t TOUCH_ADDR = 0x5D;
 constexpr int TOUCH_INT = 16;  // unused: polled
 

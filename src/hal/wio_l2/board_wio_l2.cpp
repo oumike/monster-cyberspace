@@ -210,6 +210,8 @@ bool hasKeys() { return false; }
 bool backspaceIsBack() { return false; }
 bool anyInputWakes() { return false; }
 bool upDownOnly() { return false; }
+bool sideNav() { return false; }
+void textEntry(bool) {}
 bool eink() { return false; }
 bool doubleTapWakes() { return false; }
 bool readTouch(int16_t& x, int16_t& y) {

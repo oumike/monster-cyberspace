@@ -568,7 +568,9 @@ void RoomScreen::render(Grid& g, const Theme& t, int64_t) {
   const bool docked = drawerDocked();
   const bool shown = drawer || docked;
   // Messages wrap to the width left of the member list, so none run under it.
-  const int reserve = shown ? Drawer::width(g.cols(), docked) : 0;
+  // Or left of the side strip, which steps aside for the member list.
+  const int nav = shown ? 0 : sideNavWidth(g);
+  const int reserve = shown ? Drawer::width(g.cols(), docked) : nav;
   const int logCols = std::max(1, g.cols() - reserve);
   int online = 0;
   bool markRead = false;
@@ -670,6 +672,7 @@ void RoomScreen::render(Grid& g, const Theme& t, int64_t) {
   }
   log_.render(g, 1, logBottom, reserve, t);
   if (shown) drawer_.render(g, 1, logBottom, t, docked);
+  if (nav > 0) renderSideNav(g, 1, logBottom, nav, t);
 
   if (view_ == View::Menu)
     box_.render(g, 1, logBottom, reserve, OverlayPlace::BottomRight, t);

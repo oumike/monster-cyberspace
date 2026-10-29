@@ -82,8 +82,9 @@ void resizeGrid() {
   int cols, rows;
   const TextSize ts = gridSize = wantedSize();
   const int rowH = cellSize(ts).h;
-  // Keyboardless touch boards get a taller status bar, easier to tap.
-  const HeaderSize hd = board::hasTouch() && !board::hasKeyboard()
+  // Touch boards without a keyboard or without keys that move a selection get
+  // a taller status bar, easier to tap.
+  const HeaderSize hd = board::hasTouch() && (!board::hasKeyboard() || !board::hasKeys())
                             ? touchHeader(board::panelWidth(), ts)
                             : HeaderSize{};
   gridDims(board::panelWidth(), board::panelHeight(), ts, cols, rows, hd.px);
@@ -412,6 +413,7 @@ void taskMain(void*) {
         }
       }
     }
+    board::textEntry(power == Power::On && router::screen().acceptsText());
     KeyEvent key;
     while (board::pollKey(key)) handleKey(key);
     Event e;
@@ -489,7 +491,7 @@ void start() {
   if (board::canRotate()) board::setRotation(app().cfg.rotation);
   if (!renderer.begin()) Serial.println("[ui] no memory for the frame buffer");
   setActiveTaps(board::hasTouch() ? &taps : nullptr);
-  setCursorShown(board::hasKeys());
+  setCursorShown(board::hasKeys() || board::sideNav());
   resolver.setTouchOnly(!board::hasKeys());
   resizeGrid();
   router::go(router::Id::Splash);

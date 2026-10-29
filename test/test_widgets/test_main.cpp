@@ -16,6 +16,7 @@
 #include "ui/widgets/list_view.h"
 #include "ui/widgets/log_view.h"
 #include "ui/widgets/palette.h"
+#include "ui/widgets/side_nav.h"
 #include "ui/widgets/status_bar.h"
 #include "ui/widgets/symbol_table.h"
 #include "ui/widgets/text_area.h"
@@ -809,8 +810,8 @@ void test_emoji_tray_taps() {
   int c3 = -1, r3 = -1;
   for (int r = 0; r < g.rows() && c3 < 0; ++r)
     for (int c = 0; c < g.cols(); ++c)
-      if (g.at(c, r).cp == SymbolTable::emoji()[3]) { c3 = c; r3 = r; break; }
-  Target t = m.hit(c3 + 1, r3);
+      if (g.at(c, r).cp == trayBigPiece(3, 0, 0)) { c3 = c; r3 = r; break; }
+  Target t = m.hit(c3 + 3, r3 + 1);  // anywhere on the large emoji
   TEST_ASSERT_EQUAL(int(TargetKind::Fixed), int(t.kind));
   auto o = s.key(t.tap);  // a tap picks that emoji, and the tray stays open
   TEST_ASSERT_EQUAL(int(SymbolTable::Kind::Insert), int(o.kind));
@@ -1196,13 +1197,17 @@ void test_emoji_tray_spaced_out() {
   int c0 = -1, r0 = -1;
   for (int r = 0; r < g.rows() && c0 < 0; ++r)
     for (int c = 0; c < g.cols(); ++c)
-      if (g.at(c, r).cp == SymbolTable::emoji()[0]) { c0 = c; r0 = r; break; }
+      if (g.at(c, r).cp == trayBigPiece(0, 0, 0)) { c0 = c; r0 = r; break; }
   TEST_ASSERT_TRUE(c0 >= 0);
+  // Room to spare: each emoji is large, 4 x 2 cells, drawn piece by piece.
+  for (int r = 0; r < kTrayBigRows; ++r)
+    for (int c = 0; c < kTrayBigCols; ++c)
+      TEST_ASSERT_EQUAL(int(trayBigPiece(0, r, c)), int(g.at(c0 + c, r0 + r).cp));
   // One blank cell between neighbours, and a blank row between rows.
-  TEST_ASSERT_EQUAL(int(SymbolTable::emoji()[1]), int(g.at(c0 + 3, r0).cp));
-  TEST_ASSERT_EQUAL(int(U' '), int(g.at(c0 + 2, r0).cp));
-  TEST_ASSERT_EQUAL(int(U' '), int(g.at(c0, r0 + 1).cp));
-  TEST_ASSERT_EQUAL(int(SymbolTable::emoji()[SymbolTable::kEmojiCols]), int(g.at(c0, r0 + 2).cp));
+  TEST_ASSERT_EQUAL(int(trayBigPiece(1, 0, 0)), int(g.at(c0 + 5, r0).cp));
+  TEST_ASSERT_EQUAL(int(U' '), int(g.at(c0 + 4, r0).cp));
+  TEST_ASSERT_EQUAL(int(U' '), int(g.at(c0, r0 + 2).cp));
+  TEST_ASSERT_EQUAL(int(trayBigPiece(SymbolTable::kEmojiCols, 0, 0)), int(g.at(c0, r0 + 3).cp));
   // The commands row sits below the last emoji row, apart from it.
   Grid k(40, 30);
   k.fill(T().bg);
@@ -1211,11 +1216,12 @@ void test_emoji_tray_spaced_out() {
   int lastRow = -1, cmdRow = -1;
   for (int r = 0; r < k.rows(); ++r)
     for (int c = 0; c < k.cols(); ++c) {
-      if (k.at(c, r).cp == SymbolTable::emoji().back()) lastRow = r;
+      if (k.at(c, r).cp == trayBigPiece(int(SymbolTable::emoji().size()) - 1, 1, 0)) lastRow = r;
       if (k.at(c, r).cp == U'c' && k.at(c + 1, r).cp == U'm') cmdRow = r;
     }
   TEST_ASSERT_EQUAL(lastRow + 2, cmdRow);
-  // A shorter screen puts more on a row to keep the blank rows.
+  // Too short for large emoji: two cells each, more on a row to keep the
+  // blank rows.
   Grid m(40, 13);
   m.fill(T().bg);
   s.open(U"", SymbolTable::Set::Emoji);
@@ -1250,6 +1256,30 @@ void test_symbols_linear_steps_one_cell_and_wraps() {
   TEST_ASSERT_EQUAL(0, s.selected());
   // Sym+Enter (Palette) picks while the table is open.
   TEST_ASSERT_EQUAL(int(SymbolTable::Kind::Insert), int(s.key(K(Action::Palette)).kind));
+}
+
+void test_emoji_tray_large_closes_up_before_shrinking() {
+  // 40 x 20: large emoji fit only without the blank rows.
+  Grid g(40, 20);
+  g.fill(T().bg);
+  SymbolTable s;
+  s.open(U"", SymbolTable::Set::Emoji);
+  s.render(g, g.rows() - 1, T());
+  TEST_ASSERT_EQUAL(SymbolTable::kEmojiCols, s.cols());
+  int c0 = -1, r0 = -1;
+  for (int r = 0; r < g.rows() && c0 < 0; ++r)
+    for (int c = 0; c < g.cols(); ++c)
+      if (g.at(c, r).cp == trayBigPiece(0, 0, 0)) { c0 = c; r0 = r; break; }
+  TEST_ASSERT_TRUE(c0 >= 0);
+  TEST_ASSERT_EQUAL(int(trayBigPiece(SymbolTable::kEmojiCols, 0, 0)), int(g.at(c0, r0 + 2).cp));
+  // Too narrow for six across: two-cell emoji.
+  Grid n(29, 30);
+  n.fill(T().bg);
+  s.render(n, n.rows() - 1, T());
+  bool small = false;
+  for (int r = 0; r < n.rows(); ++r)
+    for (int c = 0; c < n.cols(); ++c) small |= n.at(c, r).cp == SymbolTable::emoji()[0];
+  TEST_ASSERT_TRUE(small);
 }
 
 void test_emoji_tray_render_draws_both_halves() {
@@ -1339,6 +1369,32 @@ void test_text_area_wraps_by_width() {
   TEST_ASSERT_EQUAL(T().cursorBg, g.at(2, 1).bg);
 }
 
+void test_side_nav_cols_about_36px() {
+  TEST_ASSERT_EQUAL(6, sideNavCols(6));
+  TEST_ASSERT_EQUAL(5, sideNavCols(8));
+  TEST_ASSERT_EQUAL(4, sideNavCols(10));
+  TEST_ASSERT_EQUAL(3, sideNavCols(20));
+}
+
+void test_side_nav_draws_three_buttons_that_send_keys() {
+  TapMap m;
+  m.setOrigin({1, 1}, 0);
+  setActiveTaps(&m);
+  Grid g(20, 10);
+  g.fill(T().bg);
+  renderSideNav(g, 1, 10, 4, T());
+  // Up, Select, Down glyphs in the right four columns, top to bottom.
+  std::string col;
+  for (int r = 1; r < 10; ++r) col += u32ToUtf8(std::u32string(1, g.at(17, r).cp));
+  TEST_ASSERT_TRUE(col.find("\u25B2") < col.find("\u25CF"));
+  TEST_ASSERT_TRUE(col.find("\u25CF") < col.find("\u25BC"));
+  TEST_ASSERT_EQUAL_STRING("                ", rowText(g, 4, 0, 16).c_str());
+  TEST_ASSERT_EQUAL(int(Action::Up), int(m.hit(18, 1).tap.action));
+  TEST_ASSERT_EQUAL(int(Action::Select), int(m.hit(16, 5).tap.action));
+  TEST_ASSERT_EQUAL(int(Action::Down), int(m.hit(19, 9).tap.action));
+  TEST_ASSERT_EQUAL(int(TargetKind::None), int(m.hit(15, 5).kind));
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_input_insert_cursor);
@@ -1411,5 +1467,8 @@ int main() {
   RUN_TEST(test_put_text_wide_emoji);
   RUN_TEST(test_input_line_renders_wide_emoji);
   RUN_TEST(test_text_area_wraps_by_width);
+  RUN_TEST(test_side_nav_cols_about_36px);
+  RUN_TEST(test_emoji_tray_large_closes_up_before_shrinking);
+  RUN_TEST(test_side_nav_draws_three_buttons_that_send_keys);
   return UNITY_END();
 }

@@ -231,10 +231,13 @@ const char* wakeHint() { return "press the side button to wake"; }
 bool hasTouch() { return tdeck_pro_touch::present(); }
 bool readTouch(int16_t& x, int16_t& y) { return tdeck_pro_touch::read(x, y); }
 bool hasKeyboard() { return true; }
-bool hasKeys() { return true; }
+// The keyboard has no good arrows: navigation is by touch, with the side strip.
+bool hasKeys() { return false; }
 bool backspaceIsBack() { return true; }
 bool anyInputWakes() { return false; }
 bool upDownOnly() { return false; }
+bool sideNav() { return true; }
+void textEntry(bool) {}
 bool eink() { return true; }
 bool doubleTapWakes() { return false; }
 

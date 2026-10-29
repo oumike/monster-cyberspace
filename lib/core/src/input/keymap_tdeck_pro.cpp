@@ -3,7 +3,7 @@
 namespace rc {
 namespace {
 
-constexpr uint8_t kBackspace = 11, kEnter = 21, kAlt = 30, kShiftL = 31, kSym = 32, kSpace = 33,
+constexpr uint8_t kBackspace = 11, kEnter = 21, kMic = 34, kAlt = 30, kShiftL = 31, kSym = 32, kSpace = 33,
                   kShiftR = 35, kKeyCount = 35;
 constexpr uint8_t kShiftBit = 1, kSymBit = 2, kAltBit = 4;
 
@@ -74,6 +74,10 @@ KeyEvent TdeckProKeys::key(uint8_t keyNum, bool pressed, uint32_t ms) {
     e = action(mods & kSymBit ? Action::Back : Action::Backspace);
   } else if (keyNum == kSpace && (mods & kSymBit)) {
     e = action(Action::OpenHome);
+  } else if (keyNum == kMic && !(mods & kSymBit)) {
+    // The mic key opens the emoji picker while typing, and does nothing else.
+    e = action(Action::Emoji);
+    e.modifier = true;
   } else {
     char c = kMap[keyNum - 1][mods & kSymBit ? 1 : 0];
     if (!c) return {};

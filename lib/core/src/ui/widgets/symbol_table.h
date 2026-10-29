@@ -12,9 +12,10 @@ namespace rc {
 // The pickers a keyed board opens while typing, after camillia-mt's trays.
 // Symbols (Action::Symbols): a grid of punctuation picked with the d-pad that
 // inserts one symbol and closes; an optional last row hands over to the
-// screen's own palette. Emoji (Action::Emoji): the tray emoji, two cells wide;
-// a pick inserts and stays open, Back closes it, and it has the same palette
-// row. Board-agnostic.
+// screen's own palette. Emoji (Action::Emoji): the tray emoji, drawn large
+// (kTrayBigCols x kTrayBigRows cells, emoji_set.h) where they fit and two cells
+// wide where not; a pick inserts and stays open, Back closes it, and it has
+// the same palette row. Board-agnostic.
 class SymbolTable {
  public:
   static constexpr int kCols = 8;       // symbols a row
@@ -66,6 +67,7 @@ class SymbolTable {
   bool backspaceCloses_ = false;
   int sel_ = 0;
   mutable int emojiCols_ = kEmojiCols;  // set by render to fit the screen
+  mutable bool big_ = false;            // set by render: large emoji fit
   bool open_ = false;
 };
 

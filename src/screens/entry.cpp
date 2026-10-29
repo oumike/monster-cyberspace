@@ -484,11 +484,13 @@ void EntryScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
   const bool small = compact();
   const int inputRow = small ? g.rows() - 2 : g.rows() - 1;
   const int logRows = inputRow - 1;
-  if (dirty_ || g.cols() != cols_ || logRows != logRows_ || app().cfg.textSize != size_ ||
+  const int nav = sideNavWidth(g);
+  const int logCols = g.cols() - nav;
+  if (dirty_ || logCols != cols_ || logRows != logRows_ || app().cfg.textSize != size_ ||
       &t != theme_ || nowMs - builtAt_ >= kAgeRefreshMs) {
-    rebuild(g.cols(), logRows, t);
+    rebuild(logCols, logRows, t);
     dirty_ = false;
-    cols_ = g.cols();
+    cols_ = logCols;
     logRows_ = logRows;
     size_ = app().cfg.textSize;
     theme_ = &t;
@@ -512,11 +514,12 @@ void EntryScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
             t.dim, t.bg);
   }
   const bool offline = app().conn == 0;
-  if (loaded_) log_.render(g, 1, logBottom, 0, t);
+  if (loaded_) log_.render(g, 1, logBottom, nav, t);
   else putLine(g, 1, 2, offline ? "offline" : "loading\u2026", t.dim, t.bg);
 
   if (view_ == View::Menu)
-    box_.render(g, 1, logBottom, 0, OverlayPlace::BottomRight, t);
+    box_.render(g, 1, logBottom, nav, OverlayPlace::BottomRight, t);
+  if (loaded_ && nav > 0) renderSideNav(g, 1, logBottom, nav, t);
 
   input_.setDisabled(offline || view_ != View::None || sending_ || !loaded_);
   input_.setEmojiButton(true);

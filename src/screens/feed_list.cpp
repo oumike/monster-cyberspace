@@ -198,7 +198,8 @@ void FeedListScreen::rebuild(int cols, const Theme& t) {
   ids_.clear();
   replyIds_ = std::move(replyIds);
   for (size_t i = 0; i < entries.size(); ++i) {
-    rows.push_back(layoutFeedRow(entries[i], marked[i], now, cols, t, headCols()));
+    // With the side strip, the head lines stay in the plain font (FeedList render).
+    rows.push_back(layoutFeedRow(entries[i], marked[i], now, cols, t, board::sideNav() ? cols : headCols()));
     ids_.push_back(entries[i].id);
     if (side && sel < 0 && entries[i].id == selId_) sel = int(i);
   }
@@ -208,11 +209,15 @@ void FeedListScreen::rebuild(int cols, const Theme& t) {
 }
 
 void FeedListScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
-  if (dirty_ || g.cols() != cols_ || &t != theme_ || nowMs - builtAt_ >= kAgeRefreshMs) {
-    rebuild(g.cols(), t);
+  // Big rows draw fewer, wider cells, which would push the side strip off the
+  // panel; with it, every row stays plain.
+  const int nav = sideNavWidth(g);
+  const int listCols = g.cols() - nav;
+  if (dirty_ || listCols != cols_ || &t != theme_ || nowMs - builtAt_ >= kAgeRefreshMs) {
+    rebuild(listCols, t);
     theme_ = &t;
     dirty_ = false;
-    cols_ = g.cols();
+    cols_ = listCols;
     builtAt_ = nowMs;
   }
   bool loading = lockedFeed().with([](FeedState& s) { return s.loading; });
@@ -226,9 +231,9 @@ void FeedListScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
   // The palette is drawn over the list in plain rows, so the list drops its
   // larger first lines while it's open.
   TextSize ts = app().cfg.textSize;
-  if (palette_) list_.setBigHeads(0, 0, 0);
+  if (palette_ || nav > 0) list_.setBigHeads(0, 0, 0);
   else list_.setBigHeads(cellSize(ts).h, bigCellSize(ts).h, headCols());
-  list_.render(g, 1, bottom, t);
+  list_.render(g, 1, bottom, t, nav);
   if (list_.size() == 0) {
     // An empty feed with pages to come hasn't loaded yet.
     bool waiting = !loaded_ || loading || (kind_ == Kind::Feed && more_);
@@ -242,8 +247,9 @@ void FeedListScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
     putLine(g, 1, 2, empty, t.dim, t.bg);
   }
 
+  if (nav > 0) renderSideNav(g, 1, bottom, nav, t);
   if (palette_) {
-    box_.render(g, 1, bottom, 0, OverlayPlace::BottomRight, t);
+    box_.render(g, 1, bottom, nav, OverlayPlace::BottomRight, t);
     drawHint(g, t, U"\u2191\u2193 pick  \u25CF choose  back: close", U"tap: choose  outside: close");
   } else if (asked_) {
     drawHint(g, t, U"loading more\u2026", U"loading more\u2026");

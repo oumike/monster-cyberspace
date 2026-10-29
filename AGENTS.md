@@ -145,9 +145,14 @@ OTA updates were added on 2026-10-28 (built without flashing): signed images
 straight from GitHub releases over HTTPS (`src/app/ota_service.cpp`,
 `lib/core/src/ota/`), and `partitions_16mb.csv` moves NVS past the app slots
 so installs keep settings (`src/store/nvs_migrate.cpp`; docs/BUILD.md).
-The native suite is green: 414/414
+The T-Deck Pro (env `tdeck_pro`, e-paper) uses the touch-only paradigm plus a
+▲ ● ▼ side strip on list screens (`board::sideNav()`, `ui/widgets/side_nav`);
+its and the T-Deck Plus's mic key opens the emoji tray (`board::textEntry`).
+A browser flasher (GitHub Pages, `site/`, `.github/workflows/pages.yml`)
+serves the latest release (docs/BUILD.md).
+The native suite is green: 440/440
 (`pio test -e native`), and `scripts/build-upload-monitor.sh -B` builds all
-six firmware envs.
+seven firmware envs.
 
 Notes for whoever continues:
 - Each task follows test-driven development: write the plan's tests first, run

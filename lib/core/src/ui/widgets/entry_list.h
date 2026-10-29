@@ -26,7 +26,7 @@ class EntryList {
   // are skipped. bigH 0 (the default) draws two Normal rows an entry.
   void setBigHeads(int rowH, int bigH, int headCols);
   // Draws rows [top, bottom) across the full grid width.
-  void render(Grid& g, int top, int bottom, const Theme& t) const;
+  void render(Grid& g, int top, int bottom, const Theme& t, int rightReserve = 0) const;
 
  private:
   std::vector<FeedRow> rows_;

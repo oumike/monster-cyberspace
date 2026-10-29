@@ -147,6 +147,15 @@ void test_alt_arrow_repeats_while_held() {
   expectAction(k.poll(5000), Action::None);
 }
 
+void test_mic_key_opens_emoji_only_while_typing() {
+  TdeckProKeys k;
+  KeyEvent e = k.key(34, true, 0);
+  expectAction(e, Action::Emoji);
+  TEST_ASSERT_TRUE(e.modifier);  // ignored outside text entry (ui_task)
+  k.key(kSym, true, 10);
+  expectChar(k.key(34, true, 20), '0');
+}
+
 void test_chars_dont_repeat() {
   TdeckProKeys k;
   expectChar(k.key(kQ, true, 0), 'q');
@@ -167,5 +176,6 @@ int main(int, char**) {
   RUN_TEST(test_backspace_repeats_while_held);
   RUN_TEST(test_alt_arrow_repeats_while_held);
   RUN_TEST(test_chars_dont_repeat);
+  RUN_TEST(test_mic_key_opens_emoji_only_while_typing);
   return UNITY_END();
 }

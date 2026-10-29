@@ -68,6 +68,13 @@ bool pollKey(rc::KeyEvent& key) {
     key = rc::mapTdeckKey(raw);
     if (key.action != rc::Action::None) return true;
   }
+  if (tdeck_kb::micPressed()) {
+    // The mic key opens the emoji picker; outside text entry it isn't read.
+    key = rc::KeyEvent{};
+    key.action = rc::Action::Emoji;
+    key.modifier = true;
+    return true;
+  }
   return trackball::poll(key);
 }
 
@@ -93,6 +100,8 @@ bool hasKeys() { return true; }
 bool backspaceIsBack() { return true; }
 bool anyInputWakes() { return true; }
 bool upDownOnly() { return false; }
+bool sideNav() { return false; }
+void textEntry(bool active) { tdeck_kb::watchMic(active); }
 bool eink() { return false; }
 bool doubleTapWakes() { return false; }
 

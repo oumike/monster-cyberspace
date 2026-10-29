@@ -116,7 +116,9 @@ void CmailListScreen::render(Grid& g, const Theme& t, int64_t) {
   int bottom = g.rows() - 1;
   if (editing_) --bottom;
   list_.setItems(std::move(items));
-  list_.render(g, 1, bottom, 0, g.cols(), t);
+  const int nav = sideNavWidth(g);
+  list_.render(g, 1, bottom, 0, g.cols() - nav, t);
+  if (nav > 0) renderSideNav(g, 1, bottom, nav, t);
   if (ids_.empty()) putLine(g, 1, 3, "no conversations yet", t.dim, t.bg);
   if (editing_) {
     input_.setDisabled(busy_);

@@ -40,8 +40,8 @@ void EntryList::setBigHeads(int rowH, int bigH, int headCols) {
   headCols_ = headCols;
 }
 
-void EntryList::render(Grid& g, int top, int bottom, const Theme& t) const {
-  const int width = g.cols();
+void EntryList::render(Grid& g, int top, int bottom, const Theme& t, int rightReserve) const {
+  const int width = g.cols() - rightReserve;
   const int height = bottom - top;
   if (height <= 0 || width <= 0) return;
   for (int r = top; r < bottom; ++r) g.fillRow(r, t.bg);

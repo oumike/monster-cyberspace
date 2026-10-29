@@ -25,7 +25,8 @@ struct KeyEvent {
   uint8_t target = 0;           // Activate: a ListId; Focus: the screen's field id
   Action then = Action::None;   // Activate: sent once the selection has moved
   bool modifier = false;        // Symbols from a key that is also a modifier
-                                // (the Pager's Sym): ignored outside typing
+                                // (the Pager's Sym, the T-Decks' mic):
+                                // ignored outside typing
 };
 
 // With anyInputWakes false, only a centre hold (ScreenOff) wakes a dark screen,

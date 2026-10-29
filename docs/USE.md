@@ -131,6 +131,7 @@ on the real one.
 | Trackball roll | Up, Down, Left, Right (moves between Home tiles too) |
 | Hold the trackball click 2 s | Screen off |
 | `⋯`, or a long-press | The screen's menu or the command palette (there's no Sym key) |
+| Mic key (left of Space), while typing | The emoji tray |
 
 **Screen off:** any key, trackball roll or touch wakes the screen. The press
 that wakes it does nothing else, so it never types, selects or taps.
@@ -172,9 +173,18 @@ than filled bars, no blinking cursor and no moving screensaver. The screen
 updates a moment after you stop typing, and redraws fully now and then to
 clear ghosting.
 
+Navigation works as on the touch-only boards: the room list and Settings are
+buttons, the status bar has `‹` and `⋯`, and log and Feed rows act on a hold
+rather than a tap. Screens with a list (a room or conversation, C-Mail, the
+Feed and an entry) also show a strip of three buttons on the right: ▲ and ▼
+move up and down, and ● between them acts as Enter on the selected item, so
+on a message in a room it opens the reply/report menu.
+
 | Input | Action |
 |---|---|
 | Keys | Type. Shift and Sym apply to the next key (press twice to cancel; they lapse after 1.5 s). While typing, Sym also opens the symbol table; Sym again switches to the emoji tray. Backspace closes either |
+| Mic key, while typing | The emoji tray (Sym + Mic still types `0`) |
+| ▲ ● ▼ strip | Up, Enter, Down |
 | Alt + W / A / S / D | Up, Left, Down, Right (hold to repeat) |
 | Enter | Select (send, in a room) |
 | Backspace | Deletes while there's text to delete; otherwise Back. Hold it to repeat |
@@ -341,6 +351,9 @@ emoji in Noto Emoji, one colour and two cells wide. Skin tones are dropped,
 showing the plain emoji; a flag shows as its two letters; a combined emoji
 (family, profession) shows its parts side by side. Anything else, such as
 Chinese or Japanese, shows as `�`.
+
+The emoji tray draws its 40 emoji large (four cells by two) wherever the
+screen has room, and two cells wide where it doesn't.
 
 ## Text sizes
 

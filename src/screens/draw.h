@@ -6,6 +6,7 @@
 #include "hal/board.h"
 #include "ui/grid.h"
 #include "ui/theme.h"
+#include "ui/widgets/side_nav.h"
 #include "ui/wrap.h"
 #include "util/utf8.h"
 
@@ -29,6 +30,12 @@ inline int putWrapped(Grid& g, int col, int row, std::string_view utf8, uint16_t
     g.putText(col, row++, line, fg, bg, g.cols() - col);
   }
   return row;
+}
+
+// Columns of the Up / Select / Down strip (board::sideNav) at the right of
+// lists, 0 on boards without it.
+inline int sideNavWidth(const Grid& g) {
+  return board::sideNav() && g.cols() > 0 ? sideNavCols(board::panelWidth() / g.cols()) : 0;
 }
 
 // The last row in the hint colours.

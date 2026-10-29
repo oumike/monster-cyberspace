@@ -103,34 +103,54 @@ void SymbolTable::render(Grid& g, int bottom, const Theme& t) const {
   const bool emojiSet = set_ == Set::Emoji;
   const int n = static_cast<int>(items().size());
   const int extra = commands_.empty() ? 0 : 1;
-  // Title, [blank], the rows with a blank row between each, [blank], [commands].
-  auto gapsFit = [&](int c) { return 2 * ((n + c - 1) / c) + 2 + extra <= bottom; };
+  // An emoji is ew x eh cells with one blank cell before the next; rows have
+  // a blank row between them where that fits. Title, [blank], the rows,
+  // [blank], [commands].
+  auto height = [&](int eh, int c, bool gaps) {
+    const int rows = (n + c - 1) / c;
+    return 1 + rows * eh + (gaps ? rows + 1 : 0) + extra;
+  };
+  int ew = 2, eh = 1;
+  bool gaps = false;
   if (emojiSet) {
-    // Emoji sit one blank cell apart with a blank row between rows; on a
-    // short screen, more go on a row so the blank rows still fit.
-    const int maxCols = std::max(kEmojiCols, std::min(n, (g.cols() - 1) / 3));
-    int c = kEmojiCols;
-    while (c < maxCols && !gapsFit(c)) ++c;
-    emojiCols_ = c;
+    // Large where they fit across and down, the blank rows kept if they can
+    // be; else two cells wide, more on a row on a short screen.
+    big_ = false;
+    const int bigMax = std::min(n, (g.cols() - 1) / (kTrayBigCols + 1));
+    for (int pass = 0; pass < 2 && !big_; ++pass)
+      for (int c = kEmojiCols; c <= bigMax && !big_; ++c)
+        if (height(kTrayBigRows, c, pass == 0) <= bottom) {
+          big_ = true;
+          emojiCols_ = c;
+          gaps = pass == 0;
+        }
+    if (big_) {
+      ew = kTrayBigCols;
+      eh = kTrayBigRows;
+    } else {
+      const int maxCols = std::max(kEmojiCols, std::min(n, (g.cols() - 1) / 3));
+      int c = kEmojiCols;
+      while (c < maxCols && height(1, c, true) > bottom) ++c;
+      emojiCols_ = c;
+      gaps = height(1, c, true) <= bottom;
+    }
   }
   const int kc = cols();
   const int rows = (n + kc - 1) / kc;
-  const int pitch = 3;
+  const int pitch = emojiSet ? ew + 1 : 3;
   const int width = emojiSet ? kc * pitch + 1 : kc * pitch + 2;
-  const bool gaps = emojiSet && gapsFit(kc);
-  const int rowStep = gaps ? 2 : 1;
-  const int gridRows = rows * rowStep - (gaps ? 1 : 0);
-  const int height = 1 + gridRows + (gaps ? 2 : 0) + extra;
+  const int rowStep = eh + (gaps ? 1 : 0);
+  const int h = emojiSet ? height(eh, kc, gaps) : 1 + rows + extra;
   const int left = std::max(0, (g.cols() - width) / 2);
-  const int top = std::max(0, (bottom - height) / 2);
-  auto cellTap = [&](int c0, int r0, int c1, int i) {
+  const int top = std::max(0, (bottom - h) / 2);
+  auto cellTap = [&](int c0, int r0, int c1, int r1, int i) {
     if (!activeTaps()) return;
     Target tt;
     tt.kind = TargetKind::Fixed;
     tt.tap.action = Action::Activate;
     tt.tap.index = static_cast<int16_t>(i);
     tt.tap.target = static_cast<uint8_t>(ListId::Menu);
-    activeTaps()->addCells(c0, r0, c1, r0, tt);
+    activeTaps()->addCells(c0, r0, c1, r1, tt);
   };
   if (activeTaps()) {
     // A tap outside the table closes it.
@@ -139,7 +159,7 @@ void SymbolTable::render(Grid& g, int bottom, const Theme& t) const {
     back.tap.action = Action::Back;
     activeTaps()->addCells(0, 0, g.cols() - 1, g.rows() - 1, back);
   }
-  for (int r = 0; r < height; ++r)
+  for (int r = 0; r < h; ++r)
     for (int c = 0; c < width; ++c) g.put(left + c, top + r, U' ', t.fg, t.bg);
   for (int c = 0; c < width; ++c) g.put(left + c, top, U' ', t.barFg, t.barBg);
   g.putText(left + 1, top, emojiSet ? U"emoji" : U"symbols", t.barFg, t.barBg, width - 2);
@@ -148,30 +168,35 @@ void SymbolTable::render(Grid& g, int bottom, const Theme& t) const {
     const bool sel = i == sel_;
     const bool fill = sel && !t.outlined;
     const uint16_t fg = fill ? t.selectFg : t.fg, bg = fill ? t.selectBg : t.bg;
-    if (emojiSet) {
+    if (big_ && emojiSet) {
+      for (int r = 0; r < eh; ++r)
+        for (int c = 0; c < ew; ++c) g.put(col + c, row + r, trayBigPiece(i, r, c), fg, bg);
+      cellTap(col, row, col + ew, row + eh - 1, i);
+      if (sel && t.outlined) g.outline(col, row, col + ew - 1, row + eh - 1, t.selectBg);
+    } else if (emojiSet) {
       // An emoji fills two cells, with one blank cell before the next.
       g.putText(col, row, items().substr(i, 1), fg, bg, 2);
-      cellTap(col, row, col + 2, i);
+      cellTap(col, row, col + 2, row, i);
       if (sel && t.outlined) g.outline(col, row, col + 1, row, t.selectBg);
     } else {
       // A symbol sits between two spaces.
       for (int c = 0; c < pitch; ++c) g.put(col + c, row, U' ', fg, bg);
       g.putText(col + 1, row, items().substr(i, 1), fg, bg, 1);
-      cellTap(col, row, col + pitch - 1, i);
+      cellTap(col, row, col + pitch - 1, row, i);
       if (sel && t.outlined) g.outline(col, row, col + pitch - 1, row, t.selectBg);
     }
   }
   if (!commands_.empty()) {
-    const int row = top + height - 1;
+    const int row = top + h - 1;
     const bool sel = sel_ >= n;
     const bool fill = sel && !t.outlined;
     const uint16_t fg = fill ? t.selectFg : t.fg, bg = fill ? t.selectBg : t.bg;
     for (int c = 1; c < width - 1; ++c) g.put(left + c, row, U' ', fg, bg);
     g.putText(left + 2, row, commands_, fg, bg, width - 4);
-    cellTap(left + 1, row, left + width - 2, n);
+    cellTap(left + 1, row, left + width - 2, row, n);
     if (sel && t.outlined) g.outline(left + 1, row, left + width - 2, row, t.selectBg);
   }
-  g.outline(left, top, left + width - 1, top + height - 1, t.drawerEdge);
+  g.outline(left, top, left + width - 1, top + h - 1, t.drawerEdge);
 }
 
 }  // namespace rc

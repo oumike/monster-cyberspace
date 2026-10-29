@@ -18,4 +18,19 @@ constexpr char32_t kTrayEmoji[] = {
 // in a private use plane.
 constexpr char32_t kWideTailBase = 0xF0000;
 
+// The tray draws its emoji large where they fit: kTrayEmoji[i] over
+// kTrayBigCols x kTrayBigRows cells, the cell at (col c, row r) drawn from
+// code point kTrayBigBase + i * kTrayBigCols * kTrayBigRows + r * kTrayBigCols + c.
+constexpr int kTrayBigCols = 4, kTrayBigRows = 2;
+constexpr char32_t kTrayBigBase = 0xF8000;
+constexpr int kTrayCount = sizeof(kTrayEmoji) / sizeof(kTrayEmoji[0]);
+
+constexpr char32_t trayBigPiece(int i, int r, int c) {
+  return kTrayBigBase + static_cast<char32_t>((i * kTrayBigRows + r) * kTrayBigCols + c);
+}
+constexpr bool isTrayBigPiece(char32_t cp) {
+  return cp >= kTrayBigBase &&
+         cp < kTrayBigBase + static_cast<char32_t>(kTrayCount * kTrayBigCols * kTrayBigRows);
+}
+
 }  // namespace rc

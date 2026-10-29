@@ -59,6 +59,13 @@ bool doubleTapWakes();
 // True when the only arrows are Up/Down (a wheel): pickers then step one cell
 // at a time instead of moving in two dimensions.
 bool upDownOnly();
+// Lists get an Up / Select / Down button strip at their right edge
+// (ui/widgets/side_nav.h), for touch panels where picking a row is a chore.
+// The selection outline is drawn, as on keyed boards.
+bool sideNav();
+// The UI says each frame whether a text field takes typing, for keys only
+// read then (the T-Deck Plus's mic key, polled from the raw key matrix).
+void textEntry(bool active);
 // An e-paper panel: slow refreshes, and the image stays with the power off.
 // The UI then keeps still (no animation), uses rc::paperTheme only, and the
 // panel's pushRows only marks what changed; the board refreshes it from pollKey.

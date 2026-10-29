@@ -143,6 +143,8 @@ bool hasKeys() { return false; }
 bool backspaceIsBack() { return false; }
 bool anyInputWakes() { return true; }
 bool upDownOnly() { return false; }
+bool sideNav() { return false; }
+void textEntry(bool) {}
 bool eink() { return false; }
 bool doubleTapWakes() { return true; }
 

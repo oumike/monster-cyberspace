@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <Arduino.h>
 
 #include "app/app_state.h"
@@ -466,6 +467,11 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
     }
   }
 
+  // The menu sits at the bottom and scrolls, so the account, Wi-Fi and
+  // config lines above it always have room.
+  constexpr int kStatusRows = 3;
+  const int menuRows = std::clamp(bottom - 1 - kStatusRows, std::min(nItems, 4), nItems);
+  const int menuTop = bottom - menuRows;
   if (buttons_) {
     // Touch-only boards: the menu as buttons, without the status lines.
     if (!picking_) pad_.render(g, t, rows, 2, bottom, true);
@@ -475,14 +481,14 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
     // On a narrow grid a value too long for its row continues on the next rows.
     const bool narrow = narrowGrid(g);
     auto field = [&](const char* label, const std::string& value, uint16_t fg) {
-      if (r >= bottom - nItems) return;
+      if (r >= menuTop) return;
       putLine(g, 1, r, label, t.dim, t.bg);
       if (!narrow) {
         putLine(g, 11, r++, value, fg, t.bg);
         return;
       }
       for (const std::u32string& line : wrapText(utf8ToU32(value), g.cols() - 11, g.cols() - 11)) {
-        if (r >= bottom - nItems) break;
+        if (r >= menuTop) break;
         g.putText(11, r++, line, fg, t.bg, g.cols() - 11);
       }
     };
@@ -532,7 +538,7 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
   } else if (buttons_) {
     drawHint(g, t, U"", U"tap to select  drag to scroll");
   } else {
-    menu_.render(g, bottom - nItems, bottom, 1, g.cols() - 2, t);
+    menu_.render(g, menuTop, bottom, 1, g.cols() - 2, t);
     drawHint(g, t, U"\u2191\u2193 pick  \u25CF select  back: home", U"tap to select");
   }
 }

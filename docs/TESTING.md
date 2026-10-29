@@ -302,7 +302,7 @@ Buttons: BOOT tap = Back, BOOT hold (0.6 s) = Home; Wake tap = screen off
 
 **Room wrapping (every board):**
 
-- [ ] At Comfortable and Large, a long room message's second and later lines start under the nick; at Compact they start under the text
+- [ ] At every text size, a long room message's second and later lines start under the nick
 
 **Large emoji tray (every board):**
 

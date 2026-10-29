@@ -409,8 +409,7 @@ uses Compact, so its items fit.
 - **Large:** like Comfortable, one size up: 10×18 text and 12×24 titles.
 
 Room messages read `14:02 nick: message`, with a divider when the day
-changes, at every size. A long message wraps under its text at Compact, and
-under the nick at Comfortable and Large, which have fewer columns to spare.
+changes, at every size. A long message wraps under the nick at every size.
 
 ## Themes
 

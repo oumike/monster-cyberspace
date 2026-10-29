@@ -1,6 +1,7 @@
 #include "app/app_state.h"
 #include "app/ui_task.h"
 #include "chat/chat_source.h"
+#include "screens/button_pad.h"
 #include "screens/draw.h"
 #include "screens/screens.h"
 #include "store/locked_chat.h"
@@ -15,8 +16,18 @@ void CmailListScreen::enter(const std::string&) {
   chatSource().command(Command{CmdType::RefreshConversations});
 }
 
+void CmailListScreen::open(int i) {
+  if (i == 0) {
+    editing_ = true;
+    input_.clear();
+  } else if (i > 0 && i - 1 < int(ids_.size())) {
+    router::go(router::Id::Conversation, ids_[i - 1]);
+  }
+}
+
 void CmailListScreen::onKey(const KeyEvent& k) {
   if (editing_) return editKey(k);
+  if (buttons_ && k.action != Action::Left && k.action != Action::Back) return open(pad_.key(k));
   switch (k.action) {
     case Action::Up:
       list_.up();
@@ -28,16 +39,9 @@ void CmailListScreen::onKey(const KeyEvent& k) {
       if (k.target == uint8_t(ListId::Main) && list_.select(k.index)) onKey(KeyEvent{k.then});
       break;
     case Action::Select:
-    case Action::Right: {
-      int i = list_.selected();
-      if (i == 0) {
-        editing_ = true;
-        input_.clear();
-      } else if (i - 1 < int(ids_.size())) {
-        router::go(router::Id::Conversation, ids_[i - 1]);
-      }
+    case Action::Right:
+      open(list_.selected());
       break;
-    }
     case Action::Left:
     case Action::Back:
       router::go(router::Id::Home);
@@ -100,14 +104,18 @@ void CmailListScreen::onEvent(const Event& e) {
 }
 
 void CmailListScreen::render(Grid& g, const Theme& t, int64_t) {
+  buttons_ = ButtonPad::active();
   std::vector<ListItem> items{ListItem{U"New conversation\u2026", U""}};
   ids_.clear();
   lockedChat().with([&](ChatState& s) {
     for (const auto& c : s.conversations) {
       std::string label = "@" + c.partner + (c.partnerDeleted ? " (deleted)" : "");
-      if (!c.lastMessage.empty()) label += "  " + c.lastMessage;
       std::string right = c.unread > 0 ? std::to_string(c.unread) : std::string();
-      items.push_back(ListItem{utf8ToU32(label), utf8ToU32(right), ItemTone::Normal, c.unread > 0});
+      // Buttons show the last message on a line of its own.
+      if (!buttons_ && !c.lastMessage.empty()) label += "  " + c.lastMessage;
+      ListItem it{utf8ToU32(label), utf8ToU32(right), ItemTone::Normal, c.unread > 0};
+      if (buttons_) it.detail = utf8ToU32(c.lastMessage);
+      items.push_back(std::move(it));
       ids_.push_back(c.id);
     }
   });
@@ -115,16 +123,23 @@ void CmailListScreen::render(Grid& g, const Theme& t, int64_t) {
   drawStatus(g, t, U"c-mail", int(ids_.size()));
   int bottom = g.rows() - 1;
   if (editing_) --bottom;
-  list_.setItems(std::move(items));
-  const int nav = sideNavWidth(g);
-  list_.render(g, 1, bottom, 0, g.cols() - nav, t);
-  if (nav > 0) renderSideNav(g, 1, bottom, nav, t);
-  if (ids_.empty()) putLine(g, 1, 3, "no conversations yet", t.dim, t.bg);
+  if (buttons_) {
+    pad_.render(g, t, items, 2, bottom, true, 1);
+    if (ids_.empty()) putLine(g, 1, 7, "no conversations yet", t.dim, t.bg);
+  } else {
+    list_.setItems(std::move(items));
+    const int nav = sideNavWidth(g);
+    list_.render(g, 1, bottom, 0, g.cols() - nav, t);
+    if (nav > 0) renderSideNav(g, 1, bottom, nav, t);
+    if (ids_.empty()) putLine(g, 1, 3, "no conversations yet", t.dim, t.bg);
+  }
   if (editing_) {
     input_.setDisabled(busy_);
     input_.render(g, bottom, t, U"to> @");
     drawHint(g, t, busy_ ? U"starting\u2026  back: cancel" : U"type a username  \u25CF start  back: cancel",
              busy_ ? U"starting\u2026" : U"type a username  enter: start");
+  } else if (buttons_) {
+    drawHint(g, t, U"", U"tap to open  drag to scroll");
   } else {
     drawHint(g, t, U"\u2191\u2193 pick  \u25CF open  \u2190 home", U"tap to open  swipe to scroll");
   }

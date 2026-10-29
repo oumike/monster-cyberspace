@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+#include <string_view>
 #include <vector>
 
 #include "ui/home_tiles.h"
@@ -20,6 +22,13 @@ struct ButtonGrid {
   int maxScroll = 0;
   int visibleRows = 0, totalRows = 0;  // button rows that fit, and in all
 };
-ButtonGrid buttonGrid(int cols, int top, int bottom, int count, int columns, int scrollRow);
+// height: each button's rows, outline included (kButtonRows for one line of
+// text, one more for each extra line).
+ButtonGrid buttonGrid(int cols, int top, int bottom, int count, int columns, int scrollRow,
+                      int height = kButtonRows);
+
+// `s` on one line no wider than `width` cells: line breaks and runs of
+// spaces become one space, the ends are trimmed, and a cut ends in "…".
+std::u32string oneLine(std::u32string_view s, int width);
 
 }  // namespace rc

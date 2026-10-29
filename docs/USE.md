@@ -293,7 +293,9 @@ C-Mail is private, one-to-one messaging. Open it with Fn under Home, or
 
 - **The list** shows **New conversation…** first, then your conversations,
   unread first. Unread ones are bold with a count, followed by a preview of
-  the last message.
+  the last message. On touch-only boards each is a full-width button: the
+  name (and unread count) on the first line, and the last message, cut to
+  one line, under it.
 - **New conversation…:** Centre, type a username (no `@`), then Centre. You
   land in that conversation, or a banner explains why not (for example, no
   such user). Back cancels.

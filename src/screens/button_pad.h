@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "input/key_event.h"
+#include "ui/button_grid.h"
 #include "ui/grid.h"
 #include "ui/theme.h"
 #include "ui/widgets/list_view.h"
@@ -12,7 +13,8 @@ namespace rc {
 // A menu as a grid of outlined buttons, for touch-only boards: three columns
 // on a panel at least 800 px wide, else two. Scrolled by whole button rows; a
 // drag's Up/Down steps add up to one row's pitch. Each button shows the item's
-// label, with its `right` text at the right edge.
+// label, with its `right` text at the right edge; when any item has a
+// detail, every button is a row taller and shows it dim under the label.
 class ButtonPad {
  public:
   // Touch and no keys: menus are buttons instead of lines.
@@ -28,6 +30,7 @@ class ButtonPad {
               bool keepRight, int columns = 0);
 
  private:
+  int height_ = kButtonRows;
   int scroll_ = 0;
   int dragSteps_ = 0;
 };

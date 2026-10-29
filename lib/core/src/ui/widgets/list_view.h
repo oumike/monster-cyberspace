@@ -18,6 +18,8 @@ struct ListItem {
   std::u32string label, right;
   ItemTone tone = ItemTone::Normal;
   bool marker = false;  // drawn as "•" before the label
+  // A second line, shown only by ButtonPad buttons (dim, cut to one line).
+  std::u32string detail;
 };
 
 // A vertical menu that scrolls to keep the selection visible. Up and Down wrap.

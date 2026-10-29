@@ -731,8 +731,29 @@ void test_button_grid_three_columns() {
   TEST_ASSERT_EQUAL(0, int(buttonGrid(9, 2, 19, 5, 3, 0).rects.size()));
 }
 
+void test_button_grid_taller_buttons() {
+  // 4-row buttons: a pitch of 5, so rows 2..18 hold three button rows.
+  ButtonGrid b = buttonGrid(53, 2, 19, 7, 1, 0, 4);
+  TEST_ASSERT_EQUAL(3, int(b.rects.size()));
+  TEST_ASSERT_EQUAL(2, b.rects[0].r0);
+  TEST_ASSERT_EQUAL(5, b.rects[0].r1);
+  TEST_ASSERT_EQUAL(7, b.rects[1].r0);
+  TEST_ASSERT_EQUAL(4, b.maxScroll);
+}
+
+void test_one_line_blurb() {
+  TEST_ASSERT_TRUE(oneLine(U"hi there", 10) == U"hi there");
+  // Line breaks and runs of spaces fold to one space; ends trimmed.
+  TEST_ASSERT_TRUE(oneLine(U"  hi\n\n  there ", 20) == U"hi there");
+  // Too long: cut with an ellipsis, within the width.
+  TEST_ASSERT_TRUE(oneLine(U"abcdefghij", 6) == U"abcde\u2026");
+  TEST_ASSERT_TRUE(oneLine(U"abc", 0).empty());
+}
+
 int main() {
   UNITY_BEGIN();
+  RUN_TEST(test_button_grid_taller_buttons);
+  RUN_TEST(test_one_line_blurb);
   RUN_TEST(test_grid_dims);
   RUN_TEST(test_big_cells);
   RUN_TEST(test_large_text_size);

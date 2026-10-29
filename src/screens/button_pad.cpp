@@ -14,7 +14,7 @@ bool ButtonPad::active() { return board::hasTouch() && !board::hasKeys(); }
 int ButtonPad::columns() { return board::panelWidth() >= 800 ? 3 : 2; }
 
 int ButtonPad::key(const KeyEvent& k) {
-  constexpr int kPitch = kButtonRows + 1;
+  const int kPitch = height_ + 1;
   switch (k.action) {
     case Action::Up:
       if (--(dragSteps_ = std::min(dragSteps_, 0)) <= -kPitch) {
@@ -40,14 +40,18 @@ int ButtonPad::key(const KeyEvent& k) {
 void ButtonPad::render(Grid& g, const Theme& t, const std::vector<ListItem>& items, int top,
                        int bottom, bool keepRight, int cols) {
   const int n = int(items.size());
-  const ButtonGrid b = buttonGrid(g.cols(), top, bottom, n, cols > 0 ? cols : columns(), scroll_);
+  const bool details =
+      std::any_of(items.begin(), items.end(), [](const ListItem& it) { return !it.detail.empty(); });
+  height_ = kButtonRows + (details ? 1 : 0);
+  const ButtonGrid b =
+      buttonGrid(g.cols(), top, bottom, n, cols > 0 ? cols : columns(), scroll_, height_);
   scroll_ = b.scrollRow;
   if (activeTaps()) activeTaps()->setList(ListId::Main, -1, n, false);
   for (size_t k = 0; k < b.rects.size(); ++k) {
     const int i = b.first + int(k);
     const TileRect& r = b.rects[k];
     const ListItem& it = items[i];
-    const int mid = r.r0 + kButtonRows / 2;
+    const int mid = r.r0 + 1;  // the label row; a detail goes under it
     const int inW = r.c1 - r.c0 - 1;  // inside the outline
     const int lw = int(it.label.size());
     int rw = int(it.right.size());
@@ -58,6 +62,7 @@ void ButtonPad::render(Grid& g, const Theme& t, const std::vector<ListItem>& ite
     if (rw > 0) g.putText(r.c1 - rw, mid, it.right, t.dim, t.bg, rw);
     const uint16_t fg = it.tone == ItemTone::Error ? t.error : it.marker ? t.selectBg : t.fg;
     g.putText(r.c0 + 1, mid, it.label, fg, t.bg, rw > 0 ? inW - rw - 1 : inW);
+    if (!it.detail.empty()) g.putText(r.c0 + 1, mid + 1, oneLine(it.detail, inW), t.dim, t.bg, inW);
     g.outline(r.c0, r.r0, r.c1, r.r1, t.dim);
     if (activeTaps()) {
       Target tt;

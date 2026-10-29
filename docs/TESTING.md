@@ -231,6 +231,7 @@ Buttons: BOOT tap = Back, BOOT hold (0.6 s) = Home; Wake tap = screen off
 - [ ] Touch: a tap lands where the finger is, and a swipe scrolls
 - [ ] The setup screen shows "Log in on device" and "Restore from SD" (with a backup on the card) as buttons, side by side or stacked at bigger text sizes, and each works
 - [ ] Confirms (Restore, Log out, Factory reset…) show Cancel and the action as two buttons above the hint; each works, and a tap outside cancels
+- [ ] C-Mail shows one button per conversation: `@name` (and the unread count) on the first line, the last message cut to one line in dim under it; tapping opens it, and "New conversation…" opens the username line
 - [ ] The room list and Settings are buttons; the status bar shows `‹` and `⋯`; holding a log or Feed row opens its menu
 - [ ] Nicks in the room log and entry replies are bold and still legible at every text size
 - [ ] Side strip (room, conversation, C-Mail, Feed, entry): ▲/▼ move the selection, ● sends or opens the room menu when nothing is selected and opens the reply/report menu on a selected message; it steps aside when the member drawer is open and nothing on the screen is cut off

@@ -182,8 +182,11 @@ class CmailListScreen : public Screen {
 
  private:
   void editKey(const KeyEvent&);
+  void open(int index);
 
   ListView list_;
+  ButtonPad pad_;
+  bool buttons_ = false;  // touch only: conversations are buttons
   std::vector<std::string> ids_;
   InputLine input_;  // the username for a new conversation
   bool editing_ = false, busy_ = false;

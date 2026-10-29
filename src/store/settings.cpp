@@ -138,6 +138,13 @@ void saveScreen(uint32_t onSecs, bool saver) {
   p.end();
 }
 
+void saveKbLight(rc::KbLight level) {
+  Preferences p;
+  if (!p.begin(kNs, false)) return;
+  p.putUChar("kblight", static_cast<uint8_t>(level));
+  p.end();
+}
+
 void saveToken(const std::string& refreshToken) {
   Preferences p;
   if (!p.begin(kNs, false)) return;

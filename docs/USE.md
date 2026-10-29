@@ -408,7 +408,8 @@ At `http://monster-cyberspace.local`, or the device IP, on your LAN:
 - Status
 - Wi-Fi: scan, add, and remove saved networks (up to 5)
 - Cyberspace account: sign in, sign out, resend verification
-- Display: text size, theme, buzzer, and orientation (touch boards)
+- Display: text size, theme, buzzer, orientation (touch boards), and
+  keyboard light (boards with a lit keyboard)
 - Time: zone and NTP server (see Time and time zone below)
 - Security: page password and setup-AP password
 - Restart and factory reset
@@ -504,7 +505,8 @@ touch board and two more on a board with an SD card slot:
 - **At timeout: screensaver / screen off.** Centre switches what the screen
   timeout does and saves it.
 - **Keyboard light: …** (M9, T-Deck Plus, T-Deck Pro, Pager) Opens a box with
-  Low, Medium, High and Off; picking one saves it. The keys are lit only while
+  Low, Medium, High and Off; picking one saves it (also under Display in web
+  config). The keys are lit only while
   the screen is on. Off by default, except on the M9, where it is High and its
   keyboard lights the keys itself after a press; Off there switches that light
   off until the M9 is power cycled.

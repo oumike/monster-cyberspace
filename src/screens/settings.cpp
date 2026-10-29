@@ -179,7 +179,7 @@ void SettingsScreen::confirmKey(const KeyEvent& k) {
         const int i = confirmBox_.selected();
         if (i >= 0 && i < int(std::size(kKbLightOrder))) {
           app().cfg.kbLight = kKbLightOrder[i];
-          settings::saveUiPrefs(app().cfg);
+          settings::saveKbLight(app().cfg.kbLight);
         }
         break;
       }

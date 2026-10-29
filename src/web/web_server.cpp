@@ -23,6 +23,7 @@
 #include "store/backup_store.h"
 #include "store/settings.h"
 #include "tz/zones.h"
+#include "ui/kb_light.h"
 #include "ui/screen_timeout.h"
 #include "web/page.h"
 #include "web/web_util.h"
@@ -312,6 +313,7 @@ esp_err_t getPrefs(httpd_req_t* req) {
   d["tzName"] = s.tzName;
   d["ntpServer"] = s.ntpServer;
   if (board::canRotate()) d["rotation"] = s.rotation;
+  if (board::hasKbLight()) d["kbLight"] = rc::kbLightKey(s.kbLight);
   return sendJson(req, d);
 }
 
@@ -356,6 +358,10 @@ esp_err_t postPrefs(httpd_req_t* req) {
     screenOnSecs = doc["screenOnSecs"].as<uint32_t>();
   }
   const bool screenSaver = doc["screenSaver"].is<bool>() ? doc["screenSaver"].as<bool>() : s.screenSaver;
+  rc::KbLight kbLight = s.kbLight;
+  if (!doc["kbLight"].isNull() &&
+      (!doc["kbLight"].is<const char*>() || !rc::parseKbLight(doc["kbLight"].as<const char*>(), kbLight)))
+    return fail(req, "400 Bad Request", "Keyboard light: off, low, medium or high");
   std::string ntp = s.ntpServer;
   if (doc["ntpServer"].is<const char*>()) {
     ntp = doc["ntpServer"].as<const char*>();
@@ -388,6 +394,11 @@ esp_err_t postPrefs(httpd_req_t* req) {
     rc::app().cfg.screenOnSecs = screenOnSecs;
     rc::app().cfg.screenSaver = screenSaver;
     settings::saveScreen(screenOnSecs, screenSaver);
+  }
+  // The UI task picks the new level up on its next pass.
+  if (board::hasKbLight() && kbLight != s.kbLight) {
+    rc::app().cfg.kbLight = kbLight;
+    settings::saveKbLight(kbLight);
   }
   // The UI task owns text size, theme and buzzer; it applies and saves them.
   if (!doc["textSize"].isNull() || !doc["buzzer"].isNull() || !doc["theme"].isNull())

@@ -52,6 +52,7 @@ a{color:#6cf}
 <label id="rotrow" hidden>Orientation<select id="rot"><option value="0">Landscape</option><option value="2">Landscape 180</option><option value="1">Portrait</option><option value="3">Portrait 180</option></select></label>
 <label>Screen timeout<select id="scrsecs"><option value="15">15 s</option><option value="30">30 s</option><option value="60">1 min</option><option value="120">2 min</option><option value="300">5 min</option><option value="600">10 min</option><option value="1800">30 min</option><option value="3600">60 min</option><option value="0">Never</option></select></label>
 <label>At timeout<select id="scrsaver"><option value="1">Screensaver</option><option value="0">Screen off</option></select></label>
+<label id="kbrow" hidden>Keyboard light<select id="kblight"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="off">Off</option></select></label>
 <label><input id="buzzer" type="checkbox" style="width:auto"> Buzzer on mentions</label>
 <button onclick="savePrefs()">Save display</button>
 <div id="prefmsg" class="msg"></div>
@@ -135,6 +136,7 @@ async function loadPrefs(){const p=await call('GET','/api/prefs');if(p.tz===unde
   $('tsize').value=p.textSize;if(p.theme){$('themerow').hidden=false;$('theme').value=p.theme;}$('buzzer').checked=p.buzzer;$('tz').value=p.tz;
   $('scrsecs').value=String(p.screenOnSecs);$('scrsaver').value=p.screenSaver?'1':'0';
   if(p.rotation!==undefined){$('rotrow').hidden=false;$('rot').value=String(p.rotation);}
+  if(p.kbLight){$('kbrow').hidden=false;$('kblight').value=p.kbLight;}
   $('tzpick').value=listed(p.tzName)?p.tzName:'';tzCustom();$('ntp').value=p.ntpServer;
   // Setup mode keeps a zone already set; only the factory default takes the browser's.
   savedTzName=p.tzName;const keep=$('wtz').querySelector('option[value=""]');
@@ -154,7 +156,8 @@ async function login(){$('acctmsg').textContent='Signing in…';$('acctmsg').cla
 function savePrefs(){const b={textSize:$('tsize').value,buzzer:$('buzzer').checked,
     screenOnSecs:parseInt($('scrsecs').value,10),screenSaver:$('scrsaver').value==='1'};
   if(!$('themerow').hidden)b.theme=$('theme').value;
-  if(!$('rotrow').hidden)b.rotation=parseInt($('rot').value,10);post('/api/prefs',b,'prefmsg');}
+  if(!$('rotrow').hidden)b.rotation=parseInt($('rot').value,10);
+  if(!$('kbrow').hidden)b.kbLight=$('kblight').value;post('/api/prefs',b,'prefmsg');}
 function saveTime(){post('/api/prefs',{tzName:$('tzpick').value,tz:$('tz').value,ntpServer:$('ntp').value},'timemsg');}
 async function saveSec(){const b={pagePassword:$('pagepw').value,apPassword:$('appw').value};
   if(!b.pagePassword&&!confirm('Leave the page password empty (no password)?'))return;

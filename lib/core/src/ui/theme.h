@@ -9,8 +9,8 @@ namespace rc {
 struct Theme {
   uint16_t bg, fg, dim, barBg, barFg, hintBg, hintFg, time, sys, mentionBg, inputBg, cursorBg, cursorFg,
       selectBg, selectFg, drawerBg, drawerEdge, error;
-  // Default, Bubblegum and Top8 keep the website's per-user nick hues; the
-  // others draw every nick in `nick`. Your own is always `selfNick`.
+  // Default and the Bubblegum and Top8 themes keep the website's per-user
+  // nick hues; the others draw every nick in `nick`. Your own is always `selfNick`.
   bool colorNicks;
   uint16_t nick, selfNick;
   // E-paper: a highlight that would be a solid block (a picked symbol, a
@@ -23,12 +23,14 @@ struct Theme {
   uint8_t nickLightness = 68;
 };
 
-// Saved by number: append, never reorder. Dark onwards are cyberspace.online's.
+// Saved by number: append, never reorder. Dark … Top8 are cyberspace.online's;
+// BubblegumDark and Top8Dark are our dark takes on its two light ones.
 enum class ThemeId : uint8_t {
   Default = 0, BlackWhite = 1, WhiteBlack = 2,
-  Dark, Light, Lcd, C64, Vt320, Matrix, Poetry, Brutalist, Grid, Crypt, Bubblegum, Top8
+  Dark, Light, Lcd, C64, Vt320, Matrix, Poetry, Brutalist, Grid, Crypt, Bubblegum, Top8,
+  BubblegumDark, Top8Dark
 };
-constexpr int kThemeCount = 15;
+constexpr int kThemeCount = 17;
 
 const Theme& theme(ThemeId id);
 // The "terminal" look of the mockups: green on black.

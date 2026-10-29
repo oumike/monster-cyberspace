@@ -154,7 +154,7 @@ void test_round_trip_every_field() {
                               "notifyLight: magenta  # off | red | green | blue | yellow | cyan |"
                               " magenta | white\n"
                               "notifyTimeout: 0  # seconds, 0 until read\n"));
-  TEST_ASSERT_NOT_NULL(strstr(y.c_str(), "theme: wb  # default | bw | wb | dark | light | lcd | c64 | vt320 | matrix | poetry | brutalist | grid | crypt | bubblegum | top8\n"
+  TEST_ASSERT_NOT_NULL(strstr(y.c_str(), "theme: wb  # default | bw | wb | dark | light | lcd | c64 | vt320 | matrix | poetry | brutalist | grid | crypt | bubblegum | top8 | bubblegumdark | top8dark\n"
                                            "rotation: 3  # 0 landscape, 1 portrait, 2 landscape 180, 3 portrait 180\n"));
   TEST_ASSERT_EQUAL(0, y.rfind("# Monster for Cyberspace settings backup.\n", 0));
 }

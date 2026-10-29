@@ -65,7 +65,7 @@ on 2026-10-27; the sections marked `m9_fake` passed on it before then.
 
 - [x] Settings → Theme cycles Default → Black & white → White & black → Default; each redraws at once and survives a restart
 - [ ] Settings → Theme opens a box listing all 15 themes with a marker on the current one; it scrolls, picking one redraws at once and survives a restart
-- [ ] Each site theme (Dark … Top8) is readable on Home, room, drawer, menus, Settings and the keyboard; the web config select offers them all
+- [ ] Each site theme (Dark … Top8, Bubblegum Dark, Top8 Dark) is readable on Home, room, drawer, menus, Settings and the keyboard; the web config select offers them all
 - [ ] Web config Display → Theme changes the device at once; the select shows the saved theme on reload
 - [ ] In both mono themes: Home, room, drawer, menus, palette, Feed list, Entry, Composer, login and Settings are readable; nicks use the text colour
 - [ ] Link view QR stays black on white

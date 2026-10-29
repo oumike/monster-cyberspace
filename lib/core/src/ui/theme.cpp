@@ -64,10 +64,11 @@ constexpr Theme site(uint32_t bg, uint32_t fg, uint32_t dim, uint32_t bar, uint3
   };
 }
 
-// A light site theme with the website's per-user nick hues, darkened to read.
-constexpr Theme colourNicks(Theme t) {
+// A site theme with the website's per-user nick hues: darkened on a light
+// background, lightened on a dark one.
+constexpr Theme colourNicks(Theme t, uint8_t lightness) {
   t.colorNicks = true;
-  t.nickLightness = 32;
+  t.nickLightness = lightness;
   return t;
 }
 
@@ -103,10 +104,17 @@ const Theme kCrypt = site(0x100202, 0xEE1100, 0xCF0000, /*bar*/ 0x580101, /*pane
                          /*mention*/ 0x3B0101, /*error*/ 0xFFFFFF);
 // Bubblegum: fg #6b1a4a, bg #ffe4f1, dim #b86b93, border #f5b5d1, code #ffd0e5.
 const Theme kBubblegum = colourNicks(site(0xFFE4F1, 0x6B1A4A, 0xB86B93, /*bar*/ 0xF5B5D1, /*panel*/ 0xFFD0E5,
-                         /*mention*/ 0xF9C8DE, /*error*/ 0xC01818));
+                         /*mention*/ 0xF9C8DE, /*error*/ 0xC01818), 32);
 // Top8: fg #000000, bg #ffffff, dim #666666, border #6699cc, code #e6f2ff.
 const Theme kTop8 = colourNicks(site(0xFFFFFF, 0x000000, 0x666666, /*bar*/ 0x6699CC, /*panel*/ 0xE6F2FF,
-                         /*mention*/ 0xA3C2E0, /*error*/ 0xC01818));
+                         /*mention*/ 0xA3C2E0, /*error*/ 0xC01818), 32);
+
+// Ours, not the site's: Bubblegum's pinks on a deep plum.
+const Theme kBubblegumDark = colourNicks(site(0x2A0F1F, 0xFFD0E5, 0xC97FA6, /*bar*/ 0x6B1A4A,
+                         /*panel*/ 0x3A1529, /*mention*/ 0x4F1F3A, /*error*/ 0xFF5555), 74);
+// Ours, not the site's: Top8's blues on a midnight navy.
+const Theme kTop8Dark = colourNicks(site(0x0B1622, 0xE6F2FF, 0x8FA8C2, /*bar*/ 0x336699,
+                         /*panel*/ 0x13243A, /*mention*/ 0x1F3A5C, /*error*/ 0xFF5555), 74);
 
 
 // E-paper: black and white only.
@@ -139,6 +147,8 @@ const Theme& theme(ThemeId id) {
     case ThemeId::Crypt: return kCrypt;
     case ThemeId::Bubblegum: return kBubblegum;
     case ThemeId::Top8: return kTop8;
+    case ThemeId::BubblegumDark: return kBubblegumDark;
+    case ThemeId::Top8Dark: return kTop8Dark;
     default: return kDefault;
   }
 }
@@ -176,6 +186,8 @@ const char* themeKey(ThemeId id) {
     case ThemeId::Crypt: return "crypt";
     case ThemeId::Bubblegum: return "bubblegum";
     case ThemeId::Top8: return "top8";
+    case ThemeId::BubblegumDark: return "bubblegumdark";
+    case ThemeId::Top8Dark: return "top8dark";
     default: return "default";
   }
 }
@@ -206,6 +218,8 @@ const char* themeLabel(ThemeId id) {
     case ThemeId::Crypt: return "Crypt";
     case ThemeId::Bubblegum: return "Bubblegum";
     case ThemeId::Top8: return "Top8";
+    case ThemeId::BubblegumDark: return "Bubblegum Dark";
+    case ThemeId::Top8Dark: return "Top8 Dark";
     default: return "Default";
   }
 }

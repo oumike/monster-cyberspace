@@ -121,7 +121,7 @@ M2 (C-Mail) plan and all 12 of the M3 (Feed) plan are done and committed, with
 their boxes ticked. The room-screen, C-Mail, web config and Feed (`m9_fake`)
 hardware checks passed on the device (2026-10-26).
 Also done since: themes (Default / Black & white / White & black plus
-cyberspace.online's twelve, Dark … Top8, from the site's colours; picked in a
+cyberspace.online's twelve, Dark … Top8, then our Bubblegum Dark and Top8 Dark, from the site's colours; picked in a
 Settings box and web config; saved by index, so append new ones), and the Wio Tracker L2 HAL with env `wio_l2`
 (bring-up only, untested on hardware).
 All 8 tasks of the GPS time plan are done and committed: NTP, GPS and RTC
@@ -165,7 +165,7 @@ The T-Deck Pro (env `tdeck_pro`, e-paper) uses the touch-only paradigm plus a
 its and the T-Deck Plus's mic key opens the emoji tray (`board::textEntry`).
 A browser flasher (GitHub Pages, `site/`, `.github/workflows/pages.yml`)
 serves the latest release (docs/BUILD.md).
-The native suite is green: 507/507
+The native suite is green: 508/508
 (`pio test -e native`), and `scripts/build-upload-monitor.sh -B` builds all
 eight firmware envs.
 

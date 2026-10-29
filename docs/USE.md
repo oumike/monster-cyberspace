@@ -468,9 +468,12 @@ with every theme) or in web config under Display. The choice is saved.
   Poetry, Brutalist, GRiD, Crypt, Bubblegum and Top8, in the site's colours.
   The status bar takes the site's border colour and the input line and
   member list its code-block colour.
+- **Bubblegum Dark, Top8 Dark:** our dark takes on those two, pink on plum
+  and pale blue on navy.
 
 Bubblegum and Top8 colour nicks like Default, in darker shades for their
-light backgrounds, with yours in the dim colour. The other themes draw nicks
+light backgrounds, and their dark takes in lighter ones; yours is in the dim
+colour. The other themes draw nicks
 in the text colour, and yours in the dim one. QR codes stay
 black on white in every theme. The T-Deck Pro's e-paper has one theme of its
 own, black on white with outlined selections, and no Theme item.

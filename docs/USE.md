@@ -319,11 +319,12 @@ in the Feed palette, an entry's menu or the web page, where each switch steps
 Compact → Comfortable → Large. The choice is saved. Settings itself always
 uses Compact, so its items fit.
 
-- **Comfortable:** larger 8×16 text, `nick message`, with a time divider when
-  the minute changes.
-- **Compact:** 6×12 text, `14:02 nick: message`, with a hint row at the
-  bottom.
+- **Comfortable:** larger 8×16 text.
+- **Compact:** 6×12 text, with a hint row at the bottom.
 - **Large:** like Comfortable, one size up: 10×18 text and 12×24 titles.
+
+Room messages read `14:02 nick: message`, with a divider when the day
+changes, at every size.
 
 ## Themes
 

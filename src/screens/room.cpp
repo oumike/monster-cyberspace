@@ -612,7 +612,9 @@ void RoomScreen::render(Grid& g, const Theme& t, int64_t) {
     version_ = s.store.version();
     cols_ = logCols;
     LayoutOptions o;
-    o.size = app().cfg.textSize;
+    // Every text size lays messages out as Compact does: a time on each
+    // message and a divider per day.
+    o.size = TextSize::Compact;
     o.cols = logCols;
     o.selfUsername = s.self;
     o.muted = &muted_;

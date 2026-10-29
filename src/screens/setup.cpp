@@ -33,7 +33,9 @@ void SetupScreen::onKey(const KeyEvent& k) {
   if (picker_.isOpen()) return picker_.onKey(k);
   if (buttons_) {
     const int i = pad_.key(k);
-    if (i >= 0 && menu_.select(i)) onKey(KeyEvent{Action::Select});
+    if (i < 0) return;
+    if (hasRestore_ && i == 1) picker_.open();
+    else if (i == 0) router::go(router::Id::LoginForm);
     return;
   }
   switch (k.action) {

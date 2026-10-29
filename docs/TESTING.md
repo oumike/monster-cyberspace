@@ -188,6 +188,7 @@ Buttons: BOOT tap = Back, BOOT hold (0.6 s) = Home; Wake tap = screen off
 - [ ] Sym/Alt + Backspace go back, Sym/Alt + Enter open the palette, Sym + Space and Alt + H go Home, Alt + C/M/F open cIRC, C-Mail and Feed
 - [ ] Keys typed quickly during a refresh are not lost
 - [ ] Touch: a tap lands where the finger is, and a swipe scrolls
+- [ ] The setup screen shows "Log in on device" and "Restore from SD" (with a backup on the card) as buttons, side by side or stacked at bigger text sizes, and each works
 - [ ] The room list and Settings are buttons; the status bar shows `‹` and `⋯`; holding a log or Feed row opens its menu
 - [ ] Nicks in the room log and entry replies are bold and still legible at every text size
 - [ ] Side strip (room, conversation, C-Mail, Feed, entry): ▲/▼ move the selection, ● sends or opens the room menu when nothing is selected and opens the reply/report menu on a selected message; it steps aside when the member drawer is open and nothing on the screen is cut off

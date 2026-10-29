@@ -34,6 +34,8 @@ class SetupScreen : public Screen {
   ListView menu_;
   BackupPicker picker_;
   bool hasRestore_ = false;  // the SD list held backups on enter
+  bool buttons_ = false;     // touch-only boards: the options as buttons
+  ButtonPad pad_;
 };
 
 class LoginFormScreen : public Screen {

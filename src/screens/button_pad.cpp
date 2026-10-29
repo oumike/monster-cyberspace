@@ -37,9 +37,9 @@ int ButtonPad::key(const KeyEvent& k) {
 }
 
 void ButtonPad::render(Grid& g, const Theme& t, const std::vector<ListItem>& items, int top,
-                       int bottom, bool keepRight) {
+                       int bottom, bool keepRight, int cols) {
   const int n = int(items.size());
-  const ButtonGrid b = buttonGrid(g.cols(), top, bottom, n, columns(), scroll_);
+  const ButtonGrid b = buttonGrid(g.cols(), top, bottom, n, cols > 0 ? cols : columns(), scroll_);
   scroll_ = b.scrollRow;
   if (activeTaps()) activeTaps()->setList(ListId::Main, -1, n, false);
   for (size_t k = 0; k < b.rects.size(); ++k) {

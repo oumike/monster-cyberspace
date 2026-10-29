@@ -23,9 +23,9 @@ class ButtonPad {
   // Up/Down scroll. A tap on a button returns its index; anything else -1.
   int key(const KeyEvent& k);
   // Over grid rows [top, bottom). keepRight shortens the label rather than
-  // dropping `right` when both don't fit.
+  // dropping `right` when both don't fit. columns 0: columns().
   void render(Grid& g, const Theme& t, const std::vector<ListItem>& items, int top, int bottom,
-              bool keepRight);
+              bool keepRight, int columns = 0);
 
  private:
   int scroll_ = 0;

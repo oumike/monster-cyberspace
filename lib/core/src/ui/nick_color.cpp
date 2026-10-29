@@ -36,9 +36,9 @@ uint16_t hslToRgb565(float hDeg, float s, float l) {
 }
 
 uint16_t nickColor(const Theme& t, std::string_view name, bool isSelf) {
-  if (!t.colorNicks) return isSelf ? t.selfNick : t.nick;
-  if (isSelf) return 0xFE8C;
-  return hslToRgb565(nickHue(name), 0.70f, 0.68f);
+  if (isSelf) return t.selfNick;
+  if (!t.colorNicks) return t.nick;
+  return hslToRgb565(nickHue(name), 0.70f, t.nickLightness / 100.0f);
 }
 
 

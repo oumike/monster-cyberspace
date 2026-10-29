@@ -36,6 +36,12 @@ void assertReadable(const Theme& t) {
   TEST_ASSERT_NOT_EQUAL(t.bg, t.selfNick);
 }
 
+// Perceived brightness, 0..255.
+int luma(uint16_t c) {
+  const int r = ((c >> 11) & 0x1F) * 255 / 31, g = ((c >> 5) & 0x3F) * 255 / 63, b = (c & 0x1F) * 255 / 31;
+  return (299 * r + 587 * g + 114 * b) / 1000;
+}
+
 bool isGrey(uint16_t c) {
   const int r = (c >> 11) & 0x1F, g = (c >> 6) & 0x1F, b = c & 0x1F;  // g at 5 bits
   return r == g && g == b;
@@ -139,6 +145,17 @@ void test_next_theme_wraps() {
   TEST_ASSERT_EQUAL(static_cast<int>(ThemeId::Default), static_cast<int>(nextTheme(ThemeId::Top8)));
 }
 
+void test_light_colour_themes_have_dark_colour_nicks() {
+  const char* names[] = {"tardibyte", "oumike", "zed", "alice", "bob", "carol", "dave", "yellowfan"};
+  for (ThemeId id : {ThemeId::Bubblegum, ThemeId::Top8}) {
+    const Theme& t = theme(id);
+    TEST_ASSERT_TRUE(t.colorNicks);
+    TEST_ASSERT_NOT_EQUAL(nickColor(t, "tardibyte", false), nickColor(t, "oumike", false));
+    for (const char* n : names) TEST_ASSERT_TRUE(luma(t.bg) - luma(nickColor(t, n, false)) > 90);
+    TEST_ASSERT_EQUAL_HEX16(t.selfNick, nickColor(t, "oumike", true));
+  }
+}
+
 int main(int, char**) {
   UNITY_BEGIN();
   RUN_TEST(test_every_theme_readable);
@@ -152,5 +169,6 @@ int main(int, char**) {
   RUN_TEST(test_site_theme_ids_are_stable);
   RUN_TEST(test_site_themes_have_visible_panels);
   RUN_TEST(test_site_colours_match);
+  RUN_TEST(test_light_colour_themes_have_dark_colour_nicks);
   return UNITY_END();
 }

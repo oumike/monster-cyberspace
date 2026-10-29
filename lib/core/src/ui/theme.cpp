@@ -64,6 +64,13 @@ constexpr Theme site(uint32_t bg, uint32_t fg, uint32_t dim, uint32_t bar, uint3
   };
 }
 
+// A light site theme with the website's per-user nick hues, darkened to read.
+constexpr Theme colourNicks(Theme t) {
+  t.colorNicks = true;
+  t.nickLightness = 32;
+  return t;
+}
+
 // Dark: fg #efe5c0, bg #000000, dim #a89984, border #3a3a3a, code hsla(0,0%,100%,.07).
 const Theme kDark = site(0x000000, 0xEFE5C0, 0xA89984, /*bar*/ 0x3A3A3A, /*panel*/ 0x121212,
                          /*mention*/ 0x232323, /*error*/ 0xFF5555);
@@ -95,11 +102,11 @@ const Theme kGrid = site(0x180F06, 0xFEA813, 0xD08C17, /*bar*/ 0x49310B, /*panel
 const Theme kCrypt = site(0x100202, 0xEE1100, 0xCF0000, /*bar*/ 0x580101, /*panel*/ 0x1C0202,
                          /*mention*/ 0x3B0101, /*error*/ 0xFFFFFF);
 // Bubblegum: fg #6b1a4a, bg #ffe4f1, dim #b86b93, border #f5b5d1, code #ffd0e5.
-const Theme kBubblegum = site(0xFFE4F1, 0x6B1A4A, 0xB86B93, /*bar*/ 0xF5B5D1, /*panel*/ 0xFFD0E5,
-                         /*mention*/ 0xF9C8DE, /*error*/ 0xC01818);
+const Theme kBubblegum = colourNicks(site(0xFFE4F1, 0x6B1A4A, 0xB86B93, /*bar*/ 0xF5B5D1, /*panel*/ 0xFFD0E5,
+                         /*mention*/ 0xF9C8DE, /*error*/ 0xC01818));
 // Top8: fg #000000, bg #ffffff, dim #666666, border #6699cc, code #e6f2ff.
-const Theme kTop8 = site(0xFFFFFF, 0x000000, 0x666666, /*bar*/ 0x6699CC, /*panel*/ 0xE6F2FF,
-                         /*mention*/ 0xA3C2E0, /*error*/ 0xC01818);
+const Theme kTop8 = colourNicks(site(0xFFFFFF, 0x000000, 0x666666, /*bar*/ 0x6699CC, /*panel*/ 0xE6F2FF,
+                         /*mention*/ 0xA3C2E0, /*error*/ 0xC01818));
 
 
 // E-paper: black and white only.

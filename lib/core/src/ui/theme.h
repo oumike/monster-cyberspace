@@ -9,8 +9,8 @@ namespace rc {
 struct Theme {
   uint16_t bg, fg, dim, barBg, barFg, hintBg, hintFg, time, sys, mentionBg, inputBg, cursorBg, cursorFg,
       selectBg, selectFg, drawerBg, drawerEdge, error;
-  // Default keeps the website's per-user nick colours; the monochrome themes
-  // draw every nick in `nick` and your own in `selfNick`.
+  // Default, Bubblegum and Top8 keep the website's per-user nick hues; the
+  // others draw every nick in `nick`. Your own is always `selfNick`.
   bool colorNicks;
   uint16_t nick, selfNick;
   // E-paper: a highlight that would be a solid block (a picked symbol, a
@@ -18,6 +18,9 @@ struct Theme {
   bool outlined;
   // E-paper: nicks in the room log are drawn bold, as colour can't set them apart.
   bool boldNicks = false;
+  // The per-user nick colours' HSL lightness, in percent: light on a dark
+  // background, dark on a light one.
+  uint8_t nickLightness = 68;
 };
 
 // Saved by number: append, never reorder. Dark onwards are cyberspace.online's.

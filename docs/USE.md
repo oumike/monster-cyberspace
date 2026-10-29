@@ -469,8 +469,9 @@ with every theme) or in web config under Display. The choice is saved.
   The status bar takes the site's border colour and the input line and
   member list its code-block colour.
 
-Every theme but Default draws nicks in the text colour, and yours in the dim
-one. QR codes stay
+Bubblegum and Top8 colour nicks like Default, in darker shades for their
+light backgrounds, with yours in the dim colour. The other themes draw nicks
+in the text colour, and yours in the dim one. QR codes stay
 black on white in every theme. The T-Deck Pro's e-paper has one theme of its
 own, black on white with outlined selections, and no Theme item.
 

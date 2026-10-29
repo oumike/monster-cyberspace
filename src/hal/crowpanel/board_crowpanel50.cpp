@@ -143,6 +143,7 @@ bool hasKeys() { return false; }
 bool backspaceIsBack() { return false; }
 bool anyInputWakes() { return true; }
 bool upDownOnly() { return false; }
+bool eink() { return false; }
 bool doubleTapWakes() { return true; }
 
 // Raw touch is the panel's native landscape 800x480; turn it into the frame

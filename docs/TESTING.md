@@ -178,6 +178,22 @@ Buttons: BOOT tap = Back, BOOT hold (0.6 s) = Home; Wake tap = screen off
 - [ ] Wi-Fi setup (`pager`, nothing saved): the AP is named `Monster-Cyberspace-Pager-Setup` and `http://192.168.4.1` loads
 - [ ] Regression after the shared-driver change: the Wio L2 speaker and the M9/T-Deck panels still work as before
 
+**T-Deck Pro (`tdeck_pro`):**
+
+- [ ] Boots: the serial log (USB) shows `[boot] … on TDeckPro`, `[kb] keyboard found` and `[touch] CST328` or `[touch] CST3530`
+- [ ] E-paper: portrait, black on white, nothing cut off; the first frame is a full refresh, typing updates with partial refreshes once you pause, and ghosting clears every so often
+- [ ] Selections, the Home tiles, the symbol table and error banners are outlined, not filled; the splash cursor doesn't blink
+- [ ] Settings and web config show no Theme item
+- [ ] Every key types the right character, with Shift and Sym; holding Backspace repeats; Alt + W/A/S/D move, and repeat when held
+- [ ] Sym/Alt + Backspace go back, Sym/Alt + Enter open the palette, Sym + Space and Alt + H go Home, Alt + C/M/F open cIRC, C-Mail and Feed
+- [ ] Keys typed quickly during a refresh are not lost
+- [ ] Touch: a tap lands where the finger is, and a swipe scrolls
+- [ ] Side button: turns the screen off (the panel keeps the still splash), and on again; keys don't wake it
+- [ ] Battery %: Settings shows a sensible value; the charging state follows the USB cable
+- [ ] GPS: outdoors with Wi-Fi off, `[time] set from GPS` within 15 min, then `[gps] off`
+- [ ] SD (FAT32 card): Back up to SD card, then Restore from SD card…, both work
+- [ ] Wi-Fi setup (nothing saved): the AP is named `Monster-Cyberspace-TDeckPro` and `http://192.168.4.1` loads
+
 **GPS time, RTC and time zone (`m9`):**
 
 - [ ] With Wi-Fi in range, `[time] NTP sync` and `[time] RTC written` appear, then `[gps] off`

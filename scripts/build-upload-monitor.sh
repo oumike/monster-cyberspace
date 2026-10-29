@@ -31,6 +31,7 @@ env_label() {
 		crowpanel35) echo "Elecrow CrowPanel Advance 3.5\"" ;;
 		crowpanel50) echo "Elecrow CrowPanel Advance 5.0\"" ;;
 		pager)  echo "LilyGO T-LoRa Pager" ;;
+		tdeck_pro) echo "LilyGO T-Deck Pro" ;;
 		*)      echo "$1" ;;
 	esac
 }
@@ -78,7 +79,7 @@ prompt_for_device() {
 
 show_usage() {
 	cat <<USAGE
-Usage: $0 [ENV] [--m9|-9] [--wio-l2|-w] [--tdeck|-t] [--crowpanel35|-3] [--crowpanel50|-5] [--pager|-P] [--port|-p PORT] [--erase|-E] [--fullclean|-F] [--just-build|-B]
+Usage: $0 [ENV] [--m9|-9] [--wio-l2|-w] [--tdeck|-t] [--crowpanel35|-3] [--crowpanel50|-5] [--pager|-P] [--tdeck-pro|-D] [--port|-p PORT] [--erase|-E] [--fullclean|-F] [--just-build|-B]
   ENV               Any firmware environment in platformio.ini (e.g. m9, tdeck).
   Board flags (one per supported board):
   --m9, -9          Elecrow ThinkNode M9 (m9)
@@ -87,6 +88,7 @@ Usage: $0 [ENV] [--m9|-9] [--wio-l2|-w] [--tdeck|-t] [--crowpanel35|-3] [--crowp
   --crowpanel35, -3 Elecrow CrowPanel Advance 3.5" (crowpanel35)
   --crowpanel50, -5 Elecrow CrowPanel Advance 5.0" (crowpanel50)
   --pager, -P       LilyGO T-LoRa Pager (pager)
+  --tdeck-pro, -D   LilyGO T-Deck Pro (tdeck_pro)
                     With no board or environment given, you'll be prompted.
   --port, -p PORT   Serial port for upload and monitor (default: auto-detect)
   --erase, -E       Erase the whole flash while uploading (wipes saved settings)
@@ -116,6 +118,7 @@ while [ "$#" -gt 0 ]; do
 		--crowpanel35|-3) BOARD=crowpanel35 ;;
 		--crowpanel50|-5) BOARD=crowpanel50 ;;
 		--pager|-P)      BOARD=pager ;;
+		--tdeck-pro|-D)  BOARD=tdeck_pro ;;
 		--port|-p)
 			[ "$#" -ge 2 ] || { echo "--port needs a value"; exit 1; }
 			PORT="$2"

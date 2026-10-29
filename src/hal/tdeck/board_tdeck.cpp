@@ -93,6 +93,7 @@ bool hasKeys() { return true; }
 bool backspaceIsBack() { return true; }
 bool anyInputWakes() { return true; }
 bool upDownOnly() { return false; }
+bool eink() { return false; }
 bool doubleTapWakes() { return false; }
 
 bool readTouch(int16_t& x, int16_t& y) {

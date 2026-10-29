@@ -46,6 +46,9 @@ void renderStatusBar(Grid& g, const Theme& t, std::u32string_view title, int cou
   if (static_cast<int>(left.size()) > leftMax && leftMax > 0)
     left = left.substr(0, leftMax - 1) + U"\u2026";
   g.putText(titleCol, row, left, t.barFg, t.barBg, leftMax);
+  // An outlined theme's bar is the page colour: a rule sets it apart.
+  if (t.outlined)
+    for (int c = 0; c < g.cols(); ++c) g.addEdges(c, row, kEdgeBottom, t.barFg);
 
   if (touch.on && activeTaps()) {
     if (touch.back) {

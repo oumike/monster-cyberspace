@@ -4,7 +4,8 @@ Standalone ESP32 firmware client for [cyberspace.online](https://cyberspace.onli
 a retro text-only social network. Milestone 1 is cIRC chat plus a device-served
 web config page, on the Elecrow ThinkNode M9. The Seeed Wio Tracker L2 and
 the LilyGO T-Deck Plus followed, then the Elecrow CrowPanel Advance 3.5" and
-5.0" and the LilyGO T-LoRa Pager (all built, not yet tried on hardware). More
+5.0", the LilyGO T-LoRa Pager and the LilyGO T-Deck Pro (all built, not yet
+tried on hardware). More
 boards and Cyberspace features come later.
 
 - **Design spec:** `docs/superpowers/specs/2026-10-25-cyberspace-m9-circ-design.md`
@@ -57,7 +58,8 @@ pio run -e wio_l2           # Seeed Wio Tracker L2 firmware
 pio run -e tdeck            # LilyGO T-Deck Plus firmware
 pio run -e crowpanel35      # Elecrow CrowPanel Advance 3.5" (crowpanel50: the 5.0")
 pio run -e pager            # LilyGO T-LoRa Pager
-scripts/build-upload-monitor.sh m9   # flash + serial monitor (115200); -w for the Wio L2, -t for the T-Deck Plus, -3/-5 for the CrowPanels, -P for the Pager; --help for options
+pio run -e tdeck_pro        # LilyGO T-Deck Pro (e-paper)
+scripts/build-upload-monitor.sh m9   # flash + serial monitor (115200); -w for the Wio L2, -t for the T-Deck Plus, -3/-5 for the CrowPanels, -P for the Pager, -D for the T-Deck Pro; --help for options
 scripts/build-upload-monitor.sh -B   # build every firmware env, no device needed
 scripts/release.sh --dist-only       # release images into dist/; releasing itself is the user's call (docs/BUILD.md)
 ```
@@ -88,6 +90,14 @@ list in its `Config`), an XL9555 expander for power rails, a TCA8418
 keyboard, the side wheel as Up/Down, the Wio's `es8311` speaker driver,
 BQ25896 battery, PCF85063 RTC, GPS and SD. No touch; its input rules
 (`keymap_pager`, `rotary`) live in `lib/core`.
+`src/hal/tdeck_pro/` is the LilyGO T-Deck Pro (from camillia-mt's
+`hw_tdeck_pro.h`/`tdeck_pro_display.h` and platy-aprs's `display_eink.cpp`,
+`tdeck_pro_io.cpp`): a GDEQ031T10 240x320 e-paper through GxEPD2, with frames
+packed to 1 bit and refresh timing by `ui/eink` in `lib/core`; a TCA8418
+keyboard (`keymap_tdeck_pro`), raw CST328/CST3530 touch, the side button as
+ScreenOff, BQ27220/BQ25896 battery, GPS and SD. `board::eink()` makes the app
+use `paperTheme()` (outlined selections, `Theme::outlined`), hide the Theme
+item, and keep the splash cursor and screensaver still.
 Touch: `lib/core` turns samples into gestures and resolves them against the
 per-frame `TapMap` widgets fill as they draw (`input/gestures`, `ui/tap_map`,
 `input/touch_resolve`, the `Osk` keyboard); `ui_task` feeds `handleKey` and
@@ -125,8 +135,10 @@ The scripted fake-API builds (`*_fake`, `RC_FAKE_API`) were removed on
 The LilyGO T-LoRa Pager HAL (env `pager`) was added on 2026-10-27 (built
 without flashing; `PANEL_MADCTL` and the row offset await the hardware
 check; the wheel direction was flipped after a hardware check on 2026-10-28).
+The LilyGO T-Deck Pro HAL (env `tdeck_pro`) was added on 2026-10-28 (built
+without flashing).
 **Still open:** the unticked items under "Open hardware checks" in
-`docs/TESTING.md` (themes, device Settings, touch UI, Wio L2, T-Deck Plus, CrowPanels, Pager, GPS time, API
+`docs/TESTING.md` (themes, device Settings, touch UI, Wio L2, T-Deck Plus, CrowPanels, Pager, T-Deck Pro, GPS time, API
 assumptions, settings backup, OTA), then the human live checklist on the `m9` build.
 CI (`.github/workflows/build.yml`) runs on GitHub.
 OTA updates were added on 2026-10-28 (built without flashing): signed images

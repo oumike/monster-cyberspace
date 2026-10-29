@@ -3,7 +3,7 @@
 Standalone ESP32 firmware client for [cyberspace.online](https://cyberspace.online),
 a retro text-only social network. It runs on the Elecrow ThinkNode M9, with
 builds for the Seeed Wio Tracker L2, the LilyGO T-Deck Plus, the Elecrow
-CrowPanel Advance 3.5" and 5.0" and the LilyGO T-LoRa Pager (not yet tried on hardware), and offers cIRC chat (milestone 1), C-Mail private messages (milestone 2), and a
+CrowPanel Advance 3.5" and 5.0", the LilyGO T-LoRa Pager and the LilyGO T-Deck Pro (not yet tried on hardware), and offers cIRC chat (milestone 1), C-Mail private messages (milestone 2), and a
 web config page served by the device. No phone app or companion is needed.
 
 ## Install

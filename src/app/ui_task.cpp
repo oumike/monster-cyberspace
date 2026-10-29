@@ -163,14 +163,23 @@ void setLit(uint8_t level) {
   board::backlightLevel(level);
 }
 
+void drawBounce(const Theme& t);
+
 void goDark() {
   showOsk(false);
   power = lockedTo = Power::Dark;
   lit = 255;
+  // An e-paper panel keeps its last image with the power off, so it is left
+  // showing the still screensaver rather than a frozen screen.
+  if (board::eink()) {
+    drawBounce(currentTheme());
+    renderer.draw(grid, gridSize);
+  }
   board::displaySleep(true);
 }
 
-// The splash monster and name, bouncing slowly around a black screen.
+// The splash monster and name, bouncing slowly around a black screen. On
+// e-paper it sits still in the middle.
 void drawBounce(const Theme& t) {
   std::vector<SplashLine> ls = splashLayout(grid.cols(), grid.rows(), "");
   int minC = grid.cols(), minR = grid.rows(), maxC = 0, maxR = 0;
@@ -188,7 +197,9 @@ void drawBounce(const Theme& t) {
   grid.fill(t.bg);
   if (ls.empty()) return;
   const int w = maxC - minC, h = maxR - minR;
-  bouncer.step(std::max(0, grid.cols() - w), std::max(0, grid.rows() - h));
+  const int maxX = std::max(0, grid.cols() - w), maxY = std::max(0, grid.rows() - h);
+  if (board::eink()) bouncer = Bouncer{maxX / 2, maxY / 2, 0, 0};
+  else bouncer.step(maxX, maxY);
   for (const SplashLine& l : ls)
     putLine(grid, bouncer.x + l.col - minC, bouncer.y + l.row - minR, l.text,
             l.role == SplashRole::Art ? t.selectBg : t.fg, t.bg);
@@ -462,7 +473,8 @@ void taskMain(void*) {
       drawSaver(t);
       renderer.draw(grid, gridSize);
     } else if (power == Power::Bounce && now >= nextBounce) {
-      nextBounce = now + kBounceStepMs;
+      // E-paper draws it once.
+      nextBounce = board::eink() ? INT64_MAX : now + kBounceStepMs;
       drawBounce(t);
       renderer.draw(grid, gridSize);
     }

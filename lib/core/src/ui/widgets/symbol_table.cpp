@@ -146,25 +146,30 @@ void SymbolTable::render(Grid& g, int bottom, const Theme& t) const {
   for (int i = 0; i < n; ++i) {
     const int col = left + 1 + (i % kc) * pitch, row = top + 1 + (gaps ? 1 : 0) + (i / kc) * rowStep;
     const bool sel = i == sel_;
-    const uint16_t fg = sel ? t.selectFg : t.fg, bg = sel ? t.selectBg : t.bg;
+    const bool fill = sel && !t.outlined;
+    const uint16_t fg = fill ? t.selectFg : t.fg, bg = fill ? t.selectBg : t.bg;
     if (emojiSet) {
       // An emoji fills two cells, with one blank cell before the next.
       g.putText(col, row, items().substr(i, 1), fg, bg, 2);
       cellTap(col, row, col + 2, i);
+      if (sel && t.outlined) g.outline(col, row, col + 1, row, t.selectBg);
     } else {
       // A symbol sits between two spaces.
       for (int c = 0; c < pitch; ++c) g.put(col + c, row, U' ', fg, bg);
       g.putText(col + 1, row, items().substr(i, 1), fg, bg, 1);
       cellTap(col, row, col + pitch - 1, i);
+      if (sel && t.outlined) g.outline(col, row, col + pitch - 1, row, t.selectBg);
     }
   }
   if (!commands_.empty()) {
     const int row = top + height - 1;
     const bool sel = sel_ >= n;
-    const uint16_t fg = sel ? t.selectFg : t.fg, bg = sel ? t.selectBg : t.bg;
+    const bool fill = sel && !t.outlined;
+    const uint16_t fg = fill ? t.selectFg : t.fg, bg = fill ? t.selectBg : t.bg;
     for (int c = 1; c < width - 1; ++c) g.put(left + c, row, U' ', fg, bg);
     g.putText(left + 2, row, commands_, fg, bg, width - 4);
     cellTap(left + 1, row, left + width - 2, n);
+    if (sel && t.outlined) g.outline(left + 1, row, left + width - 2, row, t.selectBg);
   }
   g.outline(left, top, left + width - 1, top + height - 1, t.drawerEdge);
 }

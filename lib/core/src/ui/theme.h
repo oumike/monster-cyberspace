@@ -13,6 +13,9 @@ struct Theme {
   // draw every nick in `nick` and your own in `selfNick`.
   bool colorNicks;
   uint16_t nick, selfNick;
+  // E-paper: a highlight that would be a solid block (a picked symbol, a
+  // focused checkbox, an error banner) is drawn as an outline instead.
+  bool outlined;
 };
 
 enum class ThemeId : uint8_t { Default = 0, BlackWhite = 1, WhiteBlack = 2 };
@@ -21,6 +24,9 @@ constexpr int kThemeCount = 3;
 const Theme& theme(ThemeId id);
 // The "terminal" look of the mockups: green on black.
 const Theme& defaultTheme();
+// E-paper boards (board::eink) always use this: black on white, no greys, so
+// the panel's 1-bit conversion keeps every line and letter, and outlined.
+const Theme& paperTheme();
 
 // Whether lists, logs and Home tiles outline their selection. Off on boards
 // with no keys, where a tap picks by position and a cursor only misleads.

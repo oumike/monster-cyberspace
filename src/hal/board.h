@@ -59,6 +59,10 @@ bool doubleTapWakes();
 // True when the only arrows are Up/Down (a wheel): pickers then step one cell
 // at a time instead of moving in two dimensions.
 bool upDownOnly();
+// An e-paper panel: slow refreshes, and the image stays with the power off.
+// The UI then keeps still (no animation), uses rc::paperTheme only, and the
+// panel's pushRows only marks what changed; the board refreshes it from pollKey.
+bool eink();
 void setRotation(uint8_t r);
 // GPS receiver. On: power, a 10 ms reset pulse, then the UART up. Off: the
 // UART down, then power off.

@@ -1267,6 +1267,35 @@ void test_emoji_tray_render_draws_both_halves() {
   TEST_ASSERT_TRUE(found);
 }
 
+void test_paper_symbol_table_outlines_selection() {
+  const Theme& t = paperTheme();
+  Grid g(40, 13);
+  g.fill(t.bg);
+  SymbolTable s;
+  s.open(U"", SymbolTable::Set::Symbols);
+  s.render(g, g.rows() - 1, t);
+  // No cell is filled: the picked symbol is boxed by edges.
+  int boxed = 0;
+  for (int r = 0; r < g.rows(); ++r)
+    for (int c = 0; c < g.cols(); ++c) {
+      TEST_ASSERT_EQUAL_HEX16(t.bg, g.at(c, r).bg);
+      if (g.at(c, r).cp == SymbolTable::symbols()[0] && (g.at(c, r).edges & kEdgeTop)) ++boxed;
+    }
+  TEST_ASSERT_EQUAL(1, boxed);
+}
+
+void test_paper_error_banner_is_outlined() {
+  const Theme& t = paperTheme();
+  Banner b;
+  b.show(U"Sent too fast", 0, 3000, true);
+  Grid g(20, 3);
+  b.render(g, 2, t, 10);
+  TEST_ASSERT_EQUAL_HEX16(t.bg, g.at(19, 2).bg);
+  TEST_ASSERT_EQUAL_HEX16(t.fg, g.at(1, 2).fg);
+  TEST_ASSERT_EQUAL(kEdgeTop | kEdgeBottom | kEdgeLeft, g.at(0, 2).edges);
+  TEST_ASSERT_EQUAL(kEdgeTop | kEdgeBottom | kEdgeRight, g.at(19, 2).edges);
+}
+
 void test_put_text_wide_emoji() {
   Grid g(5, 1);
   g.fill(0);
@@ -1377,6 +1406,8 @@ int main() {
   RUN_TEST(test_type_filter);
   RUN_TEST(test_symbol_table_backspace_closes);
   RUN_TEST(test_emoji_tray_render_draws_both_halves);
+  RUN_TEST(test_paper_symbol_table_outlines_selection);
+  RUN_TEST(test_paper_error_banner_is_outlined);
   RUN_TEST(test_put_text_wide_emoji);
   RUN_TEST(test_input_line_renders_wide_emoji);
   RUN_TEST(test_text_area_wraps_by_width);

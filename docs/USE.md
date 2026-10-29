@@ -163,6 +163,36 @@ RTC, a GPS that powers off fully once the time is set, a microSD slot for
 backups and a speaker for beeps. The setup AP is
 **`Monster-Cyberspace-Pager-Setup`**.
 
+## T-Deck Pro
+
+The T-Deck Pro has a keyboard, a touch screen and a side button. Its screen is
+e-paper, so the firmware keeps it calm: one black-on-white theme (no Theme
+item, on the device or in web config), selections drawn as outlines rather
+than filled bars, no blinking cursor and no moving screensaver. The screen
+updates a moment after you stop typing, and redraws fully now and then to
+clear ghosting.
+
+| Input | Action |
+|---|---|
+| Keys | Type. Shift and Sym apply to the next key (press twice to cancel; they lapse after 1.5 s). While typing, Sym also opens the symbol table; Sym again switches to the emoji tray. Backspace closes either |
+| Alt + W / A / S / D | Up, Left, Down, Right (hold to repeat) |
+| Enter | Select (send, in a room) |
+| Backspace | Deletes while there's text to delete; otherwise Back. Hold it to repeat |
+| Sym + Backspace, or Alt + Backspace | Back |
+| Sym + Enter, or Alt + Enter | The command palette |
+| Sym + Space, or Alt + H | Home |
+| Alt + C / M / F | cIRC, C-Mail, Feed |
+| Touch | Tap and swipe as on the other touch boards |
+| Side button | Screen off, and on again |
+
+**Screen off:** the panel keeps showing the Monster Cyberspace splash. Only
+the side button wakes it.
+
+The screen stays portrait (there is no Orientation item). The frontlight and
+the keyboard light stay off. There is no RTC or speaker: the clock comes from
+Wi-Fi or the GPS, which powers off once the time is set. Backups go to the
+microSD slot. The setup AP is **`Monster-Cyberspace-TDeckPro`**.
+
 ## CrowPanel
 
 The CrowPanel Advance 3.5" and 5.0" work by touch alone, as described under
@@ -337,7 +367,8 @@ saved.
 - **White & black:** black text on white, in greys only.
 
 In the two mono themes nicks are drawn in the text colour. QR codes stay
-black on white in every theme.
+black on white in every theme. The T-Deck Pro's e-paper has one theme of its
+own, black on white with outlined selections, and no Theme item.
 
 ## Alerts
 

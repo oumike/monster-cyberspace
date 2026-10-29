@@ -307,7 +307,7 @@ esp_err_t getPrefs(httpd_req_t* req) {
   d["buzzer"] = s.buzzer;
   d["screenOnSecs"] = s.screenOnSecs;
   d["screenSaver"] = s.screenSaver;
-  d["theme"] = rc::themeKey(s.theme);
+  if (!board::eink()) d["theme"] = rc::themeKey(s.theme);
   d["tz"] = s.tz;
   d["tzName"] = s.tzName;
   d["ntpServer"] = s.ntpServer;

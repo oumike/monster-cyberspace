@@ -14,6 +14,7 @@ RELEASE_ENVS=(
     crowpanel35
     crowpanel50
     pager
+    tdeck_pro
 )
 
 # Every release image is merged with this esptool. esptool 5 renamed merge_bin
@@ -39,6 +40,7 @@ env_label() {
         crowpanel35) echo "Elecrow CrowPanel Advance 3.5\"" ;;
         crowpanel50) echo "Elecrow CrowPanel Advance 5.0\"" ;;
         pager)       echo "LilyGO T-LoRa Pager" ;;
+        tdeck_pro)   echo "LilyGO T-Deck Pro" ;;
         *)           echo "$1" ;;
     esac
 }

@@ -296,8 +296,11 @@ void ComposerScreen::render(Grid& g, const Theme& t, int64_t) {
   g.fillRow(checkRow, t.bg);
   auto box = [&](int col, bool on, const char32_t* label, bool focused) {
     std::u32string s = std::u32string(on ? U"[x] " : U"[ ] ") + label;
-    uint16_t fg = focused ? t.selectFg : t.fg, bg = focused ? t.selectBg : t.bg;
-    return col + g.putText(col, checkRow, s, fg, bg, g.cols() - col);
+    const bool fill = focused && !t.outlined;
+    uint16_t fg = fill ? t.selectFg : t.fg, bg = fill ? t.selectBg : t.bg;
+    const int w = g.putText(col, checkRow, s, fg, bg, g.cols() - col);
+    if (focused && t.outlined && w > 0) g.outline(col, checkRow, col + w - 1, checkRow, t.selectBg);
+    return col + w;
   };
   int col = box(0, gDraft.isPublic, U"Public", focus_ == kPublic);
   int nsfwStart = col + 2;

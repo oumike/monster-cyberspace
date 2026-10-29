@@ -34,11 +34,15 @@ enum Item {
   kReset
 };
 
-// The visible menu, in order. Orientation appears only on a board that can
-// rotate and the SD-card items only on a board with a slot, so item indices and
-// the menu height follow from this.
+// The visible menu, in order. Theme is hidden on e-paper (one theme there),
+// orientation appears only on a board that can rotate and the SD-card items
+// only on a board with a slot, so item indices and the menu height follow
+// from this.
 std::vector<Item> menuItems() {
-  std::vector<Item> v{kTheme, kTextSize, kZone};
+  std::vector<Item> v;
+  if (!board::eink()) v.push_back(kTheme);
+  v.push_back(kTextSize);
+  v.push_back(kZone);
   if (board::canRotate()) v.push_back(kRotation);
   v.push_back(kScreenTimeout);
   v.push_back(kAtTimeout);

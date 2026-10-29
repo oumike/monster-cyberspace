@@ -154,6 +154,9 @@ void HomeScreen::renderTiles(Grid& g, const Theme& t, const std::vector<TileRect
       g.putText(r.c0 + 1 + std::max(0, (inW - sw) / 2), mid + 1, it.sub, subFg, bg, sw);
     }
     g.outline(r.c0, r.r0, r.c1, r.r1, sel && cursorShown() ? t.selectBg : t.dim);
+    // Outlined themes have one ink for both outlines: the cursor is a second box.
+    if (sel && cursorShown() && t.outlined && r.r1 - r.r0 >= 2 && r.c1 - r.c0 >= 2)
+      g.outline(r.c0 + 1, r.r0 + 1, r.c1 - 1, r.r1 - 1, t.selectBg);
 
     if (activeTaps()) {
       Target tt;

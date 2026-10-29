@@ -27,7 +27,9 @@ void SplashScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
       case SplashRole::Detail: putLine(g, l.col, l.row, l.text, t.dim, t.bg); break;
       case SplashRole::Prompt: {
         int end = l.col + putLine(g, l.col, l.row, l.text, t.selectBg, t.bg);
-        if ((nowMs - since_) / kBlinkMs % 2 == 0) g.put(end, l.row, U' ', t.cursorFg, t.cursorBg);
+        // E-paper: a still cursor, not a blink.
+        if (board::eink() || (nowMs - since_) / kBlinkMs % 2 == 0)
+          g.put(end, l.row, U' ', t.cursorFg, t.cursorBg);
         break;
       }
     }

@@ -17,6 +17,7 @@ const Theme kDefault = {
     /*cursorFg*/ rgb(0x000000),  /*selectBg*/ rgb(0x7CFC7C), /*selectFg*/ rgb(0x000000),
     /*drawerBg*/ rgb(0x0A0F0A),  /*drawerEdge*/ rgb(0x7CFC7C), /*error*/ rgb(0xFF5555),
     /*colorNicks*/ true,         /*nick*/ rgb(0xB8C0CC),     /*selfNick*/ rgb(0xFFD166),
+    /*outlined*/ false,
 };
 
 // White on black, greys only.
@@ -28,6 +29,7 @@ const Theme kBlackWhite = {
     /*cursorFg*/ rgb(0x000000),  /*selectBg*/ rgb(0xFFFFFF), /*selectFg*/ rgb(0x000000),
     /*drawerBg*/ rgb(0x101010),  /*drawerEdge*/ rgb(0xFFFFFF), /*error*/ rgb(0xFFFFFF),
     /*colorNicks*/ false,        /*nick*/ rgb(0xC8C8C8),     /*selfNick*/ rgb(0xFFFFFF),
+    /*outlined*/ false,
 };
 
 // Black on white, greys only.
@@ -39,6 +41,19 @@ const Theme kWhiteBlack = {
     /*cursorFg*/ rgb(0xFFFFFF),  /*selectBg*/ rgb(0x000000), /*selectFg*/ rgb(0xFFFFFF),
     /*drawerBg*/ rgb(0xF0F0F0),  /*drawerEdge*/ rgb(0x000000), /*error*/ rgb(0x000000),
     /*colorNicks*/ false,        /*nick*/ rgb(0x383838),     /*selfNick*/ rgb(0x000000),
+    /*outlined*/ false,
+};
+
+// E-paper: black and white only.
+const Theme kPaper = {
+    /*bg*/ rgb(0xFFFFFF),        /*fg*/ rgb(0x000000),       /*dim*/ rgb(0x000000),
+    /*barBg*/ rgb(0xFFFFFF),     /*barFg*/ rgb(0x000000),    /*hintBg*/ rgb(0xFFFFFF),
+    /*hintFg*/ rgb(0x000000),    /*time*/ rgb(0x000000),     /*sys*/ rgb(0x000000),
+    /*mentionBg*/ rgb(0xFFFFFF), /*inputBg*/ rgb(0xFFFFFF),  /*cursorBg*/ rgb(0x000000),
+    /*cursorFg*/ rgb(0xFFFFFF),  /*selectBg*/ rgb(0x000000), /*selectFg*/ rgb(0xFFFFFF),
+    /*drawerBg*/ rgb(0xFFFFFF),  /*drawerEdge*/ rgb(0x000000), /*error*/ rgb(0x000000),
+    /*colorNicks*/ false,        /*nick*/ rgb(0x000000),     /*selfNick*/ rgb(0x000000),
+    /*outlined*/ true,
 };
 
 }  // namespace
@@ -52,6 +67,8 @@ const Theme& theme(ThemeId id) {
 }
 
 const Theme& defaultTheme() { return kDefault; }
+
+const Theme& paperTheme() { return kPaper; }
 
 namespace {
 bool gCursorShown = true;

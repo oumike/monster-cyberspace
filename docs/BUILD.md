@@ -19,6 +19,7 @@
 | `crowpanel35` | The firmware for the Elecrow CrowPanel Advance 3.5" (touch only; not yet tried on hardware) |
 | `crowpanel50` | The firmware for the Elecrow CrowPanel Advance 5.0" (touch only; not yet tried on hardware) |
 | `pager` | The firmware for the LilyGO T-LoRa Pager (keyboard and side wheel, no touch; not yet tried on hardware) |
+| `tdeck_pro` | The firmware for the LilyGO T-Deck Pro (e-paper, keyboard, touch; not yet tried on hardware) |
 | `native` | Host unit tests for `lib/core` |
 
 ```sh
@@ -29,6 +30,7 @@ pio run -e tdeck                      # build for the T-Deck Plus
 pio run -e crowpanel35                # build for the CrowPanel Advance 3.5"
 pio run -e crowpanel50                # build for the CrowPanel Advance 5.0"
 pio run -e pager                      # build for the T-LoRa Pager
+pio run -e tdeck_pro                  # build for the T-Deck Pro
 scripts/build-upload-monitor.sh m9    # build, flash, then open the serial monitor
 ```
 
@@ -42,6 +44,7 @@ scripts/build-upload-monitor.sh m9    # build, flash, then open the serial monit
 | `--crowpanel35`/`-3` | Board flag: Elecrow CrowPanel Advance 3.5" (`crowpanel35`) |
 | `--crowpanel50`/`-5` | Board flag: Elecrow CrowPanel Advance 5.0" (`crowpanel50`) |
 | `--pager`/`-P` | Board flag: LilyGO T-LoRa Pager (`pager`) |
+| `--tdeck-pro`/`-D` | Board flag: LilyGO T-Deck Pro (`tdeck_pro`) |
 | `ENV` | Or name any firmware env directly; with neither, a menu lists every firmware env |
 | `--port`/`-p PORT` | Serial port for upload and monitor (default: auto-detect) |
 | `--erase`/`-E` | Erase the whole flash in the same esptool session as the upload (`upload_erase` target); wipes saved settings |

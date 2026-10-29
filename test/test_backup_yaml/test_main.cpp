@@ -148,7 +148,7 @@ void test_round_trip_every_field() {
   TEST_ASSERT_NOT_NULL(strstr(y.c_str(), "kbLight: medium  # off | low | medium | high\n"));
   TEST_ASSERT_NOT_NULL(strstr(y.c_str(), "theme: wb  # default | bw | wb | dark | light | lcd | c64 | vt320 | matrix | poetry | brutalist | grid | crypt | bubblegum | top8\n"
                                            "rotation: 3  # 0 landscape, 1 portrait, 2 landscape 180, 3 portrait 180\n"));
-  TEST_ASSERT_EQUAL(0, y.rfind("# Monster Cyberspace settings backup.\n", 0));
+  TEST_ASSERT_EQUAL(0, y.rfind("# Monster for Cyberspace settings backup.\n", 0));
 }
 
 void test_writer_no_clock_no_wifi() {
@@ -283,17 +283,17 @@ void test_wrong_format_and_version() {
   Settings s = full();
   std::string err, note;
   TEST_ASSERT_FALSE(run("format: other\nversion: 1\n", s, err, note));
-  TEST_ASSERT_EQUAL_STRING("Not a Monster Cyberspace backup", err.c_str());
+  TEST_ASSERT_EQUAL_STRING("Not a Monster for Cyberspace backup", err.c_str());
   TEST_ASSERT_FALSE(run("version: 1\n", s, err, note));
-  TEST_ASSERT_EQUAL_STRING("Not a Monster Cyberspace backup", err.c_str());
+  TEST_ASSERT_EQUAL_STRING("Not a Monster for Cyberspace backup", err.c_str());
   TEST_ASSERT_FALSE(run("format: monster-cyberspace-backup\nversion: 2\n", s, err, note));
   TEST_ASSERT_EQUAL_STRING("Backup version 2 is newer than this firmware", err.c_str());
   TEST_ASSERT_FALSE(run("format: monster-cyberspace-backup\nversion: x\n", s, err, note));
-  TEST_ASSERT_EQUAL_STRING("Not a Monster Cyberspace backup", err.c_str());
+  TEST_ASSERT_EQUAL_STRING("Not a Monster for Cyberspace backup", err.c_str());
   TEST_ASSERT_FALSE(run("format: monster-cyberspace-backup\nversion: 0\n", s, err, note));
-  TEST_ASSERT_EQUAL_STRING("Not a Monster Cyberspace backup", err.c_str());
+  TEST_ASSERT_EQUAL_STRING("Not a Monster for Cyberspace backup", err.c_str());
   TEST_ASSERT_FALSE(run("format: monster-cyberspace-backup\n", s, err, note));
-  TEST_ASSERT_EQUAL_STRING("Not a Monster Cyberspace backup", err.c_str());
+  TEST_ASSERT_EQUAL_STRING("Not a Monster for Cyberspace backup", err.c_str());
   // Backups from the earlier names (Rhino, Platy Cyberspace) still restore.
   TEST_ASSERT_TRUE_MESSAGE(run("format: rhino-cyberspace-backup\nversion: 1\n", s, err, note),
                            err.c_str());

@@ -18,7 +18,7 @@ void setup() {
   // Large allocations (the message store, buffers) go to PSRAM.
   heap_caps_malloc_extmem_enable(64);
   Serial.begin(115200);
-  Serial.printf("[boot] monster-cyberspace %s on %s\n", RC_VERSION, board::name());
+  Serial.printf("[boot] Monster for Cyberspace %s on %s\n", RC_VERSION, board::name());
   // Before anything reads NVS: settings saved under the old partition table.
   nvsmigrate::run();
   board::begin();

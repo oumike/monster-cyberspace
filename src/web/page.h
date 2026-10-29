@@ -6,7 +6,7 @@ namespace web {
 static const char kPage[] = R"HTML(<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>monster-cyberspace</title>
+<title>Monster for Cyberspace</title>
 <style>
 body{background:#000;color:#3f3;font:15px/1.45 ui-monospace,Menlo,Consolas,monospace;margin:0 auto;max-width:44em;padding:1em}
 h1{font-size:1.3em;margin:.2em 0 .8em}h2{font-size:1.05em;border-bottom:1px solid #1a5;padding-bottom:.2em;margin-top:1.6em}
@@ -20,7 +20,7 @@ ul{padding-left:1.2em;margin:.3em 0}li button{padding:.1em .4em;font-size:.85em}
 .msg{min-height:1.4em}
 a{color:#6cf}
 </style></head><body>
-<h1>monster-cyberspace</h1>
+<h1>Monster for Cyberspace</h1>
 
 <h2>Status</h2>
 <table id="status"><tr><td>loading…</td></tr></table>

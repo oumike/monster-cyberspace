@@ -1,4 +1,4 @@
-# Using Monster Cyberspace
+# Using Monster for Cyberspace
 
 On the Elecrow ThinkNode M9 (keyboard and d-pad), the Seeed Wio Tracker L2
 (touch screen; see Touch below) and the LilyGO T-Deck Plus (keyboard,
@@ -217,7 +217,7 @@ log and replies are drawn bold, since the panel has no colours.
 | Touch | Tap and swipe as on the other touch boards |
 | Side button | Screen off, and on again |
 
-**Screen off:** the panel keeps showing the Monster Cyberspace splash. Only
+**Screen off:** the panel keeps showing the Monster for Cyberspace splash. Only
 the side button wakes it.
 
 The screen stays portrait (there is no Orientation item). The frontlight and

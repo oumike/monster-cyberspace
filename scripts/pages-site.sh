@@ -35,7 +35,7 @@ for f in "$src"/monster-cyberspace-*-"$tag".bin; do
     # is relative to the manifest.
     cat > "$out/manifests/$slug.json" <<EOF
 {
-  "name": "Monster Cyberspace",
+  "name": "Monster for Cyberspace",
   "version": "$tag",
   "new_install_prompt_erase": true,
   "builds": [

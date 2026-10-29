@@ -1,4 +1,4 @@
-# Monster Cyberspace — agent instructions
+# Monster for Cyberspace — agent instructions
 
 Standalone ESP32 firmware client for [cyberspace.online](https://cyberspace.online),
 a retro text-only social network. Milestone 1 is cIRC chat plus a device-served

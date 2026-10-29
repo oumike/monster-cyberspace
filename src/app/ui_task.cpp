@@ -55,6 +55,9 @@ bool touchSwallow = false;
 // Touch-only boards show no cursor, except on what a long press opened a
 // menu for, until that menu (and any it leads to) closes.
 bool baseCursor = false;
+// The emoji tray opened from the on-screen keyboard takes the keyboard's
+// place at the bottom; the keyboard comes back when the tray closes.
+bool oskBehindTray = false;
 bool pressMenu = false;
 // The last Backspace that deleted text (backspaceIsBack boards).
 uint32_t lastDeleteMs = 0;
@@ -440,6 +443,10 @@ void taskMain(void*) {
           OskOutput o = osk.press(out.oskKey, millis());
           if (o.key.action != Action::None) handleKey(o.key);
           if (o.hide) showOsk(false);
+          if (o.key.action == Action::Emoji && symbols.isOpen()) {
+            showOsk(false);
+            oskBehindTray = true;
+          }
         }
       }
     }
@@ -475,9 +482,17 @@ void taskMain(void*) {
       gestures.reset();
       doubleTap.reset();
       resolver.reset();
-      if (router::current() != beforeScreen) showOsk(false);
+      if (router::current() != beforeScreen) {
+        showOsk(false);
+        oskBehindTray = false;
+      }
     }
     if (oskShown && !router::screen().acceptsText()) showOsk(false);
+    if (oskBehindTray && !symbols.isOpen()) {
+      oskBehindTray = false;
+      if (power == Power::On && router::current() == beforeScreen && router::screen().acceptsText())
+        showOsk(true);
+    }
     if (symbols.isOpen() && (router::current() != beforeScreen || power != Power::On ||
                              !router::screen().acceptsText()))
       symbols.close();

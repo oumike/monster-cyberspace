@@ -113,7 +113,8 @@ above it gets shorter.
 - `⇧` shifts the next letter; tap it twice quickly to lock caps, and once
   more to unlock.
 - `?123` shows digits and common symbols, `#+=` the rest, and `ABC` returns to
-  letters. The emoji key beside `?123` opens the emoji tray.
+  letters. The emoji key beside `?123` opens the emoji tray in the
+  keyboard's place; the keyboard returns when the tray closes.
 - `⌫` deletes, and enter sends or moves on, as Enter does on a keyboard. In the
   Composer Body enter starts a new line.
 - `▼` hides the keyboard; tap the field to bring it back. It also goes away

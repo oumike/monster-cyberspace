@@ -92,6 +92,8 @@ bool sideNav() { return false; }
 void textEntry(bool) {}
 bool hasKbLight() { return true; }
 uint8_t kbLightDefault() { return 3; }  // High: the controller's own default
+bool hasNotifyLight() { return false; }
+void notifyLight(uint8_t) {}
 void kbLight(uint8_t duty, bool) {
   static int last = -1;
   if (duty == last) return;

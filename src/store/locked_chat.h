@@ -49,4 +49,7 @@ class LockedChat {
 
 LockedChat& lockedChat();
 
+// Unread C-Mail across every conversation. Takes the lock.
+int cmailUnread();
+
 }  // namespace rc

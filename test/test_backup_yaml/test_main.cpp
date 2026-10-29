@@ -88,6 +88,8 @@ Settings full() {
   s.screenSaver = false;
   s.spellCheck = false;
   s.kbLight = KbLight::Medium;
+  s.notifyLight = LedColor::Magenta;
+  s.notifyTimeoutSecs = 0;
   s.theme = ThemeId::WhiteBlack;
   s.rotation = 3;
   s.lastRoom = "random";
@@ -121,6 +123,8 @@ void expectSame(const Settings& a, const Settings& b) {
   TEST_ASSERT_EQUAL(a.screenSaver, b.screenSaver);
   TEST_ASSERT_EQUAL(a.spellCheck, b.spellCheck);
   TEST_ASSERT_TRUE(a.kbLight == b.kbLight);
+  TEST_ASSERT_TRUE(a.notifyLight == b.notifyLight);
+  TEST_ASSERT_EQUAL_UINT16(a.notifyTimeoutSecs, b.notifyTimeoutSecs);
   TEST_ASSERT_TRUE(a.theme == b.theme);
   TEST_ASSERT_EQUAL(a.rotation, b.rotation);
   TEST_ASSERT_EQUAL_STRING(a.lastRoom.c_str(), b.lastRoom.c_str());
@@ -146,6 +150,10 @@ void test_round_trip_every_field() {
   TEST_ASSERT_EQUAL_STRING("", note.c_str());
   TEST_ASSERT_NOT_NULL(strstr(y.c_str(), "created: \"2026-10-26T18:30:00Z\""));
   TEST_ASSERT_NOT_NULL(strstr(y.c_str(), "kbLight: medium  # off | low | medium | high\n"));
+  TEST_ASSERT_NOT_NULL(strstr(y.c_str(),
+                              "notifyLight: magenta  # off | red | green | blue | yellow | cyan |"
+                              " magenta | white\n"
+                              "notifyTimeout: 0  # seconds, 0 until read\n"));
   TEST_ASSERT_NOT_NULL(strstr(y.c_str(), "theme: wb  # default | bw | wb | dark | light | lcd | c64 | vt320 | matrix | poetry | brutalist | grid | crypt | bubblegum | top8\n"
                                            "rotation: 3  # 0 landscape, 1 portrait, 2 landscape 180, 3 portrait 180\n"));
   TEST_ASSERT_EQUAL(0, y.rfind("# Monster for Cyberspace settings backup.\n", 0));
@@ -328,6 +336,10 @@ void test_bad_values_rejected() {
       {"textSize: huge\n", "line 3: text size: compact, comfortable or large"},
       {"theme: pink\n", "line 3: theme: default, bw or wb"},
       {"kbLight: dim\n", "line 3: keyboard light: off, low, medium or high"},
+      {"notifyLight: pink\n",
+       "line 3: notify light: off, red, green, blue, yellow, cyan, magenta or white"},
+      {"notifyTimeout: 45\n", "line 3: light timeout: 15, 30, 60, 300 or 0 (until read)"},
+      {"notifyTimeout: -1\n", "line 3: light timeout: 15, 30, 60, 300 or 0 (until read)"},
       {"rotation: up\n", "line 3: orientation: 0 to 3"},
       {"buzzer: maybe\n", "line 3: expected true or false"},
       {"wifi:\n  - ssid: A\n    password: \"\"\n  - ssid: A\n    password: \"\"\n",

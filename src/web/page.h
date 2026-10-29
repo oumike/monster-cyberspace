@@ -53,6 +53,8 @@ a{color:#6cf}
 <label>Screen timeout<select id="scrsecs"><option value="15">15 s</option><option value="30">30 s</option><option value="60">1 min</option><option value="120">2 min</option><option value="300">5 min</option><option value="600">10 min</option><option value="1800">30 min</option><option value="3600">60 min</option><option value="0">Never</option></select></label>
 <label>At timeout<select id="scrsaver"><option value="1">Screensaver</option><option value="0">Screen off</option></select></label>
 <label id="kbrow" hidden>Keyboard light<select id="kblight"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="off">Off</option></select></label>
+<label id="ledrow" hidden>Notify light<select id="ledcolor"><option value="red">Red</option><option value="green">Green</option><option value="blue">Blue</option><option value="yellow">Yellow</option><option value="cyan">Cyan</option><option value="magenta">Magenta</option><option value="white">White</option><option value="off">Off</option></select></label>
+<label id="ledtrow" hidden>Light timeout<select id="ledtime"><option value="15">15 s</option><option value="30">30 s</option><option value="60">1 min</option><option value="300">5 min</option><option value="0">Until read</option></select></label>
 <label><input id="buzzer" type="checkbox" style="width:auto"> Buzzer on mentions</label>
 <label><input id="spell" type="checkbox" style="width:auto"> Spell check while typing</label>
 <button onclick="savePrefs()">Save display</button>
@@ -138,6 +140,7 @@ async function loadPrefs(){const p=await call('GET','/api/prefs');if(p.tz===unde
   $('scrsecs').value=String(p.screenOnSecs);$('scrsaver').value=p.screenSaver?'1':'0';
   if(p.rotation!==undefined){$('rotrow').hidden=false;$('rot').value=String(p.rotation);}
   if(p.kbLight){$('kbrow').hidden=false;$('kblight').value=p.kbLight;}
+  if(p.notifyLight){$('ledrow').hidden=$('ledtrow').hidden=false;$('ledcolor').value=p.notifyLight;$('ledtime').value=String(p.notifyTimeout);}
   $('tzpick').value=listed(p.tzName)?p.tzName:'';tzCustom();$('ntp').value=p.ntpServer;
   // Setup mode keeps a zone already set; only the factory default takes the browser's.
   savedTzName=p.tzName;const keep=$('wtz').querySelector('option[value=""]');
@@ -158,7 +161,7 @@ function savePrefs(){const b={textSize:$('tsize').value,buzzer:$('buzzer').check
     screenOnSecs:parseInt($('scrsecs').value,10),screenSaver:$('scrsaver').value==='1'};
   if(!$('themerow').hidden)b.theme=$('theme').value;
   if(!$('rotrow').hidden)b.rotation=parseInt($('rot').value,10);
-  if(!$('kbrow').hidden)b.kbLight=$('kblight').value;post('/api/prefs',b,'prefmsg');}
+  if(!$('kbrow').hidden)b.kbLight=$('kblight').value;if(!$('ledrow').hidden){b.notifyLight=$('ledcolor').value;b.notifyTimeout=+$('ledtime').value;}post('/api/prefs',b,'prefmsg');}
 function saveTime(){post('/api/prefs',{tzName:$('tzpick').value,tz:$('tz').value,ntpServer:$('ntp').value},'timemsg');}
 async function saveSec(){const b={pagePassword:$('pagepw').value,apPassword:$('appw').value};
   if(!b.pagePassword&&!confirm('Leave the page password empty (no password)?'))return;

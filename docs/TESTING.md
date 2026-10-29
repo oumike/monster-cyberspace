@@ -242,6 +242,20 @@ Buttons: BOOT tap = Back, BOOT hold (0.6 s) = Home; Wake tap = screen off
 - [ ] SD (FAT32 card): Back up to SD card, then Restore from SD card…, both work
 - [ ] Wi-Fi setup (nothing saved): the AP is named `Monster-Cyberspace-TDeckPro` and `http://192.168.4.1` loads
 
+**Mesh Deck (`mesh_deck`):**
+
+- [x] Boots: the serial log (UART0, CH340) shows the `[INFO] [APP] … on Mesh Deck 1.0` banner, `[meshdeck] FT6636 ready`, `MAX17048 ready` and both keyboard halves found (2026-10-29)
+- [ ] Panel: landscape, upright, not mirrored, colours right (`PANEL_MADCTL` 0xA0, inverted)
+- [ ] Touch: a tap lands where the finger is in every corner (`TOUCH_ROT` 0), and a swipe scrolls
+- [ ] D-pad arrows move the right way and repeat when held; Select selects, held turns the screen off and on; L1 goes back, held goes Home; R2 and BOOT turn the screen off and on; the power button does nothing in the UI
+- [ ] Every key types the right character, with Shift, Sym and Alt held or tapped; Del deletes and repeats, then goes back; Tab opens the palette; Mic opens the emoji tray while typing; Sym + Enter opens the symbol table; Alt/Fn + W/A/S/D, Del, Enter, H, C, M, F
+- [ ] Unplugging and replugging the keyboard module: `keyboard … half lost` / `found`, and the on-screen keyboard shows only while it's out
+- [ ] Notification light: a mention or C-Mail blinks the front and keyboard LEDs twice a second in the chosen colour; it stops once read or after the timeout; Off keeps it dark; picking a colour in Settings or web config blinks it once
+- [ ] Battery %: Settings shows a sensible value; the charging state follows the USB cable
+- [ ] GPS: outdoors with Wi-Fi off, `[time] set from GPS` within 15 min, then `[gps] off`
+- [ ] After flashing, the board restarts on its own; if the screen stays dark, note it (camillia-mt needed a power cycle there)
+- [ ] Wi-Fi setup (nothing saved): the AP is named `Monster-Cyberspace-MeshDeck` and `http://192.168.4.1` loads
+
 **GPS time, RTC and time zone (`m9`):**
 
 - [ ] With Wi-Fi in range, `[time] NTP sync` and `[time] RTC written` appear, then `[gps] off`

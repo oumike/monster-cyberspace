@@ -6,7 +6,7 @@
   build downloads the pioarduino platform (Arduino core 3.3 / ESP-IDF 5.5)
   into `.pio-core/`, kept apart from the shared `~/.platformio`.
 - A USB data cable. The ThinkNode M9's console runs through its USB-to-UART
-  bridge at 115200 baud, and so do the CrowPanels' (a CH340); the Wio Tracker
+  bridge at 115200 baud, and so do the CrowPanels' and the Mesh Deck's (a CH340); the Wio Tracker
   L2's and the T-Deck Plus's run through the ESP32-S3's own USB.
 
 ## Environments
@@ -20,6 +20,7 @@
 | `crowpanel50` | The firmware for the Elecrow CrowPanel Advance 5.0" (touch only; not yet tried on hardware) |
 | `pager` | The firmware for the LilyGO T-LoRa Pager (keyboard and side wheel, no touch; not yet tried on hardware) |
 | `tdeck_pro` | The firmware for the LilyGO T-Deck Pro (e-paper, keyboard, touch; not yet tried on hardware) |
+| `mesh_deck` | The firmware for the Attaky Mesh Deck (d-pad, touch, keyboard module, notification light; boots on hardware, the rest not yet checked) |
 | `native` | Host unit tests for `lib/core` |
 
 ```sh
@@ -31,6 +32,7 @@ pio run -e crowpanel35                # build for the CrowPanel Advance 3.5"
 pio run -e crowpanel50                # build for the CrowPanel Advance 5.0"
 pio run -e pager                      # build for the T-LoRa Pager
 pio run -e tdeck_pro                  # build for the T-Deck Pro
+pio run -e mesh_deck                  # build for the Mesh Deck
 scripts/build-upload-monitor.sh m9    # build, flash, then open the serial monitor
 ```
 
@@ -45,6 +47,7 @@ scripts/build-upload-monitor.sh m9    # build, flash, then open the serial monit
 | `--crowpanel50`/`-5` | Board flag: Elecrow CrowPanel Advance 5.0" (`crowpanel50`) |
 | `--pager`/`-P` | Board flag: LilyGO T-LoRa Pager (`pager`) |
 | `--tdeck-pro`/`-D` | Board flag: LilyGO T-Deck Pro (`tdeck_pro`) |
+| `--mesh-deck`/`-M` | Board flag: Attaky Mesh Deck (`mesh_deck`) |
 | `ENV` | Or name any firmware env directly; with neither, a menu lists every firmware env |
 | `--port`/`-p PORT` | Serial port for upload and monitor (default: auto-detect) |
 | `--erase`/`-E` | Erase the whole flash in the same esptool session as the upload (`upload_erase` target); wipes saved settings |

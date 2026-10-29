@@ -18,6 +18,7 @@
 #include "screens/router.h"
 #include "store/locked_chat.h"
 #include "ui/kb_light.h"
+#include "ui/notify_light.h"
 #include "ui/renderer.h"
 #include "ui/room_layout.h"
 #include "ui/rotation.h"
@@ -188,6 +189,27 @@ void applyKbLight() {
   board::kbLight(uint8_t(duty), on);
 }
 
+// The new-message light: a double blink each second while something is
+// unread, for the configured time after the last message.
+NotifyBlinker blinker;
+uint8_t notifyShown = 0;
+
+void applyNotifyLight() {
+  if (!board::hasNotifyLight()) return;
+  uint8_t rgb = 0;
+  if (blinker.active()) {
+    const bool unread = app().unreadMentions > 0 || cmailUnread() > 0;
+    rgb = blinker.tick(millis(), app().cfg.notifyLight, app().cfg.notifyTimeoutSecs, unread);
+  }
+  if (rgb == notifyShown) return;
+  notifyShown = rgb;
+  board::notifyLight(rgb);
+}
+
+void notifyMessage() {
+  if (board::hasNotifyLight() && app().cfg.notifyLight != LedColor::Off) blinker.message(millis());
+}
+
 void goDark() {
   showOsk(false);
   power = lockedTo = Power::Dark;
@@ -287,13 +309,18 @@ void handleEvent(const Event& e) {
       break;
     case EvtType::MentionAlert:
       ++app().unreadMentions;
+      notifyMessage();
       if (app().cfg.buzzer) board::beep(2000, 80);
       banner(e.text, false);
       break;
     case EvtType::CmailAlert:
       // The unread count lives in the conversation list (Home sums it).
+      notifyMessage();
       if (app().cfg.buzzer) board::beep(1600, 80);
       banner(e.text, false);
+      break;
+    case EvtType::NotifyPreview:
+      notifyLightPreview(ledColorFromIndex(e.code));
       break;
     case EvtType::FeedAlert:
       // code 1 asks for a beep; post_cooldown (code 0) is a banner only.
@@ -456,6 +483,7 @@ void taskMain(void*) {
     applyKbLight();
     Event e;
     while (nextEvent(e)) handleEvent(e);
+    applyNotifyLight();
 
     int64_t now = nowMs();
     if (power == Power::Saver && now >= saverUntil) {
@@ -566,5 +594,9 @@ void banner(const std::string& text, bool error) {
 }
 
 void redrawAll() { needResize = true; }
+
+void notifyLightPreview(LedColor c) {
+  if (board::hasNotifyLight()) blinker.preview(c, millis());
+}
 
 }  // namespace rc::ui

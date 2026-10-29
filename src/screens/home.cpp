@@ -27,14 +27,6 @@ std::string newestNotice() {
   });
 }
 
-int cmailUnread() {
-  return lockedChat().with([](ChatState& s) {
-    int n = 0;
-    for (const auto& c : s.conversations) n += c.unread;
-    return n;
-  });
-}
-
 int feedUnread() {
   return lockedFeed().with([](FeedState& s) { return int(s.notices.size()); });
 }

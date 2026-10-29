@@ -64,6 +64,9 @@ void load(rc::Settings& s) {
   s.spellCheck = p.getBool("spell", true);
   s.kbLight = rc::kbLightFromIndex(p.getUChar("kblight", board::kbLightDefault()),
                                    rc::kbLightFromIndex(board::kbLightDefault()));
+  s.notifyLight = rc::ledColorFromIndex(p.getUChar("ledcolor", uint8_t(rc::LedColor::Blue)),
+                                       rc::LedColor::Blue);
+  s.notifyTimeoutSecs = rc::snapNotifyTimeout(p.getUShort("ledtime", 15));
   s.theme = rc::themeFromIndex(p.getUChar("theme", 0));
   s.rotation = rc::rotationFromIndex(p.getUChar("rot", 0));
   s.lastRoom = getStr(p, "room", s.lastRoom);
@@ -146,6 +149,20 @@ void saveKbLight(rc::KbLight level) {
   p.end();
 }
 
+void saveNotifyLight(rc::LedColor color) {
+  Preferences p;
+  if (!p.begin(kNs, false)) return;
+  p.putUChar("ledcolor", static_cast<uint8_t>(color));
+  p.end();
+}
+
+void saveNotifyTimeout(uint16_t secs) {
+  Preferences p;
+  if (!p.begin(kNs, false)) return;
+  p.putUShort("ledtime", secs);
+  p.end();
+}
+
 void saveSpellCheck(bool on) {
   Preferences p;
   if (!p.begin(kNs, false)) return;
@@ -184,6 +201,8 @@ void saveAll(const rc::Settings& s) {
   saveAutoUpdate(s.autoUpdate);
   saveScreen(s.screenOnSecs, s.screenSaver);
   saveSpellCheck(s.spellCheck);
+  saveNotifyLight(s.notifyLight);
+  saveNotifyTimeout(s.notifyTimeoutSecs);
   saveAccount(s.email, s.refreshToken);
   if (s.refreshToken.empty()) clearToken();
 }

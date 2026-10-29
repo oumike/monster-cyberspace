@@ -35,6 +35,10 @@ void displaySleep(bool sleep);
 bool hasKbLight();
 uint8_t kbLightDefault();
 void kbLight(uint8_t duty, bool screenOn);
+// An RGB notification light (the Mesh Deck's LEDs). notifyLight sets it:
+// bit 0 red, bit 1 green, bit 2 blue, 0 off. A no-op without one.
+bool hasNotifyLight();
+void notifyLight(uint8_t rgb);
 // The last line of the screensaver, telling the user how to wake the screen.
 const char* wakeHint();
 // The next pending key press, already mapped to a portable key.

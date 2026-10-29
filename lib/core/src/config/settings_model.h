@@ -6,6 +6,7 @@
 
 #include "ui/grid.h"
 #include "ui/kb_light.h"
+#include "ui/notify_light.h"
 #include "ui/theme.h"
 
 namespace rc {
@@ -26,6 +27,10 @@ struct Settings {
   // Boards with a lit keyboard (board::hasKbLight); the saved value falls back
   // to board::kbLightDefault().
   KbLight kbLight = KbLight::Off;
+  // Boards with a new-message light (board::hasNotifyLight): its colour, and
+  // how long it blinks after the last message (ui/notify_light.h); 0 until read.
+  LedColor notifyLight = LedColor::Blue;
+  uint16_t notifyTimeoutSecs = 15;
   ThemeId theme = ThemeId::Default;
   uint8_t rotation = 0;  // touch boards: see ui/rotation.h
   std::string lastRoom = "general";

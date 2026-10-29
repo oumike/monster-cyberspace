@@ -147,6 +147,8 @@ bool sideNav() { return false; }
 void textEntry(bool) {}
 bool hasKbLight() { return false; }
 uint8_t kbLightDefault() { return 0; }
+bool hasNotifyLight() { return false; }
+void notifyLight(uint8_t) {}
 void kbLight(uint8_t, bool) {}
 bool eink() { return false; }
 bool doubleTapWakes() { return true; }

@@ -22,6 +22,10 @@ void saveAutoUpdate(bool on);
 void saveScreen(uint32_t onSecs, bool saver);
 // The device's Settings and web config: the keyboard light.
 void saveKbLight(rc::KbLight level);
+// The device's Settings and web config: the new-message light's colour and
+// how long it blinks (board::hasNotifyLight).
+void saveNotifyLight(rc::LedColor color);
+void saveNotifyTimeout(uint16_t secs);
 // The device's Settings and web config: spell suggestions while typing.
 void saveSpellCheck(bool on);
 void saveToken(const std::string& refreshToken);

@@ -4,6 +4,7 @@
 #include <string>
 
 #include "ui/grid.h"
+#include "ui/notify_light.h"
 
 namespace rc::ui {
 
@@ -21,5 +22,8 @@ void setRotation(uint8_t r);
 void banner(const std::string& text, bool error);
 // Forces every row to be redrawn on the next frame.
 void redrawAll();
+// One double blink of the new-message light in c (board::hasNotifyLight).
+// UI task only; the web server posts EvtType::NotifyPreview instead.
+void notifyLightPreview(LedColor c);
 
 }  // namespace rc::ui

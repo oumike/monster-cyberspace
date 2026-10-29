@@ -15,6 +15,7 @@
 #include "tz/zones.h"
 #include "ui/rotation.h"
 #include "ui/kb_light.h"
+#include "ui/notify_light.h"
 #include "ui/screen_timeout.h"
 
 namespace rc {
@@ -22,6 +23,10 @@ namespace rc {
 namespace {
 // The keyboard light picker's order.
 constexpr KbLight kKbLightOrder[] = {KbLight::Low, KbLight::Medium, KbLight::High, KbLight::Off};
+// The notify light picker's order.
+constexpr LedColor kLedColorOrder[] = {LedColor::Red,  LedColor::Green,   LedColor::Blue,
+                                       LedColor::Yellow, LedColor::Cyan, LedColor::Magenta,
+                                       LedColor::White, LedColor::Off};
 
 enum Item {
   kTheme,
@@ -31,6 +36,8 @@ enum Item {
   kScreenTimeout,
   kAtTimeout,
   kKbLight,
+  kNotifyLight,
+  kNotifyTimeout,
   kSpellCheck,
   kWifi,
   kSetupAp,
@@ -55,6 +62,10 @@ std::vector<Item> menuItems() {
   v.push_back(kScreenTimeout);
   v.push_back(kAtTimeout);
   if (board::hasKbLight()) v.push_back(kKbLight);
+  if (board::hasNotifyLight()) {
+    v.push_back(kNotifyLight);
+    v.push_back(kNotifyTimeout);
+  }
   v.push_back(kSpellCheck);
   v.push_back(kWifi);
   v.push_back(kSetupAp);
@@ -196,6 +207,23 @@ void SettingsScreen::confirmKey(const KeyEvent& k) {
         }
         break;
       }
+      if (c == Confirm::NotifyLight) {
+        const int i = confirmBox_.selected();
+        if (i >= 0 && i < int(std::size(kLedColorOrder))) {
+          app().cfg.notifyLight = kLedColorOrder[i];
+          settings::saveNotifyLight(app().cfg.notifyLight);
+          ui::notifyLightPreview(app().cfg.notifyLight);
+        }
+        break;
+      }
+      if (c == Confirm::NotifyTimeout) {
+        const int i = confirmBox_.selected();
+        if (i >= 0 && i < kNotifyTimeoutCount) {
+          app().cfg.notifyTimeoutSecs = kNotifyTimeoutSecs[i];
+          settings::saveNotifyTimeout(app().cfg.notifyTimeoutSecs);
+        }
+        break;
+      }
       if (c == Confirm::TextSize) {
         const int i = confirmBox_.selected();
         if (i >= 0 && i < 3 && kSizeOrder[i] != app().cfg.textSize) ui::setTextSize(kSizeOrder[i]);
@@ -330,6 +358,37 @@ void SettingsScreen::activate(int item) {
       confirmBox_.open(U"keyboard light", std::move(rows), sel);
       break;
     }
+    case kNotifyLight: {
+      std::vector<ListItem> rows;
+      int sel = 0;
+      for (size_t i = 0; i < std::size(kLedColorOrder); ++i) {
+        ListItem it{ledColorLabel(kLedColorOrder[i]), U""};
+        if (kLedColorOrder[i] == app().cfg.notifyLight) {
+          it.marker = true;
+          sel = int(i);
+        }
+        rows.push_back(std::move(it));
+      }
+      confirm_ = Confirm::NotifyLight;
+      confirmBox_.open(U"notify light", std::move(rows), sel);
+      break;
+    }
+    case kNotifyTimeout: {
+      std::vector<ListItem> rows;
+      int sel = 0;
+      const uint16_t cur = snapNotifyTimeout(app().cfg.notifyTimeoutSecs);
+      for (int i = 0; i < kNotifyTimeoutCount; ++i) {
+        ListItem it{notifyTimeoutLabel(kNotifyTimeoutSecs[i]), U""};
+        if (kNotifyTimeoutSecs[i] == cur) {
+          it.marker = true;
+          sel = i;
+        }
+        rows.push_back(std::move(it));
+      }
+      confirm_ = Confirm::NotifyTimeout;
+      confirmBox_.open(U"light timeout", std::move(rows), sel);
+      break;
+    }
     case kAtTimeout: {
       AppState& a = app();
       a.cfg.screenSaver = !a.cfg.screenSaver;
@@ -425,6 +484,12 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
         break;
       case kKbLight:
         rows.push_back(ListItem{U"Keyboard light", kbLightLabel(a.cfg.kbLight)});
+        break;
+      case kNotifyLight:
+        rows.push_back(ListItem{U"Notify light", ledColorLabel(a.cfg.notifyLight)});
+        break;
+      case kNotifyTimeout:
+        rows.push_back(ListItem{U"Light timeout", notifyTimeoutLabel(a.cfg.notifyTimeoutSecs)});
         break;
       case kAtTimeout:
         rows.push_back(ListItem{U"At timeout", a.cfg.screenSaver ? U"screensaver" : U"screen off"});
@@ -537,6 +602,7 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
     // strip only has room for a two-row confirm.
     const bool pick = confirm_ == Confirm::Rotation || confirm_ == Confirm::TextSize ||
                       confirm_ == Confirm::Timeout || confirm_ == Confirm::KbLight ||
+                      confirm_ == Confirm::NotifyLight || confirm_ == Confirm::NotifyTimeout ||
                       confirm_ == Confirm::Theme;
     confirmBox_.render(g, 1, bottom, 0, pick ? OverlayPlace::Centre : OverlayPlace::Bottom, t);
     if (pick)

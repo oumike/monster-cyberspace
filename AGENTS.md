@@ -4,8 +4,8 @@ Standalone ESP32 firmware client for [cyberspace.online](https://cyberspace.onli
 a retro text-only social network. Milestone 1 is cIRC chat plus a device-served
 web config page, on the Elecrow ThinkNode M9. The Seeed Wio Tracker L2 and
 the LilyGO T-Deck Plus followed, then the Elecrow CrowPanel Advance 3.5" and
-5.0", the LilyGO T-LoRa Pager and the LilyGO T-Deck Pro (all built, not yet
-tried on hardware). More
+5.0", the LilyGO T-LoRa Pager, the LilyGO T-Deck Pro and the Attaky Mesh Deck
+(all built, not yet tried on hardware; the Mesh Deck boots). More
 boards and Cyberspace features come later.
 
 - **Design spec:** `docs/superpowers/specs/2026-10-25-cyberspace-m9-circ-design.md`
@@ -21,6 +21,8 @@ boards and Cyberspace features come later.
   plan `docs/superpowers/plans/2026-10-26-cyberspace-touch.md`.
 - **T-Deck Plus:** spec `docs/superpowers/specs/2026-10-26-cyberspace-tdeck-plus-design.md`,
   plan `docs/superpowers/plans/2026-10-26-cyberspace-tdeck-plus.md`.
+- **Mesh Deck:** survey `docs/superpowers/specs/2026-10-29-cyberspace-mesh-deck-design.md`,
+  plan `docs/superpowers/plans/2026-10-29-cyberspace-mesh-deck.md`.
 - **User guide:** `docs/USE.md`. **Testing and the live checklist:** `docs/TESTING.md`.
 - **Implementation plan:** `docs/superpowers/plans/2026-10-25-cyberspace-m9-circ.md`.
   Work its tasks in order, tick each `- [ ]` box as you finish a step, and
@@ -59,7 +61,8 @@ pio run -e tdeck            # LilyGO T-Deck Plus firmware
 pio run -e crowpanel35      # Elecrow CrowPanel Advance 3.5" (crowpanel50: the 5.0")
 pio run -e pager            # LilyGO T-LoRa Pager
 pio run -e tdeck_pro        # LilyGO T-Deck Pro (e-paper)
-scripts/build-upload-monitor.sh m9   # flash + serial monitor (115200); -w for the Wio L2, -t for the T-Deck Plus, -3/-5 for the CrowPanels, -P for the Pager, -D for the T-Deck Pro; --help for options
+pio run -e mesh_deck        # Attaky Mesh Deck
+scripts/build-upload-monitor.sh m9   # flash + serial monitor (115200); -w for the Wio L2, -t for the T-Deck Plus, -3/-5 for the CrowPanels, -P for the Pager, -D for the T-Deck Pro, -M for the Mesh Deck; --help for options
 scripts/build-upload-monitor.sh -B   # build every firmware env, no device needed
 scripts/release.sh --dist-only       # release images into dist/; releasing itself is the user's call (docs/BUILD.md)
 ```
@@ -98,6 +101,14 @@ keyboard (`keymap_tdeck_pro`), raw CST328/CST3530 touch, the side button as
 ScreenOff, BQ27220/BQ25896 battery, GPS and SD. `board::eink()` makes the app
 use `paperTheme()` (outlined selections, `Theme::outlined`), hide the Theme
 item, and keep the splash cursor and screensaver still.
+`src/hal/mesh_deck/` is the Attaky Mesh Deck 1.0 (from camillia-mt's
+`hw_mesh_deck.h` and platy-aprs's `mesh_deck_io.cpp`, `pins_mesh_deck.h`): an
+ST7789 through the shared `st7789` driver (MADCTL 0xA0, panel mounted 180°),
+FT6636 touch, the AW9523 front buttons (`MeshDeckPad`) and keyboard module
+(`MeshDeckKeys`, both in `input/keymap_mesh_deck`), MAX17048 gauge and GPS; no
+RTC, SD or buzzer. Console: UART0 (CH340). Its RGB LEDs are the notification
+light (`board::hasNotifyLight`/`notifyLight`; the blinker, colours and
+timeouts in `ui/notify_light`, settings `notifyLight`/`notifyTimeoutSecs`).
 Touch: `lib/core` turns samples into gestures and resolves them against the
 per-frame `TapMap` widgets fill as they draw (`input/gestures`, `ui/tap_map`,
 `input/touch_resolve`, the `Osk` keyboard); `ui_task` feeds `handleKey` and
@@ -138,6 +149,9 @@ without flashing; `PANEL_MADCTL` and the row offset await the hardware
 check; the wheel direction was flipped after a hardware check on 2026-10-28).
 The LilyGO T-Deck Pro HAL (env `tdeck_pro`) was added on 2026-10-28 (built
 without flashing).
+The Attaky Mesh Deck HAL (env `mesh_deck`) and the notification light were
+added on 2026-10-29 (flashed: it boots and finds touch, gauge and keyboard;
+the panel, touch mapping, keys and LEDs await the hardware check).
 **Still open:** the unticked items under "Open hardware checks" in
 `docs/TESTING.md` (themes, device Settings, touch UI, Wio L2, T-Deck Plus, CrowPanels, Pager, T-Deck Pro, GPS time, API
 assumptions, settings backup, OTA), then the human live checklist on the `m9` build.
@@ -151,9 +165,9 @@ The T-Deck Pro (env `tdeck_pro`, e-paper) uses the touch-only paradigm plus a
 its and the T-Deck Plus's mic key opens the emoji tray (`board::textEntry`).
 A browser flasher (GitHub Pages, `site/`, `.github/workflows/pages.yml`)
 serves the latest release (docs/BUILD.md).
-The native suite is green: 462/462
+The native suite is green: 505/505
 (`pio test -e native`), and `scripts/build-upload-monitor.sh -B` builds all
-seven firmware envs.
+eight firmware envs.
 
 Notes for whoever continues:
 - Each task follows test-driven development: write the plan's tests first, run

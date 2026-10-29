@@ -3,7 +3,8 @@
 On the Elecrow ThinkNode M9 (keyboard and d-pad), the Seeed Wio Tracker L2
 (touch screen; see Touch below) and the LilyGO T-Deck Plus (keyboard,
 trackball and touch; see T-Deck Plus below), and the Elecrow CrowPanel
-Advance 3.5" and 5.0" (touch only; see CrowPanel below). Key names in this guide are the
+Advance 3.5" and 5.0" (touch only; see CrowPanel below), and the Attaky Mesh
+Deck (d-pad, touch and keyboard; see Mesh Deck below). Key names in this guide are the
 M9's.
 
 ## First setup
@@ -226,6 +227,44 @@ The screen stays portrait (there is no Orientation item). The frontlight and
 the keyboard light stay off. There is no RTC or speaker: the clock comes from
 Wi-Fi or the GPS, which powers off once the time is set. Backups go to the
 microSD slot. The setup AP is **`Monster-Cyberspace-TDeckPro`**.
+
+## Mesh Deck
+
+The Attaky Mesh Deck has a d-pad with Select, two shoulder buttons (L1, R2),
+a touch screen and, with the keyboard module attached, a 48-key keyboard.
+Without the keyboard module it works as a touch board, with the on-screen
+keyboard; the module can be plugged in while it runs.
+
+| Input | Action |
+|---|---|
+| D-pad | Up, Down, Left, Right (hold to repeat) |
+| Select | Select; hold it to turn the screen off, and on again |
+| L1 | Back; hold it for Home |
+| R2 or BOOT | Screen off, and on again |
+| Keys | Type. Shift, Sym and Alt work held, or tapped for the next key (they lapse after 1.5 s). Shift gives capitals and the symbols on the number row; Sym gives `? / - _ = + [ ] { } : ; ' " ` ~ \ | & < > * @ # % ^ ! ?` on q … m , . |
+| Enter | Select (send, in a room) |
+| Del | Deletes while there's text to delete; otherwise Back. Hold it to repeat |
+| Tab | The command palette |
+| Mic, while typing | The emoji tray |
+| Sym + Enter | The symbol table |
+| Alt (or Fn) + W / A / S / D | Up, Left, Down, Right (hold to repeat) |
+| Alt + Del, Alt + Enter | Back, the command palette |
+| Alt + H / C / M / F | Home, cIRC, C-Mail, Feed |
+| Touch | Tap and swipe as on the other touch boards |
+
+The power button is not used by the firmware: holding it cuts the power.
+
+**Notification light:** the front LED and the keyboard's LEDs blink twice every
+second while a mention or a C-Mail is unread, for the light timeout after the
+last one came in. Settings has **Notify light** (the colour, or Off; Blue by
+default) and **Light timeout** (15 s by default, up to Until read); picking a
+colour blinks it once. Web config has both under Display.
+
+There is no RTC, speaker or SD slot: the clock comes from Wi-Fi or the GPS,
+and backups go through web config. The setup AP is
+**`Monster-Cyberspace-MeshDeck`**. The serial console is the USB-C port
+(a CH340). Right after flashing, if the screen stays dark, switch the
+Mesh Deck off and on.
 
 ## CrowPanel
 
@@ -560,6 +599,8 @@ touch board and two more on a board with an SD card slot:
   the screen is on. Off by default, except on the M9, where it is High and its
   keyboard lights the keys itself after a press; Off there switches that light
   off until the M9 is power cycled.
+- **Notify light: …** and **Light timeout: …** (Mesh Deck) Open a box with
+  the colours (or Off) and the timeouts; see Mesh Deck.
 - **Spell check: on / off.** Centre switches suggestions while typing (see
   Spell check). On by default.
 - **Wi-Fi: …** Shows the joined network and opens Wi-Fi on the device (see

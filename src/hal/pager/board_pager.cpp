@@ -152,6 +152,8 @@ bool sideNav() { return false; }
 void textEntry(bool) {}
 bool hasKbLight() { return true; }
 uint8_t kbLightDefault() { return 0; }
+bool hasNotifyLight() { return false; }
+void notifyLight(uint8_t) {}
 void kbLight(uint8_t duty, bool screenOn) { pager_kb::setBacklight(screenOn ? duty : 0); }
 bool eink() { return false; }
 bool doubleTapWakes() { return false; }

@@ -25,6 +25,7 @@
 #include "store/settings.h"
 #include "tz/zones.h"
 #include "ui/kb_light.h"
+#include "ui/notify_light.h"
 #include "ui/screen_timeout.h"
 #include "web/page.h"
 #include "web/web_util.h"
@@ -311,6 +312,10 @@ esp_err_t getPrefs(httpd_req_t* req) {
   d["ntpServer"] = s.ntpServer;
   if (board::canRotate()) d["rotation"] = s.rotation;
   if (board::hasKbLight()) d["kbLight"] = rc::kbLightKey(s.kbLight);
+  if (board::hasNotifyLight()) {
+    d["notifyLight"] = rc::ledColorKey(s.notifyLight);
+    d["notifyTimeout"] = s.notifyTimeoutSecs;
+  }
   return sendJson(req, d);
 }
 
@@ -360,6 +365,19 @@ esp_err_t postPrefs(httpd_req_t* req) {
   if (!doc["kbLight"].isNull() &&
       (!doc["kbLight"].is<const char*>() || !rc::parseKbLight(doc["kbLight"].as<const char*>(), kbLight)))
     return fail(req, "400 Bad Request", "Keyboard light: off, low, medium or high");
+  rc::LedColor notifyLight = s.notifyLight;
+  if (!doc["notifyLight"].isNull() &&
+      (!doc["notifyLight"].is<const char*>() ||
+       !rc::parseLedColor(doc["notifyLight"].as<const char*>(), notifyLight)))
+    return fail(req, "400 Bad Request",
+                "Notify light: off, red, green, blue, yellow, cyan, magenta or white");
+  uint16_t notifyTimeout = s.notifyTimeoutSecs;
+  if (!doc["notifyTimeout"].isNull()) {
+    if (!doc["notifyTimeout"].is<int>() || doc["notifyTimeout"].as<int>() < 0 ||
+        !rc::validNotifyTimeout(doc["notifyTimeout"].as<uint32_t>()))
+      return fail(req, "400 Bad Request", "Light timeout: 15, 30, 60, 300 or 0 (until read)");
+    notifyTimeout = uint16_t(doc["notifyTimeout"].as<uint32_t>());
+  }
   std::string ntp = s.ntpServer;
   if (doc["ntpServer"].is<const char*>()) {
     ntp = doc["ntpServer"].as<const char*>();
@@ -401,6 +419,16 @@ esp_err_t postPrefs(httpd_req_t* req) {
   if (board::hasKbLight() && kbLight != s.kbLight) {
     rc::app().cfg.kbLight = kbLight;
     settings::saveKbLight(kbLight);
+  }
+  // The UI task reads the light settings each pass; a new colour shows once.
+  if (board::hasNotifyLight() && notifyLight != s.notifyLight) {
+    rc::app().cfg.notifyLight = notifyLight;
+    settings::saveNotifyLight(notifyLight);
+    rc::postEvent(rc::Event{rc::EvtType::NotifyPreview, "", static_cast<int>(notifyLight), true});
+  }
+  if (board::hasNotifyLight() && notifyTimeout != s.notifyTimeoutSecs) {
+    rc::app().cfg.notifyTimeoutSecs = notifyTimeout;
+    settings::saveNotifyTimeout(notifyTimeout);
   }
   // The UI task owns text size, theme and buzzer; it applies and saves them.
   if (!doc["textSize"].isNull() || !doc["buzzer"].isNull() || !doc["theme"].isNull())

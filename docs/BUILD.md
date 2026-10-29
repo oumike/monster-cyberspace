@@ -57,6 +57,14 @@ scripts/build-upload-monitor.sh m9    # build, flash, then open the serial monit
 If a first build fails while installing a tool package, run it again. A
 one-off PlatformIO install error has been seen on the first run.
 
+## Screenshots
+
+Every firmware answers `screenshot` on its serial console with the frame on
+screen. `scripts/screenshot.py PORT` saves it as a PNG in `screenshots/`;
+`--watch` saves each new screen once it settles, while you move around the
+device (Ctrl-C stops). It needs pyserial (PlatformIO's Python has it) and opens
+the port without resetting the board. Only the frame buffer is read.
+
 ## Releases
 
 Ported from platy-aprs, with its OTA signing.

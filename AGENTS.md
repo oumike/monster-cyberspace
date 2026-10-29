@@ -64,6 +64,7 @@ pio run -e tdeck_pro        # LilyGO T-Deck Pro (e-paper)
 pio run -e mesh_deck        # Attaky Mesh Deck
 scripts/build-upload-monitor.sh m9   # flash + serial monitor (115200); -w for the Wio L2, -t for the T-Deck Plus, -3/-5 for the CrowPanels, -P for the Pager, -D for the T-Deck Pro, -M for the Mesh Deck; --help for options
 scripts/build-upload-monitor.sh -B   # build every firmware env, no device needed
+scripts/screenshot.py PORT [--watch]  # PNG screenshots over the serial console (no device writes)
 scripts/release.sh --dist-only       # release images into dist/; releasing itself is the user's call (docs/BUILD.md)
 ```
 
@@ -165,7 +166,7 @@ The T-Deck Pro (env `tdeck_pro`, e-paper) uses the touch-only paradigm plus a
 its and the T-Deck Plus's mic key opens the emoji tray (`board::textEntry`).
 A browser flasher (GitHub Pages, `site/`, `.github/workflows/pages.yml`)
 serves the latest release (docs/BUILD.md).
-The native suite is green: 508/508
+The native suite is green: 512/512
 (`pio test -e native`), and `scripts/build-upload-monitor.sh -B` builds all
 eight firmware envs.
 

@@ -20,6 +20,8 @@
 #include "ui/kb_light.h"
 #include "ui/notify_light.h"
 #include "ui/renderer.h"
+#include "ui/screenshot.h"
+#include <vector>
 #include "ui/room_layout.h"
 #include "ui/rotation.h"
 #include "ui/screen_timeout.h"
@@ -425,6 +427,33 @@ void handleKey(const KeyEvent& key) {
   router::screen().onKey(k);
 }
 
+// Answers the console's "screenshot" command (scripts/screenshot.py) with the
+// frame as drawn; read only, it touches nothing else.
+SerialCommand console;
+
+void sendScreenshot() {
+  const uint16_t* f = renderer.frame();
+  const int w = renderer.width(), h = renderer.height();
+  if (!f || w <= 0 || h <= 0) return;
+  static std::vector<uint8_t> buf;
+  buf.resize(static_cast<size_t>(w) * 3);
+  Serial.printf("\n@@SHOT %d %d\n", w, h);
+  uint32_t crc = 0;
+  size_t total = 0;
+  for (int y = 0; y < h; ++y) {
+    const size_t n = rle565Row(f + static_cast<size_t>(y) * w, w, buf.data());
+    Serial.write(buf.data(), n);
+    crc = crc32Update(crc, buf.data(), n);
+    total += n;
+  }
+  Serial.printf("\n@@END %u %08lx\n", static_cast<unsigned>(total), static_cast<unsigned long>(crc));
+}
+
+void pollConsole() {
+  while (Serial.available() > 0)
+    if (console.feed(static_cast<char>(Serial.read())) == SerialCommand::Screenshot) sendScreenshot();
+}
+
 void taskMain(void*) {
   ThemeId shown = app().cfg.theme;
   for (;;) {
@@ -556,6 +585,7 @@ void taskMain(void*) {
       drawBounce(t);
       renderer.draw(grid, gridSize);
     }
+    pollConsole();
     uint32_t spent = millis() - start;
     vTaskDelay(pdMS_TO_TICKS(spent < kFrameMs ? kFrameMs - spent : 1));
   }

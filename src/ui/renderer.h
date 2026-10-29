@@ -24,6 +24,10 @@ class Renderer {
   // below the screen's, such as the on-screen keyboard), offsetPx lower. A
   // header row 0 (Grid::setHeader) is drawn in the big font, centred.
   void draw(Grid& g, TextSize s, int firstRow = 0, int offsetPx = 0);
+  // The frame as last drawn, width() x height() RGB565 (null without memory).
+  const uint16_t* frame() const { return frame_; }
+  int width() const { return w_; }
+  int height() const { return h_; }
 
  private:
   // What was drawn last frame, per grid: the screen's (firstRow 0) and one

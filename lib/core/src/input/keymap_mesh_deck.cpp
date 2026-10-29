@@ -91,7 +91,11 @@ KeyEvent MeshDeckKeys::key(uint8_t pos, bool pressed, uint32_t ms) {
     held_ |= bit;
     armed_ |= bit;
     armedMs_ = ms;
-    return {};
+    if (bit != kSymBit) return {};
+    // Sym also opens the symbol table (only while typing; see ui_task).
+    KeyEvent e = action(Action::Symbols);
+    e.modifier = true;
+    return e;
   }
   if (k == kNone) return {};
   const uint8_t mods = held_ | armed_;
@@ -100,8 +104,7 @@ KeyEvent MeshDeckKeys::key(uint8_t pos, bool pressed, uint32_t ms) {
   if (mods & kAltBit) {
     e = action(altChord(k));
   } else if (k == kEnter) {
-    e = action(mods & kSymBit ? Action::Symbols : Action::Select);
-    e.modifier = e.action == Action::Symbols;
+    e = action(Action::Select);
   } else if (k == kDel) {
     e = action(Action::Backspace);
   } else if (k == kTab) {

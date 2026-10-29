@@ -246,7 +246,7 @@ keyboard; the module can be plugged in while it runs.
 | Del | Deletes while there's text to delete; otherwise Back. Hold it to repeat |
 | Tab | The command palette |
 | Mic, while typing | The emoji tray |
-| Sym + Enter | The symbol table |
+| Sym, while typing | The symbol table: pick with the d-pad and Enter, or type a key for its Sym character. Sym again switches to the emoji tray |
 | Alt (or Fn) + W / A / S / D | Up, Left, Down, Right (hold to repeat) |
 | Alt + Del, Alt + Enter | Back, the command palette |
 | Alt + H / C / M / F | Home, cIRC, C-Mail, Feed |

@@ -99,9 +99,16 @@ void test_sym_layer() {
   expectChar(tap(k, kComma, 50), '!');
   k.key(kSym, false, 60);
   tap(k, kSym, 70);
-  KeyEvent e = tap(k, kEnter, 80);
+  expectAction(tap(k, kEnter, 80), Action::Select);
+}
+
+void test_sym_press_opens_symbols() {
+  MeshDeckKeys k;
+  KeyEvent e = k.key(kSym, true, 0);
   expectAction(e, Action::Symbols);
   TEST_ASSERT_TRUE(e.modifier);
+  expectAction(k.key(kSym, false, 10), Action::None);
+  expectChar(tap(k, kQ, 20), '?');
 }
 
 void test_alt_and_fn_chords() {
@@ -235,6 +242,7 @@ int main(int, char**) {
   RUN_TEST(test_shift_held_and_one_shot);
   RUN_TEST(test_one_shot_times_out);
   RUN_TEST(test_sym_layer);
+  RUN_TEST(test_sym_press_opens_symbols);
   RUN_TEST(test_alt_and_fn_chords);
   RUN_TEST(test_backspace_repeats_while_held);
   RUN_TEST(test_alt_arrow_stops_when_alt_released);

@@ -26,8 +26,8 @@ constexpr uint8_t meshDeckKeyPos(int half, int row, int col) {
 // Shift, Sym and Alt (Fn is a second Alt) work held, for every key while
 // down, or as a one-shot tap for the next key. Shift upper-cases letters and
 // gives the US number-row symbols; Sym is platy's punctuation layer.
-// Del is Backspace, Enter Select, Tab the palette, Mic the emoji tray while
-// typing, Sym+Enter the symbol table. Alt chords: W/A/S/D arrows,
+// Del is Backspace, Enter Select, Tab the palette, Mic the emoji tray and Sym
+// the symbol table while typing. Alt chords: W/A/S/D arrows,
 // Del Back, Enter the palette, H Home, C cIRC, M C-Mail, F Feed.
 class MeshDeckKeys {
  public:

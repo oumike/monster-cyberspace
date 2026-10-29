@@ -212,6 +212,9 @@ bool anyInputWakes() { return false; }
 bool upDownOnly() { return false; }
 bool sideNav() { return false; }
 void textEntry(bool) {}
+bool hasKbLight() { return false; }
+uint8_t kbLightDefault() { return 0; }
+void kbLight(uint8_t, bool) {}
 bool eink() { return false; }
 bool doubleTapWakes() { return false; }
 bool readTouch(int16_t& x, int16_t& y) {

@@ -22,6 +22,14 @@ These were built without flashing and still need a run on the device. The
 scripted fake-API builds (`m9_fake`, `wio_l2_fake`, `tdeck_fake`) were removed
 on 2026-10-27; the sections marked `m9_fake` passed on it before then.
 
+**Keyboard light (`m9`, `tdeck`, `tdeck_pro`, `pager`):**
+
+- [ ] Settings → Keyboard light: Low, Medium and High are visibly different
+  steps, and Off darkens the keys.
+- [ ] The keys go dark with the screen and come back when it wakes
+  (not the M9, whose keyboard lights itself on a press).
+- [ ] The level survives a restart and a backup and restore.
+
 **Themes (`m9`):**
 
 - [x] Settings → Theme cycles Default → Black & white → White & black → Default; each redraws at once and survives a restart

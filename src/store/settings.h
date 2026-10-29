@@ -8,7 +8,7 @@ void load(rc::Settings&);
 // Each saver writes only its own keys, so the UI task and the web server
 // never overwrite each other's changes.
 // The UI's own preferences: text size, theme, orientation, drawer, buzzer,
-// last room.
+// keyboard light, last room.
 void saveUiPrefs(const rc::Settings&);
 // Web config only. Networks beyond kMaxWifiNets are dropped.
 void saveWifi(const std::vector<rc::WifiNet>&);

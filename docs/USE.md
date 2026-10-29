@@ -503,6 +503,11 @@ touch board and two more on a board with an SD card slot:
   60 min, and Never; picking one saves it. 30 s by default. See Screen timeout.
 - **At timeout: screensaver / screen off.** Centre switches what the screen
   timeout does and saves it.
+- **Keyboard light: …** (M9, T-Deck Plus, T-Deck Pro, Pager) Opens a box with
+  Low, Medium, High and Off; picking one saves it. The keys are lit only while
+  the screen is on. Off by default, except on the M9, where it is High and its
+  keyboard lights the keys itself after a press; Off there switches that light
+  off until the M9 is power cycled.
 - **Turn setup AP on / off.** Brings up the setup AP (its name, password state
   and `http://192.168.4.1` are shown) while staying on your Wi-Fi, so you can
   reach web config when your network is unreachable. It stays on until you

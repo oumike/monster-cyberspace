@@ -74,6 +74,16 @@ void watchMic(bool on) {
   watching = on;
 }
 
+void setBacklight(uint8_t duty) {
+  if (!present) return;
+  // One command per transmission: the C3 reads anything after it as that
+  // command's argument (camillia-mt's tdeckKeyboardSetBacklight).
+  Wire.beginTransmission(tdeck::KB_ADDR);
+  Wire.write(uint8_t(0x01));
+  Wire.write(duty);
+  (void)Wire.endTransmission();
+}
+
 bool micPressed() {
   if (!present || !rawMode || !watching) return false;
   uint32_t now = millis();

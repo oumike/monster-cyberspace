@@ -13,5 +13,6 @@ bool poll(uint8_t& raw);    // at most one read per 10 ms; false on 0 or no data
 // every 90 ms and never while KB_INT says a character is waiting.
 void watchMic(bool on);
 bool micPressed();          // true once per press while watching
+void setBacklight(uint8_t duty);  // the C3's keyboard light, 0..255
 
 }  // namespace tdeck_kb

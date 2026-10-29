@@ -13,11 +13,15 @@
 #include "store/settings.h"
 #include "tz/zones.h"
 #include "ui/rotation.h"
+#include "ui/kb_light.h"
 #include "ui/screen_timeout.h"
 
 namespace rc {
 
 namespace {
+// The keyboard light picker's order.
+constexpr KbLight kKbLightOrder[] = {KbLight::Low, KbLight::Medium, KbLight::High, KbLight::Off};
+
 enum Item {
   kTheme,
   kTextSize,
@@ -25,6 +29,7 @@ enum Item {
   kRotation,
   kScreenTimeout,
   kAtTimeout,
+  kKbLight,
   kSetupAp,
   kFirmware,
   kAutoUpdate,
@@ -46,6 +51,7 @@ std::vector<Item> menuItems() {
   if (board::canRotate()) v.push_back(kRotation);
   v.push_back(kScreenTimeout);
   v.push_back(kAtTimeout);
+  if (board::hasKbLight()) v.push_back(kKbLight);
   v.push_back(kSetupAp);
   v.push_back(kFirmware);
   v.push_back(kAutoUpdate);
@@ -169,6 +175,14 @@ void SettingsScreen::confirmKey(const KeyEvent& k) {
         }
         break;
       }
+      if (c == Confirm::KbLight) {
+        const int i = confirmBox_.selected();
+        if (i >= 0 && i < int(std::size(kKbLightOrder))) {
+          app().cfg.kbLight = kKbLightOrder[i];
+          settings::saveUiPrefs(app().cfg);
+        }
+        break;
+      }
       if (c == Confirm::TextSize) {
         const int i = confirmBox_.selected();
         if (i >= 0 && i < 3 && kSizeOrder[i] != app().cfg.textSize) ui::setTextSize(kSizeOrder[i]);
@@ -279,6 +293,21 @@ void SettingsScreen::activate(int item) {
       confirmBox_.open(U"screen timeout", std::move(rows), sel);
       break;
     }
+    case kKbLight: {
+      std::vector<ListItem> rows;
+      int sel = 0;
+      for (size_t i = 0; i < std::size(kKbLightOrder); ++i) {
+        ListItem it{kbLightLabel(kKbLightOrder[i]), U""};
+        if (kKbLightOrder[i] == app().cfg.kbLight) {
+          it.marker = true;
+          sel = int(i);
+        }
+        rows.push_back(std::move(it));
+      }
+      confirm_ = Confirm::KbLight;
+      confirmBox_.open(U"keyboard light", std::move(rows), sel);
+      break;
+    }
     case kAtTimeout: {
       AppState& a = app();
       a.cfg.screenSaver = !a.cfg.screenSaver;
@@ -364,6 +393,9 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
         break;
       case kScreenTimeout:
         rows.push_back(ListItem{U"Screen timeout", widen(screenTimeoutLabel(a.cfg.screenOnSecs).c_str())});
+        break;
+      case kKbLight:
+        rows.push_back(ListItem{U"Keyboard light", kbLightLabel(a.cfg.kbLight)});
         break;
       case kAtTimeout:
         rows.push_back(ListItem{U"At timeout", a.cfg.screenSaver ? U"screensaver" : U"screen off"});
@@ -454,7 +486,7 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
     // The orientation and text size pickers are centred boxes; the bottom
     // strip only has room for a two-row confirm.
     const bool pick = confirm_ == Confirm::Rotation || confirm_ == Confirm::TextSize ||
-                      confirm_ == Confirm::Timeout;
+                      confirm_ == Confirm::Timeout || confirm_ == Confirm::KbLight;
     confirmBox_.render(g, 1, bottom, 0, pick ? OverlayPlace::Centre : OverlayPlace::Bottom, t);
     if (pick)
       drawHint(g, t, U"\u2191\u2193 pick  \u25CF set  back: cancel",

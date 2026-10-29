@@ -17,6 +17,7 @@
 #include "screens/draw.h"
 #include "screens/router.h"
 #include "store/locked_chat.h"
+#include "ui/kb_light.h"
 #include "ui/renderer.h"
 #include "ui/room_layout.h"
 #include "ui/rotation.h"
@@ -166,6 +167,19 @@ void setLit(uint8_t level) {
 }
 
 void drawBounce(const Theme& t);
+
+// The keyboard light follows the setting while the screen is on.
+void applyKbLight() {
+  static int shownDuty = -1;
+  static bool shownOn = false;
+  if (!board::hasKbLight()) return;
+  const int duty = kbLightDuty(app().cfg.kbLight);
+  const bool on = power == Power::On;
+  if (duty == shownDuty && on == shownOn) return;
+  shownDuty = duty;
+  shownOn = on;
+  board::kbLight(uint8_t(duty), on);
+}
 
 void goDark() {
   showOsk(false);
@@ -417,6 +431,7 @@ void taskMain(void*) {
     board::textEntry(power == Power::On && router::screen().acceptsText());
     KeyEvent key;
     while (board::pollKey(key)) handleKey(key);
+    applyKbLight();
     Event e;
     while (nextEvent(e)) handleEvent(e);
 

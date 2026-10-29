@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "ui/grid.h"
+#include "ui/kb_light.h"
 #include "ui/theme.h"
 
 namespace rc {
@@ -21,6 +22,9 @@ struct Settings {
   bool autoUpdate = false;  // install a newer release without asking
   uint32_t screenOnSecs = 30;  // screen timeout (ui/screen_timeout.h); 0 never
   bool screenSaver = true;     // at the timeout: the screensaver, else screen off
+  // Boards with a lit keyboard (board::hasKbLight); the saved value falls back
+  // to board::kbLightDefault().
+  KbLight kbLight = KbLight::Off;
   ThemeId theme = ThemeId::Default;
   uint8_t rotation = 0;  // touch boards: see ui/rotation.h
   std::string lastRoom = "general";

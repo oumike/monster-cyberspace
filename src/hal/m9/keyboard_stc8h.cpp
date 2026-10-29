@@ -13,6 +13,7 @@ namespace stc8h {
 namespace {
 
 uint8_t addr = 0;
+constexpr uint8_t kRegBacklight = 0x02;  // after camillia-mt's KB_REG_BACKLIGHT
 uint8_t keyReg = m9::KB_REG_KEY;
 bool isEarly = false;
 uint32_t lastPollMs = 0;
@@ -78,6 +79,14 @@ bool poll(uint8_t& raw) {
 }
 
 bool early() { return isEarly; }
+
+void setBacklight(uint8_t level) {
+  if (!addr) return;
+  Wire.beginTransmission(addr);
+  Wire.write(kRegBacklight);
+  Wire.write(level);
+  (void)Wire.endTransmission();
+}
 
 }  // namespace stc8h
 

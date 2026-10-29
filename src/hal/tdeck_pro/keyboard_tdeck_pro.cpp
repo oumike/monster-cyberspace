@@ -23,6 +23,7 @@ constexpr uint32_t kSweepMs = 100;
 uint32_t lastDrainMs = 0, lastPressMs = 0;
 
 bool present = false;
+constexpr uint32_t kBlFreq = 12000;  // the keyboard light's PWM, as camillia-mt
 rc::TdeckProKeys keys;
 rc::KeyEvent pending[kQueue];
 uint8_t head = 0, count = 0;
@@ -60,8 +61,8 @@ void drain() {
 
 bool begin() {
   pinMode(KB_INT, INPUT_PULLUP);
-  pinMode(KB_BL, OUTPUT);
-  digitalWrite(KB_BL, LOW);  // keys unlit
+  ledcAttach(KB_BL, kBlFreq, 8);
+  ledcWrite(KB_BL, 0);  // keys unlit
   I2cGuard g;
   const uint32_t start = millis();
   do {
@@ -88,6 +89,8 @@ void service() {
   lastDrainMs = millis();
   drain();
 }
+
+void setBacklight(uint8_t duty) { ledcWrite(KB_BL, duty); }
 
 bool poll(rc::KeyEvent& key) {
   if (!present) return false;

@@ -7,5 +7,6 @@ namespace pager_kb {
 
 bool begin();  // after the expander has powered it
 bool poll(rc::KeyEvent& key);
+void setBacklight(uint8_t duty);  // the keyboard light (PWM), 0..255
 
 }  // namespace pager_kb

@@ -238,6 +238,9 @@ bool anyInputWakes() { return false; }
 bool upDownOnly() { return false; }
 bool sideNav() { return true; }
 void textEntry(bool) {}
+bool hasKbLight() { return true; }
+uint8_t kbLightDefault() { return 0; }
+void kbLight(uint8_t duty, bool screenOn) { tdeck_pro_kb::setBacklight(screenOn ? duty : 0); }
 bool eink() { return true; }
 bool doubleTapWakes() { return false; }
 

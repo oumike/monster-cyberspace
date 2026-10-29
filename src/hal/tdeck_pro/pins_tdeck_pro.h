@@ -25,7 +25,7 @@ constexpr int I2C_SDA = 13, I2C_SCL = 14;
 constexpr uint32_t I2C_HZ = 400000;
 constexpr uint8_t KB_ADDR = 0x34;
 constexpr int KB_INT = 15;  // active low
-constexpr int KB_BL = 42;   // keyboard backlight; kept off
+constexpr int KB_BL = 42;   // keyboard backlight (PWM)
 constexpr uint8_t TOUCH_ADDR = 0x1A;
 constexpr int TOUCH_INT = 12, TOUCH_RST = 38;
 constexpr uint8_t CHARGER_ADDR = 0x6B;  // BQ25896

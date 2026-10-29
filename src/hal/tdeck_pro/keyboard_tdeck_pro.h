@@ -12,6 +12,7 @@ bool poll(rc::KeyEvent& key);
 // Reads the controller's FIFO into the queue, so keys struck during an
 // e-paper refresh (up to a second of waiting on BUSY) aren't lost.
 void service();
+void setBacklight(uint8_t duty);  // the keyboard light (PWM), 0..255
 // millis() of the last key press, so refreshes can wait for typing to pause.
 uint32_t lastInputMs();
 

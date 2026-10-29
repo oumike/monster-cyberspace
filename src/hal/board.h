@@ -27,6 +27,14 @@ void backlight(bool on);
 // an on/off backlight treat any level above 0 as on.
 void backlightLevel(uint8_t level);
 void displaySleep(bool sleep);
+// The keyboard backlight. hasKbLight: the board has one to set;
+// kbLightDefault: its rc::KbLight index before any is saved. kbLight sets it,
+// duty 0..255, lit only while screenOn (the M9's controller lights the keys
+// itself on a key press, so there it is that light's brightness, and 0
+// switches it off until a power cycle).
+bool hasKbLight();
+uint8_t kbLightDefault();
+void kbLight(uint8_t duty, bool screenOn);
 // The last line of the screensaver, telling the user how to wake the screen.
 const char* wakeHint();
 // The next pending key press, already mapped to a portable key.

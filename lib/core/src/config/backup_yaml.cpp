@@ -9,6 +9,7 @@
 #include "tz/zones.h"
 #include "ui/rotation.h"
 #include "ui/screen_timeout.h"
+#include "ui/kb_light.h"
 #include "ui/theme.h"
 #include "web/web_util.h"
 
@@ -59,7 +60,7 @@ struct Item {
 
 struct Staged {
   Str format, version, timezone, tzName, ntpServer, pagePassword, apPassword, textSize, theme,
-      rotation, lastRoom, email, refreshToken, screenOnSecs;
+      rotation, lastRoom, email, refreshToken, screenOnSecs, kbLight;
   Bool drawerOpen, buzzer, autoUpdate, screenSaver;
   bool hasWifi = false;
   std::vector<Item> wifi;
@@ -249,6 +250,7 @@ bool parse(std::string_view yaml, Staged& st, std::string& err) {
              : key == "theme"        ? &st.theme
              : key == "rotation"     ? &st.rotation
              : key == "screenOnSecs" ? &st.screenOnSecs
+             : key == "kbLight"      ? &st.kbLight
              : key == "lastRoom"     ? &st.lastRoom
                                      : nullptr;
     Str ignored;
@@ -362,6 +364,7 @@ std::string backupToYaml(const Settings& s, const BackupMeta& m) {
   o += std::string("autoUpdate: ") + boolStr(s.autoUpdate) + "  # install firmware updates on its own\n";
   o += "screenOnSecs: " + std::to_string(s.screenOnSecs) + "  # screen timeout; 0 never\n";
   o += std::string("screenSaver: ") + boolStr(s.screenSaver) + "  # at the timeout; false: screen off\n";
+  o += std::string("kbLight: ") + kbLightKey(s.kbLight) + "  # off | low | medium | high\n";
   o += "lastRoom: " + yamlQuote(s.lastRoom) + "\n";
   o += "account:\n";
   o += "  email: " + yamlQuote(s.email) + "\n";
@@ -415,6 +418,7 @@ bool backupFromYaml(std::string_view yaml, Settings& inOut, std::string& err, st
   }
 
   ThemeId theme = inOut.theme;
+  KbLight kbLight = inOut.kbLight;
   int rotation = 0, screenOnSecs = 0;
   if (st.apPassword.has && !validApPassword(st.apPassword.v)) {
     err = at(st.apPassword.line, "setup-AP password: 8-63 printable characters, or empty");
@@ -431,6 +435,8 @@ bool backupFromYaml(std::string_view yaml, Settings& inOut, std::string& err, st
                                      !validScreenTimeout(uint32_t(screenOnSecs)))) {
     err = at(st.screenOnSecs.line,
              "screen timeout: 15, 30, 60, 120, 300, 600, 1800, 3600 or 0 (never)");
+  } else if (st.kbLight.has && !parseKbLight(st.kbLight.v, kbLight)) {
+    err = at(st.kbLight.line, "keyboard light: off, low, medium or high");
   } else if (st.timezone.has && !validPosixTz(st.timezone.v)) {
     err = at(st.timezone.line, "time zone: 1-63 printable characters");
   } else if (st.tzName.has && (st.tzName.v.size() > 63 || !printable(st.tzName.v))) {
@@ -467,6 +473,7 @@ bool backupFromYaml(std::string_view yaml, Settings& inOut, std::string& err, st
   if (st.autoUpdate.has) inOut.autoUpdate = st.autoUpdate.v;
   if (st.screenOnSecs.has) inOut.screenOnSecs = uint32_t(screenOnSecs);
   if (st.screenSaver.has) inOut.screenSaver = st.screenSaver.v;
+  if (st.kbLight.has) inOut.kbLight = kbLight;
   if (st.lastRoom.has) inOut.lastRoom = st.lastRoom.v;
   if (st.email.has) inOut.email = st.email.v;
   if (st.refreshToken.has) inOut.refreshToken = st.refreshToken.v;

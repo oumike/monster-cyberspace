@@ -1,5 +1,8 @@
 #include <unity.h>
 
+#include <cstring>
+
+#include "ui/kb_light.h"
 #include "ui/screen_timeout.h"
 
 using namespace rc;
@@ -46,10 +49,28 @@ void test_bouncer_stays_inside_and_reflects() {
   TEST_ASSERT_EQUAL(0, still.y);
 }
 
+void test_kb_light_levels() {
+  using rc::KbLight;
+  TEST_ASSERT_EQUAL_UINT8(0, rc::kbLightDuty(KbLight::Off));
+  TEST_ASSERT_EQUAL_UINT8(64, rc::kbLightDuty(KbLight::Low));
+  TEST_ASSERT_EQUAL_UINT8(160, rc::kbLightDuty(KbLight::Medium));
+  TEST_ASSERT_EQUAL_UINT8(255, rc::kbLightDuty(KbLight::High));
+  TEST_ASSERT(rc::kbLightFromIndex(2) == KbLight::Medium);
+  TEST_ASSERT(rc::kbLightFromIndex(9, KbLight::High) == KbLight::High);
+  TEST_ASSERT(rc::kbLightFromIndex(-1) == KbLight::Off);
+  KbLight l = KbLight::Off;
+  TEST_ASSERT_TRUE(rc::parseKbLight("medium", l));
+  TEST_ASSERT(l == KbLight::Medium);
+  TEST_ASSERT_FALSE(rc::parseKbLight("dim", l));
+  TEST_ASSERT(l == KbLight::Medium);
+  TEST_ASSERT_EQUAL_STRING("high", rc::kbLightKey(KbLight::High));
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_timeout_options_cycle_and_labels);
   RUN_TEST(test_idle_phases);
   RUN_TEST(test_bouncer_stays_inside_and_reflects);
+  RUN_TEST(test_kb_light_levels);
   return UNITY_END();
 }

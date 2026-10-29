@@ -2,6 +2,7 @@
 
 #include <Preferences.h>
 
+#include "hal/board.h"
 #include "tz/zones.h"
 #include "ui/rotation.h"
 #include "ui/screen_timeout.h"
@@ -60,6 +61,8 @@ void load(rc::Settings& s) {
   s.screenOnSecs = p.getUInt("scrsecs", 30);
   if (!rc::validScreenTimeout(s.screenOnSecs)) s.screenOnSecs = 30;
   s.screenSaver = p.getBool("scrsaver", true);
+  s.kbLight = rc::kbLightFromIndex(p.getUChar("kblight", board::kbLightDefault()),
+                                   rc::kbLightFromIndex(board::kbLightDefault()));
   s.theme = rc::themeFromIndex(p.getUChar("theme", 0));
   s.rotation = rc::rotationFromIndex(p.getUChar("rot", 0));
   s.lastRoom = getStr(p, "room", s.lastRoom);
@@ -74,6 +77,7 @@ void saveUiPrefs(const rc::Settings& s) {
   p.putBool("buzz", s.buzzer);
   p.putUChar("theme", static_cast<uint8_t>(s.theme));
   p.putUChar("rot", s.rotation);
+  p.putUChar("kblight", static_cast<uint8_t>(s.kbLight));
   p.putString("room", s.lastRoom.c_str());
   p.end();
 }

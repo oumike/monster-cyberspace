@@ -60,8 +60,8 @@ void drain() {
 
 bool begin() {
   pinMode(pager::KB_INT, INPUT_PULLUP);
-  pinMode(pager::KB_BL, OUTPUT);
-  digitalWrite(pager::KB_BL, LOW);  // keys unlit
+  ledcAttach(pager::KB_BL, pager::TFT_BL_FREQ, 8);
+  ledcWrite(pager::KB_BL, 0);  // keys unlit
   pager::I2cGuard g;
   uint32_t start = millis();
   do {
@@ -83,6 +83,8 @@ bool begin() {
   Serial.printf("[kb] keyboard %s\n", present ? "found" : "not found");
   return present;
 }
+
+void setBacklight(uint8_t duty) { ledcWrite(pager::KB_BL, duty); }
 
 bool poll(rc::KeyEvent& key) {
   if (!present) return false;

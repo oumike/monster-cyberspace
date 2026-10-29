@@ -90,6 +90,14 @@ bool anyInputWakes() { return false; }
 bool upDownOnly() { return false; }
 bool sideNav() { return false; }
 void textEntry(bool) {}
+bool hasKbLight() { return true; }
+uint8_t kbLightDefault() { return 3; }  // High: the controller's own default
+void kbLight(uint8_t duty, bool) {
+  static int last = -1;
+  if (duty == last) return;
+  last = duty;
+  stc8h::setBacklight(duty);
+}
 bool eink() { return false; }
 bool doubleTapWakes() { return false; }
 bool readTouch(int16_t&, int16_t&) { return false; }

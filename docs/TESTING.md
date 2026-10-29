@@ -295,6 +295,7 @@ Buttons: BOOT tap = Back, BOOT hold (0.6 s) = Home; Wake tap = screen off
 **Long-press outline (`wio_l2`, `crowpanel35`, `crowpanel50`):**
 
 - [ ] A long press on a room message or a Feed entry outlines it while its menu is open; picking an action or closing the menu removes the outline
+- [ ] That long press doesn't scroll the room, entry or Feed; a drag afterwards scrolls on from where the view was
 
 **Touch emoji button (`wio_l2`, `tdeck`, `crowpanel35`, `crowpanel50`):**
 

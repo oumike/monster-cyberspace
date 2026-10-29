@@ -21,7 +21,10 @@ class EntryList {
   void down();
   int selected() const { return sel_; }
   void setSelected(int i);  // clamps
-  bool select(int i);       // false when out of range
+  // False when out of range. A tap selects this way, so the list holds
+  // still: it keeps the last frame's entries while the selection is on
+  // screen, and with a cursor then scrolls only as far as it needs.
+  bool select(int i);
   size_t size() const { return rows_.size(); }
   bool atEnd() const;  // the last row is selected
   // Draws each entry's first line as a RowKind::Big row cut to headCols, and
@@ -33,7 +36,13 @@ class EntryList {
 
  private:
   std::vector<FeedRow> rows_;
+  // Before a step from a held list without a cursor, selects the bottom
+  // entry shown, as if the list had followed the selection.
+  void unpin();
+
   int sel_ = 0;
+  mutable int lastFirst_ = -1, lastVisible_ = 0;
+  mutable int pin_ = -1;  // the first entry held after a tap; -1: none
   int rowH_ = 0, bigH_ = 0, headCols_ = 0;
 };
 

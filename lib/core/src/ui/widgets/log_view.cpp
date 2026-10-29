@@ -49,6 +49,7 @@ bool LogView::selectMessage(int ordinal) {
     if (!any || l.messageId != last) {
       if (n == ordinal) {
         selected_ = l.messageId;
+        pin_ = lastStart_;
         return true;
       }
       ++n;
@@ -72,11 +73,46 @@ int LogView::lastLineOf(const std::string& id) const {
 }
 
 void LogView::setLines(std::vector<DisplayLine> lines) {
+  // Lines added or dropped above move every index: keep a held view on the
+  // same message line.
+  auto anchor = [&](int at, std::string& id, int& off) {
+    id.clear();
+    if (at < 0 || at >= static_cast<int>(lines_.size())) return;
+    int i = at;
+    while (i < static_cast<int>(lines_.size()) && lines_[i].divider) ++i;
+    if (i == static_cast<int>(lines_.size())) return;
+    id = lines_[i].messageId;
+    off = at - firstLineOf(id);
+  };
+  std::string pinId, lastId;
+  int pinOff = 0, lastOff = 0;
+  anchor(pin_, pinId, pinOff);
+  anchor(lastStart_, lastId, lastOff);
   lines_ = std::move(lines);
-  if (!selected_.empty() && firstLineOf(selected_) < 0) selected_.clear();
+  auto place = [&](const std::string& id, int off) {
+    const int f = id.empty() ? -1 : firstLineOf(id);
+    return f < 0 ? -1 : std::max(0, f + off);
+  };
+  pin_ = place(pinId, pinOff);
+  lastStart_ = place(lastId, lastOff);
+  if (!selected_.empty() && firstLineOf(selected_) < 0) {
+    selected_.clear();
+    pin_ = -1;
+  }
+}
+
+void LogView::unpin() {
+  if (pin_ < 0) return;
+  if (!cursorShown() && !lines_.empty()) {
+    int i = std::min(pin_ + std::max(lastHeight_, 1), static_cast<int>(lines_.size())) - 1;
+    while (i > 0 && lines_[i].divider) --i;
+    if (!lines_[i].divider) selected_ = lines_[i].messageId;
+    pin_ = -1;
+  }
 }
 
 void LogView::up() {
+  unpin();
   int from = following() ? static_cast<int>(lines_.size()) : firstLineOf(selected_);
   for (int i = from - 1; i >= 0; --i) {
     if (!lines_[i].divider && lines_[i].messageId != selected_) {
@@ -88,6 +124,7 @@ void LogView::up() {
 
 void LogView::down() {
   if (following()) return;
+  unpin();
   for (size_t i = lastLineOf(selected_) + 1; i < lines_.size(); ++i) {
     if (!lines_[i].divider) {
       selected_ = lines_[i].messageId;
@@ -115,11 +152,26 @@ void LogView::render(Grid& g, int top, int bottom, int rightReserve, const Theme
     start = std::max(0, end - height);
   } else {
     int first = firstLineOf(selected_), last = lastLineOf(selected_);
-    end = last + 1;
-    start = std::max(0, end - height);
-    if (start > first) start = first;
-    end = std::min(static_cast<int>(lines_.size()), start + height);
+    const int n = static_cast<int>(lines_.size());
+    if (pin_ >= 0) {
+      pin_ = std::min(pin_, std::max(0, n - height));
+      const bool inView = first >= pin_ && last < pin_ + height;
+      if (!inView && cursorShown())
+        pin_ = first < pin_ ? first : std::min(first, last + 1 - height);
+      else if (!inView)
+        pin_ = -1;
+    }
+    if (pin_ >= 0) {
+      start = pin_;
+    } else {
+      end = last + 1;
+      start = std::max(0, end - height);
+      if (start > first) start = first;
+    }
+    end = std::min(n, start + height);
   }
+  lastStart_ = start;
+  lastHeight_ = height;
 
   int selTop = -1, selBottom = -1;
   if (activeTaps()) activeTaps()->setList(ListId::Log, -1, messageCount(), false, true);

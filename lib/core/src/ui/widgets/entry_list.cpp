@@ -8,6 +8,7 @@
 namespace rc {
 
 void EntryList::setRows(std::vector<FeedRow> rows) {
+  if (rows.size() != rows_.size()) pin_ = lastFirst_ = -1;
   rows_ = std::move(rows);
   setSelected(sel_);
 }
@@ -17,12 +18,20 @@ void EntryList::setSelected(int i) {
   sel_ = n == 0 ? 0 : std::clamp(i, 0, n - 1);
 }
 
+void EntryList::unpin() {
+  if (pin_ < 0 || cursorShown()) return;
+  setSelected(pin_ + std::max(lastVisible_, 1) - 1);
+  pin_ = -1;
+}
+
 void EntryList::up() {
+  unpin();
   int n = static_cast<int>(rows_.size());
   if (n) sel_ = (sel_ + n - 1) % n;
 }
 
 void EntryList::down() {
+  unpin();
   int n = static_cast<int>(rows_.size());
   if (n) sel_ = (sel_ + 1) % n;
 }
@@ -32,6 +41,7 @@ bool EntryList::atEnd() const { return !rows_.empty() && sel_ == static_cast<int
 bool EntryList::select(int i) {
   if (i < 0 || i >= static_cast<int>(rows_.size())) return false;
   sel_ = i;
+  pin_ = lastFirst_;
   return true;
 }
 
@@ -56,7 +66,15 @@ void EntryList::render(Grid& g, int top, int bottom, const Theme& t, int rightRe
     for (int k = 0; k < visible; ++k) g.setRowKind(top + 2 * k, RowKind::Big);
     for (int r = top + 2 * visible; r < bottom; ++r) g.setRowKind(r, RowKind::Skip);
   }
-  const int first = std::max(0, sel_ - visible + 1);
+  if (pin_ >= 0) {
+    pin_ = std::min(pin_, std::max(0, static_cast<int>(rows_.size()) - visible));
+    const bool inView = sel_ >= pin_ && sel_ < pin_ + visible;
+    if (!inView && cursorShown()) pin_ = sel_ < pin_ ? sel_ : sel_ - visible + 1;
+    else if (!inView) pin_ = -1;
+  }
+  const int first = pin_ >= 0 ? pin_ : std::max(0, sel_ - visible + 1);
+  lastFirst_ = first;
+  lastVisible_ = visible;
   if (activeTaps()) activeTaps()->setList(ListId::Main, sel_, static_cast<int>(rows_.size()), true);
   for (int k = 0; k < visible; ++k) {
     int idx = first + k;

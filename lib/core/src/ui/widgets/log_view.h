@@ -23,12 +23,16 @@ class LogView {
   // True when the oldest message is selected (or there are none).
   bool atTop() const;
   bool following() const { return selected_.empty(); }
-  void follow() { selected_.clear(); }
+  void follow() {
+    selected_.clear();
+    pin_ = -1;
+  }
   std::string selectedId() const { return selected_; }
   // The number of distinct message ids (dividers aside).
   int messageCount() const;
   // Selects the message at `ordinal` among distinct ids, oldest first; false
-  // when out of range.
+  // when out of range. A tap selects this way, so the view holds still: it
+  // keeps the last frame's lines while the selection is on screen.
   bool selectMessage(int ordinal);
   // Draws rows [top, bottom), leaving rightReserve columns on the right alone.
   // The last kBarCols columns before those hold the scroll bar, so lines are
@@ -40,8 +44,17 @@ class LogView {
   int lastLineOf(const std::string& id) const;
   int ordinalOf(const std::string& id) const;
 
+  // Before a step from a held view without a cursor, selects the message
+  // at the view's bottom, as if the view had followed the selection.
+  void unpin();
+
   std::vector<DisplayLine> lines_;
   std::string selected_;
+  // The first line shown: lastStart_ from the last frame, pin_ held after a
+  // tap (-1: none). With a cursor the held view then scrolls only as far as
+  // the selection needs.
+  mutable int lastStart_ = -1, lastHeight_ = 0;
+  mutable int pin_ = -1;
 };
 
 }  // namespace rc

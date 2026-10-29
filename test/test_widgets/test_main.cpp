@@ -429,6 +429,58 @@ void test_entry_list_scrolls() {
   TEST_ASSERT_EQUAL(5, el.selected());
 }
 
+void test_log_tap_select_holds_the_view() {
+  std::vector<DisplayLine> ls;
+  for (int i = 0; i < 10; ++i) ls.push_back(line("m" + std::to_string(i), "line" + std::to_string(i)));
+  LogView v;
+  v.setLines(ls);
+  Grid g(20, 4);
+  setCursorShown(false);
+  v.render(g, 0, 4, 0, T());  // following: m6..m9
+  TEST_ASSERT_TRUE(v.selectMessage(7));
+  v.render(g, 0, 4, 0, T());
+  TEST_ASSERT_EQUAL_STRING("line6", rowText(g, 0, 0, 5).c_str());
+  // Older history loading above leaves the view where it was.
+  std::vector<DisplayLine> more{line("o", "older")};
+  more.insert(more.end(), ls.begin(), ls.end());
+  v.setLines(more);
+  v.render(g, 0, 4, 0, T());
+  TEST_ASSERT_EQUAL_STRING("line6", rowText(g, 0, 0, 5).c_str());
+  v.setLines(ls);
+  // A drag step goes on from the view, not from the tapped message.
+  v.up();
+  v.render(g, 0, 4, 0, T());
+  TEST_ASSERT_EQUAL_STRING("line5", rowText(g, 0, 0, 5).c_str());
+  setCursorShown(true);
+  TEST_ASSERT_TRUE(v.selectMessage(6));
+  v.render(g, 0, 4, 0, T());
+  TEST_ASSERT_EQUAL_STRING("line5", rowText(g, 0, 0, 5).c_str());
+  // With a cursor, steps scroll only as far as the selection needs.
+  v.up();
+  v.render(g, 0, 4, 0, T());
+  TEST_ASSERT_EQUAL_STRING("line5", rowText(g, 0, 0, 5).c_str());
+  v.up();
+  v.render(g, 0, 4, 0, T());
+  TEST_ASSERT_EQUAL_STRING("line4", rowText(g, 0, 0, 5).c_str());
+}
+
+void test_entry_list_tap_select_holds_the_view() {
+  EntryList el;
+  el.setRows(feedRows(6));
+  el.setSelected(5);
+  Grid g(20, 4);
+  setCursorShown(false);
+  el.render(g, 0, 4, T());  // nick4, nick5
+  TEST_ASSERT_TRUE(el.select(4));
+  el.render(g, 0, 4, T());
+  TEST_ASSERT_EQUAL_STRING("nick4", rowText(g, 0, 0, 5).c_str());
+  el.up();  // from the bottom entry shown
+  el.render(g, 0, 4, T());
+  TEST_ASSERT_EQUAL_STRING("nick3", rowText(g, 0, 0, 5).c_str());
+  TEST_ASSERT_EQUAL(4, el.selected());
+  setCursorShown(true);
+}
+
 void test_entry_list_big_heads() {
   EntryList el;
   el.setRows(feedRows(12));
@@ -1573,6 +1625,8 @@ int main() {
   RUN_TEST(test_entry_list_outline);
   RUN_TEST(test_entry_list_rows_act_on_tap);
   RUN_TEST(test_entry_list_scrolls);
+  RUN_TEST(test_entry_list_tap_select_holds_the_view);
+  RUN_TEST(test_log_tap_select_holds_the_view);
   RUN_TEST(test_entry_list_big_heads);
   RUN_TEST(test_entry_list_wraps);
   RUN_TEST(test_text_area_newlines_and_cap);

@@ -17,7 +17,7 @@ void Overlay::setConfirmButtons(bool on) { gConfirmButtons = on; }
 bool Overlay::confirmButtons() { return gConfirmButtons; }
 
 void Overlay::open(std::u32string title, std::vector<ListItem> items, int selected) {
-  confirm_ = false;
+  confirm_ = buttons_ = false;
   title_ = std::move(title);
   list_.setListId(ListId::Menu);
   list_.setItems(std::move(items));
@@ -30,7 +30,12 @@ void Overlay::confirm(std::u32string title, std::u32string action) {
   items.push_back(ListItem{U"Cancel", U""});
   items.push_back(ListItem{std::move(action), U"", ItemTone::Error});
   open(std::move(title), std::move(items), 0);
-  confirm_ = true;
+  confirm_ = buttons_ = true;
+}
+
+void Overlay::openButtons(std::u32string title, std::vector<ListItem> items) {
+  open(std::move(title), std::move(items), 0);
+  buttons_ = true;
 }
 
 Overlay::Result Overlay::key(const KeyEvent& k) {
@@ -73,18 +78,20 @@ void Overlay::render(Grid& g, int top, int bottom, int rightReserve, OverlayPlac
     activeTaps()->addCells(0, 0, g.cols() - 1, g.rows() - 1, back);
   }
   const int n = static_cast<int>(list_.size());
-  if (confirm_ && gConfirmButtons) {
-    // The title wrapped above two buttons, Cancel on the left.
-    const int btnTop = bottom - kButtonRows - 1;
-    const ButtonGrid b = buttonGrid(g.cols(), btnTop, bottom, n, 2, 0);
-    if (!b.rects.empty()) {
+  if (buttons_ && gConfirmButtons) {
+    // The title wrapped above the buttons, two a row (a confirm's Cancel on
+    // the left).
+    const int btnRows = (n + 1) / 2;
+    const int btnTop = bottom - btnRows * (kButtonRows + 1);
+    const ButtonGrid b = btnTop > top ? buttonGrid(g.cols(), btnTop, bottom, n, 2, 0) : ButtonGrid{};
+    if (static_cast<int>(b.rects.size()) == n) {
       const int width = std::max(1, g.cols() - 2);
       std::vector<std::u32string> lines = wrapText(title_, width, width);
       const int titleTop = std::max(top, btnTop - 1 - static_cast<int>(lines.size()));
       for (int r = titleTop; r < bottom; ++r)
         for (int c = 0; c < g.cols(); ++c) g.put(c, r, U' ', t.fg, t.bg);
       for (size_t i = 0; i < lines.size() && titleTop + int(i) < btnTop - 1; ++i)
-        g.putText(1, titleTop + int(i), lines[i], t.error, t.bg, width);
+        g.putText(1, titleTop + int(i), lines[i], confirm_ ? t.error : t.fg, t.bg, width);
       if (activeTaps()) activeTaps()->setList(ListId::Menu, list_.selected(), n, false);
       for (size_t k = 0; k < b.rects.size(); ++k) {
         const TileRect& r = b.rects[k];

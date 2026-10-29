@@ -1489,8 +1489,41 @@ void test_confirm_as_buttons() {
   TEST_ASSERT_EQUAL(1, o.selected());
 }
 
+// Touch-only boards: a button menu is a grid of buttons, two a row, above
+// the bottom; elsewhere it stays a list.
+void test_overlay_button_menu() {
+  TapMap m;
+  m.setOrigin({8, 16}, 0);
+  setActiveTaps(&m);
+  Overlay o;
+  o.openButtons(U"nick", {ListItem{U"Reply", U""}, ListItem{U"Mute", U""},
+                          ListItem{U"Report", U"", ItemTone::Error}});
+  Grid g(40, 20);
+  Overlay::setConfirmButtons(true);
+  o.render(g, 1, 19, 0, OverlayPlace::BottomRight, T());
+  Overlay::setConfirmButtons(false);
+  setActiveTaps(nullptr);
+  // Two button rows: Reply and Mute side by side, Report under them.
+  const int pitch = kButtonRows + 1;
+  const int mid1 = 19 - 2 * pitch + kButtonRows / 2, mid2 = mid1 + pitch;
+  const std::string r1 = rowText(g, mid1, 0, 40);
+  TEST_ASSERT_TRUE(r1.find("Reply") < r1.find("Mute"));
+  TEST_ASSERT_TRUE(rowText(g, mid2, 0, 40).find("Report") != std::string::npos);
+  TEST_ASSERT_TRUE(rowText(g, 19 - 2 * pitch - 2, 0, 40).find("nick") != std::string::npos);
+  const Target t = m.hit(8 * 30, 16 * mid1);
+  TEST_ASSERT_EQUAL(int(TargetKind::Row), int(t.kind));
+  TEST_ASSERT_EQUAL(1, t.index);
+  // Without touch-only buttons, the same menu is the usual list box.
+  Grid g2(40, 20);
+  o.render(g2, 1, 19, 0, OverlayPlace::BottomRight, T());
+  TEST_ASSERT_TRUE(rowText(g2, mid1, 0, 40).find("Mute") == std::string::npos ||
+                   rowText(g2, mid1, 0, 40).find("Reply") == std::string::npos);
+  TEST_ASSERT_EQUAL(0, g2.at(1, mid1).edges);
+}
+
 int main() {
   UNITY_BEGIN();
+  RUN_TEST(test_overlay_button_menu);
   RUN_TEST(test_input_insert_cursor);
   RUN_TEST(test_input_right_at_end_false);
   RUN_TEST(test_input_byte_cap);

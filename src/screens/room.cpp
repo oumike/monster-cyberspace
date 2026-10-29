@@ -319,7 +319,11 @@ void RoomScreen::viewerKey(const KeyEvent& k) {
 
 void RoomScreen::openMenu(Menu m, std::u32string title, std::vector<ListItem> items) {
   menu_ = m;
-  box_.open(std::move(title), std::move(items));
+  // A message's actions and their confirms are buttons on touch-only boards.
+  if (m == Menu::Message || m == Menu::ConfirmDelete || m == Menu::ConfirmReport)
+    box_.openButtons(std::move(title), std::move(items));
+  else
+    box_.open(std::move(title), std::move(items));
   view_ = View::Menu;
 }
 

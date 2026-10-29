@@ -251,7 +251,8 @@ void EntryScreen::reasonKey(const KeyEvent& k) {
 
 void EntryScreen::openMenu(Menu m, std::u32string title, std::vector<ListItem> items) {
   menu_ = m;
-  box_.open(std::move(title), std::move(items));
+  // Every entry menu acts on the entry or a reply: buttons on touch-only boards.
+  box_.openButtons(std::move(title), std::move(items));
   view_ = View::Menu;
 }
 

@@ -29,8 +29,11 @@ class Overlay {
   // With confirmButtons() on, drawn as two buttons side by side at the bottom
   // instead, wherever it was placed.
   void confirm(std::u32string title, std::u32string action);
+  // A menu that confirmButtons() draws as buttons, two a row at the bottom
+  // under its title (when they fit); otherwise the usual list box.
+  void openButtons(std::u32string title, std::vector<ListItem> items);
   void close() { open_ = false; }
-  // Touch-only boards: confirms are buttons. Off by default.
+  // Touch-only boards: confirms and button menus are buttons. Off by default.
   static void setConfirmButtons(bool on);
   static bool confirmButtons();
   bool isOpen() const { return open_; }
@@ -51,6 +54,7 @@ class Overlay {
   std::u32string title_;
   bool open_ = false;
   bool confirm_ = false;  // opened by confirm()
+  bool buttons_ = false;  // opened by confirm() or openButtons()
 };
 
 }  // namespace rc

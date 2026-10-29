@@ -13,9 +13,9 @@ namespace rc {
 
 // Spell suggestions for the word just finished, as camillia-mt's compose box
 // does them. Typing a space or punctuation after a word the list doesn't know
-// opens a one-row strip: the word as typed, then up to three suggestions. Up
-// and Down (the Pager's wheel) swap the word in the text for the next or
-// previous option as they go; Select keeps the one shown, and a tap on an
+// opens a one-row strip: the word as typed, then up to three suggestions.
+// Right or Down (the Pager's wheel) swaps the word in the text for the next
+// option, Left or Up for the previous one; Select keeps the one shown, and a tap on an
 // option (Action::Spell) takes it. Anything else closes the strip and does
 // its usual job, so Select on an untouched strip still sends.
 //
@@ -38,9 +38,12 @@ class SpellStrip {
       case Action::None:
         return false;
       case Action::Up:
-      case Action::Down: {
+      case Action::Down:
+      case Action::Left:
+      case Action::Right: {
         const int n = shown_;
-        return pick((sel_ + (k.action == Action::Down ? 1 : n - 1)) % n, f);
+        const bool next = k.action == Action::Down || k.action == Action::Right;
+        return pick((sel_ + (next ? 1 : n - 1)) % n, f);
       }
       case Action::Spell:
         if (k.index >= 0 && k.index < shown_) pick(k.index, f);

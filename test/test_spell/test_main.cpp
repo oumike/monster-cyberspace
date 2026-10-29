@@ -197,6 +197,11 @@ void test_strip_cycles_with_up_down_and_keeps_the_choice() {
   TEST_ASSERT_TRUE(in.text() == U"so teh,");
   TEST_ASSERT_TRUE(s.key(act(Action::Up), in));  // wraps round to the last
   TEST_ASSERT_TRUE(in.text() == U"so eh,");
+  // Left and Right step along the strip the same way.
+  TEST_ASSERT_TRUE(s.key(act(Action::Right), in));
+  TEST_ASSERT_TRUE(in.text() == U"so teh,");
+  TEST_ASSERT_TRUE(s.key(act(Action::Left), in));
+  TEST_ASSERT_TRUE(in.text() == U"so eh,");
   // Select keeps it and is used up: it doesn't also send.
   TEST_ASSERT_TRUE(s.key(act(Action::Select), in));
   TEST_ASSERT_FALSE(s.visible());

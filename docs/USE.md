@@ -384,8 +384,9 @@ word with a space or punctuation checks it against a 25,000-word English list.
 If it isn't there but something close is, a strip opens above the input: the
 word as you typed it (dim), then up to three suggestions, likeliest first.
 
-- **Up / Down** (the Pager's wheel, the T-Deck Pro's side buttons) swap the
-  word in your text for the next or previous option as you go.
+- **Left / Right** (or Up / Down: the Pager's wheel, the T-Deck Pro's side
+  buttons) swap the word in your text for the next or previous option as you
+  go.
 - **Centre / Enter** keeps the one shown. On the word as typed, it does what
   it always does (sends).
 - **Tap** an option to take it.

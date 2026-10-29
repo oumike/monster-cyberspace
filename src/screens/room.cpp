@@ -692,7 +692,7 @@ void RoomScreen::render(Grid& g, const Theme& t, int64_t) {
     const char32_t* hint;
     const char32_t* touch;
     if (spell_.visible()) {
-      hint = U"\u2191\u2193 spelling  \u25CF keep";
+      hint = U"\u2190\u2192 spelling  \u25CF keep";
       touch = U"tap a spelling, or keep typing";
     } else if (reasonMode_) {
       hint = U"type a reason (optional)  \u25CF report  back: cancel";

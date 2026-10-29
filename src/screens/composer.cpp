@@ -343,7 +343,7 @@ void ComposerScreen::render(Grid& g, const Theme& t, int64_t) {
     } else if (gPosting) {
       hint = touch = U"posting\u2026";
     } else if (spell_.visible() && (focus_ == kTitle || focus_ == kBody)) {
-      hint = U"\u2191\u2193 spelling  \u25CF keep";
+      hint = U"\u2190\u2192 spelling  \u25CF keep";
       touch = U"tap a spelling, or keep typing";
     } else if (focus_ == kBody) {
       hint = U"\u25CF new line  \u2191\u2193 lines  ctrl post  back: feed";

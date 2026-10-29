@@ -37,7 +37,7 @@ on 2026-10-27; the sections marked `m9_fake` passed on it before then.
 
 **Spell check (any board):**
 
-- [ ] In a room, `teh ` opens the strip; Up/Down (wheel, side buttons) swap
+- [ ] In a room, `teh ` opens the strip; Left/Right and Up/Down (wheel, side buttons) swap
   the word in the input; Centre keeps it without sending; a tap takes one.
 - [ ] Centre on the untouched strip sends; typing on closes it.
 - [ ] Works in a C-Mail, a Feed reply, and a new entry's title and body.

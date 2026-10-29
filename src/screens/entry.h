@@ -12,6 +12,7 @@
 #include "ui/widgets/list_view.h"
 #include "ui/widgets/log_view.h"
 #include "ui/widgets/overlay.h"
+#include "ui/widgets/spell_strip.h"
 
 namespace rc {
 
@@ -60,6 +61,7 @@ class EntryScreen : public Screen {
   bool repliesArrived_ = false;
   LogView log_;
   InputLine input_;
+  SpellStrip spell_;
   Overlay box_;
   LinkView link_;
   View view_ = View::None;

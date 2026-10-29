@@ -22,6 +22,8 @@ void saveAutoUpdate(bool on);
 void saveScreen(uint32_t onSecs, bool saver);
 // The device's Settings and web config: the keyboard light.
 void saveKbLight(rc::KbLight level);
+// The device's Settings and web config: spell suggestions while typing.
+void saveSpellCheck(bool on);
 void saveToken(const std::string& refreshToken);
 void clearToken();
 // Saves the email and refresh token after a login.

@@ -12,6 +12,7 @@
 #include "ui/widgets/list_view.h"
 #include "ui/widgets/log_view.h"
 #include "ui/widgets/overlay.h"
+#include "ui/widgets/spell_strip.h"
 
 namespace rc {
 
@@ -72,6 +73,7 @@ class RoomScreen : public Screen {
   int64_t lastTypingPost_ = 0;
   LogView log_;
   InputLine input_;
+  SpellStrip spell_;
   Drawer drawer_;
   Overlay box_;
   View view_ = View::None;

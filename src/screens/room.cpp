@@ -46,6 +46,7 @@ bool compact() { return app().cfg.textSize == TextSize::Compact; }
 }  // namespace
 
 void RoomScreen::enter(const std::string& slug) {
+  spell_.hide();
   slug_ = slug.empty() && !dm_ ? std::string("general") : slug;
   log_.follow();
   input_.clear();
@@ -144,10 +145,12 @@ void RoomScreen::onKey(const KeyEvent& k) {
 }
 
 void RoomScreen::typingKey(const KeyEvent& k) {
+  if (spell_.key(k, input_)) return;
   const bool drawer = drawerOpen();
   switch (k.action) {
     case Action::Char:
       input_.insert(k.ch);
+      spell_.typed(input_, spell::english(), app().cfg.spellCheck);
       noteTyping();
       break;
     case Action::Backspace:
@@ -672,6 +675,7 @@ void RoomScreen::render(Grid& g, const Theme& t, int64_t) {
     for (size_t i = 1; i < typers.size(); ++i) who += ", " + typers[i];
     putLine(g, 1, logBottom, who + " is typing\u2026", t.dim, t.bg);
   }
+  if (spell_.visible() && view_ == View::None && !reasonMode_) spell_.render(g, --logBottom, t);
   log_.render(g, 1, logBottom, reserve, t);
   if (shown) drawer_.render(g, 1, logBottom, t, docked);
   if (nav > 0) renderSideNav(g, 1, logBottom, nav, t);
@@ -687,7 +691,10 @@ void RoomScreen::render(Grid& g, const Theme& t, int64_t) {
   if (small) {
     const char32_t* hint;
     const char32_t* touch;
-    if (reasonMode_) {
+    if (spell_.visible()) {
+      hint = U"\u2191\u2193 spelling  \u25CF keep";
+      touch = U"tap a spelling, or keep typing";
+    } else if (reasonMode_) {
       hint = U"type a reason (optional)  \u25CF report  back: cancel";
       touch = U"type a reason (optional)  enter: report";
     } else if (view_ == View::Menu) {

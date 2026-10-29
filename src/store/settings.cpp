@@ -61,6 +61,7 @@ void load(rc::Settings& s) {
   s.screenOnSecs = p.getUInt("scrsecs", 30);
   if (!rc::validScreenTimeout(s.screenOnSecs)) s.screenOnSecs = 30;
   s.screenSaver = p.getBool("scrsaver", true);
+  s.spellCheck = p.getBool("spell", true);
   s.kbLight = rc::kbLightFromIndex(p.getUChar("kblight", board::kbLightDefault()),
                                    rc::kbLightFromIndex(board::kbLightDefault()));
   s.theme = rc::themeFromIndex(p.getUChar("theme", 0));
@@ -145,6 +146,13 @@ void saveKbLight(rc::KbLight level) {
   p.end();
 }
 
+void saveSpellCheck(bool on) {
+  Preferences p;
+  if (!p.begin(kNs, false)) return;
+  p.putBool("spell", on);
+  p.end();
+}
+
 void saveToken(const std::string& refreshToken) {
   Preferences p;
   if (!p.begin(kNs, false)) return;
@@ -175,6 +183,7 @@ void saveAll(const rc::Settings& s) {
   saveUiPrefs(s);
   saveAutoUpdate(s.autoUpdate);
   saveScreen(s.screenOnSecs, s.screenSaver);
+  saveSpellCheck(s.spellCheck);
   saveAccount(s.email, s.refreshToken);
   if (s.refreshToken.empty()) clearToken();
 }

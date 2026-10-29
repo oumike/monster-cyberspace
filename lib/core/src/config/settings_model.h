@@ -22,6 +22,7 @@ struct Settings {
   bool autoUpdate = false;  // install a newer release without asking
   uint32_t screenOnSecs = 30;  // screen timeout (ui/screen_timeout.h); 0 never
   bool screenSaver = true;     // at the timeout: the screensaver, else screen off
+  bool spellCheck = true;      // spell suggestions while typing (ui/widgets/spell_strip.h)
   // Boards with a lit keyboard (board::hasKbLight); the saved value falls back
   // to board::kbLightDefault().
   KbLight kbLight = KbLight::Off;

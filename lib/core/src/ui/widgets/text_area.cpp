@@ -41,6 +41,15 @@ void TextArea::clear() {
 
 void TextArea::setCursor(size_t pos) { cursor_ = std::min(pos, text_.size()); }
 
+bool TextArea::replace(size_t start, size_t len, std::u32string_view with) {
+  if (start > text_.size() || len > text_.size() - start) return false;
+  if (text_.size() - len + with.size() > max_) return false;
+  text_.replace(start, len, with);
+  if (cursor_ >= start + len) cursor_ = cursor_ - len + with.size();
+  else if (cursor_ > start) cursor_ = start + with.size();
+  return true;
+}
+
 // Each logical line splits into len / width + 1 segments, so a line that
 // exactly fills the width gets an empty segment for the cursor after it.
 std::vector<TextArea::Segment> TextArea::segments(int width) const {

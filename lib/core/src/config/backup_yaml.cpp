@@ -61,7 +61,7 @@ struct Item {
 struct Staged {
   Str format, version, timezone, tzName, ntpServer, pagePassword, apPassword, textSize, theme,
       rotation, lastRoom, email, refreshToken, screenOnSecs, kbLight;
-  Bool drawerOpen, buzzer, autoUpdate, screenSaver;
+  Bool drawerOpen, buzzer, autoUpdate, screenSaver, spellCheck;
   bool hasWifi = false;
   std::vector<Item> wifi;
 };
@@ -255,7 +255,7 @@ bool parse(std::string_view yaml, Staged& st, std::string& err) {
                                      : nullptr;
     Str ignored;
     bool isBool = key == "drawerOpen" || key == "buzzer" || key == "autoUpdate" ||
-                  key == "screenSaver";
+                  key == "screenSaver" || key == "spellCheck";
     bool known = s || isBool;
     if (key == "board" || key == "firmware" || key == "created") {
       s = &ignored;
@@ -270,6 +270,7 @@ bool parse(std::string_view yaml, Staged& st, std::string& err) {
         Bool& dst = key == "buzzer"       ? st.buzzer
                     : key == "autoUpdate"  ? st.autoUpdate
                     : key == "screenSaver" ? st.screenSaver
+                    : key == "spellCheck"  ? st.spellCheck
                                            : st.drawerOpen;
         if (!readBool(rest, l.no, dst, err)) return false;
       } else {
@@ -364,6 +365,7 @@ std::string backupToYaml(const Settings& s, const BackupMeta& m) {
   o += std::string("autoUpdate: ") + boolStr(s.autoUpdate) + "  # install firmware updates on its own\n";
   o += "screenOnSecs: " + std::to_string(s.screenOnSecs) + "  # screen timeout; 0 never\n";
   o += std::string("screenSaver: ") + boolStr(s.screenSaver) + "  # at the timeout; false: screen off\n";
+  o += std::string("spellCheck: ") + boolStr(s.spellCheck) + "  # suggestions while typing\n";
   o += std::string("kbLight: ") + kbLightKey(s.kbLight) + "  # off | low | medium | high\n";
   o += "lastRoom: " + yamlQuote(s.lastRoom) + "\n";
   o += "account:\n";
@@ -473,6 +475,7 @@ bool backupFromYaml(std::string_view yaml, Settings& inOut, std::string& err, st
   if (st.autoUpdate.has) inOut.autoUpdate = st.autoUpdate.v;
   if (st.screenOnSecs.has) inOut.screenOnSecs = uint32_t(screenOnSecs);
   if (st.screenSaver.has) inOut.screenSaver = st.screenSaver.v;
+  if (st.spellCheck.has) inOut.spellCheck = st.spellCheck.v;
   if (st.kbLight.has) inOut.kbLight = kbLight;
   if (st.lastRoom.has) inOut.lastRoom = st.lastRoom.v;
   if (st.email.has) inOut.email = st.email.v;

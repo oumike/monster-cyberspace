@@ -45,6 +45,7 @@ std::string entryUrl(const Entry& e) {
 }  // namespace
 
 void EntryScreen::enter(const std::string& arg) {
+  spell_.hide();
   std::string parts[3];
   size_t start = 0;
   for (int i = 0; i < 3; ++i) {
@@ -112,9 +113,12 @@ void EntryScreen::onKey(const KeyEvent& k) {
 }
 
 void EntryScreen::typingKey(const KeyEvent& k) {
+  if (spell_.key(k, input_)) return;
   switch (k.action) {
     case Action::Char:
-      if (!sending_) input_.insert(k.ch);
+      if (sending_) break;
+      input_.insert(k.ch);
+      spell_.typed(input_, spell::english(), app().cfg.spellCheck);
       break;
     case Action::Backspace:
       if (!sending_) input_.backspace();
@@ -513,6 +517,7 @@ void EntryScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
     putLine(g, 1, logBottom, "\u21b3 @" + (it == authors_.end() ? std::string("?") : it->second),
             t.dim, t.bg);
   }
+  if (spell_.visible() && view_ == View::None && !reasonMode_) spell_.render(g, --logBottom, t);
   const bool offline = app().conn == 0;
   if (loaded_) log_.render(g, 1, logBottom, nav, t);
   else putLine(g, 1, 2, offline ? "offline" : "loading\u2026", t.dim, t.bg);
@@ -528,7 +533,10 @@ void EntryScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
   if (small) {
     const char32_t* hint;
     const char32_t* touch;
-    if (reasonMode_) {
+    if (spell_.visible()) {
+      hint = U"\u2191\u2193 spelling  \u25CF keep";
+      touch = U"tap a spelling, or keep typing";
+    } else if (reasonMode_) {
       hint = U"type a reason (optional)  \u25CF report  back: cancel";
       touch = U"type a reason (optional)  enter: report";
     } else if (view_ == View::Menu) {

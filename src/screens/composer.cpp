@@ -38,6 +38,7 @@ void composerBackgroundEvent(const Event& e) { settle(e); }
 
 void ComposerScreen::enter(const std::string&) {
   menu_ = Menu::None;
+  spell_.hide();
   title_.setFieldId(kTitle);
   body_.setFieldId(kBody);
   topics_.setFieldId(kTopics);
@@ -93,6 +94,10 @@ void ComposerScreen::onKey(const KeyEvent& k) {
 }
 
 void ComposerScreen::fieldKey(const KeyEvent& k) {
+  if (focus_ == kTitle ? spell_.key(k, title_) : focus_ == kBody && spell_.key(k, body_)) {
+    save();
+    return;
+  }
   if (k.action == Action::Back || k.action == Action::OpenFeed) return askLeave();
   if (gPosting) return;  // no edits while the post is in flight
   InputLine* in = line();
@@ -100,6 +105,10 @@ void ComposerScreen::fieldKey(const KeyEvent& k) {
     case Action::Char:
       if (in) in->insert(k.ch);
       else if (focus_ == kBody) body_.insert(k.ch);
+      // Titles and bodies are prose; topics and the CW are tags and labels.
+      if (focus_ == kTitle) spell_.typed(title_, spell::english(), app().cfg.spellCheck);
+      else if (focus_ == kBody) spell_.typed(body_, spell::english(), app().cfg.spellCheck);
+      else spell_.hide();
       save();
       break;
     case Action::Backspace:
@@ -289,6 +298,9 @@ void ComposerScreen::render(Grid& g, const Theme& t, int64_t) {
   std::string count = std::to_string(body_.length()) + "/4096";
   putLine(g, std::max(0, g.cols() - int(count.size())), labelRow, count, t.dim, t.bg);
   body_.render(g, bodyTop, bodyBottom, t, focus_ == kBody && !gPosting);
+  // Suggestions sit between the title and the body, over the label.
+  if (spell_.visible() && (focus_ == kTitle || focus_ == kBody) && menu_ == Menu::None)
+    spell_.render(g, labelRow, t);
 
   topics_.setDisabled(focus_ != kTopics || gPosting);
   topics_.render(g, topicsRow, t, U"Topics ");
@@ -330,6 +342,9 @@ void ComposerScreen::render(Grid& g, const Theme& t, int64_t) {
       touch = U"tap: choose  outside: close";
     } else if (gPosting) {
       hint = touch = U"posting\u2026";
+    } else if (spell_.visible() && (focus_ == kTitle || focus_ == kBody)) {
+      hint = U"\u2191\u2193 spelling  \u25CF keep";
+      touch = U"tap a spelling, or keep typing";
     } else if (focus_ == kBody) {
       hint = U"\u25CF new line  \u2191\u2193 lines  ctrl post  back: feed";
       touch = U"\u25CF new line  \u2191\u2193 lines  \u22ef post  \u2039 feed";

@@ -54,6 +54,19 @@ std::string InputLine::utf8() const { return u32ToUtf8(text_); }
 
 void InputLine::setCursor(size_t pos) { cursor_ = std::min(pos, text_.size()); }
 
+bool InputLine::replace(size_t start, size_t len, std::u32string_view with) {
+  if (start > text_.size() || len > text_.size() - start) return false;
+  size_t out = 0, in = 0;
+  for (size_t i = 0; i < len; ++i) out += utf8Bytes(text_[start + i]);
+  for (char32_t c : with) in += utf8Bytes(c);
+  if (bytes_ - out + in > kMaxBytes) return false;
+  text_.replace(start, len, with);
+  bytes_ = bytes_ - out + in;
+  if (cursor_ >= start + len) cursor_ = cursor_ - len + with.size();
+  else if (cursor_ > start) cursor_ = start + with.size();
+  return true;
+}
+
 void InputLine::render(Grid& g, int row, const Theme& t, std::u32string_view prompt) const {
   const uint16_t fg = disabled_ ? t.dim : t.fg;
   g.fillRow(row, t.inputBg);

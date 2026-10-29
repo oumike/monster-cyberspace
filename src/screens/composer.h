@@ -7,6 +7,7 @@
 #include "ui/widgets/input_line.h"
 #include "ui/widgets/list_view.h"
 #include "ui/widgets/overlay.h"
+#include "ui/widgets/spell_strip.h"
 #include "ui/widgets/text_area.h"
 
 namespace rc {
@@ -43,6 +44,7 @@ class ComposerScreen : public Screen {
 
   InputLine title_, topics_, cw_;
   TextArea body_{4096};
+  SpellStrip spell_;    // for the title and the body
   int focus_ = kTitle;
   int cols_ = 40;       // the body width, for moving by line
   Menu menu_ = Menu::None;

@@ -304,6 +304,7 @@ esp_err_t getPrefs(httpd_req_t* req) {
   d["buzzer"] = s.buzzer;
   d["screenOnSecs"] = s.screenOnSecs;
   d["screenSaver"] = s.screenSaver;
+  d["spellCheck"] = s.spellCheck;
   if (!board::eink()) d["theme"] = rc::themeKey(s.theme);
   d["tz"] = s.tz;
   d["tzName"] = s.tzName;
@@ -354,6 +355,7 @@ esp_err_t postPrefs(httpd_req_t* req) {
     screenOnSecs = doc["screenOnSecs"].as<uint32_t>();
   }
   const bool screenSaver = doc["screenSaver"].is<bool>() ? doc["screenSaver"].as<bool>() : s.screenSaver;
+  const bool spellCheck = doc["spellCheck"].is<bool>() ? doc["spellCheck"].as<bool>() : s.spellCheck;
   rc::KbLight kbLight = s.kbLight;
   if (!doc["kbLight"].isNull() &&
       (!doc["kbLight"].is<const char*>() || !rc::parseKbLight(doc["kbLight"].as<const char*>(), kbLight)))
@@ -390,6 +392,10 @@ esp_err_t postPrefs(httpd_req_t* req) {
     rc::app().cfg.screenOnSecs = screenOnSecs;
     rc::app().cfg.screenSaver = screenSaver;
     settings::saveScreen(screenOnSecs, screenSaver);
+  }
+  if (spellCheck != s.spellCheck) {
+    rc::app().cfg.spellCheck = spellCheck;
+    settings::saveSpellCheck(spellCheck);
   }
   // The UI task picks the new level up on its next pass.
   if (board::hasKbLight() && kbLight != s.kbLight) {

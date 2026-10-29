@@ -39,5 +39,8 @@ and platy-aprs. The cell fonts are derived from Terminus Font under the SIL Open
 Font License 1.1 ([src/ui/fonts/OFL-Terminus.txt](src/ui/fonts/OFL-Terminus.txt)),
 and the emoji are rendered from Noto Emoji under the same licence
 ([src/ui/fonts/OFL-NotoEmoji.txt](src/ui/fonts/OFL-NotoEmoji.txt)).
+The spell-check word list ([dict/en.txt](dict/en.txt)) is from
+[hermitdave/FrequencyWords](https://github.com/hermitdave/FrequencyWords)
+under CC-BY-SA-4.0.
 Cyberspace itself is a separate service with its own terms; this project is not
 affiliated with it.

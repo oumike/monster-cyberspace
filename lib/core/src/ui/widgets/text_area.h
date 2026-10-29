@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "ui/grid.h"
@@ -22,6 +23,11 @@ class TextArea {
   bool up(int width);    // false on the first visual line
   bool down(int width);  // false on the last visual line
   size_t length() const { return text_.size(); }
+  const std::u32string& text() const { return text_; }
+  size_t cursor() const { return cursor_; }
+  // Swaps text_[start, start + len) for `with`; a cursor past the range moves
+  // with it. False (and no change) out of range or past maxChars.
+  bool replace(size_t start, size_t len, std::u32string_view with);
   std::string utf8() const;
   void clear();
   // Moves the cursor to `pos`, clamped to the text length.

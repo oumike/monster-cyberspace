@@ -377,6 +377,25 @@ Chinese or Japanese, shows as `�`.
 The emoji tray draws its 40 emoji large (four cells by two) wherever the
 screen has room, and two cells wide where it doesn't.
 
+## Spell check
+
+In a room, a C-Mail, a Feed reply, and a new entry's title and body, ending a
+word with a space or punctuation checks it against a 25,000-word English list.
+If it isn't there but something close is, a strip opens above the input: the
+word as you typed it (dim), then up to three suggestions, likeliest first.
+
+- **Up / Down** (the Pager's wheel, the T-Deck Pro's side buttons) swap the
+  word in your text for the next or previous option as you go.
+- **Centre / Enter** keeps the one shown. On the word as typed, it does what
+  it always does (sends).
+- **Tap** an option to take it.
+- Typing anything else closes the strip and leaves the word alone.
+
+Words in capitals (acronyms), with a capital inside (LongFast), digits or
+non-English letters, and the tail of a link, @name or #room are never checked.
+Turn it off in Settings → Spell check or web config. Nothing is ever changed
+without a key press.
+
 ## Text sizes
 
 Pick one in **Settings** → **Text size** (a box with all three), or switch
@@ -429,8 +448,8 @@ At `http://monster-cyberspace.local`, or the device IP, on your LAN:
 - Status
 - Wi-Fi: scan, add, and remove saved networks (up to 5)
 - Cyberspace account: sign in, sign out, resend verification
-- Display: text size, theme, buzzer, orientation (touch boards), and
-  keyboard light (boards with a lit keyboard)
+- Display: text size, theme, buzzer, spell check, orientation (touch boards),
+  and keyboard light (boards with a lit keyboard)
 - Time: zone and NTP server (see Time and time zone below)
 - Security: page password and setup-AP password
 - Restart and factory reset
@@ -531,6 +550,8 @@ touch board and two more on a board with an SD card slot:
   the screen is on. Off by default, except on the M9, where it is High and its
   keyboard lights the keys itself after a press; Off there switches that light
   off until the M9 is power cycled.
+- **Spell check: on / off.** Centre switches suggestions while typing (see
+  Spell check). On by default.
 - **Wi-Fi: …** Shows the joined network and opens Wi-Fi on the device (see
   above).
 - **Turn setup AP on / off.** Brings up the setup AP (its name, password state

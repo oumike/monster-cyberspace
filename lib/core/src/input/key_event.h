@@ -12,7 +12,8 @@ enum class Action {
   Activate, Focus, PowerTap,
   Options,  // an edge swipe from the right: the screen's options
   Symbols,  // the symbol table while typing; the palette elsewhere
-  Emoji     // the emoji tray while typing; the palette elsewhere
+  Emoji,    // the emoji tray while typing; the palette elsewhere
+  Spell     // a tap on spell suggestion `index` (ui/widgets/spell_strip.h)
 };
 
 // A list a touch Row target belongs to.

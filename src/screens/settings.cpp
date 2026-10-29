@@ -30,6 +30,7 @@ enum Item {
   kScreenTimeout,
   kAtTimeout,
   kKbLight,
+  kSpellCheck,
   kWifi,
   kSetupAp,
   kFirmware,
@@ -53,6 +54,7 @@ std::vector<Item> menuItems() {
   v.push_back(kScreenTimeout);
   v.push_back(kAtTimeout);
   if (board::hasKbLight()) v.push_back(kKbLight);
+  v.push_back(kSpellCheck);
   v.push_back(kWifi);
   v.push_back(kSetupAp);
   v.push_back(kFirmware);
@@ -316,6 +318,10 @@ void SettingsScreen::activate(int item) {
       settings::saveScreen(a.cfg.screenOnSecs, a.cfg.screenSaver);
       break;
     }
+    case kSpellCheck:
+      app().cfg.spellCheck = !app().cfg.spellCheck;
+      settings::saveSpellCheck(app().cfg.spellCheck);
+      break;
     case kWifi:
       router::go(router::Id::Wifi);
       break;
@@ -404,6 +410,9 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
         break;
       case kAtTimeout:
         rows.push_back(ListItem{U"At timeout", a.cfg.screenSaver ? U"screensaver" : U"screen off"});
+        break;
+      case kSpellCheck:
+        rows.push_back(ListItem{U"Spell check", a.cfg.spellCheck ? U"on" : U"off"});
         break;
       case kWifi:
         rows.push_back(ListItem{U"Wi-Fi", wifiUp() ? utf8ToU32(wifiSsid()) : U"not connected"});

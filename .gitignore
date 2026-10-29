@@ -9,3 +9,6 @@ dist/
 # OTA signing key: never commit (see BUILD.md, Releases)
 ota_signing_key.pem
 *.pem
+
+# Generated from dict/en.txt by tools/gen_spell_dict.py on every build.
+src/spell_dict_en.h

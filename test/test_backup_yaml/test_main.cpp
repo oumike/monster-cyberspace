@@ -86,6 +86,7 @@ Settings full() {
   s.autoUpdate = true;
   s.screenOnSecs = 300;
   s.screenSaver = false;
+  s.spellCheck = false;
   s.kbLight = KbLight::Medium;
   s.theme = ThemeId::WhiteBlack;
   s.rotation = 3;
@@ -118,6 +119,7 @@ void expectSame(const Settings& a, const Settings& b) {
   TEST_ASSERT_EQUAL(a.autoUpdate, b.autoUpdate);
   TEST_ASSERT_EQUAL_UINT32(a.screenOnSecs, b.screenOnSecs);
   TEST_ASSERT_EQUAL(a.screenSaver, b.screenSaver);
+  TEST_ASSERT_EQUAL(a.spellCheck, b.spellCheck);
   TEST_ASSERT_TRUE(a.kbLight == b.kbLight);
   TEST_ASSERT_TRUE(a.theme == b.theme);
   TEST_ASSERT_EQUAL(a.rotation, b.rotation);
@@ -179,6 +181,7 @@ void test_hand_edits() {
       "autoUpdate: true\n"
       "screenOnSecs: 0\n"
       "screenSaver: false\n"
+      "spellCheck: false\n"
       "lastRoom: lobby\n";
   Settings s;
   std::string err, note;
@@ -193,6 +196,7 @@ void test_hand_edits() {
   TEST_ASSERT_TRUE(s.autoUpdate);
   TEST_ASSERT_EQUAL_UINT32(0, s.screenOnSecs);
   TEST_ASSERT_FALSE(s.screenSaver);
+  TEST_ASSERT_FALSE(s.spellCheck);
   TEST_ASSERT_TRUE(run(std::string(kHead) + "textSize: large\n", s, err, note));
   TEST_ASSERT_TRUE(s.textSize == TextSize::Large);
   TEST_ASSERT_NOT_EQUAL(std::string::npos, backupToYaml(s, {"M9", "0.1.0", 0}).find("textSize: large\n"));

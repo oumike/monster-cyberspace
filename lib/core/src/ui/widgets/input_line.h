@@ -30,6 +30,9 @@ class InputLine {
   size_t cursor() const { return cursor_; }
   // Moves the cursor to `pos`, clamped to the text length.
   void setCursor(size_t pos);
+  // Swaps text_[start, start + len) for `with`; a cursor past the range moves
+  // with it. False (and no change) out of range or past kMaxBytes.
+  bool replace(size_t start, size_t len, std::u32string_view with);
   // The screen's field id, carried in the tap Field target.
   void setFieldId(uint8_t id) { fieldId_ = id; }
   // While disabled the text is kept but drawn dim, with no cursor.

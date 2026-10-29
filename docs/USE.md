@@ -197,7 +197,8 @@ clear ghosting.
 Navigation works as on the touch-only boards: the room list and Settings are
 buttons, the status bar has `‹` and `⋯`, log rows act on a hold rather
 than a tap, and a tap on a Feed row opens it. A message's, entry's or
-reply's menu (Reply, Report…) and its confirms are buttons, two a row. Screens with a list (a room or conversation, C-Mail, the
+reply's menu (Reply, Report…) and its confirms are buttons, two a row at
+the bottom left, drawn over the conversation. Screens with a list (a room or conversation, C-Mail, the
 Feed and an entry) also show a narrow strip of three buttons on the right: ▲ and ▼
 move up and down, and ● between them acts as Enter on the selected item, so
 on a message in a room it opens the reply/report menu. Nicks in the room

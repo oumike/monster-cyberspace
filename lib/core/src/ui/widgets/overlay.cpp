@@ -5,6 +5,7 @@
 
 #include "ui/button_grid.h"
 #include "ui/tap_map.h"
+#include "ui/text_width.h"
 #include "ui/wrap.h"
 
 namespace rc {
@@ -69,6 +70,43 @@ Overlay::Result Overlay::key(const KeyEvent& k) {
   }
 }
 
+bool Overlay::renderButtonMenu(Grid& g, int top, int bottom, int rightReserve,
+                               const Theme& t) const {
+  const int n = static_cast<int>(list_.size());
+  int labelW = 0;
+  for (const auto& it : list_.items()) labelW = std::max(labelW, textWidth(it.label));
+  const int avail = g.cols() - rightReserve - 1;  // a blank column at the left
+  const int w = std::min(labelW + 2, avail);      // a space each side of the label
+  if (n == 0 || w < 3) return false;
+  const int perRow = 2 * w + 1 <= avail ? 2 : 1;
+  constexpr int kPitch = kButtonRows + 1;
+  const int btnTop = bottom - (n + perRow - 1) / perRow * kPitch + 1;
+  if (btnTop - 1 < top) return false;
+  // Only the buttons and the title are painted: the screen shows around them.
+  const int titleW = std::min(textWidth(title_), avail);
+  for (int c = 0; c < titleW; ++c) g.put(1 + c, btnTop - 1, U' ', t.fg, t.bg);
+  g.putText(1, btnTop - 1, title_, t.fg, t.bg, titleW);
+  if (activeTaps()) activeTaps()->setList(ListId::Menu, list_.selected(), n, false);
+  for (int i = 0; i < n; ++i) {
+    const int c0 = 1 + (i % perRow) * (w + 1), c1 = c0 + w - 1;
+    const int r0 = btnTop + (i / perRow) * kPitch, r1 = r0 + kButtonRows - 1;
+    const ListItem& it = list_.items()[i];
+    for (int r = r0; r <= r1; ++r)
+      for (int c = c0; c <= c1; ++c) g.put(c, r, U' ', t.fg, t.bg);
+    g.putText(c0 + 1, r0 + kButtonRows / 2, it.label, it.tone == ItemTone::Error ? t.error : t.fg,
+              t.bg, w - 2);
+    g.outline(c0, r0, c1, r1, t.dim);
+    if (activeTaps()) {
+      Target tt;
+      tt.kind = TargetKind::Row;
+      tt.list = ListId::Menu;
+      tt.index = static_cast<int16_t>(i);
+      activeTaps()->addCells(c0, r0, c1, r1, tt);
+    }
+  }
+  return true;
+}
+
 void Overlay::render(Grid& g, int top, int bottom, int rightReserve, OverlayPlace p,
                      const Theme& t) const {
   if (activeTaps()) {
@@ -78,7 +116,9 @@ void Overlay::render(Grid& g, int top, int bottom, int rightReserve, OverlayPlac
     activeTaps()->addCells(0, 0, g.cols() - 1, g.rows() - 1, back);
   }
   const int n = static_cast<int>(list_.size());
-  if (buttons_ && gConfirmButtons) {
+  if (buttons_ && !confirm_ && gConfirmButtons && renderButtonMenu(g, top, bottom, rightReserve, t))
+    return;
+  if (confirm_ && gConfirmButtons) {
     // The title wrapped above the buttons, two a row (a confirm's Cancel on
     // the left).
     const int btnRows = (n + 1) / 2;

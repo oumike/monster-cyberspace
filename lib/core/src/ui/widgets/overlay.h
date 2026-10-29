@@ -50,6 +50,9 @@ class Overlay {
               const Theme& t) const;
 
  private:
+  // openButtons() menus on touch-only boards; false when they don't fit.
+  bool renderButtonMenu(Grid& g, int top, int bottom, int rightReserve, const Theme& t) const;
+
   ListView list_;
   std::u32string title_;
   bool open_ = false;

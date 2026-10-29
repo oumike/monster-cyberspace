@@ -109,8 +109,9 @@ Work is on **`main`** at https://github.com/oumike/monster-cyberspace. All 22 ta
 M2 (C-Mail) plan and all 12 of the M3 (Feed) plan are done and committed, with
 their boxes ticked. The room-screen, C-Mail, web config and Feed (`m9_fake`)
 hardware checks passed on the device (2026-10-26).
-Also done since: themes (Default / Black & white / White & black, picked in
-Settings and web config), and the Wio Tracker L2 HAL with env `wio_l2`
+Also done since: themes (Default / Black & white / White & black plus
+cyberspace.online's twelve, Dark … Top8, from the site's colours; picked in a
+Settings box and web config; saved by index, so append new ones), and the Wio Tracker L2 HAL with env `wio_l2`
 (bring-up only, untested on hardware).
 All 8 tasks of the GPS time plan are done and committed: NTP, GPS and RTC
 clock sources (`src/app/time_service.cpp`), the GPS powering itself off,
@@ -150,7 +151,7 @@ The T-Deck Pro (env `tdeck_pro`, e-paper) uses the touch-only paradigm plus a
 its and the T-Deck Plus's mic key opens the emoji tray (`board::textEntry`).
 A browser flasher (GitHub Pages, `site/`, `.github/workflows/pages.yml`)
 serves the latest release (docs/BUILD.md).
-The native suite is green: 459/459
+The native suite is green: 462/462
 (`pio test -e native`), and `scripts/build-upload-monitor.sh -B` builds all
 seven firmware envs.
 

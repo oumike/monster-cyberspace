@@ -146,7 +146,8 @@ void test_round_trip_every_field() {
   TEST_ASSERT_EQUAL_STRING("", note.c_str());
   TEST_ASSERT_NOT_NULL(strstr(y.c_str(), "created: \"2026-10-26T18:30:00Z\""));
   TEST_ASSERT_NOT_NULL(strstr(y.c_str(), "kbLight: medium  # off | low | medium | high\n"));
-  TEST_ASSERT_NOT_NULL(strstr(y.c_str(), "theme: wb  # default | bw | wb\nrotation: 3  # 0 landscape, 1 portrait, 2 landscape 180, 3 portrait 180\n"));
+  TEST_ASSERT_NOT_NULL(strstr(y.c_str(), "theme: wb  # default | bw | wb | dark | light | lcd | c64 | vt320 | matrix | poetry | brutalist | grid | crypt | bubblegum | top8\n"
+                                           "rotation: 3  # 0 landscape, 1 portrait, 2 landscape 180, 3 portrait 180\n"));
   TEST_ASSERT_EQUAL(0, y.rfind("# Monster Cyberspace settings backup.\n", 0));
 }
 

@@ -357,7 +357,9 @@ std::string backupToYaml(const Settings& s, const BackupMeta& m) {
   o += "pagePassword: " + yamlQuote(s.pagePassword) + "\n";
   o += "apPassword: " + yamlQuote(s.apPassword) + "\n";
   o += std::string("textSize: ") + textSizeKey(s.textSize) + "\n";
-  o += std::string("theme: ") + themeKey(s.theme) + "  # default | bw | wb\n";
+  o += std::string("theme: ") + themeKey(s.theme) +
+       "  # default | bw | wb | dark | light | lcd | c64 | vt320 | matrix | poetry | brutalist | grid |"
+       " crypt | bubblegum | top8\n";
   o += "rotation: " + std::to_string(s.rotation) +
        "  # 0 landscape, 1 portrait, 2 landscape 180, 3 portrait 180\n";
   o += std::string("drawerOpen: ") + boolStr(s.drawerOpen) + "\n";

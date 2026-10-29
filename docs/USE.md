@@ -414,15 +414,19 @@ under the nick at Comfortable and Large, which have fewer columns to spare.
 
 ## Themes
 
-Pick a theme on the device (**Home** → **Settings** → **Theme**, each Centre
-press moves to the next one) or in web config under Display. The choice is
-saved.
+Pick a theme on the device (**Home** → **Settings** → **Theme** opens a box
+with every theme) or in web config under Display. The choice is saved.
 
 - **Default:** the terminal look, with coloured nicks.
 - **Black & white:** white text on black, in greys only.
 - **White & black:** black text on white, in greys only.
+- **cyberspace.online's themes:** Dark, Light, LCD, C64, VT320, Matrix,
+  Poetry, Brutalist, GRiD, Crypt, Bubblegum and Top8, in the site's colours.
+  The status bar takes the site's border colour and the input line and
+  member list its code-block colour.
 
-In the two mono themes nicks are drawn in the text colour. QR codes stay
+Every theme but Default draws nicks in the text colour, and yours in the dim
+one. QR codes stay
 black on white in every theme. The T-Deck Pro's e-paper has one theme of its
 own, black on white with outlined selections, and no Theme item.
 
@@ -533,8 +537,8 @@ config address, the battery, the setup AP state and the gps, time and zone
 lines (see Time and time zone), with ten actions, plus Orientation on a
 touch board and two more on a board with an SD card slot:
 
-- **Theme: …** Centre moves to the next theme (Default, Black & white, White &
-  black) and saves it.
+- **Theme: …** Opens a box with every theme (see Themes); picking one
+  applies and saves it.
 - **Text size: …** Opens a box with the three sizes (Compact, Comfortable,
   Large); picking one applies and saves it.
 - **Time zone: …** Opens the zone list; Centre picks one and saves it, Back

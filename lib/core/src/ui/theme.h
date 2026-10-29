@@ -20,8 +20,12 @@ struct Theme {
   bool boldNicks = false;
 };
 
-enum class ThemeId : uint8_t { Default = 0, BlackWhite = 1, WhiteBlack = 2 };
-constexpr int kThemeCount = 3;
+// Saved by number: append, never reorder. Dark onwards are cyberspace.online's.
+enum class ThemeId : uint8_t {
+  Default = 0, BlackWhite = 1, WhiteBlack = 2,
+  Dark, Light, Lcd, C64, Vt320, Matrix, Poetry, Brutalist, Grid, Crypt, Bubblegum, Top8
+};
+constexpr int kThemeCount = 15;
 
 const Theme& theme(ThemeId id);
 // The "terminal" look of the mockups: green on black.
@@ -37,7 +41,8 @@ void setCursorShown(bool on);
 
 ThemeId nextTheme(ThemeId id);  // wraps round
 ThemeId themeFromIndex(int i);  // out of range gives Default
-// Stable keys for settings and web config: "default", "bw", "wb".
+// Stable keys for settings, backup and web config: "default", "bw", "wb",
+// then the site's names in lower case ("dark", "vt320", "top8"...).
 const char* themeKey(ThemeId id);
 bool parseThemeId(std::string_view key, ThemeId& out);  // leaves out unchanged on failure
 // Shown in Settings and web config.

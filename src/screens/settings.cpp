@@ -179,6 +179,14 @@ void SettingsScreen::confirmKey(const KeyEvent& k) {
         }
         break;
       }
+      if (c == Confirm::Theme) {
+        const int i = confirmBox_.selected();
+        if (i >= 0 && i < kThemeCount) {
+          app().cfg.theme = themeFromIndex(i);
+          settings::saveUiPrefs(app().cfg);
+        }
+        break;
+      }
       if (c == Confirm::KbLight) {
         const int i = confirmBox_.selected();
         if (i >= 0 && i < int(std::size(kKbLightOrder))) {
@@ -244,9 +252,18 @@ void SettingsScreen::onKey(const KeyEvent& k) {
 void SettingsScreen::activate(int item) {
   switch (item) {
     case kTheme: {
-      AppState& a = app();
-      a.cfg.theme = nextTheme(a.cfg.theme);
-      settings::saveUiPrefs(a.cfg);
+      std::vector<ListItem> rows;
+      int sel = 0;
+      for (int i = 0; i < kThemeCount; ++i) {
+        ListItem it{widen(themeLabel(themeFromIndex(i))), U""};
+        if (themeFromIndex(i) == app().cfg.theme) {
+          it.marker = true;
+          sel = i;
+        }
+        rows.push_back(std::move(it));
+      }
+      confirm_ = Confirm::Theme;
+      confirmBox_.open(U"theme", std::move(rows), sel);
       break;
     }
     case kTextSize: {
@@ -503,7 +520,8 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
     // The orientation and text size pickers are centred boxes; the bottom
     // strip only has room for a two-row confirm.
     const bool pick = confirm_ == Confirm::Rotation || confirm_ == Confirm::TextSize ||
-                      confirm_ == Confirm::Timeout || confirm_ == Confirm::KbLight;
+                      confirm_ == Confirm::Timeout || confirm_ == Confirm::KbLight ||
+                      confirm_ == Confirm::Theme;
     confirmBox_.render(g, 1, bottom, 0, pick ? OverlayPlace::Centre : OverlayPlace::Bottom, t);
     if (pick)
       drawHint(g, t, U"\u2191\u2193 pick  \u25CF set  back: cancel",

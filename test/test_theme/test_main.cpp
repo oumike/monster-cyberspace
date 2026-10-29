@@ -1,5 +1,7 @@
 #include <unity.h>
 
+#include <string>
+
 #include "ui/nick_color.h"
 #include "ui/theme.h"
 
@@ -9,7 +11,10 @@ void setUp() {}
 void tearDown() {}
 
 namespace {
-const ThemeId kAll[] = {ThemeId::Default, ThemeId::BlackWhite, ThemeId::WhiteBlack};
+const ThemeId kAll[] = {ThemeId::Default, ThemeId::BlackWhite, ThemeId::WhiteBlack, ThemeId::Dark,
+                        ThemeId::Light,   ThemeId::Lcd,        ThemeId::C64,        ThemeId::Vt320,
+                        ThemeId::Matrix,  ThemeId::Poetry,     ThemeId::Brutalist,  ThemeId::Grid,
+                        ThemeId::Crypt,   ThemeId::Bubblegum,  ThemeId::Top8};
 
 // Pairs that are drawn on top of each other must never match.
 void assertReadable(const Theme& t) {
@@ -90,13 +95,48 @@ void test_theme_ids_round_trip() {
   ThemeId out = ThemeId::WhiteBlack;
   TEST_ASSERT_FALSE(parseThemeId("neon", out));
   TEST_ASSERT_EQUAL(static_cast<int>(ThemeId::WhiteBlack), static_cast<int>(out));
-  TEST_ASSERT_EQUAL(static_cast<int>(ThemeId::Default), static_cast<int>(themeFromIndex(9)));
+  TEST_ASSERT_EQUAL(static_cast<int>(ThemeId::Default), static_cast<int>(themeFromIndex(kThemeCount)));
+  TEST_ASSERT_EQUAL(static_cast<int>(ThemeId::Default), static_cast<int>(themeFromIndex(-1)));
+}
+
+// Saved settings and backups hold these numbers and keys: they must not move.
+void test_site_theme_ids_are_stable() {
+  TEST_ASSERT_EQUAL(15, kThemeCount);
+  TEST_ASSERT_EQUAL(3, static_cast<int>(ThemeId::Dark));
+  TEST_ASSERT_EQUAL(14, static_cast<int>(ThemeId::Top8));
+  TEST_ASSERT_EQUAL_STRING("vt320", themeKey(ThemeId::Vt320));
+  TEST_ASSERT_EQUAL_STRING("GRiD", themeLabel(ThemeId::Grid));
+  for (int i = 0; i < kThemeCount; ++i)
+    for (int j = i + 1; j < kThemeCount; ++j) {
+      TEST_ASSERT_TRUE(std::string(themeKey(themeFromIndex(i))) != themeKey(themeFromIndex(j)));
+      TEST_ASSERT_TRUE(std::string(themeLabel(themeFromIndex(i))) != themeLabel(themeFromIndex(j)));
+    }
+}
+
+// Bars, the input line and panels must stand out from the page.
+void test_site_themes_have_visible_panels() {
+  for (int i = static_cast<int>(ThemeId::Dark); i < kThemeCount; ++i) {
+    const Theme& t = theme(themeFromIndex(i));
+    TEST_ASSERT_NOT_EQUAL(t.bg, t.barBg);
+    TEST_ASSERT_NOT_EQUAL(t.bg, t.inputBg);
+    TEST_ASSERT_NOT_EQUAL(t.bg, t.mentionBg);
+    TEST_ASSERT_NOT_EQUAL(t.nick, t.selfNick);
+  }
+}
+
+void test_site_colours_match() {
+  const Theme& d = theme(ThemeId::Dark);
+  TEST_ASSERT_EQUAL_HEX16(0x0000, d.bg);
+  TEST_ASSERT_EQUAL_HEX16(0xEF38, d.fg);  // #efe5c0
+  const Theme& c = theme(ThemeId::C64);
+  TEST_ASSERT_EQUAL_HEX16(0x2957, c.bg);  // #2a2ab8
 }
 
 void test_next_theme_wraps() {
   TEST_ASSERT_EQUAL(static_cast<int>(ThemeId::BlackWhite), static_cast<int>(nextTheme(ThemeId::Default)));
   TEST_ASSERT_EQUAL(static_cast<int>(ThemeId::WhiteBlack), static_cast<int>(nextTheme(ThemeId::BlackWhite)));
-  TEST_ASSERT_EQUAL(static_cast<int>(ThemeId::Default), static_cast<int>(nextTheme(ThemeId::WhiteBlack)));
+  TEST_ASSERT_EQUAL(static_cast<int>(ThemeId::Dark), static_cast<int>(nextTheme(ThemeId::WhiteBlack)));
+  TEST_ASSERT_EQUAL(static_cast<int>(ThemeId::Default), static_cast<int>(nextTheme(ThemeId::Top8)));
 }
 
 int main(int, char**) {
@@ -109,5 +149,8 @@ int main(int, char**) {
   RUN_TEST(test_default_nicks_keep_site_colours);
   RUN_TEST(test_theme_ids_round_trip);
   RUN_TEST(test_next_theme_wraps);
+  RUN_TEST(test_site_theme_ids_are_stable);
+  RUN_TEST(test_site_themes_have_visible_panels);
+  RUN_TEST(test_site_colours_match);
   return UNITY_END();
 }

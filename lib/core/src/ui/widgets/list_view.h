@@ -33,6 +33,7 @@ class ListView {
   // The list a tap Row target belongs to. Default Main; Overlay uses Menu.
   void setListId(ListId id) { listId_ = id; }
   size_t size() const { return items_.size(); }
+  const std::vector<ListItem>& items() const { return items_; }
   // Draws rows [top, bottom) in columns [left, left + width).
   void render(Grid& g, int top, int bottom, int left, int width, const Theme& t) const;
 

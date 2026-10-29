@@ -3,11 +3,21 @@
 #include <algorithm>
 #include <utility>
 
+#include "ui/button_grid.h"
 #include "ui/tap_map.h"
+#include "ui/wrap.h"
 
 namespace rc {
 
+namespace {
+bool gConfirmButtons = false;
+}  // namespace
+
+void Overlay::setConfirmButtons(bool on) { gConfirmButtons = on; }
+bool Overlay::confirmButtons() { return gConfirmButtons; }
+
 void Overlay::open(std::u32string title, std::vector<ListItem> items, int selected) {
+  confirm_ = false;
   title_ = std::move(title);
   list_.setListId(ListId::Menu);
   list_.setItems(std::move(items));
@@ -20,6 +30,7 @@ void Overlay::confirm(std::u32string title, std::u32string action) {
   items.push_back(ListItem{U"Cancel", U""});
   items.push_back(ListItem{std::move(action), U"", ItemTone::Error});
   open(std::move(title), std::move(items), 0);
+  confirm_ = true;
 }
 
 Overlay::Result Overlay::key(const KeyEvent& k) {
@@ -62,6 +73,38 @@ void Overlay::render(Grid& g, int top, int bottom, int rightReserve, OverlayPlac
     activeTaps()->addCells(0, 0, g.cols() - 1, g.rows() - 1, back);
   }
   const int n = static_cast<int>(list_.size());
+  if (confirm_ && gConfirmButtons) {
+    // The title wrapped above two buttons, Cancel on the left.
+    const int btnTop = bottom - kButtonRows - 1;
+    const ButtonGrid b = buttonGrid(g.cols(), btnTop, bottom, n, 2, 0);
+    if (!b.rects.empty()) {
+      const int width = std::max(1, g.cols() - 2);
+      std::vector<std::u32string> lines = wrapText(title_, width, width);
+      const int titleTop = std::max(top, btnTop - 1 - static_cast<int>(lines.size()));
+      for (int r = titleTop; r < bottom; ++r)
+        for (int c = 0; c < g.cols(); ++c) g.put(c, r, U' ', t.fg, t.bg);
+      for (size_t i = 0; i < lines.size() && titleTop + int(i) < btnTop - 1; ++i)
+        g.putText(1, titleTop + int(i), lines[i], t.error, t.bg, width);
+      if (activeTaps()) activeTaps()->setList(ListId::Menu, list_.selected(), n, false);
+      for (size_t k = 0; k < b.rects.size(); ++k) {
+        const TileRect& r = b.rects[k];
+        const ListItem& it = list_.items()[b.first + k];
+        const int inW = r.c1 - r.c0 - 1;
+        const int lw = std::min(inW, static_cast<int>(it.label.size()));
+        g.putText(r.c0 + 1 + (inW - lw) / 2, r.r0 + kButtonRows / 2, it.label,
+                  it.tone == ItemTone::Error ? t.error : t.fg, t.bg, inW);
+        g.outline(r.c0, r.r0, r.c1, r.r1, t.dim);
+        if (activeTaps()) {
+          Target tt;
+          tt.kind = TargetKind::Row;
+          tt.list = ListId::Menu;
+          tt.index = static_cast<int16_t>(b.first + k);
+          activeTaps()->addCells(r.c0, r.r0, r.c1, r.r1, tt);
+        }
+      }
+      return;
+    }
+  }
   switch (p) {
     case OverlayPlace::BottomRight: {
       const int h = std::min(n, bottom - 2);

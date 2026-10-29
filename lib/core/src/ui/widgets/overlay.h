@@ -26,8 +26,13 @@ class Overlay {
   // A menu of `items`, with `selected` highlighted.
   void open(std::u32string title, std::vector<ListItem> items, int selected = 0);
   // A two-row confirm: "Cancel" (selected) and `action` in ItemTone::Error.
+  // With confirmButtons() on, drawn as two buttons side by side at the bottom
+  // instead, wherever it was placed.
   void confirm(std::u32string title, std::u32string action);
   void close() { open_ = false; }
+  // Touch-only boards: confirms are buttons. Off by default.
+  static void setConfirmButtons(bool on);
+  static bool confirmButtons();
   bool isOpen() const { return open_; }
   int selected() const { return list_.selected(); }
   const std::u32string& title() const { return title_; }
@@ -45,6 +50,7 @@ class Overlay {
   ListView list_;
   std::u32string title_;
   bool open_ = false;
+  bool confirm_ = false;  // opened by confirm()
 };
 
 }  // namespace rc

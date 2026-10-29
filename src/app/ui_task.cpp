@@ -26,6 +26,7 @@
 #include "ui/theme.h"
 #include "ui/widgets/banner.h"
 #include "ui/widgets/osk.h"
+#include "ui/widgets/overlay.h"
 #include "ui/widgets/symbol_table.h"
 #include "util/utf8.h"
 
@@ -493,6 +494,7 @@ void start() {
   setActiveTaps(board::hasTouch() ? &taps : nullptr);
   setCursorShown(board::hasKeys() || board::sideNav());
   resolver.setTouchOnly(!board::hasKeys());
+  Overlay::setConfirmButtons(board::hasTouch() && !board::hasKeys());
   resizeGrid();
   router::go(router::Id::Splash);
   board::backlight(true);

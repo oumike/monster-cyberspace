@@ -9,6 +9,7 @@
 #include "ui/qr_cells.h"
 #include "ui/theme.h"
 #include "ui/widgets/banner.h"
+#include "ui/button_grid.h"
 #include "ui/widgets/overlay.h"
 #include "ui/widgets/drawer.h"
 #include "ui/widgets/entry_list.h"
@@ -1417,6 +1418,37 @@ void test_log_draws_bold_spans_bold() {
   TEST_ASSERT_FALSE(g.at(6, row).bold);
 }
 
+void test_confirm_as_buttons() {
+  TapMap m;
+  m.setOrigin({1, 1}, 0);
+  setActiveTaps(&m);
+  Overlay o;
+  o.confirm(U"Restore backup.yaml and restart?", U"Restore");
+  Overlay::setConfirmButtons(true);
+  Grid g(40, 20);
+  g.fill(T().bg);
+  o.render(g, 1, 19, 0, OverlayPlace::Bottom, T());
+  Overlay::setConfirmButtons(false);
+  setActiveTaps(nullptr);
+  // Two outlined buttons on the rows above the hint, Cancel on the left.
+  const int mid = 19 - kButtonRows - 1 + kButtonRows / 2;
+  const std::string row = rowText(g, mid, 0, 40);
+  TEST_ASSERT_TRUE(row.find("Cancel") < row.find("Restore"));
+  TEST_ASSERT_TRUE(g.at(1, mid).edges != 0);
+  TEST_ASSERT_TRUE(rowText(g, 19 - kButtonRows - 3, 0, 40).find("Restore backup") != std::string::npos);
+  // A tap on a button picks it.
+  KeyEvent k;
+  const Target t = m.hit(30, mid);
+  TEST_ASSERT_EQUAL(int(TargetKind::Row), int(t.kind));
+  TEST_ASSERT_EQUAL(1, t.index);
+  k.action = Action::Activate;
+  k.target = uint8_t(ListId::Menu);
+  k.index = t.index;
+  k.then = Action::Select;
+  TEST_ASSERT_EQUAL(int(Overlay::Result::Picked), int(o.key(k)));
+  TEST_ASSERT_EQUAL(1, o.selected());
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_input_insert_cursor);
@@ -1493,5 +1525,6 @@ int main() {
   RUN_TEST(test_emoji_tray_large_closes_up_before_shrinking);
   RUN_TEST(test_side_nav_draws_three_buttons_that_send_keys);
   RUN_TEST(test_log_draws_bold_spans_bold);
+  RUN_TEST(test_confirm_as_buttons);
   return UNITY_END();
 }

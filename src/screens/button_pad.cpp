@@ -67,7 +67,16 @@ void ButtonPad::render(Grid& g, const Theme& t, const std::vector<ListItem>& ite
   const int btnTop = top + std::max(0, header) - shift_;
   const ButtonGrid b = buttonGrid(g.cols(), btnTop, bottom, n, cols, scroll_, height_);
   scroll_ = b.scrollRow;
-  if (activeTaps()) activeTaps()->setList(ListId::Main, -1, n, false);
+  if (activeTaps()) {
+    activeTaps()->setList(ListId::Main, -1, n, false);
+    // Under the buttons, the whole area (gaps and header too) takes drags;
+    // a tap there picks nothing.
+    Target bg;
+    bg.kind = TargetKind::Row;
+    bg.list = ListId::Main;
+    bg.index = -1;
+    activeTaps()->addCells(0, top, g.cols() - 1, bottom - 1, bg);
+  }
   for (size_t k = 0; k < b.rects.size(); ++k) {
     const int i = b.first + int(k);
     const TileRect& r = b.rects[k];

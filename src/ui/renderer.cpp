@@ -64,6 +64,7 @@ void Renderer::drawRow(const Grid& g, int r, const CellFont& font, RowSpan span,
     for (int y = 0; y < ch; ++y) {
       uint16_t bits = 0;
       if (glyph) bits = rb == 1 ? glyph[y] << 8 : (glyph[y * 2] << 8) | glyph[y * 2 + 1];
+      if (cell.bold) bits |= bits >> 1;
       uint16_t* px = frame_ + static_cast<size_t>(y0 + y) * w_ + x0;
       for (int x = 0; x < cw; ++x) px[x] = (bits & (0x8000 >> x)) ? cell.fg : cell.bg;
     }

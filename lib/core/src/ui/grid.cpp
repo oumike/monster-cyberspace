@@ -62,6 +62,12 @@ void Grid::put(int col, int row, char32_t cp, uint16_t fg, uint16_t bg) {
   cells_[static_cast<size_t>(row) * cols_ + col] = Cell{cp, fg, bg};
 }
 
+void Grid::embolden(int c0, int c1, int row) {
+  if (row < 0 || row >= rows_) return;
+  for (int c = std::max(c0, 0); c <= std::min(c1, cols_ - 1); ++c)
+    cells_[static_cast<size_t>(row) * cols_ + c].bold = true;
+}
+
 void Grid::outline(int c0, int r0, int c1, int r1, uint16_t color) {
   c0 = std::max(c0, 0);
   r0 = std::max(r0, 0);

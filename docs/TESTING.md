@@ -189,6 +189,7 @@ Buttons: BOOT tap = Back, BOOT hold (0.6 s) = Home; Wake tap = screen off
 - [ ] Keys typed quickly during a refresh are not lost
 - [ ] Touch: a tap lands where the finger is, and a swipe scrolls
 - [ ] The room list and Settings are buttons; the status bar shows `‹` and `⋯`; holding a log or Feed row opens its menu
+- [ ] Nicks in the room log and entry replies are bold and still legible at every text size
 - [ ] Side strip (room, conversation, C-Mail, Feed, entry): ▲/▼ move the selection, ● sends or opens the room menu when nothing is selected and opens the reply/report menu on a selected message; it steps aside when the member drawer is open and nothing on the screen is cut off
 - [ ] Mic key while typing opens the emoji tray; Sym + Mic types `0`; elsewhere the Mic key does nothing
 - [ ] Side button: turns the screen off (the panel keeps the still splash), and on again; keys don't wake it
@@ -255,6 +256,10 @@ Buttons: BOOT tap = Back, BOOT hold (0.6 s) = Home; Wake tap = screen off
 **T-Deck Plus mic key (`tdeck`):**
 
 - [ ] While typing, the mic key opens the emoji tray once per press; outside text entry it does nothing, and the other keys still type normally (it reads the keyboard's raw matrix only while typing; `micPressed` in `src/hal/tdeck/keyboard_tdeck.cpp`)
+
+**Room wrapping (every board):**
+
+- [ ] At Comfortable and Large, a long room message's second and later lines start under the nick; at Compact they start under the text
 
 **Large emoji tray (every board):**
 

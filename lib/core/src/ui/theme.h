@@ -16,6 +16,8 @@ struct Theme {
   // E-paper: a highlight that would be a solid block (a picked symbol, a
   // focused checkbox, an error banner) is drawn as an outline instead.
   bool outlined;
+  // E-paper: nicks in the room log are drawn bold, as colour can't set them apart.
+  bool boldNicks = false;
 };
 
 enum class ThemeId : uint8_t { Default = 0, BlackWhite = 1, WhiteBlack = 2 };

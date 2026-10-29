@@ -150,7 +150,7 @@ The T-Deck Pro (env `tdeck_pro`, e-paper) uses the touch-only paradigm plus a
 its and the T-Deck Plus's mic key opens the emoji tray (`board::textEntry`).
 A browser flasher (GitHub Pages, `site/`, `.github/workflows/pages.yml`)
 serves the latest release (docs/BUILD.md).
-The native suite is green: 440/440
+The native suite is green: 443/443
 (`pio test -e native`), and `scripts/build-upload-monitor.sh -B` builds all
 seven firmware envs.
 

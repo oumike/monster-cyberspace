@@ -142,7 +142,11 @@ void LogView::render(Grid& g, int top, int bottom, int rightReserve, const Theme
     }
     uint16_t bg = l.mentionTint ? t.mentionBg : t.bg;
     int col = 0;
-    for (const auto& s : l.spans) col += g.putText(col, row, s.text, s.fg, bg, width - col);
+    for (const auto& s : l.spans) {
+      const int n = g.putText(col, row, s.text, s.fg, bg, width - col);
+      if (s.bold) g.embolden(col, col + n - 1, row);
+      col += n;
+    }
     for (; col < width; ++col) g.put(col, row, U' ', t.fg, bg);
   }
   if (selTop >= 0 && width > 0 && cursorShown()) g.outline(0, selTop, width - 1, selBottom, t.selectBg);

@@ -15,6 +15,7 @@ namespace rc {
 struct Span {
   std::u32string text;
   uint16_t fg;
+  bool bold = false;
 };
 
 // One screen row of the room log. Every line of a message carries its id;
@@ -33,6 +34,9 @@ struct LayoutOptions {
   const std::set<std::string>* muted = nullptr;     // lower-cased usernames
   const std::set<std::string>* revealed = nullptr;  // spoiler message ids
   const Theme* theme = nullptr;                     // defaultTheme() when null
+  // Compact layout only: wrapped lines start under the nick rather than under
+  // the text (the room log at Comfortable and Large).
+  bool indentToNick = false;
 };
 
 // Lays out messages (oldest first) into display lines no wider than o.cols,

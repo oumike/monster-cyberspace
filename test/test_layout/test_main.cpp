@@ -278,6 +278,34 @@ void test_compact_long_nick_indent() {
   TEST_ASSERT_EQUAL_STRING("      w", flat(lines[1]).substr(0, 7).c_str());
 }
 
+void test_indent_to_nick_wraps_under_the_nick() {
+  std::deque<CircMessage> d{msg("m1", "tardibyte",
+                                "anyone else on the 4.0 beta yet? the grid build tools are finally in"),
+                            msg("m2", "tardibyte", "waves at everyone in the room today")};
+  d[1].isAction = true;
+  LayoutOptions o = opts(TextSize::Compact, 40);
+  o.indentToNick = true;
+  auto lines = body(layoutRoom(d, o));
+  TEST_ASSERT_EQUAL_STRING("14:02 tardibyte: anyone else on the 4.0", flat(lines[0]).c_str());
+  TEST_ASSERT_EQUAL_STRING("      beta yet? the grid build tools are", flat(lines[1]).c_str());
+  TEST_ASSERT_EQUAL_STRING("      finally in", flat(lines[2]).c_str());
+  // An action wraps under the nick after "* ".
+  TEST_ASSERT_EQUAL_STRING("14:02 * tardibyte waves at everyone in", flat(lines[3]).c_str());
+  TEST_ASSERT_EQUAL_STRING("        the room today", flat(lines[4]).c_str());
+}
+
+void test_paper_theme_bolds_nicks() {
+  std::deque<CircMessage> d{msg("m1", "tardibyte", "hi")};
+  LayoutOptions o = opts(TextSize::Compact, 40);
+  TEST_ASSERT_FALSE(layoutRoom(d, o).back().spans[1].bold);
+  o.theme = &paperTheme();
+  auto l = layoutRoom(d, o).back();
+  TEST_ASSERT_EQUAL_STRING("tardibyte", u32ToUtf8(l.spans[1].text).c_str());
+  TEST_ASSERT_TRUE(l.spans[1].bold);
+  TEST_ASSERT_FALSE(l.spans[0].bold);
+  TEST_ASSERT_FALSE(l.spans[2].bold);
+}
+
 void test_compact_day_divider_first() {
   std::deque<CircMessage> d{msg("m1", "a", "one"), msg("m2", "b", "two", kTs + 60000),
                             msg("m3", "c", "three", kTs + 86400000LL)};
@@ -720,6 +748,8 @@ int main() {
   RUN_TEST(test_time);
   RUN_TEST(test_compact_basic);
   RUN_TEST(test_compact_long_nick_indent);
+  RUN_TEST(test_indent_to_nick_wraps_under_the_nick);
+  RUN_TEST(test_paper_theme_bolds_nicks);
   RUN_TEST(test_compact_day_divider_first);
   RUN_TEST(test_comfortable_layout);
   RUN_TEST(test_comfortable_minute_divider);

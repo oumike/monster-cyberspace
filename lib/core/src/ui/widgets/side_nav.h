@@ -9,7 +9,7 @@ namespace rc {
 // of lists (messages, the feed, C-Mail), where picking a row by touch is a
 // chore (e-paper). The middle button acts as Enter on the selected item.
 
-// Columns for a strip about 36 px wide in cells cellW px wide; at least 3.
+// Columns for a strip about 18 px wide in cells cellW px wide; at least 2.
 int sideNavCols(int cellW);
 
 // Three outlined buttons stacked over rows [top, bottom) in the right `cols`

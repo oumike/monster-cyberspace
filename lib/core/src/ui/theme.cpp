@@ -53,7 +53,7 @@ const Theme kPaper = {
     /*cursorFg*/ rgb(0xFFFFFF),  /*selectBg*/ rgb(0x000000), /*selectFg*/ rgb(0xFFFFFF),
     /*drawerBg*/ rgb(0xFFFFFF),  /*drawerEdge*/ rgb(0x000000), /*error*/ rgb(0x000000),
     /*colorNicks*/ false,        /*nick*/ rgb(0x000000),     /*selfNick*/ rgb(0x000000),
-    /*outlined*/ true,
+    /*outlined*/ true,           /*boldNicks*/ true,
 };
 
 }  // namespace

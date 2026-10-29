@@ -7,13 +7,13 @@
 namespace rc {
 
 int sideNavCols(int cellW) {
-  if (cellW <= 0) return 3;
-  return std::max(3, (36 + cellW - 1) / cellW);
+  if (cellW <= 0) return 2;
+  return std::max(2, (18 + cellW - 1) / cellW);
 }
 
 void renderSideNav(Grid& g, int top, int bottom, int cols, const Theme& t) {
   const int h = bottom - top;
-  if (h < 3 || cols < 3 || cols > g.cols()) return;
+  if (h < 3 || cols < 1 || cols > g.cols()) return;
   const int c0 = g.cols() - cols, c1 = g.cols() - 1;
   // The middle button takes what the even split leaves over.
   const int edge = h / 3;

@@ -107,7 +107,7 @@ std::vector<DisplayLine> layoutEntry(const Entry& e, const std::deque<Reply>& re
   DisplayLine head;
   head.messageId = e.id;
   const bool self = !o.self.empty() && sameUsername(e.author, o.self);
-  head.spans.push_back({utf8ToU32(e.author), nickColor(th, e.author, self)});
+  head.spans.push_back({utf8ToU32(e.author), nickColor(th, e.author, self), th.boldNicks});
   head.spans.push_back({kSep + utf8ToU32(relativeAge(e.createdMs, o.nowMs)), th.time});
   clip(head, cols);
   out.push_back(std::move(head));

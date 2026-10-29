@@ -15,8 +15,9 @@ struct Cell {
   uint16_t fg = 0, bg = 0;
   uint8_t edges = 0;
   uint16_t edgeColor = 0;
+  bool bold = false;
   bool operator==(const Cell& o) const {
-    return cp == o.cp && fg == o.fg && bg == o.bg && edges == o.edges &&
+    return cp == o.cp && fg == o.fg && bg == o.bg && edges == o.edges && bold == o.bold &&
            (!edges || edgeColor == o.edgeColor);
   }
   bool operator!=(const Cell& o) const { return !(*this == o); }
@@ -52,6 +53,9 @@ class Grid {
   // Draws a box on the edges of cells [c0..c1] x [r0..r1] (inclusive). Call it
   // after writing the cells: put() clears a cell's edges.
   void outline(int c0, int r0, int c1, int r1, uint16_t color);
+  // Draws cells [c0..c1] of a row bold. Call it after writing the cells: put()
+  // clears it.
+  void embolden(int c0, int c1, int row);
   // ORs edges into one cell's edges, in color.
   void addEdges(int col, int row, uint8_t edges, uint16_t color);
   void setRowKind(int row, RowKind k);

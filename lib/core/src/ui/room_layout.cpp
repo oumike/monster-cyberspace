@@ -102,11 +102,13 @@ std::vector<DisplayLine> layoutRoom(const std::deque<CircMessage>& msgs, const L
       if (action) {
         bodyStart = kCompactTimeCols;
         int under = kCompactTimeCols + 2 + static_cast<int>(nick.size()) + 1;
-        contIndent = under <= kCompactIndentCap ? under : kCompactTimeCols;
+        contIndent = o.indentToNick                ? kCompactTimeCols + 2
+                     : under <= kCompactIndentCap ? under
+                                                  : kCompactTimeCols;
       } else {
-        head.spans.push_back({nick, nickFg});
+        head.spans.push_back({nick, nickFg, th.boldNicks});
         bodyStart = kCompactTimeCols + static_cast<int>(nick.size()) + 2;
-        contIndent = bodyStart <= kCompactIndentCap ? bodyStart : kCompactTimeCols;
+        contIndent = !o.indentToNick && bodyStart <= kCompactIndentCap ? bodyStart : kCompactTimeCols;
       }
     } else if (action) {
       bodyStart = 0;
@@ -114,7 +116,7 @@ std::vector<DisplayLine> layoutRoom(const std::deque<CircMessage>& msgs, const L
     } else {
       std::u32string n = cutNick(nick, kComfortNickCols);
       n.resize(kComfortNickCols, U' ');
-      head.spans.push_back({n + U" ", nickFg});
+      head.spans.push_back({n + U" ", nickFg, th.boldNicks});
       bodyStart = contIndent = kComfortBodyCol;
     }
     if (contIndent >= cols) contIndent = 0;

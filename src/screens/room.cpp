@@ -617,6 +617,8 @@ void RoomScreen::render(Grid& g, const Theme& t, int64_t) {
     // Every text size lays messages out as Compact does: a time on each
     // message and a divider per day.
     o.size = TextSize::Compact;
+    // Bigger sizes have fewer columns: wrapped lines start under the nick.
+    o.indentToNick = app().cfg.textSize != TextSize::Compact;
     o.cols = logCols;
     o.selfUsername = s.self;
     o.muted = &muted_;

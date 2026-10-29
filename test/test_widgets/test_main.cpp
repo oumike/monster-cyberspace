@@ -1369,11 +1369,11 @@ void test_text_area_wraps_by_width() {
   TEST_ASSERT_EQUAL(T().cursorBg, g.at(2, 1).bg);
 }
 
-void test_side_nav_cols_about_36px() {
-  TEST_ASSERT_EQUAL(6, sideNavCols(6));
-  TEST_ASSERT_EQUAL(5, sideNavCols(8));
-  TEST_ASSERT_EQUAL(4, sideNavCols(10));
-  TEST_ASSERT_EQUAL(3, sideNavCols(20));
+void test_side_nav_cols_about_18px() {
+  TEST_ASSERT_EQUAL(3, sideNavCols(6));
+  TEST_ASSERT_EQUAL(3, sideNavCols(8));
+  TEST_ASSERT_EQUAL(2, sideNavCols(10));
+  TEST_ASSERT_EQUAL(2, sideNavCols(20));
 }
 
 void test_side_nav_draws_three_buttons_that_send_keys() {
@@ -1393,6 +1393,28 @@ void test_side_nav_draws_three_buttons_that_send_keys() {
   TEST_ASSERT_EQUAL(int(Action::Select), int(m.hit(16, 5).tap.action));
   TEST_ASSERT_EQUAL(int(Action::Down), int(m.hit(19, 9).tap.action));
   TEST_ASSERT_EQUAL(int(TargetKind::None), int(m.hit(15, 5).kind));
+}
+
+void test_log_draws_bold_spans_bold() {
+  LogView v;
+  DisplayLine l;
+  l.messageId = "m1";
+  l.spans.push_back({U"14:02 ", T().time});
+  l.spans.push_back({U"nick", T().fg, true});
+  l.spans.push_back({U": hi", T().fg});
+  v.setLines({l});
+  Grid g(20, 3);
+  g.fill(T().bg);
+  v.render(g, 0, 3, 0, T());
+  int row = -1;
+  for (int r = 0; r < 3; ++r)
+    if (g.at(6, r).cp == U'n') row = r;
+  TEST_ASSERT_TRUE(row >= 0);
+  TEST_ASSERT_FALSE(g.at(5, row).bold);
+  for (int c = 6; c < 10; ++c) TEST_ASSERT_TRUE(g.at(c, row).bold);
+  TEST_ASSERT_FALSE(g.at(10, row).bold);
+  g.put(6, row, U'n', T().fg, T().bg);  // a put clears it
+  TEST_ASSERT_FALSE(g.at(6, row).bold);
 }
 
 int main() {
@@ -1467,8 +1489,9 @@ int main() {
   RUN_TEST(test_put_text_wide_emoji);
   RUN_TEST(test_input_line_renders_wide_emoji);
   RUN_TEST(test_text_area_wraps_by_width);
-  RUN_TEST(test_side_nav_cols_about_36px);
+  RUN_TEST(test_side_nav_cols_about_18px);
   RUN_TEST(test_emoji_tray_large_closes_up_before_shrinking);
   RUN_TEST(test_side_nav_draws_three_buttons_that_send_keys);
+  RUN_TEST(test_log_draws_bold_spans_bold);
   return UNITY_END();
 }

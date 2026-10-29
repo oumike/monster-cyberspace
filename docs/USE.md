@@ -176,9 +176,10 @@ clear ghosting.
 Navigation works as on the touch-only boards: the room list and Settings are
 buttons, the status bar has `‹` and `⋯`, and log and Feed rows act on a hold
 rather than a tap. Screens with a list (a room or conversation, C-Mail, the
-Feed and an entry) also show a strip of three buttons on the right: ▲ and ▼
+Feed and an entry) also show a narrow strip of three buttons on the right: ▲ and ▼
 move up and down, and ● between them acts as Enter on the selected item, so
-on a message in a room it opens the reply/report menu.
+on a message in a room it opens the reply/report menu. Nicks in the room
+log and replies are drawn bold, since the panel has no colours.
 
 | Input | Action |
 |---|---|
@@ -367,7 +368,8 @@ uses Compact, so its items fit.
 - **Large:** like Comfortable, one size up: 10×18 text and 12×24 titles.
 
 Room messages read `14:02 nick: message`, with a divider when the day
-changes, at every size.
+changes, at every size. A long message wraps under its text at Compact, and
+under the nick at Comfortable and Large, which have fewer columns to spare.
 
 ## Themes
 

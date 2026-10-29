@@ -8,17 +8,14 @@ web config page served by the device. No phone app or companion is needed.
 
 ## Install
 
-Download `monster-cyberspace-<board>-<version>.bin` for your board from
+**Browser flasher:** <https://oumike.github.io/monster-cyberspace/>. Plug the
+board in over USB and install from Chrome or Edge on a desktop.
+
+Or download `monster-cyberspace-<board>-<version>.bin` for your board from
 [Releases](../../releases) and flash it at `0x0` with the `flash.sh` attached to
 each release (`./flash.sh monster-cyberspace-<board>-<version>.bin /dev/ttyUSB0`;
 on macOS, `/dev/cu.usbmodem*` or `/dev/cu.wchusbserial*`). Installs keep your
 Wi-Fi, sign-in and preferences: they live past the end of the image.
-
-Boards installed before over-the-air updates arrived kept their settings at
-`0x9000`. `flash.sh` skips that area and the firmware moves them on its first
-boot; other tools ([esptool-js](https://espressif.github.io/esptool-js/),
-`esptool.py --chip esp32s3 write_flash 0x0 <file>`) write over it, so for those
-take a backup first (Settings → Back up to SD card, or web config).
 
 After that, updates come over the air (Settings → Firmware, or web config). The
 `-ota.bin` files are for that and are not flashed by hand.

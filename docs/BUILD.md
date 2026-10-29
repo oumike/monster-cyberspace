@@ -89,6 +89,13 @@ nothing. A new firmware env must be added to `RELEASE_ENVS` in
 `board::otaSlug()` must match the release's file name (`env_out_name`: the env
 name with `_` turned into `-`), or its devices find no update.
 
+The browser flasher (<https://oumike.github.io/monster-cyberspace/>) is
+`site/index.html` (ESP Web Tools). `.github/workflows/pages.yml` publishes it
+to GitHub Pages after each release: `scripts/pages-site.sh` copies the latest
+release's factory images into the site (browsers can't fetch release assets
+directly) and writes a manifest per board. A new board needs a name in the
+page's `LABELS`. Pages must be set to deploy from GitHub Actions.
+
 ### Flash layout
 
 Every env uses `partitions_16mb.csv`: two 6.25 MB app slots at `0x10000` and

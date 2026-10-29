@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monster Cyberspace flasher</title>
+<script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module"></script>
+<style>
+  :root { color-scheme: dark; }
+  body {
+    margin: 0; min-height: 100vh; background: #000; color: #9f9;
+    font: 16px/1.5 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    display: flex; justify-content: center;
+  }
+  main { max-width: 40rem; padding: 2rem 1.25rem; }
+  h1 { font-size: 1.4rem; margin: 0 0 .25rem; color: #cfc; }
+  a { color: #6cf; }
+  .muted { color: #6a6; }
+  label { display: block; margin: 1.5rem 0 .5rem; }
+  select {
+    font: inherit; color: #cfc; background: #000; border: 1px solid #6a6;
+    padding: .4rem .5rem; width: 100%;
+  }
+  esp-web-install-button { display: block; margin-top: 1rem; }
+  esp-web-install-button button[slot="activate"] {
+    font: inherit; color: #000; background: #9f9; border: 0;
+    padding: .6rem 1.2rem; cursor: pointer;
+  }
+  .note { margin-top: 2rem; border-top: 1px solid #262; padding-top: 1rem; font-size: .9rem; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Monster Cyberspace</h1>
+  <div class="muted">Firmware for <a href="https://cyberspace.online">cyberspace.online</a>, flashed from the browser.
+    <span id="version"></span></div>
+
+  <label for="board">Board</label>
+  <select id="board" disabled><option>Loading…</option></select>
+
+  <esp-web-install-button id="install">
+    <button slot="activate">Install</button>
+    <span slot="unsupported">This browser can't flash over USB. Use Chrome or Edge on a desktop.</span>
+    <span slot="not-allowed">Flashing needs a secure (https) page.</span>
+  </esp-web-install-button>
+
+  <div class="note muted">
+    Plug the board in over USB, pick it above and press Install. Choosing
+    <em>erase</em> clears saved Wi-Fi, sign-in and settings; without it they
+    are kept. After this, updates come over the air (Settings → Firmware).
+    <br><br>
+    Images come from the latest
+    <a href="https://github.com/oumike/monster-cyberspace/releases/latest">release</a>.
+    Source and docs: <a href="https://github.com/oumike/monster-cyberspace">github.com/oumike/monster-cyberspace</a>.
+  </div>
+</main>
+<script>
+  // Release slugs (scripts/release.sh env_out_name) to names.
+  const LABELS = {
+    "m9": "Elecrow ThinkNode M9",
+    "wio-l2": "Seeed Wio Tracker L2",
+    "tdeck": "LilyGO T-Deck Plus",
+    "tdeck-pro": "LilyGO T-Deck Pro",
+    "crowpanel35": "Elecrow CrowPanel Advance 3.5\"",
+    "crowpanel50": "Elecrow CrowPanel Advance 5.0\"",
+    "pager": "LilyGO T-LoRa Pager",
+  };
+  const select = document.getElementById("board");
+  const install = document.getElementById("install");
+  fetch("boards.json", { cache: "no-cache" })
+    .then((r) => r.json())
+    .then(({ version, boards }) => {
+      document.getElementById("version").textContent = version;
+      select.innerHTML = "";
+      boards
+        .map((slug) => [slug, LABELS[slug] || slug])
+        .sort((a, b) => a[1].localeCompare(b[1]))
+        .forEach(([slug, label]) => select.add(new Option(label, slug)));
+      const pick = () => install.setAttribute("manifest", `manifests/${select.value}.json`);
+      select.addEventListener("change", pick);
+      select.disabled = false;
+      pick();
+    })
+    .catch(() => { select.innerHTML = "<option>No release found</option>"; });
+</script>
+</body>
+</html>

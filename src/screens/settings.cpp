@@ -30,6 +30,7 @@ enum Item {
   kScreenTimeout,
   kAtTimeout,
   kKbLight,
+  kWifi,
   kSetupAp,
   kFirmware,
   kAutoUpdate,
@@ -52,6 +53,7 @@ std::vector<Item> menuItems() {
   v.push_back(kScreenTimeout);
   v.push_back(kAtTimeout);
   if (board::hasKbLight()) v.push_back(kKbLight);
+  v.push_back(kWifi);
   v.push_back(kSetupAp);
   v.push_back(kFirmware);
   v.push_back(kAutoUpdate);
@@ -314,6 +316,9 @@ void SettingsScreen::activate(int item) {
       settings::saveScreen(a.cfg.screenOnSecs, a.cfg.screenSaver);
       break;
     }
+    case kWifi:
+      router::go(router::Id::Wifi);
+      break;
     case kSetupAp: {
       Command c{CmdType::SetupAp};
       c.n = setupApUp() ? 0 : 1;
@@ -399,6 +404,9 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
         break;
       case kAtTimeout:
         rows.push_back(ListItem{U"At timeout", a.cfg.screenSaver ? U"screensaver" : U"screen off"});
+        break;
+      case kWifi:
+        rows.push_back(ListItem{U"Wi-Fi", wifiUp() ? utf8ToU32(wifiSsid()) : U"not connected"});
         break;
       case kSetupAp:
         if (buttons_)

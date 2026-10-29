@@ -54,6 +54,50 @@ void post(EvtType t, int code = 0, const std::string& text = "", bool ok = true)
   postEvent(Event{t, text, code, ok});
 }
 
+// ---- the device's Wi-Fi screen ----
+
+std::string gJoining;  // the network a WifiJoin is trying
+
+void wipeStr(std::string& s) { std::fill(s.begin(), s.end(), '\0'); }
+
+void wifiCommand(Command& c) {
+  rc::Settings s;
+  settings::load(s);
+  switch (c.type) {
+    case CmdType::WifiScan:
+      post(EvtType::WifiScanned, 0, rc::encodeWifiScan(wifimgr::scanDetailed()));
+      break;
+    case CmdType::WifiJoin: {
+      // n = 1: b is the password to save; 0: join with the saved one.
+      if (c.n == 1 && rc::saveWifiNet(s.wifi, c.a, c.b) == rc::WifiSave::Full) {
+        post(EvtType::WifiState, -2, "Five networks saved already: forget one first", false);
+        break;
+      }
+      if (c.n == 1) settings::saveWifi(s.wifi);
+      gJoining = c.a;
+      wifimgr::setNetworks(s.wifi, c.a);
+      post(EvtType::WifiState, 0, c.a);
+      break;
+    }
+    case CmdType::WifiForget:
+      if (rc::forgetWifiNet(s.wifi, c.a)) settings::saveWifi(s.wifi);
+      wifimgr::setNetworks(s.wifi, "");
+      post(EvtType::WifiState, 2, c.a);
+      break;
+    default:
+      break;
+  }
+  wipeStr(c.b);
+  for (auto& w : s.wifi) wipeStr(w.password);
+}
+
+void pollJoin() {
+  const int r = wifimgr::takeJoinResult();
+  if (r == 0) return;
+  if (r > 0) post(EvtType::WifiState, 1, gJoining);
+  else post(EvtType::WifiState, -1, "Couldn't join " + gJoining + ": check the password", false);
+}
+
 // Web logins wait here for the worker to finish the Login command.
 std::mutex loginMu;
 std::condition_variable loginCv;
@@ -561,6 +605,11 @@ class Worker {
       case CmdType::SetupAp:
         wifimgr::setSetupAp(c.n != 0);
         return;
+      case CmdType::WifiScan:
+      case CmdType::WifiJoin:
+      case CmdType::WifiForget:
+        wifiCommand(c);
+        return;
       case CmdType::Logout:
         closeRoom();
         feed_.signOut();
@@ -665,6 +714,7 @@ class Worker {
 
   void tick() {
     wifimgr::reconnectWithBackoff();
+    pollJoin();
     int64_t now = mono();
 
     if (!online()) {

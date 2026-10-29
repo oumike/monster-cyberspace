@@ -25,6 +25,7 @@ ComposerScreen composer;
 SettingsScreen settingsScreen;
 ComingSoonScreen comingSoon;
 LoginFormScreen loginForm;
+WifiScreen wifiScreen;
 
 Id cur = Id::Splash;
 Screen* active = &splash;
@@ -44,6 +45,7 @@ Screen* lookup(Id id) {
     case Id::Watched: return &watched;
     case Id::Bookmarks: return &bookmarks;
     case Id::Settings: return &settingsScreen;
+    case Id::Wifi: return &wifiScreen;
     case Id::Entry: return &entry;
     case Id::Composer: return &composer;
   }

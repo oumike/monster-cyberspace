@@ -1,6 +1,7 @@
 #pragma once
 
 #include "input/type_filter.h"
+#include "net/wifi_list.h"
 #include "screens/backup_picker.h"
 #include "screens/button_pad.h"
 #include "screens/router.h"
@@ -31,6 +32,7 @@ class SetupScreen : public Screen {
   void closeOverlays() override { picker_.close(); }
 
  private:
+  void activate(int item);
   ListView menu_;
   BackupPicker picker_;
   bool hasRestore_ = false;  // the SD list held backups on enter
@@ -103,6 +105,49 @@ class SettingsScreen : public Screen {
   bool picking_ = false;  // the time zone list is open
   ButtonPad pad_;         // touch-only boards: the menu as buttons
   bool buttons_ = false;
+};
+
+// Wi-Fi on the device: scan, join (with a password, or a name typed for a
+// hidden network), and Connect / New password / Forget on saved ones. Its
+// arg "setup" comes from the setup screen, which Back and a join return to.
+class WifiScreen : public Screen {
+ public:
+  void enter(const std::string& arg) override;
+  void leave() override;
+  void onKey(const KeyEvent&) override;
+  void onEvent(const Event&) override;
+  void render(Grid&, const Theme&, int64_t nowMs) override;
+  bool hasOverlay() const override { return menu_.isOpen() || typing(); }
+  void closeOverlays() override;
+  bool acceptsText() const override { return typing(); }
+  bool consumesBackspace() const override { return typing() && !input_.text().empty(); }
+  bool compactText() const override { return ButtonPad::active(); }
+
+ private:
+  enum class Mode { List, Name, Password, Joining };
+  bool typing() const { return mode_ == Mode::Name || mode_ == Mode::Password; }
+  void scan();
+  void pick(int index);
+  void menuKey(const KeyEvent&);
+  void entryKey(const KeyEvent&);
+  void startEntry(Mode m, const std::string& ssid);
+  // password null: join with the saved one.
+  void join(const std::string& ssid, const std::string* password);
+  void setNote(const std::string& text, bool error);
+
+  Mode mode_ = Mode::List;
+  ListView list_;
+  ButtonPad pad_;
+  bool buttons_ = false;
+  Overlay menu_;
+  InputLine input_;
+  std::string ssid_;  // the network being joined or edited
+  std::vector<WifiScanEntry> scan_;
+  std::vector<WifiRow> rows_;
+  bool scanning_ = false, fromSetup_ = false;
+  bool added_ = false;  // the join saved a network that wasn't saved before
+  std::string note_;
+  bool noteError_ = false;
 };
 
 class RoomListScreen : public Screen {

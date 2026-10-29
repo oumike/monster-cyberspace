@@ -26,8 +26,29 @@ M9's.
    password. The device signs in, keeps only a refresh token, and discards the
    password.
 
-If you can't use the web page, the setup screen also has **Log in on this device**,
-which takes your email and password on the M9 keyboard.
+If you can't use the web page, the setup screen also has **Join Wi-Fi on this
+device** (see Wi-Fi on the device below) and **Log in on this device**, which
+takes your email and password on the keyboard or the on-screen keyboard. A
+network joined there takes you back to the setup screen, and the setup AP goes
+down once nobody is joined to it.
+
+## Wi-Fi on the device
+
+**Home** → **Settings** → **Wi-Fi** (or **Join Wi-Fi on this device** during
+setup) scans and lists the networks in range, strongest first, with signal
+bars. The connected one comes first, and saved networks out of range are
+listed as `away`. Below them are **Other network…**, for a hidden network you
+name yourself, and **Scan again**.
+
+- A new network asks for its password (an open one joins at once). Leave the
+  password empty for an open hidden network. The password is shown as you
+  type.
+- The device tries it at once, for up to 12 seconds, and says whether it
+  joined. A new network that fails isn't kept. If it fails, the device goes
+  back to the other saved networks.
+- A saved network offers **Connect**, **New password** and **Forget**.
+- Up to 5 networks are saved, as in web config: with 5 saved, forget one
+  before adding another.
 
 ## Buttons
 
@@ -510,6 +531,8 @@ touch board and two more on a board with an SD card slot:
   the screen is on. Off by default, except on the M9, where it is High and its
   keyboard lights the keys itself after a press; Off there switches that light
   off until the M9 is power cycled.
+- **Wi-Fi: …** Shows the joined network and opens Wi-Fi on the device (see
+  above).
 - **Turn setup AP on / off.** Brings up the setup AP (its name, password state
   and `http://192.168.4.1` are shown) while staying on your Wi-Fi, so you can
   reach web config when your network is unreachable. It stays on until you

@@ -19,6 +19,7 @@
 #include "config/backup_yaml.h"
 #include "core_version.h"
 #include "hal/board.h"
+#include "net/wifi_list.h"
 #include "net/wifi_mgr.h"
 #include "store/backup_store.h"
 #include "store/settings.h"
@@ -212,21 +213,16 @@ esp_err_t postWifi(httpd_req_t* req) {
   std::string ssid = doc["ssid"] | "";
   std::string pass = doc["password"] | "";
   wipe(body);
-  if (ssid.empty() || ssid.size() > 32) return fail(req, "400 Bad Request", "Network name: 1-32 characters");
-  if (pass.size() > 63 || (!pass.empty() && pass.size() < 8)) {
+  if (!rc::validWifiSsid(ssid)) return fail(req, "400 Bad Request", "Network name: 1-32 characters");
+  if (!rc::validWifiPassword(pass)) {
     wipe(pass);
     return fail(req, "400 Bad Request", "Wi-Fi password: 8-63 characters, or empty for an open network");
   }
   Settings s = current();
-  auto it = std::find_if(s.wifi.begin(), s.wifi.end(),
-                         [&](const rc::WifiNet& w) { return w.ssid == ssid; });
-  if (it != s.wifi.end()) {
-    it->password = pass;
-  } else if (s.wifi.size() >= rc::kMaxWifiNets) {
+  if (rc::saveWifiNet(s.wifi, ssid, pass) == rc::WifiSave::Full) {
     wipe(pass);
+    for (auto& w : s.wifi) wipe(w.password);
     return fail(req, "400 Bad Request", "Five networks saved already: remove one first");
-  } else {
-    s.wifi.push_back(rc::WifiNet{ssid, pass});
   }
   wipe(pass);
   settings::saveWifi(s.wifi);

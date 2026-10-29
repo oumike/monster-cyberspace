@@ -270,6 +270,14 @@ void handleEvent(const Event& e) {
     case EvtType::Banner:
       banner(e.text, !e.ok);
       break;
+    case EvtType::WifiState:
+      // The network task saved or forgot a network; the screens list cfg.wifi.
+      if (e.code >= 0) {
+        Settings s;
+        settings::load(s);
+        app().cfg.wifi = std::move(s.wifi);
+      }
+      break;
     case EvtType::MentionAlert:
       ++app().unreadMentions;
       if (app().cfg.buzzer) board::beep(2000, 80);

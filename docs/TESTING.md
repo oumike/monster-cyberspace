@@ -22,6 +22,19 @@ These were built without flashing and still need a run on the device. The
 scripted fake-API builds (`m9_fake`, `wio_l2_fake`, `tdeck_fake`) were removed
 on 2026-10-27; the sections marked `m9_fake` passed on it before then.
 
+**Wi-Fi on the device (any board):**
+
+- [ ] Settings → Wi-Fi lists the networks in range with bars, the joined one
+  first; Scan again refreshes it.
+- [ ] A new network with the right password joins and is saved; with a wrong
+  one it fails after about 12 s, isn't kept, and the old network comes back.
+- [ ] Other network… joins a hidden network by name.
+- [ ] A saved network's Connect, New password and Forget work; forgetting the
+  last one brings the setup AP up.
+- [ ] After a factory reset, Join Wi-Fi on this device joins, returns to the
+  setup screen, and the setup AP goes down.
+- [ ] With 5 saved, a sixth is refused.
+
 **Keyboard light (`m9`, `tdeck`, `tdeck_pro`, `pager`):**
 
 - [ ] Settings → Keyboard light: Low, Medium and High are visibly different

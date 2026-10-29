@@ -53,6 +53,7 @@ enum class Id {
   Watched,
   Bookmarks,
   Settings,
+  Wifi,
 };
 
 void go(Id id, const std::string& arg = "");

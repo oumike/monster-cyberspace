@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 
+#include "net/wifi_list.h"
 #include "store/settings.h"
 
 namespace wifimgr {
@@ -29,6 +30,14 @@ bool apHasPassword();
 void setSetupAp(bool on);
 // Blocking scan (a few seconds): unique SSIDs, strongest first.
 std::vector<std::string> scan();
+// The same scan with signal and security, for the device's Wi-Fi screen.
+std::vector<rc::WifiScanEntry> scanDetailed();
+// From the network task: the saved networks changed on the device. A
+// non-empty joinNow is tried at once; its outcome comes from takeJoinResult.
+// A network no longer saved is left; with none left the setup AP comes up.
+void setNetworks(const std::vector<rc::WifiNet>& nets, const std::string& joinNow);
+// 1 the joinNow network connected, -1 it failed, 0 nothing new. Read once.
+int takeJoinResult();
 // Call often. Runs the AP fallback, and tries the saved networks in order,
 // backing off 1, 2, 4 … 60 s after each full pass that fails.
 void reconnectWithBackoff();

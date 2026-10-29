@@ -20,6 +20,9 @@ enum class CmdType {
   Login,           // a = email, b = password (zeroed after use)
   Logout,
   SetupAp,         // n = 1 on, 0 off
+  WifiScan,        // answered by WifiScanned
+  WifiJoin,        // a = SSID; n = 1: b = password to save (zeroed after use), 0: the saved one
+  WifiForget,      // a = SSID
   ResendVerification,
   ScreenOff,
   ScreenOn,
@@ -81,6 +84,11 @@ enum class EvtType {
   FeedWriteDone,        // a reply's result: ok; text = error message when !ok
   EntryPosted,          // text = postId; !ok: text = error (the entry wasn't posted)
   FeedAlert,            // text = banner; code = 1 to beep
+  // The device's Wi-Fi screen.
+  WifiScanned,          // text = rc::encodeWifiScan
+  // code 0 joining (text = SSID), 1 joined (text = SSID), 2 forgotten
+  // (text = SSID); -1 failed, -2 refused: ok=false, text = the message.
+  WifiState,
 };
 
 struct Event {

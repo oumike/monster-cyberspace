@@ -33,6 +33,9 @@ bool gWasConnected = false;  // connected at the last reconnectWithBackoff()
 uint32_t gAttemptStart = 0;
 uint32_t gBackoffMs = 1000;
 uint32_t gWaitUntil = 0;   // millis() before which no new pass starts
+bool gBootSetup = false;   // setup mode because nothing was saved
+std::string gWatch;        // the network the device asked to join now
+int gJoinResult = 0;
 
 void startMdns() {
   if (gMdns) return;
@@ -89,6 +92,7 @@ void begin(const rc::Settings& s) {
   gNets.assign(s.wifi.begin(),
                s.wifi.begin() + std::min(s.wifi.size(), rc::kMaxWifiNets));
   gMode = gNets.empty() ? Mode::Setup : Mode::Station;
+  gBootSetup = gNets.empty();
   gApSsid = rc::setupApSsid(board::name());
 
   WiFi.persistent(false);  // settings live in our own NVS namespace
@@ -115,12 +119,7 @@ bool connected() { return WiFi.status() == WL_CONNECTED; }
 
 int rssiBars() {
   if (!connected()) return 0;
-  int r = WiFi.RSSI();
-  if (r >= -55) return 4;
-  if (r >= -65) return 3;
-  if (r >= -75) return 2;
-  if (r >= -85) return 1;
-  return 0;
+  return rc::wifiBarsFor(WiFi.RSSI());
 }
 
 std::string ssid() { return connected() ? std::string(WiFi.SSID().c_str()) : std::string(); }
@@ -139,23 +138,62 @@ void setSetupAp(bool on) {
   gFallback.noteManual(millis(), mode() == Mode::Setup);
 }
 
-std::vector<std::string> scan() {
-  std::vector<std::pair<int, std::string>> found;
+std::vector<rc::WifiScanEntry> scanDetailed() {
+  std::vector<rc::WifiScanEntry> found;
   int n = WiFi.scanNetworks(false, false);
   for (int i = 0; i < n; ++i) {
     std::string name = WiFi.SSID(i).c_str();
     if (name.empty()) continue;
-    int rssi = WiFi.RSSI(i);
+    const int rssi = WiFi.RSSI(i);
     auto it = std::find_if(found.begin(), found.end(),
-                           [&](const auto& f) { return f.second == name; });
-    if (it == found.end()) found.emplace_back(rssi, name);
-    else if (rssi > it->first) it->first = rssi;
+                           [&](const rc::WifiScanEntry& f) { return f.ssid == name; });
+    if (it == found.end())
+      found.push_back(rc::WifiScanEntry{name, rssi, WiFi.encryptionType(i) != WIFI_AUTH_OPEN});
+    else if (rssi > it->rssi) it->rssi = rssi;
   }
   WiFi.scanDelete();
-  std::sort(found.begin(), found.end(), [](const auto& a, const auto& b) { return a.first > b.first; });
+  std::sort(found.begin(), found.end(),
+            [](const rc::WifiScanEntry& a, const rc::WifiScanEntry& b) { return a.rssi > b.rssi; });
+  return found;
+}
+
+std::vector<std::string> scan() {
   std::vector<std::string> out;
-  for (auto& f : found) out.push_back(std::move(f.second));
+  for (auto& f : scanDetailed()) out.push_back(std::move(f.ssid));
   return out;
+}
+
+void setNetworks(const std::vector<rc::WifiNet>& nets, const std::string& joinNow) {
+  const std::string current = ssid();
+  gNets.assign(nets.begin(), nets.begin() + std::min(nets.size(), rc::kMaxWifiNets));
+  gTrying = false;
+  gNext = 0;
+  gBackoffMs = 1000;
+  gWaitUntil = millis();
+  if (gNets.empty()) {
+    gWatch.clear();
+    WiFi.disconnect(false, false);
+    apOn();
+    gBootSetup = true;
+    return;
+  }
+  if (!joinNow.empty()) {
+    for (size_t i = 0; i < gNets.size(); ++i)
+      if (gNets[i].ssid == joinNow) gNext = i;
+    gWatch = joinNow;
+    gJoinResult = 0;
+    tryNext();
+    return;
+  }
+  const bool kept = std::any_of(gNets.begin(), gNets.end(),
+                                [&](const rc::WifiNet& n) { return n.ssid == current; });
+  if (!current.empty() && !kept) WiFi.disconnect(false, false);
+}
+
+int takeJoinResult() {
+  const int r = gJoinResult;
+  gJoinResult = 0;
+  return r;
 }
 
 void reconnectWithBackoff() {
@@ -179,6 +217,13 @@ void reconnectWithBackoff() {
     rc::timesvc::restartNtp();
   }
   gWasConnected = up;
+  if (up && !gWatch.empty() && ssid() == gWatch) {
+    gWatch.clear();
+    gJoinResult = 1;
+    // The AP was only up because nothing was saved: it has done its job.
+    if (gBootSetup && gMode == Mode::Setup && WiFi.softAPgetStationNum() == 0) apOff();
+    gBootSetup = false;
+  }
   if (up) {
     gTrying = false;
     gBackoffMs = 1000;
@@ -190,6 +235,10 @@ void reconnectWithBackoff() {
   if (gTrying) {
     if (now - gAttemptStart < kAttemptMs) return;
     gTrying = false;
+    if (!gWatch.empty() && gNets[gNext].ssid == gWatch) {
+      gWatch.clear();
+      gJoinResult = -1;
+    }
     if (++gNext < gNets.size()) {
       tryNext();
       return;

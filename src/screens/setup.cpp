@@ -13,7 +13,8 @@
 namespace rc {
 
 void SetupScreen::enter(const std::string&) {
-  std::vector<ListItem> items{ListItem{U"Log in on this device", U""}};
+  std::vector<ListItem> items{ListItem{U"Join Wi-Fi on this device", U""},
+                              ListItem{U"Log in on this device", U""}};
   hasRestore_ = false;
   if (board::hasSdSlot()) {
     std::vector<backupstore::FileInfo> files;
@@ -29,13 +30,18 @@ void SetupScreen::enter(const std::string&) {
   pad_.reset();
 }
 
+void SetupScreen::activate(int i) {
+  if (i == 0) router::go(router::Id::Wifi, "setup");
+  else if (i == 1) router::go(router::Id::LoginForm);
+  else if (i == 2 && hasRestore_) picker_.open();
+}
+
 void SetupScreen::onKey(const KeyEvent& k) {
   if (picker_.isOpen()) return picker_.onKey(k);
   if (buttons_) {
     const int i = pad_.key(k);
     if (i < 0) return;
-    if (hasRestore_ && i == 1) picker_.open();
-    else if (i == 0) router::go(router::Id::LoginForm);
+    activate(i);
     return;
   }
   switch (k.action) {
@@ -50,8 +56,7 @@ void SetupScreen::onKey(const KeyEvent& k) {
       break;
     case Action::Select:
     case Action::Right:
-      if (hasRestore_ && menu_.selected() == 1) picker_.open();
-      else router::go(router::Id::LoginForm);
+      activate(menu_.selected());
       break;
     default:
       break;
@@ -90,7 +95,7 @@ void SetupScreen::render(Grid& g, const Theme& t, int64_t) {
   if (buttons_) {
     // Side by side where the shorter labels fit, else stacked; drawn last so
     // they stay whole on a short screen.
-    std::vector<ListItem> items{ListItem{U"Log in on device", U""}};
+    std::vector<ListItem> items{ListItem{U"Join Wi-Fi", U""}, ListItem{U"Log in on device", U""}};
     if (hasRestore_) items.push_back(ListItem{U"Restore from SD", U""});
     int columns = n;
     while (columns > 1 && (g.cols() - 1) / columns - 3 < 16) --columns;

@@ -591,9 +591,10 @@ void test_resolve_hold_to_act() {
   TouchOutput out;
   r.resolve(mkG(GestureKind::Tap, 2, 6), m, out);  // a scrolling list: taps do nothing
   TEST_ASSERT_EQUAL(0u, out.keys.size());
-  r.resolve(mkG(GestureKind::LongPress, 2, 6), m, out);
-  TEST_ASSERT_EQUAL(0u, out.keys.size());
+  // A long press (not the later, longer Hold) acts on the row.
   r.resolve(mkG(GestureKind::Hold, 2, 6), m, out);
+  TEST_ASSERT_EQUAL(0u, out.keys.size());
+  r.resolve(mkG(GestureKind::LongPress, 2, 6), m, out);
   TEST_ASSERT_EQUAL(1u, out.keys.size());
   TEST_ASSERT_EQUAL(int(Action::Activate), int(out.keys[0].action));
   TEST_ASSERT_EQUAL(3, out.keys[0].index);

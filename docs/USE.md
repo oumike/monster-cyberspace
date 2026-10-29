@@ -85,11 +85,10 @@ Every screen works by touch. Touch never wakes a dark screen.
 
 - **Tap** a row to open it, or a field to type in it. **Hold** a row (half a
   second) to select it and open the screen's menu, as `⋯` does.
-- **Scrolling views** (room and conversation messages, the Feed list, an
-  entry's replies) on boards with no keys (the Wio Tracker L2 and the
-  CrowPanels): a tap does nothing, so scrolling never acts by accident. Hold
-  an item still for **1 second** to act on it (a message's menu, open an
-  entry).
+- **Scrolling views** (room and conversation messages, an entry and its
+  replies) on boards with no keys (the Wio Tracker L2 and the CrowPanels): a
+  tap does nothing, so scrolling never acts by accident. Hold an item still
+  for **half a second** to open its menu. A tap on a Feed row opens it.
 - **Status bar:** `‹` at the left goes back; holding it goes Home. `⋯` at the
   right opens the screen's menu (the palette in a room, Post/Discard in the
   Composer).

@@ -50,18 +50,8 @@ void TouchResolver::resolve(const Gesture& g, const TapMap& m, TouchOutput& out)
   Target t = m.hit(g.x, g.y);
 
   switch (g.kind) {
-    case GestureKind::Hold: {
-      if (!touchOnly_ || t.kind != TargetKind::Row) return;
-      const ListInfo* li = m.list(t.list);
-      if (!li || !li->holdToAct) return;
-      KeyEvent e;
-      e.action = Action::Activate;
-      e.index = t.index;
-      e.target = (uint8_t)t.list;
-      e.then = Action::Select;
-      out.keys.push_back(e);
+    case GestureKind::Hold:
       return;
-    }
 
     case GestureKind::Tap:
     case GestureKind::LongPress: {
@@ -69,7 +59,17 @@ void TouchResolver::resolve(const Gesture& g, const TapMap& m, TouchOutput& out)
       switch (t.kind) {
         case TargetKind::Row: {
           const ListInfo* li = m.list(t.list);
-          if (touchOnly_ && li && li->holdToAct) break;
+          if (touchOnly_ && li && li->holdToAct) {
+            // Taps scroll safely past; a long press acts on the row.
+            if (!hold) break;
+            KeyEvent e;
+            e.action = Action::Activate;
+            e.index = t.index;
+            e.target = (uint8_t)t.list;
+            e.then = Action::Select;
+            out.keys.push_back(e);
+            break;
+          }
           KeyEvent e;
           e.action = Action::Activate;
           e.index = t.index;

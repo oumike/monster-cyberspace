@@ -472,24 +472,24 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
   constexpr int kStatusRows = 3;
   const int menuRows = std::clamp(bottom - 1 - kStatusRows, std::min(nItems, 4), nItems);
   const int menuTop = bottom - menuRows;
-  // Touch-only boards keep at least one row of buttons (three rows tall)
-  // under the status lines.
-  const int statusEnd = buttons_ ? bottom - 4 : menuTop;
-  {
+  // The status lines from row 1, drawn when draw is set and only above row
+  // `end`: above the menu on key boards, and on touch-only boards as a header
+  // that scrolls with the buttons, `shift` rows already off the top. Returns
+  // the rows they take.
+  // On a narrow grid a value too long for its row continues on the next rows.
+  const bool narrow = narrowGrid(g);
+  const int valueW = g.cols() - 11 - (buttons_ ? 1 : 0);  // clear of the scroll bar
+  auto status = [&](bool draw, int shift, int end) {
     int r = 1;
-    // Status lines stop above the menu.
-    // On a narrow grid a value too long for its row continues on the next rows.
-    const bool narrow = narrowGrid(g);
     auto field = [&](const char* label, const std::string& value, uint16_t fg) {
-      if (r >= statusEnd) return;
-      putLine(g, 1, r, label, t.dim, t.bg);
-      if (!narrow) {
-        putLine(g, 11, r++, value, fg, t.bg);
-        return;
-      }
-      for (const std::u32string& line : wrapText(utf8ToU32(value), g.cols() - 11, g.cols() - 11)) {
-        if (r >= statusEnd) break;
-        g.putText(11, r++, line, fg, t.bg, g.cols() - 11);
+      const std::vector<std::u32string> lines =
+          narrow ? wrapText(utf8ToU32(value), valueW, valueW)
+                 : std::vector<std::u32string>{utf8ToU32(value)};
+      for (size_t i = 0; i < lines.size(); ++i, ++r) {
+        const int row = r - shift;
+        if (!draw || row < 1 || row >= end) continue;
+        if (i == 0) putLine(g, 1, row, label, t.dim, t.bg);
+        g.putText(11, row, lines[i], fg, t.bg, valueW);
       }
     };
     field("account", a.user.empty() ? "not signed in" : "@" + a.user, t.fg);
@@ -506,15 +506,21 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
     field("gps", ts.gps, t.fg);
     field("time", ts.time, t.fg);
     field("zone", ts.zone, t.fg);
-    if (buttons_) {
-      if (!picking_) pad_.render(g, t, rows, r + 1, bottom, true);
-    } else {
-      for (ListItem& it : rows) {
-        if (!it.right.empty()) it.label += U": " + it.right;
-        it.right.clear();
-      }
-      menu_.setItems(std::move(rows));
+    return r - 1;
+  };
+  if (buttons_) {
+    if (!picking_) {
+      const int header = status(false, 0, 0) + 1;  // and a blank row
+      pad_.render(g, t, rows, 1, bottom, true, 0, header);
+      status(true, pad_.headerShift(), bottom);
     }
+  } else {
+    status(true, 0, menuTop);
+    for (ListItem& it : rows) {
+      if (!it.right.empty()) it.label += U": " + it.right;
+      it.right.clear();
+    }
+    menu_.setItems(std::move(rows));
   }
 
   if (picking_) {

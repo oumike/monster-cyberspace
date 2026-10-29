@@ -17,12 +17,22 @@ int ButtonPad::key(const KeyEvent& k) {
   const int kPitch = height_ + 1;
   switch (k.action) {
     case Action::Up:
+      if (scroll_ == 0 && shift_ > 0) {
+        --shift_;
+        dragSteps_ = 0;
+        break;
+      }
       if (--(dragSteps_ = std::min(dragSteps_, 0)) <= -kPitch) {
         dragSteps_ = 0;
         --scroll_;  // clamped in render
       }
       break;
     case Action::Down:
+      if (shift_ < header_) {
+        ++shift_;  // clamped in render
+        dragSteps_ = 0;
+        break;
+      }
       if (++(dragSteps_ = std::max(dragSteps_, 0)) >= kPitch) {
         dragSteps_ = 0;
         ++scroll_;
@@ -38,13 +48,24 @@ int ButtonPad::key(const KeyEvent& k) {
 }
 
 void ButtonPad::render(Grid& g, const Theme& t, const std::vector<ListItem>& items, int top,
-                       int bottom, bool keepRight, int cols) {
+                       int bottom, bool keepRight, int cols, int header) {
   const int n = int(items.size());
   const bool details =
       std::any_of(items.begin(), items.end(), [](const ListItem& it) { return !it.detail.empty(); });
   height_ = kButtonRows + (details ? 1 : 0);
-  const ButtonGrid b =
-      buttonGrid(g.cols(), top, bottom, n, cols > 0 ? cols : columns(), scroll_, height_);
+  cols = cols > 0 ? cols : columns();
+  // The header scrolls only as far as the buttons need, and fully away
+  // before they scroll.
+  header_ = std::max(0, header);
+  int maxShift = 0;
+  while (maxShift < header_ &&
+         buttonGrid(g.cols(), top + header_ - maxShift, bottom, n, cols, 0, height_).maxScroll > 0)
+    ++maxShift;
+  header_ = maxShift;
+  shift_ = std::min(std::max(0, shift_), maxShift);
+  if (shift_ < maxShift) scroll_ = 0;
+  const int btnTop = top + std::max(0, header) - shift_;
+  const ButtonGrid b = buttonGrid(g.cols(), btnTop, bottom, n, cols, scroll_, height_);
   scroll_ = b.scrollRow;
   if (activeTaps()) activeTaps()->setList(ListId::Main, -1, n, false);
   for (size_t k = 0; k < b.rects.size(); ++k) {
@@ -72,7 +93,13 @@ void ButtonPad::render(Grid& g, const Theme& t, const std::vector<ListItem>& ite
       activeTaps()->addCells(r.c0, r.r0, r.c1, r.r1, tt);
     }
   }
-  drawScrollBar(g, g.cols() - 1, top, bottom, b.totalRows, b.visibleRows, b.scrollRow, t, t.bg);
+  if (header > 0) {
+    const int pitch = height_ + 1;
+    drawScrollBar(g, g.cols() - 1, top, bottom, header + b.totalRows * pitch, bottom - top,
+                  shift_ + b.scrollRow * pitch, t, t.bg);
+  } else {
+    drawScrollBar(g, g.cols() - 1, top, bottom, b.totalRows, b.visibleRows, b.scrollRow, t, t.bg);
+  }
 }
 
 }  // namespace rc

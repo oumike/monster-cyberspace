@@ -21,18 +21,25 @@ class ButtonPad {
   static bool active();
   static int columns();
 
-  void reset() { scroll_ = dragSteps_ = 0; }
+  void reset() { scroll_ = dragSteps_ = shift_ = 0; }
   // Up/Down scroll. A tap on a button returns its index; anything else -1.
   int key(const KeyEvent& k);
   // Over grid rows [top, bottom). keepRight shortens the label rather than
-  // dropping `right` when both don't fit. columns 0: columns().
+  // dropping `right` when both don't fit. columns 0: columns(). header:
+  // rows the caller draws above the buttons, from `top`; they scroll away a
+  // row per drag step before the buttons scroll.
   void render(Grid& g, const Theme& t, const std::vector<ListItem>& items, int top, int bottom,
-              bool keepRight, int columns = 0);
+              bool keepRight, int columns = 0, int header = 0);
+  // Header rows scrolled off the top: the caller draws header row i at
+  // top + i - headerShift(), when that is at or below top.
+  int headerShift() const { return shift_; }
 
  private:
   int height_ = kButtonRows;
   int scroll_ = 0;
   int dragSteps_ = 0;
+  int shift_ = 0;
+  int header_ = 0;
 };
 
 }  // namespace rc

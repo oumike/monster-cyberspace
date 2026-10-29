@@ -100,6 +100,9 @@ SymbolTable::Out SymbolTable::key(const KeyEvent& k) {
 
 void SymbolTable::render(Grid& g, int bottom, const Theme& t) const {
   if (!open_) return;
+  // Below the status bar, so its title never lands on the status bar's row.
+  constexpr int kAreaTop = 1;
+  const int avail = bottom - kAreaTop;
   const bool emojiSet = set_ == Set::Emoji;
   const int n = static_cast<int>(items().size());
   const int extra = commands_.empty() ? 0 : 1;
@@ -119,7 +122,7 @@ void SymbolTable::render(Grid& g, int bottom, const Theme& t) const {
     const int bigMax = std::min(n, (g.cols() - 1) / (kTrayBigCols + 1));
     for (int pass = 0; pass < 2 && !big_; ++pass)
       for (int c = kEmojiCols; c <= bigMax && !big_; ++c)
-        if (height(kTrayBigRows, c, pass == 0) <= bottom) {
+        if (height(kTrayBigRows, c, pass == 0) <= avail) {
           big_ = true;
           emojiCols_ = c;
           gaps = pass == 0;
@@ -130,9 +133,9 @@ void SymbolTable::render(Grid& g, int bottom, const Theme& t) const {
     } else {
       const int maxCols = std::max(kEmojiCols, std::min(n, (g.cols() - 1) / 3));
       int c = kEmojiCols;
-      while (c < maxCols && height(1, c, true) > bottom) ++c;
+      while (c < maxCols && height(1, c, true) > avail) ++c;
       emojiCols_ = c;
-      gaps = height(1, c, true) <= bottom;
+      gaps = height(1, c, true) <= avail;
     }
   }
   const int kc = cols();
@@ -142,7 +145,7 @@ void SymbolTable::render(Grid& g, int bottom, const Theme& t) const {
   const int rowStep = eh + (gaps ? 1 : 0);
   const int h = emojiSet ? height(eh, kc, gaps) : 1 + rows + extra;
   const int left = std::max(0, (g.cols() - width) / 2);
-  const int top = std::max(0, (bottom - h) / 2);
+  const int top = h <= avail ? kAreaTop + (avail - h) / 2 : std::max(0, (bottom - h) / 2);
   auto cellTap = [&](int c0, int r0, int c1, int r1, int i) {
     if (!activeTaps()) return;
     Target tt;

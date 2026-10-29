@@ -1337,13 +1337,14 @@ void test_emoji_tray_spaced_out() {
   m.fill(T().bg);
   s.open(U"", SymbolTable::Set::Emoji);
   s.render(m, m.rows() - 1, T());
-  TEST_ASSERT_EQUAL(8, s.cols());
+  TEST_ASSERT_EQUAL(10, s.cols());  // rows 1..11, below the status bar
   int mc = -1, mr = -1;
   for (int r = 0; r < m.rows() && mc < 0; ++r)
     for (int c = 0; c < m.cols(); ++c)
       if (m.at(c, r).cp == SymbolTable::emoji()[0]) { mc = c; mr = r; break; }
   TEST_ASSERT_EQUAL(int(U' '), int(m.at(mc, mr + 1).cp));
-  TEST_ASSERT_EQUAL(int(SymbolTable::emoji()[8]), int(m.at(mc, mr + 2).cp));
+  TEST_ASSERT_EQUAL(int(SymbolTable::emoji()[10]), int(m.at(mc, mr + 2).cp));
+  TEST_ASSERT_TRUE(mr >= 2);  // the title is on row 1 or below
   // Too short even then: the rows close up instead of clipping.
   Grid h(40, 10);
   h.fill(T().bg);

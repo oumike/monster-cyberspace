@@ -236,7 +236,8 @@ Touch above, but with no buttons:
   do nothing else), so brushing the panel doesn't.
 - **Orientation:** pick it in Settings or web config, as on the Wio Tracker L2.
 - **No cursor:** as on the Wio Tracker L2, lists and Home tiles draw no
-  selection outline; a tap opens what's under the finger.
+  selection outline; a tap opens what's under the finger. A long press that
+  opens a menu outlines the message or entry it's for, until the menu closes.
 - **Rooms:** on the Wio Tracker L2 and the CrowPanels the room list is a
   grid of small buttons, three across on a screen at least 800 px wide (the
   5.0" in landscape) and two across otherwise, each with the room's name and

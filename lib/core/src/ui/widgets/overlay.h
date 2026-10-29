@@ -32,7 +32,13 @@ class Overlay {
   // A menu that confirmButtons() draws as buttons, two a row at the bottom
   // under its title (when they fit); otherwise the usual list box.
   void openButtons(std::u32string title, std::vector<ListItem> items);
-  void close() { open_ = false; }
+  Overlay() = default;
+  Overlay(const Overlay&) = delete;
+  Overlay& operator=(const Overlay&) = delete;
+  ~Overlay() { close(); }
+  void close();
+  // True while any Overlay is open.
+  static bool anyOpen();
   // Touch-only boards: confirms and button menus are buttons. Off by default.
   static void setConfirmButtons(bool on);
   static bool confirmButtons();

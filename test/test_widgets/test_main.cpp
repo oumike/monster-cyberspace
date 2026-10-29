@@ -571,6 +571,24 @@ void test_overlay_back_and_left_close() {
   TEST_ASSERT_FALSE(o.isOpen());
 }
 
+void test_overlay_any_open_tracks_every_box() {
+  TEST_ASSERT_FALSE(Overlay::anyOpen());
+  Overlay a, b;
+  a.open(U"Menu", {ListItem{U"Reply", U""}});
+  b.confirm(U"Report?", U"Report");
+  b.confirm(U"Report?", U"Report");  // reopening counts once
+  a.key(overlayKe(Action::Select));
+  TEST_ASSERT_TRUE(Overlay::anyOpen());
+  b.key(overlayKe(Action::Back));
+  TEST_ASSERT_FALSE(Overlay::anyOpen());
+  {
+    Overlay c;
+    c.open(U"Menu", {ListItem{U"Reply", U""}});
+    TEST_ASSERT_TRUE(Overlay::anyOpen());
+  }
+  TEST_ASSERT_FALSE(Overlay::anyOpen());
+}
+
 void test_overlay_activate_picks() {
   Overlay o;
   o.open(U"menu", {ListItem{U"a", U""}, ListItem{U"b", U""}, ListItem{U"c", U""}});
@@ -1561,6 +1579,7 @@ int main() {
   RUN_TEST(test_text_area_up_down);
   RUN_TEST(test_overlay_confirm_defaults_cancel_and_wraps);
   RUN_TEST(test_overlay_back_and_left_close);
+  RUN_TEST(test_overlay_any_open_tracks_every_box);
   RUN_TEST(test_overlay_activate_picks);
   RUN_TEST(test_overlay_activate_out_of_range);
   RUN_TEST(test_overlay_render_bottom_right);

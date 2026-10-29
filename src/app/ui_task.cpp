@@ -52,6 +52,10 @@ Gestures gestures;
 DoubleTap doubleTap;  // wakes boards with doubleTapWakes
 // Set by a touch that woke the screen: that finger is ignored until it lifts.
 bool touchSwallow = false;
+// Touch-only boards show no cursor, except on what a long press opened a
+// menu for, until that menu (and any it leads to) closes.
+bool baseCursor = false;
+bool pressMenu = false;
 // The last Backspace that deleted text (backspaceIsBack boards).
 uint32_t lastDeleteMs = 0;
 bool deletedOnce = false;
@@ -423,8 +427,11 @@ void taskMain(void*) {
         TouchOutput out;
         resolver.resolve(g, taps, out);
         if (out.hideBanner) topBanner.hide();
+        const bool menuBefore = Overlay::anyOpen();
         for (const KeyEvent& k : out.keys) {
           handleKey(k);
+          if (g.kind == GestureKind::LongPress && !menuBefore && Overlay::anyOpen())
+            pressMenu = true;
           if (k.action == Action::Focus && power == Power::On && !board::hasKeyboard() &&
               router::screen().acceptsText())
             showOsk(true);
@@ -481,6 +488,8 @@ void taskMain(void*) {
     }
     if (wantedSize() != gridSize) needResize = true;
     if (needResize) resizeGrid();
+    if (!Overlay::anyOpen() || router::current() != beforeScreen) pressMenu = false;
+    setCursorShown(baseCursor || pressMenu);
     const Theme& t = currentTheme();
     if (power == Power::On) {
       taps.clear();
@@ -515,7 +524,8 @@ void start() {
   if (board::canRotate()) board::setRotation(app().cfg.rotation);
   if (!renderer.begin()) Serial.println("[ui] no memory for the frame buffer");
   setActiveTaps(board::hasTouch() ? &taps : nullptr);
-  setCursorShown(board::hasKeys() || board::sideNav());
+  baseCursor = board::hasKeys() || board::sideNav();
+  setCursorShown(baseCursor);
   resolver.setTouchOnly(!board::hasKeys());
   Overlay::setConfirmButtons(board::hasTouch() && !board::hasKeys());
   resizeGrid();

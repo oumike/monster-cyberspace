@@ -292,6 +292,10 @@ Buttons: BOOT tap = Back, BOOT hold (0.6 s) = Home; Wake tap = screen off
 
 - [ ] With the screen locked or off, one tap does nothing; two taps within half a second wake it, and neither tap acts on the screen
 
+**Long-press outline (`wio_l2`, `crowpanel35`, `crowpanel50`):**
+
+- [ ] A long press on a room message or a Feed entry outlines it while its menu is open; picking an action or closing the menu removes the outline
+
 **Touch emoji button (`wio_l2`, `tdeck`, `crowpanel35`, `crowpanel50`):**
 
 - [ ] The room, conversation and Feed reply inputs show an emoji button left of the prompt; tapping it opens the emoji tray

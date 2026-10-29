@@ -12,7 +12,15 @@ namespace rc {
 
 namespace {
 bool gConfirmButtons = false;
+int gOpenCount = 0;
 }  // namespace
+
+bool Overlay::anyOpen() { return gOpenCount > 0; }
+
+void Overlay::close() {
+  if (open_) --gOpenCount;
+  open_ = false;
+}
 
 void Overlay::setConfirmButtons(bool on) { gConfirmButtons = on; }
 bool Overlay::confirmButtons() { return gConfirmButtons; }
@@ -23,6 +31,7 @@ void Overlay::open(std::u32string title, std::vector<ListItem> items, int select
   list_.setListId(ListId::Menu);
   list_.setItems(std::move(items));
   list_.setSelected(selected);
+  if (!open_) ++gOpenCount;
   open_ = true;
 }
 

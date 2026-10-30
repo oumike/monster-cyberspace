@@ -551,8 +551,15 @@ class Worker {
     if (c.type == CmdType::OpenFeed || c.type == CmdType::FeedMore ||
         c.type == CmdType::FeedRefresh)
       post(EvtType::FeedUpdated);
-    if (c.type == CmdType::OpenWatched || c.type == CmdType::OpenBookmarks)
+    if (c.type == CmdType::OpenWatched || c.type == CmdType::OpenBookmarks ||
+        c.type == CmdType::OpenGuild || c.type == CmdType::GuildThreadsMore)
       post(EvtType::SideListUpdated, 0, "", false);
+    if (c.type == CmdType::OpenGuilds) post(EvtType::GuildsUpdated, 0, "", false);
+    if (c.type == CmdType::OpenMembers) post(EvtType::MembersUpdated, 0, "", false);
+    if (c.type == CmdType::PostGuildThread) post(EvtType::EntryPosted, 0, why, false);
+    if (c.type == CmdType::JoinGuild || c.type == CmdType::LeaveGuild ||
+        c.type == CmdType::PromoteGuild)
+      post(EvtType::GuildWriteDone, 0, why, false);
     return false;
   }
 

@@ -222,12 +222,12 @@
   - `FeedState` gains `GuildStore guilds;`.
   - Thread pages go to `s.store.setSideList(entries, next, append)` and post `SideListUpdated`.
 
-- [ ] **Step 1: Add the enums and `FeedState.guilds`.**
-- [ ] **Step 2: FeedWorker handlers.** Add each command to `isFeedCommand` and `handle`. `OpenGuilds`: `myGuilds` when `!mineLoaded()` or `n==0`, then `fetchList(20, …guilds…)`; `setBrowse(page, next, n==0)`; post `GuildsUpdated`. `OpenGuild`: `guild(slug)` → 404 posts `GuildUpdated` code 404 ok=false and banner "Guild not found"; else `openGuild`, post `GuildUpdated`, then the first thread page (`fetchList(kSideLimit, …)`). `CloseGuild` → `closeGuild()`. Writes: `PostGuildThread` posts `EntryPosted` like `postEntry`; Join/Leave/Promote map errors (409 → `e.message`, 403 → "Manage this on the web", 404 → "Guild not found", else `errorText`), post `GuildWriteDone`; on success re-read `myGuilds` and the open guild, then post `GuildsUpdated` and `GuildUpdated`. `signOut()` also clears `s.guilds`.
-- [ ] **Step 3: Notices.** In `onNotice`, `guild_new_thread` uses `guildNoticeText(m.actorUsername, m.guildName, preview)`; the rest is unchanged.
-- [ ] **Step 4: Settle offline/busy.** `needNet` and `refuseCommand`: `OpenGuilds` → `GuildsUpdated` ok=false; `OpenGuild`/`GuildThreadsMore` → `SideListUpdated` ok=false; `OpenMembers` → `MembersUpdated` ok=false; `PostGuildThread` → `EntryPosted` ok=false with the reason; Join/Leave/Promote → `GuildWriteDone` ok=false with the reason.
-- [ ] **Step 5: Build** `pio run -e m9` — SUCCESS.
-- [ ] **Step 6: Commit** `Guilds: worker commands and alerts`.
+- [x] **Step 1: Add the enums and `FeedState.guilds`.**
+- [x] **Step 2: FeedWorker handlers.** Add each command to `isFeedCommand` and `handle`. `OpenGuilds`: `myGuilds` when `!mineLoaded()` or `n==0`, then `fetchList(20, …guilds…)`; `setBrowse(page, next, n==0)`; post `GuildsUpdated`. `OpenGuild`: `guild(slug)` → 404 posts `GuildUpdated` code 404 ok=false and banner "Guild not found"; else `openGuild`, post `GuildUpdated`, then the first thread page (`fetchList(kSideLimit, …)`). `CloseGuild` → `closeGuild()`. Writes: `PostGuildThread` posts `EntryPosted` like `postEntry`; Join/Leave/Promote map errors (409 → `e.message`, 403 → "Manage this on the web", 404 → "Guild not found", else `errorText`), post `GuildWriteDone`; on success re-read `myGuilds` and the open guild, then post `GuildsUpdated` and `GuildUpdated`. `signOut()` also clears `s.guilds`.
+- [x] **Step 3: Notices.** In `onNotice`, `guild_new_thread` uses `guildNoticeText(m.actorUsername, m.guildName, preview)`; the rest is unchanged.
+- [x] **Step 4: Settle offline/busy.** `needNet` and `refuseCommand`: `OpenGuilds` → `GuildsUpdated` ok=false; `OpenGuild`/`GuildThreadsMore` → `SideListUpdated` ok=false; `OpenMembers` → `MembersUpdated` ok=false; `PostGuildThread` → `EntryPosted` ok=false with the reason; Join/Leave/Promote → `GuildWriteDone` ok=false with the reason.
+- [x] **Step 5: Build** `pio run -e m9` — SUCCESS.
+- [x] **Step 6: Commit** `Guilds: worker commands and alerts`.
 
 ### Task 7: Demo fake source
 

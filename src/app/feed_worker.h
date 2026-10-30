@@ -48,6 +48,13 @@ class FeedWorker {
   // replyIds: parallel to postIds (Bookmarks only), the bookmarked reply or "".
   bool resolveSide(const std::vector<std::string>& postIds, const std::string& next, bool append,
                    const std::vector<std::string>& replyIds = {});
+  void openGuilds(bool append);
+  void openGuild(const std::string& slug);
+  void guildThreadsMore(const std::string& slug);
+  void openMembers(const std::string& slug, bool append);
+  void postGuildThread(const Command& c);
+  void guildMembership(const Command& c);
+  void refreshGuildState();
   void setLoading(bool on);
   std::string openPostId();
 

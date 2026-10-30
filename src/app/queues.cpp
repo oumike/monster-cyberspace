@@ -58,8 +58,24 @@ void refuseCommand(const Command& c) {
       break;
     case CmdType::OpenWatched:
     case CmdType::OpenBookmarks:
+    case CmdType::OpenGuild:
+    case CmdType::GuildThreadsMore:
       postEvent(Event{EvtType::SideListUpdated, "", 0, false});
       break;
+    case CmdType::OpenGuilds:
+      postEvent(Event{EvtType::GuildsUpdated, "", 0, false});
+      break;
+    case CmdType::OpenMembers:
+      postEvent(Event{EvtType::MembersUpdated, "", 0, false});
+      break;
+    case CmdType::PostGuildThread:
+      postEvent(Event{EvtType::EntryPosted, busy, 0, false});
+      return;
+    case CmdType::JoinGuild:
+    case CmdType::LeaveGuild:
+    case CmdType::PromoteGuild:
+      postEvent(Event{EvtType::GuildWriteDone, busy, 0, false});
+      return;
     default:
       break;
   }

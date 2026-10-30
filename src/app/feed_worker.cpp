@@ -9,6 +9,7 @@
 #include "app/queues.h"
 #include "feed/markdown_text.h"
 #include "store/locked_feed.h"
+#include "ui/guild_layout.h"
 
 namespace rc {
 
@@ -84,6 +85,15 @@ bool FeedWorker::isFeedCommand(CmdType t) {
     case CmdType::Unwatch:
     case CmdType::OpenWatched:
     case CmdType::OpenBookmarks:
+    case CmdType::OpenGuilds:
+    case CmdType::OpenGuild:
+    case CmdType::GuildThreadsMore:
+    case CmdType::CloseGuild:
+    case CmdType::OpenMembers:
+    case CmdType::PostGuildThread:
+    case CmdType::JoinGuild:
+    case CmdType::LeaveGuild:
+    case CmdType::PromoteGuild:
       return true;
     default:
       return false;
@@ -113,6 +123,17 @@ void FeedWorker::handle(const Command& c) {
     case CmdType::Unwatch: watch(c, false); break;
     case CmdType::OpenWatched: openWatched(c.n == 1); break;
     case CmdType::OpenBookmarks: openBookmarks(c.n == 1); break;
+    case CmdType::OpenGuilds: openGuilds(c.n == 1); break;
+    case CmdType::OpenGuild: openGuild(c.a); break;
+    case CmdType::GuildThreadsMore: guildThreadsMore(c.a); break;
+    case CmdType::CloseGuild:
+      lockedFeed().with([](FeedState& s) { s.guilds.closeGuild(); });
+      break;
+    case CmdType::OpenMembers: openMembers(c.a, c.n == 1); break;
+    case CmdType::PostGuildThread: postGuildThread(c); break;
+    case CmdType::JoinGuild:
+    case CmdType::LeaveGuild:
+    case CmdType::PromoteGuild: guildMembership(c); break;
     default: break;
   }
 }
@@ -134,6 +155,7 @@ void FeedWorker::signOut() {
   seen_.clear();
   lockedFeed().with([](FeedState& s) {
     s.store.clear();
+    s.guilds.clear();
     s.notices.clear();
     s.loading = false;
   });
@@ -496,6 +518,203 @@ bool FeedWorker::resolveSide(const std::vector<std::string>& postIds, const std:
   return true;
 }
 
+// ---- guilds ----
+
+void FeedWorker::openGuilds(bool append) {
+  std::string cursor;
+  if (append) {
+    cursor = lockedFeed().with([](FeedState& s) { return s.guilds.browseCursor(); });
+    if (cursor.empty()) {
+      post(EvtType::GuildsUpdated);
+      return;
+    }
+  }
+  bool needMine = lockedFeed().with([](FeedState& s) { return !s.guilds.mineLoaded(); });
+  setLoading(true);
+  if (needMine || !append) {
+    std::vector<MyGuild> mine;
+    ApiError me = api_.myGuilds(mine);
+    if (!me.ok()) {
+      setLoading(false);
+      fail(me);
+      post(EvtType::GuildsUpdated, "", 0, false);
+      return;
+    }
+    lockedFeed().with([&](FeedState& s) { s.guilds.setMine(std::move(mine)); });
+  }
+  std::vector<Guild> page;
+  std::string next;
+  ApiError e = fetchList(20, [&](int limit) {
+    page.clear();
+    return api_.guilds(cursor, limit, page, next);
+  });
+  setLoading(false);
+  if (!e.ok()) {
+    fail(e);
+    post(EvtType::GuildsUpdated, "", 0, false);
+    return;
+  }
+  lockedFeed().with([&](FeedState& s) { s.guilds.setBrowse(std::move(page), next, !append); });
+  post(EvtType::GuildsUpdated);
+}
+
+void FeedWorker::openGuild(const std::string& slug) {
+  setLoading(true);
+  Guild g;
+  ApiError e = api_.guild(slug, g);
+  if (!e.ok()) {
+    setLoading(false);
+    banner(e.http == 404 ? "Guild not found" : errorText(e, false));
+    post(EvtType::GuildUpdated, "", e.http == 404 ? 404 : 0, false);
+    return;
+  }
+  bool needMine = lockedFeed().with([](FeedState& s) { return !s.guilds.mineLoaded(); });
+  if (needMine) {
+    std::vector<MyGuild> mine;
+    if (api_.myGuilds(mine).ok())
+      lockedFeed().with([&](FeedState& s) { s.guilds.setMine(std::move(mine)); });
+  }
+  lockedFeed().with([&](FeedState& s) {
+    s.guilds.openGuild(std::move(g));
+    s.store.setSideList({}, "", false);
+  });
+  post(EvtType::GuildUpdated);
+
+  std::vector<Entry> entries;
+  std::string next;
+  e = fetchList(kSideLimit, [&](int limit) {
+    entries.clear();
+    return api_.guildThreads(slug, "", limit, entries, next);
+  });
+  if (!e.ok()) {
+    setLoading(false);
+    fail(e);
+    post(EvtType::SideListUpdated, "", 0, false);
+    return;
+  }
+  lockedFeed().with([&](FeedState& s) {
+    s.store.setSideList(std::move(entries), next, false);
+    s.loading = false;
+  });
+  post(EvtType::SideListUpdated);
+}
+
+void FeedWorker::guildThreadsMore(const std::string& slug) {
+  std::string cursor = lockedFeed().with([](FeedState& s) { return s.store.sideCursor(); });
+  if (cursor.empty()) {
+    post(EvtType::SideListUpdated);
+    return;
+  }
+  std::vector<Entry> entries;
+  std::string next;
+  setLoading(true);
+  ApiError e = fetchList(kSideLimit, [&](int limit) {
+    entries.clear();
+    return api_.guildThreads(slug, cursor, limit, entries, next);
+  });
+  if (!e.ok()) {
+    setLoading(false);
+    fail(e);
+    post(EvtType::SideListUpdated, "", 0, false);
+    return;
+  }
+  lockedFeed().with([&](FeedState& s) {
+    s.store.setSideList(std::move(entries), next, true);
+    s.loading = false;
+  });
+  post(EvtType::SideListUpdated);
+}
+
+void FeedWorker::openMembers(const std::string& slug, bool append) {
+  std::string cursor;
+  if (append) {
+    cursor = lockedFeed().with([](FeedState& s) { return s.guilds.membersCursor(); });
+    if (cursor.empty()) {
+      post(EvtType::MembersUpdated);
+      return;
+    }
+  }
+  std::vector<Member> page;
+  std::string next;
+  setLoading(true);
+  ApiError e = fetchList(20, [&](int limit) {
+    page.clear();
+    return api_.guildMembers(slug, cursor, limit, page, next);
+  });
+  setLoading(false);
+  if (!e.ok()) {
+    fail(e);
+    post(EvtType::MembersUpdated, "", 0, false);
+    return;
+  }
+  lockedFeed().with(
+      [&](FeedState& s) { s.guilds.appendMembers(std::move(page), next, !append); });
+  post(EvtType::MembersUpdated);
+}
+
+void FeedWorker::postGuildThread(const Command& c) {
+  std::string postId;
+  ApiError e = api_.postGuildThread(c.a, c.b, postId);
+  if (!e.ok()) {
+    post(EvtType::EntryPosted, errorText(e, false), e.http, false);
+    return;
+  }
+  post(EvtType::EntryPosted, postId);
+}
+
+// Reads that follow a successful membership write; a failure here is
+// ignored, the write itself succeeded.
+void FeedWorker::refreshGuildState() {
+  std::vector<MyGuild> mine;
+  if (api_.myGuilds(mine).ok())
+    lockedFeed().with([&](FeedState& s) { s.guilds.setMine(std::move(mine)); });
+  std::string open = lockedFeed().with([](FeedState& s) {
+    const Guild* g = s.guilds.guild();
+    return g ? g->slug : std::string();
+  });
+  if (!open.empty()) {
+    Guild g;
+    if (api_.guild(open, g).ok()) {
+      lockedFeed().with([&](FeedState& s) {
+        const Guild* cur = s.guilds.guild();
+        if (cur && cur->slug == open) s.guilds.openGuild(std::move(g));
+      });
+    }
+  }
+  post(EvtType::GuildsUpdated);
+  post(EvtType::GuildUpdated);
+}
+
+void FeedWorker::guildMembership(const Command& c) {
+  std::string name = lockedFeed().with([&](FeedState& s) {
+    const Guild* g = s.guilds.guild();
+    if (g && g->slug == c.a && !g->name.empty()) return g->name;
+    const MyGuild* m = s.guilds.myGuild(c.a);
+    if (m && !m->name.empty()) return m->name;
+    return c.a;
+  });
+  std::string role;
+  ApiError e;
+  if (c.type == CmdType::JoinGuild) e = api_.joinGuild(c.a, role);
+  else if (c.type == CmdType::PromoteGuild) e = api_.promoteGuild(c.a, role);
+  else e = api_.leaveGuild(c.a);
+  if (!e.ok()) {
+    std::string text;
+    if (e.http == 409) text = e.message;
+    else if (e.http == 403) text = "Manage this on the web";
+    else if (e.http == 404) text = "Guild not found";
+    else text = errorText(e, false);
+    post(EvtType::GuildWriteDone, text, e.http, false);
+    return;
+  }
+  std::string text;
+  if (c.type == CmdType::JoinGuild) text = role.empty() ? "Joined" : "Joined as " + role;
+  else if (c.type == CmdType::LeaveGuild) text = "Left " + name;
+  else text = name + " is now your guild";
+  post(EvtType::GuildWriteDone, text);
+  refreshGuildState();
+}
+
 // ---- notifications ----
 
 void FeedWorker::onNotice(const Mention& m, bool buzzer) {
@@ -506,6 +725,20 @@ void FeedWorker::onNotice(const Mention& m, bool buzzer) {
   }
   if (m.type == "post_cooldown") {
     post(EvtType::FeedAlert, "Entry held for review (saved as a note)", 0);
+    return;
+  }
+  if (m.type == "guild_new_thread") {
+    if (m.targetId.empty()) return;
+    std::string preview = m.preview;
+    truncateCodePoints(preview, kPreviewCodePoints);
+    std::string text = guildNoticeText(m.actorUsername, m.guildName, preview);
+    lockedFeed().with([&](FeedState& s) {
+      for (const auto& n : s.notices)
+        if (n.id == m.id) return;
+      s.notices.push_back(FeedNotice{m.id, m.targetId, text});
+      if (s.notices.size() > kMaxNotices) s.notices.erase(s.notices.begin());
+    });
+    post(EvtType::FeedAlert, text, buzzer ? 1 : 0);
     return;
   }
   // A notice without a target would open GET /v1/posts/; drop it.

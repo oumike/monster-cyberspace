@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "feed/feed_store.h"
+#include "guild/guild_store.h"
 
 namespace rc {
 
@@ -16,6 +17,7 @@ struct FeedNotice {
 // Everything the Feed screens read and the network side writes.
 struct FeedState {
   FeedStore store;
+  GuildStore guilds;
   std::vector<FeedNotice> notices;  // unread Feed notifications, newest last
   bool loading = false;
 };

@@ -53,5 +53,6 @@ RateLimiter makeEntryLimiter() { return RateLimiter({{2, 60000}, {24, 86400000}}
 RateLimiter makeReplyLimiter() { return RateLimiter({{3, 60000}, {48, 86400000}}); }
 RateLimiter makeBookmarkLimiter() { return RateLimiter({{5, 60000}, {75, 86400000}}); }
 RateLimiter makeWatchLimiter() { return RateLimiter({{10, 60000}, {100, 86400000}}); }
+RateLimiter makeMembershipLimiter() { return RateLimiter({{3, 60000}, {15, 86400000}}); }
 
 }  // namespace rc

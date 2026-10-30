@@ -40,5 +40,7 @@ RateLimiter makeEntryLimiter();
 RateLimiter makeReplyLimiter();
 RateLimiter makeBookmarkLimiter();
 RateLimiter makeWatchLimiter();
+// Join, promote and leave share it.
+RateLimiter makeMembershipLimiter();
 
 }  // namespace rc

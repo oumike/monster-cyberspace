@@ -134,6 +134,34 @@ void test_title_and_cw_trimmed() {
   TEST_ASSERT_EQUAL_STRING("", validateDraft(d).c_str());
 }
 
+void test_guild_thread_json_minimal() {
+  EntryDraft d;
+  d.body = "hi";
+  TEST_ASSERT_EQUAL_STRING("{\"content\":\"hi\"}", guildThreadJson(d).c_str());
+}
+
+void test_guild_thread_json_full() {
+  EntryDraft d;
+  d.body = "hi";
+  d.title = "  T ";
+  d.topics = "A, #b";
+  JsonDocument doc;
+  TEST_ASSERT_FALSE(deserializeJson(doc, guildThreadJson(d)));
+  TEST_ASSERT_EQUAL_STRING("T", doc["title"].as<const char*>());
+  TEST_ASSERT_EQUAL_STRING("a", doc["topics"][0].as<const char*>());
+  TEST_ASSERT_EQUAL_STRING("b", doc["topics"][1].as<const char*>());
+  TEST_ASSERT_EQUAL(2, doc["topics"].size());
+}
+
+void test_guild_thread_json_ignores_flags() {
+  EntryDraft d;
+  d.body = "hi";
+  d.isPublic = true;
+  d.nsfw = true;
+  d.cw = "warn";
+  TEST_ASSERT_EQUAL_STRING("{\"content\":\"hi\"}", guildThreadJson(d).c_str());
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_split_topics);
@@ -145,5 +173,8 @@ int main() {
   RUN_TEST(test_entry_json_omits_empties);
   RUN_TEST(test_reply_flag_bookmark_json);
   RUN_TEST(test_title_and_cw_trimmed);
+  RUN_TEST(test_guild_thread_json_minimal);
+  RUN_TEST(test_guild_thread_json_full);
+  RUN_TEST(test_guild_thread_json_ignores_flags);
   return UNITY_END();
 }

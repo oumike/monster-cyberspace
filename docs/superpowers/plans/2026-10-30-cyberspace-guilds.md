@@ -145,11 +145,11 @@
   RateLimiter makeMembershipLimiter();  // {3, 60000}, {15, 86400000}
   ```
 
-- [ ] **Step 1: Write failing tests:** `test_guild_thread_json_minimal` (`{"content":"hi"}`), `test_guild_thread_json_full` (title trimmed, topics `["a","b"]`), `test_guild_thread_json_ignores_flags` (a draft with `isPublic`, `nsfw`, `cw` set has none of `isPublic`, `isNSFW`, `contentWarning`); in `test_limits_token`: `checkMinuteEdge(makeMembershipLimiter(), 3)`, `checkDayEdge(makeMembershipLimiter(), 15)`.
-- [ ] **Step 2: Run** `pio test -e native -f test_feed_compose -f test_limits_token` — FAIL.
-- [ ] **Step 3: Implement** both.
-- [ ] **Step 4: Run** — PASS.
-- [ ] **Step 5: Commit** `Guilds: thread JSON and membership limiter`.
+- [x] **Step 1: Write failing tests:** `test_guild_thread_json_minimal` (`{"content":"hi"}`), `test_guild_thread_json_full` (title trimmed, topics `["a","b"]`), `test_guild_thread_json_ignores_flags` (a draft with `isPublic`, `nsfw`, `cw` set has none of `isPublic`, `isNSFW`, `contentWarning`); in `test_limits_token`: `checkMinuteEdge(makeMembershipLimiter(), 3)`, `checkDayEdge(makeMembershipLimiter(), 15)`.
+- [x] **Step 2: Run** `pio test -e native -f test_feed_compose -f test_limits_token` — FAIL.
+- [x] **Step 3: Implement** both.
+- [x] **Step 4: Run** — PASS.
+- [x] **Step 5: Commit** `Guilds: thread JSON and membership limiter`.
 
 ### Task 4: Guild layout and text
 

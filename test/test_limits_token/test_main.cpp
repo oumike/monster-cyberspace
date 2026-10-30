@@ -73,6 +73,8 @@ void test_feed_limiters() {
   checkMinuteEdge(makeReplyLimiter(), 3);
   checkMinuteEdge(makeBookmarkLimiter(), 5);
   checkMinuteEdge(makeWatchLimiter(), 10);
+  checkMinuteEdge(makeMembershipLimiter(), 3);
+  checkDayEdge(makeMembershipLimiter(), 15);
   RateLimiter r = makeReplyLimiter();
   for (int i = 0; i < 48; ++i) TEST_ASSERT_TRUE(r.tryAcquire(int64_t(i) * 1200000));
   TEST_ASSERT_FALSE(r.tryAcquire(48LL * 1200000 - 1));

@@ -80,6 +80,19 @@ std::string entryJson(const EntryDraft& d) {
   return serialize(doc);
 }
 
+std::string guildThreadJson(const EntryDraft& d) {
+  JsonDocument doc;
+  doc["content"] = d.body;
+  std::string_view title = trim(d.title);
+  if (!title.empty()) doc["title"] = std::string(title);
+  std::vector<std::string> topics = splitTopics(d.topics);
+  if (!topics.empty()) {
+    JsonArray arr = doc["topics"].to<JsonArray>();
+    for (const std::string& t : topics) arr.add(t);
+  }
+  return serialize(doc);
+}
+
 std::string validateReply(std::string_view body) {
   return trim(body).empty() ? "Reply is empty" : "";
 }

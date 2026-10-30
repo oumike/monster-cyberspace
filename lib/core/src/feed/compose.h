@@ -23,6 +23,10 @@ std::string validateDraft(const EntryDraft& d);
 // empty topics and an empty cw; leaves out
 // isPublic and isNSFW when false.
 std::string entryJson(const EntryDraft& d);
+// For guild threads; the caller validates with validateDraft (cw/isPublic/nsfw
+// ignored). Leaves out an empty title and empty topics; never writes isPublic,
+// isNSFW or contentWarning.
+std::string guildThreadJson(const EntryDraft& d);
 // "" when the reply can be sent, else the message to show (whitespace-only is empty).
 std::string validateReply(std::string_view body);
 // parentReplyId only when non-empty.

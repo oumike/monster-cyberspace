@@ -154,19 +154,21 @@ void kbDebounce(uint8_t h, const uint8_t fresh[5]) {
 }  // namespace
 
 bool radioSleep() {
-  // Chip select high first: a falling edge would wake it.
-  digitalWrite(LORA_CS, HIGH);
+  // Chip select high first, through its pull-up (the core writes only to
+  // output pins): a falling edge would wake it.
+  pinMode(LORA_CS, INPUT_PULLUP);
   pinMode(LORA_CS, OUTPUT);
-  digitalWrite(LORA_SCK, LOW);
+  digitalWrite(LORA_CS, HIGH);
   pinMode(LORA_SCK, OUTPUT);
-  digitalWrite(LORA_MOSI, LOW);
+  digitalWrite(LORA_SCK, LOW);
   pinMode(LORA_MOSI, OUTPUT);
+  digitalWrite(LORA_MOSI, LOW);
   pinMode(LORA_MISO, INPUT_PULLUP);
   pinMode(LORA_DIO1, INPUT_PULLDOWN);
   // Pulled up, BUSY stays high with no module; a radio drops it once reset.
   pinMode(LORA_BUSY, INPUT_PULLUP);
-  digitalWrite(LORA_RST, LOW);
   pinMode(LORA_RST, OUTPUT);
+  digitalWrite(LORA_RST, LOW);
   delay(2);
   digitalWrite(LORA_RST, HIGH);
   const uint32_t t0 = millis();

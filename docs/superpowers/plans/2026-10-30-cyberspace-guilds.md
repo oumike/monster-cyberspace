@@ -268,12 +268,12 @@
 - Consumes: Tasks 4, 6, 8.
 - Produces: `FeedListScreen::Kind::Guild` (arg = slug); `class GuildInfoView { void open(const Guild&); bool key(const KeyEvent&) /* false = closed */; void render(Grid&, const Theme&); }` (a `TextView` of `guildInfoText`; Centre with a link opens a `LinkView` of it); `class MembersScreen : public Screen` (arg = slug).
 
-- [ ] **Step 1: Kind::Guild.** `enter(slug)` sends `OpenGuild`; `requestMore` sends `GuildThreadsMore`; The open guild is freed by `GuildListScreen::enter` (it sends `CloseGuild`), so Entry, Composer and Members keep it; `FeedListScreen::leave` sends nothing for `Kind::Guild`. Status shows `<icon> <name>` from `s.guilds.guild()`. Left/Back → `GuildList`. `GuildUpdated` with code 404 → `router::go(GuildList)`.
-- [ ] **Step 2: Palette.** Items per spec §5, built from `guild()->role`: New thread → `router::go(Composer, "guild:" + slug)`; Info → the `GuildInfoView`; Members → `router::go(Members, slug)`; Join/Leave/Make my guild → a confirm `Overlay` with the Global Constraints copy, then the command; Refresh → `OpenGuild`; Text size. `GuildWriteDone` shows its text as a banner (error when !ok).
-- [ ] **Step 3: MembersScreen.** `ListView` of `memberItem`s; enter sends `OpenMembers`; Down on the last item with a cursor sends `OpenMembers` n=1; Back → `Guild` with the slug. Status `members · <name>`.
-- [ ] **Step 4: Entry back target.** In `EntryScreen::enter`, remember `router::previous()` when its id is `Guild`; Back (when following) returns there with its arg, else `FeedList` as now.
-- [ ] **Step 5: Build** `pio run -e m9` and the demo build — SUCCESS.
-- [ ] **Step 6: Commit** `Guilds: thread list, info, members`.
+- [x] **Step 1: Kind::Guild.** `enter(slug)` sends `OpenGuild`; `requestMore` sends `GuildThreadsMore`; The open guild is freed by `GuildListScreen::enter` (it sends `CloseGuild`), so Entry, Composer and Members keep it; `FeedListScreen::leave` sends nothing for `Kind::Guild`. Status shows `<icon> <name>` from `s.guilds.guild()`. Left/Back → `GuildList`. `GuildUpdated` with code 404 → `router::go(GuildList)`.
+- [x] **Step 2: Palette.** Items per spec §5, built from `guild()->role`: New thread → `router::go(Composer, "guild:" + slug)`; Info → the `GuildInfoView`; Members → `router::go(Members, slug)`; Join/Leave/Make my guild → a confirm `Overlay` with the Global Constraints copy, then the command; Refresh → `OpenGuild`; Text size. `GuildWriteDone` shows its text as a banner (error when !ok).
+- [x] **Step 3: MembersScreen.** `ListView` of `memberItem`s; enter sends `OpenMembers`; Down on the last item with a cursor sends `OpenMembers` n=1; Back → `Guild` with the slug. Status `members · <name>`.
+- [x] **Step 4: Entry back target.** In `EntryScreen::enter`, remember `router::previous()` when its id is `Guild`; Back (when following) returns there with its arg, else `FeedList` as now.
+- [x] **Step 5: Build** `pio run -e m9` and the demo build — SUCCESS.
+- [x] **Step 6: Commit** `Guilds: thread list, info, members`.
 
 ### Task 10: Composer guild target
 

@@ -4,6 +4,7 @@
 #include "net/wifi_list.h"
 #include "screens/backup_picker.h"
 #include "screens/button_pad.h"
+#include "screens/guild_info.h"
 #include "screens/router.h"
 #include "ui/home_tiles.h"
 #include "ui/widgets/entry_list.h"
@@ -199,18 +200,25 @@ class CmailListScreen : public Screen {
 // instances (spec §5).
 class FeedListScreen : public Screen {
  public:
-  enum class Kind { Feed, Watched, Bookmarks };
+  enum class Kind { Feed, Watched, Bookmarks, Guild };
   explicit FeedListScreen(Kind kind) : kind_(kind) {}
   void enter(const std::string&) override;
   void leave() override;
   void onKey(const KeyEvent&) override;
   void onEvent(const Event&) override;
   void render(Grid&, const Theme&, int64_t nowMs) override;
-  bool hasOverlay() const override { return palette_; }
-  void closeOverlays() override { palette_ = false; }
+  bool hasOverlay() const override { return palette_ || info_.isOpen(); }
+  void closeOverlays() override {
+    palette_ = confirm_ = false;
+    box_.close();
+    info_.close();
+  }
 
  private:
   void paletteKey(const KeyEvent&);
+  void openPalette();
+  std::u32string guildTitle() const;
+  void askConfirm(CmdType type, const Guild& g);
   void open();         // the first page
   void requestMore();  // the next page
   void rebuild(int cols, const Theme& t);
@@ -220,6 +228,11 @@ class FeedListScreen : public Screen {
   EntryList list_;
   Overlay box_;
   bool palette_ = false;
+  bool confirm_ = false;       // box_ holds a membership confirm
+  CmdType pending_ = CmdType::OpenGuilds;  // the command that confirm sends
+  std::vector<int> acts_;      // the palette's items, as PaletteItem values
+  std::string slug_;           // Guild: the open guild
+  GuildInfoView info_;
   std::vector<std::string> ids_;
   std::vector<std::string> replyIds_;  // Bookmarks: the bookmarked reply per row, or ""
   std::string selId_;      // the selected entry, kept across updates
@@ -231,6 +244,21 @@ class FeedListScreen : public Screen {
   int cols_ = 0;
   int64_t builtAt_ = 0;    // for the ages ("3h")
   const Theme* theme_ = nullptr;  // the rows bake its colours
+};
+
+// A guild's members, read-only and paged (spec §5).
+class MembersScreen : public Screen {
+ public:
+  void enter(const std::string& slug) override;
+  void onKey(const KeyEvent&) override;
+  void onEvent(const Event&) override;
+  void render(Grid&, const Theme&, int64_t nowMs) override;
+
+ private:
+  void requestMore();
+  ListView list_;
+  std::string slug_;
+  bool more_ = false, asked_ = false, failed_ = false;
 };
 
 // Every guild: mine first (pinned), then the browse list (spec §5).

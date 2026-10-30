@@ -55,8 +55,11 @@ class EntryScreen : public Screen {
 
   // The selected reply's id (any page of it); "" for the body or following.
   std::string selectedReply() const;
+  void leaveToList();  // the guild it was opened from, else the Feed list
 
   std::string postId_, noticeId_;
+  bool inGuild_ = false;
+  std::string guildSlug_;
   std::string wantReply_;     // a reply to select once the replies arrive
   bool repliesArrived_ = false;
   LogView log_;

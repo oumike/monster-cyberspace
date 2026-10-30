@@ -46,6 +46,14 @@ std::string entryUrl(const Entry& e) {
 
 void EntryScreen::enter(const std::string& arg) {
   spell_.hide();
+  // A reply or new-thread round trip (Composer, Entry) keeps the guild.
+  const router::Place from = router::previous();
+  if (from.id == router::Id::Guild) {
+    inGuild_ = true;
+    guildSlug_ = from.arg;
+  } else if (from.id != router::Id::Composer && from.id != router::Id::Entry) {
+    inGuild_ = false;
+  }
   std::string parts[3];
   size_t start = 0;
   for (int i = 0; i < 3; ++i) {
@@ -92,6 +100,11 @@ void EntryScreen::closeOverlays() {
     input_.setText(savedInput_);
   }
   log_.follow();
+}
+
+void EntryScreen::leaveToList() {
+  if (inGuild_) router::go(router::Id::Guild, guildSlug_);
+  else router::go(router::Id::FeedList);
 }
 
 std::string EntryScreen::selectedReply() const {
@@ -152,7 +165,7 @@ void EntryScreen::typingKey(const KeyEvent& k) {
       break;
     case Action::Back:
       if (!log_.following()) log_.follow();
-      else router::go(router::Id::FeedList);
+      else leaveToList();
       break;
     default:
       break;
@@ -396,7 +409,7 @@ void EntryScreen::onEvent(const Event& e) {
   switch (e.type) {
     case EvtType::EntryUpdated:
       // Gone or failed to load: back to the list (leave() closes the entry).
-      if (!e.ok) router::go(router::Id::FeedList);
+      if (!e.ok) leaveToList();
       else dirty_ = true;
       break;
     case EvtType::RepliesLoaded:

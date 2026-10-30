@@ -11,6 +11,8 @@ boards and Cyberspace features come later.
 - **Design spec:** `docs/superpowers/specs/2026-10-25-cyberspace-m9-circ-design.md`
 - **Milestone 2 (C-Mail):** spec `docs/superpowers/specs/2026-10-25-cyberspace-m9-cmail-design.md`,
   plan `docs/superpowers/plans/2026-10-25-cyberspace-m9-cmail.md`.
+- **Guilds:** spec `docs/superpowers/specs/2026-10-30-cyberspace-guilds-design.md`,
+  plan `docs/superpowers/plans/2026-10-30-cyberspace-guilds.md`.
 - **Milestone 3 (Feed):** spec `docs/superpowers/specs/2026-10-26-cyberspace-m9-feed-design.md`,
   plan `docs/superpowers/plans/2026-10-26-cyberspace-m9-feed.md`.
 - **GPS time:** spec `docs/superpowers/specs/2026-10-26-cyberspace-gps-time-design.md`,
@@ -171,7 +173,10 @@ The T-Deck Pro (env `tdeck_pro`, e-paper) uses the touch-only paradigm plus a
 its and the T-Deck Plus's mic key opens the emoji tray (`board::textEntry`).
 A browser flasher (GitHub Pages, `site/`, `.github/workflows/pages.yml`)
 serves the latest release (docs/BUILD.md).
-The native suite is green: 513/513
+Guilds were added on 2026-10-30 (built without flashing): browse, threads,
+info, members, join, leave, make my guild, new thread and alerts, opened by
+the M9's Map button or Home.
+The native suite is green: 539/539
 (`pio test -e native`), and `scripts/build-upload-monitor.sh -B` builds all
 eight firmware envs.
 

@@ -120,7 +120,7 @@ Dedicated buttons work from anywhere and close whatever is open first.
 | Home | Home dashboard |
 | Fn under Home | C-Mail ("coming soon" in M1) |
 | Fn under Back | Feed ("coming soon" in M1) |
-| Map | Unassigned (undecided) |
+| Map | Guilds |
 | Back | Up one level, or closes a menu or drawer. It never deletes text |
 | Ctrl | Command palette: slash commands, "Text size: Comfortable/Compact" |
 | Back/Del hold (0x89) | Clear the input line |

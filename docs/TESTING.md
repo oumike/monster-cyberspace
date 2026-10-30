@@ -119,6 +119,25 @@ on 2026-10-27; the sections marked `m9_fake` passed on it before then.
 - [x] Composer: posting opens the new entry
 - [x] Composer: Back asks to discard
 
+**Guilds (M9):**
+
+- [ ] Map opens the guild list from Home, a room and the Feed; signed out it does nothing
+- [ ] Map in the Composer asks "Discard draft?"
+- [ ] The list shows my guilds first under `── my guilds ──`, then all guilds, with roles
+- [ ] Down pages in more guilds and then wraps
+- [ ] Centre opens a guild and lists its threads
+- [ ] A thread opens in Entry; a reply posts
+- [ ] Back from the thread returns to the guild, and Back again to the list
+- [ ] New thread: Title, Body and Topics only; Post asks "Post thread?" and opens it
+- [ ] Join asks with the limit and joins; the role shows in the list
+- [ ] Leave asks (member guild adds "Your badge will be cleared."), then leaves
+- [ ] Make my guild works for an apprenticeship
+- [ ] Join on a full account shows the server's message; Leave as founder shows "Manage this on the web"
+- [ ] Info shows the details; Centre on the link shows its QR code
+- [ ] Members lists `@name · role · age` and pages
+- [ ] A new thread in one of my guilds shows a banner and beeps
+- [ ] Home → Guilds opens the list (every board)
+
 **Web config (`m9`):**
 
 - [x] With no Wi-Fi saved: the setup AP appears, `http://192.168.4.1` loads, and nothing pops up

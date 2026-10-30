@@ -61,7 +61,7 @@ Dedicated buttons work from anywhere and close whatever is open first.
 | Home | Home dashboard |
 | Fn under Home | C-Mail: the conversation list. Press it again in a conversation for the list |
 | Fn under Back | Feed: the entry list. Press it again anywhere in the Feed for the list |
-| Map | Unassigned |
+| Map | Guilds: the guild list, once you are signed in. In the composer it asks "Discard draft?" first |
 | Back | Up one level, or closes a menu or drawer. It never deletes text |
 | Sym | The command palette (slash commands in a room or conversation) |
 | Ctrl | While typing: the emoji tray. Elsewhere (the Feed list): the palette |
@@ -409,6 +409,54 @@ Feed alerts; with one waiting, **Feed** opens its entry instead of the list.
 **Watched threads and Bookmarks** are lists in the same style, from the
 palette. Centre opens the entry; a bookmarked reply opens its entry with that
 reply selected. Left or Back returns to the Feed list.
+
+## Guilds
+
+Guilds are Cyberspace member groups, each with its own forum of threads. A
+guild thread is an ordinary Feed entry. Open the list with the Map button
+(far right on the M9) from anywhere, or **Guilds** on the Home screen. You
+must be signed in.
+
+**The list:**
+
+- Each guild takes two lines: `🦉 Night Owls · 42+7` (members, then
+  apprentices when there are any), plus your role (`founder`, `member` or
+  `apprentice`) if you belong to it, then the bio, dimmed.
+- Your own guilds come first under `── my guilds ──`; the rest follow under
+  `── all guilds ──`, most populated first.
+- Up/Down select. Down on the last guild loads the next page; once every page
+  is loaded it wraps to the top. Centre or Right opens the guild. Left or Back
+  goes Home.
+- **Ctrl** (on the M9) opens the palette: **Refresh** and **Text size**.
+
+**A guild:**
+
+- The threads are listed like the Feed, most recently active first. Centre or
+  Right opens a thread. Back from the thread returns to the guild.
+- **Ctrl** opens the palette: **New thread**, **Info**, **Members**, **Join**
+  (if you are not in it), **Make my guild** (apprentices only), **Leave**
+  (members and apprentices; founders have none), **Refresh** and **Text size**.
+- Join, Leave and Make my guild ask first, with the limit: "Join Night Owls?
+  (3 per minute, 15 per day)". Leaving your own guild adds "Your badge will be
+  cleared." Nothing is retried.
+- Left, Back or Map returns to the guild list.
+- If the guild is gone, you get "Guild not found" and the list. If you hit a
+  limit, you get "Slow down: try in Ns" and nothing is sent. Leave and Make my
+  guild say "Manage this on the web" when the server refuses them.
+
+**Info:** a read-only page with the founder, member counts, founding date,
+your role, the bio and the link. Centre on it shows the link in full with its
+QR code. Back closes it.
+
+**Members:** `@name · role · 3mo` per row, paged like the list. Back returns
+to the guild.
+
+**New thread:** like New entry in the Feed, with Title, Body and Topics only.
+Post asks "Post thread? (2 per minute, 24 per day)", then opens the new
+thread. Back with text asks "Discard draft?".
+
+**Alerts:** a new thread in a guild you belong to shows a banner
+(`@name in Night Owls: …`) and sounds the buzzer if it's on.
 
 ## Characters and emoji
 

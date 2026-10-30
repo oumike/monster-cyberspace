@@ -289,6 +289,6 @@
 **Files:**
 - Modify: `docs/USE.md` (Buttons table: Map → Guilds; a Guilds section), `docs/TESTING.md` (an unticked "Guilds (M9)" checklist: Map button, browse and pinning, open, thread and reply, Back to the guild, new thread, join, leave, make my guild, info and QR, members, alert), `AGENTS.md` (Guild spec/plan pointers and a progress line), `docs/superpowers/specs/2026-10-25-cyberspace-m9-circ-design.md:123` (Map → Guilds).
 
-- [ ] **Step 1: Write the docs.**
-- [ ] **Step 2: Run** `pio test -e native` — all PASS; `scripts/build-upload-monitor.sh -B` — every env SUCCESS.
-- [ ] **Step 3: Commit** `Guilds: docs`.
+- [x] **Step 1: Write the docs.**
+- [x] **Step 2: Run** `pio test -e native` — all PASS; `scripts/build-upload-monitor.sh -B` — every env SUCCESS.
+- [x] **Step 3: Commit** `Guilds: docs`.

@@ -97,7 +97,7 @@ void test_bio_cut() {
   for (int i = 0; i < 200; i++) g.bio += "é";
   GuildStore s;
   s.setBrowse({g}, "", true);
-  const std::string& b = s.others()[0].bio;
+  const std::string b = s.others()[0].bio;  // others() is a copy
   TEST_ASSERT_TRUE(b.size() <= kGuildBioBytes);
   TEST_ASSERT_EQUAL(0, (int)(b.size() % 2));
   TEST_ASSERT_TRUE(u32ToUtf8(utf8ToU32(b)) == b);

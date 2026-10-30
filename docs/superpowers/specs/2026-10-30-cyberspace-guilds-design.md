@@ -112,8 +112,10 @@ machinery, since a thread is an entry.
   - **commands:** `OpenGuilds`, `GuildsMore`, `OpenGuild` (slug),
     `GuildThreadsMore`, `OpenMembers`, `MembersMore`, `PostGuildThread`
     (slug + JSON), `JoinGuild`, `LeaveGuild`, `PromoteGuild` (slug);
-  - **events:** `GuildsUpdated`, `GuildUpdated`, `MembersUpdated`; writes
-    reuse `FeedWriteDone(ok, text)` and `EntryPosted(text = postId)`.
+  - **events:** `GuildsUpdated`, `GuildUpdated` (`code` 404 when the guild
+    is gone), `MembersUpdated`, and `GuildWriteDone(ok, text)` for join,
+    leave and promote (`FeedWriteDone` stays the Entry's reply result); a new
+    thread reuses `EntryPosted(text = postId)`.
 - After a successful join, leave or promote, the worker re-reads my guilds
   and the open guild. That is a read following the user's write, not a
   retry.
@@ -134,8 +136,8 @@ The M9 keymap is unchanged. Home gains a `guilds` item and tile, after feed.
 
 - Browse and members pages are `limit=20`; thread pages are `limit=10`, with
   the side list's caps and its body-too-large step-down (10, 5, 2).
-- Leaving the guild screens (to anything but Entry, Composer, Members or the
-  Guild) frees the open guild and its members. My guilds and the browse list
+- Opening GuildList frees the open guild and its members (Entry, Composer
+  and Members keep them). My guilds and the browse list
   stay until sign-out.
 
 ## 5. Controls
@@ -176,7 +178,8 @@ The M9 keymap is unchanged. Home gains a `guilds` item and tile, after feed.
 **Info** (a scrolling read-only page, like Show link): name with icon,
 `founded by @user`, `42 members · 7 apprentices`, `founded Mar 2026`, the
 user's role if any, the bio (as Markdown text), and the link as
-`linkText <url>` plus its QR code when present. Back closes it.
+`linkText <url>` when present; Centre then shows the link full screen with
+its QR code (the existing `LinkView`). Back closes it.
 
 **Members:** `@user · role · 3mo` per row, paged like the browse list,
 read-only. Back returns to the Guild.

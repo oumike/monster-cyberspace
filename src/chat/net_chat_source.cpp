@@ -1,3 +1,4 @@
+#if !RC_FAKE_API
 
 #include "app/net_worker.h"
 #include "app/queues.h"
@@ -25,3 +26,4 @@ void startChatSource(const Settings& s) { networker::start(s); }
 
 }  // namespace rc
 
+#endif

@@ -25,7 +25,7 @@ void setup() {
   backupstore::begin();
   settings::load(app().cfg);
   timesvc::start(app().cfg);
-  // The network source brings up Wi-Fi too.
+  // The network source brings up Wi-Fi too; the demo build (RC_FAKE_API) has none.
   startChatSource(app().cfg);
   ui::start();
   ota::start();

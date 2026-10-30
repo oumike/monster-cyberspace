@@ -7,6 +7,7 @@
 #include <ctime>
 #include <mutex>
 
+#if !RC_FAKE_API
 #include <esp_netif.h>
 #include <esp_sntp.h>
 #include <esp_timer.h>
@@ -18,6 +19,7 @@
 #include "hal/board.h"
 #include "net/wifi_mgr.h"
 #include "time/clock_policy.h"
+#endif
 
 #include "time/time_status.h"
 
@@ -33,6 +35,40 @@ void applyTz(const std::string& tz) {
 }
 
 }  // namespace
+
+#if RC_FAKE_API
+
+std::mutex gMutex;  // guards gTzName, gTz and the TZ change
+std::string gTzName, gTz;
+
+void apply(const Settings& s) {
+  std::lock_guard<std::mutex> lock(gMutex);
+  gTzName = s.tzName;
+  gTz = s.tz;
+  applyTz(gTz);
+}
+
+// A fixed clock with no network: 2026-10-29 23:42 UTC.
+void start(const Settings& s) {
+  timeval tv{1793317320, 0};
+  settimeofday(&tv, nullptr);
+  apply(s);
+}
+
+void restartNtp() {}
+
+void settingsChanged() {
+  Settings s;
+  settings::load(s);
+  apply(s);
+}
+
+Snapshot snapshot() {
+  std::lock_guard<std::mutex> lock(gMutex);
+  return {"fix, 7 of 11 satellites", "GPS, 2 min ago", zoneStatusText(gTzName, gTz), gTzName, gTz};
+}
+
+#else
 
 namespace {
 
@@ -199,5 +235,7 @@ Snapshot snapshot() {
   std::lock_guard<std::mutex> lock(gMutex);
   return gSnap;
 }
+
+#endif
 
 }  // namespace rc::timesvc

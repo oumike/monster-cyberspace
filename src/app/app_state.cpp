@@ -28,6 +28,15 @@ std::string clockText() {
   return ms < 1700000000000LL ? std::string("--:--") : formatHHMM(ms);
 }
 
+#if RC_FAKE_API
+bool wifiUp() { return true; }
+std::string wifiSsid() { return "fake-net"; }
+std::string wifiIp() { return "10.0.0.42"; }
+int wifiBars() { return 3; }
+bool setupApUp() { return false; }
+std::string setupApSsid() { return ""; }
+bool setupApHasPassword() { return false; }
+#else
 bool wifiUp() { return wifimgr::connected(); }
 std::string wifiSsid() { return wifimgr::ssid(); }
 std::string wifiIp() { return wifimgr::ip(); }
@@ -35,6 +44,7 @@ int wifiBars() { return wifimgr::rssiBars(); }
 bool setupApUp() { return wifimgr::mode() == wifimgr::Mode::Setup; }
 std::string setupApSsid() { return wifimgr::apSsid(); }
 bool setupApHasPassword() { return wifimgr::apHasPassword(); }
+#endif
 
 void drawStatus(Grid& g, const Theme& t, std::u32string_view title, int count, bool menu) {
   char32_t marker = app().conn == 2 ? U'\u25CF' : app().conn == 1 ? U'\u25CC' : U'\u2715';

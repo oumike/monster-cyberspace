@@ -1,6 +1,7 @@
 #include <unity.h>
 
 #include <cstring>
+#include <string>
 #include <vector>
 
 #include "ui/screenshot.h"
@@ -62,11 +63,35 @@ void test_command_line() {
   TEST_ASSERT_EQUAL(1, late);
 }
 
+void test_key_and_type_commands() {
+  SerialCommand c;
+  const char* names[] = {"up", "down", "left", "right", "select", "back", "home", "palette", "options",
+                         "backspace", "symbols", "emoji", "circ", "cmail", "feed", "screenoff"};
+  const Action acts[] = {Action::Up, Action::Down, Action::Left, Action::Right, Action::Select,
+                         Action::Back, Action::OpenHome, Action::Palette, Action::Options,
+                         Action::Backspace, Action::Symbols, Action::Emoji, Action::OpenCirc,
+                         Action::OpenCmail, Action::OpenFeed, Action::ScreenOff};
+  for (size_t i = 0; i < sizeof(acts) / sizeof(acts[0]); ++i) {
+    std::string line = std::string("key ") + names[i] + "\n";
+    SerialCommand::Result r = SerialCommand::None;
+    for (char ch : line) r = c.feed(ch);
+    TEST_ASSERT_EQUAL(SerialCommand::Key, r);
+    TEST_ASSERT_EQUAL(static_cast<int>(acts[i]), static_cast<int>(c.key().action));
+  }
+  SerialCommand::Result r = SerialCommand::None;
+  for (char ch : std::string("key nonsense\n")) r = c.feed(ch);
+  TEST_ASSERT_EQUAL(SerialCommand::None, r);
+  for (char ch : std::string("type hi there\n")) r = c.feed(ch);
+  TEST_ASSERT_EQUAL(SerialCommand::Type, r);
+  TEST_ASSERT_EQUAL_STRING("hi there", std::string(c.text()).c_str());
+}
+
 int main(int, char**) {
   UNITY_BEGIN();
   RUN_TEST(test_runs_round_trip);
   RUN_TEST(test_long_runs_split_at_255);
   RUN_TEST(test_crc32_matches_zlib);
   RUN_TEST(test_command_line);
+  RUN_TEST(test_key_and_type_commands);
   return UNITY_END();
 }

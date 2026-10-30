@@ -27,7 +27,29 @@ uint32_t crc32Update(uint32_t crc, const uint8_t* data, size_t n) {
   return ~crc;
 }
 
+namespace {
+
+struct KeyName {
+  const char* name;
+  Action action;
+};
+
+constexpr KeyName kKeys[] = {
+    {"up", Action::Up},           {"down", Action::Down},         {"left", Action::Left},
+    {"right", Action::Right},     {"select", Action::Select},     {"back", Action::Back},
+    {"home", Action::OpenHome},   {"palette", Action::Palette},   {"options", Action::Options},
+    {"backspace", Action::Backspace}, {"symbols", Action::Symbols}, {"emoji", Action::Emoji},
+    {"circ", Action::OpenCirc},   {"cmail", Action::OpenCmail},   {"feed", Action::OpenFeed},
+    {"screenoff", Action::ScreenOff},
+};
+
+}  // namespace
+
 SerialCommand::Result SerialCommand::feed(char c) {
+  if (typed_) {
+    len_ = 0;
+    typed_ = false;
+  }
   if (c == '\r') return None;
   if (c != '\n') {
     if (len_ < kMax - 1) line_[len_++] = c;
@@ -35,10 +57,27 @@ SerialCommand::Result SerialCommand::feed(char c) {
     return None;
   }
   line_[len_] = '\0';
-  const bool hit = !overflow_ && std::strcmp(line_, "screenshot") == 0;
+  const bool ok = !overflow_;
+  const int len = len_;
   len_ = 0;
   overflow_ = false;
-  return hit ? Screenshot : None;
+  if (!ok) return None;
+  if (std::strcmp(line_, "screenshot") == 0) return Screenshot;
+  if (std::strncmp(line_, "type ", 5) == 0) {
+    len_ = len;  // text() reads it until the next character arrives
+    typed_ = true;
+    return Type;
+  }
+  if (std::strncmp(line_, "key ", 4) == 0) {
+    for (const KeyName& k : kKeys) {
+      if (std::strcmp(line_ + 4, k.name) == 0) {
+        key_ = KeyEvent{};
+        key_.action = k.action;
+        return Key;
+      }
+    }
+  }
+  return None;
 }
 
 }  // namespace rc

@@ -1,5 +1,6 @@
 #pragma once
 
+#if !RC_FAKE_API
 
 #include <cstdint>
 #include <set>
@@ -58,3 +59,4 @@ class FeedWorker {
 
 }  // namespace rc
 
+#endif

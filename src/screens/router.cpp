@@ -53,7 +53,11 @@ Screen* lookup(Id id) {
 }
 
 bool signedIn() {
+#if RC_FAKE_API
+  return true;
+#else
   return app().auth == 1;
+#endif
 }
 
 }  // namespace
@@ -107,9 +111,13 @@ bool handleGlobal(const KeyEvent& k) {
 }
 
 Id bootTarget() {
+#if RC_FAKE_API
+  return Id::Home;
+#else
   const Settings& c = app().cfg;
   if (c.wifi.empty() || c.refreshToken.empty()) return Id::Setup;
   return Id::Home;
+#endif
 }
 
 }  // namespace rc::router

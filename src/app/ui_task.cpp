@@ -450,8 +450,26 @@ void sendScreenshot() {
 }
 
 void pollConsole() {
-  while (Serial.available() > 0)
-    if (console.feed(static_cast<char>(Serial.read())) == SerialCommand::Screenshot) sendScreenshot();
+  while (Serial.available() > 0) {
+    switch (console.feed(static_cast<char>(Serial.read()))) {
+      case SerialCommand::Screenshot: sendScreenshot(); break;
+#if RC_FAKE_API
+      // The demo build only: key presses for scripted screenshots.
+      case SerialCommand::Key: handleKey(console.key()); break;
+      case SerialCommand::Type: {
+        std::u32string text = utf8ToU32(console.text());
+        for (char32_t c : text) {
+          KeyEvent k;
+          k.action = Action::Char;
+          k.ch = c;
+          handleKey(k);
+        }
+        break;
+      }
+#endif
+      default: break;
+    }
+  }
 }
 
 void taskMain(void*) {

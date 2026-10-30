@@ -7,7 +7,7 @@ buffer only: nothing on the device or the network is touched.
   scripts/screenshot.py PORT                 one shot into screenshots/
   scripts/screenshot.py PORT --watch         a shot each time the screen changes
                                              and settles (Ctrl-C to stop)
-  scripts/screenshot.py PORT -o DIR --name mesh-deck
+  scripts/screenshot.py PORT -o DIR --name mesh-deck --scale 2
 
 Needs pyserial; PlatformIO's Python has it (the python beside the pio executable).
 The port opens with DTR and RTS low, so boards on a USB-serial chip don't reset.
@@ -88,13 +88,17 @@ def grab(s, timeout=30.0):
     return w, h, bytes(pixels)
 
 
-def write_png(path, w, h, px565):
+def write_png(path, w, h, px565, scale=1):
     rows = bytearray()
     for y in range(h):
-        rows.append(0)
+        row = bytearray()
         for (v,) in struct.iter_unpack("<H", px565[y * w * 2:(y + 1) * w * 2]):
             r, g, b = (v >> 11) & 0x1F, (v >> 5) & 0x3F, v & 0x1F
-            rows += bytes(((r << 3) | (r >> 2), (g << 2) | (g >> 4), (b << 3) | (b >> 2)))
+            row += bytes(((r << 3) | (r >> 2), (g << 2) | (g >> 4), (b << 3) | (b >> 2))) * scale
+        for _ in range(scale):
+            rows.append(0)
+            rows += row
+    w, h = w * scale, h * scale
 
     def chunk(kind, data):
         return struct.pack(">I", len(data)) + kind + data + struct.pack(">I", zlib.crc32(kind + data))
@@ -120,6 +124,7 @@ def main():
     ap.add_argument("-o", "--out", default="screenshots")
     ap.add_argument("--name", default="screen", help="file name prefix")
     ap.add_argument("--baud", type=int, default=115200)
+    ap.add_argument("--scale", type=int, default=1, help="enlarge each pixel N times (crisp, for docs)")
     ap.add_argument("--watch", action="store_true", help="save each new screen once it settles")
     ap.add_argument("--interval", type=float, default=1.0, help="seconds between polls with --watch")
     a = ap.parse_args()
@@ -132,7 +137,7 @@ def main():
         while os.path.exists(os.path.join(a.out, f"{a.name}-{n:02d}.png")):
             n += 1
         path = os.path.join(a.out, f"{a.name}-{n:02d}.png")
-        write_png(path, *shot)
+        write_png(path, *shot, scale=a.scale)
         print(path, flush=True)
 
     if not a.watch:

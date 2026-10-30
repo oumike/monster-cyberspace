@@ -65,6 +65,8 @@ pio run -e mesh_deck        # Attaky Mesh Deck
 scripts/build-upload-monitor.sh m9   # flash + serial monitor (115200); -w for the Wio L2, -t for the T-Deck Plus, -3/-5 for the CrowPanels, -P for the Pager, -D for the T-Deck Pro, -M for the Mesh Deck; --help for options
 scripts/build-upload-monitor.sh -B   # build every firmware env, no device needed
 scripts/screenshot.py PORT [--watch]  # PNG screenshots over the serial console (no device writes)
+# demo build for screenshots, no network (never release): docs/BUILD.md "Screenshots"
+PLATFORMIO_BUILD_DIR=.pio/demo PLATFORMIO_BUILD_FLAGS=-DRC_FAKE_API=1 pio run -e mesh_deck
 scripts/release.sh --dist-only       # release images into dist/; releasing itself is the user's call (docs/BUILD.md)
 ```
 
@@ -143,8 +145,11 @@ battery, speaker and SD, with env `tdeck` (built without flashing;
 The CrowPanel Advance 3.5" and 5.0" HALs (envs `crowpanel35`, `crowpanel50`)
 were added on 2026-10-27 (built without flashing; the 5.0"'s portrait
 direction and both touch mappings await the hardware check).
-The scripted fake-API builds (`*_fake`, `RC_FAKE_API`) were removed on
-2026-10-27 at the user's request; every firmware env talks to the real API.
+The scripted fake-API builds (`*_fake` envs) were removed on 2026-10-27 at
+the user's request; every firmware env talks to the real API. The fake
+sources came back on 2026-10-29 as an unreleased demo build for screenshots
+(`RC_FAKE_API` through `PLATFORMIO_BUILD_FLAGS`, no env), driven with the
+console's `key`/`type` commands.
 The LilyGO T-LoRa Pager HAL (env `pager`) was added on 2026-10-27 (built
 without flashing; `PANEL_MADCTL` and the row offset await the hardware
 check; the wheel direction was flipped after a hardware check on 2026-10-28).
@@ -166,7 +171,7 @@ The T-Deck Pro (env `tdeck_pro`, e-paper) uses the touch-only paradigm plus a
 its and the T-Deck Plus's mic key opens the emoji tray (`board::textEntry`).
 A browser flasher (GitHub Pages, `site/`, `.github/workflows/pages.yml`)
 serves the latest release (docs/BUILD.md).
-The native suite is green: 512/512
+The native suite is green: 513/513
 (`pio test -e native`), and `scripts/build-upload-monitor.sh -B` builds all
 eight firmware envs.
 

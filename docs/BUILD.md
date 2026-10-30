@@ -65,6 +65,18 @@ screen. `scripts/screenshot.py PORT` saves it as a PNG in `screenshots/`;
 device (Ctrl-C stops). It needs pyserial (PlatformIO's Python has it) and opens
 the port without resetting the board. Only the frame buffer is read.
 
+The README's screenshots come from the demo build: `RC_FAKE_API` swaps the
+network for scripted rooms, C-Mail and Feed with made-up users, a fixed clock,
+and no Wi-Fi, so it never touches the Cyberspace API. It also takes
+`key <name>` (up, down, left, right, select, back, home, palette, options,
+backspace, symbols, emoji, circ, cmail, feed, screenoff) and `type <text>` on
+the console, so screens can be driven from a script. Never release it:
+
+```sh
+PLATFORMIO_BUILD_DIR=.pio/demo PLATFORMIO_BUILD_FLAGS=-DRC_FAKE_API=1 pio run -e mesh_deck -t upload
+scripts/screenshot.py /dev/cu.wchusbserial10 --scale 2 --name home
+```
+
 ## Releases
 
 Ported from platy-aprs, with its OTA signing.

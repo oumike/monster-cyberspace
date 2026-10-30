@@ -1,3 +1,4 @@
+#if !RC_FAKE_API
 
 #include "app/feed_worker.h"
 
@@ -531,3 +532,4 @@ void FeedWorker::onNotice(const Mention& m, bool buzzer) {
 
 }  // namespace rc
 
+#endif

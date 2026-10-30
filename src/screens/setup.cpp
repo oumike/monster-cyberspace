@@ -72,6 +72,7 @@ void SetupScreen::render(Grid& g, const Theme& t, int64_t) {
     if (narrowGrid(g)) r = putWrapped(g, col, r, text, fg, t.bg);
     else putLine(g, col, r++, text, fg, t.bg);
   };
+#if !RC_FAKE_API
   if (wifimgr::mode() == wifimgr::Mode::Setup) {
     line(1, "Join this Wi-Fi network:", t.fg);
     line(3, wifimgr::apSsid(), t.selectBg);
@@ -80,6 +81,7 @@ void SetupScreen::render(Grid& g, const Theme& t, int64_t) {
     line(3, "http://192.168.4.1", t.selectBg);
     ++r;
   }
+#endif
   if (wifiUp()) {
     line(1, "On " + wifiSsid() + ", browse to:", t.fg);
     line(3, "http://monster-cyberspace.local", t.selectBg);

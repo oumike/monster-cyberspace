@@ -55,6 +55,7 @@ bool parseSendResult(std::string_view body, std::string& messageId, std::string&
 
 struct Mention {
   std::string id, roomSlug, roomName, actorUsername, messageContent;
+  std::string guildName;  // guild_new_thread: metadata.guildName
   // Feed notifications: preview is metadata.replyContent, else postContent,
   // else the top-level reason.
   std::string type, targetId, replyId, preview;

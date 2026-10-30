@@ -60,7 +60,7 @@
   ```
   `Mention` gains `std::string guildName;` from `metadata.guildName`.
 
-- [ ] **Step 1: Write fixtures and failing tests.** Fixtures copy the docs' JSON shapes (List Guilds object, Get Guild with `isMember`/`role`, the two-guild my-guilds list, the members list, join `{"data":{"guildId":"g","role":"apprentice"}}`). Tests:
+- [x] **Step 1: Write fixtures and failing tests.** Fixtures copy the docs' JSON shapes (List Guilds object, Get Guild with `isMember`/`role`, the two-guild my-guilds list, the members list, join `{"data":{"guildId":"g","role":"apprentice"}}`). Tests:
   - `test_guild_page`: two guilds; `out[0].slug=="night-owls"`, `name=="Night Owls"`, `icon=="🦉"`, `founder=="someone"`, `members==42`, `apprentices==7`, `link`/`linkText` set, `createdMs` from `2026-03-27T10:12:01.516Z`; cursor `"xyz"`; a `"cursor":null` page gives `""`.
   - `test_guild_missing_counts_and_null_role`: Get Guild without `apprenticeCount` and with `"role":null,"isMember":false` → `apprentices==0`, `role==""`.
   - `test_guild_role_member`: Get Guild `"isMember":true,"role":"member"` → `role=="member"`.
@@ -69,13 +69,13 @@
   - `test_join_role`: `parseGuildRole` → `"apprentice"`; malformed body → false.
   - In `test_api_parse`: `test_guild_new_thread_notice`: a `guild_new_thread` notification with `metadata.guildName:"Night Owls"`, `postContent:"hello"` → `type`, `targetId`, `guildName=="Night Owls"`, `preview=="hello"`.
 
-- [ ] **Step 2: Run** `pio test -e native -f test_guild_parse -f test_api_parse` — FAIL (missing headers / field).
+- [x] **Step 2: Run** `pio test -e native -f test_guild_parse -f test_api_parse` — FAIL (missing headers / field).
 
-- [ ] **Step 3: Implement** the structs and parsers, reusing `parseIsoMs` from `feed/feed_parse.h`; null/absent strings read as "", absent counts as 0. Add `guildName` to `Mention` and its parse.
+- [x] **Step 3: Implement** the structs and parsers, reusing `parseIsoMs` from `feed/feed_parse.h`; null/absent strings read as "", absent counts as 0. Add `guildName` to `Mention` and its parse.
 
-- [ ] **Step 4: Run** the same command — PASS.
+- [x] **Step 4: Run** the same command — PASS.
 
-- [ ] **Step 5: Commit** `Guilds: types and parsing`.
+- [x] **Step 5: Commit** `Guilds: types and parsing`.
 
 ### Task 2: GuildStore
 

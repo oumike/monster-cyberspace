@@ -144,6 +144,7 @@ bool parseMentions(std::string_view body, std::vector<Mention>& out) {
     m.roomSlug = str(md["roomSlug"]);
     m.roomName = str(md["roomName"]);
     m.messageContent = str(md["messageContent"]);
+    m.guildName = str(md["guildName"]);
     m.type = str(n["type"]);
     m.targetId = str(n["targetId"]);
     m.replyId = str(md["replyId"]);

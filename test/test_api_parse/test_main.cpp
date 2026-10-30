@@ -157,6 +157,17 @@ void test_mentions() {
   TEST_ASSERT_EQUAL_STRING("system", m[3].actorUsername.c_str());
 }
 
+void test_guild_new_thread_notice() {
+  std::vector<Mention> m;
+  TEST_ASSERT_TRUE(parseMentions(fx::kGuildNotice, m));
+  TEST_ASSERT_EQUAL(1, m.size());
+  TEST_ASSERT_EQUAL_STRING("guild_new_thread", m[0].type.c_str());
+  TEST_ASSERT_EQUAL_STRING("p42", m[0].targetId.c_str());
+  TEST_ASSERT_EQUAL_STRING("Night Owls", m[0].guildName.c_str());
+  TEST_ASSERT_EQUAL_STRING("hello", m[0].preview.c_str());
+  TEST_ASSERT_EQUAL_STRING("rain", m[0].actorUsername.c_str());
+}
+
 void test_unread_count() {
   int count = 0;
   bool exact = true;
@@ -249,5 +260,6 @@ int main() {
   RUN_TEST(test_start_conversation);
   RUN_TEST(test_typing_ack);
   RUN_TEST(test_cmail_history_sender_aliases);
+  RUN_TEST(test_guild_new_thread_notice);
   return UNITY_END();
 }

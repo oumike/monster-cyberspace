@@ -59,6 +59,12 @@ static const char* kMentions = R"({"data":[
    "reason":"held","read":false,"createdAt":"2026-06-03T12:03:00.000Z"}
 ],"cursor":null})";
 
+static const char* kGuildNotice = R"({"data":[
+  {"id":"n7","userId":"me","type":"guild_new_thread","actorUsername":"rain","targetId":"p42",
+   "read":false,"createdAt":"2026-06-03T12:04:00.000Z",
+   "metadata":{"guildSlug":"night-owls","guildName":"Night Owls","postContent":"hello"}}
+],"cursor":null})";
+
 static const char* kUnread = R"({"data":{"count":100,"exact":false}})";
 
 static const char* kErrRateLimited = R"({"error":{"code":"RATE_LIMITED","message":"Too many requests"}})";

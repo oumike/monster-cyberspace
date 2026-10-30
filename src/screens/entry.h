@@ -58,8 +58,6 @@ class EntryScreen : public Screen {
   void leaveToList();  // the guild it was opened from, else the Feed list
 
   std::string postId_, noticeId_;
-  bool inGuild_ = false;
-  std::string guildSlug_;
   std::string wantReply_;     // a reply to select once the replies arrive
   bool repliesArrived_ = false;
   LogView log_;

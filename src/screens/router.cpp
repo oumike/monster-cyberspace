@@ -34,6 +34,7 @@ Id cur = Id::Splash;
 Screen* active = &splash;
 Place prev{Id::Splash, ""};
 Place curPlace{Id::Splash, ""};
+Place base{Id::Splash, ""};
 
 Screen* lookup(Id id) {
   switch (id) {
@@ -74,6 +75,7 @@ void go(Id id, const std::string& arg) {
   active->leave();
   prev = curPlace;
   curPlace = Place{id, arg};
+  if (id != Id::Entry && id != Id::Composer) base = curPlace;
   cur = id;
   active = lookup(id);
   active->enter(arg);
@@ -81,6 +83,7 @@ void go(Id id, const std::string& arg) {
 
 Id current() { return cur; }
 Place previous() { return prev; }
+Place lastBase() { return base; }
 Screen& screen() { return *active; }
 
 bool handleGlobal(const KeyEvent& k) {

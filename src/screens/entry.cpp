@@ -46,14 +46,6 @@ std::string entryUrl(const Entry& e) {
 
 void EntryScreen::enter(const std::string& arg) {
   spell_.hide();
-  // A reply or new-thread round trip (Composer, Entry) keeps the guild.
-  const router::Place from = router::previous();
-  if (from.id == router::Id::Guild) {
-    inGuild_ = true;
-    guildSlug_ = from.arg;
-  } else if (from.id != router::Id::Composer && from.id != router::Id::Entry) {
-    inGuild_ = false;
-  }
   std::string parts[3];
   size_t start = 0;
   for (int i = 0; i < 3; ++i) {
@@ -103,7 +95,8 @@ void EntryScreen::closeOverlays() {
 }
 
 void EntryScreen::leaveToList() {
-  if (inGuild_) router::go(router::Id::Guild, guildSlug_);
+  const router::Place base = router::lastBase();
+  if (base.id == router::Id::Guild) router::go(router::Id::Guild, base.arg);
   else router::go(router::Id::FeedList);
 }
 

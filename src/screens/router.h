@@ -54,10 +54,20 @@ enum class Id {
   Bookmarks,
   Settings,
   Wifi,
+  GuildList,
+  Guild,
+  Members,
+};
+
+struct Place {
+  Id id;
+  std::string arg;
 };
 
 void go(Id id, const std::string& arg = "");
 Id current();
+// The screen before the current one, as go() was given it.
+Place previous();
 Screen& screen();
 // The dedicated buttons (Messages, Home, C-Mail, Feed, Map). True when the
 // key was one of them.

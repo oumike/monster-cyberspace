@@ -13,9 +13,9 @@
 namespace rc {
 
 namespace {
-enum Item { kMessages, kRooms, kCmail, kFeed, kSettings, kMentions };
-constexpr int kItems = 5;      // the list (keyed boards)
-constexpr int kTileCount = 6;  // the tiles (touch boards)
+enum Item { kMessages, kRooms, kCmail, kFeed, kGuilds, kSettings, kMentions };
+constexpr int kItems = 6;      // the list (keyed boards)
+constexpr int kTileCount = 7;  // the tiles (touch boards)
 constexpr int kTilePercent = 90;  // of the area between the status bar and the hint
 
 // The newest unread Feed notice as an Entry arg ("postId\nnoticeId"), or "".
@@ -56,6 +56,9 @@ void HomeScreen::openItem(int item) {
       else router::go(router::Id::Entry, arg);
       break;
     }
+    case kGuilds:
+      router::go(router::Id::GuildList);
+      break;
     case kSettings:
       router::go(router::Id::Settings);
       break;
@@ -121,6 +124,7 @@ void HomeScreen::renderTiles(Grid& g, const Theme& t, const std::vector<TileRect
       {U"rooms", U"", false},
       {U"c-mail", utf8ToU32(std::to_string(cmail) + " unread"), cmail > 0},
       {U"feed", utf8ToU32(std::to_string(feed) + " unread"), feed > 0},
+      {U"guilds", U"", false},
       {U"settings", U"", false},
       {utf8ToU32(std::to_string(mentions) + " mentions"), U"", mentions > 0},
   };
@@ -236,6 +240,7 @@ void HomeScreen::render(Grid& g, const Theme& t, int64_t) {
       ListItem{U"Rooms", U""},
       ListItem{U"C-Mail", U""},
       ListItem{U"Feed", U""},
+      ListItem{U"Guilds", U""},
       ListItem{U"Settings", U""},
   });
   int bottom = g.rows() - 1;

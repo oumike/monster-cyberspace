@@ -252,11 +252,11 @@
   Place previous();
   ```
 
-- [ ] **Step 1: Router.** Add the ids and `previous()` (set in `go()`). In `handleGlobal`, `OpenMap` is no longer swallowed: signed in and past Splash, it closes overlays and goes to `GuildList`, except from the Composer (pass the key to the screen) and on `GuildList` with an overlay open (only closes it).
-- [ ] **Step 2: GuildListScreen.** `enter` sends `OpenGuilds`; rows = a divider row `── my guilds ──` (when `pinned()` non-empty), the pinned guilds, `── all guilds ──`, then `others()`, each via `layoutGuildRow`; divider rows are skipped by Up/Down. Down at the end with `!browseEnd()` sends `OpenGuilds` n=1; Select/Right opens `Guild` with the slug; Left/Back → Home; palette Refresh (re-sends `OpenGuilds` n=0) and Text size. Status `Guilds`; empty text "offline" / "loading…" / "couldn't load: Ctrl, Refresh" (touch: "⋯, Refresh") / "no guilds"; hint `↑↓ pick  ● open  ← home  ctrl cmds`, touch `tap to open`. Registers taps and the side strip like `FeedListScreen`.
-- [ ] **Step 3: Home.** Add `kGuilds` after `kFeed` (list item `Guilds`, tile `guilds`), `kTileCount = 7`.
-- [ ] **Step 4: Build** `pio run -e m9` and the demo build — SUCCESS; on the demo build `scripts/screenshot.py` of GuildList is optional.
-- [ ] **Step 5: Commit** `Guilds: list screen, Map button and Home item`.
+- [x] **Step 1: Router.** Add the ids and `previous()` (set in `go()`). In `handleGlobal`, `OpenMap` is no longer swallowed: signed in and past Splash, it closes overlays and goes to `GuildList`, except from the Composer (pass the key to the screen) and on `GuildList` with an overlay open (only closes it).
+- [x] **Step 2: GuildListScreen.** `enter` sends `OpenGuilds`; rows = a divider row `── my guilds ──` (when `pinned()` non-empty), the pinned guilds, `── all guilds ──`, then `others()`, each via `layoutGuildRow`; divider rows are skipped by Up/Down. Down at the end with `!browseEnd()` sends `OpenGuilds` n=1; Select/Right opens `Guild` with the slug; Left/Back → Home; palette Refresh (re-sends `OpenGuilds` n=0) and Text size. Status `Guilds`; empty text "offline" / "loading…" / "couldn't load: Ctrl, Refresh" (touch: "⋯, Refresh") / "no guilds"; hint `↑↓ pick  ● open  ← home  ctrl cmds`, touch `tap to open`. Registers taps and the side strip like `FeedListScreen`.
+- [x] **Step 3: Home.** Add `kGuilds` after `kFeed` (list item `Guilds`, tile `guilds`), `kTileCount = 7`.
+- [x] **Step 4: Build** `pio run -e m9` and the demo build — SUCCESS; on the demo build `scripts/screenshot.py` of GuildList is optional.
+- [x] **Step 5: Commit** `Guilds: list screen, Map button and Home item`.
 
 ### Task 9: Guild thread list, Info, Members and Entry back
 

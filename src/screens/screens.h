@@ -233,6 +233,35 @@ class FeedListScreen : public Screen {
   const Theme* theme_ = nullptr;  // the rows bake its colours
 };
 
+// Every guild: mine first (pinned), then the browse list (spec §5).
+class GuildListScreen : public Screen {
+ public:
+  void enter(const std::string&) override;
+  void leave() override { palette_ = false; }
+  void onKey(const KeyEvent&) override;
+  void onEvent(const Event&) override;
+  void render(Grid&, const Theme&, int64_t nowMs) override;
+  bool hasOverlay() const override { return palette_; }
+  void closeOverlays() override { palette_ = false; }
+
+ private:
+  void paletteKey(const KeyEvent&);
+  void open();
+  void requestMore();
+  void step(bool down);  // moves the selection, skipping the dividers
+  void rebuild(int cols, const Theme& t);
+  void remember();
+
+  EntryList list_;
+  Overlay box_;
+  bool palette_ = false;
+  std::vector<std::string> slugs_;  // per row; "" for a divider
+  std::string selSlug_;
+  bool dirty_ = true, failed_ = false, more_ = false, asked_ = false;
+  int cols_ = 0;
+  const Theme* theme_ = nullptr;
+};
+
 class ComingSoonScreen : public Screen {
  public:
   void enter(const std::string& name) override { name_ = name; }

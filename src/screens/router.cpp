@@ -26,9 +26,12 @@ SettingsScreen settingsScreen;
 ComingSoonScreen comingSoon;
 LoginFormScreen loginForm;
 WifiScreen wifiScreen;
+GuildListScreen guildList;
 
 Id cur = Id::Splash;
 Screen* active = &splash;
+Place prev{Id::Splash, ""};
+Place curPlace{Id::Splash, ""};
 
 Screen* lookup(Id id) {
   switch (id) {
@@ -48,6 +51,10 @@ Screen* lookup(Id id) {
     case Id::Wifi: return &wifiScreen;
     case Id::Entry: return &entry;
     case Id::Composer: return &composer;
+    case Id::GuildList:
+    case Id::Guild:    // Task 9 replaces these two with the thread list
+    case Id::Members:  // and the members screen
+      return &guildList;
   }
   return &home;
 }
@@ -64,12 +71,15 @@ bool signedIn() {
 
 void go(Id id, const std::string& arg) {
   active->leave();
+  prev = curPlace;
+  curPlace = Place{id, arg};
   cur = id;
   active = lookup(id);
   active->enter(arg);
 }
 
 Id current() { return cur; }
+Place previous() { return prev; }
 Screen& screen() { return *active; }
 
 bool handleGlobal(const KeyEvent& k) {
@@ -83,7 +93,7 @@ bool handleGlobal(const KeyEvent& k) {
     default:
       return false;
   }
-  if (k.action == Action::OpenMap || !signedIn() || cur == Id::Splash) return true;
+  if (!signedIn() || cur == Id::Splash) return true;
   bool hadOverlay = active->hasOverlay();
   active->closeOverlays();
   switch (k.action) {
@@ -103,6 +113,10 @@ bool handleGlobal(const KeyEvent& k) {
       if (cur == Id::Composer) active->onKey(k);
       // In the list, a press with a palette open only closes it.
       else if (cur != Id::FeedList || !hadOverlay) go(Id::FeedList);
+      break;
+    case Action::OpenMap:
+      if (cur == Id::Composer) active->onKey(k);
+      else if (cur != Id::GuildList || !hadOverlay) go(Id::GuildList);
       break;
     default:
       break;

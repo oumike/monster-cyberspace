@@ -944,13 +944,17 @@ void FakeFeedSource::guildMembership(const Command& c) {
       if (mine != mine_.end()) {
         code = 409;
         text = "You are already in this guild";
+      } else if (std::count_if(mine_.begin(), mine_.end(),
+                               [](const MyGuild& m) { return m.role == "apprentice"; }) >= 5) {
+        code = 409;
+        text = "You can hold at most five apprenticeships";
       } else {
         mine_.push_back(MyGuild{fg->info.slug, fg->info.name, fg->info.icon, "apprentice"});
         text = "Joined as apprentice";
       }
     } else if (mine == mine_.end()) {
-      code = 403;
-      text = "Manage this on the web";
+      code = 404;
+      text = "Guild not found";
     } else if (c.type == CmdType::LeaveGuild) {
       mine_.erase(mine);
       text = "Left " + name;

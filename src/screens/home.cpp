@@ -1,4 +1,5 @@
 #include "app/app_state.h"
+#include "app/ui_task.h"
 #include "hal/board.h"
 #include "screens/draw.h"
 #include "screens/screens.h"
@@ -35,6 +36,7 @@ int feedUnread() {
 void HomeScreen::enter(const std::string&) {
   menu_.setSelected(0);
   tileSel_ = 0;
+  tileHidden_ = ui::fromTouch();
 }
 
 void HomeScreen::openItem(int item) {
@@ -68,6 +70,24 @@ void HomeScreen::openItem(int item) {
 
 void HomeScreen::onKey(const KeyEvent& k) {
   if (tileMode_) {
+    // Drags and taps hide the cursor and never move it; the next arrow or
+    // Select only brings it back.
+    if (ui::fromTouch()) {
+      tileHidden_ = true;
+      if (k.action != Action::Activate && k.action != Action::Select) return;
+    } else if (tileHidden_) {
+      switch (k.action) {
+        case Action::Up:
+        case Action::Down:
+        case Action::Left:
+        case Action::Right:
+        case Action::Select:
+          tileHidden_ = false;
+          return;
+        default:
+          break;
+      }
+    }
     switch (k.action) {
       case Action::Up:
       case Action::Down:
@@ -130,11 +150,11 @@ void HomeScreen::renderTiles(Grid& g, const Theme& t, const std::vector<TileRect
       {U"settings", U"", false},
   };
 
-  if (activeTaps()) activeTaps()->setList(ListId::Main, tileSel_, kTileCount, false);
+  if (activeTaps()) activeTaps()->setList(ListId::Main, tileHidden_ ? -1 : tileSel_, kTileCount, false);
   for (int i = 0; i < kTileCount && i < int(tiles.size()); ++i) {
     const TileRect& r = tiles[i];
     const TileInfo& it = info[i];
-    const bool sel = i == tileSel_;
+    const bool sel = i == tileSel_ && !tileHidden_;
     // The cursor is the outline alone: the selected tile's in the accent.
     const uint16_t bg = t.bg;
     for (int row = r.r0; row <= r.r1; ++row)

@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include "app/ui_task.h"
 #include "hal/board.h"
 #include "ui/button_grid.h"
 #include "ui/tap_map.h"
@@ -11,10 +12,37 @@ namespace rc {
 
 bool ButtonPad::active() { return board::hasTouch() && !board::hasKeys(); }
 
+void ButtonPad::reset() {
+  scroll_ = dragSteps_ = shift_ = selected_ = 0;
+  hidden_ = ui::fromTouch();
+}
+
 int ButtonPad::columns() { return board::panelWidth() >= 800 ? 3 : 2; }
 
 int ButtonPad::key(const KeyEvent& k) {
-  if (cursor_) {
+  if (cursor_ && ui::fromTouch()) {
+    hidden_ = true;
+    if (k.action == Action::Activate) {
+      if (k.target != uint8_t(ListId::Main) || k.index < 0 || k.index >= count_) return -1;
+      selected_ = k.index;
+      return k.then == Action::Select ? k.index : -1;
+    }
+  } else if (cursor_ && hidden_) {
+    switch (k.action) {
+      case Action::Up:
+      case Action::Down:
+      case Action::Left:
+      case Action::Right:
+      case Action::Select:
+        hidden_ = false;
+        dragSteps_ = 0;
+        selected_ = firstShown_;
+        break;
+      default:
+        break;
+    }
+    return -1;
+  } else if (cursor_) {
     switch (k.action) {
       case Action::Up:
         if (selected_ >= cols_) selected_ -= cols_;
@@ -97,11 +125,12 @@ void ButtonPad::render(Grid& g, const Theme& t, const std::vector<ListItem>& ite
   auto layout = [&] {
     return buttonGrid(g.cols(), top + std::max(0, header) - shift_, bottom, n, cols, scroll_, height_);
   };
+  const bool showCursor = cursor_ && !hidden_;
   // On the first row the header comes back too, as far as it fits.
-  if (cursor_ && selected_ < cols) scroll_ = shift_ = 0;
+  if (showCursor && selected_ < cols) scroll_ = shift_ = 0;
   ButtonGrid b = layout();
   // Keep the cursor shown: the header scrolls away first and comes back last.
-  for (int guard = 0; cursor_ && n > 0 && guard < n + header_ + 2; ++guard) {
+  for (int guard = 0; showCursor && n > 0 && guard < n + header_ + 2; ++guard) {
     if (selected_ < b.first) {
       if (scroll_ > 0) --scroll_;
       else if (shift_ > 0) --shift_;
@@ -115,9 +144,10 @@ void ButtonPad::render(Grid& g, const Theme& t, const std::vector<ListItem>& ite
     }
     b = layout();
   }
+  firstShown_ = b.first;
   scroll_ = b.scrollRow;
   if (activeTaps()) {
-    activeTaps()->setList(ListId::Main, cursor_ ? selected_ : -1, n, false);
+    activeTaps()->setList(ListId::Main, showCursor ? selected_ : -1, n, false);
     // Under the buttons, the whole area (gaps and header too) takes drags;
     // a tap there picks nothing.
     Target bg;
@@ -142,7 +172,7 @@ void ButtonPad::render(Grid& g, const Theme& t, const std::vector<ListItem>& ite
     const uint16_t fg = it.tone == ItemTone::Error ? t.error : it.marker ? t.selectBg : t.fg;
     g.putText(r.c0 + 1, mid, it.label, fg, t.bg, rw > 0 ? inW - rw - 1 : inW);
     if (!it.detail.empty()) g.putText(r.c0 + 1, mid + 1, oneLine(it.detail, inW), t.dim, t.bg, inW);
-    const bool sel = cursor_ && i == selected_ && cursorShown();
+    const bool sel = showCursor && i == selected_ && cursorShown();
     g.outline(r.c0, r.r0, r.c1, r.r1, sel ? t.selectBg : t.dim);
     // Outlined themes have one ink for both outlines: the cursor is a second
     // box, where it clears the label row.

@@ -21,15 +21,18 @@ class ButtonPad {
   static bool active();
   static int columns();
 
-  void reset() { scroll_ = dragSteps_ = shift_ = selected_ = 0; }
+  // The cursor starts hidden when a tap opened the screen.
+  void reset();
   // With a cursor (touch boards that also have keys) one button is selected:
   // the arrows move it through the grid, Select returns it, and the view
-  // scrolls to keep it shown. Without one, Up/Down scroll.
+  // scrolls to keep it shown. Without one, Up/Down scroll. Touch (drags and
+  // taps, ui::fromTouch) hides the cursor and scrolls as without one; the
+  // next arrow or Select only brings it back, on the first button shown.
   void setCursor(bool on) { cursor_ = on; }
   // A tap on a button returns its index; anything else -1.
   int key(const KeyEvent& k);
   // The cursor is in the first column, where Left leaves the grid.
-  bool atLeftEdge() const { return selected_ % cols_ == 0; }
+  bool atLeftEdge() const { return !hidden_ && selected_ % cols_ == 0; }
   // Over grid rows [top, bottom). keepRight shortens the label rather than
   // dropping `right` when both don't fit. columns 0: columns(). header:
   // rows the caller draws above the buttons, from `top`; they scroll away a
@@ -48,6 +51,8 @@ class ButtonPad {
   int header_ = 0;
   bool cursor_ = false;
   int selected_ = 0;
+  bool hidden_ = false;  // the cursor, after touch
+  int firstShown_ = 0;
   int count_ = 0;
   int cols_ = 2;
 };

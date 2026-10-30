@@ -73,6 +73,7 @@ class HomeScreen : public Screen {
   ListView menu_;
   int tileSel_ = 0;      // selected tile (touch boards)
   bool tileMode_ = false;  // set each render: tiles shown this frame
+  bool tileHidden_ = false;  // touch hides the tile cursor until an arrow or Select
 };
 
 // On-device settings: the setup AP, log out, factory reset.

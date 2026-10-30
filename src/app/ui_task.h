@@ -20,6 +20,9 @@ void cycleTextSize();
 void setRotation(uint8_t r);
 // A one-row banner on the bottom row, above whatever the screen drew.
 void banner(const std::string& text, bool error);
+// The key being handled came from the touch screen (a tap, drag or the
+// on-screen keyboard), not a button or keyboard.
+bool fromTouch();
 // Forces every row to be redrawn on the next frame.
 void redrawAll();
 // One double blink of the new-message light in c (board::hasNotifyLight).

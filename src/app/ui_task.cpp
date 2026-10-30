@@ -62,6 +62,7 @@ bool baseCursor = false;
 // place at the bottom; the keyboard comes back when the tray closes.
 bool oskBehindTray = false;
 bool pressMenu = false;
+bool touchKey = false;  // ui::fromTouch()
 // The last Backspace that deleted text (backspaceIsBack boards).
 uint32_t lastDeleteMs = 0;
 bool deletedOnce = false;
@@ -506,6 +507,7 @@ void taskMain(void*) {
         resolver.resolve(g, taps, out);
         if (out.hideBanner) topBanner.hide();
         const bool menuBefore = Overlay::anyOpen();
+        touchKey = true;
         for (const KeyEvent& k : out.keys) {
           handleKey(k);
           if (g.kind == GestureKind::LongPress && !menuBefore && Overlay::anyOpen())
@@ -523,6 +525,7 @@ void taskMain(void*) {
             oskBehindTray = true;
           }
         }
+        touchKey = false;
       }
     }
     board::textEntry(power == Power::On && router::screen().acceptsText());
@@ -637,6 +640,8 @@ std::u32string textSizeItem() { return U"Text size: " + textSizeLabel(nextTextSi
 void cycleTextSize() { setTextSize(nextTextSize(app().cfg.textSize)); }
 
 void setRotation(uint8_t r) { applyRotation(r); }
+
+bool fromTouch() { return touchKey; }
 
 void banner(const std::string& text, bool error) {
   topBanner.show(utf8ToU32(text), nowMs(), error ? 6000 : 4000, error);

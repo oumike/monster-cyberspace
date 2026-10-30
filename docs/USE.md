@@ -639,7 +639,9 @@ touch board and two more on a board with an SD card slot:
 On a touch board the actions are a grid of buttons, each with its current
 value at the right. On the T-Deck Plus and the Mesh Deck the arrows move a
 highlighted outline between them and Select opens one; Left from the first
-column, or Back, returns Home.
+column, or Back, returns Home. Dragging or tapping hides the outline (on the
+Home tiles too); the next arrow or Select brings it back on the first button
+shown without moving or opening anything.
 
 - **Theme: …** Opens a box with every theme (see Themes); picking one
   applies and saves it.

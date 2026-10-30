@@ -31,8 +31,12 @@ for f in "$src"/monster-cyberspace-*-"$tag".bin; do
     slug="${name#monster-cyberspace-}"
     slug="${slug%-"$tag".bin}"
     cp "$f" "$out/firmware/$name"
-    # Every board is an ESP32-S3 (scripts/release.sh env_chip). The part path
-    # is relative to the manifest.
+    # Chip per board, as scripts/release.sh env_chip. The part path is
+    # relative to the manifest.
+    case "$slug" in
+        tdisplay-p4) chip="ESP32-P4" ;;
+        *)           chip="ESP32-S3" ;;
+    esac
     cat > "$out/manifests/$slug.json" <<EOF
 {
   "name": "Monster for Cyberspace",
@@ -40,7 +44,7 @@ for f in "$src"/monster-cyberspace-*-"$tag".bin; do
   "new_install_prompt_erase": true,
   "builds": [
     {
-      "chipFamily": "ESP32-S3",
+      "chipFamily": "$chip",
       "parts": [{ "path": "../firmware/$name", "offset": 0 }]
     }
   ]

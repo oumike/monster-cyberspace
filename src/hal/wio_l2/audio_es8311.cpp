@@ -1,4 +1,4 @@
-#if defined(BOARD_WIO_L2) || defined(BOARD_PAGER)
+#if defined(BOARD_WIO_L2) || defined(BOARD_PAGER) || defined(BOARD_TDISPLAY_P4)
 
 #include "hal/wio_l2/audio_es8311.h"
 
@@ -13,7 +13,7 @@
 
 // Ported from platy-aprs's src/hal/audio.cpp (itself from camillia-mt's
 // pager/T-Deck tone players), on Arduino 3's ESP_I2S instead of the legacy
-// I2S driver. Shared by the Wio Tracker L2 and the T-LoRa Pager.
+// I2S driver. Shared by the Wio Tracker L2, the T-LoRa Pager and the T-Display P4.
 
 namespace es8311 {
 namespace {
@@ -48,7 +48,7 @@ audio_driver::AudioBoard codec(audio_driver::AudioDriverES8311, pins);
 bool codecBegin() {
   static bool pinsSet = false;
   if (!pinsSet) {
-    pins.addI2C(audio_driver::PinFunction::CODEC, Wire);
+    pins.addI2C(audio_driver::PinFunction::CODEC, cfg.wire ? *cfg.wire : Wire);
     pins.addI2S(audio_driver::PinFunction::CODEC, cfg.mclk, cfg.bck, cfg.ws, cfg.dout, -1);
     (void)codec.driver().setI2CAddress(cfg.addr);
     pinsSet = true;

@@ -16,6 +16,7 @@ RELEASE_ENVS=(
     pager
     tdeck_pro
     mesh_deck
+    tdisplay_p4
 )
 
 # Every release image is merged with this esptool. esptool 5 renamed merge_bin
@@ -43,14 +44,28 @@ env_label() {
         pager)       echo "LilyGO T-LoRa Pager" ;;
         tdeck_pro)   echo "LilyGO T-Deck Pro" ;;
         mesh_deck)   echo "Attaky Mesh Deck" ;;
+        tdisplay_p4) echo "LilyGO T-Display P4" ;;
         *)           echo "$1" ;;
     esac
 }
 
-# Every board here is an ESP32-S3 with 16 MB of flash. Kept as functions so a
-# board that differs only has to add a case. Artifact names use dashes.
+# Every board has 16 MB of flash and all but the T-Display P4 are ESP32-S3s.
+# Kept as functions so a board that differs only has to add a case. Artifact
+# names use dashes.
 env_out_name()   { echo "${1//_/-}"; }
-env_chip()       { echo "esp32s3"; }
+env_chip() {
+    case "$1" in
+        tdisplay_p4) echo "esp32p4" ;;
+        *)           echo "esp32s3" ;;
+    esac
+}
+# Where the chip's ROM looks for the second-stage bootloader.
+env_boot_offset() {
+    case "$(env_chip "$1")" in
+        esp32p4) echo "0x2000" ;;
+        *)       echo "0x0" ;;
+    esac
+}
 env_flash_size() { echo "16MB"; }
 # DIO in the image header boots on every QIO-capable part, and is what the
 # platy-aprs and camillia-mt images for the same boards ship with.
@@ -210,7 +225,7 @@ merge_assets() {
         echo "  $env_name -> $out.bin"
         "${ESPTOOL[@]}" --chip "$(env_chip "$env_name")" merge_bin -o "$out.bin" \
             -fm "$(env_flash_mode "$env_name")" -ff 80m -fs "$(env_flash_size "$env_name")" \
-            0x0     "$d/bootloader.bin" \
+            "$(env_boot_offset "$env_name")" "$d/bootloader.bin" \
             0x8000  "$d/partitions.bin" \
             0xe000  "$d/boot_app0.bin" \
             0x10000 "$d/firmware.bin" >/dev/null

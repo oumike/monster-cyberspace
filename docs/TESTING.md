@@ -256,6 +256,20 @@ Buttons: BOOT tap = Back, BOOT hold (0.6 s) = Home; Wake tap = screen off
 - [ ] After flashing, the board restarts on its own; if the screen stays dark, note it (camillia-mt needed a power cycle there)
 - [ ] Wi-Fi setup (nothing saved): the AP is named `Monster-Cyberspace-MeshDeck` and `http://192.168.4.1` loads
 
+**T-Display P4 (`tdisplay_p4`):**
+
+- [ ] Boots: the AMOLED lights with the splash, and the serial log (USB) has none of `[p4] expander init failed`, `ESP32-C6 reset failed`, `panel init failed` or `[gt9895] not found`
+- [ ] Panel: every orientation is upright, not mirrored, colours right, and fills the screen (the 2× blit in `p4panel::pushRows`); `esp_restart` (e.g. after saving Wi-Fi) brings the panel back
+- [ ] Touch: a tap lands where the finger is in every corner and every orientation; holding a finger still counts as one long press (GT9895 hold timeout, 100 ms); a swipe scrolls; a double tap wakes the screen
+- [ ] Side button: turns the screen off, and on again
+- [ ] Wi-Fi through the ESP32-C6 (ESP-Hosted): joins a saved network, and reconnects after a drop (camillia-mt needed a C6 reset to recover)
+- [ ] Battery %: Settings shows a sensible value; the charging state follows the USB cable (BQ27220)
+- [ ] Beeps play on the speaker (ES8311 on `Wire1`)
+- [ ] GPS: outdoors with Wi-Fi off, `[time] set from GPS` within 15 min, then `[gps] off`
+- [ ] SD (FAT32 card): Back up to SD card, then Restore from SD card…, both work (SD_MMC, 4-bit)
+- [ ] Browser flasher and `flash.sh` install the factory image (bootloader at `0x2000` inside it)
+- [ ] Wi-Fi setup (nothing saved): the AP is named `Monster-Cyberspace-TDisplayP4` and `http://192.168.4.1` loads
+
 **GPS time, RTC and time zone (`m9`):**
 
 - [ ] With Wi-Fi in range, `[time] NTP sync` and `[time] RTC written` appear, then `[gps] off`

@@ -4,7 +4,8 @@ On the Elecrow ThinkNode M9 (keyboard and d-pad), the Seeed Wio Tracker L2
 (touch screen; see Touch below) and the LilyGO T-Deck Plus (keyboard,
 trackball and touch; see T-Deck Plus below), and the Elecrow CrowPanel
 Advance 3.5" and 5.0" (touch only; see CrowPanel below), and the Attaky Mesh
-Deck (d-pad, touch and keyboard; see Mesh Deck below). Key names in this guide are the
+Deck (d-pad, touch and keyboard; see Mesh Deck below), and the LilyGO
+T-Display P4 (touch only; see T-Display P4 below). Key names in this guide are the
 M9's.
 
 ## First setup
@@ -265,6 +266,24 @@ and backups go through web config. The setup AP is
 **`Monster-Cyberspace-MeshDeck`**. The serial console is the USB-C port
 (a CH340). Right after flashing, if the screen stays dark, switch the
 Mesh Deck off and on.
+
+## T-Display P4
+
+The LilyGO T-Display P4 works by touch alone, as described under Touch above
+and like the CrowPanels below (double tap to wake, no cursor, the room list
+and Settings as button grids, Orientation in Settings or web config). Its
+4.1" AMOLED is drawn at half resolution, so every pixel is a 2×2 block and
+text is the size it would be on a 4" phone screen.
+
+- **Side button:** turns the screen off, and on again.
+- **Wi-Fi** goes through the board's ESP32-C6 co-processor.
+- **Battery:** Settings shows the charge from the fuel gauge.
+- **Clock:** no RTC; NTP or the GPS sets it, and the GPS powers off once it has.
+- **Backups:** the microSD slot.
+- **Sound:** beeps play on the speaker.
+
+The setup AP is **`Monster-Cyberspace-TDisplayP4`**. The serial console is the
+USB-C port (the ESP32-P4's own USB).
 
 ## CrowPanel
 

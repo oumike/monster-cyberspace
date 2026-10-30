@@ -63,6 +63,7 @@ bool baseCursor = false;
 bool oskBehindTray = false;
 bool pressMenu = false;
 bool touchKey = false;  // ui::fromTouch()
+bool oskWanted = false;  // ui::showKeyboard()
 // The last Backspace that deleted text (backspaceIsBack boards).
 uint32_t lastDeleteMs = 0;
 bool deletedOnce = false;
@@ -567,6 +568,12 @@ void taskMain(void*) {
       }
     }
     if (oskShown && !router::screen().acceptsText()) showOsk(false);
+    if (oskWanted) {
+      oskWanted = false;
+      if (power == Power::On && board::hasTouch() && !board::hasKeyboard() && !symbols.isOpen() &&
+          router::current() == beforeScreen && router::screen().acceptsText())
+        showOsk(true);
+    }
     if (oskBehindTray && !symbols.isOpen()) {
       oskBehindTray = false;
       if (power == Power::On && router::current() == beforeScreen && router::screen().acceptsText())
@@ -642,6 +649,8 @@ void cycleTextSize() { setTextSize(nextTextSize(app().cfg.textSize)); }
 void setRotation(uint8_t r) { applyRotation(r); }
 
 bool fromTouch() { return touchKey; }
+
+void showKeyboard() { oskWanted = true; }
 
 void banner(const std::string& text, bool error) {
   topBanner.show(utf8ToU32(text), nowMs(), error ? 6000 : 4000, error);

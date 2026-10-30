@@ -359,6 +359,7 @@ void EntryScreen::pickMenu() {
       if (key == "reply") {
         // The selection stays, so the next send answers this reply (or the entry).
         if (menu_ == Menu::Entry) log_.follow();
+        ui::showKeyboard();
       } else if (key == "bookmark") {
         feedSource().command(
             Command{CmdType::Bookmark, postId_, targetReply_ ? target_ : std::string()});

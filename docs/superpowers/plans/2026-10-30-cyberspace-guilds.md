@@ -176,11 +176,11 @@
                               const std::string& preview);
   ```
 
-- [ ] **Step 1: Write failing tests:** `test_guild_row_counts_role` (`🦉 Night Owls · 42+7 · member`), `test_guild_row_no_apprentices` (`· 42` with no `+0`), `test_row_without_icon_or_name` (line1 starts with the slug), `test_guild_row_no_bio` (`no bio`), `test_member_item`, `test_guild_info_text` (contains each line above; no "you:" when role empty; no link line when link empty), `test_guild_notice_text` (both forms).
-- [ ] **Step 2: Run** `pio test -e native -f test_layout` — FAIL.
-- [ ] **Step 3: Implement.**
-- [ ] **Step 4: Run** — PASS, then the whole `pio test -e native` — all green.
-- [ ] **Step 5: Commit** `Guilds: rows, info text and notice text`.
+- [x] **Step 1: Write failing tests:** `test_guild_row_counts_role` (`🦉 Night Owls · 42+7 · member`), `test_guild_row_no_apprentices` (`· 42` with no `+0`), `test_row_without_icon_or_name` (line1 starts with the slug), `test_guild_row_no_bio` (`no bio`), `test_member_item`, `test_guild_info_text` (contains each line above; no "you:" when role empty; no link line when link empty), `test_guild_notice_text` (both forms).
+- [x] **Step 2: Run** `pio test -e native -f test_layout` — FAIL.
+- [x] **Step 3: Implement.**
+- [x] **Step 4: Run** — PASS, then the whole `pio test -e native` — all green.
+- [x] **Step 5: Commit** `Guilds: rows, info text and notice text`.
 
 ### Task 5: CsApi guild calls
 

@@ -11,6 +11,7 @@
 #include "ui/button_grid.h"
 #include "ui/feed_layout.h"
 #include "ui/grid.h"
+#include "ui/guild_layout.h"
 #include "ui/nick_color.h"
 #include "ui/room_layout.h"
 #include "ui/splash_layout.h"
@@ -750,6 +751,93 @@ void test_one_line_blurb() {
   TEST_ASSERT_TRUE(oneLine(U"abc", 0).empty());
 }
 
+
+static Guild sampleGuild() {
+  Guild g;
+  g.slug = "night-owls";
+  g.name = "Night Owls";
+  g.icon = "\xF0\x9F\xA6\x89";
+  g.founder = "ann";
+  g.bio = "\nWe stay **up** late.\nSecond line";
+  g.members = 42;
+  g.apprentices = 7;
+  g.createdMs = 1773000000000LL;  // Mar 2026
+  return g;
+}
+
+void test_guild_row_counts_role() {
+  Guild g = sampleGuild();
+  g.role = "member";
+  FeedRow r = layoutGuildRow(g, 60, defaultTheme());
+  TEST_ASSERT_TRUE(r.line1 == utf8ToU32("\xF0\x9F\xA6\x89 Night Owls \xC2\xB7 42+7 \xC2\xB7 member"));
+  TEST_ASSERT_TRUE(r.line2 == utf8ToU32("We stay up late."));
+}
+
+void test_guild_row_no_apprentices() {
+  Guild g = sampleGuild();
+  g.apprentices = 0;
+  FeedRow r = layoutGuildRow(g, 60, defaultTheme());
+  TEST_ASSERT_TRUE(r.line1 == utf8ToU32("\xF0\x9F\xA6\x89 Night Owls \xC2\xB7 42"));
+}
+
+void test_row_without_icon_or_name() {
+  Guild g = sampleGuild();
+  g.icon.clear();
+  g.name.clear();
+  FeedRow r = layoutGuildRow(g, 60, defaultTheme());
+  TEST_ASSERT_TRUE(r.line1 == utf8ToU32("night-owls \xC2\xB7 42+7"));
+}
+
+void test_guild_row_no_bio() {
+  Guild g = sampleGuild();
+  g.bio.clear();
+  TEST_ASSERT_TRUE(layoutGuildRow(g, 60, defaultTheme()).line2 == utf8ToU32("no bio"));
+  g.bio = "Hello world";
+  TEST_ASSERT_EQUAL(5, (int)layoutGuildRow(g, 5, defaultTheme()).line2.size());
+}
+
+void test_member_item() {
+  Member m;
+  m.username = "bob";
+  m.role = "member";
+  m.joinedMs = 1000;
+  ListItem it = memberItem(m, 1000 + 90LL * 86400000LL);
+  TEST_ASSERT_TRUE(it.label == U"@bob");
+  TEST_ASSERT_TRUE(it.right == utf8ToU32("member \xC2\xB7 " + relativeAge(1000, 1000 + 90LL * 86400000LL)));
+}
+
+static bool hasLine(const std::u32string& t, const std::string& l) {
+  std::u32string n = U"\n" + t + U"\n";
+  return n.find(U"\n" + utf8ToU32(l) + U"\n") != std::u32string::npos;
+}
+
+void test_guild_info_text() {
+  Guild g = sampleGuild();
+  g.role = "member";
+  g.link = "https://x.example";
+  g.linkText = "Our site";
+  std::u32string t = guildInfoText(g);
+  TEST_ASSERT_TRUE(hasLine(t, "\xF0\x9F\xA6\x89 Night Owls"));
+  TEST_ASSERT_TRUE(hasLine(t, "founded by @ann"));
+  TEST_ASSERT_TRUE(hasLine(t, "42 members \xC2\xB7 7 apprentices"));
+  TEST_ASSERT_TRUE(hasLine(t, "founded Mar 2026"));
+  TEST_ASSERT_TRUE(hasLine(t, "you: member"));
+  TEST_ASSERT_TRUE(hasLine(t, "We stay up late."));
+  TEST_ASSERT_TRUE(hasLine(t, "Our site https://x.example"));
+  g.role.clear();
+  g.link.clear();
+  g.createdMs = -1;
+  t = guildInfoText(g);
+  TEST_ASSERT_TRUE(t.find(U"you:") == std::u32string::npos);
+  TEST_ASSERT_TRUE(t.find(U"https") == std::u32string::npos);
+  TEST_ASSERT_TRUE(t.find(U"founded Mar") == std::u32string::npos);
+}
+
+void test_guild_notice_text() {
+  TEST_ASSERT_EQUAL_STRING("@ann in Night Owls: hi", guildNoticeText("ann", "Night Owls", "hi").c_str());
+  TEST_ASSERT_EQUAL_STRING("@ann in a guild: hi", guildNoticeText("ann", "", "hi").c_str());
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_button_grid_taller_buttons);
@@ -796,5 +884,12 @@ int main() {
   RUN_TEST(test_splash_art_is_one_block);
   RUN_TEST(test_splash_drops_art_when_too_small);
   RUN_TEST(test_button_grid_three_columns);
+  RUN_TEST(test_guild_row_counts_role);
+  RUN_TEST(test_guild_row_no_apprentices);
+  RUN_TEST(test_row_without_icon_or_name);
+  RUN_TEST(test_guild_row_no_bio);
+  RUN_TEST(test_member_item);
+  RUN_TEST(test_guild_info_text);
+  RUN_TEST(test_guild_notice_text);
   return UNITY_END();
 }

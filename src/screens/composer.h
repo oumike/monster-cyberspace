@@ -36,8 +36,9 @@ class ComposerScreen : public Screen {
   void openMenu(Menu m, std::u32string title, std::vector<ListItem> items);
   void pick();
   void post();
-  void askLeave();      // Back or the Feed key
-  void discard();       // clears the draft and goes to the Feed
+  void askLeave(bool toMap);  // Back, the Feed key, or the Map key (toMap)
+  void goBack();        // the Feed, the guild, or the guild list
+  void discard();       // clears the draft and goes back
   void load();          // the widgets from the draft
   void save();          // the focused field into the draft
   InputLine* line();    // the focused one-line field, or null
@@ -48,6 +49,7 @@ class ComposerScreen : public Screen {
   int focus_ = kTitle;
   int cols_ = 40;       // the body width, for moving by line
   Menu menu_ = Menu::None;
+  bool toMap_ = false;  // the pending leave goes to the guild list
   Overlay box_;
 };
 

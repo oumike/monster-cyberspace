@@ -7,6 +7,7 @@
 #include "feed/compose.h"
 #include "feed/feed_source.h"
 #include "screens/draw.h"
+#include "store/locked_feed.h"
 #include "ui/tap_map.h"
 
 namespace rc {
@@ -16,6 +17,7 @@ namespace {
 // The draft outlives the screen; only Post and Discard clear it.
 EntryDraft gDraft;
 bool gPosting = false;  // a PostEntry waits for its result
+std::string gGuildSlug;  // set: a new thread in that guild (Title, Body, Topics only)
 
 bool hasText() {
   return !gDraft.title.empty() || !gDraft.body.empty() || !gDraft.topics.empty() ||
@@ -36,14 +38,17 @@ bool settle(const Event& e) {
 
 void composerBackgroundEvent(const Event& e) { settle(e); }
 
-void ComposerScreen::enter(const std::string&) {
+void ComposerScreen::enter(const std::string& key) {
   menu_ = Menu::None;
+  toMap_ = false;
+  gGuildSlug = key.rfind("guild:", 0) == 0 ? key.substr(6) : std::string();
   spell_.hide();
   title_.setFieldId(kTitle);
   body_.setFieldId(kBody);
   topics_.setFieldId(kTopics);
   cw_.setFieldId(kCw);
   load();
+  if (!gGuildSlug.empty() && focus_ > kTopics) focus_ = kTitle;
 }
 
 bool ComposerScreen::acceptsText() const {
@@ -98,7 +103,8 @@ void ComposerScreen::fieldKey(const KeyEvent& k) {
     save();
     return;
   }
-  if (k.action == Action::Back || k.action == Action::OpenFeed) return askLeave();
+  if (k.action == Action::Back || k.action == Action::OpenFeed) return askLeave(false);
+  if (k.action == Action::OpenMap) return askLeave(true);
   if (gPosting) return;  // no edits while the post is in flight
   InputLine* in = line();
   switch (k.action) {
@@ -135,7 +141,7 @@ void ComposerScreen::fieldKey(const KeyEvent& k) {
       break;
     case Action::Down:
       if (focus_ == kBody && body_.down(cols_)) break;
-      if (focus_ < kCw) ++focus_;
+      if (focus_ < (gGuildSlug.empty() ? kCw : kTopics)) ++focus_;
       break;
     case Action::Select:
       if (focus_ == kBody) {
@@ -145,17 +151,18 @@ void ComposerScreen::fieldKey(const KeyEvent& k) {
         gDraft.isPublic = !gDraft.isPublic;
       } else if (focus_ == kNsfw) {
         gDraft.nsfw = !gDraft.nsfw;
-      } else if (focus_ < kCw) {
+      } else if (focus_ < (gGuildSlug.empty() ? kCw : kTopics)) {
         ++focus_;
       }
       break;
     case Action::Palette:
     case Action::Options: {
-      openMenu(Menu::Actions, U"entry",
+      openMenu(Menu::Actions, gGuildSlug.empty() ? U"entry" : U"thread",
                {ListItem{U"Post\u2026", U""}, ListItem{U"Discard\u2026", U"", ItemTone::Error}});
       break;
     }
     case Action::Focus:
+      if (!gGuildSlug.empty() && k.target > kTopics) break;
       if (k.target == kPublic) {
         focus_ = kPublic;
         gDraft.isPublic = !gDraft.isPublic;
@@ -173,9 +180,16 @@ void ComposerScreen::fieldKey(const KeyEvent& k) {
   }
 }
 
-void ComposerScreen::askLeave() {
+void ComposerScreen::goBack() {
+  if (toMap_) router::go(router::Id::GuildList);
+  else if (!gGuildSlug.empty()) router::go(router::Id::Guild, gGuildSlug);
+  else router::go(router::Id::FeedList);
+}
+
+void ComposerScreen::askLeave(bool toMap) {
+  toMap_ = toMap;
   // A post in flight keeps the draft until it settles.
-  if (gPosting) return router::go(router::Id::FeedList);
+  if (gPosting) return goBack();
   if (!hasText()) return discard();
   openMenu(Menu::ConfirmDiscard, U"Discard draft?",
            {ListItem{U"Cancel", U""}, ListItem{U"Discard", U"", ItemTone::Error}});
@@ -185,7 +199,7 @@ void ComposerScreen::discard() {
   gDraft = EntryDraft{};
   load();
   focus_ = kTitle;
-  router::go(router::Id::FeedList);
+  goBack();
 }
 
 // ---- menus ----
@@ -224,7 +238,7 @@ void ComposerScreen::pick() {
       } else if (!hasText()) {
         discard();
       } else {
-        askLeave();
+        askLeave(false);
       }
       break;
     case Menu::ConfirmPost:
@@ -235,7 +249,10 @@ void ComposerScreen::pick() {
         break;
       }
       gPosting = true;
-      feedSource().command(Command{CmdType::PostEntry, entryJson(gDraft)});
+      if (gGuildSlug.empty())
+        feedSource().command(Command{CmdType::PostEntry, entryJson(gDraft)});
+      else
+        feedSource().command(Command{CmdType::PostGuildThread, gGuildSlug, guildThreadJson(gDraft)});
       break;
     case Menu::ConfirmDiscard:
       if (i == 1) discard();
@@ -259,7 +276,9 @@ void ComposerScreen::post() {
     ui::banner("Offline: not posted", true);
     return;
   }
-  openMenu(Menu::ConfirmPost, U"Post entry? (2 per minute, 24 per day)",
+  openMenu(Menu::ConfirmPost,
+           gGuildSlug.empty() ? U"Post entry? (2 per minute, 24 per day)"
+                              : U"Post thread? (2 per minute, 24 per day)",
            {ListItem{U"Cancel", U""}, ListItem{U"Post", U""}});
 }
 
@@ -279,13 +298,24 @@ void ComposerScreen::render(Grid& g, const Theme& t, int64_t) {
   const int rows = g.rows();
   cols_ = g.cols() - TextArea::kBarCols;
   g.fill(t.bg);
-  drawStatus(g, t, U"new entry", -1, true);
+  const bool guild = !gGuildSlug.empty();
+  if (guild) {
+    std::string name = lockedFeed().with([](FeedState& s) {
+      const Guild* gd = s.guilds.guild();
+      return gd ? (gd->name.empty() ? gd->slug : gd->name) : std::string();
+    });
+    if (name.empty()) name = gGuildSlug;
+    drawStatus(g, t, U"new thread \u00b7 " + utf8ToU32(name), -1, true);
+  } else {
+    drawStatus(g, t, U"new entry", -1, true);
+  }
 
-  // Rows: title, the body label, the body, topics, the checkboxes, CW, hint.
+  // Rows: title, the body label, the body, topics, the checkboxes, CW, hint
+  // (a guild thread has only title, body and topics).
   const int hintRows = small ? 1 : 0;
-  const int cwRow = rows - 1 - hintRows;
-  const int checkRow = cwRow - 1;
-  const int topicsRow = checkRow - 1;
+  const int cwRow = guild ? rows : rows - 1 - hintRows;
+  const int checkRow = guild ? rows : cwRow - 1;
+  const int topicsRow = guild ? rows - 1 - hintRows : checkRow - 1;
   const int titleRow = 1, labelRow = 2, bodyTop = 3;
   const int bodyBottom = std::max(bodyTop + 1, topicsRow);
 
@@ -305,7 +335,7 @@ void ComposerScreen::render(Grid& g, const Theme& t, int64_t) {
   topics_.setDisabled(focus_ != kTopics || gPosting);
   topics_.render(g, topicsRow, t, U"Topics ");
 
-  g.fillRow(checkRow, t.bg);
+  if (!guild) g.fillRow(checkRow, t.bg);
   auto box = [&](int col, bool on, const char32_t* label, bool focused) {
     std::u32string s = std::u32string(on ? U"[x] " : U"[ ] ") + label;
     const bool fill = focused && !t.outlined;
@@ -314,10 +344,13 @@ void ComposerScreen::render(Grid& g, const Theme& t, int64_t) {
     if (focused && t.outlined && w > 0) g.outline(col, checkRow, col + w - 1, checkRow, t.selectBg);
     return col + w;
   };
-  int col = box(0, gDraft.isPublic, U"Public", focus_ == kPublic);
-  int nsfwStart = col + 2;
-  int nsfwEnd = box(nsfwStart, gDraft.nsfw, U"NSFW", focus_ == kNsfw);
-  if (activeTaps()) {
+  int col = 0, nsfwStart = 0, nsfwEnd = 0;
+  if (!guild) {
+    col = box(0, gDraft.isPublic, U"Public", focus_ == kPublic);
+    nsfwStart = col + 2;
+    nsfwEnd = box(nsfwStart, gDraft.nsfw, U"NSFW", focus_ == kNsfw);
+  }
+  if (!guild && activeTaps()) {
     Target tp;
     tp.kind = TargetKind::Field;
     tp.field = kPublic;
@@ -328,8 +361,10 @@ void ComposerScreen::render(Grid& g, const Theme& t, int64_t) {
     activeTaps()->addCells(nsfwStart, checkRow, std::max(nsfwStart, nsfwEnd - 1), checkRow, tn);
   }
 
-  cw_.setDisabled(focus_ != kCw || gPosting);
-  cw_.render(g, cwRow, t, U"CW ");
+  if (!guild) {
+    cw_.setDisabled(focus_ != kCw || gPosting);
+    cw_.render(g, cwRow, t, U"CW ");
+  }
 
   if (menu_ != Menu::None)
     box_.render(g, 0, rows, 0, OverlayPlace::Centre, t);

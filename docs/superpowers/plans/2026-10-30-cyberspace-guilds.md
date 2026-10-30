@@ -280,9 +280,9 @@
 **Files:**
 - Modify: `src/screens/composer.h`, `src/screens/composer.cpp`
 
-- [ ] **Step 1: Target.** `enter("guild:<slug>")` sets a file-static `gGuildSlug`; `enter("")` clears it. With a slug: fields are Title, Body, Topics only (focus skips `kPublic`, `kNsfw`, `kCw` and they aren't drawn); status `new thread · <name>` (name from `s.guilds.guild()`, else the slug); Post confirms "Post thread? (2 per minute, 24 per day)" and sends `PostGuildThread{slug, guildThreadJson(gDraft)}`; leaving/discard goes to `Guild` with the slug instead of `FeedList`. `EntryPosted` opens the Entry as today. The OpenMap key asks "Discard draft?" like the Feed key.
-- [ ] **Step 2: Build** `pio run -e m9` and the demo build — SUCCESS.
-- [ ] **Step 3: Commit** `Guilds: new thread in the Composer`.
+- [x] **Step 1: Target.** `enter("guild:<slug>")` sets a file-static `gGuildSlug`; `enter("")` clears it. With a slug: fields are Title, Body, Topics only (focus skips `kPublic`, `kNsfw`, `kCw` and they aren't drawn); status `new thread · <name>` (name from `s.guilds.guild()`, else the slug); Post confirms "Post thread? (2 per minute, 24 per day)" and sends `PostGuildThread{slug, guildThreadJson(gDraft)}`; leaving/discard goes to `Guild` with the slug instead of `FeedList`. `EntryPosted` opens the Entry as today. The OpenMap key asks "Discard draft?" like the Feed key.
+- [x] **Step 2: Build** `pio run -e m9` and the demo build — SUCCESS.
+- [x] **Step 3: Commit** `Guilds: new thread in the Composer`.
 
 ### Task 11: Docs and full build
 

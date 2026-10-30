@@ -7,6 +7,7 @@
 #include "cs/api_parse.h"
 #include "cs/rate_limiter.h"
 #include "feed/entry.h"
+#include "guild/guild.h"
 #include "net/https_client.h"
 
 namespace rc {
@@ -86,6 +87,19 @@ class CsApi {
                        std::string& bookmarkId);
   ApiError removeBookmark(const std::string& bookmarkId);
 
+  // Guilds. Cursors are "" at the end; a 404 from guild() reaches the caller as http 404.
+  ApiError guilds(const std::string& cursor, int limit, std::vector<Guild>&, std::string& next);
+  ApiError guild(const std::string& slug, Guild&);
+  ApiError guildMembers(const std::string& slug, const std::string& cursor, int limit,
+                        std::vector<Member>&, std::string& next);
+  ApiError guildThreads(const std::string& slug, const std::string& cursor, int limit,
+                        std::vector<Entry>&, std::string& next);
+  ApiError myGuilds(std::vector<MyGuild>&);
+  ApiError postGuildThread(const std::string& slug, const std::string& json, std::string& postId);
+  ApiError joinGuild(const std::string& slug, std::string& role);
+  ApiError promoteGuild(const std::string& slug, std::string& role);
+  ApiError leaveGuild(const std::string& slug);
+
   const Tokens& tokens() const { return tokens_; }
   bool signedIn() const { return !tokens_.refreshToken.empty(); }
   // Restores a session from the refresh token saved in NVS.
@@ -105,7 +119,7 @@ class CsApi {
   ApiError refreshErr_{200, "", ""};
   RateLimiter sendL_, presenceL_, deleteL_, flagL_, readL_, resendL_;
   RateLimiter cmailSendL_, startL_, cmailReadL_, typingL_;
-  RateLimiter entryL_, replyL_, bookmarkL_, watchL_;
+  RateLimiter entryL_, replyL_, bookmarkL_, watchL_, membershipL_;
 };
 
 }  // namespace rc

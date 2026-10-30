@@ -7,6 +7,7 @@
 
 #include "cs/token.h"
 #include "feed/feed_parse.h"
+#include "guild/guild_parse.h"
 #include "store/settings.h"
 
 namespace rc {
@@ -61,7 +62,8 @@ CsApi::CsApi(HttpsClient& h)
       entryL_(makeEntryLimiter()),
       replyL_(makeReplyLimiter()),
       bookmarkL_(makeBookmarkLimiter()),
-      watchL_(makeWatchLimiter()) {}
+      watchL_(makeWatchLimiter()),
+      membershipL_(makeMembershipLimiter()) {}
 
 void CsApi::adopt(const Tokens& t) {
   tokens_ = t;
@@ -332,7 +334,7 @@ ApiError CsApi::mutedUsers(MutedUsers& out) {
 ApiError CsApi::mentions(std::vector<Mention>& out) {
   HttpResult r;
   ApiError e = call("GET", "/v1/notifications?read=false&type=chat_mention,reply,thread_reply,post_mention,"
-                     "reply_mention,post_cooldown&limit=20", "", r);
+                     "reply_mention,post_cooldown,guild_new_thread&limit=20", "", r);
   if (e.ok() && !parseMentions(r.body, out)) return badBody(r.status);
   return e;
 }
@@ -490,6 +492,82 @@ ApiError CsApi::removeBookmark(const std::string& bookmarkId) {
   if (!l.ok()) return l;
   HttpResult r;
   return call("DELETE", "/v1/bookmarks/" + enc(bookmarkId), "", r);
+}
+
+
+ApiError CsApi::guilds(const std::string& cursor, int limit, std::vector<Guild>& out,
+                       std::string& next) {
+  HttpResult r;
+  ApiError e = call("GET", "/v1/guilds" + pageQuery(limit, cursor), "", r);
+  if (e.ok() && !parseGuildPage(r.body, out, next)) return badBody(r.status);
+  return e;
+}
+
+ApiError CsApi::guild(const std::string& slug, Guild& out) {
+  HttpResult r;
+  ApiError e = call("GET", "/v1/guilds/" + enc(slug), "", r);
+  if (e.ok() && !parseGuild(r.body, out)) return badBody(r.status);
+  return e;
+}
+
+ApiError CsApi::guildMembers(const std::string& slug, const std::string& cursor, int limit,
+                             std::vector<Member>& out, std::string& next) {
+  HttpResult r;
+  ApiError e =
+      call("GET", "/v1/guilds/" + enc(slug) + "/members" + pageQuery(limit, cursor), "", r);
+  if (e.ok() && !parseMembers(r.body, out, next)) return badBody(r.status);
+  return e;
+}
+
+ApiError CsApi::guildThreads(const std::string& slug, const std::string& cursor, int limit,
+                             std::vector<Entry>& out, std::string& next) {
+  HttpResult r;
+  ApiError e = call("GET", "/v1/guilds/" + enc(slug) + "/posts" + pageQuery(limit, cursor), "", r);
+  if (e.ok() && !parseFeedPage(r.body, out, next)) return badBody(r.status);
+  return e;
+}
+
+ApiError CsApi::myGuilds(std::vector<MyGuild>& out) {
+  HttpResult r;
+  ApiError e = call("GET", "/v1/users/me/guilds", "", r);
+  if (e.ok() && !parseMyGuilds(r.body, out)) return badBody(r.status);
+  return e;
+}
+
+ApiError CsApi::postGuildThread(const std::string& slug, const std::string& body,
+                                std::string& postId) {
+  ApiError l = limited(entryL_);
+  if (!l.ok()) return l;
+  HttpResult r;
+  ApiError e = call("POST", "/v1/guilds/" + enc(slug) + "/posts", body, r);
+  if (e.ok()) parseCreatedId(r.body, postId);
+  return e;
+}
+
+ApiError CsApi::joinGuild(const std::string& slug, std::string& role) {
+  ApiError l = limited(membershipL_);
+  if (!l.ok()) return l;
+  HttpResult r;
+  ApiError e = call("POST", "/v1/guilds/" + enc(slug) + "/join", "", r);
+  // Already joined: an unreadable role is not a failure the user would resend.
+  if (e.ok()) parseGuildRole(r.body, role);
+  return e;
+}
+
+ApiError CsApi::promoteGuild(const std::string& slug, std::string& role) {
+  ApiError l = limited(membershipL_);
+  if (!l.ok()) return l;
+  HttpResult r;
+  ApiError e = call("POST", "/v1/guilds/" + enc(slug) + "/promote", "", r);
+  if (e.ok()) parseGuildRole(r.body, role);
+  return e;
+}
+
+ApiError CsApi::leaveGuild(const std::string& slug) {
+  ApiError l = limited(membershipL_);
+  if (!l.ok()) return l;
+  HttpResult r;
+  return call("POST", "/v1/guilds/" + enc(slug) + "/leave", "", r);
 }
 
 }  // namespace rc

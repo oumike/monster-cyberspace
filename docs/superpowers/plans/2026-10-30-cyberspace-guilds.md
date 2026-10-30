@@ -205,9 +205,9 @@
   ```
   Add `RateLimiter membershipL_` (`makeMembershipLimiter()`). Paths use `enc(slug)` and the existing `pageQuery`. `mentions()` type list gains `guild_new_thread`.
 
-- [ ] **Step 1: Implement** the calls following `feed()`/`postEntry()`/`setWatch()`.
-- [ ] **Step 2: Build** `pio run -e m9` — SUCCESS.
-- [ ] **Step 3: Commit** `Guilds: API calls`.
+- [x] **Step 1: Implement** the calls following `feed()`/`postEntry()`/`setWatch()`.
+- [x] **Step 2: Build** `pio run -e m9` — SUCCESS.
+- [x] **Step 3: Commit** `Guilds: API calls`.
 
 ### Task 6: Messages, state and FeedWorker
 

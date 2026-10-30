@@ -176,7 +176,7 @@ serves the latest release (docs/BUILD.md).
 Guilds were added on 2026-10-30 (built without flashing): browse, threads,
 info, members, join, leave, make my guild, new thread and alerts, opened by
 the M9's Map button or Home.
-The native suite is green: 539/539
+The native suite is green: 541/541
 (`pio test -e native`), and `scripts/build-upload-monitor.sh -B` builds all
 eight firmware envs.
 

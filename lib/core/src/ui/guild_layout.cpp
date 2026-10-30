@@ -54,7 +54,10 @@ ListItem memberItem(const Member& m, int64_t nowMs) {
   ListItem it;
   it.label = U"@" + utf8ToU32(m.username);
   std::u32string right = utf8ToU32(m.role);
-  if (m.joinedMs >= 0) right += kSep + utf8ToU32(relativeAge(m.joinedMs, nowMs));
+  if (m.joinedMs >= 0) {
+    if (!right.empty()) right += kSep;
+    right += utf8ToU32(relativeAge(m.joinedMs, nowMs));
+  }
   it.right = right;
   return it;
 }
@@ -63,7 +66,7 @@ std::u32string guildInfoText(const Guild& g) {
   std::u32string t;
   if (!g.icon.empty()) t += utf8ToU32(g.icon) + U" ";
   t += utf8ToU32(g.name.empty() ? g.slug : g.name) + U"\n";
-  t += U"founded by @" + utf8ToU32(g.founder) + U"\n";
+  if (!g.founder.empty()) t += U"founded by @" + utf8ToU32(g.founder) + U"\n";
   t += utf8ToU32(std::to_string(g.members)) + U" members" + kSep +
        utf8ToU32(std::to_string(g.apprentices)) + U" apprentices\n";
   if (g.createdMs >= 0) {

@@ -36,7 +36,7 @@ class ComposerScreen : public Screen {
   void openMenu(Menu m, std::u32string title, std::vector<ListItem> items);
   void pick();
   void post();
-  void askLeave(bool toMap);  // Back, the Feed key, or the Map key (toMap)
+  void askLeave(bool toMap, bool toFeed);  // Back, the Feed key (toFeed), or the Map key (toMap)
   void goBack();        // the Feed, the guild, or the guild list
   void discard();       // clears the draft and goes back
   void load();          // the widgets from the draft
@@ -50,6 +50,7 @@ class ComposerScreen : public Screen {
   int cols_ = 40;       // the body width, for moving by line
   Menu menu_ = Menu::None;
   bool toMap_ = false;  // the pending leave goes to the guild list
+  bool toFeed_ = false;  // ... or to the feed list, even from a guild thread
   Overlay box_;
 };
 

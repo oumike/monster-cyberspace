@@ -605,6 +605,7 @@ class Worker {
         login(c);
         return;
       case CmdType::CloseFeed:
+      case CmdType::CloseGuild:
         feed_.handle(c);
         return;
       case CmdType::OpenFeed:

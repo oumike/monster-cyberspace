@@ -66,8 +66,6 @@ struct Place {
 
 void go(Id id, const std::string& arg = "");
 Id current();
-// The screen before the current one, as go() was given it.
-Place previous();
 // The last place go() was given that is not Entry or Composer.
 Place lastBase();
 Screen& screen();

@@ -62,14 +62,17 @@ void MembersScreen::onEvent(const Event& e) {
 }
 
 void MembersScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
-  std::vector<ListItem> items;
+  std::vector<Member> members;
   std::u32string name;
   lockedFeed().with([&](FeedState& s) {
     more_ = !s.guilds.membersCursor().empty();
-    for (const auto& m : s.guilds.members()) items.push_back(memberItem(m, nowMs));
+    members = s.guilds.members();
     const Guild* gd = s.guilds.guild();
     if (gd) name = utf8ToU32(gd->name.empty() ? gd->slug : gd->name);
   });
+  std::vector<ListItem> items;
+  items.reserve(members.size());
+  for (const auto& m : members) items.push_back(memberItem(m, nowMs));
   bool loading = lockedFeed().with([](FeedState& s) { return s.loading; });
   const int nav = sideNavWidth(g);
   const int bottom = g.rows() - 1;

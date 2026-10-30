@@ -40,7 +40,7 @@ void composerBackgroundEvent(const Event& e) { settle(e); }
 
 void ComposerScreen::enter(const std::string& key) {
   menu_ = Menu::None;
-  toMap_ = false;
+  toMap_ = toFeed_ = false;
   gGuildSlug = key.rfind("guild:", 0) == 0 ? key.substr(6) : std::string();
   spell_.hide();
   title_.setFieldId(kTitle);
@@ -103,8 +103,9 @@ void ComposerScreen::fieldKey(const KeyEvent& k) {
     save();
     return;
   }
-  if (k.action == Action::Back || k.action == Action::OpenFeed) return askLeave(false);
-  if (k.action == Action::OpenMap) return askLeave(true);
+  if (k.action == Action::Back) return askLeave(false, false);
+  if (k.action == Action::OpenFeed) return askLeave(false, true);
+  if (k.action == Action::OpenMap) return askLeave(true, false);
   if (gPosting) return;  // no edits while the post is in flight
   InputLine* in = line();
   switch (k.action) {
@@ -182,12 +183,13 @@ void ComposerScreen::fieldKey(const KeyEvent& k) {
 
 void ComposerScreen::goBack() {
   if (toMap_) router::go(router::Id::GuildList);
-  else if (!gGuildSlug.empty()) router::go(router::Id::Guild, gGuildSlug);
+  else if (!gGuildSlug.empty() && !toFeed_) router::go(router::Id::Guild, gGuildSlug);
   else router::go(router::Id::FeedList);
 }
 
-void ComposerScreen::askLeave(bool toMap) {
+void ComposerScreen::askLeave(bool toMap, bool toFeed) {
   toMap_ = toMap;
+  toFeed_ = toFeed;
   // A post in flight keeps the draft until it settles.
   if (gPosting) return goBack();
   if (!hasText()) return discard();
@@ -212,6 +214,7 @@ void ComposerScreen::openMenu(Menu m, std::u32string title, std::vector<ListItem
 void ComposerScreen::menuKey(const KeyEvent& k) {
   if (k.action == Action::Palette) {
     menu_ = Menu::None;
+    toMap_ = toFeed_ = false;
     box_.close();
     return;
   }
@@ -221,6 +224,7 @@ void ComposerScreen::menuKey(const KeyEvent& k) {
       break;
     case Overlay::Result::Closed:
       menu_ = Menu::None;
+      toMap_ = toFeed_ = false;
       break;
     case Overlay::Result::None:
       break;
@@ -238,7 +242,7 @@ void ComposerScreen::pick() {
       } else if (!hasText()) {
         discard();
       } else {
-        askLeave(false);
+        askLeave(false, false);
       }
       break;
     case Menu::ConfirmPost:
@@ -256,6 +260,7 @@ void ComposerScreen::pick() {
       break;
     case Menu::ConfirmDiscard:
       if (i == 1) discard();
+      else toMap_ = toFeed_ = false;
       break;
     case Menu::None:
       break;
@@ -381,14 +386,17 @@ void ComposerScreen::render(Grid& g, const Theme& t, int64_t) {
       hint = U"\u2190\u2192 spelling  \u25CF keep";
       touch = U"tap a spelling, or keep typing";
     } else if (focus_ == kBody) {
-      hint = U"\u25CF new line  \u2191\u2193 lines  ctrl post  back: feed";
-      touch = U"\u25CF new line  \u2191\u2193 lines  \u22ef post  \u2039 feed";
+      hint = guild ? U"\u25CF new line  \u2191\u2193 lines  ctrl post  back: guild"
+                   : U"\u25CF new line  \u2191\u2193 lines  ctrl post  back: feed";
+      touch = guild ? U"\u25CF new line  \u2191\u2193 lines  \u22ef post  \u2039 guild"
+                    : U"\u25CF new line  \u2191\u2193 lines  \u22ef post  \u2039 feed";
     } else if (focus_ == kPublic || focus_ == kNsfw) {
       hint = U"\u25CF toggle  \u2191\u2193 fields  ctrl post  back: feed";
       touch = U"tap to toggle  \u22ef post  \u2039 feed";
     } else {
-      hint = U"\u2191\u2193 fields  ctrl post  back: feed";
-      touch = U"tap a field  \u22ef post  \u2039 feed";
+      hint = guild ? U"\u2191\u2193 fields  ctrl post  back: guild"
+                   : U"\u2191\u2193 fields  ctrl post  back: feed";
+      touch = guild ? U"tap a field  \u22ef post  \u2039 guild" : U"tap a field  \u22ef post  \u2039 feed";
     }
     drawHint(g, t, hint, touch);
   }

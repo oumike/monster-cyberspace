@@ -656,7 +656,8 @@ void FeedWorker::postGuildThread(const Command& c) {
   std::string postId;
   ApiError e = api_.postGuildThread(c.a, c.b, postId);
   if (!e.ok()) {
-    post(EvtType::EntryPosted, errorText(e, false), e.http, false);
+    post(EvtType::EntryPosted, e.http == 404 ? "Guild not found" : errorText(e, false),
+         e.http, false);
     return;
   }
   post(EvtType::EntryPosted, postId);
@@ -700,7 +701,7 @@ void FeedWorker::guildMembership(const Command& c) {
   else e = api_.leaveGuild(c.a);
   if (!e.ok()) {
     std::string text;
-    if (e.http == 409) text = e.message;
+    if (e.http == 409 && !e.message.empty()) text = e.message;
     else if (e.http == 403) text = "Manage this on the web";
     else if (e.http == 404) text = "Guild not found";
     else text = errorText(e, false);

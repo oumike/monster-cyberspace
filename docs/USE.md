@@ -440,7 +440,8 @@ must be signed in.
   (3 per minute, 15 per day)". Leaving your own guild adds "Your badge will be
   cleared." Nothing is retried.
 - Left, Back or Map returns to the guild list.
-- If the guild is gone, you get "Guild not found" and the list. If you hit a
+- If the guild is gone (also when a join, leave or Make my guild finds it
+  gone), you get "Guild not found" and the list. If you hit a
   limit, you get "Slow down: try in Ns" and nothing is sent. Leave and Make my
   guild say "Manage this on the web" when the server refuses them.
 
@@ -453,7 +454,8 @@ to the guild.
 
 **New thread:** like New entry in the Feed, with Title, Body and Topics only.
 Post asks "Post thread? (2 per minute, 24 per day)", then opens the new
-thread. Back with text asks "Discard draft?".
+thread. Back with text asks "Discard draft?" and returns to the guild; the
+Feed key asks the same and goes to the Feed, Map to the guild list.
 
 **Alerts:** a new thread in a guild you belong to shows a banner
 (`@name in Night Owls: …`) and sounds the buzzer if it's on.

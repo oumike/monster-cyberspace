@@ -806,6 +806,16 @@ void test_member_item() {
   TEST_ASSERT_TRUE(it.right == utf8ToU32("member \xC2\xB7 " + relativeAge(1000, 1000 + 90LL * 86400000LL)));
 }
 
+void test_member_item_empty_parts() {
+  Member m;
+  m.username = "bob";
+  m.joinedMs = 1000;
+  ListItem it = memberItem(m, 1000 + 90LL * 86400000LL);
+  TEST_ASSERT_TRUE(it.right == utf8ToU32(relativeAge(1000, 1000 + 90LL * 86400000LL)));
+  m.joinedMs = -1;
+  TEST_ASSERT_TRUE(memberItem(m, 5).right.empty());
+}
+
 static bool hasLine(const std::u32string& t, const std::string& l) {
   std::u32string n = U"\n" + t + U"\n";
   return n.find(U"\n" + utf8ToU32(l) + U"\n") != std::u32string::npos;
@@ -831,6 +841,9 @@ void test_guild_info_text() {
   TEST_ASSERT_TRUE(t.find(U"you:") == std::u32string::npos);
   TEST_ASSERT_TRUE(t.find(U"https") == std::u32string::npos);
   TEST_ASSERT_TRUE(t.find(U"founded Mar") == std::u32string::npos);
+  g.founder.clear();
+  t = guildInfoText(g);
+  TEST_ASSERT_TRUE(t.find(U"founded by") == std::u32string::npos);
 }
 
 void test_guild_notice_text() {
@@ -889,6 +902,7 @@ int main() {
   RUN_TEST(test_row_without_icon_or_name);
   RUN_TEST(test_guild_row_no_bio);
   RUN_TEST(test_member_item);
+  RUN_TEST(test_member_item_empty_parts);
   RUN_TEST(test_guild_info_text);
   RUN_TEST(test_guild_notice_text);
   return UNITY_END();

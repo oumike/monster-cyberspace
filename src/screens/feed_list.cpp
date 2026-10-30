@@ -267,10 +267,12 @@ void FeedListScreen::onEvent(const Event& e) {
       if (kind_ != Kind::Guild) break;
       dirty_ = true;
       if (!e.ok && e.code == 404) router::go(router::Id::GuildList);
+      else if (!e.ok && !loaded_) failed_ = true;
       break;
     case EvtType::GuildWriteDone:
       if (kind_ != Kind::Guild) break;
       ui::banner(e.text, !e.ok);
+      if (!e.ok && e.code == 404) router::go(router::Id::GuildList);
       break;
     case EvtType::SideListUpdated:
       if (kind_ == Kind::Feed) break;

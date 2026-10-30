@@ -28,6 +28,7 @@ class GuildStore {
   // (else a Guild built from the MyGuild), in mine() order.
   std::vector<Guild> pinned() const;
   const std::string& browseCursor() const { return browseCursor_; }
+  bool browseLoaded() const { return browseLoaded_; }
   bool browseEnd() const { return browseLoaded_ && browseCursor_.empty(); }
 
   void openGuild(Guild g);  // clears members; bio cut

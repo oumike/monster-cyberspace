@@ -24,7 +24,6 @@ void GuildListScreen::enter(const std::string&) {
   palette_ = false;
   asked_ = false;
   dirty_ = true;
-  selSlug_.clear();
   feedSource().command(Command{CmdType::CloseGuild});
   open();
 }
@@ -37,7 +36,8 @@ void GuildListScreen::open() {
 void GuildListScreen::requestMore() {
   asked_ = true;
   Command c{CmdType::OpenGuilds};
-  c.n = 1;
+  // Without a first browse page there is no cursor to continue from.
+  c.n = lockedFeed().with([](FeedState& s) { return s.guilds.browseLoaded(); }) ? 1 : 0;
   feedSource().command(c);
 }
 

@@ -128,6 +128,15 @@ void test_members_cap_and_first() {
   TEST_ASSERT_EQUAL_STRING("", s.membersCursor().c_str());
 }
 
+void test_browse_loaded() {
+  GuildStore s;
+  TEST_ASSERT_FALSE(s.browseLoaded());
+  s.setBrowse({G("a")}, "x", true);
+  TEST_ASSERT_TRUE(s.browseLoaded());
+  s.clear();
+  TEST_ASSERT_FALSE(s.browseLoaded());
+}
+
 void test_clear() {
   GuildStore s;
   s.setMine({M("a")});
@@ -153,6 +162,7 @@ int main(int, char**) {
   RUN_TEST(test_browse_cap_ends_list);
   RUN_TEST(test_bio_cut);
   RUN_TEST(test_members_cap_and_first);
+  RUN_TEST(test_browse_loaded);
   RUN_TEST(test_clear);
   return UNITY_END();
 }

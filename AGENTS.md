@@ -4,9 +4,8 @@ Standalone ESP32 firmware client for [cyberspace.online](https://cyberspace.onli
 a retro text-only social network. Milestone 1 is cIRC chat plus a device-served
 web config page, on the Elecrow ThinkNode M9. The Seeed Wio Tracker L2 and
 the LilyGO T-Deck Plus followed, then the Elecrow CrowPanel Advance 3.5" and
-5.0", the LilyGO T-LoRa Pager, the LilyGO T-Deck Pro, the Attaky Mesh Deck
-and the LilyGO T-Display P4 (all built, not yet tried on hardware; the Mesh
-Deck boots). More
+5.0", the LilyGO T-LoRa Pager, the LilyGO T-Deck Pro and the Attaky Mesh Deck
+(all built, not yet tried on hardware; the Mesh Deck boots). More
 boards and Cyberspace features come later.
 
 - **Design spec:** `docs/superpowers/specs/2026-10-25-cyberspace-m9-circ-design.md`
@@ -63,8 +62,7 @@ pio run -e crowpanel35      # Elecrow CrowPanel Advance 3.5" (crowpanel50: the 5
 pio run -e pager            # LilyGO T-LoRa Pager
 pio run -e tdeck_pro        # LilyGO T-Deck Pro (e-paper)
 pio run -e mesh_deck        # Attaky Mesh Deck
-pio run -e tdisplay_p4      # LilyGO T-Display P4 (ESP32-P4)
-scripts/build-upload-monitor.sh m9   # flash + serial monitor (115200); -w for the Wio L2, -t for the T-Deck Plus, -3/-5 for the CrowPanels, -P for the Pager, -D for the T-Deck Pro, -M for the Mesh Deck, -4 for the T-Display P4; --help for options
+scripts/build-upload-monitor.sh m9   # flash + serial monitor (115200); -w for the Wio L2, -t for the T-Deck Plus, -3/-5 for the CrowPanels, -P for the Pager, -D for the T-Deck Pro, -M for the Mesh Deck; --help for options
 scripts/build-upload-monitor.sh -B   # build every firmware env, no device needed
 scripts/screenshot.py PORT [--watch]  # PNG screenshots over the serial console (no device writes)
 # demo build for screenshots, no network (never release): docs/BUILD.md "Screenshots"
@@ -114,16 +112,6 @@ FT6636 touch, the AW9523 front buttons (`MeshDeckPad`) and keyboard module
 RTC, SD or buzzer. Console: UART0 (CH340). Its RGB LEDs are the notification
 light (`board::hasNotifyLight`/`notifyLight`; the blinker, colours and
 timeouts in `ui/notify_light`, settings `notifyLight`/`notifyTimeoutSecs`).
-`src/hal/tdisplay_p4/` is the LilyGO T-Display P4 (from camillia-mt's
-`hw_tdisplay_p4.h`, `tdisplay_p4_display.h`, `tdisplay_p4_io.cpp`), the only
-ESP32-P4 board (`boards/tdisplay_p4.json`; bootloader at 0x2000, see
-`scripts/release.sh`): a 568x1232 RM69A10 AMOLED over MIPI-DSI (LovyanGFX
-`Panel_DSI`), drawn from a half-size 284x616 frame doubled and rotated in
-software by `ui/scale_blit` in `lib/core`; GT9895 touch, an XL9535 expander
-for power rails and resets, Wi-Fi through the ESP32-C6 (ESP-Hosted), BQ27220
-gauge, the shared `es8311` on `Wire1`, GPS and SD_MMC. Touch only; the user
-button is ScreenOff. Restarts go through an RTC watchdog reset, since
-`esp_restart` leaves the DSI panel dark.
 Touch: `lib/core` turns samples into gestures and resolves them against the
 per-frame `TapMap` widgets fill as they draw (`input/gestures`, `ui/tap_map`,
 `input/touch_resolve`, the `Osk` keyboard); `ui_task` feeds `handleKey` and
@@ -170,8 +158,6 @@ without flashing).
 The Attaky Mesh Deck HAL (env `mesh_deck`) and the notification light were
 added on 2026-10-29 (flashed: it boots and finds touch, gauge and keyboard;
 the panel, touch mapping, keys and LEDs await the hardware check).
-The LilyGO T-Display P4 HAL (env `tdisplay_p4`) was added on 2026-10-29
-(built without flashing).
 **Still open:** the unticked items under "Open hardware checks" in
 `docs/TESTING.md` (themes, device Settings, touch UI, Wio L2, T-Deck Plus, CrowPanels, Pager, T-Deck Pro, GPS time, API
 assumptions, settings backup, OTA), then the human live checklist on the `m9` build.
@@ -185,9 +171,9 @@ The T-Deck Pro (env `tdeck_pro`, e-paper) uses the touch-only paradigm plus a
 its and the T-Deck Plus's mic key opens the emoji tray (`board::textEntry`).
 A browser flasher (GitHub Pages, `site/`, `.github/workflows/pages.yml`)
 serves the latest release (docs/BUILD.md).
-The native suite is green: 520/520
+The native suite is green: 513/513
 (`pio test -e native`), and `scripts/build-upload-monitor.sh -B` builds all
-nine firmware envs.
+eight firmware envs.
 
 Notes for whoever continues:
 - Each task follows test-driven development: write the plan's tests first, run

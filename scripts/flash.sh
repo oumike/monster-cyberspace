@@ -50,7 +50,7 @@ else ESPTOOL=(python3 -m esptool); fi
 WRITE=( 0x0 "$FIRMWARE" )
 if [[ "$ERASE" == "1" ]]; then
     echo "Erasing $PORT (settings will be lost)..."
-    "${ESPTOOL[@]}" --chip auto --port "$PORT" --baud 921600 \
+    "${ESPTOOL[@]}" --chip esp32s3 --port "$PORT" --baud 921600 \
         --before default_reset --after no_reset erase_flash
 else
     # Everything but 0x9000-0xDFFF, where older installs kept the settings.
@@ -62,6 +62,6 @@ else
 fi
 
 echo "Flashing $FIRMWARE to $PORT..."
-"${ESPTOOL[@]}" --chip auto --port "$PORT" --baud 921600 \
+"${ESPTOOL[@]}" --chip esp32s3 --port "$PORT" --baud 921600 \
     --before default_reset --after hard_reset \
     write_flash -z "${WRITE[@]}"

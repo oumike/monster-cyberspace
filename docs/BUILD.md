@@ -7,8 +7,7 @@
   into `.pio-core/`, kept apart from the shared `~/.platformio`.
 - A USB data cable. The ThinkNode M9's console runs through its USB-to-UART
   bridge at 115200 baud, and so do the CrowPanels' and the Mesh Deck's (a CH340); the Wio Tracker
-  L2's and the T-Deck Plus's run through the ESP32-S3's own USB, and the T-Display P4's
-  through the ESP32-P4's.
+  L2's and the T-Deck Plus's run through the ESP32-S3's own USB.
 
 ## Environments
 
@@ -22,7 +21,6 @@
 | `pager` | The firmware for the LilyGO T-LoRa Pager (keyboard and side wheel, no touch; not yet tried on hardware) |
 | `tdeck_pro` | The firmware for the LilyGO T-Deck Pro (e-paper, keyboard, touch; not yet tried on hardware) |
 | `mesh_deck` | The firmware for the Attaky Mesh Deck (d-pad, touch, keyboard module, notification light; boots on hardware, the rest not yet checked) |
-| `tdisplay_p4` | The firmware for the LilyGO T-Display P4 (ESP32-P4, AMOLED, touch only; not yet tried on hardware) |
 | `native` | Host unit tests for `lib/core` |
 
 ```sh
@@ -35,7 +33,6 @@ pio run -e crowpanel50                # build for the CrowPanel Advance 5.0"
 pio run -e pager                      # build for the T-LoRa Pager
 pio run -e tdeck_pro                  # build for the T-Deck Pro
 pio run -e mesh_deck                  # build for the Mesh Deck
-pio run -e tdisplay_p4                # build for the T-Display P4
 scripts/build-upload-monitor.sh m9    # build, flash, then open the serial monitor
 ```
 
@@ -51,7 +48,6 @@ scripts/build-upload-monitor.sh m9    # build, flash, then open the serial monit
 | `--pager`/`-P` | Board flag: LilyGO T-LoRa Pager (`pager`) |
 | `--tdeck-pro`/`-D` | Board flag: LilyGO T-Deck Pro (`tdeck_pro`) |
 | `--mesh-deck`/`-M` | Board flag: Attaky Mesh Deck (`mesh_deck`) |
-| `--tdisplay-p4`/`-4` | Board flag: LilyGO T-Display P4 (`tdisplay_p4`) |
 | `ENV` | Or name any firmware env directly; with neither, a menu lists every firmware env |
 | `--port`/`-p PORT` | Serial port for upload and monitor (default: auto-detect) |
 | `--erase`/`-E` | Erase the whole flash in the same esptool session as the upload (`upload_erase` target); wipes saved settings |
@@ -131,11 +127,6 @@ image writes. `0x9000` is `nvs_old`, where the stock `default_16MB.csv` kept
 them; `src/store/nvs_migrate.cpp` moves anything there into `nvs` at boot and
 erases it. Keep the app slots where they are: the OTA code refuses to update a
 board whose layout differs (`layoutSupportsUpdate`).
-
-Every board is an ESP32-S3 except the T-Display P4, an ESP32-P4, whose ROM
-loads the bootloader from `0x2000` instead of `0x0` (`env_chip` and
-`env_boot_offset` in `scripts/release.sh`). Its factory image is still flashed
-at `0x0`, and `scripts/pages-site.sh` gives it the `ESP32-P4` chip family.
 
 ### OTA signing
 

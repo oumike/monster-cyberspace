@@ -279,6 +279,7 @@ void EntryScreen::openEntryMenu() {
     items.push_back(ListItem{label, U"", tone});
     menuKeys_.push_back(key);
   };
+  if (!e.deleted) add(U"Reply", "reply");
   add(marked ? U"Unbookmark" : U"Bookmark", marked ? "unbookmark" : "bookmark");
   add(watching ? U"Unwatch" : U"Watch", watching ? "unwatch" : "watch");
   add(U"Show link", "link");
@@ -350,7 +351,8 @@ void EntryScreen::pickMenu() {
     case Menu::Entry:
     case Menu::Reply:
       if (key == "reply") {
-        // The selection stays, so the next send answers this reply.
+        // The selection stays, so the next send answers this reply (or the entry).
+        if (menu_ == Menu::Entry) log_.follow();
       } else if (key == "bookmark") {
         feedSource().command(
             Command{CmdType::Bookmark, postId_, targetReply_ ? target_ : std::string()});

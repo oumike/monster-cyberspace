@@ -114,7 +114,7 @@
   ```
   Over a cap, the page that would exceed it is cut to fit and the cursor becomes "" (the list ends).
 
-- [ ] **Step 1: Write failing tests:**
+- [x] **Step 1: Write failing tests:**
   - `test_pinned_removed_from_others`: mine `{b}`, browse `{a,b,c}` → `others()` ids `{a,c}`, `pinned()` slugs `{b}` with browse's `members`.
   - `test_mine_after_browse`: browse first, then `setMine({c})` → `others()` `{a,b}`.
   - `test_left_guild_returns_to_browse`: mine `{b}` then `setMine({})` → `others()` `{a,b,c}`.
@@ -125,10 +125,10 @@
   - `test_members_cap_and_first`: `first=true` replaces; cap 200 ends the cursor.
   - `test_clear`: everything empty, `mineLoaded()==false`, `guild()==nullptr`.
 
-- [ ] **Step 2: Run** `pio test -e native -f test_guild_store` — FAIL.
-- [ ] **Step 3: Implement** in `guild_store.cpp`.
-- [ ] **Step 4: Run** — PASS.
-- [ ] **Step 5: Commit** `Guilds: store`.
+- [x] **Step 2: Run** `pio test -e native -f test_guild_store` — FAIL.
+- [x] **Step 3: Implement** in `guild_store.cpp`.
+- [x] **Step 4: Run** — PASS.
+- [x] **Step 5: Commit** `Guilds: store`.
 
 ### Task 3: Compose and limiter
 

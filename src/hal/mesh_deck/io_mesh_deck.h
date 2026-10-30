@@ -10,6 +10,9 @@ namespace mesh_deck {
 // Bus recovery, Wire, the front expander and the touch reset. False without
 // the front expander.
 bool ioBegin();
+// Resets the LoRa module's SX1262, if one is fitted, and puts it to sleep
+// with its chip select held high (left awake it whines). False: no radio.
+bool radioSleep();
 // Front buttons, pressed bits (AW9523 port 0, inverted). False on a bad read.
 bool readButtons(uint8_t& pressed);
 bool readTouch(int16_t& x, int16_t& y);  // native portrait

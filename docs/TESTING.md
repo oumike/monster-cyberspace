@@ -272,6 +272,7 @@ Buttons: BOOT tap = Back, BOOT hold (0.6 s) = Home; Wake tap = screen off
 - [ ] Notification light: a mention or C-Mail blinks the front and keyboard LEDs twice a second in the chosen colour; it stops once read or after the timeout; Off keeps it dark; picking a colour in Settings or web config blinks it once
 - [ ] Battery %: Settings shows a sensible value; the charging state follows the USB cable
 - [ ] GPS: outdoors with Wi-Fi off, `[time] set from GPS` within 15 min, then `[gps] off`
+- [ ] With the LoRa/GPS module: the log shows `[meshdeck] LoRa radio asleep` and the high-pitched whine is gone; without one, `[meshdeck] no LoRa radio`
 - [ ] After flashing, the board restarts on its own; if the screen stays dark, note it (camillia-mt needed a power cycle there)
 - [ ] Wi-Fi setup (nothing saved): the AP is named `Monster-Cyberspace-MeshDeck` and `http://192.168.4.1` loads
 - [ ] Home is six tiles in every text size and orientation, with and without the keyboard module (messages shows `N mentions` while unread); Settings is a button grid: the d-pad moves the highlighted outline and scrolls to it, Select opens, Left from the first column and L1 go Home, taps work; dragging or tapping hides the outline (Settings and Home), and the next d-pad press only brings it back

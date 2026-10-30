@@ -153,6 +153,46 @@ void kbDebounce(uint8_t h, const uint8_t fresh[5]) {
 
 }  // namespace
 
+bool radioSleep() {
+  // Chip select high first: a falling edge would wake it.
+  digitalWrite(LORA_CS, HIGH);
+  pinMode(LORA_CS, OUTPUT);
+  digitalWrite(LORA_SCK, LOW);
+  pinMode(LORA_SCK, OUTPUT);
+  digitalWrite(LORA_MOSI, LOW);
+  pinMode(LORA_MOSI, OUTPUT);
+  pinMode(LORA_MISO, INPUT_PULLUP);
+  pinMode(LORA_DIO1, INPUT_PULLDOWN);
+  // Pulled up, BUSY stays high with no module; a radio drops it once reset.
+  pinMode(LORA_BUSY, INPUT_PULLUP);
+  digitalWrite(LORA_RST, LOW);
+  pinMode(LORA_RST, OUTPUT);
+  delay(2);
+  digitalWrite(LORA_RST, HIGH);
+  const uint32_t t0 = millis();
+  while (digitalRead(LORA_BUSY) == HIGH) {
+    if (millis() - t0 > 50) return false;
+    delay(1);
+  }
+  // SetSleep (0x84), cold start: SPI mode 0, MSB first, bit-banged.
+  const uint8_t cmd[] = {0x84, 0x00};
+  digitalWrite(LORA_CS, LOW);
+  delayMicroseconds(1);
+  for (uint8_t b : cmd) {
+    for (int i = 7; i >= 0; --i) {
+      digitalWrite(LORA_MOSI, (b >> i) & 1);
+      delayMicroseconds(1);
+      digitalWrite(LORA_SCK, HIGH);
+      delayMicroseconds(1);
+      digitalWrite(LORA_SCK, LOW);
+    }
+  }
+  delayMicroseconds(1);
+  digitalWrite(LORA_CS, HIGH);
+  digitalWrite(LORA_MOSI, LOW);
+  return true;
+}
+
 bool ioBegin() {
   busRecover();
   Wire.begin(I2C_SDA, I2C_SCL, I2C_HZ);

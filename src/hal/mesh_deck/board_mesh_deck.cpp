@@ -48,6 +48,7 @@ void scan() {
 void begin() {
   Serial.printf("[INFO] [APP] Monster for Cyberspace v%s on Mesh Deck 1.0\n", RC_VERSION);
   Serial.printf("[INFO] [APP] Build: %s %s / toolchain: PlatformIO\n", __DATE__, __TIME__);
+  Serial.println(mesh_deck::radioSleep() ? "[meshdeck] LoRa radio asleep" : "[meshdeck] no LoRa radio");
   st7789::begin({mesh_deck::TFT_SCK, mesh_deck::TFT_MOSI, -1, mesh_deck::TFT_CS, mesh_deck::TFT_DC,
                  mesh_deck::TFT_RST, mesh_deck::TFT_SPI_HZ, mesh_deck::PANEL_MADCTL, true});
   ledcAttach(mesh_deck::TFT_BL, mesh_deck::TFT_BL_FREQ, 8);

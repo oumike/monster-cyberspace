@@ -111,7 +111,8 @@ item, and keep the splash cursor and screensaver still.
 ST7789 through the shared `st7789` driver (MADCTL 0xA0, panel mounted 180°),
 FT6636 touch, the AW9523 front buttons (`MeshDeckPad`) and keyboard module
 (`MeshDeckKeys`, both in `input/keymap_mesh_deck`), MAX17048 gauge and GPS; no
-RTC, SD or buzzer. Console: UART0 (CH340). Its RGB LEDs are the notification
+RTC, SD or buzzer. The LoRa module's SX1262, when fitted, is unused: `radioSleep()`
+puts it to sleep at boot (awake, it whines). Console: UART0 (CH340). Its RGB LEDs are the notification
 light (`board::hasNotifyLight`/`notifyLight`; the blinker, colours and
 timeouts in `ui/notify_light`, settings `notifyLight`/`notifyTimeoutSecs`).
 Touch: `lib/core` turns samples into gestures and resolves them against the

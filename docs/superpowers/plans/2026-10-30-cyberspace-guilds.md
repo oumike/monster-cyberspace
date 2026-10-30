@@ -234,9 +234,9 @@
 **Files:**
 - Modify: `src/feed/fake_feed_source.cpp` (and its header block of members near line 180)
 
-- [ ] **Step 1: Seed** two guilds ("Night Owls" 🦉, the user a `member`; "Deep Divers" 🐳, not in it), three threads each (`guildSlug` set, `isGuildThread`), three members each; handle every Task 6 command locally with the same events, applying `makeMembershipLimiter`/entry limits through the file's `limited()`; join makes the user an apprentice, leave removes, promote swaps roles.
-- [ ] **Step 2: Build** `PLATFORMIO_BUILD_DIR=.pio/demo PLATFORMIO_BUILD_FLAGS=-DRC_FAKE_API=1 pio run -e m9` — SUCCESS.
-- [ ] **Step 3: Commit** `Guilds: demo build fixtures`.
+- [x] **Step 1: Seed** two guilds ("Night Owls" 🦉, the user a `member`; "Deep Divers" 🐳, not in it), three threads each (`guildSlug` set, `isGuildThread`), three members each; handle every Task 6 command locally with the same events, applying `makeMembershipLimiter`/entry limits through the file's `limited()`; join makes the user an apprentice, leave removes, promote swaps roles.
+- [x] **Step 2: Build** `PLATFORMIO_BUILD_DIR=.pio/demo PLATFORMIO_BUILD_FLAGS=-DRC_FAKE_API=1 pio run -e m9` — SUCCESS.
+- [x] **Step 3: Commit** `Guilds: demo build fixtures`.
 
 ### Task 8: GuildList, router, Map and Home
 

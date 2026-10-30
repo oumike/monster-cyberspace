@@ -33,7 +33,9 @@
 // the fake chat source at boot. Posts, replies, bookmarks, watches,
 // deletes and flags apply locally under the real client limiters, with the
 // same banners as CsApi. Deleting someone else's item gives "Not allowed".
-// Commands are applied inline on the caller's task, as in fake_chat_source.
+// Two guilds are seeded too: Night Owls (the user is a member) and Deep Divers,
+// three threads and three members each; join, leave and promote apply locally
+// under the membership limiter. Commands are applied inline on the caller's task, as in fake_chat_source.
 
 namespace rc {
 
@@ -129,6 +131,12 @@ std::string longMarkdown() {
   return md;
 }
 
+struct FakeGuild {
+  Guild info;  // role is filled in from the user's guilds on every read
+  std::vector<Member> members;
+  std::vector<Entry> threads;  // newest first
+};
+
 class FakeFeedSource : public FeedSource {
  public:
   FakeFeedSource();
@@ -137,6 +145,7 @@ class FakeFeedSource : public FeedSource {
  private:
   static void onTimer(void* self) { static_cast<FakeFeedSource*>(self)->notice(); }
   void seed();
+  void seedGuilds();
   void notice();
 
   // Each pulls from the script under mu_, then touches lockedFeed() once.
@@ -161,24 +170,37 @@ class FakeFeedSource : public FeedSource {
   void watch(const Command& c, bool on);
   void openSide(bool bookmarks, bool append);
 
+  FakeGuild* findGuild(const std::string& slug);
+  Guild guildView(const FakeGuild& g);  // caller holds mu_
+  std::vector<MyGuild> mineCopy();
+  void openGuilds();
+  void openGuild(const std::string& slug);
+  void openMembers(const std::string& slug);
+  void postGuildThread(const Command& c);
+  void guildMembership(const Command& c);
+
   // Lock order: mu_, then lockedFeed(); never the other way round.
   std::mutex mu_;  // guards everything below
   std::vector<Entry> entries_;                    // newest first, full bodies
   std::map<std::string, std::vector<Reply>> replies_;  // postId → oldest first
   std::vector<Bookmark> bookmarks_;               // newest first
   std::vector<std::string> watched_;              // postIds, newest first
+  std::vector<FakeGuild> guilds_;
+  std::vector<MyGuild> mine_;                     // the user's guilds
   RateLimiter entryL_ = makeEntryLimiter();
   RateLimiter replyL_ = makeReplyLimiter();
   RateLimiter deleteL_ = makeDeleteLimiter();
   RateLimiter flagL_ = makeFlagLimiter();
   RateLimiter bookmarkL_ = makeBookmarkLimiter();
   RateLimiter watchL_ = makeWatchLimiter();
+  RateLimiter membershipL_ = makeMembershipLimiter();
   int seq_ = 0, noticeN_ = 0;
   esp_timer_handle_t timer_ = nullptr;
 };
 
 FakeFeedSource::FakeFeedSource() {
   seed();
+  seedGuilds();
   esp_timer_create_args_t args = {};
   args.callback = &FakeFeedSource::onTimer;
   args.arg = this;
@@ -270,9 +292,61 @@ void FakeFeedSource::seed() {
   watched_ = {"p06"};
 }
 
+void FakeFeedSource::seedGuilds() {
+  struct Script {
+    const char *slug, *name, *icon, *founder, *bio;
+  };
+  static const Script script[] = {
+      {"night-owls", "Night Owls", "\xF0\x9F\xA6\x89", "moth",
+       "For everyone still up. Posts after midnight, tea optional."},
+      {"deep-divers", "Deep Divers", "\xF0\x9F\x90\xB3", "kiwi",
+       "Long reads, slow replies, and the occasional sea creature."},
+  };
+  static const char* titles[] = {"welcome aboard", "what are you up to?", "weekly check-in"};
+  static const char* roles[] = {"founder", "member", "apprentice"};
+  int64_t now = epochMs();
+  int g = 0;
+  for (const Script& s : script) {
+    FakeGuild fg;
+    fg.info.id = std::string("g") + std::to_string(g + 1);
+    fg.info.slug = s.slug;
+    fg.info.name = s.name;
+    fg.info.icon = s.icon;
+    fg.info.founder = s.founder;
+    fg.info.bio = s.bio;
+    fg.info.createdMs = now - int64_t(g + 5) * 24 * 60 * kMin;
+    for (int i = 0; i < 3; ++i) {
+      Member m;
+      m.id = fg.info.id + "-m" + std::to_string(i + 1);
+      m.username = i == 0 ? s.founder : kNicks[(g * 4 + i * 3) % 11];
+      m.role = roles[i];
+      m.joinedMs = fg.info.createdMs + int64_t(i) * 60 * kMin;
+      fg.members.push_back(std::move(m));
+
+      Entry e;
+      e.id = fg.info.id + "-t" + std::to_string(i + 1);
+      e.slug = e.id;
+      e.guildSlug = s.slug;
+      e.author = fg.members[i].username;
+      e.title = titles[i];
+      e.body = std::string("A thread for ") + s.name + ".";
+      e.createdMs = now - int64_t(g * 3 + i + 1) * 53 * kMin;
+      e.isPublic = true;
+      replies_[e.id];
+      fg.threads.push_back(std::move(e));
+    }
+    guilds_.push_back(std::move(fg));
+    ++g;
+  }
+  mine_ = {MyGuild{"night-owls", "Night Owls", guilds_[0].info.icon, "member"}};
+}
+
 Entry* FakeFeedSource::findEntry(const std::string& id) {
   for (auto& e : entries_)
     if (e.id == id) return &e;
+  for (auto& g : guilds_)
+    for (auto& e : g.threads)
+      if (e.id == id) return &e;
   return nullptr;
 }
 
@@ -350,6 +424,15 @@ void FakeFeedSource::command(const Command& c) {
     case CmdType::Unwatch: watch(c, false); break;
     case CmdType::OpenWatched: openSide(false, c.n == 1); break;
     case CmdType::OpenBookmarks: openSide(true, c.n == 1); break;
+    case CmdType::OpenGuilds: openGuilds(); break;
+    case CmdType::OpenGuild: openGuild(c.a); break;
+    case CmdType::GuildThreadsMore: post(EvtType::SideListUpdated); break;  // one page
+    case CmdType::CloseGuild: lockedFeed().with([](FeedState& s) { s.guilds.closeGuild(); }); break;
+    case CmdType::OpenMembers: openMembers(c.a); break;
+    case CmdType::PostGuildThread: postGuildThread(c); break;
+    case CmdType::JoinGuild:
+    case CmdType::LeaveGuild:
+    case CmdType::PromoteGuild: guildMembership(c); break;
     default: break;
   }
 }
@@ -700,6 +783,211 @@ void FakeFeedSource::openSide(bool bookmarks, bool append) {
     s.loading = false;
   });
   post(EvtType::SideListUpdated);
+}
+
+// ---- guilds ----
+
+FakeGuild* FakeFeedSource::findGuild(const std::string& slug) {
+  for (auto& g : guilds_)
+    if (g.info.slug == slug) return &g;
+  return nullptr;
+}
+
+Guild FakeFeedSource::guildView(const FakeGuild& fg) {
+  Guild g = fg.info;
+  g.members = int(fg.members.size());
+  g.apprentices = 0;
+  g.role = "";
+  for (const auto& m : mine_) {
+    if (m.slug != g.slug) continue;
+    g.role = m.role;
+    if (m.role == "apprentice") ++g.apprentices;
+    else ++g.members;
+  }
+  return g;
+}
+
+std::vector<MyGuild> FakeFeedSource::mineCopy() {
+  std::lock_guard<std::mutex> g(mu_);
+  return mine_;
+}
+
+void FakeFeedSource::openGuilds() {
+  std::vector<Guild> all;
+  {
+    std::lock_guard<std::mutex> g(mu_);
+    for (const auto& fg : guilds_) all.push_back(guildView(fg));
+  }
+  std::vector<MyGuild> mine = mineCopy();
+  lockedFeed().with([&](FeedState& s) {
+    s.guilds.setMine(std::move(mine));
+    s.guilds.setBrowse(std::move(all), "", true);
+    s.loading = false;
+  });
+  post(EvtType::GuildsUpdated);
+}
+
+void FakeFeedSource::openGuild(const std::string& slug) {
+  Guild info;
+  std::vector<Entry> threads;
+  bool found;
+  {
+    std::lock_guard<std::mutex> g(mu_);
+    const FakeGuild* fg = findGuild(slug);
+    found = fg != nullptr;
+    if (found) {
+      info = guildView(*fg);
+      threads = fg->threads;
+    }
+  }
+  if (!found) {
+    lockedFeed().with([](FeedState& s) { s.loading = false; });
+    banner("Guild not found");
+    post(EvtType::GuildUpdated, "", 404, false);
+    return;
+  }
+  std::vector<MyGuild> mine = mineCopy();
+  lockedFeed().with([&](FeedState& s) {
+    s.guilds.setMine(std::move(mine));
+    s.guilds.openGuild(std::move(info));
+    s.store.setSideList({}, "", false);
+  });
+  post(EvtType::GuildUpdated);
+  lockedFeed().with([&](FeedState& s) {
+    s.store.setSideList(std::move(threads), "", false);
+    s.loading = false;
+  });
+  post(EvtType::SideListUpdated);
+}
+
+void FakeFeedSource::openMembers(const std::string& slug) {
+  std::vector<Member> members;
+  {
+    std::lock_guard<std::mutex> g(mu_);
+    if (const FakeGuild* fg = findGuild(slug)) members = fg->members;
+  }
+  lockedFeed().with([&](FeedState& s) {
+    s.guilds.appendMembers(std::move(members), "", true);
+    s.loading = false;
+  });
+  post(EvtType::MembersUpdated);
+}
+
+void FakeFeedSource::postGuildThread(const Command& c) {
+  JsonDocument doc;
+  EntryDraft d;
+  if (!deserializeJson(doc, c.b)) {
+    d.body = doc["content"] | "";
+    d.title = doc["title"] | "";
+    d.isPublic = true;
+    for (JsonVariantConst t : doc["topics"].as<JsonArrayConst>()) {
+      if (!d.topics.empty()) d.topics += ",";
+      d.topics += t.as<const char*>() ? t.as<const char*>() : "";
+    }
+  }
+  std::string why = validateDraft(d);
+  if (!why.empty()) {
+    post(EvtType::EntryPosted, why, 400, false);
+    return;
+  }
+  std::string id;
+  {
+    std::lock_guard<std::mutex> g(mu_);
+    FakeGuild* fg = findGuild(c.a);
+    if (!fg) {
+      post(EvtType::EntryPosted, "Guild not found", 404, false);
+      return;
+    }
+    if (limited(entryL_, why)) {
+      post(EvtType::EntryPosted, why, 429, false);
+      return;
+    }
+    Entry e;
+    e.id = "n" + std::to_string(++seq_);
+    e.slug = e.id;
+    e.guildSlug = c.a;
+    e.author = kSelf;
+    e.title = d.title;
+    e.body = d.body;
+    e.topics = splitTopics(d.topics);
+    e.isPublic = true;
+    e.createdMs = epochMs();
+    replies_[e.id];
+    id = e.id;
+    fg->threads.insert(fg->threads.begin(), std::move(e));
+  }
+  post(EvtType::EntryPosted, id);
+}
+
+void FakeFeedSource::guildMembership(const Command& c) {
+  std::string name = lockedFeed().with([&](FeedState& s) {
+    const Guild* g = s.guilds.guild();
+    if (g && g->slug == c.a && !g->name.empty()) return g->name;
+    const MyGuild* m = s.guilds.myGuild(c.a);
+    if (m && !m->name.empty()) return m->name;
+    return c.a;
+  });
+  std::string text, why;
+  int code = 0;
+  {
+    std::lock_guard<std::mutex> g(mu_);
+    FakeGuild* fg = findGuild(c.a);
+    auto mine = std::find_if(mine_.begin(), mine_.end(),
+                             [&](const MyGuild& m) { return m.slug == c.a; });
+    if (limited(membershipL_, why)) {
+      code = 429;
+      text = why;
+    } else if (!fg) {
+      code = 404;
+      text = "Guild not found";
+    } else if (c.type == CmdType::JoinGuild) {
+      if (mine != mine_.end()) {
+        code = 409;
+        text = "You are already in this guild";
+      } else {
+        mine_.push_back(MyGuild{fg->info.slug, fg->info.name, fg->info.icon, "apprentice"});
+        text = "Joined as apprentice";
+      }
+    } else if (mine == mine_.end()) {
+      code = 403;
+      text = "Manage this on the web";
+    } else if (c.type == CmdType::LeaveGuild) {
+      mine_.erase(mine);
+      text = "Left " + name;
+    } else {
+      for (auto& m : mine_)
+        if (m.role == "member") m.role = "apprentice";
+      mine->role = "member";
+      text = name + " is now your guild";
+    }
+  }
+  if (code) {
+    post(EvtType::GuildWriteDone, text, code, false);
+    return;
+  }
+  post(EvtType::GuildWriteDone, text);
+
+  std::vector<MyGuild> mine = mineCopy();
+  std::string open = lockedFeed().with([](FeedState& s) {
+    const Guild* g = s.guilds.guild();
+    return g ? g->slug : std::string();
+  });
+  Guild info;
+  bool reopen = false;
+  if (!open.empty()) {
+    std::lock_guard<std::mutex> g(mu_);
+    if (const FakeGuild* fg = findGuild(open)) {
+      info = guildView(*fg);
+      reopen = true;
+    }
+  }
+  lockedFeed().with([&](FeedState& s) {
+    s.guilds.setMine(std::move(mine));
+    const Guild* cur = s.guilds.guild();
+    if (reopen && cur && cur->slug == open) s.guilds.openGuild(std::move(info));
+  });
+  post(EvtType::GuildsUpdated);
+  post(EvtType::GuildUpdated);
 }
 
 // ---- the 90 s reply notice on entry 1 ----

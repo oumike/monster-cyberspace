@@ -107,7 +107,7 @@ class SettingsScreen : public Screen {
   BackupPicker picker_;
   Confirm confirm_ = Confirm::None;
   bool picking_ = false;  // the time zone list is open
-  ButtonPad pad_;         // touch-only boards: the menu as buttons
+  ButtonPad pad_;         // touch boards: the menu as buttons
   bool buttons_ = false;
 };
 

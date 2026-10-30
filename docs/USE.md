@@ -103,8 +103,9 @@ Every screen works by touch. Touch never wakes a dark screen.
   outside an open menu or confirm closes it. A tap on a banner dismisses it.
 - **Scroll:** drag a list or log to move line by line; swipe up or down to
   move a page. Dragging past the end of a list stops there.
-- **Home** shows six large tiles: messages, rooms, c-mail, feed, settings and
-  mentions. They fill about 90% of the space below the status bar, centred
+- **Home** shows six large tiles: messages, rooms, c-mail, feed, guilds and
+  settings. The messages tile shows the last room, or how many mentions are
+  unread (in the accent colour) while there are any. They fill about 90% of the space below the status bar, centred
   and spaced apart, with their labels in a larger font. The selected tile has
   a highlighted outline.
 
@@ -634,6 +635,11 @@ screensaver. **Never** keeps the screen on.
 config address, the battery, the setup AP state and the gps, time and zone
 lines (see Time and time zone), with ten actions, plus Orientation on a
 touch board and two more on a board with an SD card slot:
+
+On a touch board the actions are a grid of buttons, each with its current
+value at the right. On the T-Deck Plus and the Mesh Deck the arrows move a
+highlighted outline between them and Select opens one; Left from the first
+column, or Back, returns Home.
 
 - **Theme: …** Opens a box with every theme (see Themes); picking one
   applies and saves it.

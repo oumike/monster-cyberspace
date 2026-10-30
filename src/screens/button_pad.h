@@ -21,9 +21,15 @@ class ButtonPad {
   static bool active();
   static int columns();
 
-  void reset() { scroll_ = dragSteps_ = shift_ = 0; }
-  // Up/Down scroll. A tap on a button returns its index; anything else -1.
+  void reset() { scroll_ = dragSteps_ = shift_ = selected_ = 0; }
+  // With a cursor (touch boards that also have keys) one button is selected:
+  // the arrows move it through the grid, Select returns it, and the view
+  // scrolls to keep it shown. Without one, Up/Down scroll.
+  void setCursor(bool on) { cursor_ = on; }
+  // A tap on a button returns its index; anything else -1.
   int key(const KeyEvent& k);
+  // The cursor is in the first column, where Left leaves the grid.
+  bool atLeftEdge() const { return selected_ % cols_ == 0; }
   // Over grid rows [top, bottom). keepRight shortens the label rather than
   // dropping `right` when both don't fit. columns 0: columns(). header:
   // rows the caller draws above the buttons, from `top`; they scroll away a
@@ -40,6 +46,10 @@ class ButtonPad {
   int dragSteps_ = 0;
   int shift_ = 0;
   int header_ = 0;
+  bool cursor_ = false;
+  int selected_ = 0;
+  int count_ = 0;
+  int cols_ = 2;
 };
 
 }  // namespace rc

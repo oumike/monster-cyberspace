@@ -249,7 +249,10 @@ void SettingsScreen::onKey(const KeyEvent& k) {
   if (picker_.isOpen()) return picker_.onKey(k);
   if (picking_) return zoneKey(k);
   if (confirm_ != Confirm::None) return confirmKey(k);
-  if (buttons_ && k.action != Action::Back && k.action != Action::Left) {
+  // Left leaves from the first column only when the arrows move a cursor.
+  const bool leave = k.action == Action::Back ||
+                     (k.action == Action::Left && (!board::hasKeys() || pad_.atLeftEdge()));
+  if (buttons_ && !leave) {
     const std::vector<Item> items = menuItems();
     const int i = pad_.key(k);
     if (i >= 0 && i < int(items.size())) activate(items[i]);
@@ -460,7 +463,9 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
   const int nItems = int(items.size());
   const bool ap = setupApUp();
   const timesvc::Snapshot ts = timesvc::snapshot();
-  buttons_ = ButtonPad::active();
+  // Every touch board gets buttons here, as Home gets tiles; with keys, a cursor.
+  buttons_ = board::hasTouch();
+  pad_.setCursor(board::hasKeys());
 
   // Each item as a label and its current value; lines join them, buttons put
   // the value at the right.

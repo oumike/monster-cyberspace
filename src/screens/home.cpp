@@ -13,9 +13,9 @@
 namespace rc {
 
 namespace {
-enum Item { kMessages, kRooms, kCmail, kFeed, kGuilds, kSettings, kMentions };
+enum Item { kMessages, kRooms, kCmail, kFeed, kGuilds, kSettings };
 constexpr int kItems = 6;      // the list (keyed boards)
-constexpr int kTileCount = 7;  // the tiles (touch boards)
+constexpr int kTileCount = 6;  // the tiles (touch boards); messages shows the mentions
 constexpr int kTilePercent = 90;  // of the area between the status bar and the hint
 
 // The newest unread Feed notice as an Entry arg ("postId\nnoticeId"), or "".
@@ -40,7 +40,6 @@ void HomeScreen::enter(const std::string&) {
 void HomeScreen::openItem(int item) {
   switch (item) {
     case kMessages:
-    case kMentions:
       router::go(router::Id::Room, app().cfg.lastRoom);
       break;
     case kRooms:
@@ -120,13 +119,15 @@ void HomeScreen::renderTiles(Grid& g, const Theme& t, const std::vector<TileRect
   };
   int mentions = a.unreadMentions, cmail = cmailUnread(), feed = feedUnread();
   TileInfo info[kTileCount] = {
-      {U"messages", utf8ToU32("#" + a.cfg.lastRoom), false},
+      {U"messages",
+       mentions > 0 ? utf8ToU32(std::to_string(mentions) + (mentions == 1 ? " mention" : " mentions"))
+                    : utf8ToU32("#" + a.cfg.lastRoom),
+       mentions > 0},
       {U"rooms", U"", false},
       {U"c-mail", utf8ToU32(std::to_string(cmail) + " unread"), cmail > 0},
       {U"feed", utf8ToU32(std::to_string(feed) + " unread"), feed > 0},
       {U"guilds", U"", false},
       {U"settings", U"", false},
-      {utf8ToU32(std::to_string(mentions) + " mentions"), U"", mentions > 0},
   };
 
   if (activeTaps()) activeTaps()->setList(ListId::Main, tileSel_, kTileCount, false);

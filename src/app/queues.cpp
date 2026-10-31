@@ -42,6 +42,9 @@ void refuseCommand(const Command& c) {
     case CmdType::StartConversation:
       postEvent(Event{EvtType::ConversationStarted, busy, 0, false});
       return;
+    case CmdType::MarkAllRead:
+      postEvent(Event{EvtType::AllRead, busy, 0, false});
+      return;
     case CmdType::OpenEntry:
       postEvent(Event{EvtType::EntryUpdated, "", 0, false});
       break;

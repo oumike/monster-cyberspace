@@ -11,7 +11,8 @@ struct HttpResult {
   bool overflow = false;  // the body passed the cap; transportError is set too
 };
 
-// HTTPS to https://api.cyberspace.online over one keep-alive connection.
+// HTTPS to https://api.cyberspace.online over one keep-alive connection
+// (without PSRAM, a connection per request).
 // Not thread-safe: owned by the network task.
 class HttpsClient {
  public:

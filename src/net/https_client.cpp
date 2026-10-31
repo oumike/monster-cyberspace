@@ -13,7 +13,12 @@ namespace rc {
 namespace {
 
 constexpr const char* kBase = "https://api.cyberspace.online";
+#if RC_LOW_MEM
+// Without PSRAM a body this big couldn't be parsed anyway.
+constexpr size_t kBodyCap = 48 * 1024;
+#else
 constexpr size_t kBodyCap = 256 * 1024;
+#endif
 
 struct Sink {
   std::string* body;
@@ -106,6 +111,10 @@ HttpResult HttpsClient::request(const char* method, const std::string& path,
   }
   r.status = esp_http_client_get_status_code(h);
   Serial.printf("[http] %s %s -> %d\n", method, path.c_str(), r.status);
+#if RC_LOW_MEM
+  // The TLS session holds ~45 KB: give it back before the body is parsed.
+  close();
+#endif
   return r;
 }
 

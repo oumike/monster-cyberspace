@@ -41,6 +41,8 @@ constexpr bool kPollRoom = false;
 #endif
 constexpr int64_t kRoomPollMs = 60000;
 constexpr int kRoomPollLimit = 20;
+// Messages fetched when a room opens.
+constexpr int kHistoryLimit = kPollRoom ? 20 : 50;
 constexpr int64_t kMaxBackoffMs = 30000;
 constexpr int64_t kPausedBannerMs = 30000;
 
@@ -301,8 +303,8 @@ class Worker {
   void loadHistory() {
     std::vector<CircMessage> msgs;
     int64_t cursor = -1;
-    ApiError e = dm_ ? api_.cmailHistory(room_, 0, msgs, cursor)
-                     : api_.history(roomKey(room_), 0, msgs, cursor);
+    ApiError e = dm_ ? api_.cmailHistory(room_, 0, msgs, cursor, kHistoryLimit)
+                     : api_.history(roomKey(room_), 0, msgs, cursor, kHistoryLimit);
     if (!e.ok()) {
       checkAuthError(e);
       banner(e.message, false);
@@ -323,8 +325,8 @@ class Worker {
     if (oldest < 0) return;
     std::vector<CircMessage> msgs;
     int64_t cursor = -1;
-    ApiError e = dm_ ? api_.cmailHistory(room_, oldest, msgs, cursor)
-                     : api_.history(roomKey(room_), oldest, msgs, cursor);
+    ApiError e = dm_ ? api_.cmailHistory(room_, oldest, msgs, cursor, kHistoryLimit)
+                     : api_.history(roomKey(room_), oldest, msgs, cursor, kHistoryLimit);
     if (!e.ok()) {
       checkAuthError(e);
       banner(e.message, false);
@@ -886,7 +888,9 @@ void start(const Settings& s) {
   wifimgr::begin(s);
   web::begin();
   static Worker* w = new Worker(s);
-  xTaskCreatePinnedToCore(taskMain, "net", 12288, w, 3, nullptr, 0);
+  // One core (the X4): below the UI (2), or TLS handshakes and parsing hold
+  // off key presses.
+  xTaskCreatePinnedToCore(taskMain, "net", 12288, w, portNUM_PROCESSORS > 1 ? 3 : 1, nullptr, 0);
 }
 
 }  // namespace rc::networker

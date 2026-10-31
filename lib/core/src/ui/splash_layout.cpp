@@ -32,8 +32,9 @@ std::string clip(std::string_view s, int cols) {
 constexpr int kBubbleText = 18;
 
 // The bubble's rows: a border, the text with the tail on its first line, and
-// a border. Empty when it can't get `maxW` cells or fewer.
-std::vector<std::string> bubbleRows(std::string_view say, int maxW) {
+// a border. Empty when it can't get `maxW` cells or fewer. tailDown: the tail
+// goes on the bottom border instead, near the left.
+std::vector<std::string> bubbleRows(std::string_view say, int maxW, bool tailDown = false) {
   const int inner = std::min(kBubbleText, maxW - 4);
   if (say.empty() || inner < 3) return {};
   std::vector<std::u32string> lines = wrapText(utf8ToU32(say), inner, inner);
@@ -44,9 +45,9 @@ std::vector<std::string> bubbleRows(std::string_view say, int maxW) {
   for (size_t i = 0; i < lines.size(); ++i) {
     std::u32string l = lines[i];
     l.resize(w, U' ');
-    out.push_back(std::string(i == 0 ? "< " : "| ") + u32ToUtf8(l) + " |");
+    out.push_back(std::string(i == 0 && !tailDown ? "< " : "| ") + u32ToUtf8(l) + " |");
   }
-  out.push_back("'" + std::string(w + 2, '-') + "'");
+  out.push_back(tailDown ? "'-v" + std::string(w, '-') + "'" : "'" + std::string(w + 2, '-') + "'");
   return out;
 }
 
@@ -75,11 +76,35 @@ const char* MonsterWords::next(uint32_t rnd) {
 }
 
 std::vector<SplashLine> splashLayout(int cols, int rows, std::string_view detail,
-                                     std::string_view say) {
+                                     std::string_view say, int maxScale) {
   int artW = 0;
   for (const char* l : kArt) artW = std::max(artW, width(l));
   // Art (and its bubble), a blank row, title, detail, a blank row, prompt.
   constexpr int kTextRows = 4;
+  // A scaled monster: the biggest that leaves a margin each side and room
+  // below for the text. Its rows each take scale rows of the panel.
+  for (int s = maxScale; s >= 2; --s) {
+    if (artW * s > cols - 4 || kArtRows * s + 1 + kTextRows > rows) continue;
+    const int artCol = (cols / s - artW) / 2;  // in scaled cells
+    // The bubble's tail over the monster's right side.
+    const int bubCol = artCol * s + artW * s * 6 / 10 - 2;
+    std::vector<std::string> bub = bubbleRows(say, cols - bubCol, true);
+    if (int(bub.size()) + kArtRows * s + 1 + kTextRows > rows) bub.clear();
+    int row = std::max((rows - (int(bub.size()) + kArtRows * s + 1 + kTextRows)) / 2, 0);
+    std::vector<SplashLine> out;
+    for (const std::string& b : bub) out.push_back({bubCol, row++, b, SplashRole::Bubble});
+    for (int i = 0; i < kArtRows; ++i) out.push_back({artCol, row++, kArt[i], SplashRole::Art, s});
+    ++row;
+    auto centred = [&](std::string_view t, SplashRole role) {
+      std::string c = clip(t, cols);
+      out.push_back({(cols - width(c)) / 2, row++, c, role});
+    };
+    centred("Monster for Cyberspace", SplashRole::Title);
+    centred(detail, SplashRole::Detail);
+    ++row;
+    centred("> booting", SplashRole::Prompt);
+    return out;
+  }
   bool art = artW <= cols && kArtRows + 1 + kTextRows <= rows;
   std::vector<std::string> bub;
   if (art) {

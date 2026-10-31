@@ -109,6 +109,11 @@ class Grid {
   // for centring to the pixel; the strip on the left takes cell 0's background.
   void setRowShift(int row, int px);
   int rowShift(int row) const;
+  // Draws the row's glyphs scale times as wide and tall, pixel for pixel (1
+  // by default and after fill()), so fewer cells fit across: a big splash
+  // monster.
+  void setRowScale(int row, int scale);
+  int rowScale(int row) const;
   // Row 0 as a header (HeaderSize). Kept across fill() and resize().
   void setHeader(HeaderSize h) { header_ = h; }
   const HeaderSize& header() const { return header_; }
@@ -140,6 +145,7 @@ class Grid {
   std::vector<bool> forced_;  // rows dirty regardless of content (after resize)
   std::vector<RowKind> kinds_;
   std::vector<int16_t> pads_, shifts_;
+  std::vector<uint8_t> scales_;
   HeaderSize header_;
   int bottomPad_ = 0;
   bool stacked_ = false;
@@ -171,7 +177,7 @@ int bigCols(int panelW, TextSize s);
 HeaderSize touchHeader(int panelW, TextSize s);
 
 // Where each row is drawn, in pixels. Rows stack from the top by kind
-// (Normal rowH, Big bigH, Skip 0) or by their pad height; the last row stays at (rows-1)*rowH, so
+// (Normal rowH, Big bigH, Skip 0, times the row's scale) or by their pad height; the last row stays at (rows-1)*rowH, so
 // the hint keeps its place, and a row reaching past it is cut short. A header
 // (Grid::setHeader) makes row 0 its px tall and moves the last row down by the
 // difference; the last row also takes the grid's bottom pad. A stacked grid

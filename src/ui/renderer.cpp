@@ -86,7 +86,10 @@ void Renderer::resize() {
 
 void Renderer::drawRow(const Grid& g, int r, const CellFont& font, RowSpan span, int yoff) {
   yoff = std::clamp(yoff, 0, span.h);
-  const int cw = font.w, ch = std::min<int>(font.h, span.h - yoff);
+  // A scaled row (Grid::setRowScale): each glyph pixel drawn sc x sc.
+  const int sc = g.rowScale(r);
+  const int fw = font.w;
+  const int cw = fw * sc, ch = std::min<int>(font.h * sc, span.h - yoff);
   const int ox = std::clamp(span.x, 0, w_);
   const int rb = rowBytes(font);
   const int cols = std::min(g.cols(), (w_ - ox) / cw);
@@ -107,7 +110,7 @@ void Renderer::drawRow(const Grid& g, int r, const CellFont& font, RowSpan span,
       glyphs_[c] = cellGlyph(font, cell.cp);
     }
   }
-  const int half = cw / 2;
+  const int half = fw / 2;
   auto rowBits = [&](const uint8_t* gl, int y) -> uint16_t {
     return rb == 1 ? gl[y] << 8 : (gl[y * 2] << 8) | gl[y * 2 + 1];
   };
@@ -115,8 +118,9 @@ void Renderer::drawRow(const Grid& g, int r, const CellFont& font, RowSpan span,
   for (int y = span.y; y < span.y + span.h && y < h_; ++y) {
     if (strip_) base_ = y;
     uint16_t* px = row(y);
-    const int gy = y - span.y - yoff;  // the glyph line, outside [0, ch) padding
-    if (gy < 0 || gy >= ch) {
+    const int ly = y - span.y - yoff;  // the line in the row, outside [0, ch) padding
+    const int gy = ly / sc;             // the glyph line
+    if (ly < 0 || ly >= ch) {
       if (g.cols() > 0)
         for (int x = 0; x < w_; ++x) px[x] = bg0;
     } else {
@@ -135,13 +139,16 @@ void Renderer::drawRow(const Grid& g, int r, const CellFont& font, RowSpan span,
         if (spill) {
           uint16_t sb = rowBits(spill, gy);
           if (prev->bold) sb |= sb >> 1;
-          bits |= uint16_t(sb << (cw - half));
+          bits |= uint16_t(sb << (fw - half));
         }
         const uint16_t fg = cellColor(cell.fg), bg = cellColor(cell.bg);
-        for (int x = 0; x < cw; ++x) cp[x] = (bits & (0x8000 >> x)) ? fg : bg;
+        if (sc == 1)
+          for (int x = 0; x < cw; ++x) cp[x] = (bits & (0x8000 >> x)) ? fg : bg;
+        else
+          for (int x = 0; x < cw; ++x) cp[x] = (bits & (0x8000 >> (x / sc))) ? fg : bg;
         if (cell.edges) {
           const uint16_t ec = cellColor(cell.edgeColor);
-          if ((gy == 0 && (cell.edges & kEdgeTop)) || (gy == ch - 1 && (cell.edges & kEdgeBottom)))
+          if ((ly == 0 && (cell.edges & kEdgeTop)) || (ly == ch - 1 && (cell.edges & kEdgeBottom)))
             for (int x = 0; x < cw; ++x) cp[x] = ec;
           if (cell.edges & kEdgeLeft) cp[0] = ec;
           // The last cell's right side goes on the panel edge (below), so rows
@@ -154,7 +161,7 @@ void Renderer::drawRow(const Grid& g, int r, const CellFont& font, RowSpan span,
         const Cell& last = g.at(cols - 1, r);
         const uint16_t ec = cellColor(last.edgeColor);
         const bool line =
-            (gy == 0 && (last.edges & kEdgeTop)) || (gy == ch - 1 && (last.edges & kEdgeBottom));
+            (ly == 0 && (last.edges & kEdgeTop)) || (ly == ch - 1 && (last.edges & kEdgeBottom));
         for (int x = used; x < w_; ++x) px[x] = line ? ec : cellColor(last.bg);
         if (last.edges & kEdgeRight) px[w_ - 1] = ec;
       }

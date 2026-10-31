@@ -6,6 +6,11 @@
 #include "ui/splash_layout.h"
 #include "util/utf8.h"
 
+// How many times bigger the monster may grow on a roomy grid (the X4).
+#ifndef RC_SPLASH_SCALE
+#define RC_SPLASH_SCALE 1
+#endif
+
 namespace rc {
 
 namespace {
@@ -24,9 +29,12 @@ void SplashScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
   if (since_ < 0) since_ = nowMs;
   g.fill(t.bg);
   std::string detail = std::string("v") + RC_VERSION + " \u00b7 " + board::name();
-  for (const auto& l : splashLayout(g.cols(), g.rows(), detail, say_)) {
+  for (const auto& l : splashLayout(g.cols(), g.rows(), detail, say_, RC_SPLASH_SCALE)) {
     switch (l.role) {
-      case SplashRole::Art: putLine(g, l.col, l.row, l.text, t.selectBg, t.bg); break;
+      case SplashRole::Art:
+        putLine(g, l.col, l.row, l.text, t.selectBg, t.bg);
+        g.setRowScale(l.row, l.scale);
+        break;
       case SplashRole::Bubble: putLine(g, l.col, l.row, l.text, t.fg, t.bg); break;
       case SplashRole::Title: putLine(g, l.col, l.row, l.text, t.fg, t.bg); break;
       case SplashRole::Detail: putLine(g, l.col, l.row, l.text, t.dim, t.bg); break;

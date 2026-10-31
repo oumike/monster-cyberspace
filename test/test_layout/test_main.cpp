@@ -202,6 +202,18 @@ void test_row_spans_shift() {
   TEST_ASSERT_EQUAL(0, rowSpans(g, 12, 14)[1].x);
 }
 
+void test_row_spans_scale() {
+  Grid g(5, 6);
+  g.setRowScale(1, 3);
+  std::vector<RowSpan> s = rowSpans(g, 12, 14);
+  TEST_ASSERT_EQUAL(36, s[1].h);
+  TEST_ASSERT_EQUAL(48, s[2].y);
+  TEST_ASSERT_EQUAL(3, g.rowScale(1));
+  g.fill(0);
+  TEST_ASSERT_EQUAL(1, g.rowScale(1));
+  TEST_ASSERT_EQUAL(12, rowSpans(g, 12, 14)[1].h);
+}
+
 void test_grid_add_edges() {
   Grid g(4, 2);
   g.put(1, 0, U'a', 1, 2);
@@ -751,6 +763,39 @@ void test_splash_drops_bubble_without_room() {
   TEST_ASSERT_TRUE(bubble(v).empty());
 }
 
+void test_splash_scales_art_on_a_big_grid() {
+  // The X4: 60 x 50 cells, up to 4x.
+  auto v = splashLayout(60, 50, "v0.1.0 \u00b7 X4", "boo", 4);
+  const SplashLine* art = findRole(v, SplashRole::Art);
+  TEST_ASSERT_NOT_NULL(art);
+  TEST_ASSERT_EQUAL(4, art->scale);
+  int artEnd = 0, bubbleEnd = -1;
+  for (const auto& l : v) {
+    const int w = int(utf8Length(l.text)) * l.scale;
+    // A scaled line's col counts scaled cells.
+    TEST_ASSERT_TRUE(l.col * l.scale + w <= 60);
+    if (l.role == SplashRole::Art) artEnd = std::max(artEnd, l.row + 1);
+    if (l.role == SplashRole::Bubble) bubbleEnd = std::max(bubbleEnd, l.row + 1);
+    else if (l.role != SplashRole::Art) TEST_ASSERT_EQUAL(1, l.scale);
+  }
+  // The bubble goes above the big monster, its tail pointing down.
+  auto b = bubble(v);
+  TEST_ASSERT_EQUAL(3, int(b.size()));
+  TEST_ASSERT_TRUE(bubbleEnd <= art->row);
+  TEST_ASSERT_EQUAL_STRING("| boo |", b[1]->text.c_str());
+  TEST_ASSERT_TRUE(b[2]->text.find('v') != std::string::npos);
+  // Drawn heights (art rows 4 tall) fit the grid.
+  const SplashLine* prompt = findRole(v, SplashRole::Prompt);
+  TEST_ASSERT_TRUE(prompt->row + (artEnd - art->row) * 3 < 50);
+}
+
+void test_splash_scale_needs_room() {
+  // The M9's grid gets the art at 1x even when 4x is allowed.
+  auto v = splashLayout(40, 15, "v0.1.0", "boo", 4);
+  TEST_ASSERT_EQUAL(1, findRole(v, SplashRole::Art)->scale);
+  TEST_ASSERT_EQUAL_STRING("< boo |", bubble(v)[1]->text.c_str());
+}
+
 void test_monster_words_shuffle() {
   MonsterWords w;
   const char* last = nullptr;
@@ -928,6 +973,7 @@ int main() {
   RUN_TEST(test_row_spans_cut_before_last_row);
   RUN_TEST(test_row_spans_pad_rows);
   RUN_TEST(test_row_spans_shift);
+  RUN_TEST(test_row_spans_scale);
   RUN_TEST(test_header_rows);
   RUN_TEST(test_grid_add_edges);
   RUN_TEST(test_grid_dirty);
@@ -964,6 +1010,8 @@ int main() {
   RUN_TEST(test_splash_bubble_beside_the_monster);
   RUN_TEST(test_splash_bubble_wraps_long_words);
   RUN_TEST(test_splash_drops_bubble_without_room);
+  RUN_TEST(test_splash_scales_art_on_a_big_grid);
+  RUN_TEST(test_splash_scale_needs_room);
   RUN_TEST(test_monster_words_shuffle);
   RUN_TEST(test_button_grid_three_columns);
   RUN_TEST(test_guild_row_counts_role);

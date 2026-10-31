@@ -17,6 +17,7 @@ void Grid::resize(int cols, int rows) {
   kinds_.assign(rows_, RowKind::Normal);
   pads_.assign(rows_, -1);
   shifts_.assign(rows_, 0);
+  scales_.assign(rows_, 1);
 }
 
 void Grid::fill(uint16_t bg) {
@@ -24,6 +25,7 @@ void Grid::fill(uint16_t bg) {
   std::fill(kinds_.begin(), kinds_.end(), RowKind::Normal);
   std::fill(pads_.begin(), pads_.end(), int16_t(-1));
   std::fill(shifts_.begin(), shifts_.end(), int16_t(0));
+  std::fill(scales_.begin(), scales_.end(), uint8_t(1));
 }
 
 void Grid::setRowKind(int row, RowKind k) {
@@ -45,6 +47,12 @@ void Grid::setRowShift(int row, int px) {
 }
 
 int Grid::rowShift(int row) const { return row >= 0 && row < rows_ ? shifts_[row] : 0; }
+
+void Grid::setRowScale(int row, int scale) {
+  if (row >= 0 && row < rows_) scales_[row] = static_cast<uint8_t>(std::clamp(scale, 1, 8));
+}
+
+int Grid::rowScale(int row) const { return row >= 0 && row < rows_ ? scales_[row] : 1; }
 
 void Grid::addEdges(int col, int row, uint8_t edges, uint16_t color) {
   if (col < 0 || row < 0 || col >= cols_ || row >= rows_) return;
@@ -222,7 +230,7 @@ std::vector<RowSpan> rowSpans(const Grid& g, int rowH, int bigH) {
     int y = 0;
     for (int r = 0; r < n; ++r) {
       RowKind k = g.rowKind(r);
-      int h = k == RowKind::Skip ? 0 : k == RowKind::Big ? bigH : rowH;
+      int h = (k == RowKind::Skip ? 0 : k == RowKind::Big ? bigH : rowH) * g.rowScale(r);
       if (g.rowPad(r) >= 0) h = g.rowPad(r);
       if (r == n - 1) h += g.bottomPad();
       out[r] = RowSpan{y, h, g.rowShift(r)};
@@ -235,7 +243,7 @@ std::vector<RowSpan> rowSpans(const Grid& g, int rowH, int bigH) {
   int y = 0;
   for (int r = 0; r < n - 1; ++r) {
     RowKind k = g.rowKind(r);
-    int h = k == RowKind::Skip ? 0 : k == RowKind::Big ? bigH : rowH;
+    int h = (k == RowKind::Skip ? 0 : k == RowKind::Big ? bigH : rowH) * g.rowScale(r);
     if (g.rowPad(r) >= 0) h = g.rowPad(r);
     if (r == 0 && headPx > 0) h = headPx;
     h = std::max(0, std::min(h, lastY - y));

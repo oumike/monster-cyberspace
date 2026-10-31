@@ -92,6 +92,9 @@ Bouncer bouncer;
 // The monster's word on the screensaver, a new one every kSayMs.
 MonsterWords words;
 const char* saying = "";
+#ifndef RC_SPLASH_SCALE
+#define RC_SPLASH_SCALE 1
+#endif
 int64_t sayUntil = 0;
 constexpr int64_t kSayMs = 20000;
 bool needResize = true;
@@ -263,7 +266,9 @@ void drawBounce(const Theme& t) {
     saying = words.next(esp_random());
     sayUntil = nowMs() + kSayMs;
   }
-  std::vector<SplashLine> ls = splashLayout(grid.cols(), grid.rows(), "", saying);
+  // E-paper keeps it still, so it may be the splash's big monster.
+  std::vector<SplashLine> ls =
+      splashLayout(grid.cols(), grid.rows(), "", saying, board::eink() ? RC_SPLASH_SCALE : 1);
   int minC = grid.cols(), minR = grid.rows(), maxC = 0, maxR = 0;
   ls.erase(std::remove_if(ls.begin(), ls.end(),
                           [](const SplashLine& l) {
@@ -280,11 +285,16 @@ void drawBounce(const Theme& t) {
   if (ls.empty()) return;
   const int w = maxC - minC, h = maxR - minR;
   const int maxX = std::max(0, grid.cols() - w), maxY = std::max(0, grid.rows() - h);
+  // A scaled monster's cols count scaled cells: draw it where the layout
+  // centred it.
+  const bool scaled = std::any_of(ls.begin(), ls.end(), [](const SplashLine& l) { return l.scale > 1; });
   if (board::eink()) bouncer = Bouncer{maxX / 2, maxY / 2, 0, 0};
   else bouncer.step(maxX, maxY);
-  for (const SplashLine& l : ls)
-    putLine(grid, bouncer.x + l.col - minC, bouncer.y + l.row - minR, l.text,
-            l.role == SplashRole::Art ? t.selectBg : t.fg, t.bg);
+  for (const SplashLine& l : ls) {
+    const int c = scaled ? l.col : bouncer.x + l.col - minC, r = scaled ? l.row : bouncer.y + l.row - minR;
+    putLine(grid, c, r, l.text, l.role == SplashRole::Art ? t.selectBg : t.fg, t.bg);
+    grid.setRowScale(r, l.scale);
+  }
 }
 
 // The screen timeout ran out: lock into the screensaver or screen off.

@@ -19,7 +19,7 @@ void cycleTextSize();
 // Turns the panel (rotation r, ui/rotation.h) at once, saves it and reflows
 // the grid. Only on boards that can rotate.
 void setRotation(uint8_t r);
-// A one-row banner on the bottom row, above whatever the screen drew.
+// A one-row banner on the top row, over the status bar.
 void banner(const std::string& text, bool error);
 // The key being handled came from the touch screen (a tap, drag or the
 // on-screen keyboard), not a button or keyboard.

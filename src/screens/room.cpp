@@ -43,7 +43,6 @@ std::string firstUrl(const CircMessage& m) {
   return m.content.substr(p, e == std::string::npos ? std::string::npos : e - p);
 }
 
-bool compact() { return app().cfg.textSize == TextSize::Compact; }
 
 }  // namespace
 
@@ -591,8 +590,8 @@ void RoomScreen::onEvent(const Event& e) {
 // ---- drawing ----
 
 void RoomScreen::render(Grid& g, const Theme& t, int64_t) {
-  const bool small = compact();
-  const int inputRow = small ? g.rows() - 2 : g.rows() - 1;
+  // The input sits above the hint row.
+  const int inputRow = g.rows() - 2;
   int logBottom = inputRow;
   const int64_t now = nowEpochMs();
   const bool drawer = drawerOpen();
@@ -718,7 +717,7 @@ void RoomScreen::render(Grid& g, const Theme& t, int64_t) {
   input_.setEmojiButton(true);
   input_.render(g, inputRow, t, reasonMode_ ? U"reason> " : U"> ");
 
-  if (small) {
+  {
     const char32_t* hint;
     const char32_t* touch;
     if (spell_.visible()) {

@@ -866,7 +866,7 @@ void taskMain(void*) {
       router::screen().render(grid, t, now);
       symbols.render(grid, grid.rows() - 1, t);
       canned.render(grid, 0, grid.rows() - 1, t);
-      topBanner.render(grid, grid.rows() - 1, t, now);
+      topBanner.render(grid, 0, t, now);  // over the status bar
       taps.mapRows(0, rowSpans(grid, cellSize(gridSize).h, bigCellSize(gridSize).h));
       renderer.draw(grid, gridSize);
       if (oskShown) {

@@ -87,6 +87,14 @@ void test_feed_limiters() {
   for (int i = 0; i < 100; ++i) TEST_ASSERT_TRUE(w.tryAcquire(int64_t(i) * 800000));
   TEST_ASSERT_FALSE(w.tryAcquire(80000000));
   TEST_ASSERT_TRUE(w.tryAcquire(86400000));
+  checkMinuteEdge(makeFollowLimiter(), 3);
+  checkDayEdge(makeFollowLimiter(), 15);
+  RateLimiter k = makePokeLimiter();
+  TEST_ASSERT_TRUE(k.tryAcquire(0));
+  TEST_ASSERT_FALSE(k.tryAcquire(3599999));
+  for (int i = 1; i < 8; ++i) TEST_ASSERT_TRUE(k.tryAcquire(int64_t(i) * 3600000));
+  TEST_ASSERT_FALSE(k.tryAcquire(8LL * 3600000));
+  TEST_ASSERT_TRUE(k.tryAcquire(86400000));
 }
 
 static std::string jwt(const char* payload) {

@@ -15,34 +15,73 @@
 
 namespace rc {
 
+// A whole frame in PSRAM, or strip mode: the strip grows to the tallest row
+// drawn.
+bool Renderer::allocate() {
+  heap_caps_free(frame_);
+  stripRows_ = 0;
+  base_ = 0;
+  frame_ = static_cast<uint16_t*>(
+      heap_caps_calloc(static_cast<size_t>(w_) * h_, sizeof(uint16_t), MALLOC_CAP_SPIRAM));
+  strip_ = frame_ == nullptr;
+  return frame_ || ensureStrip(32);
+}
+
+bool Renderer::ensureStrip(int rows) {
+  if (rows <= stripRows_) return true;
+  heap_caps_free(frame_);
+  frame_ = static_cast<uint16_t*>(heap_caps_malloc(static_cast<size_t>(w_) * rows * sizeof(uint16_t),
+                                                   MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
+  stripRows_ = frame_ ? rows : 0;
+  return frame_ != nullptr;
+}
+
+// pushRows takes a whole frame, so the strip goes as one shifted back by
+// base_ rows; the board reads only rows [y0, y1).
+void Renderer::push(int y0, int y1) {
+  if (!strip_) {
+    board::pushRows(frame_, y0, y1);
+    return;
+  }
+  const uintptr_t shifted =
+      reinterpret_cast<uintptr_t>(frame_) - static_cast<uintptr_t>(base_) * w_ * sizeof(uint16_t);
+  board::pushRows(reinterpret_cast<const uint16_t*>(shifted), y0, y1);
+}
+
 bool Renderer::begin() {
   w_ = board::panelWidth();
   h_ = board::panelHeight();
-  frame_ = static_cast<uint16_t*>(
-      heap_caps_calloc(static_cast<size_t>(w_) * h_, sizeof(uint16_t), MALLOC_CAP_SPIRAM));
-  return frame_ != nullptr;
+  return allocate();
 }
 
 void Renderer::resize() {
   const int w = board::panelWidth(), h = board::panelHeight();
-  if (static_cast<size_t>(w) * h > static_cast<size_t>(w_) * h_) {
-    heap_caps_free(frame_);
-    frame_ = static_cast<uint16_t*>(
-        heap_caps_calloc(static_cast<size_t>(w) * h, sizeof(uint16_t), MALLOC_CAP_SPIRAM));
-  }
+  const bool grew = static_cast<size_t>(w) * h > static_cast<size_t>(w_) * h_;
   w_ = w;
   h_ = h;
+  if (strip_) {
+    heap_caps_free(frame_);
+    frame_ = nullptr;
+    stripRows_ = 0;
+    ensureStrip(32);
+  } else if (grew) {
+    allocate();
+  }
   main_ = Layer{0};
   docked_ = Layer{};
 }
 
 void Renderer::drawRow(const Grid& g, int r, const CellFont& font, RowSpan span, int yoff) {
+  if (strip_) {
+    if (!ensureStrip(span.h)) return;
+    base_ = span.y;
+  }
   yoff = std::clamp(yoff, 0, span.h);
   const int cw = font.w, ch = std::min<int>(font.h, span.h - yoff), y0 = span.y + yoff;
   if (yoff > 0 && g.cols() > 0) {
     const uint16_t bg = g.at(0, r).bg;
     for (int y = span.y; y < y0; ++y) {
-      uint16_t* px = frame_ + static_cast<size_t>(y) * w_;
+      uint16_t* px = row(y);
       for (int x = 0; x < w_; ++x) px[x] = bg;
     }
   }
@@ -54,7 +93,7 @@ void Renderer::drawRow(const Grid& g, int r, const CellFont& font, RowSpan span,
   if (ox > 0 && g.cols() > 0) {
     const uint16_t bg = g.at(0, r).bg;
     for (int y = 0; y < ch; ++y) {
-      uint16_t* px = frame_ + static_cast<size_t>(y0 + y) * w_;
+      uint16_t* px = row(y0 + y);
       for (int x = 0; x < ox; ++x) px[x] = bg;
     }
   }
@@ -89,12 +128,12 @@ void Renderer::drawRow(const Grid& g, int r, const CellFont& font, RowSpan span,
         if (prev->bold) sb |= sb >> 1;
         bits |= uint16_t(sb << (cw - half));
       }
-      uint16_t* px = frame_ + static_cast<size_t>(y0 + y) * w_ + x0;
+      uint16_t* px = row(y0 + y) + x0;
       for (int x = 0; x < cw; ++x) px[x] = (bits & (0x8000 >> x)) ? cell.fg : cell.bg;
     }
     if (cell.edges) {
       const uint16_t ec = cell.edgeColor;
-      uint16_t* top = frame_ + static_cast<size_t>(y0) * w_ + x0;
+      uint16_t* top = row(y0) + x0;
       uint16_t* bottom = top + static_cast<size_t>(ch - 1) * w_;
       if (cell.edges & kEdgeTop)
         for (int x = 0; x < cw; ++x) top[x] = ec;
@@ -112,11 +151,11 @@ void Renderer::drawRow(const Grid& g, int r, const CellFont& font, RowSpan span,
   if (used < w_ && cols > 0) {
     const Cell& last = g.at(cols - 1, r);
     for (int y = 0; y < ch; ++y) {
-      uint16_t* px = frame_ + static_cast<size_t>(y0 + y) * w_;
+      uint16_t* px = row(y0 + y);
       for (int x = used; x < w_; ++x) px[x] = last.bg;
     }
     const uint16_t ec = last.edgeColor;
-    uint16_t* top = frame_ + static_cast<size_t>(y0) * w_;
+    uint16_t* top = row(y0);
     if (last.edges & kEdgeTop)
       for (int x = used; x < w_; ++x) top[x] = ec;
     if (last.edges & kEdgeBottom)
@@ -128,7 +167,7 @@ void Renderer::drawRow(const Grid& g, int r, const CellFont& font, RowSpan span,
   if (span.h - yoff > ch && g.cols() > 0) {
     const uint16_t bg = g.at(0, r).bg;
     for (int y = ch; y < span.h - yoff; ++y) {
-      uint16_t* px = frame_ + static_cast<size_t>(y0 + y) * w_;
+      uint16_t* px = row(y0 + y);
       for (int x = 0; x < w_; ++x) px[x] = bg;
     }
   }
@@ -136,10 +175,10 @@ void Renderer::drawRow(const Grid& g, int r, const CellFont& font, RowSpan span,
   // a bar down several rows is unbroken.
   if (barX >= 0)
     for (int y = span.y; y < span.y + span.h && y < h_; ++y) {
-      uint16_t* px = frame_ + static_cast<size_t>(y) * w_;
+      uint16_t* px = row(y);
       for (int x = std::max(barX, 0); x < barX + barW && x < w_; ++x) px[x] = barColor;
     }
-  board::pushRows(frame_, span.y, span.y + span.h);
+  push(span.y, span.y + span.h);
 }
 
 void Renderer::draw(Grid& g, TextSize s, int firstRow, int offsetPx) {
@@ -170,11 +209,17 @@ void Renderer::draw(Grid& g, TextSize s, int firstRow, int offsetPx) {
     const int gapEnd = std::min(top + spans[n - 1].y, h_);
     if (gapY < gapEnd && (gapY != layer.gapY || aboveGapChanged || !sameShape)) {
       const uint16_t bg = g.at(0, n - 2).bg;
-      for (int y = gapY; y < gapEnd; ++y) {
-        uint16_t* px = frame_ + static_cast<size_t>(y) * w_;
-        for (int x = 0; x < w_; ++x) px[x] = bg;
+      // In strip mode a strip at a time.
+      for (int y0 = gapY; y0 < gapEnd;) {
+        const int y1 = strip_ ? std::min(gapEnd, y0 + stripRows_) : gapEnd;
+        if (strip_) base_ = y0;
+        for (int y = y0; y < y1; ++y) {
+          uint16_t* px = row(y);
+          for (int x = 0; x < w_; ++x) px[x] = bg;
+        }
+        push(y0, y1);
+        y0 = y1;
       }
-      board::pushRows(frame_, gapY, gapEnd);
     }
     layer.gapY = gapY;
   }

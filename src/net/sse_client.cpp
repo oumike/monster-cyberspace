@@ -9,6 +9,7 @@
 #include <freertos/task.h>
 
 #include "core_version.h"
+#include "sys/mem.h"
 
 namespace rc {
 
@@ -60,7 +61,7 @@ void SseClient::taskMain(void* self) {
 }
 
 void SseClient::run() {
-  char* buf = static_cast<char*>(heap_caps_malloc(kBufBytes, MALLOC_CAP_SPIRAM));
+  char* buf = static_cast<char*>(rc::mem::big(kBufBytes));
   esp_http_client_handle_t h = nullptr;
   bool live = false;
 

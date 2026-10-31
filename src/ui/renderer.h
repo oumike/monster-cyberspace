@@ -10,6 +10,9 @@ namespace rc {
 struct CellFont;
 
 // Rasterises a cell Grid into a PSRAM frame and pushes only the dirty rows.
+// Without PSRAM for a whole frame (the X4's 480x800 on an ESP32-C3) it draws
+// each row into a strip one row tall and pushes that; the panel keeps the
+// picture.
 class Renderer {
  public:
   bool begin();
@@ -24,8 +27,9 @@ class Renderer {
   // below the screen's, such as the on-screen keyboard), offsetPx lower. A
   // header row 0 (Grid::setHeader) is drawn in the big font, centred.
   void draw(Grid& g, TextSize s, int firstRow = 0, int offsetPx = 0);
-  // The frame as last drawn, width() x height() RGB565 (null without memory).
-  const uint16_t* frame() const { return frame_; }
+  // The frame as last drawn, width() x height() RGB565 (null without memory,
+  // or in strip mode).
+  const uint16_t* frame() const { return strip_ ? nullptr : frame_; }
   int width() const { return w_; }
   int height() const { return h_; }
 
@@ -38,8 +42,16 @@ class Renderer {
     std::vector<RowSpan> spans;  // where each row was drawn, relative to firstRow
     int gapY = -1;               // where the gap above the last row began
   };
-  uint16_t* frame_ = nullptr;
+  uint16_t* frame_ = nullptr;  // the whole frame, or the strip
   int w_ = 0, h_ = 0;
+  bool strip_ = false;
+  int stripRows_ = 0;  // the strip's height
+  int base_ = 0;       // the panel row the strip's row 0 is
+
+  bool allocate();
+  bool ensureStrip(int rows);
+  uint16_t* row(int y) { return frame_ + static_cast<size_t>(y - base_) * w_; }
+  void push(int y0, int y1);
   Layer main_{0}, docked_;
 
   // yoff: px of span above the glyphs, in the row's background.

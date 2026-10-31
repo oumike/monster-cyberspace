@@ -12,7 +12,11 @@
 namespace rc {
 
 constexpr size_t kPreviewChars = 280, kEntryBodyBytes = 16384, kReplyBodyBytes = 4096;
-constexpr size_t kMaxReplies = 100;
+// Boards without PSRAM (the X4) keep fewer replies.
+#ifndef RC_MAX_REPLIES
+#define RC_MAX_REPLIES 100
+#endif
+constexpr size_t kMaxReplies = RC_MAX_REPLIES;
 
 // The feed list, the open entry with its replies, the bookmark map and the
 // Watched/Bookmarks side list. References returned here are invalidated by the

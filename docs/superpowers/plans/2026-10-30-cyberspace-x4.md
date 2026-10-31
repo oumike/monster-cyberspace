@@ -36,10 +36,10 @@ Spec: `docs/superpowers/specs/2026-10-30-cyberspace-x4-design.md`. Branch `x4`.
   free-text-only actions hidden. Test `test_canned_picker`.
 - [x] 5. Web config switch: `web/web_access` rule (AP up, or enabled), the
   web server, device Settings, page. Test in `test_web_access`.
-- [ ] 6. No-PSRAM: `sys/mem` (SPIRAM with internal fallback), `sys/tasks`
+- [x] 6. No-PSRAM: `sys/mem` (SPIRAM with internal fallback), `sys/tasks`
   (core pin clamped to the cores present), renderer 1-bit frame, smaller
   buffers, no spell dictionary, heap logging.
-- [ ] 7. `board::canType()`, `board::webCompose()` on every HAL.
+- [x] 7. `board::canType()`, `board::webCompose()` on every HAL.
 - [ ] 8. Web compose (X4): `/api/compose` + page section; target parsing in
   `lib/core` (`web/compose_req`). Test `test_compose_req`.
 - [ ] 9. X4 HAL `src/hal/x4/`, env `x4`, release/flash scripts, CI.

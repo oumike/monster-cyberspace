@@ -11,11 +11,16 @@
 #include "chat/presence.h"
 #include "cs/api_parse.h"
 
+// Messages kept; boards without PSRAM (the X4) set a smaller cap.
+#ifndef RC_CHAT_CAP
+#define RC_CHAT_CAP 1000
+#endif
+
 namespace rc {
 
 // Everything the UI reads and the network side writes, behind one mutex.
 struct ChatState {
-  ChatStore store;
+  ChatStore store{RC_CHAT_CAP};
   PresenceMap presence;
   std::vector<RoomInfo> rooms;
   PresenceCadence cadence;

@@ -712,7 +712,8 @@ void start() {
   resizeGrid();
   router::go(router::Id::Splash);
   board::backlight(true);
-  xTaskCreatePinnedToCore(taskMain, "ui", 16384, nullptr, 2, nullptr, 1);
+  // Core 1 beside the network's core 0; a single-core chip (the X4's C3) has only 0.
+  xTaskCreatePinnedToCore(taskMain, "ui", 16384, nullptr, 2, nullptr, portNUM_PROCESSORS > 1 ? 1 : 0);
 }
 
 void setTextSize(TextSize s) {

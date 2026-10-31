@@ -182,6 +182,26 @@ void test_profile_text_bare() {
   TEST_ASSERT_TRUE(hasLine(t, "active now"));
 }
 
+void test_profile_line_roles() {
+  Profile p;
+  parseProfile(fx::kProfileFull, p);
+  auto lines = profileLines(p, true, 0, true);
+  auto roleOf = [&](const char32_t* text) {
+    for (const auto& l : lines)
+      if (l.text == text) return int(l.role);
+    return -1;
+  };
+  TEST_ASSERT_EQUAL(int(ProfileRole::Name), roleOf(U"Ann Example"));
+  TEST_ASSERT_EQUAL(int(ProfileRole::Handle), roleOf(U"@ann"));
+  TEST_ASSERT_EQUAL(int(ProfileRole::Following), roleOf(U"you follow them"));
+  TEST_ASSERT_EQUAL(int(ProfileRole::Blocked), roleOf(U"you blocked them"));
+  TEST_ASSERT_EQUAL(int(ProfileRole::Website), roleOf(U"my site https://ann.example"));
+  // The lines joined are profileText.
+  std::u32string joined;
+  for (const auto& l : lines) joined += (joined.empty() ? U"" : U"\n") + l.text;
+  TEST_ASSERT_TRUE(joined == profileText(p, true, 0, true));
+}
+
 int main(int, char**) {
   UNITY_BEGIN();
   RUN_TEST(test_profile_full);
@@ -194,5 +214,6 @@ int main(int, char**) {
   RUN_TEST(test_follow_index_cap);
   RUN_TEST(test_profile_text);
   RUN_TEST(test_profile_text_bare);
+  RUN_TEST(test_profile_line_roles);
   return UNITY_END();
 }

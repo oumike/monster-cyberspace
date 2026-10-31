@@ -291,6 +291,7 @@ class ProfileScreen : public Screen {
   std::string user_;
   TextView text_;
   std::u32string shown_;   // what text_ holds
+  const Theme* styledFor_ = nullptr;  // the theme text_'s colours came from
   Overlay box_;
   LinkView link_;
   std::vector<int> acts_;  // the menu's rows, as ProfileAct values

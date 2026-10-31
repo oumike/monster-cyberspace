@@ -4,8 +4,9 @@ On the Elecrow ThinkNode M9 (keyboard and d-pad), the Seeed Wio Tracker L2
 (touch screen; see Touch below) and the LilyGO T-Deck Plus (keyboard,
 trackball and touch; see T-Deck Plus below), and the Elecrow CrowPanel
 Advance 3.5" and 5.0" (touch only; see CrowPanel below), and the Attaky Mesh
-Deck (d-pad, touch and keyboard; see Mesh Deck below). Key names in this guide are the
-M9's.
+Deck (d-pad, touch and keyboard; see Mesh Deck below), and the Xteink X4
+(e-paper and six buttons, a mostly passive client; see Xteink X4 below). Key
+names in this guide are the M9's.
 
 ## First setup
 
@@ -267,6 +268,50 @@ and backups go through web config. The setup AP is
 **`Monster-Cyberspace-MeshDeck`**. The serial console is the USB-C port
 (a CH340). Right after flashing, if the screen stays dark, switch the
 Mesh Deck off and on.
+
+## Xteink X4
+
+The Xteink X4 is an e-paper reader with no keyboard or touch: it shows cIRC,
+the Feed, C-Mail, Guilds and Notifications, and replies with canned phrases.
+Longer text is written in web config and sent to it.
+
+| Button | Action |
+|---|---|
+| Up, Down (right edge) | Move the selection or scroll (hold to repeat) |
+| Left, Right (below the screen) | Previous or next tab, room or page |
+| Confirm | Open, select or send; hold it for the item's menu |
+| Back | Back; hold it for Home |
+| Power | Tap: screen off, and any button turns it on again. Hold 2 s: power off |
+
+**Canned replies:** where another board would type, the X4 opens a list of
+your phrases, then the 40 tray emoji. Confirm sends the one picked; Back
+cancels. Up to 10 phrases of up to 80 characters each are edited in web
+config (Canned replies) and kept in backups. Starting a C-Mail, a new thread
+or adding a Wi-Fi network says to use web config instead.
+
+**Sending from web config:** the page's Send box (at `http://<device IP>/`,
+no password needed) shows what is open on the X4. Text sent there goes to the
+open room or C-Mail as if typed, or starts a C-Mail to a user, or posts a new
+thread in a guild. Each Send is one message; nothing is retried. With a page
+password set, `/` shows only the Send box, and Settings (`/config`) asks for
+the password. The Web config item in Settings, or the box in web config's
+Security section, turns the page off altogether (the setup AP still serves it).
+
+**Notifications** on Home lists unread cIRC mentions, then Feed and guild
+notices, newest first; Confirm opens the room or entry.
+
+**Power:** on USB it stays awake. On battery it sleeps after the idle time
+(Settings → **Sleep after**, 5 min by default), with "Sleeping — updated
+hh:mm" at the bottom of the screen, and wakes every **Wake every** minutes
+(15 by default; Never: only Power wakes it) to rejoin Wi-Fi and redraw, then
+sleeps again. Any button press during that makes it a full wake. Under 3.40 V
+it shows "Battery empty" and powers off. Both settings are in web config too
+(Power).
+
+The panel refreshes at most every 2 s for new content, with a full refresh
+from time to time to clear ghosting. Screenshots aren't available (there is
+no full frame in memory). Backups go to the microSD slot. The setup AP is
+**`Monster-Cyberspace-X4-Setup`**. The serial console is the USB-C port.
 
 ## CrowPanel
 

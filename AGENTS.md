@@ -5,7 +5,8 @@ a retro text-only social network. Milestone 1 is cIRC chat plus a device-served
 web config page, on the Elecrow ThinkNode M9. The Seeed Wio Tracker L2 and
 the LilyGO T-Deck Plus followed, then the Elecrow CrowPanel Advance 3.5" and
 5.0", the LilyGO T-LoRa Pager, the LilyGO T-Deck Pro and the Attaky Mesh Deck
-(all built, not yet tried on hardware; the Mesh Deck boots). More
+(all built, not yet tried on hardware; the Mesh Deck boots). The Xteink X4
+(branch `x4`) is written but has never been built. More
 boards and Cyberspace features come later.
 
 - **Design spec:** `docs/superpowers/specs/2026-10-25-cyberspace-m9-circ-design.md`
@@ -25,6 +26,8 @@ boards and Cyberspace features come later.
   plan `docs/superpowers/plans/2026-10-26-cyberspace-tdeck-plus.md`.
 - **Mesh Deck:** survey `docs/superpowers/specs/2026-10-29-cyberspace-mesh-deck-design.md`,
   plan `docs/superpowers/plans/2026-10-29-cyberspace-mesh-deck.md`.
+- **Xteink X4:** spec `docs/superpowers/specs/2026-10-30-cyberspace-x4-design.md`,
+  plan `docs/superpowers/plans/2026-10-30-cyberspace-x4.md`.
 - **User guide:** `docs/USE.md`. **Testing and the live checklist:** `docs/TESTING.md`.
 - **Implementation plan:** `docs/superpowers/plans/2026-10-25-cyberspace-m9-circ.md`.
   Work its tasks in order, tick each `- [ ]` box as you finish a step, and
@@ -67,7 +70,8 @@ pio run -e crowpanel35      # Elecrow CrowPanel Advance 3.5" (crowpanel50: the 5
 pio run -e pager            # LilyGO T-LoRa Pager
 pio run -e tdeck_pro        # LilyGO T-Deck Pro (e-paper)
 pio run -e mesh_deck        # Attaky Mesh Deck
-scripts/build-upload-monitor.sh m9   # flash + serial monitor (115200); -w for the Wio L2, -t for the T-Deck Plus, -3/-5 for the CrowPanels, -P for the Pager, -D for the T-Deck Pro, -M for the Mesh Deck; --help for options
+pio run -e x4               # Xteink X4 (ESP32-C3, no PSRAM)
+scripts/build-upload-monitor.sh m9   # flash + serial monitor (115200); -w for the Wio L2, -t for the T-Deck Plus, -3/-5 for the CrowPanels, -P for the Pager, -D for the T-Deck Pro, -M for the Mesh Deck, -X for the X4; --help for options
 scripts/build-upload-monitor.sh -B   # build every firmware env, no device needed
 scripts/screenshot.py PORT [--watch]  # PNG screenshots over the serial console (no device writes)
 # demo build for screenshots, no network (never release): docs/BUILD.md "Screenshots"
@@ -118,6 +122,17 @@ RTC, SD or buzzer. The LoRa module's SX1262, when fitted, is unused: `radioSleep
 puts it to sleep at boot (awake, it whines). Console: UART0 (CH340). Its RGB LEDs are the notification
 light (`board::hasNotifyLight`/`notifyLight`; the blinker, colours and
 timeouts in `ui/notify_light`, settings `notifyLight`/`notifyTimeoutSecs`).
+`src/hal/x4/` is the Xteink X4 (from rhino-moshi's `include/boards/x4.h`,
+`panel_x4.cpp`, `buttons.cpp`, `power.cpp`): an ESP32-C3 with no PSRAM, so
+the renderer draws in strips (`ui/renderer`, `sys/mem`) and `RC_CHAT_CAP` /
+`RC_MAX_REPLIES` shrink the caches. A GDEQ0426T82 e-paper driven through the
+bare GxEPD2 driver from a 48 KB 1-bit frame (portrait, packed turned to the
+native landscape), refreshed by `ui/eink`; buttons on two ADC ladders
+(`input/keymap_x4`) sampled by a 5 ms task; battery on GPIO0, latch GPIO13,
+SD. `board::canType()` is false (text fields open the canned picker,
+`ui/widgets/canned_picker`, with phrases from web config), `webCompose()` is
+true (web config's Send box, `/api/compose`, `web/compose_req`), and
+`sleepsOnBattery()` drives `app/power_service` (`power/power_policy`).
 Touch: `lib/core` turns samples into gestures and resolves them against the
 per-frame `TapMap` widgets fill as they draw (`input/gestures`, `ui/tap_map`,
 `input/touch_resolve`, the `Osk` keyboard); `ui_task` feeds `handleKey` and

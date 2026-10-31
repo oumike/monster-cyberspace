@@ -184,8 +184,8 @@ ApiError CsApi::rooms(std::vector<RoomInfo>& out) {
 }
 
 ApiError CsApi::history(const std::string& slug, int64_t before, std::vector<CircMessage>& out,
-                        int64_t& cursor) {
-  std::string path = "/v1/circ/" + enc(slug) + "?limit=50";
+                        int64_t& cursor, int limit) {
+  std::string path = "/v1/circ/" + enc(slug) + "?limit=" + std::to_string(limit);
   if (before > 0) path += "&before=" + std::to_string(before);
   HttpResult r;
   ApiError e = call("GET", path, "", r);
@@ -278,8 +278,8 @@ ApiError CsApi::startConversation(const std::string& username, ConversationInfo&
 }
 
 ApiError CsApi::cmailHistory(const std::string& id, int64_t before, std::vector<CircMessage>& out,
-                             int64_t& cursor) {
-  std::string path = "/v1/cmail/" + enc(id) + "?limit=50";
+                             int64_t& cursor, int limit) {
+  std::string path = "/v1/cmail/" + enc(id) + "?limit=" + std::to_string(limit);
   if (before > 0) path += "&before=" + std::to_string(before);
   HttpResult r;
   ApiError e = call("GET", path, "", r);

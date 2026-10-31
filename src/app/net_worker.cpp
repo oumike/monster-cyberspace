@@ -32,6 +32,15 @@ namespace rc::networker {
 namespace {
 
 constexpr int64_t kWatchMs = 60000;
+#if RC_LOW_MEM
+// No PSRAM (the X4): one TLS connection at a time, so the open room is polled
+// on the requests connection instead of streamed (X4 spec §4.2).
+constexpr bool kPollRoom = true;
+#else
+constexpr bool kPollRoom = false;
+#endif
+constexpr int64_t kRoomPollMs = 60000;
+constexpr int kRoomPollLimit = 20;
 constexpr int64_t kMaxBackoffMs = 30000;
 constexpr int64_t kPausedBannerMs = 30000;
 
@@ -237,7 +246,7 @@ class Worker {
 
   // Opens a cIRC room (by slug) or, with dm, a C-Mail conversation (by id).
   void openRoom(const std::string& slug, bool dm) {
-    if (slug == room_ && dm == dm_ && msgSse_.running()) {
+    if (slug == room_ && dm == dm_ && (kPollRoom ? historyLoaded_ : msgSse_.running())) {
       post(EvtType::RoomChanged);
       return;
     }
@@ -254,11 +263,39 @@ class Worker {
     if (!ready_ || !online()) return;  // tick() opens it once possible
     loadHistory();
     if (historyLoaded_) {
-      openMsgStream();
-      if (wantsSecondStream()) openPresStream();
+      if (kPollRoom) {
+        nextPoll_ = mono() + kRoomPollMs;
+        setConn(2);
+      } else {
+        openMsgStream();
+        if (wantsSecondStream()) openPresStream();
+      }
       sendPresence();
       markRead(slug);
     }
+  }
+
+  // Poll mode: the newest page, merged into the store.
+  void pollRoom() {
+    nextPoll_ = mono() + kRoomPollMs;
+    if (room_.empty() || !historyLoaded_) return;
+    std::vector<CircMessage> msgs;
+    int64_t cursor = -1;
+    ApiError e = dm_ ? api_.cmailHistory(room_, 0, msgs, cursor, kRoomPollLimit)
+                     : api_.history(roomKey(room_), 0, msgs, cursor, kRoomPollLimit);
+    if (!e.ok()) {
+      checkAuthError(e);
+      setConn(1);
+      return;
+    }
+    setConn(2);
+    const bool changed = lockedChat().with([&](ChatState& s) {
+      const size_t n = s.store.size();
+      const int64_t newest = s.store.newestTimestamp();
+      for (auto& m : msgs) s.store.upsert(std::move(m));
+      return s.store.size() != n || s.store.newestTimestamp() != newest;
+    });
+    if (changed) post(EvtType::RoomChanged);
   }
 
   void loadHistory() {
@@ -386,6 +423,14 @@ class Worker {
       if (!historyLoaded_) return;
       markRead(room_);
     }
+    if (kPollRoom) {
+      backoffMs_ = 1000;
+      downSince_ = 0;
+      nextPoll_ = mono() + kRoomPollMs;
+      setConn(2);
+      if (!dm_ && !presenceSent_) sendPresence();
+      return;
+    }
     if (!msgSse_.running()) openMsgStream();
     if (wantsSecondStream() && !presSse_.running()) openPresStream();
     if (!dm_ && !presenceSent_) sendPresence();
@@ -508,6 +553,12 @@ class Worker {
                   unsigned(heap_caps_get_free_size(MALLOC_CAP_SPIRAM)), unsigned(msgs),
                   unsigned(pres), unsigned(convs), unsigned(seenMentions_.size()), unsigned(feed),
                   unsigned(replies));
+#if RC_LOW_MEM
+    // Stack headroom (bytes), for sizing the tasks on a board without PSRAM.
+    TaskHandle_t ui = xTaskGetHandle("ui");
+    Serial.printf("[mem] stack free: net %u ui %u\n", unsigned(uxTaskGetStackHighWaterMark(nullptr)),
+                  ui ? unsigned(uxTaskGetStackHighWaterMark(ui)) : 0u);
+#endif
   }
 
   void watch() {
@@ -589,12 +640,13 @@ class Worker {
         backoffMs_ = 1000;
         reconnectAt_ = 0;
         downSince_ = 0;
-        return;  // tick() reopens the streams
+        nextPoll_ = 0;
+        return;  // tick() reopens the streams (or polls)
       case CmdType::OpenPresence:
         presenceWanted_ = true;
         if (!dm_ && needNet(c) && !room_.empty()) {
           seedPresence();
-          if (!presSse_.running()) openPresStream();
+          if (!kPollRoom && !presSse_.running()) openPresStream();
         }
         return;
       case CmdType::ClosePresence:
@@ -645,6 +697,7 @@ class Worker {
         if (e.ok()) {
           if (changesMutes(c.b)) loadMutes();
           post(EvtType::SendDone);
+          if (kPollRoom && c.a == room_) pollRoom();  // show it without a stream
           if (!reply.empty()) banner(reply);
         } else {
           checkAuthError(e);
@@ -756,7 +809,15 @@ class Worker {
       setConn(2);
     }
 
-    if (!room_.empty() && screenOn_) {
+    if (kPollRoom && !room_.empty() && screenOn_) {
+      if (!historyLoaded_ && now >= reconnectAt_) {
+        reconnectAt_ = now + backoffMs_;
+        reconnect();
+      } else if (historyLoaded_ && now >= nextPoll_) {
+        pollRoom();
+      }
+      if (!dm_ && now >= nextHeartbeat_) sendPresence();
+    } else if (!room_.empty() && screenOn_) {
       if (msgDown_.exchange(false)) scheduleReconnect();
       bool needs = !historyLoaded_ || !msgSse_.running() ||
                    (wantsSecondStream() && !presSse_.running());
@@ -795,6 +856,7 @@ class Worker {
   int conn_ = -1, auth_ = -1;
   int64_t lastActivity_ = 0, heartbeatMs_ = 30000, nextHeartbeat_ = 0, nextWatch_ = 0;
   int64_t nextBootstrap_ = 0, reconnectAt_ = 0, downSince_ = 0, backoffMs_ = 1000;
+  int64_t nextPoll_ = 0;
 };
 
 void taskMain(void* arg) {

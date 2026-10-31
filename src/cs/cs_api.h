@@ -37,7 +37,7 @@ class CsApi {
   // cIRC.
   ApiError rooms(std::vector<RoomInfo>&);
   ApiError history(const std::string& slug, int64_t before, std::vector<CircMessage>&,
-                   int64_t& cursor);
+                   int64_t& cursor, int limit = 50);
   ApiError send(const std::string& slug, const std::string& utf8, std::string& messageId,
                 std::string& reply);
   ApiError deleteMessage(const std::string& slug, const std::string& id);
@@ -51,7 +51,7 @@ class CsApi {
   ApiError conversations(std::vector<ConversationInfo>&);
   ApiError startConversation(const std::string& username, ConversationInfo& out);
   ApiError cmailHistory(const std::string& id, int64_t before, std::vector<CircMessage>&,
-                        int64_t& cursor);
+                        int64_t& cursor, int limit = 50);
   ApiError cmailSend(const std::string& id, const std::string& utf8, std::string& messageId);
   ApiError cmailRead(const std::string& id);
   ApiError cmailTyping(const std::string& id, TypingCadence& out);

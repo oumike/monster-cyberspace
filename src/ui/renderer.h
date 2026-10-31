@@ -11,8 +11,8 @@ struct CellFont;
 
 // Rasterises a cell Grid into a PSRAM frame and pushes only the dirty rows.
 // Without PSRAM for a whole frame (the X4's 480x800 on an ESP32-C3) it draws
-// each row into a strip one row tall and pushes that; the panel keeps the
-// picture.
+// each pixel line into a strip one line tall and pushes that; the panel keeps
+// the picture.
 class Renderer {
  public:
   bool begin();
@@ -47,6 +47,8 @@ class Renderer {
   bool strip_ = false;
   int stripRows_ = 0;  // the strip's height
   int base_ = 0;       // the panel row the strip's row 0 is
+
+  std::vector<const uint8_t*> glyphs_;  // drawRow's cell glyphs, kept to reuse the memory
 
   bool allocate();
   bool ensureStrip(int rows);

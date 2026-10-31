@@ -103,9 +103,13 @@ Every screen works by touch. Touch never wakes a dark screen.
   outside an open menu or confirm closes it. A tap on a banner dismisses it.
 - **Scroll:** drag a list or log to move line by line; swipe up or down to
   move a page. Dragging past the end of a list stops there.
-- **Home** shows six large tiles: messages, rooms, c-mail, feed, guilds and
-  settings. The messages tile shows the last room, or how many mentions are
-  unread (in the accent colour) while there are any. They fill about 90% of the space below the status bar, centred
+- **Home** shows seven large tiles: **unread** across the top, then messages,
+  rooms, c-mail, feed, guilds and settings two to a row. The unread tile shows
+  how many things are unread (see [Unread](#unread)), in the accent colour
+  while there are any. The messages tile shows the last room, or how many
+  mentions are unread (in the accent colour) while there are any. If the tiles
+  don't fit (a small screen at a large text size), Home is the list the
+  keyed boards use. They fill about 90% of the space below the status bar, centred
   and spaced apart, with their labels in a larger font. The selected tile has
   a highlighted outline.
 
@@ -305,6 +309,9 @@ filters it to rooms whose names contain what you typed, ignoring case. The
 filter shows on the bottom line; Backspace erases a letter, Back clears it,
 and it clears whenever you return to the list.
 
+On touch boards the rooms are buttons. With keys too (T-Deck Plus), the
+trackball or arrows move the selection through them and Centre opens one.
+
 ## In a room
 
 The keyboard always types into the input line at the bottom.
@@ -462,7 +469,39 @@ Feed key asks the same and goes to the Feed, Map to the guild list.
 **Alerts:** a new thread in a guild you belong to shows a banner
 (`@name in Night Owls: …`) and sounds the buzzer if it's on.
 
-## Characters and emoji
+## People
+
+A profile shows someone's name, guild, Cyberspace number, join date, when
+they were last active, follower and entry counts, location, website and bio.
+You must be signed in. Open one from:
+
+- a room: the person menu (in Who's here) or a message's menu → **Profile**
+- a conversation: the room menu → **Profile**
+- an entry or a reply: its menu → **Author's profile**
+- a guild's **Members**: Centre or Right on a member (tap on touch boards)
+
+**On a profile:** Up/Down scroll. Centre, Right or **Ctrl** (⋯ on touch)
+opens the actions:
+
+- **Follow** / **Unfollow** ask first, with the limit: "Follow @rain? (3 per
+  minute, 15 per day)". The profile then says `you follow them`.
+- **Message** opens a C-Mail conversation with them.
+- **Poke** asks first: "Poke @rain? (1 an hour, 8 a day)". A refused poke
+  ("Can't poke @rain") doesn't count against the limit.
+- **Entries** lists their public entries, paged like the Feed; Back returns
+  to the profile.
+- **Guild** opens their guild, **Website** shows the link with its QR code,
+  **Refresh** reloads the profile.
+
+Back returns to where you opened the profile. Nothing is retried; over a
+limit you get "Slow down: try in Ns" and nothing is sent.
+
+**Mute and block:** muting (`/mute name` in a room, or the person menu) hides
+someone in cIRC. Blocking is done on the website only; the API has no block
+call. A profile you blocked says `you blocked them`, and has no Follow,
+Message or Poke. Whether you follow someone is only known once your follow
+list has loaded (up to 500 follows).
+
 
 Every board draws all of Terminus's characters (Latin with accents, Greek,
 Cyrillic, arrows, maths, box drawing, card suits and the like) and every
@@ -529,6 +568,31 @@ colour. The other themes draw nicks
 in the text colour, and yours in the dim one. QR codes stay
 black on white in every theme. The T-Deck Pro's e-paper has one theme of its
 own, black on white with outlined selections, and no Theme item.
+
+## Unread
+
+**Unread** lists everything waiting for you in one place, newest first:
+unread C-Mail conversations, cIRC mentions of you, and Feed and guild alerts.
+Open it from Home on every board: it is the second item in the Home list,
+after Messages (`Unread  N`, marked while N is above 0), and the full-width
+tile at the top of the Home tiles on touch boards. The status bar shows the
+total; with nothing waiting it says "nothing unread".
+
+- Each row starts with what it is: `mail` (`@name: last message`, with the
+  conversation's unread count on the right), `irc` (`@name in #room: …`) or
+  `feed` (`@name replied: …`, or a new guild thread).
+- Up/Down pick, Centre or Right opens (tap on touch boards); Left or Back
+  goes Home.
+- Opening a row opens the conversation, the room (which becomes your last
+  room) or the entry, and marks it read the way opening it anywhere else
+  does. Back from there returns to Unread, so you can work down the list.
+- **✓ Mark all read** is the top row while anything is unread. It asks
+  first, then marks every notification read on your account (mentions, Feed
+  and guild alerts, and any the device doesn't list) and each unread C-Mail
+  conversation, as the website would. Nothing is retried; if some C-Mail
+  stays unread you get "Some C-Mail stayed unread".
+- Nothing is fetched for this screen: it shows what the device already knows
+  from the checks described under [Alerts](#alerts).
 
 ## Alerts
 

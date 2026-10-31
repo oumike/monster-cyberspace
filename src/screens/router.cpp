@@ -29,11 +29,19 @@ WifiScreen wifiScreen;
 GuildListScreen guildList;
 FeedListScreen guild{FeedListScreen::Kind::Guild};
 MembersScreen members;
+ProfileScreen profile;
+FeedListScreen userPosts{FeedListScreen::Kind::User};
+NotificationsScreen notifications;
 
 Id cur = Id::Splash;
 Screen* active = &splash;
 Place curPlace{Id::Splash, ""};
 Place base{Id::Splash, ""};
+// Set by goFrom: Back from `to` returns to `from`.
+struct Origin {
+  bool set = false;
+  Id from = Id::Home, to = Id::Home;
+} origin;
 
 Screen* lookup(Id id) {
   switch (id) {
@@ -56,6 +64,9 @@ Screen* lookup(Id id) {
     case Id::GuildList: return &guildList;
     case Id::Guild: return &guild;
     case Id::Members: return &members;
+    case Id::Profile: return &profile;
+    case Id::UserPosts: return &userPosts;
+    case Id::Notifications: return &notifications;
   }
   return &home;
 }
@@ -71,6 +82,7 @@ bool signedIn() {
 }  // namespace
 
 void go(Id id, const std::string& arg) {
+  if (id != origin.to && id != Id::Entry && id != Id::Composer) origin.set = false;
   active->leave();
   curPlace = Place{id, arg};
   if (id != Id::Entry && id != Id::Composer) base = curPlace;
@@ -79,8 +91,21 @@ void go(Id id, const std::string& arg) {
   active->enter(arg);
 }
 
+void goFrom(Id from, Id id, const std::string& arg) {
+  go(id, arg);
+  origin = Origin{true, from, id};
+}
+
+bool backToOrigin() {
+  if (!origin.set || cur != origin.to) return false;
+  go(origin.from);
+  return true;
+}
+
 Id current() { return cur; }
+Place here() { return curPlace; }
 Place lastBase() { return base; }
+void setBase(const Place& p) { base = p; }
 Screen& screen() { return *active; }
 
 bool handleGlobal(const KeyEvent& k) {

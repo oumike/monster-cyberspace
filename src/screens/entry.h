@@ -71,6 +71,7 @@ class EntryScreen : public Screen {
   std::string target_;        // the entry or reply a menu acts on
   bool targetReply_ = false;  // target_ is a reply
   std::string url_;           // the target's link, for Show link
+  std::string author_;        // the target's author, for Author's profile
 
   // Report reason entry, which borrows the input line.
   bool reasonMode_ = false;

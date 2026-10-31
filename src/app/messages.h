@@ -61,6 +61,13 @@ enum class CmdType {
   JoinGuild,             // a = slug
   LeaveGuild,            // a = slug
   PromoteGuild,          // a = slug
+  // People.
+  OpenProfile,           // a = username
+  Follow,                // a = userId, b = username
+  Unfollow,              // a = userId, b = username
+  Poke,                  // a = username
+  OpenUserPosts,         // a = username; n = 1 to append the next page
+  MarkAllRead,           // Unread: every notification and unread C-Mail
 };
 
 struct Command {
@@ -99,12 +106,16 @@ enum class EvtType {
   GuildUpdated,         // ok=false; code = 404 when the guild is gone
   MembersUpdated,       // ok=false on a failed load
   GuildWriteDone,       // join/leave/promote: ok; text = error or the success banner
+  // People.
+  ProfileUpdated,       // ok=false on a failed load; code = 404 when there's no such user
+  PeopleWriteDone,      // follow/unfollow/poke: ok; text = error or the success banner
   // The device's Wi-Fi screen.
   WifiScanned,          // text = rc::encodeWifiScan
   // code 0 joining (text = SSID), 1 joined (text = SSID), 2 forgotten
   // (text = SSID); -1 failed, -2 refused: ok=false, text = the message.
   WifiState,
   NotifyPreview,        // from the web page: code = rc::LedColor index, one double blink
+  AllRead,              // MarkAllRead: ok when the notifications were marked; text = banner
 };
 
 struct Event {
@@ -112,6 +123,8 @@ struct Event {
   std::string text;
   int code = 0;
   bool ok = true;
+  std::string arg;  // MentionAlert: the room slug
+  int64_t at = 0;   // MentionAlert: when it was made, epoch ms; 0 unknown
 };
 
 }  // namespace rc

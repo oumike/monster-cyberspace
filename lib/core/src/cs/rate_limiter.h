@@ -42,5 +42,9 @@ RateLimiter makeBookmarkLimiter();
 RateLimiter makeWatchLimiter();
 // Join, promote and leave share it.
 RateLimiter makeMembershipLimiter();
+// Follows and unfollows each have their own.
+RateLimiter makeFollowLimiter();
+// One poke an hour, eight a day, across everyone.
+RateLimiter makePokeLimiter();
 
 }  // namespace rc

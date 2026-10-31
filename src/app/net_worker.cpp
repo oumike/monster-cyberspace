@@ -16,6 +16,7 @@
 #include <set>
 
 #include "app/feed_worker.h"
+#include "app/people_worker.h"
 #include "app/queues.h"
 #include "cs/cs_api.h"
 #include "cs/rtdb.h"
@@ -114,7 +115,7 @@ void finishLogin(const LoginResult& r) {
 
 class Worker {
  public:
-  explicit Worker(const Settings& s) : api_(http_), feed_(api_), email_(s.email) {
+  explicit Worker(const Settings& s) : api_(http_), feed_(api_), people_(api_), email_(s.email) {
     if (!s.refreshToken.empty()) api_.setRefreshToken(s.refreshToken);
   }
 
@@ -150,6 +151,7 @@ class Worker {
     if (deadToken) {
       closeRoom();
       feed_.signOut();
+      people_.signOut();
       api_.signOut();
       self_.clear();
       ready_ = false;
@@ -435,6 +437,39 @@ class Worker {
     pendingMentions_.erase(range.first, range.second);
   }
 
+  // Unread's Mark all read, from one key press: every notification (mentions
+  // and Feed notices) in one call, then each unread conversation. Not retried.
+  void markAllRead() {
+    ApiError e = api_.markAllNotificationsRead();
+    if (e.ok()) {
+      pendingMentions_.clear();
+      lockedFeed().with([](FeedState& s) { s.notices.clear(); });
+    } else {
+      checkAuthError(e);
+    }
+    std::vector<std::string> ids;
+    lockedChat().with([&](ChatState& s) {
+      for (const auto& c : s.conversations)
+        if (c.unread > 0) ids.push_back(c.id);
+    });
+    bool mailOk = true;
+    for (const auto& id : ids) {
+      if (!api_.cmailRead(id).ok()) {
+        mailOk = false;
+        continue;
+      }
+      lockedChat().with([&](ChatState& s) {
+        for (auto& c : s.conversations)
+          if (c.id == id) c.unread = 0;
+      });
+    }
+    if (!ids.empty()) post(EvtType::ConversationsUpdated);
+    const bool ok = e.ok() && mailOk;
+    post(EvtType::AllRead, 0,
+         ok ? std::string("Marked all read") : e.ok() ? std::string("Some C-Mail stayed unread") : e.message,
+         e.ok());
+  }
+
   // ---- C-Mail ----
 
   // Refreshes the list and raises one alert per conversation each time a new
@@ -521,6 +556,7 @@ class Worker {
       return;
     }
     for (auto& m : ms) {
+      if (m.at <= 0) m.at = epochMs();
       if (!m.type.empty() && m.type != "chat_mention") {
         // The UI decides on the beep with its buzzer setting.
         feed_.onNotice(m, true);
@@ -528,8 +564,11 @@ class Worker {
       }
       if (!seenMentions_.insert(m.id).second) continue;
       pendingMentions_.emplace(m.roomSlug, m.id);
-      post(EvtType::MentionAlert, 0,
-           "@" + m.actorUsername + " in #" + m.roomSlug + ": " + m.messageContent);
+      Event ev{EvtType::MentionAlert,
+               "@" + m.actorUsername + " in #" + m.roomSlug + ": " + m.messageContent};
+      ev.arg = m.roomSlug;
+      ev.at = m.at;
+      postEvent(std::move(ev));
     }
     if (seenMentions_.size() > 200) seenMentions_.clear();
   }
@@ -556,10 +595,15 @@ class Worker {
       post(EvtType::SideListUpdated, 0, "", false);
     if (c.type == CmdType::OpenGuilds) post(EvtType::GuildsUpdated, 0, "", false);
     if (c.type == CmdType::OpenMembers) post(EvtType::MembersUpdated, 0, "", false);
+    if (c.type == CmdType::MarkAllRead) post(EvtType::AllRead, 0, why, false);
     if (c.type == CmdType::PostGuildThread) post(EvtType::EntryPosted, 0, why, false);
     if (c.type == CmdType::JoinGuild || c.type == CmdType::LeaveGuild ||
         c.type == CmdType::PromoteGuild)
       post(EvtType::GuildWriteDone, 0, why, false);
+    if (c.type == CmdType::OpenProfile) post(EvtType::ProfileUpdated, 0, "", false);
+    if (c.type == CmdType::Follow || c.type == CmdType::Unfollow || c.type == CmdType::Poke)
+      post(EvtType::PeopleWriteDone, 0, why, false);
+    if (c.type == CmdType::OpenUserPosts) post(EvtType::SideListUpdated, 0, "", false);
     return false;
   }
 
@@ -622,6 +666,7 @@ class Worker {
       case CmdType::Logout:
         closeRoom();
         feed_.signOut();
+        people_.signOut();
         api_.signOut();
         self_.clear();
         ready_ = false;
@@ -635,6 +680,10 @@ class Worker {
     if (!needNet(c)) return;
     if (FeedWorker::isFeedCommand(c.type)) {
       feed_.handle(c);
+      return;
+    }
+    if (PeopleWorker::isPeopleCommand(c.type)) {
+      people_.handle(c);
       return;
     }
     switch (c.type) {
@@ -669,6 +718,9 @@ class Worker {
       }
       case CmdType::MarkRead:
         markRead(c.a.empty() ? room_ : c.a);
+        break;
+      case CmdType::MarkAllRead:
+        markAllRead();
         break;
       case CmdType::RefreshRooms:
         refreshRooms();
@@ -781,6 +833,7 @@ class Worker {
   HttpsClient http_;
   CsApi api_;
   FeedWorker feed_;
+  PeopleWorker people_;
   SseClient msgSse_, presSse_;
   std::string email_, self_, room_;
   std::map<std::string, std::string> roomIds_;  // slug → id

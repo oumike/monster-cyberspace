@@ -30,6 +30,23 @@ on 2026-10-27; the sections marked `m9_fake` passed on it before then.
 - [ ] The bar never covers text, outlines or the side strip; screens that
       fit show none.
 
+**Unread (any board):**
+
+- [ ] Have a second account send a C-Mail, mention you in a room and reply to
+      your entry, a minute or more apart: all three show on Unread, newest
+      first, tagged `mail`, `irc` and `feed`; the C-Mail row shows its count.
+- [ ] Opening each clears it from Unread, and Back returns to Unread (not the
+      C-Mail list, room list or Feed).
+- [ ] The Home item (`Unread  N`) or tile (`N unread`) matches the status
+      bar total on Unread, and the mentions count on Home drops only by the
+      mentions of the room you opened.
+- [ ] With items waiting, the top row is "✓ Mark all read"; it asks first,
+      then empties Unread, says "Marked all read", and the website shows
+      the notifications and C-Mail read. Cancel sends nothing.
+- [ ] Touch Home: the unread tile spans the top row; Up from either tile of
+      the next row goes to it and Down from it goes to the left tile; taps
+      open every tile. With nothing unread, Unread says "nothing unread".
+
 **Wi-Fi on the device (any board):**
 
 - [ ] Settings → Wi-Fi lists the networks in range with bars, the joined one
@@ -137,6 +154,22 @@ on 2026-10-27; the sections marked `m9_fake` passed on it before then.
 - [ ] Members lists `@name · role · age` and pages
 - [ ] A new thread in one of my guilds shows a banner and beeps
 - [ ] Home → Guilds opens the list (every board)
+
+**People (M9):**
+
+- [ ] A room's person menu and a message's menu open the Profile; Back returns to the room
+- [ ] A conversation's room menu → Profile opens the partner
+- [ ] An entry's and a reply's menu → Author's profile; Back returns to the entry, and Back again to its list
+- [ ] Guild Members: Centre on a member opens their profile
+- [ ] The profile shows name, guild, number, joined, active, counts, website and bio, and scrolls
+- [ ] Follow asks with the limit, then shows "Following @name" and `you follow them`; Unfollow undoes it
+- [ ] Follow on someone already followed (from the website) shows "Already following"
+- [ ] Message opens a C-Mail conversation
+- [ ] Poke asks, then "Poked @name"; a second within the hour shows "Slow down"
+- [ ] Entries lists their public entries and pages; an entry opens and Back returns to the list
+- [ ] A user blocked on the website shows `you blocked them` and no Follow, Message or Poke
+- [ ] My own profile has no Follow, Message or Poke
+- [ ] An unknown username shows "No such user"
 
 **Web config (`m9`):**
 
@@ -275,7 +308,7 @@ Buttons: BOOT tap = Back, BOOT hold (0.6 s) = Home; Wake tap = screen off
 - [ ] With the LoRa/GPS module: the log shows `[meshdeck] LoRa radio asleep` and the high-pitched whine is gone; without one, `[meshdeck] no LoRa radio`
 - [ ] After flashing, the board restarts on its own; if the screen stays dark, note it (camillia-mt needed a power cycle there)
 - [ ] Wi-Fi setup (nothing saved): the AP is named `Monster-Cyberspace-MeshDeck` and `http://192.168.4.1` loads
-- [ ] Home is six tiles in every text size and orientation, with and without the keyboard module (messages shows `N mentions` while unread); Settings is a button grid: the d-pad moves the highlighted outline and scrolls to it, Select opens, Left from the first column and L1 go Home, taps work; dragging or tapping hides the outline (Settings and Home), and the next d-pad press only brings it back
+- [ ] Home is seven tiles, unread across the top, in every text size and orientation, with and without the keyboard module (messages shows `N mentions` while unread); Settings is a button grid: the d-pad moves the highlighted outline and scrolls to it, Select opens, Left from the first column and L1 go Home, taps work; dragging or tapping hides the outline (Settings and Home), and the next d-pad press only brings it back
 
 **GPS time, RTC and time zone (`m9`):**
 
@@ -409,3 +442,7 @@ this checklist on the `m9` build with their own account.
 - [ ] Watch and unwatch an entry; the website agrees
 - [ ] A reply from a second account shows a banner (and the buzzer) within a minute
 - [ ] With the Feed list open, auto-refresh shows a new entry within 2 minutes
+
+**Unread (live):**
+
+- [ ] A C-Mail, a mention and a Feed reply from a second account all show on Unread in time order; opening each marks it read on the website too

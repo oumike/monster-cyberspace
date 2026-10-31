@@ -3,12 +3,19 @@
 #include <cstdint>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include "store/settings.h"
 #include "ui/grid.h"
 #include "ui/theme.h"
 
 namespace rc {
+
+// An unread cIRC mention, for the Unread screen.
+struct MentionNote {
+  std::string slug, text;
+  int64_t at = 0;  // epoch ms
+};
 
 // UI-side state, touched only by the UI task.
 struct AppState {
@@ -17,7 +24,9 @@ struct AppState {
   int auth = -1;         // -1 unknown, 0 signed out, 1 signed in, 2 email unverified
   std::string user;      // signed-in username
   std::string authNote;  // the last auth error, for the login form
-  int unreadMentions = 0;
+  // Unread mentions, newest last; a room's go when it opens. Their count is
+  // the unread mentions.
+  std::vector<MentionNote> mentions;
 };
 
 AppState& app();
@@ -42,5 +51,8 @@ int wifiBars();
 // A local-time "HH:MM", or "--:--" before SNTP has set the clock.
 std::string clockText();
 int64_t nowEpochMs();
+// The battery percent to show (-1 unknown), steadied by a BatteryMeter. UI
+// task only; it reads the board every 2 s.
+int batteryShown();
 
 }  // namespace rc

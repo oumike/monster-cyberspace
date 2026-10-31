@@ -56,6 +56,7 @@ void WifiScreen::setNote(const std::string& text, bool error) {
 }
 
 void WifiScreen::startEntry(Mode m, const std::string& ssid) {
+  if (ui::typingElsewhere("Add networks")) return;
   mode_ = m;
   ssid_ = ssid;
   input_.clear();

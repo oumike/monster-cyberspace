@@ -57,6 +57,9 @@ enum class Id {
   GuildList,
   Guild,
   Members,
+  Profile,
+  UserPosts,
+  Notifications,  // the Unread screen
 };
 
 struct Place {
@@ -65,9 +68,19 @@ struct Place {
 };
 
 void go(Id id, const std::string& arg = "");
+// go(id, arg), and Back from that screen (backToOrigin) returns to `from`
+// until the user goes somewhere else. Entry and Composer keep it.
+void goFrom(Id from, Id id, const std::string& arg = "");
+// Goes back to goFrom's `from` when the current screen is the one it opened;
+// false, and no move, otherwise.
+bool backToOrigin();
 Id current();
+// Where go() last went, with its argument.
+Place here();
 // The last place go() was given that is not Entry or Composer.
 Place lastBase();
+// Puts back a lastBase() saved earlier, before returning to an Entry.
+void setBase(const Place& p);
 Screen& screen();
 // The dedicated buttons (Messages, Home, C-Mail, Feed, Map). True when the
 // key was one of them.

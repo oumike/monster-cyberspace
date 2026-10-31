@@ -1,12 +1,17 @@
 #include "app/ui_task.h"
 
 #include <Arduino.h>
+#include <esp_heap_caps.h>
 
 #include <algorithm>
+#include <mutex>
 
 #include "app/app_state.h"
+#include "app/power_service.h"
 #include "app/queues.h"
 #include "chat/chat_source.h"
+#include "feed/compose.h"
+#include "feed/feed_source.h"
 #include "hal/board.h"
 #include "input/backspace.h"
 #include "input/double_tap.h"
@@ -31,6 +36,7 @@
 #include "ui/widgets/banner.h"
 #include "ui/widgets/osk.h"
 #include "ui/widgets/overlay.h"
+#include "ui/widgets/canned_picker.h"
 #include "ui/widgets/symbol_table.h"
 #include "util/utf8.h"
 
@@ -43,6 +49,7 @@ constexpr int64_t kSaverMs = 10000;
 constexpr int64_t kActivityMs = 5000;
 constexpr int64_t kLockQuietMs = 3000;  // input ignored just after the screen locks
 constexpr int64_t kBounceStepMs = 250;
+constexpr size_t kMaxMentionNotes = 50;  // the oldest go first
 
 // On; Dark (screen off); Saver, the 10 s peek at recent messages; Bounce, the
 // screensaver the screen timeout locks into.
@@ -73,6 +80,10 @@ Osk osk;
 Grid oskGrid(1, 1);
 bool oskShown = false;
 SymbolTable symbols;
+// Boards that can't type (board::canType): canned replies instead of a text
+// field. cannedEmoji: the emoji tray was opened from it, so a pick sends.
+CannedPicker canned;
+bool cannedEmoji = false;
 Power power = Power::On;
 int64_t saverUntil = 0, lastActivitySent = -kActivityMs;
 int64_t lastInputMs = 0, lockedAt = INT64_MIN / 2, nextBounce = 0;
@@ -82,6 +93,9 @@ Bouncer bouncer;
 // The monster's word on the screensaver, a new one every kSayMs.
 MonsterWords words;
 const char* saying = "";
+#ifndef RC_SPLASH_SCALE
+#define RC_SPLASH_SCALE 1
+#endif
 int64_t sayUntil = 0;
 constexpr int64_t kSayMs = 20000;
 bool needResize = true;
@@ -96,7 +110,12 @@ bool fixedSize() {
 
 TextSize wantedSize() {
   if (fixedSize()) return TextSize::Comfortable;
-  return router::screen().compactText() ? TextSize::Compact : app().cfg.textSize;
+  const TextSize s = router::screen().compactText() ? TextSize::Compact : app().cfg.textSize;
+#if RC_LOW_MEM
+  // Without PSRAM a Compact grid on a big panel does not fit beside Wi-Fi.
+  if (s == TextSize::Compact) return TextSize::Comfortable;
+#endif
+  return s;
 }
 
 int64_t nowMs() { return int64_t(millis()); }
@@ -214,7 +233,7 @@ void applyNotifyLight() {
   if (!board::hasNotifyLight()) return;
   uint8_t rgb = 0;
   if (blinker.active()) {
-    const bool unread = app().unreadMentions > 0 || cmailUnread() > 0;
+    const bool unread = !app().mentions.empty() || cmailUnread() > 0;
     rgb = blinker.tick(millis(), app().cfg.notifyLight, app().cfg.notifyTimeoutSecs, unread);
   }
   if (rgb == notifyShown) return;
@@ -248,7 +267,9 @@ void drawBounce(const Theme& t) {
     saying = words.next(esp_random());
     sayUntil = nowMs() + kSayMs;
   }
-  std::vector<SplashLine> ls = splashLayout(grid.cols(), grid.rows(), "", saying);
+  // E-paper keeps it still, so it may be the splash's big monster.
+  std::vector<SplashLine> ls =
+      splashLayout(grid.cols(), grid.rows(), "", saying, board::eink() ? RC_SPLASH_SCALE : 1);
   int minC = grid.cols(), minR = grid.rows(), maxC = 0, maxR = 0;
   ls.erase(std::remove_if(ls.begin(), ls.end(),
                           [](const SplashLine& l) {
@@ -265,11 +286,16 @@ void drawBounce(const Theme& t) {
   if (ls.empty()) return;
   const int w = maxC - minC, h = maxR - minR;
   const int maxX = std::max(0, grid.cols() - w), maxY = std::max(0, grid.rows() - h);
+  // A scaled monster's cols count scaled cells: draw it where the layout
+  // centred it.
+  const bool scaled = std::any_of(ls.begin(), ls.end(), [](const SplashLine& l) { return l.scale > 1; });
   if (board::eink()) bouncer = Bouncer{maxX / 2, maxY / 2, 0, 0};
   else bouncer.step(maxX, maxY);
-  for (const SplashLine& l : ls)
-    putLine(grid, bouncer.x + l.col - minC, bouncer.y + l.row - minR, l.text,
-            l.role == SplashRole::Art ? t.selectBg : t.fg, t.bg);
+  for (const SplashLine& l : ls) {
+    const int c = scaled ? l.col : bouncer.x + l.col - minC, r = scaled ? l.row : bouncer.y + l.row - minR;
+    putLine(grid, c, r, l.text, l.role == SplashRole::Art ? t.selectBg : t.fg, t.bg);
+    grid.setRowScale(r, l.scale);
+  }
 }
 
 // The screen timeout ran out: lock into the screensaver or screen off.
@@ -286,6 +312,11 @@ void lockScreen(int64_t now) {
   setLit(kSaverLevel);
 }
 
+// Web compose waiting on the network (runWebCompose below).
+std::string mailText;  // a new C-Mail's text, sent once its conversation opens
+bool threadPosting = false;
+void sendCanned(const std::u32string& text);
+
 void handleEvent(const Event& e) {
   using router::Id;
   Id cur = router::current();
@@ -297,6 +328,7 @@ void handleEvent(const Event& e) {
       if (e.ok) {
         app().auth = e.code;
         app().user = e.code == 0 ? std::string() : e.text;
+        if (e.code == 0) app().mentions.clear();
         app().authNote.clear();
       } else {
         app().authNote = e.text;
@@ -305,7 +337,9 @@ void handleEvent(const Event& e) {
           (cur == Id::Home || cur == Id::RoomList || cur == Id::Room || cur == Id::CmailList ||
            cur == Id::Conversation || cur == Id::FeedList || cur == Id::Entry ||
            cur == Id::Composer || cur == Id::Watched || cur == Id::Bookmarks || cur == Id::Settings ||
-           cur == Id::GuildList || cur == Id::Guild || cur == Id::Members))
+           cur == Id::GuildList || cur == Id::Guild || cur == Id::Members ||
+           cur == Id::Profile || cur == Id::UserPosts ||
+           cur == Id::Notifications))
         router::go(Id::Setup);
       if (e.ok && e.code != 0 && (cur == Id::Setup || cur == Id::LoginForm)) router::go(Id::Home);
       break;
@@ -331,12 +365,28 @@ void handleEvent(const Event& e) {
         app().cfg.wifi = std::move(s.wifi);
       }
       break;
-    case EvtType::MentionAlert:
-      ++app().unreadMentions;
+    case EvtType::AllRead:
+      if (e.ok) app().mentions.clear();
+      banner(e.text, !e.ok);
+      break;
+    case EvtType::MentionAlert: {
+      // Not for the room on screen, nor again when the network side forgets
+      // what it has seen and re-alerts.
+      auto& ms = app().mentions;
+      const int64_t at = e.at ? e.at : nowEpochMs();
+      const bool open = cur == Id::Room && lockedChat().with([&](ChatState& s) {
+        return !s.dm && s.roomSlug == e.arg;
+      });
+      const bool dup = std::any_of(ms.begin(), ms.end(), [&](const MentionNote& m) {
+        return m.at == at && m.slug == e.arg && m.text == e.text;
+      });
+      if (!open && !dup) ms.push_back(MentionNote{e.arg, e.text, at});
+      if (ms.size() > kMaxMentionNotes) ms.erase(ms.begin());
       notifyMessage();
       if (app().cfg.buzzer) board::beep(2000, 80);
       banner(e.text, false);
       break;
+    }
     case EvtType::CmailAlert:
       // The unread count lives in the conversation list (Home sums it).
       notifyMessage();
@@ -346,10 +396,36 @@ void handleEvent(const Event& e) {
     case EvtType::NotifyPreview:
       notifyLightPreview(ledColorFromIndex(e.code));
       break;
+    case EvtType::PhrasesChanged:
+      app().cfg.phrases = splitPhrases(e.text);
+      break;
     case EvtType::FeedAlert:
       // code 1 asks for a beep; post_cooldown (code 0) is a banner only.
       if (e.code == 1 && app().cfg.buzzer) board::beep(1800, 80);
       banner(e.text, false);
+      break;
+    case EvtType::ConversationStarted:
+      // A web-composed C-Mail: open the conversation and send the text there.
+      if (!mailText.empty()) {
+        std::string text = std::move(mailText);
+        mailText.clear();
+        if (!e.ok) {
+          banner(e.text.empty() ? std::string("Couldn't start a C-Mail") : e.text, true);
+        } else {
+          router::go(Id::Conversation, e.text);
+          if (router::screen().acceptsText()) sendCanned(utf8ToU32(text));
+        }
+        return;  // not the C-Mail list's, which didn't ask
+      }
+      break;
+    case EvtType::EntryPosted:
+      if (threadPosting) {
+        threadPosting = false;
+        banner(e.ok ? std::string("Thread posted")
+                    : e.text.empty() ? std::string("Thread not posted") : e.text,
+               !e.ok);
+        return;
+      }
       break;
     default:
       break;
@@ -369,9 +445,115 @@ void wake() {
   setLit(255);
 }
 
+// The last image before deep sleep or power off; e-paper keeps it. whole:
+// the line alone, centred; otherwise it replaces the bottom row of what is
+// on screen (the open screen or the screensaver).
+void finalScreen(const std::string& line, bool whole) {
+  showOsk(false);
+  const Theme& t = currentTheme();
+  board::displaySleep(false);
+  const int w = int(utf8ToU32(line).size());
+  if (whole) {
+    grid.fill(t.bg);
+    putLine(grid, std::max(0, (grid.cols() - w) / 2), grid.rows() / 2, line, t.fg, t.bg);
+  } else {
+    const int row = grid.rows() - 1;
+    putLine(grid, 0, row, std::string(grid.cols(), ' '), t.fg, t.bg);
+    putLine(grid, std::max(0, (grid.cols() - w) / 2), row, line, t.fg, t.bg);
+  }
+  renderer.draw(grid, gridSize);
+  board::displaySleep(true);
+}
+
+// A canned reply goes in as typing, then Select sends it through the
+// screen's own send path.
+// Web compose: one request waits in the slot until the UI task takes it.
+std::mutex composeMu;
+ComposeReq composeSlot;
+bool composeWaiting = false;
+ComposeView composeShown;
+bool composeBusy = false;  // a C-Mail or thread from the page still settling
+
+ComposeView currentComposeView() {
+  ComposeView v;
+  const router::Id id = router::current();
+  v.takesText = router::screen().acceptsText();
+  if (id == router::Id::Room || id == router::Id::Conversation) {
+    lockedChat().with([&](ChatState& s) {
+      if (!s.dm) {
+        v.label = "#" + s.roomSlug;
+        return;
+      }
+      for (const auto& c : s.conversations)
+        if (c.id == s.roomSlug) v.label = "C-Mail with @" + c.partner;
+      if (v.label.empty()) v.label = "a C-Mail conversation";
+    });
+  } else if (id == router::Id::Entry) {
+    v.label = "replies to the open post";
+  }
+  if (v.label.empty()) v.takesText = false;
+  return v;
+}
+
+void sendCanned(const std::u32string& text);
+
+void runWebCompose() {
+  ComposeReq r;
+  {
+    std::lock_guard<std::mutex> l(composeMu);
+    composeShown = currentComposeView();
+    composeBusy = !mailText.empty() || threadPosting;
+    if (!composeWaiting) return;
+    composeWaiting = false;
+    r = std::move(composeSlot);
+    composeBusy = r.kind != ComposeKind::Open;
+  }
+  switch (r.kind) {
+    case ComposeKind::Open:
+      if (!router::screen().acceptsText()) {
+        banner("Web compose: nothing open takes text", true);
+        break;
+      }
+      canned.close();
+      router::screen().onKey(KeyEvent{Action::ClearLine});
+      sendCanned(utf8ToU32(r.text));
+      break;
+    case ComposeKind::Mail:
+      mailText = std::move(r.text);
+      chatSource().command(Command{CmdType::StartConversation, r.to});
+      banner("Starting a C-Mail to @" + r.to + "\u2026", false);
+      break;
+    case ComposeKind::Thread: {
+      EntryDraft d;
+      d.title = r.title;
+      d.body = r.text;
+      threadPosting = true;
+      feedSource().command(Command{CmdType::PostGuildThread, r.guild, guildThreadJson(d)});
+      banner("Posting a thread in " + r.guild + "\u2026", false);
+      break;
+    }
+  }
+}
+
+void sendCanned(const std::u32string& text) {
+  for (char32_t c : text) {
+    KeyEvent k;
+    k.action = Action::Char;
+    k.ch = c;
+    router::screen().onKey(k);
+  }
+  router::screen().onKey(KeyEvent{Action::Select});
+}
+
 void handleKey(const KeyEvent& key) {
   int64_t now = nowMs();
   KeyEvent k = key;
+  power_service::input();
+  if (k.action == Action::PowerOff && board::sleepsOnBattery()) {
+    finalScreen("Powered off \u2014 press Power to turn on", true);
+    power_service::powerOff();
+    return;
+  }
   if (power != Power::On) {
     // Just after the timeout locks the screen, input is ignored.
     if (now - lockedAt < kLockQuietMs) return;
@@ -402,6 +584,28 @@ void handleKey(const KeyEvent& key) {
   if (k.action == Action::ScreenOff || k.action == Action::PowerTap) {
     chatSource().command(Command{CmdType::ScreenOff});
     goDark();
+    return;
+  }
+  if (canned.isOpen()) {
+    CannedPicker::Out o = canned.key(k);
+    if (o.kind == CannedPicker::Kind::Send) {
+      sendCanned(o.text);
+    } else if (o.kind == CannedPicker::Kind::Emoji) {
+      cannedEmoji = true;
+      symbols.setBackspaceCloses(false);
+      symbols.open(U"", SymbolTable::Set::Emoji, board::upDownOnly());
+    } else if (o.kind == CannedPicker::Kind::Closed) {
+      router::screen().onKey(KeyEvent{Action::ClearLine});  // a reply's "@name "
+    }
+    return;
+  }
+  if (symbols.isOpen() && cannedEmoji) {
+    SymbolTable::Out o = symbols.key(k);
+    if (o.kind == SymbolTable::Kind::Insert) {
+      symbols.close();
+      sendCanned(std::u32string(1, o.ch));
+    }
+    if (!symbols.isOpen()) cannedEmoji = false;
     return;
   }
   if (symbols.isOpen()) {
@@ -494,10 +698,27 @@ void pollConsole() {
   }
 }
 
+#if RC_LOW_MEM
+// Heap and stack headroom every 30 s, on a board without PSRAM.
+void logMemory(uint32_t now) {
+  static uint32_t last = 0;
+  if (last && now - last < 30000) return;
+  last = now;
+  Serial.printf("[mem] int %u blk %u min %u | ui stack free %u\n",
+                unsigned(heap_caps_get_free_size(MALLOC_CAP_INTERNAL)),
+                unsigned(heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL)),
+                unsigned(heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL)),
+                unsigned(uxTaskGetStackHighWaterMark(nullptr)));
+}
+#endif
+
 void taskMain(void*) {
   ThemeId shown = app().cfg.theme;
   for (;;) {
     uint32_t start = millis();
+#if RC_LOW_MEM
+    logMemory(start);
+#endif
     router::Id beforeScreen = router::current();
     Power beforePower = power;
     // Touch first, so a gesture resolves against the map of the frame on
@@ -560,7 +781,19 @@ void taskMain(void*) {
     applyKbLight();
     Event e;
     while (nextEvent(e)) handleEvent(e);
+    if (board::webCompose()) runWebCompose();
     applyNotifyLight();
+    switch (power_service::step()) {
+      case PowerStep::Stay: break;
+      case PowerStep::Sleep:
+        finalScreen("Sleeping \u2014 updated " + clockText(), false);
+        power_service::sleep();
+        break;
+      case PowerStep::PowerOff:
+        finalScreen("Battery empty \u2014 charge to turn on", true);
+        power_service::powerOff();
+        break;
+    }
 
     int64_t now = nowMs();
     if (power == Power::Saver && now >= saverUntil) {
@@ -594,6 +827,11 @@ void taskMain(void*) {
       }
     }
     if (oskShown && !router::screen().acceptsText()) showOsk(false);
+    if (oskWanted && !board::canType()) {
+      oskWanted = false;
+      if (power == Power::On && router::current() == beforeScreen && router::screen().acceptsText())
+        canned.open(app().cfg.phrases);
+    }
     if (oskWanted) {
       oskWanted = false;
       if (power == Power::On && board::hasTouch() && !board::hasKeyboard() && !symbols.isOpen() &&
@@ -608,6 +846,10 @@ void taskMain(void*) {
     if (symbols.isOpen() && (router::current() != beforeScreen || power != Power::On ||
                              !router::screen().acceptsText()))
       symbols.close();
+    if (!symbols.isOpen()) cannedEmoji = false;
+    if (canned.isOpen() && (router::current() != beforeScreen || power != Power::On ||
+                            !router::screen().acceptsText()))
+      canned.close();
     // Settings and web config change the theme between frames; repaint it all.
     if (app().cfg.theme != shown) {
       shown = app().cfg.theme;
@@ -623,7 +865,8 @@ void taskMain(void*) {
       taps.setOrigin(cellSize(gridSize), 0);
       router::screen().render(grid, t, now);
       symbols.render(grid, grid.rows() - 1, t);
-      topBanner.render(grid, grid.rows() - 1, t, now);
+      canned.render(grid, 0, grid.rows() - 1, t);
+      topBanner.render(grid, 0, t, now);  // over the status bar
       taps.mapRows(0, rowSpans(grid, cellSize(gridSize).h, bigCellSize(gridSize).h));
       renderer.draw(grid, gridSize);
       if (oskShown) {
@@ -651,6 +894,10 @@ void taskMain(void*) {
 
 void start() {
   if (board::canRotate()) board::setRotation(app().cfg.rotation);
+#if RC_LOW_MEM
+  if (app().cfg.textSize == TextSize::Compact) app().cfg.textSize = TextSize::Comfortable;
+#endif
+  power_service::begin();
   if (!renderer.begin()) Serial.println("[ui] no memory for the frame buffer");
   setActiveTaps(board::hasTouch() ? &taps : nullptr);
   baseCursor = board::hasKeys() || board::sideNav();
@@ -660,7 +907,14 @@ void start() {
   resizeGrid();
   router::go(router::Id::Splash);
   board::backlight(true);
-  xTaskCreatePinnedToCore(taskMain, "ui", 16384, nullptr, 2, nullptr, 1);
+  // Core 1 beside the network's core 0; a single-core chip (the X4's C3) has only 0.
+#if RC_LOW_MEM
+  // Measured: about 3.4 KB used. The heap left over is what TLS runs in.
+  constexpr uint32_t kUiStack = 10240;
+#else
+  constexpr uint32_t kUiStack = 16384;
+#endif
+  xTaskCreatePinnedToCore(taskMain, "ui", kUiStack, nullptr, 2, nullptr, portNUM_PROCESSORS > 1 ? 1 : 0);
 }
 
 void setTextSize(TextSize s) {
@@ -680,6 +934,27 @@ bool fromTouch() { return touchKey; }
 const char* monsterWord() { return words.next(esp_random()); }
 
 void showKeyboard() { oskWanted = true; }
+
+ComposeView composeView() {
+  std::lock_guard<std::mutex> l(composeMu);
+  return composeShown;
+}
+
+std::string webCompose(ComposeReq r) {
+  std::lock_guard<std::mutex> l(composeMu);
+  if (composeWaiting || composeBusy) return "Still sending the last one";
+  std::string err = checkCompose(r, composeShown.takesText);
+  if (!err.empty()) return err;
+  composeSlot = std::move(r);
+  composeWaiting = true;
+  return "";
+}
+
+bool typingElsewhere(const char* what) {
+  if (board::canType()) return false;
+  banner(std::string(what) + " from web config", true);
+  return true;
+}
 
 void banner(const std::string& text, bool error) {
   topBanner.show(utf8ToU32(text), nowMs(), error ? 6000 : 4000, error);

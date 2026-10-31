@@ -18,6 +18,7 @@ void CmailListScreen::enter(const std::string&) {
 
 void CmailListScreen::open(int i) {
   if (i == 0) {
+    if (ui::typingElsewhere("Start a C-Mail")) return;
     editing_ = true;
     input_.clear();
   } else if (i > 0 && i - 1 < int(ids_.size())) {

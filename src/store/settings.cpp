@@ -2,7 +2,9 @@
 
 #include <Preferences.h>
 
+#include "config/phrases.h"
 #include "hal/board.h"
+#include "power/power_policy.h"
 #include "tz/zones.h"
 #include "ui/rotation.h"
 #include "ui/screen_timeout.h"
@@ -70,6 +72,12 @@ void load(rc::Settings& s) {
   s.theme = rc::themeFromIndex(p.getUChar("theme", 0));
   s.rotation = rc::rotationFromIndex(p.getUChar("rot", 0));
   s.lastRoom = getStr(p, "room", s.lastRoom);
+  if (p.isKey("phrases")) s.phrases = rc::splitPhrases(getStr(p, "phrases", ""));
+  s.webConfig = p.getBool("webcfg", true);
+  s.idleSecs = p.getUInt("idlesecs", 300);
+  if (!rc::validIdleSecs(s.idleSecs)) s.idleSecs = 300;
+  s.wakeMins = p.getUInt("wakemins", 15);
+  if (!rc::validWakeMins(s.wakeMins)) s.wakeMins = 15;
   p.end();
 }
 
@@ -170,6 +178,28 @@ void saveSpellCheck(bool on) {
   p.end();
 }
 
+void savePhrases(const std::vector<std::string>& phrases) {
+  Preferences p;
+  if (!p.begin(kNs, false)) return;
+  p.putString("phrases", rc::joinPhrases(phrases).c_str());
+  p.end();
+}
+
+void saveWebConfig(bool on) {
+  Preferences p;
+  if (!p.begin(kNs, false)) return;
+  p.putBool("webcfg", on);
+  p.end();
+}
+
+void savePower(uint32_t idleSecs, uint32_t wakeMins) {
+  Preferences p;
+  if (!p.begin(kNs, false)) return;
+  p.putUInt("idlesecs", idleSecs);
+  p.putUInt("wakemins", wakeMins);
+  p.end();
+}
+
 void saveToken(const std::string& refreshToken) {
   Preferences p;
   if (!p.begin(kNs, false)) return;
@@ -203,6 +233,9 @@ void saveAll(const rc::Settings& s) {
   saveSpellCheck(s.spellCheck);
   saveNotifyLight(s.notifyLight);
   saveNotifyTimeout(s.notifyTimeoutSecs);
+  savePhrases(s.phrases);
+  saveWebConfig(s.webConfig);
+  savePower(s.idleSecs, s.wakeMins);
   saveAccount(s.email, s.refreshToken);
   if (s.refreshToken.empty()) clearToken();
 }

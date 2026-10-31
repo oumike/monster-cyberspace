@@ -4,6 +4,7 @@
 #include <esp_crt_bundle.h>
 #include <esp_http_client.h>
 
+#include <cstdlib>
 #include <cstring>
 
 #include "core_version.h"
@@ -13,21 +14,53 @@ namespace rc {
 namespace {
 
 constexpr const char* kBase = "https://api.cyberspace.online";
+#if RC_LOW_MEM
+// Without PSRAM a body this big couldn't be parsed anyway.
+constexpr size_t kBodyCap = 48 * 1024;
+#else
 constexpr size_t kBodyCap = 256 * 1024;
+#endif
 
+// The body is gathered in a malloc'd buffer grown in exact steps: a
+// std::string doubles as it grows, which on a board without PSRAM asks for a
+// block bigger than any left while the TLS session is open, and its bad_alloc
+// can't unwind through the C client. Out of memory counts as too large.
 struct Sink {
-  std::string* body;
+  char* buf = nullptr;
+  size_t size = 0, cap = 0;
   bool overflow = false;
+  ~Sink() { free(buf); }
+  bool grow(size_t want) {
+    if (want <= cap) return true;
+    if (want > kBodyCap) return false;
+    char* p = static_cast<char*>(realloc(buf, want));
+    if (!p) return false;
+    buf = p;
+    cap = want;
+    return true;
+  }
 };
 
+constexpr size_t kGrowStep = 2048;
+
 esp_err_t onEvent(esp_http_client_event_t* e) {
-  if (e->event_id != HTTP_EVENT_ON_DATA || !e->user_data) return ESP_OK;
+  if (!e->user_data) return ESP_OK;
   Sink* s = static_cast<Sink*>(e->user_data);
-  if (s->body->size() + e->data_len > kBodyCap) {
+  if (s->overflow) return ESP_OK;
+  if (e->event_id == HTTP_EVENT_ON_HEADER && e->header_key && e->header_value &&
+      !strcasecmp(e->header_key, "Content-Length")) {
+    const long n = strtol(e->header_value, nullptr, 10);
+    if (n > 0 && !s->grow(size_t(n))) s->overflow = true;
+    return ESP_OK;
+  }
+  if (e->event_id != HTTP_EVENT_ON_DATA || e->data_len <= 0) return ESP_OK;
+  const size_t need = s->size + size_t(e->data_len);
+  if (need > s->cap && !s->grow(need + kGrowStep > kBodyCap ? need : need + kGrowStep)) {
     s->overflow = true;
     return ESP_OK;
   }
-  s->body->append(static_cast<const char*>(e->data), e->data_len);
+  memcpy(s->buf + s->size, e->data, size_t(e->data_len));
+  s->size = need;
   return ESP_OK;
 }
 
@@ -55,7 +88,7 @@ HttpResult HttpsClient::request(const char* method, const std::string& path,
                                 const std::string& jsonBody, const std::string& bearer) {
   HttpResult r;
   std::string url = std::string(kBase) + path;
-  Sink sink{&r.body};
+  Sink sink;
 
   if (!handle_) {
     esp_http_client_config_t cfg = {};
@@ -100,12 +133,18 @@ HttpResult HttpsClient::request(const char* method, const std::string& path,
     r.overflow = sink.overflow;
     r.status = 0;
     Serial.printf("[http] %s %s failed: %s\n", method, path.c_str(),
-                  sink.overflow ? "body too large" : esp_err_to_name(err));
+                  sink.overflow ? "body too large or out of memory" : esp_err_to_name(err));
     close();  // drop a possibly half-read connection
     return r;
   }
   r.status = esp_http_client_get_status_code(h);
   Serial.printf("[http] %s %s -> %d\n", method, path.c_str(), r.status);
+#if RC_LOW_MEM
+  // The TLS session holds ~50 KB: give it back before the body is copied
+  // and parsed.
+  close();
+#endif
+  if (sink.size) r.body.assign(sink.buf, sink.size);
   return r;
 }
 

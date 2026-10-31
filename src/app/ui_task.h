@@ -5,6 +5,7 @@
 
 #include "ui/grid.h"
 #include "ui/notify_light.h"
+#include "web/compose_req.h"
 
 namespace rc::ui {
 
@@ -18,7 +19,7 @@ void cycleTextSize();
 // Turns the panel (rotation r, ui/rotation.h) at once, saves it and reflows
 // the grid. Only on boards that can rotate.
 void setRotation(uint8_t r);
-// A one-row banner on the bottom row, above whatever the screen drew.
+// A one-row banner on the top row, over the status bar.
 void banner(const std::string& text, bool error);
 // The key being handled came from the touch screen (a tap, drag or the
 // on-screen keyboard), not a button or keyboard.
@@ -28,6 +29,18 @@ const char* monsterWord();
 // Docks the on-screen keyboard after this key, on touch boards without a
 // keyboard, if the screen then takes text.
 void showKeyboard();
+// Boards that can't type (board::canType): shows "<what> from web config"
+// and returns true, so the caller skips its text field.
+bool typingElsewhere(const char* what);
+// Web compose (board::webCompose): what the device has open, read from any
+// task, and a request handed to the UI task, which sends it as the device
+// would. webCompose returns "" when taken, else why not.
+struct ComposeView {
+  std::string label;  // "#room", "C-Mail with @ann", "replies to the open post"; "" when none
+  bool takesText = false;
+};
+ComposeView composeView();
+std::string webCompose(ComposeReq r);
 // Forces every row to be redrawn on the next frame.
 void redrawAll();
 // One double blink of the new-message light in c (board::hasNotifyLight).

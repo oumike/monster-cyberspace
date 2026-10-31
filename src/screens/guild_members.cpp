@@ -3,6 +3,7 @@
 #include "feed/feed_source.h"
 #include "hal/board.h"
 #include "screens/draw.h"
+#include "screens/people_nav.h"
 #include "screens/screens.h"
 #include "store/locked_feed.h"
 #include "ui/guild_layout.h"
@@ -46,6 +47,12 @@ void MembersScreen::onKey(const KeyEvent& k) {
         onKey(KeyEvent{k.then});
       }
       break;
+    case Action::Select:
+    case Action::Right: {
+      int i = list_.selected();
+      if (i >= 0 && i < int(names_.size()) && !names_[i].empty()) people::openProfile(names_[i]);
+      break;
+    }
     case Action::Left:
     case Action::Back:
       router::go(router::Id::Guild, slug_);
@@ -72,7 +79,11 @@ void MembersScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
   });
   std::vector<ListItem> items;
   items.reserve(members.size());
-  for (const auto& m : members) items.push_back(memberItem(m, nowMs));
+  names_.clear();
+  for (const auto& m : members) {
+    items.push_back(memberItem(m, nowMs));
+    names_.push_back(m.username);
+  }
   bool loading = lockedFeed().with([](FeedState& s) { return s.loading; });
   const int nav = sideNavWidth(g);
   const int bottom = g.rows() - 1;
@@ -90,7 +101,8 @@ void MembersScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
   }
   if (nav > 0) renderSideNav(g, 1, bottom, nav, t);
   if (asked_) drawHint(g, t, U"loading more\u2026", U"loading more\u2026");
-  else drawHint(g, t, U"\u2191\u2193 scroll  \u2190 guild", U"swipe to scroll  \u2039 guild");
+  else drawHint(g, t, U"\u2191\u2193 pick  \u25CF profile  \u2190 guild",
+                U"tap a member  \u2039 guild");
 }
 
 }  // namespace rc

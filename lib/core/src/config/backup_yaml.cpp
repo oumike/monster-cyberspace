@@ -5,7 +5,9 @@
 #include <set>
 #include <vector>
 
+#include "config/phrases.h"
 #include "config/yaml_scalar.h"
+#include "power/power_policy.h"
 #include "tz/zones.h"
 #include "ui/rotation.h"
 #include "ui/screen_timeout.h"
@@ -62,10 +64,11 @@ struct Item {
 struct Staged {
   Str format, version, timezone, tzName, ntpServer, pagePassword, apPassword, textSize, theme,
       rotation, lastRoom, email, refreshToken, screenOnSecs, kbLight,
-      notifyLight, notifyTimeout;
-  Bool drawerOpen, buzzer, autoUpdate, screenSaver, spellCheck;
-  bool hasWifi = false;
+      notifyLight, notifyTimeout, idleSecs, wakeMins;
+  Bool drawerOpen, buzzer, autoUpdate, screenSaver, spellCheck, webConfig;
+  bool hasWifi = false, hasPhrases = false;
   std::vector<Item> wifi;
+  std::vector<std::string> phrases;
 };
 
 std::string at(int line, const std::string& msg) { return "line " + std::to_string(line) + ": " + msg; }
@@ -174,6 +177,29 @@ bool parseWifi(const std::vector<Line>& ls, size_t from, size_t to, std::vector<
   return true;
 }
 
+// "- value" lines, one phrase each.
+bool parsePhrases(const std::vector<Line>& ls, size_t from, size_t to,
+                  std::vector<std::string>& out, std::string& err) {
+  const size_t indent = ls[from].indent;
+  for (size_t k = from; k < to; k++) {
+    const Line& l = ls[k];
+    if (l.tab || l.indent != indent) {
+      err = at(l.no, "bad indent");
+      return false;
+    }
+    std::string_view t = l.text;
+    if (t[0] != '-' || (t.size() > 1 && t[1] != ' ')) {
+      err = at(l.no, "expected \"- value\"");
+      return false;
+    }
+    Str v;
+    bool empty;
+    if (!readValue(t.substr(1), l.no, v, empty, err)) return false;
+    out.push_back(v.v);
+  }
+  return true;
+}
+
 bool parseAccount(const std::vector<Line>& ls, size_t from, size_t to, Staged& st,
                   std::string& err) {
   std::set<std::string> seen;
@@ -256,10 +282,12 @@ bool parse(std::string_view yaml, Staged& st, std::string& err) {
              : key == "notifyLight"  ? &st.notifyLight
              : key == "notifyTimeout" ? &st.notifyTimeout
              : key == "lastRoom"     ? &st.lastRoom
+             : key == "idleSecs"     ? &st.idleSecs
+             : key == "wakeMins"     ? &st.wakeMins
                                      : nullptr;
     Str ignored;
     bool isBool = key == "drawerOpen" || key == "buzzer" || key == "autoUpdate" ||
-                  key == "screenSaver" || key == "spellCheck";
+                  key == "screenSaver" || key == "spellCheck" || key == "webConfig";
     bool known = s || isBool;
     if (key == "board" || key == "firmware" || key == "created") {
       s = &ignored;
@@ -275,6 +303,7 @@ bool parse(std::string_view yaml, Staged& st, std::string& err) {
                     : key == "autoUpdate"  ? st.autoUpdate
                     : key == "screenSaver" ? st.screenSaver
                     : key == "spellCheck"  ? st.spellCheck
+                    : key == "webConfig"   ? st.webConfig
                                            : st.drawerOpen;
         if (!readBool(rest, l.no, dst, err)) return false;
       } else {
@@ -292,6 +321,19 @@ bool parse(std::string_view yaml, Staged& st, std::string& err) {
         }
       } else if (v.kind == ScalarKind::Plain && v.v == "[]" && e == b) {
         st.hasWifi = true;
+      } else {
+        err = at(l.no, e > b && v.v == "[]" ? "bad indent" : "expected \"key: value\"");
+        return false;
+      }
+    } else if (key == "phrases") {
+      Str v;
+      bool empty;
+      if (!readValue(rest, l.no, v, empty, err)) return false;
+      if (empty) {
+        st.hasPhrases = true;
+        if (e > b && !parsePhrases(ls, b, e, st.phrases, err)) return false;
+      } else if (v.kind == ScalarKind::Plain && v.v == "[]" && e == b) {
+        st.hasPhrases = true;
       } else {
         err = at(l.no, e > b && v.v == "[]" ? "bad indent" : "expected \"key: value\"");
         return false;
@@ -377,6 +419,16 @@ std::string backupToYaml(const Settings& s, const BackupMeta& m) {
        "  # off | red | green | blue | yellow | cyan | magenta | white\n";
   o += "notifyTimeout: " + std::to_string(s.notifyTimeoutSecs) + "  # seconds, 0 until read\n";
   o += "lastRoom: " + yamlQuote(s.lastRoom) + "\n";
+  o += std::string("webConfig: ") + boolStr(s.webConfig) +
+       "  # serve web config on the Wi-Fi network (the setup AP always does)\n";
+  if (s.phrases.empty()) {
+    o += "phrases: []\n";
+  } else {
+    o += "phrases:  # canned replies, boards without a keyboard\n";
+    for (const std::string& p : s.phrases) o += "  - " + yamlQuote(p) + "\n";
+  }
+  o += "idleSecs: " + std::to_string(s.idleSecs) + "  # X4 on battery: idle before sleeping\n";
+  o += "wakeMins: " + std::to_string(s.wakeMins) + "  # X4 asleep: refresh every; 0 never\n";
   o += "account:\n";
   o += "  email: " + yamlQuote(s.email) + "\n";
   o += "  refreshToken: " + yamlQuote(s.refreshToken) + "\n";
@@ -431,7 +483,7 @@ bool backupFromYaml(std::string_view yaml, Settings& inOut, std::string& err, st
   ThemeId theme = inOut.theme;
   KbLight kbLight = inOut.kbLight;
   LedColor notifyLight = inOut.notifyLight;
-  int rotation = 0, screenOnSecs = 0, notifyTimeout = 0;
+  int rotation = 0, screenOnSecs = 0, notifyTimeout = 0, idleSecs = 0, wakeMins = 0;
   if (st.apPassword.has && !validApPassword(st.apPassword.v)) {
     err = at(st.apPassword.line, "setup-AP password: 8-63 printable characters, or empty");
   } else if (st.pagePassword.has &&
@@ -465,6 +517,12 @@ bool backupFromYaml(std::string_view yaml, Settings& inOut, std::string& err, st
   } else if (st.lastRoom.has && (st.lastRoom.v.empty() || st.lastRoom.v.size() > 63 ||
                                  !printable(st.lastRoom.v))) {
     err = at(st.lastRoom.line, "last room: 1-63 printable characters");
+  } else if (st.idleSecs.has && (!plainInt(st.idleSecs, idleSecs) || idleSecs < 0 ||
+                                 !validIdleSecs(uint32_t(idleSecs)))) {
+    err = at(st.idleSecs.line, "idle before sleep: 60, 120, 300, 600 or 1800 seconds");
+  } else if (st.wakeMins.has && (!plainInt(st.wakeMins, wakeMins) || wakeMins < 0 ||
+                                 !validWakeMins(uint32_t(wakeMins)))) {
+    err = at(st.wakeMins.line, "wake every: 0 (never), 5, 15, 30, 60 or 120 minutes");
   }
   if (!err.empty()) return false;
 
@@ -497,6 +555,10 @@ bool backupFromYaml(std::string_view yaml, Settings& inOut, std::string& err, st
   if (st.notifyLight.has) inOut.notifyLight = notifyLight;
   if (st.notifyTimeout.has) inOut.notifyTimeoutSecs = uint16_t(notifyTimeout);
   if (st.lastRoom.has) inOut.lastRoom = st.lastRoom.v;
+  if (st.webConfig.has) inOut.webConfig = st.webConfig.v;
+  if (st.hasPhrases) inOut.phrases = cleanPhrases(st.phrases);
+  if (st.idleSecs.has) inOut.idleSecs = uint32_t(idleSecs);
+  if (st.wakeMins.has) inOut.wakeMins = uint32_t(wakeMins);
   if (st.email.has) inOut.email = st.email.v;
   if (st.refreshToken.has) inOut.refreshToken = st.refreshToken.v;
   note = wifiNote;

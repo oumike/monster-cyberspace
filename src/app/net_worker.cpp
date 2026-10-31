@@ -16,6 +16,7 @@
 #include <set>
 
 #include "app/feed_worker.h"
+#include "app/people_worker.h"
 #include "app/queues.h"
 #include "cs/cs_api.h"
 #include "cs/rtdb.h"
@@ -32,6 +33,18 @@ namespace rc::networker {
 namespace {
 
 constexpr int64_t kWatchMs = 60000;
+#if RC_LOW_MEM
+// No PSRAM (the X4): one TLS connection at a time, so the open room is polled
+// on the requests connection instead of streamed (X4 spec §4.2).
+constexpr bool kPollRoom = true;
+#else
+constexpr bool kPollRoom = false;
+#endif
+constexpr int64_t kRoomPollMs = 60000;
+// Messages fetched when a room opens, and per poll. Without PSRAM a body and
+// a TLS session barely fit together, so ten.
+constexpr int kRoomPollLimit = kPollRoom ? 10 : 20;
+constexpr int kHistoryLimit = kPollRoom ? 10 : 50;
 constexpr int64_t kMaxBackoffMs = 30000;
 constexpr int64_t kPausedBannerMs = 30000;
 
@@ -114,7 +127,7 @@ void finishLogin(const LoginResult& r) {
 
 class Worker {
  public:
-  explicit Worker(const Settings& s) : api_(http_), feed_(api_), email_(s.email) {
+  explicit Worker(const Settings& s) : api_(http_), feed_(api_), people_(api_), email_(s.email) {
     if (!s.refreshToken.empty()) api_.setRefreshToken(s.refreshToken);
   }
 
@@ -150,6 +163,7 @@ class Worker {
     if (deadToken) {
       closeRoom();
       feed_.signOut();
+      people_.signOut();
       api_.signOut();
       self_.clear();
       ready_ = false;
@@ -237,7 +251,7 @@ class Worker {
 
   // Opens a cIRC room (by slug) or, with dm, a C-Mail conversation (by id).
   void openRoom(const std::string& slug, bool dm) {
-    if (slug == room_ && dm == dm_ && msgSse_.running()) {
+    if (slug == room_ && dm == dm_ && (kPollRoom ? historyLoaded_ : msgSse_.running())) {
       post(EvtType::RoomChanged);
       return;
     }
@@ -254,18 +268,46 @@ class Worker {
     if (!ready_ || !online()) return;  // tick() opens it once possible
     loadHistory();
     if (historyLoaded_) {
-      openMsgStream();
-      if (wantsSecondStream()) openPresStream();
+      if (kPollRoom) {
+        nextPoll_ = mono() + kRoomPollMs;
+        setConn(2);
+      } else {
+        openMsgStream();
+        if (wantsSecondStream()) openPresStream();
+      }
       sendPresence();
       markRead(slug);
     }
   }
 
+  // Poll mode: the newest page, merged into the store.
+  void pollRoom() {
+    nextPoll_ = mono() + kRoomPollMs;
+    if (room_.empty() || !historyLoaded_) return;
+    std::vector<CircMessage> msgs;
+    int64_t cursor = -1;
+    ApiError e = dm_ ? api_.cmailHistory(room_, 0, msgs, cursor, kRoomPollLimit)
+                     : api_.history(roomKey(room_), 0, msgs, cursor, kRoomPollLimit);
+    if (!e.ok()) {
+      checkAuthError(e);
+      setConn(1);
+      return;
+    }
+    setConn(2);
+    const bool changed = lockedChat().with([&](ChatState& s) {
+      const size_t n = s.store.size();
+      const int64_t newest = s.store.newestTimestamp();
+      for (auto& m : msgs) s.store.upsert(std::move(m));
+      return s.store.size() != n || s.store.newestTimestamp() != newest;
+    });
+    if (changed) post(EvtType::RoomChanged);
+  }
+
   void loadHistory() {
     std::vector<CircMessage> msgs;
     int64_t cursor = -1;
-    ApiError e = dm_ ? api_.cmailHistory(room_, 0, msgs, cursor)
-                     : api_.history(roomKey(room_), 0, msgs, cursor);
+    ApiError e = dm_ ? api_.cmailHistory(room_, 0, msgs, cursor, kHistoryLimit)
+                     : api_.history(roomKey(room_), 0, msgs, cursor, kHistoryLimit);
     if (!e.ok()) {
       checkAuthError(e);
       banner(e.message, false);
@@ -286,8 +328,8 @@ class Worker {
     if (oldest < 0) return;
     std::vector<CircMessage> msgs;
     int64_t cursor = -1;
-    ApiError e = dm_ ? api_.cmailHistory(room_, oldest, msgs, cursor)
-                     : api_.history(roomKey(room_), oldest, msgs, cursor);
+    ApiError e = dm_ ? api_.cmailHistory(room_, oldest, msgs, cursor, kHistoryLimit)
+                     : api_.history(roomKey(room_), oldest, msgs, cursor, kHistoryLimit);
     if (!e.ok()) {
       checkAuthError(e);
       banner(e.message, false);
@@ -386,6 +428,14 @@ class Worker {
       if (!historyLoaded_) return;
       markRead(room_);
     }
+    if (kPollRoom) {
+      backoffMs_ = 1000;
+      downSince_ = 0;
+      nextPoll_ = mono() + kRoomPollMs;
+      setConn(2);
+      if (!dm_ && !presenceSent_) sendPresence();
+      return;
+    }
     if (!msgSse_.running()) openMsgStream();
     if (wantsSecondStream() && !presSse_.running()) openPresStream();
     if (!dm_ && !presenceSent_) sendPresence();
@@ -433,6 +483,39 @@ class Worker {
     auto range = pendingMentions_.equal_range(slug);
     for (auto it = range.first; it != range.second; ++it) api_.markNotificationRead(it->second);
     pendingMentions_.erase(range.first, range.second);
+  }
+
+  // Unread's Mark all read, from one key press: every notification (mentions
+  // and Feed notices) in one call, then each unread conversation. Not retried.
+  void markAllRead() {
+    ApiError e = api_.markAllNotificationsRead();
+    if (e.ok()) {
+      pendingMentions_.clear();
+      lockedFeed().with([](FeedState& s) { s.notices.clear(); });
+    } else {
+      checkAuthError(e);
+    }
+    std::vector<std::string> ids;
+    lockedChat().with([&](ChatState& s) {
+      for (const auto& c : s.conversations)
+        if (c.unread > 0) ids.push_back(c.id);
+    });
+    bool mailOk = true;
+    for (const auto& id : ids) {
+      if (!api_.cmailRead(id).ok()) {
+        mailOk = false;
+        continue;
+      }
+      lockedChat().with([&](ChatState& s) {
+        for (auto& c : s.conversations)
+          if (c.id == id) c.unread = 0;
+      });
+    }
+    if (!ids.empty()) post(EvtType::ConversationsUpdated);
+    const bool ok = e.ok() && mailOk;
+    post(EvtType::AllRead, 0,
+         ok ? std::string("Marked all read") : e.ok() ? std::string("Some C-Mail stayed unread") : e.message,
+         e.ok());
   }
 
   // ---- C-Mail ----
@@ -508,6 +591,12 @@ class Worker {
                   unsigned(heap_caps_get_free_size(MALLOC_CAP_SPIRAM)), unsigned(msgs),
                   unsigned(pres), unsigned(convs), unsigned(seenMentions_.size()), unsigned(feed),
                   unsigned(replies));
+#if RC_LOW_MEM
+    // Stack headroom (bytes), for sizing the tasks on a board without PSRAM.
+    TaskHandle_t ui = xTaskGetHandle("ui");
+    Serial.printf("[mem] stack free: net %u ui %u\n", unsigned(uxTaskGetStackHighWaterMark(nullptr)),
+                  ui ? unsigned(uxTaskGetStackHighWaterMark(ui)) : 0u);
+#endif
   }
 
   void watch() {
@@ -521,6 +610,7 @@ class Worker {
       return;
     }
     for (auto& m : ms) {
+      if (m.at <= 0) m.at = epochMs();
       if (!m.type.empty() && m.type != "chat_mention") {
         // The UI decides on the beep with its buzzer setting.
         feed_.onNotice(m, true);
@@ -528,8 +618,11 @@ class Worker {
       }
       if (!seenMentions_.insert(m.id).second) continue;
       pendingMentions_.emplace(m.roomSlug, m.id);
-      post(EvtType::MentionAlert, 0,
-           "@" + m.actorUsername + " in #" + m.roomSlug + ": " + m.messageContent);
+      Event ev{EvtType::MentionAlert,
+               "@" + m.actorUsername + " in #" + m.roomSlug + ": " + m.messageContent};
+      ev.arg = m.roomSlug;
+      ev.at = m.at;
+      postEvent(std::move(ev));
     }
     if (seenMentions_.size() > 200) seenMentions_.clear();
   }
@@ -556,10 +649,15 @@ class Worker {
       post(EvtType::SideListUpdated, 0, "", false);
     if (c.type == CmdType::OpenGuilds) post(EvtType::GuildsUpdated, 0, "", false);
     if (c.type == CmdType::OpenMembers) post(EvtType::MembersUpdated, 0, "", false);
+    if (c.type == CmdType::MarkAllRead) post(EvtType::AllRead, 0, why, false);
     if (c.type == CmdType::PostGuildThread) post(EvtType::EntryPosted, 0, why, false);
     if (c.type == CmdType::JoinGuild || c.type == CmdType::LeaveGuild ||
         c.type == CmdType::PromoteGuild)
       post(EvtType::GuildWriteDone, 0, why, false);
+    if (c.type == CmdType::OpenProfile) post(EvtType::ProfileUpdated, 0, "", false);
+    if (c.type == CmdType::Follow || c.type == CmdType::Unfollow || c.type == CmdType::Poke)
+      post(EvtType::PeopleWriteDone, 0, why, false);
+    if (c.type == CmdType::OpenUserPosts) post(EvtType::SideListUpdated, 0, "", false);
     return false;
   }
 
@@ -589,12 +687,13 @@ class Worker {
         backoffMs_ = 1000;
         reconnectAt_ = 0;
         downSince_ = 0;
-        return;  // tick() reopens the streams
+        nextPoll_ = 0;
+        return;  // tick() reopens the streams (or polls)
       case CmdType::OpenPresence:
         presenceWanted_ = true;
         if (!dm_ && needNet(c) && !room_.empty()) {
           seedPresence();
-          if (!presSse_.running()) openPresStream();
+          if (!kPollRoom && !presSse_.running()) openPresStream();
         }
         return;
       case CmdType::ClosePresence:
@@ -622,6 +721,7 @@ class Worker {
       case CmdType::Logout:
         closeRoom();
         feed_.signOut();
+        people_.signOut();
         api_.signOut();
         self_.clear();
         ready_ = false;
@@ -637,6 +737,10 @@ class Worker {
       feed_.handle(c);
       return;
     }
+    if (PeopleWorker::isPeopleCommand(c.type)) {
+      people_.handle(c);
+      return;
+    }
     switch (c.type) {
       case CmdType::Send: {
         std::string id, reply;
@@ -645,6 +749,7 @@ class Worker {
         if (e.ok()) {
           if (changesMutes(c.b)) loadMutes();
           post(EvtType::SendDone);
+          if (kPollRoom && c.a == room_) pollRoom();  // show it without a stream
           if (!reply.empty()) banner(reply);
         } else {
           checkAuthError(e);
@@ -669,6 +774,9 @@ class Worker {
       }
       case CmdType::MarkRead:
         markRead(c.a.empty() ? room_ : c.a);
+        break;
+      case CmdType::MarkAllRead:
+        markAllRead();
         break;
       case CmdType::RefreshRooms:
         refreshRooms();
@@ -756,7 +864,15 @@ class Worker {
       setConn(2);
     }
 
-    if (!room_.empty() && screenOn_) {
+    if (kPollRoom && !room_.empty() && screenOn_) {
+      if (!historyLoaded_ && now >= reconnectAt_) {
+        reconnectAt_ = now + backoffMs_;
+        reconnect();
+      } else if (historyLoaded_ && now >= nextPoll_) {
+        pollRoom();
+      }
+      if (!dm_ && now >= nextHeartbeat_) sendPresence();
+    } else if (!room_.empty() && screenOn_) {
       if (msgDown_.exchange(false)) scheduleReconnect();
       bool needs = !historyLoaded_ || !msgSse_.running() ||
                    (wantsSecondStream() && !presSse_.running());
@@ -781,6 +897,7 @@ class Worker {
   HttpsClient http_;
   CsApi api_;
   FeedWorker feed_;
+  PeopleWorker people_;
   SseClient msgSse_, presSse_;
   std::string email_, self_, room_;
   std::map<std::string, std::string> roomIds_;  // slug → id
@@ -795,6 +912,7 @@ class Worker {
   int conn_ = -1, auth_ = -1;
   int64_t lastActivity_ = 0, heartbeatMs_ = 30000, nextHeartbeat_ = 0, nextWatch_ = 0;
   int64_t nextBootstrap_ = 0, reconnectAt_ = 0, downSince_ = 0, backoffMs_ = 1000;
+  int64_t nextPoll_ = 0;
 };
 
 void taskMain(void* arg) {
@@ -824,7 +942,15 @@ void start(const Settings& s) {
   wifimgr::begin(s);
   web::begin();
   static Worker* w = new Worker(s);
-  xTaskCreatePinnedToCore(taskMain, "net", 12288, w, 3, nullptr, 0);
+  // One core (the X4): below the UI (2), or TLS handshakes and parsing hold
+  // off key presses.
+#if RC_LOW_MEM
+  // Measured: about 4.4 KB used, TLS handshakes included.
+  constexpr uint32_t kNetStack = 9216;
+#else
+  constexpr uint32_t kNetStack = 12288;
+#endif
+  xTaskCreatePinnedToCore(taskMain, "net", kNetStack, w, portNUM_PROCESSORS > 1 ? 3 : 1, nullptr, 0);
 }
 
 }  // namespace rc::networker

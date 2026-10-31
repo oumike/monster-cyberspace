@@ -17,6 +17,7 @@
 #include "feed/feed_source.h"
 #include "feed/markdown_text.h"
 #include "store/locked_feed.h"
+#include "store/locked_people.h"
 
 // The scripted fake Feed for the demo build (RC_FAKE_API): no network, no account.
 // 15 entries, newest first, served 10 to a page (Down at the end loads the
@@ -35,7 +36,9 @@
 // same banners as CsApi. Deleting someone else's item gives "Not allowed".
 // Two guilds are seeded too: Night Owls (the user is a member) and Deep Divers,
 // three threads and three members each; join, leave and promote apply locally
-// under the membership limiter. Commands are applied inline on the caller's task, as in fake_chat_source.
+// under the membership limiter. Every name has a made-up profile (the user
+// follows rain; troll is blocked); follow, unfollow and poke apply locally
+// under the client limiters. Commands are applied inline on the caller's task, as in fake_chat_source.
 
 namespace rc {
 
@@ -178,6 +181,11 @@ class FakeFeedSource : public FeedSource {
   void openMembers(const std::string& slug);
   void postGuildThread(const Command& c);
   void guildMembership(const Command& c);
+  // People.
+  void openProfile(const std::string& username);
+  void follow(const Command& c, bool on);
+  void poke(const Command& c);
+  void openUserPosts(const std::string& username);
 
   // Lock order: mu_, then lockedFeed(); never the other way round.
   std::mutex mu_;  // guards everything below
@@ -194,6 +202,10 @@ class FakeFeedSource : public FeedSource {
   RateLimiter bookmarkL_ = makeBookmarkLimiter();
   RateLimiter watchL_ = makeWatchLimiter();
   RateLimiter membershipL_ = makeMembershipLimiter();
+  RateLimiter followL_ = makeFollowLimiter();
+  RateLimiter unfollowL_ = makeFollowLimiter();
+  RateLimiter pokeL_ = makePokeLimiter();
+  std::set<std::string> followed_{"id-rain"};  // user ids
   int seq_ = 0, noticeN_ = 0;
   esp_timer_handle_t timer_ = nullptr;
 };
@@ -433,6 +445,14 @@ void FakeFeedSource::command(const Command& c) {
     case CmdType::JoinGuild:
     case CmdType::LeaveGuild:
     case CmdType::PromoteGuild: guildMembership(c); break;
+    case CmdType::OpenProfile: openProfile(c.a); break;
+    case CmdType::Follow: follow(c, true); break;
+    case CmdType::Unfollow: follow(c, false); break;
+    case CmdType::Poke: poke(c); break;
+    case CmdType::OpenUserPosts:
+      if (c.n == 1) post(EvtType::SideListUpdated);  // one page
+      else openUserPosts(c.a);
+      break;
     default: break;
   }
 }
@@ -1032,7 +1052,7 @@ void FakeFeedSource::notice() {
   truncateCodePoints(preview, kPreviewCodePoints);
   std::string alert = "@" + who + " replied: " + preview;
   lockedFeed().with([&](FeedState& s) {
-    s.notices.push_back(FeedNotice{noticeId, postId, alert});
+    s.notices.push_back(FeedNotice{noticeId, postId, alert, epochMs()});
     if (s.notices.size() > kMaxNotices) s.notices.erase(s.notices.begin());
   });
   // The UI decides on the beep with its buzzer setting.
@@ -1044,6 +1064,110 @@ void FakeFeedSource::notice() {
 FeedSource& feedSource() {
   static FakeFeedSource s;
   return s;
+}
+
+// ---- people ----
+
+void FakeFeedSource::openProfile(const std::string& username) {
+  if (username == "nobody") {
+    post(EvtType::Banner, "No such user", 0, false);
+    post(EvtType::ProfileUpdated, "", 404, false);
+    return;
+  }
+  Profile p;
+  p.userId = "id-" + username;
+  p.username = username;
+  unsigned h = 0;
+  for (char c : username) h = h * 31 + static_cast<unsigned char>(c);
+  if (username == kSelf) p.displayName = "Mike";
+  p.bio = username == kSelf ? "Building **Monster for Cyberspace**."
+                            : "Hello from @" + username + ". I mostly post at night.";
+  p.serial = int(h % 900) + 100;
+  p.createdMs = epochMs() - int64_t(h % 400 + 30) * 86400000LL;
+  p.lastActiveMs = epochMs() - int64_t(h % 300) * kMin;
+  p.publicPosts = 0;
+  p.following = int(h % 40);
+  p.supporter = h % 3 == 0;
+  if (h % 2 == 0) {
+    p.guildSlug = "night-owls";
+    p.guildName = "Night Owls";
+    p.guildIcon = "\xF0\x9F\xA6\x89";
+  }
+  if (h % 5 == 0) p.websiteUrl = "https://" + username + ".example";
+  bool following;
+  std::vector<std::string> mine;
+  {
+    std::lock_guard<std::mutex> g(mu_);
+    for (const Entry& e : entries_)
+      if (e.author == username) ++p.publicPosts;
+    following = followed_.count(p.userId) > 0;
+    for (const std::string& id : followed_) mine.push_back(id);
+  }
+  p.followers = int(h % 60) + (following ? 1 : 0);
+  lockedPeople().with([&](PeopleState& s) {
+    s.wanted = username;
+    s.profile = std::move(p);
+    s.loaded = true;
+    s.loading = false;
+    s.blocked = {"troll"};
+    s.follows.clear();
+    std::vector<Follow> page;
+    for (const std::string& id : mine) page.push_back(Follow{"f-" + id, "id-oumike", id});
+    s.follows.addPage(page, "");
+  });
+  post(EvtType::ProfileUpdated);
+}
+
+void FakeFeedSource::follow(const Command& c, bool on) {
+  std::string why;
+  {
+    std::lock_guard<std::mutex> g(mu_);
+    bool already = followed_.count(c.a) > 0;
+    if (on && already) why = "Already following @" + c.b;
+    else if (!on && !already) why = "Not following @" + c.b;
+    else if (!limited(on ? followL_ : unfollowL_, why)) {
+      if (on) followed_.insert(c.a);
+      else followed_.erase(c.a);
+    }
+  }
+  if (!why.empty()) {
+    post(EvtType::PeopleWriteDone, why, 0, false);
+    return;
+  }
+  post(EvtType::PeopleWriteDone, (on ? "Following @" : "Unfollowed @") + c.b);
+  openProfile(c.b);
+}
+
+void FakeFeedSource::poke(const Command& c) {
+  std::string why;
+  if (c.a == kSelf) why = "Can't poke yourself";
+  else if (c.a == "troll") why = "Can't poke @troll";
+  if (why.empty()) {
+    std::lock_guard<std::mutex> g(mu_);
+    int64_t now = mono();
+    int64_t wait = pokeL_.retryAfterMs(now);
+    if (wait > 0) why = "Slow down: try in " + std::to_string((wait + 59999) / 60000) + "m";
+    else pokeL_.tryAcquire(now);
+  }
+  if (!why.empty()) {
+    post(EvtType::PeopleWriteDone, why, 0, false);
+    return;
+  }
+  post(EvtType::PeopleWriteDone, "Poked @" + c.a);
+}
+
+void FakeFeedSource::openUserPosts(const std::string& username) {
+  std::vector<Entry> entries;
+  {
+    std::lock_guard<std::mutex> g(mu_);
+    for (const Entry& e : entries_)
+      if (e.author == username && entries.size() < size_t(kSidePage)) entries.push_back(e);
+  }
+  lockedFeed().with([&](FeedState& s) {
+    s.store.setSideList(std::move(entries), "", false);
+    s.loading = false;
+  });
+  post(EvtType::SideListUpdated);
 }
 
 }  // namespace rc

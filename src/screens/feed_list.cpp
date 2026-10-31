@@ -17,7 +17,7 @@ constexpr int64_t kAgeRefreshMs = 30000;  // re-lay rows so "3m" keeps up
 
 enum PaletteItem {
   kNew, kRefresh, kWatched, kBookmarks, kTextSize,
-  kInfo, kMembers, kJoin, kLeave, kMakeMine,
+  kInfo, kMembers, kJoin, kLeave, kMakeMine, kProfile,
 };
 
 bool compact() { return app().cfg.textSize == TextSize::Compact; }
@@ -31,7 +31,7 @@ void FeedListScreen::enter(const std::string& arg) {
   palette_ = confirm_ = false;
   box_.close();
   info_.close();
-  if (kind_ == Kind::Guild) slug_ = arg;
+  if (kind_ == Kind::Guild || kind_ == Kind::User) slug_ = arg;
   asked_ = false;
   dirty_ = true;
   // The feed shows what it holds at once; a side list waits for its own
@@ -54,12 +54,18 @@ void FeedListScreen::open() {
     case Kind::Watched: feedSource().command(Command{CmdType::OpenWatched}); break;
     case Kind::Bookmarks: feedSource().command(Command{CmdType::OpenBookmarks}); break;
     case Kind::Guild: feedSource().command(Command{CmdType::OpenGuild, slug_}); break;
+    case Kind::User: feedSource().command(Command{CmdType::OpenUserPosts, slug_}); break;
   }
 }
 
 void FeedListScreen::requestMore() {
   asked_ = true;
   if (kind_ == Kind::Guild) return feedSource().command(Command{CmdType::GuildThreadsMore, slug_});
+  if (kind_ == Kind::User) {
+    Command c{CmdType::OpenUserPosts, slug_};
+    c.n = 1;
+    return feedSource().command(c);
+  }
   Command c{kind_ == Kind::Feed        ? CmdType::FeedMore
             : kind_ == Kind::Watched   ? CmdType::OpenWatched
                                        : CmdType::OpenBookmarks};
@@ -112,6 +118,10 @@ void FeedListScreen::onKey(const KeyEvent& k) {
     }
     case Action::Left:
     case Action::Back:
+      if (kind_ == Kind::User) {
+        router::go(router::Id::Profile, slug_);
+        break;
+      }
       router::go(kind_ == Kind::Feed    ? router::Id::Home
                  : kind_ == Kind::Guild ? router::Id::GuildList
                                         : router::Id::FeedList);
@@ -150,6 +160,11 @@ void FeedListScreen::openPalette() {
       if (role == "apprentice") add(kMakeMine, U"Make my guild");
       if (role == "apprentice" || role == "member") add(kLeave, U"Leave");
     }
+    add(kRefresh, U"Refresh");
+    acts_.push_back(kTextSize);
+    items.push_back(ListItem{ui::textSizeItem(), U""});
+  } else if (kind_ == Kind::User) {
+    add(kProfile, U"Profile");
     add(kRefresh, U"Refresh");
     acts_.push_back(kTextSize);
     items.push_back(ListItem{ui::textSizeItem(), U""});
@@ -212,6 +227,7 @@ void FeedListScreen::paletteKey(const KeyEvent& k) {
       if (sel < 0 || sel >= int(acts_.size())) break;
       switch (acts_[sel]) {
         case kNew:
+          if (ui::typingElsewhere(kind_ == Kind::Guild ? "Start threads" : "Write entries")) break;
           if (kind_ == Kind::Guild) router::go(router::Id::Composer, "guild:" + slug_);
           else router::go(router::Id::Composer);
           break;
@@ -234,6 +250,9 @@ void FeedListScreen::paletteKey(const KeyEvent& k) {
         }
         case kMembers:
           router::go(router::Id::Members, slug_);
+          break;
+        case kProfile:
+          router::go(router::Id::Profile, slug_);
           break;
         case kRefresh:
           if (kind_ == Kind::Guild) {
@@ -355,9 +374,12 @@ void FeedListScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
     return;
   }
   std::u32string guildName = kind_ == Kind::Guild ? guildTitle() : std::u32string();
+  std::u32string userTitle =
+      kind_ == Kind::User ? U"entries \u00b7 @" + utf8ToU32(slug_) : std::u32string();
   const char32_t* title = kind_ == Kind::Feed      ? U"Feed \u21BB 2m"
                           : kind_ == Kind::Watched ? U"Watched"
                           : kind_ == Kind::Guild   ? guildName.c_str()
+                          : kind_ == Kind::User    ? userTitle.c_str()
                                                    : U"Bookmarks";
   drawStatus(g, t, title, -1, true);
   int bottom = g.rows() - 1;  // the last row holds the hint
@@ -377,6 +399,7 @@ void FeedListScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
                         : kind_ == Kind::Feed    ? "no entries yet"
                         : kind_ == Kind::Watched ? "no watched threads"
                         : kind_ == Kind::Guild   ? "no threads yet"
+                        : kind_ == Kind::User    ? "no public entries"
                                                  : "no bookmarks";
     putLine(g, 1, 2, empty, t.dim, t.bg);
   }
@@ -391,6 +414,7 @@ void FeedListScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
     drawHint(g, t,
              kind_ == Kind::Feed    ? U"\u2191\u2193 pick  \u25CF open  \u2190 home  ctrl cmds"
              : kind_ == Kind::Guild ? U"\u2191\u2193 pick  \u25CF open  \u2190 guilds  ctrl cmds"
+             : kind_ == Kind::User  ? U"\u2191\u2193 pick  \u25CF open  \u2190 profile  ctrl cmds"
                                     : U"\u2191\u2193 pick  \u25CF open  \u2190 feed  ctrl cmds",
              U"tap to open  hold: menu");
   }

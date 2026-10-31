@@ -22,6 +22,11 @@ int panelWidth();
 int panelHeight();
 // Sends rows [y0, y1) of a full panelWidth() x panelHeight() RGB565 frame.
 void pushRows(const uint16_t* frame, int y0, int y1);
+// A board that keeps no frame (the X4, without PSRAM) takes redraw and
+// returns true: the UI then calls pushRows(nullptr, y0, y1) to say which rows
+// changed, and redraw, called from pollKey, draws every line from the top
+// through pushRows. Default: false (redraw unused).
+bool setRedraw(void (*redraw)());
 void backlight(bool on);
 // Dims the backlight: 255 is the board's normal on level, 0 off. Boards with
 // an on/off backlight treat any level above 0 as on.
@@ -83,6 +88,25 @@ void textEntry(bool active);
 // panel's pushRows only marks what changed; the board refreshes it from pollKey.
 bool eink();
 void setRotation(uint8_t r);
+// Text can be typed on the device (a keyboard or a touch keyboard). False:
+// text fields open the canned replies instead (ui/widgets/canned_picker.h).
+// Defaults to true (board_defaults.cpp); the X4 says false.
+bool canType();
+// Web config may send text for the device (the X4 only; spec
+// 2026-10-30-cyberspace-x4-design.md §4.4). Defaults to false.
+bool webCompose();
+// Boards that sleep on battery and wake on a timer (the X4). Defaults: none.
+bool sleepsOnBattery();
+// Battery volts, 0 when unknown. Default 0.
+float batteryVolts();
+// Deep sleep: wakes on the board's wake button, or after timerUs (0: no
+// timer). Does not return. Default: a no-op.
+void deepSleep(uint64_t timerUs);
+// True when this boot is a deep-sleep timer wake. Default false.
+bool wokeByTimer();
+// Cuts the battery (a latch); does not return on boards that have one.
+// Default: a no-op.
+void powerOff();
 // GPS receiver. On: power, a 10 ms reset pulse, then the UART up. Off: the
 // UART down, then power off.
 bool hasGps();

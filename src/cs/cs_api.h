@@ -9,6 +9,7 @@
 #include "feed/entry.h"
 #include "guild/guild.h"
 #include "net/https_client.h"
+#include "people/profile.h"
 
 namespace rc {
 
@@ -31,13 +32,14 @@ class CsApi {
   // The result of the latest refresh (ok when none failed).
   const ApiError& lastRefreshError() const { return refreshErr_; }
 
-  // The signed-in username (GET /v1/users/me).
-  ApiError me(std::string& username);
+  // The signed-in username (GET /v1/users/me), and the usernames I blocked
+  // on the website when `blocked` is set.
+  ApiError me(std::string& username, std::vector<std::string>* blocked = nullptr);
 
   // cIRC.
   ApiError rooms(std::vector<RoomInfo>&);
   ApiError history(const std::string& slug, int64_t before, std::vector<CircMessage>&,
-                   int64_t& cursor);
+                   int64_t& cursor, int limit = 50);
   ApiError send(const std::string& slug, const std::string& utf8, std::string& messageId,
                 std::string& reply);
   ApiError deleteMessage(const std::string& slug, const std::string& id);
@@ -51,7 +53,7 @@ class CsApi {
   ApiError conversations(std::vector<ConversationInfo>&);
   ApiError startConversation(const std::string& username, ConversationInfo& out);
   ApiError cmailHistory(const std::string& id, int64_t before, std::vector<CircMessage>&,
-                        int64_t& cursor);
+                        int64_t& cursor, int limit = 50);
   ApiError cmailSend(const std::string& id, const std::string& utf8, std::string& messageId);
   ApiError cmailRead(const std::string& id);
   ApiError cmailTyping(const std::string& id, TypingCadence& out);
@@ -62,6 +64,8 @@ class CsApi {
   ApiError mutedUsers(MutedUsers&);
   ApiError mentions(std::vector<Mention>&);
   ApiError markNotificationRead(const std::string& id);
+  // POST /v1/notifications/read-all, once (up to 5,000 per call).
+  ApiError markAllNotificationsRead();
 
   // Feed. List cursors are "" at the end. `limit` is the page size.
   ApiError feed(const std::string& cursor, int limit, std::vector<Entry>&, std::string& next);
@@ -100,6 +104,20 @@ class CsApi {
   ApiError promoteGuild(const std::string& slug, std::string& role);
   ApiError leaveGuild(const std::string& slug);
 
+  // People. There is no block endpoint: blocking happens on the website.
+  // A 404 from profile() reaches the caller as http 404.
+  ApiError profile(const std::string& username, Profile&);
+  // My following list (GET /v1/follows?type=following).
+  ApiError following(const std::string& cursor, int limit, std::vector<Follow>&,
+                     std::string& next);
+  ApiError follow(const std::string& userId, std::string& followId);
+  ApiError unfollow(const std::string& followId);
+  // Only an accepted (or server rate-limited) poke counts locally, as on the
+  // server: a refused one (400/403/404) doesn't use up the hour.
+  ApiError poke(const std::string& username);
+  ApiError userPosts(const std::string& username, const std::string& cursor, int limit,
+                     std::vector<Entry>&, std::string& next);
+
   const Tokens& tokens() const { return tokens_; }
   bool signedIn() const { return !tokens_.refreshToken.empty(); }
   // Restores a session from the refresh token saved in NVS.
@@ -118,8 +136,9 @@ class CsApi {
   int64_t refreshDue_ = 0;
   ApiError refreshErr_{200, "", ""};
   RateLimiter sendL_, presenceL_, deleteL_, flagL_, readL_, resendL_;
-  RateLimiter cmailSendL_, startL_, cmailReadL_, typingL_;
+  RateLimiter cmailSendL_, startL_, cmailReadL_, typingL_, readAllL_;
   RateLimiter entryL_, replyL_, bookmarkL_, watchL_, membershipL_;
+  RateLimiter followL_, unfollowL_, pokeL_;
 };
 
 }  // namespace rc

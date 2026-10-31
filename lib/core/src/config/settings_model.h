@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+#include "config/phrases.h"
 #include "ui/grid.h"
 #include "ui/kb_light.h"
 #include "ui/notify_light.h"
@@ -38,6 +39,14 @@ struct Settings {
   // empty for a custom string.
   std::string tzName = "Etc/UTC";
   std::string ntpServer = "pool.ntp.org";  // SNTP server 0; time.google.com is server 1
+  // Canned replies for boards that can't type (config/phrases.h).
+  std::vector<std::string> phrases = defaultPhrases();
+  // Serve web config on the joined network; the setup AP always serves it.
+  bool webConfig = true;
+  // Boards that sleep on battery (power/power_policy.h): idle seconds before
+  // sleeping, and minutes between refresh wakes (0: only a button wakes it).
+  uint32_t idleSecs = 300;
+  uint32_t wakeMins = 15;
 };
 
 constexpr size_t kMaxWifiNets = 5;

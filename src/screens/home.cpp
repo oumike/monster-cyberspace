@@ -14,9 +14,12 @@
 namespace rc {
 
 namespace {
-enum Item { kMessages, kRooms, kCmail, kFeed, kGuilds, kSettings };
-constexpr int kItems = 6;      // the list (keyed boards)
-constexpr int kTileCount = 6;  // the tiles (touch boards); messages shows the mentions
+enum Item { kMessages, kUnread, kRooms, kCmail, kFeed, kGuilds, kSettings };
+constexpr int kItems = 7;  // the list (keyed boards), in Item order
+// The tiles (touch boards): unread spans the first row; messages shows the
+// mentions.
+constexpr Item kTiles[] = {kUnread, kMessages, kRooms, kCmail, kFeed, kGuilds, kSettings};
+constexpr int kTileCount = int(sizeof(kTiles) / sizeof(kTiles[0]));
 constexpr int kTilePercent = 90;  // of the area between the status bar and the hint
 
 // The newest unread Feed notice as an Entry arg ("postId\nnoticeId"), or "".
@@ -43,6 +46,9 @@ void HomeScreen::openItem(int item) {
   switch (item) {
     case kMessages:
       router::go(router::Id::Room, app().cfg.lastRoom);
+      break;
+    case kUnread:
+      router::go(router::Id::Notifications);
       break;
     case kRooms:
       router::go(router::Id::RoomList);
@@ -93,10 +99,10 @@ void HomeScreen::onKey(const KeyEvent& k) {
       case Action::Down:
       case Action::Left:
       case Action::Right:
-        tileSel_ = tileMove(tileSel_, kTileCount, k.action);
+        tileSel_ = tileMove(tileSel_, kTileCount, k.action, true);
         break;
       case Action::Select:
-        openItem(tileSel_);
+        openItem(kTiles[tileSel_]);
         break;
       case Action::Activate:
         if (k.target == uint8_t(ListId::Main) && k.index >= 0 && k.index < kTileCount) {
@@ -137,8 +143,10 @@ void HomeScreen::renderTiles(Grid& g, const Theme& t, const std::vector<TileRect
     std::u32string label, sub;
     bool unread;
   };
-  int mentions = a.unreadMentions, cmail = cmailUnread(), feed = feedUnread();
+  const int mentions = int(a.mentions.size()), cmail = cmailUnread(), feed = feedUnread();
+  const int unread = unreadTotal(gatherUnread());
   TileInfo info[kTileCount] = {
+      {U"unread", utf8ToU32(std::to_string(unread) + " unread"), unread > 0},
       {U"messages",
        mentions > 0 ? utf8ToU32(std::to_string(mentions) + (mentions == 1 ? " mention" : " mentions"))
                     : utf8ToU32("#" + a.cfg.lastRoom),
@@ -202,7 +210,7 @@ void HomeScreen::render(Grid& g, const Theme& t, int64_t) {
     for (bool gaps : {true, false}) {
       for (bool tryBig : {true, false}) {
         lay = homeLayout(board::panelWidth(), areaPx, g.rows(), tryBig ? bigCellSize(ts) : cellSize(ts),
-                         kTileCount, kTilePercent, gaps);
+                         kTileCount, kTilePercent, gaps, true);
         if (!lay.tiles.empty()) {
           big = tryBig;
           break;
@@ -237,7 +245,8 @@ void HomeScreen::render(Grid& g, const Theme& t, int64_t) {
   };
   field("user", a.user.empty() ? "not signed in" : "@" + a.user + (a.auth == 2 ? " (unverified)" : ""),
         t.fg);
-  field("mentions", std::to_string(a.unreadMentions) + " unread", a.unreadMentions ? t.selectBg : t.fg);
+  const int mentions = int(a.mentions.size());
+  field("mentions", std::to_string(mentions) + " unread", mentions ? t.selectBg : t.fg);
   int cmail = lockedChat().with([](ChatState& s) {
     int n = 0;
     for (const auto& c : s.conversations) n += c.unread;
@@ -256,8 +265,10 @@ void HomeScreen::render(Grid& g, const Theme& t, int64_t) {
   });
   field("active", active, t.fg);
 
+  const int unread = unreadTotal(gatherUnread());
   menu_.setItems({
       ListItem{utf8ToU32("Messages  #" + a.cfg.lastRoom), U""},
+      ListItem{utf8ToU32("Unread  " + std::to_string(unread)), U"", ItemTone::Normal, unread > 0},
       ListItem{U"Rooms", U""},
       ListItem{U"C-Mail", U""},
       ListItem{U"Feed", U""},
@@ -265,7 +276,8 @@ void HomeScreen::render(Grid& g, const Theme& t, int64_t) {
       ListItem{U"Settings", U""},
   });
   int bottom = g.rows() - 1;
-  menu_.render(g, bottom - kItems, bottom, 1, g.cols() - 2, t);
+  // A short grid scrolls the menu rather than draw it over the fields.
+  menu_.render(g, std::max(r, bottom - kItems), bottom, 1, g.cols() - 2, t);
   drawHint(g, t, U"\u2191\u2193 pick  \u25CF open", U"tap to open");
 }
 

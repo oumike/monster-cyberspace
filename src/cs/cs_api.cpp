@@ -8,6 +8,7 @@
 #include "cs/token.h"
 #include "feed/feed_parse.h"
 #include "guild/guild_parse.h"
+#include "people/people_parse.h"
 #include "store/settings.h"
 
 namespace rc {
@@ -59,11 +60,15 @@ CsApi::CsApi(HttpsClient& h)
       startL_(makeStartConversationLimiter()),
       cmailReadL_(makeMarkReadLimiter()),
       typingL_(makeTypingLimiter()),
+      readAllL_(makeMarkReadLimiter()),
       entryL_(makeEntryLimiter()),
       replyL_(makeReplyLimiter()),
       bookmarkL_(makeBookmarkLimiter()),
       watchL_(makeWatchLimiter()),
-      membershipL_(makeMembershipLimiter()) {}
+      membershipL_(makeMembershipLimiter()),
+      followL_(makeFollowLimiter()),
+      unfollowL_(makeFollowLimiter()),
+      pokeL_(makePokeLimiter()) {}
 
 void CsApi::adopt(const Tokens& t) {
   tokens_ = t;
@@ -163,7 +168,7 @@ bool CsApi::ensureFresh(int64_t nowMono, int64_t epochSec) {
   return refresh(t).ok();
 }
 
-ApiError CsApi::me(std::string& username) {
+ApiError CsApi::me(std::string& username, std::vector<std::string>* blocked) {
   HttpResult r;
   ApiError e = call("GET", "/v1/users/me", "", r);
   if (!e.ok()) return e;
@@ -173,6 +178,7 @@ ApiError CsApi::me(std::string& username) {
   if (!u.is<const char*>()) u = d["username"];
   if (!u.is<const char*>()) return badBody(r.status);
   username = u.as<const char*>();
+  if (blocked && !parseBlockedUsers(r.body, *blocked)) blocked->clear();
   return e;
 }
 
@@ -184,8 +190,8 @@ ApiError CsApi::rooms(std::vector<RoomInfo>& out) {
 }
 
 ApiError CsApi::history(const std::string& slug, int64_t before, std::vector<CircMessage>& out,
-                        int64_t& cursor) {
-  std::string path = "/v1/circ/" + enc(slug) + "?limit=50";
+                        int64_t& cursor, int limit) {
+  std::string path = "/v1/circ/" + enc(slug) + "?limit=" + std::to_string(limit);
   if (before > 0) path += "&before=" + std::to_string(before);
   HttpResult r;
   ApiError e = call("GET", path, "", r);
@@ -278,8 +284,8 @@ ApiError CsApi::startConversation(const std::string& username, ConversationInfo&
 }
 
 ApiError CsApi::cmailHistory(const std::string& id, int64_t before, std::vector<CircMessage>& out,
-                             int64_t& cursor) {
-  std::string path = "/v1/cmail/" + enc(id) + "?limit=50";
+                             int64_t& cursor, int limit) {
+  std::string path = "/v1/cmail/" + enc(id) + "?limit=" + std::to_string(limit);
   if (before > 0) path += "&before=" + std::to_string(before);
   HttpResult r;
   ApiError e = call("GET", path, "", r);
@@ -342,6 +348,13 @@ ApiError CsApi::mentions(std::vector<Mention>& out) {
 ApiError CsApi::markNotificationRead(const std::string& id) {
   HttpResult r;
   return call("PATCH", "/v1/notifications/" + enc(id), "", r);
+}
+
+ApiError CsApi::markAllNotificationsRead() {
+  ApiError l = limited(readAllL_);
+  if (!l.ok()) return l;
+  HttpResult r;
+  return call("POST", "/v1/notifications/read-all", "", r);
 }
 
 namespace {
@@ -568,6 +581,66 @@ ApiError CsApi::leaveGuild(const std::string& slug) {
   if (!l.ok()) return l;
   HttpResult r;
   return call("POST", "/v1/guilds/" + enc(slug) + "/leave", "", r);
+}
+
+// ---- people ----
+
+ApiError CsApi::profile(const std::string& username, Profile& out) {
+  HttpResult r;
+  ApiError e = call("GET", "/v1/users/" + enc(username), "", r);
+  if (e.ok() && !parseProfile(r.body, out)) return badBody(r.status);
+  return e;
+}
+
+ApiError CsApi::following(const std::string& cursor, int limit, std::vector<Follow>& out,
+                          std::string& next) {
+  HttpResult r;
+  std::string q = pageQuery(limit, cursor);
+  ApiError e = call("GET", "/v1/follows" + q + "&type=following", "", r);
+  if (e.ok() && !parseFollowPage(r.body, out, next)) return badBody(r.status);
+  return e;
+}
+
+ApiError CsApi::follow(const std::string& userId, std::string& followId) {
+  ApiError l = limited(followL_);
+  if (!l.ok()) return l;
+  JsonDocument d;
+  d["followedId"] = userId;
+  HttpResult r;
+  ApiError e = call("POST", "/v1/follows", json(d), r);
+  // Followed, but no id to unfollow with: the caller reloads the list.
+  if (e.ok() && !parseFollowId(r.body, followId)) followId.clear();
+  return e;
+}
+
+ApiError CsApi::unfollow(const std::string& followId) {
+  ApiError l = limited(unfollowL_);
+  if (!l.ok()) return l;
+  HttpResult r;
+  return call("DELETE", "/v1/follows/" + enc(followId), "", r);
+}
+
+ApiError CsApi::poke(const std::string& username) {
+  int64_t now = monoMs();
+  int64_t wait = pokeL_.retryAfterMs(now);
+  if (wait > 0) {
+    int64_t s = (wait + 999) / 1000;
+    std::string when = s >= 120 ? std::to_string((s + 59) / 60) + "m" : std::to_string(s) + "s";
+    return ApiError{429, "LOCAL_RATE_LIMIT", "Slow down: try in " + when};
+  }
+  HttpResult r;
+  ApiError e = call("POST", "/v1/users/" + enc(username) + "/poke", "", r);
+  if (e.ok() || e.http == 429) pokeL_.tryAcquire(now);
+  return e;
+}
+
+ApiError CsApi::userPosts(const std::string& username, const std::string& cursor, int limit,
+                          std::vector<Entry>& out, std::string& next) {
+  HttpResult r;
+  ApiError e =
+      call("GET", "/v1/users/" + enc(username) + "/posts" + pageQuery(limit, cursor), "", r);
+  if (e.ok() && !parseFeedPage(r.body, out, next)) return badBody(r.status);
+  return e;
 }
 
 }  // namespace rc

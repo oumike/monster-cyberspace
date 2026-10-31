@@ -68,15 +68,15 @@ bool pollKey(rc::KeyEvent& key) {
   return true;
 }
 
-static float batteryVolts() {
+static float readBatteryVolts() {
   return analogReadMilliVolts(m9::BATT_ADC) * m9::BATT_DIV / 1000.0f;
 }
 
-int batteryPercent() { return rc::batteryPercentFromVolts(batteryVolts()); }
+int batteryPercent() { return rc::batteryPercentFromVolts(readBatteryVolts()); }
 
 // No VBUS sense on this board: a cell held above its resting maximum means
 // it's on the charger.
-bool externalPower() { return batteryVolts() > 4.25f; }
+bool externalPower() { return readBatteryVolts() > 4.25f; }
 
 void beep(int freqHz, int ms) { tone(m9::BUZZER, freqHz, ms); }
 

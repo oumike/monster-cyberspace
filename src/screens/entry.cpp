@@ -8,6 +8,7 @@
 #include "feed/compose.h"
 #include "feed/feed_source.h"
 #include "screens/draw.h"
+#include "screens/people_nav.h"
 #include "store/locked_feed.h"
 #include "ui/feed_layout.h"
 
@@ -95,8 +96,10 @@ void EntryScreen::closeOverlays() {
 }
 
 void EntryScreen::leaveToList() {
+  if (router::backToOrigin()) return;
   const router::Place base = router::lastBase();
-  if (base.id == router::Id::Guild) router::go(router::Id::Guild, base.arg);
+  if (base.id == router::Id::Guild || base.id == router::Id::UserPosts)
+    router::go(base.id, base.arg);
   else router::go(router::Id::FeedList);
 }
 
@@ -279,6 +282,7 @@ void EntryScreen::openEntryMenu() {
   target_ = postId_;
   targetReply_ = false;
   url_ = entryUrl(e);
+  author_ = e.author;
   std::vector<ListItem> items;
   menuKeys_.clear();
   auto add = [&](const char32_t* label, const char* key, ItemTone tone = ItemTone::Normal) {
@@ -289,6 +293,7 @@ void EntryScreen::openEntryMenu() {
   add(marked ? U"Unbookmark" : U"Bookmark", marked ? "unbookmark" : "bookmark");
   add(watching ? U"Unwatch" : U"Watch", watching ? "unwatch" : "watch");
   add(U"Show link", "link");
+  if (!e.author.empty()) add(U"Author's profile", "author");
   if (!e.deleted) {
     if (isSelf(e.author)) add(U"Delete\u2026", "delete", ItemTone::Error);
     else add(U"Report\u2026", "report", ItemTone::Error);
@@ -318,6 +323,7 @@ void EntryScreen::openReplyMenu(const std::string& replyId) {
   target_ = replyId;
   targetReply_ = true;
   url_ = link;
+  author_ = author;
   std::vector<ListItem> items;
   menuKeys_.clear();
   auto add = [&](const char32_t* label, const char* key, ItemTone tone = ItemTone::Normal) {
@@ -327,6 +333,7 @@ void EntryScreen::openReplyMenu(const std::string& replyId) {
   if (!deleted) add(U"Reply", "reply");
   add(marked ? U"Unbookmark" : U"Bookmark", marked ? "unbookmark" : "bookmark");
   add(U"Show link", "link");
+  if (!author.empty()) add(U"Author's profile", "author");
   if (!deleted) {
     if (isSelf(author)) add(U"Delete\u2026", "delete", ItemTone::Error);
     else add(U"Report\u2026", "report", ItemTone::Error);
@@ -367,6 +374,9 @@ void EntryScreen::pickMenu() {
         feedSource().command(Command{CmdType::Unbookmark, target_});
       } else if (key == "watch" || key == "unwatch") {
         feedSource().command(Command{key == "watch" ? CmdType::Watch : CmdType::Unwatch, postId_});
+      } else if (key == "author") {
+        people::openProfile(author_);
+        return;
       } else if (key == "link") {
         link_.open(url_);
         view_ = View::Link;

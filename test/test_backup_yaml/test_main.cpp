@@ -93,6 +93,10 @@ Settings full() {
   s.theme = ThemeId::WhiteBlack;
   s.rotation = 3;
   s.lastRoom = "random";
+  s.phrases = {"On my \"way\"", "👍 ok"};
+  s.webConfig = false;
+  s.idleSecs = 600;
+  s.wakeMins = 30;
   return s;
 }
 
@@ -128,6 +132,12 @@ void expectSame(const Settings& a, const Settings& b) {
   TEST_ASSERT_TRUE(a.theme == b.theme);
   TEST_ASSERT_EQUAL(a.rotation, b.rotation);
   TEST_ASSERT_EQUAL_STRING(a.lastRoom.c_str(), b.lastRoom.c_str());
+  TEST_ASSERT_EQUAL(a.phrases.size(), b.phrases.size());
+  for (size_t i = 0; i < a.phrases.size(); i++)
+    TEST_ASSERT_EQUAL_STRING(a.phrases[i].c_str(), b.phrases[i].c_str());
+  TEST_ASSERT_EQUAL(a.webConfig, b.webConfig);
+  TEST_ASSERT_EQUAL_UINT32(a.idleSecs, b.idleSecs);
+  TEST_ASSERT_EQUAL_UINT32(a.wakeMins, b.wakeMins);
 }
 
 // Fails on y, leaves the settings as they were, and the error is want.
@@ -453,8 +463,35 @@ void test_sort_backup_names() {
   TEST_ASSERT_TRUE(n == want);
 }
 
+void test_phrases_list() {
+  Settings s = full();
+  std::string err, note;
+  std::string y = std::string(kHead) + "phrases:\n  - \"  hi  \"\n  - brb\n  - \"\"\n";
+  TEST_ASSERT_TRUE_MESSAGE(run(y, s, err, note), err.c_str());
+  TEST_ASSERT_EQUAL(2, s.phrases.size());
+  TEST_ASSERT_EQUAL_STRING("hi", s.phrases[0].c_str());
+  TEST_ASSERT_EQUAL_STRING("brb", s.phrases[1].c_str());
+
+  TEST_ASSERT_TRUE(run(std::string(kHead) + "phrases: []\n", s, err, note));
+  TEST_ASSERT_EQUAL(0, s.phrases.size());
+
+  s = full();
+  TEST_ASSERT_TRUE(run(std::string(kHead) + "lastRoom: x\n", s, err, note));
+  TEST_ASSERT_EQUAL(2, s.phrases.size());  // missing: kept
+}
+
+void test_power_values_rejected() {
+  expectFail(std::string(kHead) + "idleSecs: 7\n",
+             "line 3: idle before sleep: 60, 120, 300, 600 or 1800 seconds");
+  expectFail(std::string(kHead) + "wakeMins: 16\n",
+             "line 3: wake every: 0 (never), 5, 15, 30, 60 or 120 minutes");
+  expectFail(std::string(kHead) + "phrases:\n  - a\n  b: c\n", "line 5: expected \"- value\"");
+}
+
 int main(int, char**) {
   UNITY_BEGIN();
+  RUN_TEST(test_phrases_list);
+  RUN_TEST(test_power_values_rejected);
   RUN_TEST(test_quote_escapes);
   RUN_TEST(test_scalar_round_trip);
   RUN_TEST(test_scalar_plain_and_single);

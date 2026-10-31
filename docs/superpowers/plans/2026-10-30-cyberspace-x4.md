@@ -26,7 +26,7 @@ Spec: `docs/superpowers/specs/2026-10-30-cyberspace-x4-design.md`. Branch `x4`.
 - [x] 1. `input/keymap_x4`: ADC ladder → button, debounce and hold → `KeyEvent`
   (Up/Down/Left/Right/Select/Back; held Confirm → Palette; held Back → Home;
   power tap → ScreenOff, power hold → PowerTap). Test `test_x4_input`.
-- [ ] 2. Settings: `phrases` (≤10 × ≤80 bytes), `webConfig` (on),
+- [x] 2. Settings: `phrases` (≤10 × ≤80 bytes), `webConfig` (on),
   `idleSecs` (300), `wakeMins` (15); portable phrase helpers; NVS and backup
   YAML. Tests in `test_backup_yaml`, `test_phrases`.
 - [ ] 3. `power/power_policy`: idle-on-battery → sleep, timed wake, critical

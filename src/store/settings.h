@@ -28,6 +28,12 @@ void saveNotifyLight(rc::LedColor color);
 void saveNotifyTimeout(uint16_t secs);
 // The device's Settings and web config: spell suggestions while typing.
 void saveSpellCheck(bool on);
+// Web config: the canned replies (config/phrases.h).
+void savePhrases(const std::vector<std::string>& phrases);
+// The device's Settings and web config: serve web config on the joined network.
+void saveWebConfig(bool on);
+// Web config (boards that sleep on battery): idle before sleep, wake period.
+void savePower(uint32_t idleSecs, uint32_t wakeMins);
 void saveToken(const std::string& refreshToken);
 void clearToken();
 // Saves the email and refresh token after a login.

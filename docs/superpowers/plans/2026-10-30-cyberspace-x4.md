@@ -43,6 +43,6 @@ Spec: `docs/superpowers/specs/2026-10-30-cyberspace-x4-design.md`. Branch `x4`.
 - [x] 8. Web compose (X4): `/api/compose` + page section; target parsing in
   `lib/core` (`web/compose_req`). Test `test_compose_req`.
 - [x] 9. X4 HAL `src/hal/x4/`, env `x4`, release/flash scripts, CI.
-- [ ] 10. `src/app/power_service.cpp`: idle sleep, timed wake, power off.
+- [x] 10. `src/app/power_service.cpp`: idle sleep, timed wake, power off.
 - [ ] 11. Notifications screen and Home entry.
 - [ ] 12. Docs: AGENTS.md, BUILD.md, USE.md, TESTING.md.

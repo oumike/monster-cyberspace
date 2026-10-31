@@ -6,6 +6,7 @@
 #include <mutex>
 
 #include "app/app_state.h"
+#include "app/power_service.h"
 #include "app/queues.h"
 #include "chat/chat_source.h"
 #include "feed/compose.h"
@@ -403,6 +404,26 @@ void wake() {
   setLit(255);
 }
 
+// The last image before deep sleep or power off; e-paper keeps it. whole:
+// the line alone, centred; otherwise it replaces the bottom row of what is
+// on screen (the open screen or the screensaver).
+void finalScreen(const std::string& line, bool whole) {
+  showOsk(false);
+  const Theme& t = currentTheme();
+  board::displaySleep(false);
+  const int w = int(utf8ToU32(line).size());
+  if (whole) {
+    grid.fill(t.bg);
+    putLine(grid, std::max(0, (grid.cols() - w) / 2), grid.rows() / 2, line, t.fg, t.bg);
+  } else {
+    const int row = grid.rows() - 1;
+    putLine(grid, 0, row, std::string(grid.cols(), ' '), t.fg, t.bg);
+    putLine(grid, std::max(0, (grid.cols() - w) / 2), row, line, t.fg, t.bg);
+  }
+  renderer.draw(grid, gridSize);
+  board::displaySleep(true);
+}
+
 // A canned reply goes in as typing, then Select sends it through the
 // screen's own send path.
 // Web compose: one request waits in the slot until the UI task takes it.
@@ -488,6 +509,12 @@ void sendCanned(const std::u32string& text) {
 void handleKey(const KeyEvent& key) {
   int64_t now = nowMs();
   KeyEvent k = key;
+  power_service::input();
+  if (k.action == Action::PowerOff && board::sleepsOnBattery()) {
+    finalScreen("Powered off \u2014 press Power to turn on", true);
+    power_service::powerOff();
+    return;
+  }
   if (power != Power::On) {
     // Just after the timeout locks the screen, input is ignored.
     if (now - lockedAt < kLockQuietMs) return;
@@ -700,6 +727,17 @@ void taskMain(void*) {
     while (nextEvent(e)) handleEvent(e);
     if (board::webCompose()) runWebCompose();
     applyNotifyLight();
+    switch (power_service::step()) {
+      case PowerStep::Stay: break;
+      case PowerStep::Sleep:
+        finalScreen("Sleeping \u2014 updated " + clockText(), false);
+        power_service::sleep();
+        break;
+      case PowerStep::PowerOff:
+        finalScreen("Battery empty \u2014 charge to turn on", true);
+        power_service::powerOff();
+        break;
+    }
 
     int64_t now = nowMs();
     if (power == Power::Saver && now >= saverUntil) {
@@ -800,6 +838,7 @@ void taskMain(void*) {
 
 void start() {
   if (board::canRotate()) board::setRotation(app().cfg.rotation);
+  power_service::begin();
   if (!renderer.begin()) Serial.println("[ui] no memory for the frame buffer");
   setActiveTaps(board::hasTouch() ? &taps : nullptr);
   baseCursor = board::hasKeys() || board::sideNav();

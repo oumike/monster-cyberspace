@@ -309,6 +309,9 @@ filters it to rooms whose names contain what you typed, ignoring case. The
 filter shows on the bottom line; Backspace erases a letter, Back clears it,
 and it clears whenever you return to the list.
 
+On touch boards the rooms are buttons. With keys too (T-Deck Plus), the
+trackball or arrows move the selection through them and Centre opens one.
+
 ## In a room
 
 The keyboard always types into the input line at the bottom.

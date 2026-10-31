@@ -171,7 +171,7 @@ class RoomListScreen : public Screen {
   ListView list_;
   std::vector<std::string> slugs_;
   TypeFilter filter_;  // keyboards: typing narrows the rooms
-  ButtonPad pad_;  // touch-only boards: rooms as buttons
+  ButtonPad pad_;  // touch boards: rooms as buttons (a cursor with keys)
   bool buttons_ = false;
 };
 

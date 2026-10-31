@@ -12,7 +12,7 @@ void Grid::resize(int cols, int rows) {
   cols_ = std::max(cols, 0);
   rows_ = std::max(rows, 0);
   cells_.assign(static_cast<size_t>(cols_) * rows_, Cell{});
-  drawn_ = cells_;
+  drawn_.assign(rows_, 0);
   forced_.assign(rows_, true);
   kinds_.assign(rows_, RowKind::Normal);
   pads_.assign(rows_, -1);
@@ -111,15 +111,29 @@ const Cell& Grid::at(int col, int row) const {
   return cells_[static_cast<size_t>(row) * cols_ + col];
 }
 
+// FNV-1a over what Cell::operator== compares; edgeColor counts only with edges.
+uint64_t Grid::rowHash(int row) const {
+  uint64_t h = 1469598103934665603ull;
+  auto mix = [&h](uint32_t v) {
+    for (int i = 0; i < 4; ++i, v >>= 8) h = (h ^ (v & 0xFF)) * 1099511628211ull;
+  };
+  const Cell* c = cells_.data() + static_cast<size_t>(row) * cols_;
+  for (int i = 0; i < cols_; ++i, ++c) {
+    mix(uint32_t(c->cp));
+    mix(uint32_t(c->fg) | uint32_t(c->bg) << 16);
+    mix(uint32_t(c->edges) | uint32_t(c->bold) << 4 | uint32_t(c->nudge) << 5 |
+        uint32_t(c->edges ? c->edgeColor : 0) << 8);
+  }
+  return h;
+}
+
 bool Grid::rowDirty(int row) const {
   if (row < 0 || row >= rows_) return false;
-  if (forced_[row]) return true;
-  auto first = cells_.begin() + static_cast<size_t>(row) * cols_;
-  return !std::equal(first, first + cols_, drawn_.begin() + static_cast<size_t>(row) * cols_);
+  return forced_[row] || rowHash(row) != drawn_[row];
 }
 
 void Grid::clearDirty() {
-  drawn_ = cells_;
+  for (int r = 0; r < rows_; ++r) drawn_[r] = rowHash(r);
   std::fill(forced_.begin(), forced_.end(), false);
 }
 

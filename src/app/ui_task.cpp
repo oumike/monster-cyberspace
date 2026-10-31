@@ -2,8 +2,6 @@
 
 #include <Arduino.h>
 
-#include <esp_heap_caps.h>
-
 #include <algorithm>
 #include <mutex>
 
@@ -861,8 +859,6 @@ void start() {
 #if RC_LOW_MEM
   if (app().cfg.textSize == TextSize::Compact) app().cfg.textSize = TextSize::Comfortable;
 #endif
-  Serial.printf("[mem] ui start: int %u blk %u\n", unsigned(heap_caps_get_free_size(MALLOC_CAP_INTERNAL)),
-                unsigned(heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL)));
   power_service::begin();
   if (!renderer.begin()) Serial.println("[ui] no memory for the frame buffer");
   setActiveTaps(board::hasTouch() ? &taps : nullptr);

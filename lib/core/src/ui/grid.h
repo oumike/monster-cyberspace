@@ -40,7 +40,7 @@ struct HeaderSize {
 };
 
 // A screen of character cells with per-row dirty tracking. A row is dirty
-// when its cells differ from what they were at the last clearDirty() (the
+// when its cells differ (by hash) from what they were at the last clearDirty() (the
 // last frame drawn), so redrawing a screen from scratch each frame only
 // pushes the rows that really changed. Out-of-range puts are ignored.
 class Grid {
@@ -99,7 +99,11 @@ class Grid {
 
  private:
   int cols_ = 0, rows_ = 0;
-  std::vector<Cell> cells_, drawn_;
+  uint64_t rowHash(int row) const;
+  std::vector<Cell> cells_;
+  // Each row's hash at the last clearDirty(): a copy of the cells would double
+  // the grid, too much for a board without PSRAM.
+  std::vector<uint64_t> drawn_;
   std::vector<bool> forced_;  // rows dirty regardless of content (after resize)
   std::vector<RowKind> kinds_;
   std::vector<int16_t> pads_, shifts_;

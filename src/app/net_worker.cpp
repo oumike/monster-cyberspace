@@ -437,6 +437,39 @@ class Worker {
     pendingMentions_.erase(range.first, range.second);
   }
 
+  // Unread's Mark all read, from one key press: every notification (mentions
+  // and Feed notices) in one call, then each unread conversation. Not retried.
+  void markAllRead() {
+    ApiError e = api_.markAllNotificationsRead();
+    if (e.ok()) {
+      pendingMentions_.clear();
+      lockedFeed().with([](FeedState& s) { s.notices.clear(); });
+    } else {
+      checkAuthError(e);
+    }
+    std::vector<std::string> ids;
+    lockedChat().with([&](ChatState& s) {
+      for (const auto& c : s.conversations)
+        if (c.unread > 0) ids.push_back(c.id);
+    });
+    bool mailOk = true;
+    for (const auto& id : ids) {
+      if (!api_.cmailRead(id).ok()) {
+        mailOk = false;
+        continue;
+      }
+      lockedChat().with([&](ChatState& s) {
+        for (auto& c : s.conversations)
+          if (c.id == id) c.unread = 0;
+      });
+    }
+    if (!ids.empty()) post(EvtType::ConversationsUpdated);
+    const bool ok = e.ok() && mailOk;
+    post(EvtType::AllRead, 0,
+         ok ? std::string("Marked all read") : e.ok() ? std::string("Some C-Mail stayed unread") : e.message,
+         e.ok());
+  }
+
   // ---- C-Mail ----
 
   // Refreshes the list and raises one alert per conversation each time a new
@@ -562,6 +595,7 @@ class Worker {
       post(EvtType::SideListUpdated, 0, "", false);
     if (c.type == CmdType::OpenGuilds) post(EvtType::GuildsUpdated, 0, "", false);
     if (c.type == CmdType::OpenMembers) post(EvtType::MembersUpdated, 0, "", false);
+    if (c.type == CmdType::MarkAllRead) post(EvtType::AllRead, 0, why, false);
     if (c.type == CmdType::PostGuildThread) post(EvtType::EntryPosted, 0, why, false);
     if (c.type == CmdType::JoinGuild || c.type == CmdType::LeaveGuild ||
         c.type == CmdType::PromoteGuild)
@@ -684,6 +718,9 @@ class Worker {
       }
       case CmdType::MarkRead:
         markRead(c.a.empty() ? room_ : c.a);
+        break;
+      case CmdType::MarkAllRead:
+        markAllRead();
         break;
       case CmdType::RefreshRooms:
         refreshRooms();

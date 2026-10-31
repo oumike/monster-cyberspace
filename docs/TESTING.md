@@ -40,6 +40,9 @@ on 2026-10-27; the sections marked `m9_fake` passed on it before then.
 - [ ] The Home item (`Unread  N`) or tile (`N unread`) matches the status
       bar total on Unread, and the mentions count on Home drops only by the
       mentions of the room you opened.
+- [ ] With items waiting, the top row is "✓ Mark all read"; it asks first,
+      then empties Unread, says "Marked all read", and the website shows
+      the notifications and C-Mail read. Cancel sends nothing.
 - [ ] Touch Home: the unread tile spans the top row; Up from either tile of
       the next row goes to it and Down from it goes to the left tile; taps
       open every tile. With nothing unread, Unread says "nothing unread".

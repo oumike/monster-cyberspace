@@ -14,6 +14,7 @@
 #include "cs/rate_limiter.h"
 #include "feed/feed_source.h"
 #include "store/locked_chat.h"
+#include "store/locked_feed.h"
 
 // The scripted fake API for the demo build (RC_FAKE_API): no network, no account.
 // Fixture rooms, a scripted message every 4 s, 12 people (3 idle), sends that
@@ -268,6 +269,14 @@ void FakeChatSource::command(const Command& c) {
           if (cv.id == c.a) cv.unread = 0;
       });
       postEvent(Event{EvtType::ConversationsUpdated});
+      break;
+    case CmdType::MarkAllRead:
+      lockedChat().with([](ChatState& s) {
+        for (auto& cv : s.conversations) cv.unread = 0;
+      });
+      lockedFeed().with([](FeedState& s) { s.notices.clear(); });
+      postEvent(Event{EvtType::ConversationsUpdated});
+      postEvent(Event{EvtType::AllRead, "Marked all read"});
       break;
     case CmdType::OpenPresence:
     case CmdType::ClosePresence:

@@ -1,6 +1,8 @@
 #include <algorithm>
 
 #include "app/app_state.h"
+#include "chat/chat_source.h"
+#include "app/ui_task.h"
 #include "screens/draw.h"
 #include "screens/screens.h"
 #include "store/locked_chat.h"
@@ -43,7 +45,17 @@ std::vector<UnreadItem> gatherUnread() {
   return mergeUnread(std::move(cmail), std::move(mentions), std::move(feed));
 }
 
-void NotificationsScreen::open(int index) {
+void NotificationsScreen::askMarkAll() {
+  if (marking_) return;
+  confirm_ = true;
+  box_.confirm(U"Mark all " + utf8ToU32(std::to_string(unreadTotal(items_))) +
+                   U" read? (C-Mail, mentions and Feed, also on the website)",
+               U"Mark all read");
+}
+
+void NotificationsScreen::open(int row) {
+  if (row == 0 && !items_.empty()) return askMarkAll();
+  const int index = row - 1;
   if (index < 0 || index >= int(items_.size())) return;
   const UnreadItem it = items_[index];
   using router::Id;
@@ -72,6 +84,26 @@ void NotificationsScreen::open(int index) {
 }
 
 void NotificationsScreen::onKey(const KeyEvent& k) {
+  if (confirm_) {
+    switch (box_.key(k)) {
+      case Overlay::Result::Picked:
+        confirm_ = false;
+        if (box_.selected() != 1) break;
+        if (app().conn == 0) {
+          ui::banner("Offline: not sent", true);
+          break;
+        }
+        marking_ = true;
+        chatSource().command(Command{CmdType::MarkAllRead});
+        break;
+      case Overlay::Result::Closed:
+        confirm_ = false;
+        break;
+      case Overlay::Result::None:
+        break;
+    }
+    return;
+  }
   switch (k.action) {
     case Action::Up:
       list_.up();
@@ -95,10 +127,16 @@ void NotificationsScreen::onKey(const KeyEvent& k) {
   }
 }
 
+void NotificationsScreen::onEvent(const Event& e) {
+  if (e.type == EvtType::AllRead) marking_ = false;
+}
+
 void NotificationsScreen::render(Grid& g, const Theme& t, int64_t) {
   items_ = gatherUnread();
   std::vector<ListItem> rows;
-  rows.reserve(items_.size());
+  rows.reserve(items_.size() + 1);
+  if (!items_.empty())
+    rows.push_back(ListItem{marking_ ? U"marking all read\u2026" : U"\u2713 Mark all read", U""});
   for (const auto& it : items_) {
     std::u32string right = it.kind == UnreadKind::Cmail ? utf8ToU32(std::to_string(it.count)) : U"";
     rows.push_back(ListItem{utf8ToU32(std::string(tag(it.kind)) + it.text), std::move(right),
@@ -112,6 +150,11 @@ void NotificationsScreen::render(Grid& g, const Theme& t, int64_t) {
   list_.render(g, 1, bottom, 0, g.cols() - nav, t);
   if (nav > 0) renderSideNav(g, 1, bottom, nav, t);
   if (items_.empty()) putLine(g, 1, 2, "nothing unread", t.dim, t.bg);
+  if (confirm_) {
+    box_.render(g, 1, bottom, nav, OverlayPlace::BottomRight, t);
+    drawHint(g, t, U"\u2191\u2193 pick  \u25CF choose  back: cancel", U"tap: choose  outside: cancel");
+    return;
+  }
   drawHint(g, t, U"\u2191\u2193 pick  \u25CF open  \u2190 home", U"tap to open  swipe to scroll");
 }
 

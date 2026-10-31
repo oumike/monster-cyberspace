@@ -583,6 +583,11 @@ total; with nothing waiting it says "nothing unread".
 - Opening a row opens the conversation, the room (which becomes your last
   room) or the entry, and marks it read the way opening it anywhere else
   does. Back from there returns to Unread, so you can work down the list.
+- **✓ Mark all read** is the top row while anything is unread. It asks
+  first, then marks every notification read on your account (mentions, Feed
+  and guild alerts, and any the device doesn't list) and each unread C-Mail
+  conversation, as the website would. Nothing is retried; if some C-Mail
+  stays unread you get "Some C-Mail stayed unread".
 - Nothing is fetched for this screen: it shows what the device already knows
   from the checks described under [Alerts](#alerts).
 

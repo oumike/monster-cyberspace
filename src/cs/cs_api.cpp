@@ -60,6 +60,7 @@ CsApi::CsApi(HttpsClient& h)
       startL_(makeStartConversationLimiter()),
       cmailReadL_(makeMarkReadLimiter()),
       typingL_(makeTypingLimiter()),
+      readAllL_(makeMarkReadLimiter()),
       entryL_(makeEntryLimiter()),
       replyL_(makeReplyLimiter()),
       bookmarkL_(makeBookmarkLimiter()),
@@ -347,6 +348,13 @@ ApiError CsApi::mentions(std::vector<Mention>& out) {
 ApiError CsApi::markNotificationRead(const std::string& id) {
   HttpResult r;
   return call("PATCH", "/v1/notifications/" + enc(id), "", r);
+}
+
+ApiError CsApi::markAllNotificationsRead() {
+  ApiError l = limited(readAllL_);
+  if (!l.ok()) return l;
+  HttpResult r;
+  return call("POST", "/v1/notifications/read-all", "", r);
 }
 
 namespace {

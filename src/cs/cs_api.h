@@ -64,6 +64,8 @@ class CsApi {
   ApiError mutedUsers(MutedUsers&);
   ApiError mentions(std::vector<Mention>&);
   ApiError markNotificationRead(const std::string& id);
+  // POST /v1/notifications/read-all, once (up to 5,000 per call).
+  ApiError markAllNotificationsRead();
 
   // Feed. List cursors are "" at the end. `limit` is the page size.
   ApiError feed(const std::string& cursor, int limit, std::vector<Entry>&, std::string& next);
@@ -134,7 +136,7 @@ class CsApi {
   int64_t refreshDue_ = 0;
   ApiError refreshErr_{200, "", ""};
   RateLimiter sendL_, presenceL_, deleteL_, flagL_, readL_, resendL_;
-  RateLimiter cmailSendL_, startL_, cmailReadL_, typingL_;
+  RateLimiter cmailSendL_, startL_, cmailReadL_, typingL_, readAllL_;
   RateLimiter entryL_, replyL_, bookmarkL_, watchL_, membershipL_;
   RateLimiter followL_, unfollowL_, pokeL_;
 };

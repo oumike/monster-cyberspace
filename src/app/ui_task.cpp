@@ -335,6 +335,10 @@ void handleEvent(const Event& e) {
         app().cfg.wifi = std::move(s.wifi);
       }
       break;
+    case EvtType::AllRead:
+      if (e.ok) app().mentions.clear();
+      banner(e.text, !e.ok);
+      break;
     case EvtType::MentionAlert: {
       // Not for the room on screen, nor again when the network side forgets
       // what it has seen and re-alerts.

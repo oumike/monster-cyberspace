@@ -67,6 +67,7 @@ enum class CmdType {
   Unfollow,              // a = userId, b = username
   Poke,                  // a = username
   OpenUserPosts,         // a = username; n = 1 to append the next page
+  MarkAllRead,           // Unread: every notification and unread C-Mail
 };
 
 struct Command {
@@ -114,6 +115,7 @@ enum class EvtType {
   // (text = SSID); -1 failed, -2 refused: ok=false, text = the message.
   WifiState,
   NotifyPreview,        // from the web page: code = rc::LedColor index, one double blink
+  AllRead,              // MarkAllRead: ok when the notifications were marked; text = banner
 };
 
 struct Event {

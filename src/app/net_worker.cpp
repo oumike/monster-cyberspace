@@ -943,7 +943,13 @@ void start(const Settings& s) {
   static Worker* w = new Worker(s);
   // One core (the X4): below the UI (2), or TLS handshakes and parsing hold
   // off key presses.
-  xTaskCreatePinnedToCore(taskMain, "net", 12288, w, portNUM_PROCESSORS > 1 ? 3 : 1, nullptr, 0);
+#if RC_LOW_MEM
+  // Measured: about 4.4 KB used, TLS handshakes included.
+  constexpr uint32_t kNetStack = 9216;
+#else
+  constexpr uint32_t kNetStack = 12288;
+#endif
+  xTaskCreatePinnedToCore(taskMain, "net", kNetStack, w, portNUM_PROCESSORS > 1 ? 3 : 1, nullptr, 0);
 }
 
 }  // namespace rc::networker

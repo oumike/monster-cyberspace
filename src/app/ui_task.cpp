@@ -908,7 +908,13 @@ void start() {
   router::go(router::Id::Splash);
   board::backlight(true);
   // Core 1 beside the network's core 0; a single-core chip (the X4's C3) has only 0.
-  xTaskCreatePinnedToCore(taskMain, "ui", 16384, nullptr, 2, nullptr, portNUM_PROCESSORS > 1 ? 1 : 0);
+#if RC_LOW_MEM
+  // Measured: about 3.4 KB used. The heap left over is what TLS runs in.
+  constexpr uint32_t kUiStack = 10240;
+#else
+  constexpr uint32_t kUiStack = 16384;
+#endif
+  xTaskCreatePinnedToCore(taskMain, "ui", kUiStack, nullptr, 2, nullptr, portNUM_PROCESSORS > 1 ? 1 : 0);
 }
 
 void setTextSize(TextSize s) {

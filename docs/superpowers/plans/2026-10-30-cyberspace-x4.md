@@ -31,7 +31,7 @@ Spec: `docs/superpowers/specs/2026-10-30-cyberspace-x4-design.md`. Branch `x4`.
   YAML. Tests in `test_backup_yaml`, `test_phrases`.
 - [x] 3. `power/power_policy`: idle-on-battery → sleep, timed wake, critical
   battery → off. Test `test_power_policy`.
-- [ ] 4. Canned picker (`ui/widgets/canned_picker`): phrases then the tray
+- [x] 4. Canned picker (`ui/widgets/canned_picker`): phrases then the tray
   emoji; screens open it instead of a text field when `!board::canType()`;
   free-text-only actions hidden. Test `test_canned_picker`.
 - [ ] 5. Web config switch: `web/web_access` rule (AP up, or enabled), the

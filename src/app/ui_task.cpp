@@ -31,6 +31,7 @@
 #include "ui/widgets/banner.h"
 #include "ui/widgets/osk.h"
 #include "ui/widgets/overlay.h"
+#include "ui/widgets/canned_picker.h"
 #include "ui/widgets/symbol_table.h"
 #include "util/utf8.h"
 
@@ -73,6 +74,10 @@ Osk osk;
 Grid oskGrid(1, 1);
 bool oskShown = false;
 SymbolTable symbols;
+// Boards that can't type (board::canType): canned replies instead of a text
+// field. cannedEmoji: the emoji tray was opened from it, so a pick sends.
+CannedPicker canned;
+bool cannedEmoji = false;
 Power power = Power::On;
 int64_t saverUntil = 0, lastActivitySent = -kActivityMs;
 int64_t lastInputMs = 0, lockedAt = INT64_MIN / 2, nextBounce = 0;
@@ -369,6 +374,18 @@ void wake() {
   setLit(255);
 }
 
+// A canned reply goes in as typing, then Select sends it through the
+// screen's own send path.
+void sendCanned(const std::u32string& text) {
+  for (char32_t c : text) {
+    KeyEvent k;
+    k.action = Action::Char;
+    k.ch = c;
+    router::screen().onKey(k);
+  }
+  router::screen().onKey(KeyEvent{Action::Select});
+}
+
 void handleKey(const KeyEvent& key) {
   int64_t now = nowMs();
   KeyEvent k = key;
@@ -402,6 +419,28 @@ void handleKey(const KeyEvent& key) {
   if (k.action == Action::ScreenOff || k.action == Action::PowerTap) {
     chatSource().command(Command{CmdType::ScreenOff});
     goDark();
+    return;
+  }
+  if (canned.isOpen()) {
+    CannedPicker::Out o = canned.key(k);
+    if (o.kind == CannedPicker::Kind::Send) {
+      sendCanned(o.text);
+    } else if (o.kind == CannedPicker::Kind::Emoji) {
+      cannedEmoji = true;
+      symbols.setBackspaceCloses(false);
+      symbols.open(U"", SymbolTable::Set::Emoji, board::upDownOnly());
+    } else if (o.kind == CannedPicker::Kind::Closed) {
+      router::screen().onKey(KeyEvent{Action::ClearLine});  // a reply's "@name "
+    }
+    return;
+  }
+  if (symbols.isOpen() && cannedEmoji) {
+    SymbolTable::Out o = symbols.key(k);
+    if (o.kind == SymbolTable::Kind::Insert) {
+      symbols.close();
+      sendCanned(std::u32string(1, o.ch));
+    }
+    if (!symbols.isOpen()) cannedEmoji = false;
     return;
   }
   if (symbols.isOpen()) {
@@ -594,6 +633,11 @@ void taskMain(void*) {
       }
     }
     if (oskShown && !router::screen().acceptsText()) showOsk(false);
+    if (oskWanted && !board::canType()) {
+      oskWanted = false;
+      if (power == Power::On && router::current() == beforeScreen && router::screen().acceptsText())
+        canned.open(app().cfg.phrases);
+    }
     if (oskWanted) {
       oskWanted = false;
       if (power == Power::On && board::hasTouch() && !board::hasKeyboard() && !symbols.isOpen() &&
@@ -608,6 +652,10 @@ void taskMain(void*) {
     if (symbols.isOpen() && (router::current() != beforeScreen || power != Power::On ||
                              !router::screen().acceptsText()))
       symbols.close();
+    if (!symbols.isOpen()) cannedEmoji = false;
+    if (canned.isOpen() && (router::current() != beforeScreen || power != Power::On ||
+                            !router::screen().acceptsText()))
+      canned.close();
     // Settings and web config change the theme between frames; repaint it all.
     if (app().cfg.theme != shown) {
       shown = app().cfg.theme;
@@ -623,6 +671,7 @@ void taskMain(void*) {
       taps.setOrigin(cellSize(gridSize), 0);
       router::screen().render(grid, t, now);
       symbols.render(grid, grid.rows() - 1, t);
+      canned.render(grid, 0, grid.rows() - 1, t);
       topBanner.render(grid, grid.rows() - 1, t, now);
       taps.mapRows(0, rowSpans(grid, cellSize(gridSize).h, bigCellSize(gridSize).h));
       renderer.draw(grid, gridSize);
@@ -680,6 +729,12 @@ bool fromTouch() { return touchKey; }
 const char* monsterWord() { return words.next(esp_random()); }
 
 void showKeyboard() { oskWanted = true; }
+
+bool typingElsewhere(const char* what) {
+  if (board::canType()) return false;
+  banner(std::string(what) + " from web config", true);
+  return true;
+}
 
 void banner(const std::string& text, bool error) {
   topBanner.show(utf8ToU32(text), nowMs(), error ? 6000 : 4000, error);

@@ -28,6 +28,9 @@ const char* monsterWord();
 // Docks the on-screen keyboard after this key, on touch boards without a
 // keyboard, if the screen then takes text.
 void showKeyboard();
+// Boards that can't type (board::canType): shows "<what> from web config"
+// and returns true, so the caller skips its text field.
+bool typingElsewhere(const char* what);
 // Forces every row to be redrawn on the next frame.
 void redrawAll();
 // One double blink of the new-message light in c (board::hasNotifyLight).

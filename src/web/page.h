@@ -3,14 +3,11 @@
 // The web config page: inline HTML, CSS and JS with no external requests.
 namespace web {
 
-static const char kPage[] = R"HTML(<!doctype html>
-<html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Monster for Cyberspace</title>
-<style>
-body{background:#000;color:#3f3;font:15px/1.45 ui-monospace,Menlo,Consolas,monospace;margin:0 auto;max-width:44em;padding:1em}
+// Shared by the config page and the send page (/send, board::webCompose).
+#define RC_PAGE_CSS R"CSS(body{background:#000;color:#3f3;font:15px/1.45 ui-monospace,Menlo,Consolas,monospace;margin:0 auto;max-width:44em;padding:1em}
 h1{font-size:1.3em;margin:.2em 0 .8em}h2{font-size:1.05em;border-bottom:1px solid #1a5;padding-bottom:.2em;margin-top:1.6em}
 input,select,button{font:inherit;background:#020;color:#3f3;border:1px solid #2a6;padding:.35em .5em;border-radius:3px}
+textarea{font:inherit;background:#020;color:#3f3;border:1px solid #2a6;padding:.35em .5em;border-radius:3px;width:100%;box-sizing:border-box;margin:.2em 0 .5em}
 input,select{width:100%;box-sizing:border-box;margin:.2em 0 .5em}
 button{cursor:pointer;margin:.2em .4em .2em 0}button:hover{background:#063}
 button.danger{color:#f66;border-color:#a33}
@@ -19,8 +16,64 @@ table{border-collapse:collapse;width:100%}td{padding:.15em .4em .15em 0;vertical
 ul{padding-left:1.2em;margin:.3em 0}li button{padding:.1em .4em;font-size:.85em}
 .msg{min-height:1.4em}
 a{color:#6cf}
-</style></head><body>
+)CSS"
+
+// Web compose (board::webCompose): hidden until /api/compose answers.
+#define RC_SEND_HTML R"HTML(<div id="sendblock" hidden>
+<h2>Send</h2>
+<div class="dim">The device sends this as if typed on it.</div>
+<label>To<select id="skind" onchange="sendKind()"><option value="open">What the device has open</option><option value="mail">A new C-Mail</option><option value="thread">A new guild thread</option></select></label>
+<div id="sopen" class="dim"></div>
+<label id="storow" hidden>Recipient<input id="sto" autocomplete="off" placeholder="@name"></label>
+<label id="sguildrow" hidden>Guild (its short name)<input id="sguild" autocomplete="off"></label>
+<label id="stitlerow" hidden>Title (optional)<input id="stitle" autocomplete="off"></label>
+<textarea id="stext" rows="4"></textarea>
+<button onclick="sendNow()">Send</button>
+<div id="sendmsg" class="msg"></div>
+</div>
+)HTML"
+
+// Uses $, call and show from the page's script.
+#define RC_SEND_JS R"JS(
+let sendTimer=0;
+async function loadSend(){const r=await call('GET','/api/compose');if(r.label===undefined)return;
+  $('sendblock').hidden=false;
+  $('sopen').textContent=r.label?(r.takesText?'Open: '+r.label:r.label+' (busy)'):'Nothing open takes text: open a room, a C-Mail or a post on the device.';
+  clearTimeout(sendTimer);sendTimer=setTimeout(loadSend,5000);}
+function sendKind(){const k=$('skind').value;$('sopen').hidden=k!=='open';$('storow').hidden=k!=='mail';
+  $('sguildrow').hidden=$('stitlerow').hidden=k!=='thread';}
+async function sendNow(){const k=$('skind').value,b={kind:k,text:$('stext').value};
+  if(k==='mail')b.to=$('sto').value;if(k==='thread'){b.guild=$('sguild').value;b.title=$('stitle').value;}
+  const r=await call('POST','/api/compose',b);show('sendmsg',r);if(r.ok){$('stext').value='';$('stitle').value='';}loadSend();}
+)JS"
+
+static const char kSendPage[] = R"HTML(<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Monster for Cyberspace</title>
+<style>)HTML" RC_PAGE_CSS R"HTML(</style></head><body>
 <h1>Monster for Cyberspace</h1>
+)HTML" RC_SEND_HTML R"HTML(
+<p><a href="/config">Settings</a> <span class="dim">(asks for the page password)</span></p>
+<script>
+const $=id=>document.getElementById(id);
+function show(id,r){const e=$(id);e.textContent=r.message||(r.ok?'Done':'Failed');e.className='msg '+(r.ok?'ok':'err');}
+async function call(method,url,body){
+  try{const r=await fetch(url,{method,headers:{'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined});
+    let j={};try{j=await r.json();}catch(e){j={ok:r.ok};}if(j.ok===undefined)j.ok=r.ok;return j;}
+  catch(e){return {ok:false,message:'No response from the device'};}
+}
+)HTML" RC_SEND_JS R"HTML(
+loadSend();
+</script></body></html>)HTML";
+
+static const char kPage[] = R"HTML(<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Monster for Cyberspace</title>
+<style>)HTML" RC_PAGE_CSS R"HTML(</style></head><body>
+<h1>Monster for Cyberspace</h1>
+)HTML" RC_SEND_HTML R"HTML(
 
 <h2>Status</h2>
 <table id="status"><tr><td>loading…</td></tr></table>
@@ -56,9 +109,26 @@ a{color:#6cf}
 <label id="ledrow" hidden>Notify light<select id="ledcolor"><option value="red">Red</option><option value="green">Green</option><option value="blue">Blue</option><option value="yellow">Yellow</option><option value="cyan">Cyan</option><option value="magenta">Magenta</option><option value="white">White</option><option value="off">Off</option></select></label>
 <label id="ledtrow" hidden>Light timeout<select id="ledtime"><option value="15">15 s</option><option value="30">30 s</option><option value="60">1 min</option><option value="300">5 min</option><option value="0">Until read</option></select></label>
 <label><input id="buzzer" type="checkbox" style="width:auto"> Buzzer on mentions</label>
-<label><input id="spell" type="checkbox" style="width:auto"> Spell check while typing</label>
+<label id="spellrow"><input id="spell" type="checkbox" style="width:auto"> Spell check while typing</label>
 <button onclick="savePrefs()">Save display</button>
 <div id="prefmsg" class="msg"></div>
+
+<div id="phraseblock" hidden>
+<h2>Canned replies</h2>
+<div class="dim">This device has no keyboard: replying picks one of these (up to 10, 80 characters each), or an emoji. One per line.</div>
+<textarea id="phrases" rows="10"></textarea>
+<button onclick="savePhrases()">Save replies</button>
+<div id="phrasemsg" class="msg"></div>
+</div>
+
+<div id="powerblock" hidden>
+<h2>Power</h2>
+<div class="dim">On battery the device sleeps when left alone, and wakes now and then to fetch what's new. On USB it stays awake.</div>
+<label>Sleep after<select id="idle"><option value="60">1 min</option><option value="120">2 min</option><option value="300">5 min</option><option value="600">10 min</option><option value="1800">30 min</option></select></label>
+<label>Wake every<select id="wake"><option value="5">5 min</option><option value="15">15 min</option><option value="30">30 min</option><option value="60">1 h</option><option value="120">2 h</option><option value="0">Never (a button wakes it)</option></select></label>
+<button onclick="post('/api/prefs',{idleSecs:+$('idle').value,wakeMins:+$('wake').value},'powermsg')">Save power</button>
+<div id="powermsg" class="msg"></div>
+</div>
 
 <h2>Time</h2>
 <label>Time zone<select id="tzpick" onchange="tzCustom()"></select></label>
@@ -70,6 +140,7 @@ a{color:#6cf}
 <h2>Security</h2>
 <label>Page password (user <b>admin</b>; empty turns it off) <span id="pagestate" class="dim"></span><input id="pagepw" type="password" autocomplete="new-password"></label>
 <label>Setup-AP password (WPA2, 8–63 characters; empty makes the AP open) <span id="apstate" class="dim"></span><input id="appw" type="password" autocomplete="new-password"></label>
+<label><input id="webcfg" type="checkbox" style="width:auto" onchange="saveWebCfg(this)"> Serve this page on the joined Wi-Fi (the setup AP always serves it)</label>
 <button onclick="saveSec()">Save security</button>
 <div id="secmsg" class="msg"></div>
 <p class="dim">The page is plain HTTP on your LAN, so set a page password on shared networks. The setup AP is open unless a setup-AP password is set, so anyone in radio range can join it while it runs. It runs with no saved Wi-Fi (first boot or after a factory reset), when turned on in the device's Settings, or after the saved networks fail for 5 minutes, and anything entered on it (Wi-Fi password, Cyberspace password) crosses that link unencrypted. Setting a setup-AP password closes that gap for later setups. A backup download contains the refresh token and every password, so anyone who can open this page can take them: set a page password.</p>
@@ -97,7 +168,7 @@ a{color:#6cf}
 <button class="danger" onclick="reset()">Factory reset…</button>
 <div id="devmsg" class="msg"></div>
 
-<script>
+<script>)HTML" RC_SEND_JS R"HTML(
 const $=id=>document.getElementById(id);
 function show(id,r){const e=$(id);e.textContent=r.message||(r.ok?'Done':'Failed');e.className='msg '+(r.ok?'ok':'err');}
 async function call(method,url,body){
@@ -141,6 +212,9 @@ async function loadPrefs(){const p=await call('GET','/api/prefs');if(p.tz===unde
   if(p.rotation!==undefined){$('rotrow').hidden=false;$('rot').value=String(p.rotation);}
   if(p.kbLight){$('kbrow').hidden=false;$('kblight').value=p.kbLight;}
   if(p.notifyLight){$('ledrow').hidden=$('ledtrow').hidden=false;$('ledcolor').value=p.notifyLight;$('ledtime').value=String(p.notifyTimeout);}
+  $('webcfg').checked=p.webConfig!==false;
+  if(p.phrases){$('phraseblock').hidden=false;$('spellrow').hidden=true;$('phrases').value=p.phrases.join('\n');}
+  if(p.idleSecs!==undefined){$('powerblock').hidden=false;$('idle').value=String(p.idleSecs);$('wake').value=String(p.wakeMins);}
   $('tzpick').value=listed(p.tzName)?p.tzName:'';tzCustom();$('ntp').value=p.ntpServer;
   // Setup mode keeps a zone already set; only the factory default takes the browser's.
   savedTzName=p.tzName;const keep=$('wtz').querySelector('option[value=""]');
@@ -162,6 +236,9 @@ function savePrefs(){const b={textSize:$('tsize').value,buzzer:$('buzzer').check
   if(!$('themerow').hidden)b.theme=$('theme').value;
   if(!$('rotrow').hidden)b.rotation=parseInt($('rot').value,10);
   if(!$('kbrow').hidden)b.kbLight=$('kblight').value;if(!$('ledrow').hidden){b.notifyLight=$('ledcolor').value;b.notifyTimeout=+$('ledtime').value;}post('/api/prefs',b,'prefmsg');}
+function savePhrases(){post('/api/phrases',{phrases:$('phrases').value.split('\n')},'phrasemsg').then(loadPrefs);}
+function saveWebCfg(c){if(!c.checked&&!setupMode&&!confirm('Turn web config off? This page stops answering on this network; turn it back on from the device\'s Settings or the setup AP.')){c.checked=true;return;}
+  post('/api/prefs',{webConfig:c.checked},'secmsg');}
 function saveTime(){post('/api/prefs',{tzName:$('tzpick').value,tz:$('tz').value,ntpServer:$('ntp').value},'timemsg');}
 async function saveSec(){const b={pagePassword:$('pagepw').value,apPassword:$('appw').value};
   if(!b.pagePassword&&!confirm('Leave the page password empty (no password)?'))return;
@@ -209,7 +286,7 @@ async function loadOta(){const o=await call('GET','/api/ota');if(o.state===undef
 async function otaCheck(){await post('/api/ota/check',{},'otamsg');loadOta();}
 async function otaInstall(){if(!confirm('Install '+$('otainst').textContent.slice(8)+'? The device restarts.'))return;
   await post('/api/ota/install',{},'otamsg');loadOta();}
-load();loadZones().then(loadPrefs);loadBackup();loadOta();setInterval(load,10000);
+load();loadZones().then(loadPrefs);loadBackup();loadOta();loadSend();setInterval(load,10000);
 </script></body></html>)HTML";
 
 }  // namespace web

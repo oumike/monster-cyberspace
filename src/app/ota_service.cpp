@@ -349,6 +349,11 @@ void scheduler(void*) {
         Serial.println("[ota] new firmware is running fine; keeping it");
       esp_ota_mark_app_valid_cancel_rollback();
     }
+#if RC_LOW_MEM
+    // No PSRAM: a check is a second TLS connection beside the chat's, which
+    // does not fit, so only Settings' "check for update" starts one.
+    continue;
+#endif
     const bool connected = wifimgr::connected();
     if (connected && !wasConnected) nextCheckMs = now + kFirstCheckDelayMs;
     wasConnected = connected;

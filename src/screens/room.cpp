@@ -168,6 +168,11 @@ void RoomScreen::typingKey(const KeyEvent& k) {
       noteTyping();
       break;
     case Action::Palette: {
+      // Nothing to type commands with: hold Confirm opens the room's menu.
+      if (!board::canType()) {
+        openRoomMenu();
+        break;
+      }
       std::vector<ListItem> items;
       menuKeys_.clear();
       for (const auto& e : paletteEntries(dm_ ? PaletteKind::Cmail : PaletteKind::Circ)) {
@@ -231,6 +236,8 @@ void RoomScreen::typingKey(const KeyEvent& k) {
         openMessageMenu();
       } else if (!input_.text().empty()) {
         send();
+      } else if (!board::canType()) {
+        ui::showKeyboard();  // the canned replies
       } else {
         openRoomMenu();
       }

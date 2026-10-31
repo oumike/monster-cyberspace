@@ -1,5 +1,8 @@
 #pragma once
 
+#include <utility>
+#include <vector>
+
 #include "input/type_filter.h"
 #include "net/wifi_list.h"
 #include "screens/backup_picker.h"
@@ -100,7 +103,7 @@ class SettingsScreen : public Screen {
  private:
   enum class Confirm {
     None, Logout, Reset, Rotation, TextSize, Timeout, KbLight, NotifyLight, NotifyTimeout, Theme,
-    Update
+    Update, Idle, Wake
   };
   void activate(int item);
   void openZones();

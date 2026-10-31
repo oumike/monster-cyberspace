@@ -78,17 +78,17 @@ bool pollKey(rc::KeyEvent& key) {
   return trackball::poll(key);
 }
 
-static float batteryVolts() {
+static float readBatteryVolts() {
   uint32_t mv = 0;
   for (int i = 0; i < 8; ++i) mv += analogReadMilliVolts(tdeck::BATT_ADC);
   return mv / 8.0f * tdeck::BATT_DIV * tdeck::BATT_CAL / 1000.0f;
 }
 
-int batteryPercent() { return rc::batteryPercentFromVolts(batteryVolts()); }
+int batteryPercent() { return rc::batteryPercentFromVolts(readBatteryVolts()); }
 
 // No charger status on this board. A USB host seen on the S3's own USB port
 // means USB power; otherwise a cell held above its resting maximum is charging.
-bool externalPower() { return HWCDC::isPlugged() || batteryVolts() > 4.25f; }
+bool externalPower() { return HWCDC::isPlugged() || readBatteryVolts() > 4.25f; }
 
 void beep(int freqHz, int ms) { tdeck_audio::beep(freqHz, ms); }
 

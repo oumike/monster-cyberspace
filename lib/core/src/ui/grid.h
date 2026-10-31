@@ -5,25 +5,60 @@
 #include <string_view>
 #include <vector>
 
+#include "ui/eink.h"
+
 namespace rc {
 
 // Cell edges drawn as 1 px lines, for outlining a selection.
 constexpr uint8_t kEdgeTop = 1, kEdgeBottom = 2, kEdgeLeft = 4, kEdgeRight = 8;
 
+#ifndef RC_LOW_MEM
+#define RC_LOW_MEM 0
+#endif
+
+#if RC_LOW_MEM
+// A board without PSRAM (the X4, black and white e-paper): 4 bytes a cell,
+// each colour kept only as light (1) or dark (0). Read colours through
+// cellColor().
 struct Cell {
-  char32_t cp = U' ';
-  uint16_t fg = 0, bg = 0;
-  uint8_t edges = 0;
-  uint16_t edgeColor = 0;
-  bool bold = false;
-  bool nudge = false;  // the glyph is drawn half a cell right (Grid::nudge)
+  Cell(char32_t c = U' ', uint16_t f = 0, uint16_t b = 0)
+      : cp(c), fg(light(f)), bg(light(b)), edgeColor(0), edges(0), bold(false), nudge(false) {}
+  static uint32_t light(uint16_t c) { return rgb565Dark(c) ? 0 : 1; }
+  void setEdgeColor(uint16_t c) { edgeColor = light(c); }
+  uint32_t cp : 21;
+  uint32_t fg : 1, bg : 1, edgeColor : 1;
+  uint32_t edges : 4;
+  uint32_t bold : 1;
+  uint32_t nudge : 1;  // the glyph is drawn half a cell right (Grid::nudge)
   bool operator==(const Cell& o) const {
     return cp == o.cp && fg == o.fg && bg == o.bg && edges == o.edges && bold == o.bold &&
-           nudge == o.nudge &&
-           (!edges || edgeColor == o.edgeColor);
+           nudge == o.nudge && (!edges || edgeColor == o.edgeColor);
   }
   bool operator!=(const Cell& o) const { return !(*this == o); }
 };
+static_assert(sizeof(Cell) == 4, "Cell grew; the X4 grid no longer fits");
+inline uint16_t cellColor(uint32_t c) { return c ? 0xFFFF : 0x0000; }
+#else
+// 12 bytes.
+struct Cell {
+  Cell(char32_t c = U' ', uint16_t f = 0, uint16_t b = 0)
+      : cp(c), fg(f), bg(b), edgeColor(0), edges(0), bold(false), nudge(false) {}
+  void setEdgeColor(uint16_t c) { edgeColor = c; }
+  char32_t cp;
+  uint16_t fg, bg;
+  uint16_t edgeColor;
+  uint8_t edges : 4;
+  bool bold : 1;
+  bool nudge : 1;  // the glyph is drawn half a cell right (Grid::nudge)
+  bool operator==(const Cell& o) const {
+    return cp == o.cp && fg == o.fg && bg == o.bg && edges == o.edges && bold == o.bold &&
+           nudge == o.nudge && (!edges || edgeColor == o.edgeColor);
+  }
+  bool operator!=(const Cell& o) const { return !(*this == o); }
+};
+static_assert(sizeof(Cell) == 12, "Cell grew");
+inline uint16_t cellColor(uint16_t c) { return c; }
+#endif
 
 // How tall a row is drawn: Normal in the text size's font, Big in the next
 // font up (fewer columns fit), Skip not at all.
@@ -36,7 +71,7 @@ struct HeaderSize {
 };
 
 // A screen of character cells with per-row dirty tracking. A row is dirty
-// when its cells differ from what they were at the last clearDirty() (the
+// when its cells differ (by hash) from what they were at the last clearDirty() (the
 // last frame drawn), so redrawing a screen from scratch each frame only
 // pushes the rows that really changed. Out-of-range puts are ignored.
 class Grid {
@@ -74,6 +109,11 @@ class Grid {
   // for centring to the pixel; the strip on the left takes cell 0's background.
   void setRowShift(int row, int px);
   int rowShift(int row) const;
+  // Draws the row's glyphs scale times as wide and tall, pixel for pixel (1
+  // by default and after fill()), so fewer cells fit across: a big splash
+  // monster.
+  void setRowScale(int row, int scale);
+  int rowScale(int row) const;
   // Row 0 as a header (HeaderSize). Kept across fill() and resize().
   void setHeader(HeaderSize h) { header_ = h; }
   const HeaderSize& header() const { return header_; }
@@ -88,6 +128,8 @@ class Grid {
   void setStacked(bool on) { stacked_ = on; }
   bool stacked() const { return stacked_; }
   const Cell& at(int col, int row) const;
+  // Copies one cell (glyph, colours, marks) to another; out of range is ignored.
+  void copyCell(int fromCol, int fromRow, int toCol, int toRow);
   bool rowDirty(int row) const;
   void clearDirty();
   // Clears all cells and marks every row dirty.
@@ -95,10 +137,15 @@ class Grid {
 
  private:
   int cols_ = 0, rows_ = 0;
-  std::vector<Cell> cells_, drawn_;
+  uint64_t rowHash(int row) const;
+  std::vector<Cell> cells_;
+  // Each row's hash at the last clearDirty(): a copy of the cells would double
+  // the grid, too much for a board without PSRAM.
+  std::vector<uint64_t> drawn_;
   std::vector<bool> forced_;  // rows dirty regardless of content (after resize)
   std::vector<RowKind> kinds_;
   std::vector<int16_t> pads_, shifts_;
+  std::vector<uint8_t> scales_;
   HeaderSize header_;
   int bottomPad_ = 0;
   bool stacked_ = false;
@@ -130,7 +177,7 @@ int bigCols(int panelW, TextSize s);
 HeaderSize touchHeader(int panelW, TextSize s);
 
 // Where each row is drawn, in pixels. Rows stack from the top by kind
-// (Normal rowH, Big bigH, Skip 0) or by their pad height; the last row stays at (rows-1)*rowH, so
+// (Normal rowH, Big bigH, Skip 0, times the row's scale) or by their pad height; the last row stays at (rows-1)*rowH, so
 // the hint keeps its place, and a row reaching past it is cut short. A header
 // (Grid::setHeader) makes row 0 its px tall and moves the last row down by the
 // difference; the last row also takes the grid's bottom pad. A stacked grid

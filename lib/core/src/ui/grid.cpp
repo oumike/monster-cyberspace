@@ -12,11 +12,12 @@ void Grid::resize(int cols, int rows) {
   cols_ = std::max(cols, 0);
   rows_ = std::max(rows, 0);
   cells_.assign(static_cast<size_t>(cols_) * rows_, Cell{});
-  drawn_ = cells_;
+  drawn_.assign(rows_, 0);
   forced_.assign(rows_, true);
   kinds_.assign(rows_, RowKind::Normal);
   pads_.assign(rows_, -1);
   shifts_.assign(rows_, 0);
+  scales_.assign(rows_, 1);
 }
 
 void Grid::fill(uint16_t bg) {
@@ -24,6 +25,7 @@ void Grid::fill(uint16_t bg) {
   std::fill(kinds_.begin(), kinds_.end(), RowKind::Normal);
   std::fill(pads_.begin(), pads_.end(), int16_t(-1));
   std::fill(shifts_.begin(), shifts_.end(), int16_t(0));
+  std::fill(scales_.begin(), scales_.end(), uint8_t(1));
 }
 
 void Grid::setRowKind(int row, RowKind k) {
@@ -46,11 +48,17 @@ void Grid::setRowShift(int row, int px) {
 
 int Grid::rowShift(int row) const { return row >= 0 && row < rows_ ? shifts_[row] : 0; }
 
+void Grid::setRowScale(int row, int scale) {
+  if (row >= 0 && row < rows_) scales_[row] = static_cast<uint8_t>(std::clamp(scale, 1, 8));
+}
+
+int Grid::rowScale(int row) const { return row >= 0 && row < rows_ ? scales_[row] : 1; }
+
 void Grid::addEdges(int col, int row, uint8_t edges, uint16_t color) {
   if (col < 0 || row < 0 || col >= cols_ || row >= rows_) return;
   Cell& cell = cells_[static_cast<size_t>(row) * cols_ + col];
   cell.edges |= edges;
-  cell.edgeColor = color;
+  cell.setEdgeColor(color);
 }
 
 void Grid::fillRow(int row, uint16_t bg) {
@@ -86,7 +94,7 @@ void Grid::outline(int c0, int r0, int c1, int r1, uint16_t color) {
       if (!e) continue;
       Cell& cell = cells_[static_cast<size_t>(r) * cols_ + c];
       cell.edges |= e;
-      cell.edgeColor = color;
+      cell.setEdgeColor(color);
     }
   }
 }
@@ -111,15 +119,36 @@ const Cell& Grid::at(int col, int row) const {
   return cells_[static_cast<size_t>(row) * cols_ + col];
 }
 
+// FNV-1a over what Cell::operator== compares; edgeColor counts only with edges.
+uint64_t Grid::rowHash(int row) const {
+  uint64_t h = 1469598103934665603ull;
+  auto mix = [&h](uint32_t v) {
+    for (int i = 0; i < 4; ++i, v >>= 8) h = (h ^ (v & 0xFF)) * 1099511628211ull;
+  };
+  const Cell* c = cells_.data() + static_cast<size_t>(row) * cols_;
+  for (int i = 0; i < cols_; ++i, ++c) {
+    mix(uint32_t(c->cp));
+    mix(uint32_t(c->fg) | uint32_t(c->bg) << 16);
+    mix(uint32_t(c->edges) | uint32_t(c->bold) << 4 | uint32_t(c->nudge) << 5 |
+        uint32_t(c->edges ? c->edgeColor : 0) << 8);
+  }
+  return h;
+}
+
+void Grid::copyCell(int fromCol, int fromRow, int toCol, int toRow) {
+  if (fromCol < 0 || fromRow < 0 || fromCol >= cols_ || fromRow >= rows_) return;
+  if (toCol < 0 || toRow < 0 || toCol >= cols_ || toRow >= rows_) return;
+  cells_[static_cast<size_t>(toRow) * cols_ + toCol] =
+      cells_[static_cast<size_t>(fromRow) * cols_ + fromCol];
+}
+
 bool Grid::rowDirty(int row) const {
   if (row < 0 || row >= rows_) return false;
-  if (forced_[row]) return true;
-  auto first = cells_.begin() + static_cast<size_t>(row) * cols_;
-  return !std::equal(first, first + cols_, drawn_.begin() + static_cast<size_t>(row) * cols_);
+  return forced_[row] || rowHash(row) != drawn_[row];
 }
 
 void Grid::clearDirty() {
-  drawn_ = cells_;
+  for (int r = 0; r < rows_; ++r) drawn_[r] = rowHash(r);
   std::fill(forced_.begin(), forced_.end(), false);
 }
 
@@ -201,7 +230,7 @@ std::vector<RowSpan> rowSpans(const Grid& g, int rowH, int bigH) {
     int y = 0;
     for (int r = 0; r < n; ++r) {
       RowKind k = g.rowKind(r);
-      int h = k == RowKind::Skip ? 0 : k == RowKind::Big ? bigH : rowH;
+      int h = (k == RowKind::Skip ? 0 : k == RowKind::Big ? bigH : rowH) * g.rowScale(r);
       if (g.rowPad(r) >= 0) h = g.rowPad(r);
       if (r == n - 1) h += g.bottomPad();
       out[r] = RowSpan{y, h, g.rowShift(r)};
@@ -214,7 +243,7 @@ std::vector<RowSpan> rowSpans(const Grid& g, int rowH, int bigH) {
   int y = 0;
   for (int r = 0; r < n - 1; ++r) {
     RowKind k = g.rowKind(r);
-    int h = k == RowKind::Skip ? 0 : k == RowKind::Big ? bigH : rowH;
+    int h = (k == RowKind::Skip ? 0 : k == RowKind::Big ? bigH : rowH) * g.rowScale(r);
     if (g.rowPad(r) >= 0) h = g.rowPad(r);
     if (r == 0 && headPx > 0) h = headPx;
     h = std::max(0, std::min(h, lastY - y));

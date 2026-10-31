@@ -16,6 +16,7 @@ RELEASE_ENVS=(
     pager
     tdeck_pro
     mesh_deck
+    x4
 )
 
 # Every release image is merged with this esptool. esptool 5 renamed merge_bin
@@ -43,14 +44,16 @@ env_label() {
         pager)       echo "LilyGO T-LoRa Pager" ;;
         tdeck_pro)   echo "LilyGO T-Deck Pro" ;;
         mesh_deck)   echo "Attaky Mesh Deck" ;;
+        x4)          echo "Xteink X4" ;;
         *)           echo "$1" ;;
     esac
 }
 
-# Every board here is an ESP32-S3 with 16 MB of flash. Kept as functions so a
-# board that differs only has to add a case. Artifact names use dashes.
+# Every board here has 16 MB of flash, and all but the X4 (an ESP32-C3) are
+# ESP32-S3s. Kept as functions so a board that differs only has to add a case.
+# Artifact names use dashes.
 env_out_name()   { echo "${1//_/-}"; }
-env_chip()       { echo "esp32s3"; }
+env_chip()       { case "$1" in x4) echo "esp32c3" ;; *) echo "esp32s3" ;; esac; }
 env_flash_size() { echo "16MB"; }
 # DIO in the image header boots on every QIO-capable part, and is what the
 # platy-aprs and camillia-mt images for the same boards ship with.

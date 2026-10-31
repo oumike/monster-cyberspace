@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstddef>
+
 namespace rc::tls {
 
 // Points mbedTLS's allocator at PSRAM, falling back to internal RAM. Each TLS
@@ -7,5 +9,7 @@ namespace rc::tls {
 // open, internal RAM fragments until a new handshake can't allocate
 // (mbedtls_ssl_setup -0x7F00). Call once, before any TLS connection.
 void usePsram();
+// The most mbedTLS has held at once.
+size_t peakBytes();
 
 }  // namespace rc::tls

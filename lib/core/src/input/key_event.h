@@ -13,7 +13,8 @@ enum class Action {
   Options,  // an edge swipe from the right: the screen's options
   Symbols,  // the symbol table while typing; the palette elsewhere
   Emoji,    // the emoji tray while typing; the palette elsewhere
-  Spell     // a tap on spell suggestion `index` (ui/widgets/spell_strip.h)
+  Spell,    // a tap on spell suggestion `index` (ui/widgets/spell_strip.h)
+  PowerOff  // boards that can cut their own power (board::powerOff)
 };
 
 // A list a touch Row target belongs to.

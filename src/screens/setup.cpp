@@ -31,6 +31,7 @@ void SetupScreen::enter(const std::string&) {
 }
 
 void SetupScreen::activate(int i) {
+  if (i < 2 && ui::typingElsewhere("Join Wi-Fi and sign in")) return;
   if (i == 0) router::go(router::Id::Wifi, "setup");
   else if (i == 1) router::go(router::Id::LoginForm);
   else if (i == 2 && hasRestore_) picker_.open();

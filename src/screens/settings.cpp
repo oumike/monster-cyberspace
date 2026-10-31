@@ -12,6 +12,7 @@
 #include "screens/screens.h"
 #include "store/backup_store.h"
 #include "store/settings.h"
+#include "power/power_policy.h"
 #include "tz/zones.h"
 #include "ui/rotation.h"
 #include "ui/kb_light.h"
@@ -39,7 +40,10 @@ enum Item {
   kNotifyLight,
   kNotifyTimeout,
   kSpellCheck,
+  kIdle,
+  kWake,
   kWifi,
+  kWebConfig,
   kSetupAp,
   kFirmware,
   kAutoUpdate,
@@ -66,8 +70,13 @@ std::vector<Item> menuItems() {
     v.push_back(kNotifyLight);
     v.push_back(kNotifyTimeout);
   }
-  v.push_back(kSpellCheck);
+  if (board::canType()) v.push_back(kSpellCheck);
+  if (board::sleepsOnBattery()) {
+    v.push_back(kIdle);
+    v.push_back(kWake);
+  }
   v.push_back(kWifi);
+  v.push_back(kWebConfig);
   v.push_back(kSetupAp);
   v.push_back(kFirmware);
   v.push_back(kAutoUpdate);
@@ -109,8 +118,24 @@ std::u32string firmwareValue(const ota::Status& s) {
   return widen("v" RC_VERSION);
 }
 
+std::u32string idleLabel(uint32_t secs) {
+  return widen((std::to_string(secs / 60) + " min").c_str());
+}
+
+std::u32string wakeLabel(uint32_t mins) {
+  if (mins == 0) return U"never";
+  if (mins >= 60) return widen((std::to_string(mins / 60) + " h").c_str());
+  return widen((std::to_string(mins) + " min").c_str());
+}
+
+#ifndef RC_LOW_MEM
+#define RC_LOW_MEM 0
+#endif
+
 // The text size picker's rows, in size order.
 constexpr TextSize kSizeOrder[] = {TextSize::Compact, TextSize::Comfortable, TextSize::Large};
+// Low-memory boards (no PSRAM) offer no Compact: its grid does not fit.
+constexpr int kFirstSize = RC_LOW_MEM ? 1 : 0;
 }  // namespace
 
 void SettingsScreen::enter(const std::string&) {
@@ -224,9 +249,21 @@ void SettingsScreen::confirmKey(const KeyEvent& k) {
         }
         break;
       }
-      if (c == Confirm::TextSize) {
+      if (c == Confirm::Idle || c == Confirm::Wake) {
         const int i = confirmBox_.selected();
-        if (i >= 0 && i < 3 && kSizeOrder[i] != app().cfg.textSize) ui::setTextSize(kSizeOrder[i]);
+        AppState& a = app();
+        if (c == Confirm::Idle && i >= 0 && i < int(std::size(kIdleChoices)))
+          a.cfg.idleSecs = kIdleChoices[i];
+        else if (c == Confirm::Wake && i >= 0 && i < int(std::size(kWakeChoices)))
+          a.cfg.wakeMins = kWakeChoices[i];
+        else
+          break;
+        settings::savePower(a.cfg.idleSecs, a.cfg.wakeMins);
+        break;
+      }
+      if (c == Confirm::TextSize) {
+        const int i = confirmBox_.selected() + kFirstSize;
+        if (i >= kFirstSize && i < 3 && kSizeOrder[i] != app().cfg.textSize) ui::setTextSize(kSizeOrder[i]);
         break;
       }
       if (confirmBox_.selected() != 1) break;
@@ -301,11 +338,11 @@ void SettingsScreen::activate(int item) {
     case kTextSize: {
       std::vector<ListItem> rows;
       int sel = 0;
-      for (int i = 0; i < 3; ++i) {
+      for (int i = kFirstSize; i < 3; ++i) {
         ListItem it{textSizeLabel(kSizeOrder[i]), U""};
         if (kSizeOrder[i] == app().cfg.textSize) {
           it.marker = true;
-          sel = i;
+          sel = i - kFirstSize;
         }
         rows.push_back(std::move(it));
       }
@@ -401,6 +438,29 @@ void SettingsScreen::activate(int item) {
     case kSpellCheck:
       app().cfg.spellCheck = !app().cfg.spellCheck;
       settings::saveSpellCheck(app().cfg.spellCheck);
+      break;
+    case kIdle:
+    case kWake: {
+      const bool idle = item == kIdle;
+      std::vector<ListItem> rows;
+      int sel = 0;
+      const size_t n = idle ? std::size(kIdleChoices) : std::size(kWakeChoices);
+      for (size_t i = 0; i < n; ++i) {
+        const uint32_t v = idle ? kIdleChoices[i] : kWakeChoices[i];
+        ListItem row{idle ? idleLabel(v) : wakeLabel(v), U""};
+        if (v == (idle ? app().cfg.idleSecs : app().cfg.wakeMins)) {
+          row.marker = true;
+          sel = int(i);
+        }
+        rows.push_back(std::move(row));
+      }
+      confirm_ = idle ? Confirm::Idle : Confirm::Wake;
+      confirmBox_.open(idle ? U"sleep after" : U"wake every", std::move(rows), sel);
+      break;
+    }
+    case kWebConfig:
+      app().cfg.webConfig = !app().cfg.webConfig;
+      settings::saveWebConfig(app().cfg.webConfig);
       break;
     case kWifi:
       router::go(router::Id::Wifi);
@@ -501,6 +561,16 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
         break;
       case kSpellCheck:
         rows.push_back(ListItem{U"Spell check", a.cfg.spellCheck ? U"on" : U"off"});
+        break;
+      case kIdle:
+        rows.push_back(ListItem{U"Sleep after", idleLabel(a.cfg.idleSecs)});
+        break;
+      case kWake:
+        rows.push_back(ListItem{U"Wake every", wakeLabel(a.cfg.wakeMins)});
+        break;
+      case kWebConfig:
+        rows.push_back(ListItem{U"Web config", a.cfg.webConfig ? U"on" : U"off", ItemTone::Normal,
+                                a.cfg.webConfig});
         break;
       case kWifi:
         rows.push_back(ListItem{U"Wi-Fi", wifiUp() ? utf8ToU32(wifiSsid()) : U"not connected"});
@@ -608,7 +678,8 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
     const bool pick = confirm_ == Confirm::Rotation || confirm_ == Confirm::TextSize ||
                       confirm_ == Confirm::Timeout || confirm_ == Confirm::KbLight ||
                       confirm_ == Confirm::NotifyLight || confirm_ == Confirm::NotifyTimeout ||
-                      confirm_ == Confirm::Theme;
+                      confirm_ == Confirm::Theme || confirm_ == Confirm::Idle ||
+                      confirm_ == Confirm::Wake;
     confirmBox_.render(g, 1, bottom, 0, pick ? OverlayPlace::Centre : OverlayPlace::Bottom, t);
     if (pick)
       drawHint(g, t, U"\u2191\u2193 pick  \u25CF set  back: cancel",

@@ -116,6 +116,7 @@ enum class EvtType {
   WifiState,
   NotifyPreview,        // from the web page: code = rc::LedColor index, one double blink
   AllRead,              // MarkAllRead: ok when the notifications were marked; text = banner
+  PhrasesChanged,       // from the web page: text = the canned replies, one per line
 };
 
 struct Event {

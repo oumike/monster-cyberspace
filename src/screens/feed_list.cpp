@@ -227,6 +227,7 @@ void FeedListScreen::paletteKey(const KeyEvent& k) {
       if (sel < 0 || sel >= int(acts_.size())) break;
       switch (acts_[sel]) {
         case kNew:
+          if (ui::typingElsewhere(kind_ == Kind::Guild ? "Start threads" : "Write entries")) break;
           if (kind_ == Kind::Guild) router::go(router::Id::Composer, "guild:" + slug_);
           else router::go(router::Id::Composer);
           break;

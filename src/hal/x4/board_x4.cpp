@@ -235,7 +235,8 @@ void begin() {
   else Serial.println("[x4] no RAM for the e-paper frame");
   SPI.begin(EPD_SCLK, SPI_MISO, EPD_MOSI, EPD_CS);
   // 0: no GxEPD2 diagnostics (it would call Serial.begin again).
-  epd.init(0, true, 10, false, SPI, SPISettings(EPD_SPI_HZ, MSBFIRST, SPI_MODE0));
+  epd.selectSPI(SPI, SPISettings(EPD_SPI_HZ, MSBFIRST, SPI_MODE0));
+  epd.init(0, true, 10, false);
   policy.changed(millis(), true);
 
   keyQueue = xQueueCreate(16, sizeof(rc::KeyEvent));

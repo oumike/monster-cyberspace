@@ -295,6 +295,11 @@ void lockScreen(int64_t now) {
   setLit(kSaverLevel);
 }
 
+// Web compose waiting on the network (runWebCompose below).
+std::string mailText;  // a new C-Mail's text, sent once its conversation opens
+bool threadPosting = false;
+void sendCanned(const std::u32string& text);
+
 void handleEvent(const Event& e) {
   using router::Id;
   Id cur = router::current();
@@ -442,8 +447,6 @@ ComposeReq composeSlot;
 bool composeWaiting = false;
 ComposeView composeShown;
 bool composeBusy = false;  // a C-Mail or thread from the page still settling
-std::string mailText;  // a new C-Mail's text, sent once its conversation opens
-bool threadPosting = false;
 
 ComposeView currentComposeView() {
   ComposeView v;

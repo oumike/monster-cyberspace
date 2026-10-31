@@ -39,8 +39,11 @@ class X4Panel : public GxEPD2_426_GDEQ0426T82 {
 
   // The driver's first write clears the panel with a full refresh; do that
   // up front, outside a pass.
-  void ready() {
-    if (!_init_display_done || _initial_write) writeScreenBuffer();
+  // True when it did (the RAMs are now white).
+  bool ready() {
+    if (_init_display_done && !_initial_write) return false;
+    writeScreenBuffer();
+    return true;
   }
   // One native byte column, all NATIVE_H rows, to RAM ram (0x24 new, 0x26
   // old), in one burst (GxEPD2 clocks a byte at a time). Addressed as the
@@ -97,14 +100,22 @@ void flushBand() {
   uint32_t h = 2166136261u;
   for (int i = 0; i < NATIVE_H; ++i) h = (h ^ band[i]) * 16777619u;
   passHash[bandAt] = h;
-  if (passRams & 1) epd.writeBand(0x24, bandAt, band);
-  if (passRams & 2) epd.writeBand(0x26, bandAt, band);
+  // A band the panel already shows is in both RAMs: skip the SPI.
+  if (h != shownHash[bandAt]) {
+    if (passRams & 1) epd.writeBand(0x24, bandAt, band);
+    if (passRams & 2) epd.writeBand(0x26, bandAt, band);
+  }
   memset(band, 0xFF, sizeof band);
   ++bandAt;
 }
 
+// The bezel covers the panel's top rows: the UI starts this far down
+// (physical px).
+constexpr int kTopInset = 16;
+
 // Portrait (x, y) is native (y, NATIVE_H - 1 - x): GxEPD2's rotation 3.
 void packLine(const uint16_t* src, int y) {
+  y += kTopInset;
   const int b = y >> 3;
   if (b < bandAt || b >= kBands) return;  // out of order: skipped
   while (bandAt < b) flushBand();         // lines never drawn stay white
@@ -155,7 +166,7 @@ void serviceDisplay() {
   if (now - lastInput > rc::kEinkTypingMaxMs && now - lastRefreshMs < kPassiveGapMs) return;
   // A big change only turns a partial into a full: check before drawing.
   if (policy.due(now, lastInput, false) == rc::EinkRefresh::None) return;
-  epd.ready();
+  if (epd.ready()) memset(shownHash, 0, sizeof shownHash);
   pass(1);
   const int diff = changedBands();
   const rc::EinkRefresh r = policy.due(now, lastInput, diff * 3 > kBands);
@@ -262,7 +273,7 @@ const char* otaSlug() { return "x4"; }
 constexpr int kUiScale = 2;
 int uiScale() { return kUiScale; }
 int panelWidth() { return PANEL_W / kUiScale; }
-int panelHeight() { return PANEL_H / kUiScale; }
+int panelHeight() { return (PANEL_H - kTopInset) / kUiScale; }
 
 bool setRedraw(void (*fn)()) {
   redraw = fn;
@@ -290,7 +301,7 @@ void displaySleep(bool sleep) {
   if (sleep == sleeping) return;
   if (sleep) {
     if (redraw && policy.pending()) {
-      epd.ready();
+      if (epd.ready()) memset(shownHash, 0, sizeof shownHash);
       pass(1);
       refresh(true);
       policy.sent(rc::EinkRefresh::Full, millis());

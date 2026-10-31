@@ -10,6 +10,7 @@
 #include "screens/people_nav.h"
 #include "screens/screens.h"
 #include "store/locked_people.h"
+#include "ui/nick_color.h"
 #include "ui/profile_layout.h"
 
 namespace rc {
@@ -247,19 +248,43 @@ void ProfileScreen::onEvent(const Event& e) {
 }
 
 void ProfileScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
-  if (dirty_ || nowMs - builtAt_ >= kAgeRefreshMs) {
+  if (dirty_ || nowMs - builtAt_ >= kAgeRefreshMs || styledFor_ != &t) {
     View v = snapshot(user_);
     if (v.loaded) {
       loaded_ = true;
-      // Keep the scroll: only a changed text goes back to the top.
-      std::u32string text = profileText(v.p, v.blocked, nowEpochMs(), !v.followId.empty());
-      if (text != shown_) {
-        shown_ = text;
-        text_.setText(std::move(text));
+      const bool self = sameUsername(v.p.username, app().user);
+      const uint16_t nick = nickColor(t, v.p.username, self);
+      std::u32string text;
+      std::vector<TextView::Style> styles;
+      for (const auto& l : profileLines(v.p, v.blocked, nowEpochMs(), !v.followId.empty())) {
+        TextView::Style st{t.fg};
+        switch (l.role) {
+          case ProfileRole::Name: st = {nick, true}; break;
+          case ProfileRole::Handle: st = {nick}; break;
+          case ProfileRole::Guild: st = {t.sys, true}; break;
+          case ProfileRole::Meta: st = {t.dim}; break;
+          case ProfileRole::Active: st = {t.time}; break;
+          case ProfileRole::Counts: st = {t.fg}; break;
+          case ProfileRole::Website: st = {t.sys}; break;
+          case ProfileRole::Supporter: st = {t.selfNick, true}; break;
+          case ProfileRole::Following: st = {t.sys}; break;
+          case ProfileRole::Blocked: st = {t.error, true}; break;
+          case ProfileRole::Bio: st = {t.fg}; break;
+        }
+        // One style per paragraph: the bio may hold several.
+        size_t paras = 1;
+        for (char32_t c : l.text) paras += c == U'\n';
+        styles.insert(styles.end(), paras, st);
+        if (!text.empty() || styles.size() > paras) text += U'\n';
+        text += l.text;
       }
+      // Keep the scroll: only a changed text goes back to the top.
+      shown_ = text;
+      text_.setText(std::move(text), std::move(styles));
     }
     dirty_ = false;
     builtAt_ = nowMs;
+    styledFor_ = &t;
   }
   g.fill(t.bg);
   drawStatus(g, t, U"@" + utf8ToU32(user_), -1, true);

@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <string>
+#include <vector>
 
 #include "people/profile.h"
 
@@ -19,5 +20,17 @@ namespace rc {
 //   "", then the bio as markdownToText (or "no bio").
 std::u32string profileText(const Profile& p, bool blocked, int64_t nowMs,
                            bool following = false);
+
+// What a line of the profile is, so the screen can colour it.
+enum class ProfileRole : uint8_t {
+  Name, Handle, Guild, Meta, Active, Counts, Website, Supporter, Following, Blocked, Bio
+};
+struct ProfileLine {
+  std::u32string text;  // the bio may hold several paragraphs
+  ProfileRole role;
+};
+// The same text as profileText, one entry per line (joined with "\n").
+std::vector<ProfileLine> profileLines(const Profile& p, bool blocked, int64_t nowMs,
+                                      bool following = false);
 
 }  // namespace rc

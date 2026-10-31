@@ -105,6 +105,7 @@ enum class EvtType {
   // (text = SSID); -1 failed, -2 refused: ok=false, text = the message.
   WifiState,
   NotifyPreview,        // from the web page: code = rc::LedColor index, one double blink
+  PhrasesChanged,       // from the web page: text = the canned replies, one per line
 };
 
 struct Event {

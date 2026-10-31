@@ -34,7 +34,7 @@ Spec: `docs/superpowers/specs/2026-10-30-cyberspace-x4-design.md`. Branch `x4`.
 - [x] 4. Canned picker (`ui/widgets/canned_picker`): phrases then the tray
   emoji; screens open it instead of a text field when `!board::canType()`;
   free-text-only actions hidden. Test `test_canned_picker`.
-- [ ] 5. Web config switch: `web/web_access` rule (AP up, or enabled), the
+- [x] 5. Web config switch: `web/web_access` rule (AP up, or enabled), the
   web server, device Settings, page. Test in `test_web_access`.
 - [ ] 6. No-PSRAM: `sys/mem` (SPIRAM with internal fallback), `sys/tasks`
   (core pin clamped to the cores present), renderer 1-bit frame, smaller

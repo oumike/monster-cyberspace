@@ -11,6 +11,7 @@ static const char kPage[] = R"HTML(<!doctype html>
 body{background:#000;color:#3f3;font:15px/1.45 ui-monospace,Menlo,Consolas,monospace;margin:0 auto;max-width:44em;padding:1em}
 h1{font-size:1.3em;margin:.2em 0 .8em}h2{font-size:1.05em;border-bottom:1px solid #1a5;padding-bottom:.2em;margin-top:1.6em}
 input,select,button{font:inherit;background:#020;color:#3f3;border:1px solid #2a6;padding:.35em .5em;border-radius:3px}
+textarea{font:inherit;background:#020;color:#3f3;border:1px solid #2a6;padding:.35em .5em;border-radius:3px;width:100%;box-sizing:border-box;margin:.2em 0 .5em}
 input,select{width:100%;box-sizing:border-box;margin:.2em 0 .5em}
 button{cursor:pointer;margin:.2em .4em .2em 0}button:hover{background:#063}
 button.danger{color:#f66;border-color:#a33}
@@ -56,9 +57,26 @@ a{color:#6cf}
 <label id="ledrow" hidden>Notify light<select id="ledcolor"><option value="red">Red</option><option value="green">Green</option><option value="blue">Blue</option><option value="yellow">Yellow</option><option value="cyan">Cyan</option><option value="magenta">Magenta</option><option value="white">White</option><option value="off">Off</option></select></label>
 <label id="ledtrow" hidden>Light timeout<select id="ledtime"><option value="15">15 s</option><option value="30">30 s</option><option value="60">1 min</option><option value="300">5 min</option><option value="0">Until read</option></select></label>
 <label><input id="buzzer" type="checkbox" style="width:auto"> Buzzer on mentions</label>
-<label><input id="spell" type="checkbox" style="width:auto"> Spell check while typing</label>
+<label id="spellrow"><input id="spell" type="checkbox" style="width:auto"> Spell check while typing</label>
 <button onclick="savePrefs()">Save display</button>
 <div id="prefmsg" class="msg"></div>
+
+<div id="phraseblock" hidden>
+<h2>Canned replies</h2>
+<div class="dim">This device has no keyboard: replying picks one of these (up to 10, 80 characters each), or an emoji. One per line.</div>
+<textarea id="phrases" rows="10"></textarea>
+<button onclick="savePhrases()">Save replies</button>
+<div id="phrasemsg" class="msg"></div>
+</div>
+
+<div id="powerblock" hidden>
+<h2>Power</h2>
+<div class="dim">On battery the device sleeps when left alone, and wakes now and then to fetch what's new. On USB it stays awake.</div>
+<label>Sleep after<select id="idle"><option value="60">1 min</option><option value="120">2 min</option><option value="300">5 min</option><option value="600">10 min</option><option value="1800">30 min</option></select></label>
+<label>Wake every<select id="wake"><option value="5">5 min</option><option value="15">15 min</option><option value="30">30 min</option><option value="60">1 h</option><option value="120">2 h</option><option value="0">Never (a button wakes it)</option></select></label>
+<button onclick="post('/api/prefs',{idleSecs:+$('idle').value,wakeMins:+$('wake').value},'powermsg')">Save power</button>
+<div id="powermsg" class="msg"></div>
+</div>
 
 <h2>Time</h2>
 <label>Time zone<select id="tzpick" onchange="tzCustom()"></select></label>
@@ -70,6 +88,7 @@ a{color:#6cf}
 <h2>Security</h2>
 <label>Page password (user <b>admin</b>; empty turns it off) <span id="pagestate" class="dim"></span><input id="pagepw" type="password" autocomplete="new-password"></label>
 <label>Setup-AP password (WPA2, 8–63 characters; empty makes the AP open) <span id="apstate" class="dim"></span><input id="appw" type="password" autocomplete="new-password"></label>
+<label><input id="webcfg" type="checkbox" style="width:auto" onchange="saveWebCfg(this)"> Serve this page on the joined Wi-Fi (the setup AP always serves it)</label>
 <button onclick="saveSec()">Save security</button>
 <div id="secmsg" class="msg"></div>
 <p class="dim">The page is plain HTTP on your LAN, so set a page password on shared networks. The setup AP is open unless a setup-AP password is set, so anyone in radio range can join it while it runs. It runs with no saved Wi-Fi (first boot or after a factory reset), when turned on in the device's Settings, or after the saved networks fail for 5 minutes, and anything entered on it (Wi-Fi password, Cyberspace password) crosses that link unencrypted. Setting a setup-AP password closes that gap for later setups. A backup download contains the refresh token and every password, so anyone who can open this page can take them: set a page password.</p>
@@ -141,6 +160,9 @@ async function loadPrefs(){const p=await call('GET','/api/prefs');if(p.tz===unde
   if(p.rotation!==undefined){$('rotrow').hidden=false;$('rot').value=String(p.rotation);}
   if(p.kbLight){$('kbrow').hidden=false;$('kblight').value=p.kbLight;}
   if(p.notifyLight){$('ledrow').hidden=$('ledtrow').hidden=false;$('ledcolor').value=p.notifyLight;$('ledtime').value=String(p.notifyTimeout);}
+  $('webcfg').checked=p.webConfig!==false;
+  if(p.phrases){$('phraseblock').hidden=false;$('spellrow').hidden=true;$('phrases').value=p.phrases.join('\n');}
+  if(p.idleSecs!==undefined){$('powerblock').hidden=false;$('idle').value=String(p.idleSecs);$('wake').value=String(p.wakeMins);}
   $('tzpick').value=listed(p.tzName)?p.tzName:'';tzCustom();$('ntp').value=p.ntpServer;
   // Setup mode keeps a zone already set; only the factory default takes the browser's.
   savedTzName=p.tzName;const keep=$('wtz').querySelector('option[value=""]');
@@ -162,6 +184,9 @@ function savePrefs(){const b={textSize:$('tsize').value,buzzer:$('buzzer').check
   if(!$('themerow').hidden)b.theme=$('theme').value;
   if(!$('rotrow').hidden)b.rotation=parseInt($('rot').value,10);
   if(!$('kbrow').hidden)b.kbLight=$('kblight').value;if(!$('ledrow').hidden){b.notifyLight=$('ledcolor').value;b.notifyTimeout=+$('ledtime').value;}post('/api/prefs',b,'prefmsg');}
+function savePhrases(){post('/api/phrases',{phrases:$('phrases').value.split('\n')},'phrasemsg').then(loadPrefs);}
+function saveWebCfg(c){if(!c.checked&&!setupMode&&!confirm('Turn web config off? This page stops answering on this network; turn it back on from the device\'s Settings or the setup AP.')){c.checked=true;return;}
+  post('/api/prefs',{webConfig:c.checked},'secmsg');}
 function saveTime(){post('/api/prefs',{tzName:$('tzpick').value,tz:$('tz').value,ntpServer:$('ntp').value},'timemsg');}
 async function saveSec(){const b={pagePassword:$('pagepw').value,apPassword:$('appw').value};
   if(!b.pagePassword&&!confirm('Leave the page password empty (no password)?'))return;

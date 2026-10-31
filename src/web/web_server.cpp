@@ -3,6 +3,7 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <esp_http_server.h>
+#include <lwip/sockets.h>
 
 #include <algorithm>
 #include <cstdlib>
@@ -17,10 +18,12 @@
 #include "app/time_service.h"
 #include "chat/chat_source.h"
 #include "config/backup_yaml.h"
+#include "config/phrases.h"
 #include "core_version.h"
 #include "hal/board.h"
 #include "net/wifi_list.h"
 #include "net/wifi_mgr.h"
+#include "power/power_policy.h"
 #include "store/backup_store.h"
 #include "store/settings.h"
 #include "tz/zones.h"
@@ -28,6 +31,7 @@
 #include "ui/notify_light.h"
 #include "ui/screen_timeout.h"
 #include "web/page.h"
+#include "web/web_access.h"
 #include "web/web_util.h"
 
 namespace web {
@@ -60,8 +64,42 @@ Settings current() {
   return s;
 }
 
+constexpr uint32_t kApIp = 0xC0A80401;  // 192.168.4.1, wifi_mgr's softAPConfig
+
+// The local address the request came in on (host order), 0 when unknown.
+// The server listens on IPv6 when lwIP has it, so IPv4 shows up mapped.
+uint32_t localIp(httpd_req_t* req) {
+  sockaddr_storage addr = {};
+  socklen_t len = sizeof addr;
+  if (getsockname(httpd_req_to_sockfd(req), reinterpret_cast<sockaddr*>(&addr), &len) != 0) return 0;
+  if (addr.ss_family == AF_INET)
+    return ntohl(reinterpret_cast<sockaddr_in*>(&addr)->sin_addr.s_addr);
+#if LWIP_IPV6
+  if (addr.ss_family == AF_INET6) {
+    const uint8_t* b = reinterpret_cast<sockaddr_in6*>(&addr)->sin6_addr.s6_addr;
+    return uint32_t(b[12]) << 24 | uint32_t(b[13]) << 16 | uint32_t(b[14]) << 8 | b[15];
+  }
+#endif
+  return 0;
+}
+
+// The "Web config" switch: off, only the setup AP serves the page.
+bool served(httpd_req_t* req, const Settings& s) {
+  const uint32_t ap = wifimgr::mode() == wifimgr::Mode::Setup ? kApIp : 0;
+  if (rc::webServes(localIp(req), ap, s.webConfig)) return true;
+  httpd_resp_set_status(req, "403 Forbidden");
+  httpd_resp_set_type(req, "text/plain");
+  httpd_resp_sendstr(req, "Web config is off on this device");
+  return false;
+}
+
 bool authorized(httpd_req_t* req) {
   Settings s = current();
+  if (!served(req, s)) {
+    wipe(s.pagePassword);
+    wipe(s.apPassword);
+    return false;
+  }
   std::string header;
   size_t n = httpd_req_get_hdr_value_len(req, "Authorization");
   if (n > 0 && n < 512) {
@@ -316,6 +354,15 @@ esp_err_t getPrefs(httpd_req_t* req) {
     d["notifyLight"] = rc::ledColorKey(s.notifyLight);
     d["notifyTimeout"] = s.notifyTimeoutSecs;
   }
+  d["webConfig"] = s.webConfig;
+  if (!board::canType()) {
+    JsonArray a = d["phrases"].to<JsonArray>();
+    for (const auto& p : s.phrases) a.add(p);
+  }
+  if (board::sleepsOnBattery()) {
+    d["idleSecs"] = s.idleSecs;
+    d["wakeMins"] = s.wakeMins;
+  }
   return sendJson(req, d);
 }
 
@@ -378,6 +425,20 @@ esp_err_t postPrefs(httpd_req_t* req) {
       return fail(req, "400 Bad Request", "Light timeout: 15, 30, 60, 300 or 0 (until read)");
     notifyTimeout = uint16_t(doc["notifyTimeout"].as<uint32_t>());
   }
+  const bool webConfig = doc["webConfig"].is<bool>() ? doc["webConfig"].as<bool>() : s.webConfig;
+  uint32_t idleSecs = s.idleSecs, wakeMins = s.wakeMins;
+  if (board::sleepsOnBattery() && !doc["idleSecs"].isNull()) {
+    if (!doc["idleSecs"].is<int>() || doc["idleSecs"].as<int>() < 0 ||
+        !rc::validIdleSecs(doc["idleSecs"].as<uint32_t>()))
+      return fail(req, "400 Bad Request", "Sleep after: 60, 120, 300, 600 or 1800 seconds");
+    idleSecs = doc["idleSecs"].as<uint32_t>();
+  }
+  if (board::sleepsOnBattery() && !doc["wakeMins"].isNull()) {
+    if (!doc["wakeMins"].is<int>() || doc["wakeMins"].as<int>() < 0 ||
+        !rc::validWakeMins(doc["wakeMins"].as<uint32_t>()))
+      return fail(req, "400 Bad Request", "Wake every: 5, 15, 30, 60 or 120 minutes, or 0 (never)");
+    wakeMins = doc["wakeMins"].as<uint32_t>();
+  }
   std::string ntp = s.ntpServer;
   if (doc["ntpServer"].is<const char*>()) {
     ntp = doc["ntpServer"].as<const char*>();
@@ -411,6 +472,15 @@ esp_err_t postPrefs(httpd_req_t* req) {
     rc::app().cfg.screenSaver = screenSaver;
     settings::saveScreen(screenOnSecs, screenSaver);
   }
+  if (webConfig != s.webConfig) {
+    rc::app().cfg.webConfig = webConfig;
+    settings::saveWebConfig(webConfig);
+  }
+  if (idleSecs != s.idleSecs || wakeMins != s.wakeMins) {
+    rc::app().cfg.idleSecs = idleSecs;
+    rc::app().cfg.wakeMins = wakeMins;
+    settings::savePower(idleSecs, wakeMins);
+  }
   if (spellCheck != s.spellCheck) {
     rc::app().cfg.spellCheck = spellCheck;
     settings::saveSpellCheck(spellCheck);
@@ -435,6 +505,25 @@ esp_err_t postPrefs(httpd_req_t* req) {
     rc::postEvent(rc::Event{rc::EvtType::PrefsChanged, rc::themeKey(theme), static_cast<int>(size), buzzer});
   if (rotation >= 0 && board::canRotate() && rotation != s.rotation)
     rc::postEvent(rc::Event{rc::EvtType::RotationChanged, "", rotation, true});
+  return okReply(req, "Saved");
+}
+
+// The canned replies, as {"phrases":[...]}; cleaned (config/phrases.h).
+esp_err_t postPhrases(httpd_req_t* req) {
+  if (!authorized(req)) return ESP_OK;
+  if (board::canType()) return fail(req, "404 Not Found", "This device has a keyboard");
+  std::string body;
+  if (!readBody(req, body, 2048)) return fail(req, "400 Bad Request", "Bad request");
+  JsonDocument doc;
+  if (deserializeJson(doc, body) || !doc["phrases"].is<JsonArrayConst>())
+    return fail(req, "400 Bad Request", "Send {\"phrases\":[\"...\"]}");
+  std::vector<std::string> in;
+  for (JsonVariantConst v : doc["phrases"].as<JsonArrayConst>())
+    if (v.is<const char*>()) in.push_back(v.as<const char*>());
+  const std::vector<std::string> p = rc::cleanPhrases(in);
+  settings::savePhrases(p);
+  // The UI task owns the in-memory list.
+  rc::postEvent(rc::Event{rc::EvtType::PhrasesChanged, rc::joinPhrases(p), 0, true});
   return okReply(req, "Saved");
 }
 
@@ -612,7 +701,7 @@ void begin() {
   if (server) return;
   httpd_config_t cfg = HTTPD_DEFAULT_CONFIG();
   cfg.server_port = 80;
-  cfg.max_uri_handlers = 28;
+  cfg.max_uri_handlers = 32;
   cfg.stack_size = 8192;
   cfg.core_id = 0;
   cfg.lru_purge_enable = true;
@@ -639,6 +728,7 @@ void begin() {
       {"/api/prefs", HTTP_POST, postPrefs},
       {"/api/zones", HTTP_GET, getZones},
       {"/api/security", HTTP_POST, postSecurity},
+      {"/api/phrases", HTTP_POST, postPhrases},
       {"/api/restart", HTTP_POST, postRestart},
       {"/api/factory-reset", HTTP_POST, postFactoryReset},
       {"/api/backup", HTTP_GET, getBackup},

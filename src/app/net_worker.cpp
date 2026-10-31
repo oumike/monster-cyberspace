@@ -41,9 +41,10 @@ constexpr bool kPollRoom = true;
 constexpr bool kPollRoom = false;
 #endif
 constexpr int64_t kRoomPollMs = 60000;
-constexpr int kRoomPollLimit = 20;
-// Messages fetched when a room opens.
-constexpr int kHistoryLimit = kPollRoom ? 20 : 50;
+// Messages fetched when a room opens, and per poll. Without PSRAM a body and
+// a TLS session barely fit together, so ten.
+constexpr int kRoomPollLimit = kPollRoom ? 10 : 20;
+constexpr int kHistoryLimit = kPollRoom ? 10 : 50;
 constexpr int64_t kMaxBackoffMs = 30000;
 constexpr int64_t kPausedBannerMs = 30000;
 

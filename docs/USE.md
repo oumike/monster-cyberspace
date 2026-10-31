@@ -279,6 +279,10 @@ The Xteink X4 is an e-paper reader with no keyboard or touch: it shows cIRC,
 the Feed, C-Mail, Guilds and Notifications, and replies with canned phrases.
 Longer text is written in web config and sent to it.
 
+**Experimental.** The X4 has no PSRAM, and one HTTPS connection takes most of
+its RAM. A room loads its last 10 messages, and once memory fragments a send
+or a mark-read can fail with a network error; try again, or restart it.
+
 | Button | Action |
 |---|---|
 | Up, Down (right edge) | Move the selection or scroll (hold to repeat) |
@@ -586,7 +590,7 @@ Compact → Comfortable → Large. The choice is saved. Settings itself always
 uses Compact, so its items fit.
 
 - **Comfortable:** larger 8×16 text.
-- **Compact:** 6×12 text, with a hint row at the bottom.
+- **Compact:** 6×12 text.
 - **Large:** like Comfortable, one size up: 10×18 text and 12×24 titles.
 
 Room messages read `14:02 nick: message`, with a divider when the day

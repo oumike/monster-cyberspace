@@ -138,6 +138,22 @@ on 2026-10-27; the sections marked `m9_fake` passed on it before then.
 - [ ] A new thread in one of my guilds shows a banner and beeps
 - [ ] Home → Guilds opens the list (every board)
 
+**People (M9):**
+
+- [ ] A room's person menu and a message's menu open the Profile; Back returns to the room
+- [ ] A conversation's room menu → Profile opens the partner
+- [ ] An entry's and a reply's menu → Author's profile; Back returns to the entry, and Back again to its list
+- [ ] Guild Members: Centre on a member opens their profile
+- [ ] The profile shows name, guild, number, joined, active, counts, website and bio, and scrolls
+- [ ] Follow asks with the limit, then shows "Following @name" and `you follow them`; Unfollow undoes it
+- [ ] Follow on someone already followed (from the website) shows "Already following"
+- [ ] Message opens a C-Mail conversation
+- [ ] Poke asks, then "Poked @name"; a second within the hour shows "Slow down"
+- [ ] Entries lists their public entries and pages; an entry opens and Back returns to the list
+- [ ] A user blocked on the website shows `you blocked them` and no Follow, Message or Poke
+- [ ] My own profile has no Follow, Message or Poke
+- [ ] An unknown username shows "No such user"
+
 **Web config (`m9`):**
 
 - [x] With no Wi-Fi saved: the setup AP appears, `http://192.168.4.1` loads, and nothing pops up

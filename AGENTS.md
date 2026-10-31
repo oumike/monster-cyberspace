@@ -13,6 +13,8 @@ boards and Cyberspace features come later.
   plan `docs/superpowers/plans/2026-10-25-cyberspace-m9-cmail.md`.
 - **Guilds:** spec `docs/superpowers/specs/2026-10-30-cyberspace-guilds-design.md`,
   plan `docs/superpowers/plans/2026-10-30-cyberspace-guilds.md`.
+- **People (profiles, follow, poke):** spec
+  `docs/superpowers/specs/2026-10-31-cyberspace-people-design.md`.
 - **Milestone 3 (Feed):** spec `docs/superpowers/specs/2026-10-26-cyberspace-m9-feed-design.md`,
   plan `docs/superpowers/plans/2026-10-26-cyberspace-m9-feed.md`.
 - **GPS time:** spec `docs/superpowers/specs/2026-10-26-cyberspace-gps-time-design.md`,
@@ -177,6 +179,10 @@ serves the latest release (docs/BUILD.md).
 Guilds were added on 2026-10-30 (built without flashing): browse, threads,
 info, members, join, leave, make my guild, new thread and alerts, opened by
 the M9's Map button or Home.
+People were added on 2026-10-31 (not built yet): profiles, follow, unfollow,
+poke and a user's entries, opened from rooms, conversations, entries and
+guild members (`lib/core/src/people/`, `src/app/people_worker.cpp`,
+`src/screens/profile.cpp`). Blocking is website-only (no API call).
 The native suite is green: 541/541
 (`pio test -e native`), and `scripts/build-upload-monitor.sh -B` builds all
 eight firmware envs.

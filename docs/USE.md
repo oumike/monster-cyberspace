@@ -462,7 +462,39 @@ Feed key asks the same and goes to the Feed, Map to the guild list.
 **Alerts:** a new thread in a guild you belong to shows a banner
 (`@name in Night Owls: …`) and sounds the buzzer if it's on.
 
-## Characters and emoji
+## People
+
+A profile shows someone's name, guild, Cyberspace number, join date, when
+they were last active, follower and entry counts, location, website and bio.
+You must be signed in. Open one from:
+
+- a room: the person menu (in Who's here) or a message's menu → **Profile**
+- a conversation: the room menu → **Profile**
+- an entry or a reply: its menu → **Author's profile**
+- a guild's **Members**: Centre or Right on a member (tap on touch boards)
+
+**On a profile:** Up/Down scroll. Centre, Right or **Ctrl** (⋯ on touch)
+opens the actions:
+
+- **Follow** / **Unfollow** ask first, with the limit: "Follow @rain? (3 per
+  minute, 15 per day)". The profile then says `you follow them`.
+- **Message** opens a C-Mail conversation with them.
+- **Poke** asks first: "Poke @rain? (1 an hour, 8 a day)". A refused poke
+  ("Can't poke @rain") doesn't count against the limit.
+- **Entries** lists their public entries, paged like the Feed; Back returns
+  to the profile.
+- **Guild** opens their guild, **Website** shows the link with its QR code,
+  **Refresh** reloads the profile.
+
+Back returns to where you opened the profile. Nothing is retried; over a
+limit you get "Slow down: try in Ns" and nothing is sent.
+
+**Mute and block:** muting (`/mute name` in a room, or the person menu) hides
+someone in cIRC. Blocking is done on the website only; the API has no block
+call. A profile you blocked says `you blocked them`, and has no Follow,
+Message or Poke. Whether you follow someone is only known once your follow
+list has loaded (up to 500 follows).
+
 
 Every board draws all of Terminus's characters (Latin with accents, Greek,
 Cyrillic, arrows, maths, box drawing, card suits and the like) and every

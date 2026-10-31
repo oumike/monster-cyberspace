@@ -121,6 +121,8 @@ struct Event {
   std::string text;
   int code = 0;
   bool ok = true;
+  std::string arg;  // MentionAlert: the room slug
+  int64_t at = 0;   // MentionAlert: when it was made, epoch ms; 0 unknown
 };
 
 }  // namespace rc

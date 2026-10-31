@@ -43,6 +43,7 @@ constexpr int64_t kSaverMs = 10000;
 constexpr int64_t kActivityMs = 5000;
 constexpr int64_t kLockQuietMs = 3000;  // input ignored just after the screen locks
 constexpr int64_t kBounceStepMs = 250;
+constexpr size_t kMaxMentionNotes = 50;  // the oldest go first
 
 // On; Dark (screen off); Saver, the 10 s peek at recent messages; Bounce, the
 // screensaver the screen timeout locks into.
@@ -214,7 +215,7 @@ void applyNotifyLight() {
   if (!board::hasNotifyLight()) return;
   uint8_t rgb = 0;
   if (blinker.active()) {
-    const bool unread = app().unreadMentions > 0 || cmailUnread() > 0;
+    const bool unread = !app().mentions.empty() || cmailUnread() > 0;
     rgb = blinker.tick(millis(), app().cfg.notifyLight, app().cfg.notifyTimeoutSecs, unread);
   }
   if (rgb == notifyShown) return;
@@ -297,6 +298,7 @@ void handleEvent(const Event& e) {
       if (e.ok) {
         app().auth = e.code;
         app().user = e.code == 0 ? std::string() : e.text;
+        if (e.code == 0) app().mentions.clear();
         app().authNote.clear();
       } else {
         app().authNote = e.text;
@@ -306,7 +308,8 @@ void handleEvent(const Event& e) {
            cur == Id::Conversation || cur == Id::FeedList || cur == Id::Entry ||
            cur == Id::Composer || cur == Id::Watched || cur == Id::Bookmarks || cur == Id::Settings ||
            cur == Id::GuildList || cur == Id::Guild || cur == Id::Members ||
-           cur == Id::Profile || cur == Id::UserPosts))
+           cur == Id::Profile || cur == Id::UserPosts ||
+           cur == Id::Notifications))
         router::go(Id::Setup);
       if (e.ok && e.code != 0 && (cur == Id::Setup || cur == Id::LoginForm)) router::go(Id::Home);
       break;
@@ -332,12 +335,24 @@ void handleEvent(const Event& e) {
         app().cfg.wifi = std::move(s.wifi);
       }
       break;
-    case EvtType::MentionAlert:
-      ++app().unreadMentions;
+    case EvtType::MentionAlert: {
+      // Not for the room on screen, nor again when the network side forgets
+      // what it has seen and re-alerts.
+      auto& ms = app().mentions;
+      const int64_t at = e.at ? e.at : nowEpochMs();
+      const bool open = cur == Id::Room && lockedChat().with([&](ChatState& s) {
+        return !s.dm && s.roomSlug == e.arg;
+      });
+      const bool dup = std::any_of(ms.begin(), ms.end(), [&](const MentionNote& m) {
+        return m.at == at && m.slug == e.arg && m.text == e.text;
+      });
+      if (!open && !dup) ms.push_back(MentionNote{e.arg, e.text, at});
+      if (ms.size() > kMaxMentionNotes) ms.erase(ms.begin());
       notifyMessage();
       if (app().cfg.buzzer) board::beep(2000, 80);
       banner(e.text, false);
       break;
+    }
     case EvtType::CmailAlert:
       // The unread count lives in the conversation list (Home sums it).
       notifyMessage();

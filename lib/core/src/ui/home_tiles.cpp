@@ -5,7 +5,7 @@
 namespace rc {
 
 HomeLayout homeLayout(int panelW, int areaPx, int gridRows, CellSize cell, int count,
-                      int percent, bool gaps) {
+                      int percent, bool gaps, bool spanFirst) {
   HomeLayout out;
   if (count <= 0 || cell.w <= 0 || cell.h <= 0 || areaPx <= 0) return out;
   // Across: an odd number of cells, so the gap column leaves equal halves.
@@ -14,7 +14,7 @@ HomeLayout homeLayout(int panelW, int areaPx, int gridRows, CellSize cell, int c
   const int tileW = (across.cells - 1) / 2;
   if (tileW < 10) return out;
   // Down: numRows tiles of h rows with gap px between them.
-  const int numRows = (count + 1) / 2;
+  const int numRows = spanFirst ? 1 + count / 2 : (count + 1) / 2;
   const int gap = gaps ? cell.w : 0;
   const int gapRows = gaps ? 1 : 0;
   const int avail = areaPx * percent / 100 - (numRows - 1) * gap;
@@ -31,7 +31,12 @@ HomeLayout homeLayout(int panelW, int areaPx, int gridRows, CellSize cell, int c
   for (int i = 0; i < numRows; ++i) {
     const int r0 = 2 + i * (h + gapRows);
     if (gaps && i + 1 < numRows) out.pads.emplace_back(r0 + h, gap);
-    for (int j = 0; j < 2 && i * 2 + j < count; ++j) {
+    if (spanFirst && i == 0) {
+      out.tiles.push_back(TileRect{0, r0, across.cells - 1, r0 + h - 1});
+      continue;
+    }
+    const int first = spanFirst ? i * 2 - 1 : i * 2;
+    for (int j = 0; j < 2 && first + j < count; ++j) {
       const int c0 = j * (tileW + 1);
       out.tiles.push_back(TileRect{c0, r0, c0 + tileW - 1, r0 + h - 1});
     }
@@ -46,8 +51,14 @@ TileSpan tileSpan(int areaPx, int unitPx, int percent) {
   return TileSpan{cells, (areaPx - cells * unitPx) / 2};
 }
 
-int tileMove(int selected, int count, Action a) {
+int tileMove(int selected, int count, Action a, bool spanFirst) {
   if (count <= 0) return selected;
+  if (spanFirst) {
+    // The rest are a plain two-column grid of count - 1 tiles.
+    if (selected == 0) return a == Action::Down && count > 1 ? 1 : 0;
+    if (a == Action::Up && selected <= 2) return 0;
+    return 1 + tileMove(selected - 1, count - 1, a);
+  }
   const int col = selected % 2;
   const int row = selected / 2;
   switch (a) {

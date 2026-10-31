@@ -2,10 +2,12 @@
 
 #include <ArduinoJson.h>
 
+#include <algorithm>
 #include <cctype>
 #include <cstdlib>
 
 #include "cs/message_json.h"
+#include "feed/feed_parse.h"
 
 namespace rc {
 
@@ -151,6 +153,7 @@ bool parseMentions(std::string_view body, std::vector<Mention>& out) {
     m.preview = str(md["replyContent"]);
     if (m.preview.empty()) m.preview = str(md["postContent"]);
     if (m.preview.empty()) m.preview = str(n["reason"]);
+    m.at = std::max<int64_t>(0, parseIsoMs(str(n["createdAt"])));
     out.push_back(std::move(m));
   }
   return true;

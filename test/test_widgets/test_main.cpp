@@ -1152,6 +1152,33 @@ void test_home_layout_without_gaps() {
   TEST_ASSERT_EQUAL(9, l.pads[0].second);  // (180 - 162) / 2
 }
 
+// Home with Unread: the first tile spans both columns, the six others follow.
+void test_home_layout_span_first() {
+  // Portrait 240 px, 26 rows of 12 px, 8x14 cells: 27 cells across, 4-row tiles.
+  HomeLayout l = homeLayout(240, 288, 26, CellSize{8, 14}, 7, 90, true, true);
+  TEST_ASSERT_EQUAL(7, l.tiles.size());
+  TEST_ASSERT_EQUAL(0, l.tiles[0].c0);
+  TEST_ASSERT_EQUAL(26, l.tiles[0].c1);
+  TEST_ASSERT_EQUAL(2, l.tiles[0].r0);
+  TEST_ASSERT_EQUAL(5, l.tiles[0].r1);
+  TEST_ASSERT_EQUAL(0, l.tiles[1].c0);
+  TEST_ASSERT_EQUAL(12, l.tiles[1].c1);
+  TEST_ASSERT_EQUAL(14, l.tiles[2].c0);
+  TEST_ASSERT_EQUAL(l.tiles[0].c1, l.tiles[2].c1);
+  TEST_ASSERT_EQUAL(7, l.tiles[1].r0);
+  TEST_ASSERT_EQUAL(7, l.tiles[2].r0);
+  TEST_ASSERT_EQUAL(17, l.tiles[5].r0);
+  TEST_ASSERT_EQUAL(0, l.tiles[5].c0);
+  TEST_ASSERT_EQUAL(14, l.tiles[6].c0);
+  TEST_ASSERT_EQUAL(20, l.tiles[6].r1);
+  TEST_ASSERT_EQUAL(20, l.lastRow);
+  TEST_ASSERT_EQUAL(4, l.pads.size());
+  TEST_ASSERT_EQUAL(20, l.pads[0].second);  // (288 - 248) / 2
+  TEST_ASSERT_EQUAL(6, l.pads[1].first);
+  // An even count leaves the last row's right column empty.
+  TEST_ASSERT_EQUAL(6, homeLayout(240, 288, 26, CellSize{8, 14}, 6, 90, true, true).tiles.size());
+}
+
 void test_tile_span_centre() {
   // 208 px between the status bar and the hint, 18 px rows, 90%: 187 px is
   // 10 rows (180 px), leaving 14 px above and 14 below.
@@ -1181,6 +1208,24 @@ void test_tile_move() {
   TEST_ASSERT_EQUAL(1, tileMove(1, 6, Action::Right));
   TEST_ASSERT_EQUAL(1, tileMove(3, 6, Action::Up));
   TEST_ASSERT_EQUAL(1, tileMove(1, 6, Action::Up));
+}
+
+void test_tile_move_span_first() {
+  TEST_ASSERT_EQUAL(1, tileMove(0, 7, Action::Down, true));
+  TEST_ASSERT_EQUAL(0, tileMove(0, 7, Action::Up, true));
+  TEST_ASSERT_EQUAL(0, tileMove(0, 7, Action::Left, true));
+  TEST_ASSERT_EQUAL(0, tileMove(0, 7, Action::Right, true));
+  TEST_ASSERT_EQUAL(0, tileMove(0, 1, Action::Down, true));
+  TEST_ASSERT_EQUAL(0, tileMove(1, 7, Action::Up, true));
+  TEST_ASSERT_EQUAL(0, tileMove(2, 7, Action::Up, true));
+  TEST_ASSERT_EQUAL(1, tileMove(3, 7, Action::Up, true));
+  TEST_ASSERT_EQUAL(2, tileMove(4, 7, Action::Up, true));
+  TEST_ASSERT_EQUAL(2, tileMove(1, 7, Action::Right, true));
+  TEST_ASSERT_EQUAL(1, tileMove(2, 7, Action::Left, true));
+  TEST_ASSERT_EQUAL(2, tileMove(2, 7, Action::Right, true));
+  TEST_ASSERT_EQUAL(3, tileMove(1, 7, Action::Down, true));
+  TEST_ASSERT_EQUAL(6, tileMove(4, 7, Action::Down, true));
+  TEST_ASSERT_EQUAL(5, tileMove(5, 7, Action::Down, true));
 }
 
 
@@ -1656,8 +1701,10 @@ int main() {
   RUN_TEST(test_home_layout_landscape);
   RUN_TEST(test_home_layout_too_small);
   RUN_TEST(test_home_layout_without_gaps);
+  RUN_TEST(test_home_layout_span_first);
   RUN_TEST(test_tile_span_centre);
   RUN_TEST(test_tile_move);
+  RUN_TEST(test_tile_move_span_first);
   RUN_TEST(test_symbols_pick_inserts_and_closes);
   RUN_TEST(test_symbols_move_wraps_in_two_dimensions);
   RUN_TEST(test_symbols_commands_row);

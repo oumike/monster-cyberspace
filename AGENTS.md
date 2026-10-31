@@ -183,6 +183,9 @@ People were added on 2026-10-31 (not built yet): profiles, follow, unfollow,
 poke and a user's entries, opened from rooms, conversations, entries and
 guild members (`lib/core/src/people/`, `src/app/people_worker.cpp`,
 `src/screens/profile.cpp`). Blocking is website-only (no API call).
+Unread (issue #3) was added on 2026-10-31 (not built yet): one screen of unread
+C-Mail, mentions and Feed notices, newest first (`ui/unread_inbox`,
+`src/screens/notifications.cpp`, `router::goFrom` for Back), from Home on every board.
 The native suite is green: 541/541
 (`pio test -e native`), and `scripts/build-upload-monitor.sh -B` builds all
 eight firmware envs.

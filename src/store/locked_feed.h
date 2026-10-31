@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <mutex>
 #include <string>
 #include <vector>
@@ -12,6 +13,7 @@ namespace rc {
 // An unread Feed notification: id is the notification id.
 struct FeedNotice {
   std::string id, postId, text;
+  int64_t at = 0;  // epoch ms; 0 unknown
 };
 
 // Everything the Feed screens read and the network side writes.

@@ -65,6 +65,12 @@ static const char* kGuildNotice = R"({"data":[
    "metadata":{"guildSlug":"night-owls","guildName":"Night Owls","postContent":"hello"}}
 ],"cursor":null})";
 
+static const char* kMentionNoTime = R"({"data":[
+  {"id":"n5","type":"chat_mention","actorUsername":"rain","metadata":{"roomSlug":"general"}},
+  {"id":"n6","type":"chat_mention","actorUsername":"rain","createdAt":"yesterday",
+   "metadata":{"roomSlug":"general"}}
+],"cursor":null})";
+
 static const char* kUnread = R"({"data":{"count":100,"exact":false}})";
 
 static const char* kErrRateLimited = R"({"error":{"code":"RATE_LIMITED","message":"Too many requests"}})";

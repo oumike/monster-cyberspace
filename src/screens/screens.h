@@ -8,6 +8,7 @@
 #include "screens/link_view.h"
 #include "screens/router.h"
 #include "ui/home_tiles.h"
+#include "ui/unread_inbox.h"
 #include "ui/widgets/entry_list.h"
 #include "ui/widgets/input_line.h"
 #include "ui/widgets/list_view.h"
@@ -329,6 +330,23 @@ class GuildListScreen : public Screen {
   bool dirty_ = true, failed_ = false, more_ = false, asked_ = false;
   int cols_ = 0;
   const Theme* theme_ = nullptr;
+};
+
+// Everything the Unread screen lists, newest first.
+std::vector<UnreadItem> gatherUnread();
+
+// Unread: unread C-Mail conversations, cIRC mentions and Feed/guild notices
+// together, newest first (ui/unread_inbox.h). Back from what it opens comes
+// back here.
+class NotificationsScreen : public Screen {
+ public:
+  void onKey(const KeyEvent&) override;
+  void render(Grid&, const Theme&, int64_t nowMs) override;
+
+ private:
+  void open(int index);
+  ListView list_;
+  std::vector<UnreadItem> items_;  // as drawn
 };
 
 class ComingSoonScreen : public Screen {

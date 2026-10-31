@@ -70,7 +70,11 @@ void RoomScreen::enter(const std::string& slug) {
     chatSource().command(Command{CmdType::OpenConversation, slug_});
     return;
   }
-  app().unreadMentions = 0;
+  {
+    auto& ms = app().mentions;
+    ms.erase(std::remove_if(ms.begin(), ms.end(), [&](const MentionNote& m) { return m.slug == slug_; }),
+             ms.end());
+  }
   chatSource().command(Command{CmdType::OpenRoom, slug_});
   if (app().cfg.drawerOpen || drawerDocked()) chatSource().command(Command{CmdType::OpenPresence});
 }
@@ -234,7 +238,7 @@ void RoomScreen::typingKey(const KeyEvent& k) {
     case Action::Back:
       if (drawer) setDrawer(false);
       else if (!log_.following()) log_.follow();
-      else router::go(dm_ ? router::Id::CmailList : router::Id::RoomList);
+      else if (!router::backToOrigin()) router::go(dm_ ? router::Id::CmailList : router::Id::RoomList);
       break;
     default:
       break;

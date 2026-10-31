@@ -141,6 +141,8 @@ void test_mentions() {
   TEST_ASSERT_EQUAL_STRING("General", m[0].roomName.c_str());
   TEST_ASSERT_EQUAL_STRING("tardibyte", m[0].actorUsername.c_str());
   TEST_ASSERT_EQUAL_STRING("hey @oumike", m[0].messageContent.c_str());
+  TEST_ASSERT_TRUE(m[0].at == 1780488000000LL);  // 2026-06-03T12:00:00.000Z
+  TEST_ASSERT_TRUE(m[1].at == 1780488060000LL);
   TEST_ASSERT_EQUAL_STRING("n2", m[1].id.c_str());
   TEST_ASSERT_EQUAL_STRING("", m[1].roomSlug.c_str());
   TEST_ASSERT_EQUAL_STRING("", m[1].actorUsername.c_str());
@@ -166,6 +168,14 @@ void test_guild_new_thread_notice() {
   TEST_ASSERT_EQUAL_STRING("Night Owls", m[0].guildName.c_str());
   TEST_ASSERT_EQUAL_STRING("hello", m[0].preview.c_str());
   TEST_ASSERT_EQUAL_STRING("rain", m[0].actorUsername.c_str());
+}
+
+void test_mention_without_created_at() {
+  std::vector<Mention> m;
+  TEST_ASSERT_TRUE(parseMentions(fx::kMentionNoTime, m));
+  TEST_ASSERT_EQUAL(2, m.size());
+  TEST_ASSERT_TRUE(m[0].at == 0);
+  TEST_ASSERT_TRUE(m[1].at == 0);  // malformed
 }
 
 void test_unread_count() {
@@ -254,6 +264,7 @@ int main() {
   RUN_TEST(test_presence_ack);
   RUN_TEST(test_send_result_and_reply);
   RUN_TEST(test_mentions);
+  RUN_TEST(test_mention_without_created_at);
   RUN_TEST(test_unread_count);
   RUN_TEST(test_muted_users);
   RUN_TEST(test_conversations);

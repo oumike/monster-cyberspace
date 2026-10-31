@@ -18,8 +18,12 @@ void begin();
 const char* name();  // "M9", "WioL2"; also used in the setup AP name
 // The release asset slug (scripts/release.sh env_out_name): "m9", "wio-l2", ...
 const char* otaSlug();
+// The panel as the UI lays it out: its pixels divided by uiScale().
 int panelWidth();
 int panelHeight();
+// How many panel pixels, each way, the UI's one pixel takes: 2 on the X4,
+// whose small pixels make text too small to read. Default 1.
+int uiScale();
 // Sends rows [y0, y1) of a full panelWidth() x panelHeight() RGB565 frame.
 void pushRows(const uint16_t* frame, int y0, int y1);
 // A board that keeps no frame (the X4, without PSRAM) takes redraw and

@@ -60,15 +60,16 @@ void fontsFor(TextSize s, const CellFont*& font, const CellFont*& big) {
 }  // namespace
 
 bool Renderer::begin() {
-  w_ = board::panelWidth();
-  h_ = board::panelHeight();
+  ui_ = std::max(board::uiScale(), 1);
+  w_ = board::panelWidth() * ui_;
+  h_ = board::panelHeight() * ui_;
   pulling = this;
   pull_ = board::setRedraw(redrawPulled);
   return allocate();
 }
 
 void Renderer::resize() {
-  const int w = board::panelWidth(), h = board::panelHeight();
+  const int w = board::panelWidth() * ui_, h = board::panelHeight() * ui_;
   const bool grew = static_cast<size_t>(w) * h > static_cast<size_t>(w_) * h_;
   w_ = w;
   h_ = h;
@@ -87,7 +88,7 @@ void Renderer::resize() {
 void Renderer::drawRow(const Grid& g, int r, const CellFont& font, RowSpan span, int yoff) {
   yoff = std::clamp(yoff, 0, span.h);
   // A scaled row (Grid::setRowScale): each glyph pixel drawn sc x sc.
-  const int sc = g.rowScale(r);
+  const int sc = g.rowScale(r) * ui_;
   const int fw = font.w;
   const int cw = fw * sc, ch = std::min<int>(font.h * sc, span.h - yoff);
   const int ox = std::clamp(span.x, 0, w_);
@@ -177,7 +178,15 @@ void Renderer::drawRow(const Grid& g, int r, const CellFont& font, RowSpan span,
 
 void Renderer::drawGridRow(const Grid& g, int r, const CellFont& font, const CellFont& big, RowSpan span) {
   const bool head = r == 0 && g.header().px > 0;
-  drawRow(g, r, head || g.rowKind(r) == RowKind::Big ? big : font, span, head ? (span.h - big.h) / 2 : 0);
+  drawRow(g, r, head || g.rowKind(r) == RowKind::Big ? big : font, span,
+          head ? (span.h - big.h * ui_) / 2 : 0);
+}
+
+std::vector<RowSpan> Renderer::spansFor(const Grid& g, const CellFont& font, const CellFont& big) const {
+  std::vector<RowSpan> spans = rowSpans(g, font.h, big.h);
+  if (ui_ > 1)
+    for (RowSpan& s : spans) s = RowSpan{s.y * ui_, s.h * ui_, s.x * ui_};
+  return spans;
 }
 
 void Renderer::redrawAll() {
@@ -185,7 +194,7 @@ void Renderer::redrawAll() {
   const Grid& g = *pullGrid_;
   const CellFont *font, *big;
   fontsFor(pullSize_, font, big);
-  const std::vector<RowSpan> spans = rowSpans(g, font->h, big->h);
+  const std::vector<RowSpan> spans = spansFor(g, *font, *big);
   const int n = std::min<int>(g.rows(), spans.size());
   int y = 0;
   // Lines no row covers (the gap above the last row, below the last) take
@@ -220,10 +229,10 @@ void Renderer::draw(Grid& g, TextSize s, int firstRow, int offsetPx) {
     pullSize_ = s;
   }
   Layer& layer = firstRow == 0 ? main_ : docked_;
-  const int top = firstRow * font.h + offsetPx;
+  const int top = (firstRow * font.h + offsetPx) * ui_;
   if (layer.firstRow != firstRow || layer.top != top) layer = Layer{firstRow, top};
   const int n = g.rows();
-  std::vector<RowSpan> spans = rowSpans(g, font.h, big.h);
+  std::vector<RowSpan> spans = spansFor(g, font, big);
   const bool sameShape = layer.spans.size() == spans.size();
   bool aboveGapChanged = false;
   for (int r = 0; r < n; ++r) {

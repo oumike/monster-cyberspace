@@ -258,8 +258,11 @@ void begin() {
 
 const char* name() { return "X4"; }
 const char* otaSlug() { return "x4"; }
-int panelWidth() { return PANEL_W; }
-int panelHeight() { return PANEL_H; }
+// The UI at 2x: 240x400 as it lays out, every pixel drawn 2x2.
+constexpr int kUiScale = 2;
+int uiScale() { return kUiScale; }
+int panelWidth() { return PANEL_W / kUiScale; }
+int panelHeight() { return PANEL_H / kUiScale; }
 
 bool setRedraw(void (*fn)()) {
   redraw = fn;

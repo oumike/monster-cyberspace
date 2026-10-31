@@ -1,6 +1,7 @@
 #include "app/ui_task.h"
 
 #include <Arduino.h>
+#include <esp_heap_caps.h>
 
 #include <algorithm>
 #include <mutex>
@@ -677,10 +678,27 @@ void pollConsole() {
   }
 }
 
+#if RC_LOW_MEM
+// Heap and stack headroom every 30 s, on a board without PSRAM.
+void logMemory(uint32_t now) {
+  static uint32_t last = 0;
+  if (last && now - last < 30000) return;
+  last = now;
+  Serial.printf("[mem] int %u blk %u min %u | ui stack free %u\n",
+                unsigned(heap_caps_get_free_size(MALLOC_CAP_INTERNAL)),
+                unsigned(heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL)),
+                unsigned(heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL)),
+                unsigned(uxTaskGetStackHighWaterMark(nullptr)));
+}
+#endif
+
 void taskMain(void*) {
   ThemeId shown = app().cfg.theme;
   for (;;) {
     uint32_t start = millis();
+#if RC_LOW_MEM
+    logMemory(start);
+#endif
     router::Id beforeScreen = router::current();
     Power beforePower = power;
     // Touch first, so a gesture resolves against the map of the frame on

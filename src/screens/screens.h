@@ -5,12 +5,14 @@
 #include "screens/backup_picker.h"
 #include "screens/button_pad.h"
 #include "screens/guild_info.h"
+#include "screens/link_view.h"
 #include "screens/router.h"
 #include "ui/home_tiles.h"
 #include "ui/widgets/entry_list.h"
 #include "ui/widgets/input_line.h"
 #include "ui/widgets/list_view.h"
 #include "ui/widgets/overlay.h"
+#include "ui/widgets/text_view.h"
 
 namespace rc {
 
@@ -202,7 +204,7 @@ class CmailListScreen : public Screen {
 // instances (spec §5).
 class FeedListScreen : public Screen {
  public:
-  enum class Kind { Feed, Watched, Bookmarks, Guild };
+  enum class Kind { Feed, Watched, Bookmarks, Guild, User };
   explicit FeedListScreen(Kind kind) : kind_(kind) {}
   void enter(const std::string&) override;
   void leave() override;
@@ -233,7 +235,7 @@ class FeedListScreen : public Screen {
   bool confirm_ = false;       // box_ holds a membership confirm
   CmdType pending_ = CmdType::OpenGuilds;  // the command that confirm sends
   std::vector<int> acts_;      // the palette's items, as PaletteItem values
-  std::string slug_;           // Guild: the open guild
+  std::string slug_;           // Guild: the open guild; User: the username
   GuildInfoView info_;
   std::vector<std::string> ids_;
   std::vector<std::string> replyIds_;  // Bookmarks: the bookmarked reply per row, or ""
@@ -260,7 +262,44 @@ class MembersScreen : public Screen {
   void requestMore();
   ListView list_;
   std::string slug_;
+  std::vector<std::string> names_;  // usernames by row, for Select
   bool more_ = false, asked_ = false, failed_ = false;
+};
+
+// A user's profile (People spec): scrolling text; Centre or the menu opens
+// its actions. Back returns where it was opened from (people::back).
+class ProfileScreen : public Screen {
+ public:
+  void enter(const std::string& username) override;
+  void leave() override { closeOverlays(); }
+  void onKey(const KeyEvent&) override;
+  void onEvent(const Event&) override;
+  void render(Grid&, const Theme&, int64_t nowMs) override;
+  bool hasOverlay() const override { return menu_ || linkOpen_; }
+  void closeOverlays() override {
+    menu_ = confirm_ = linkOpen_ = false;
+    box_.close();
+  }
+
+ private:
+  void openMenu();
+  void menuKey(const KeyEvent&);
+  void ask(int act);  // the confirm before a follow, unfollow or poke
+  void send(int act);
+
+  std::string user_;
+  TextView text_;
+  std::u32string shown_;   // what text_ holds
+  Overlay box_;
+  LinkView link_;
+  std::vector<int> acts_;  // the menu's rows, as ProfileAct values
+  int pending_ = 0;        // the act the confirm sends
+  bool menu_ = false, confirm_ = false, linkOpen_ = false;
+  bool loaded_ = false, failed_ = false, missing_ = false;
+  bool busy_ = false;       // a follow, unfollow or poke is in flight
+  bool starting_ = false;   // a StartConversation is in flight
+  bool dirty_ = true;
+  int64_t builtAt_ = 0;
 };
 
 // Every guild: mine first (pinned), then the browse list (spec §5).

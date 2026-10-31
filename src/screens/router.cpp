@@ -29,6 +29,8 @@ WifiScreen wifiScreen;
 GuildListScreen guildList;
 FeedListScreen guild{FeedListScreen::Kind::Guild};
 MembersScreen members;
+ProfileScreen profile;
+FeedListScreen userPosts{FeedListScreen::Kind::User};
 
 Id cur = Id::Splash;
 Screen* active = &splash;
@@ -56,6 +58,8 @@ Screen* lookup(Id id) {
     case Id::GuildList: return &guildList;
     case Id::Guild: return &guild;
     case Id::Members: return &members;
+    case Id::Profile: return &profile;
+    case Id::UserPosts: return &userPosts;
   }
   return &home;
 }
@@ -80,7 +84,9 @@ void go(Id id, const std::string& arg) {
 }
 
 Id current() { return cur; }
+Place here() { return curPlace; }
 Place lastBase() { return base; }
+void setBase(const Place& p) { base = p; }
 Screen& screen() { return *active; }
 
 bool handleGlobal(const KeyEvent& k) {

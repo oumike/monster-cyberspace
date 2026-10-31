@@ -30,7 +30,7 @@ void join(std::u32string& line, const std::u32string& part) {
 
 }  // namespace
 
-std::u32string profileText(const Profile& p, bool blocked, int64_t nowMs) {
+std::u32string profileText(const Profile& p, bool blocked, int64_t nowMs, bool following) {
   std::u32string t;
   if (!p.displayName.empty()) t += utf8ToU32(p.displayName) + U"\n";
   t += U"@" + utf8ToU32(p.username) + U"\n";
@@ -64,6 +64,7 @@ std::u32string profileText(const Profile& p, bool blocked, int64_t nowMs) {
     t += utf8ToU32(p.websiteUrl) + U"\n";
   }
   if (p.supporter) t += U"supporter\n";
+  if (following) t += U"you follow them\n";
   if (blocked) t += U"you blocked them\n";
 
   std::u32string bio = markdownToText(p.bio);

@@ -305,7 +305,8 @@ void handleEvent(const Event& e) {
           (cur == Id::Home || cur == Id::RoomList || cur == Id::Room || cur == Id::CmailList ||
            cur == Id::Conversation || cur == Id::FeedList || cur == Id::Entry ||
            cur == Id::Composer || cur == Id::Watched || cur == Id::Bookmarks || cur == Id::Settings ||
-           cur == Id::GuildList || cur == Id::Guild || cur == Id::Members))
+           cur == Id::GuildList || cur == Id::Guild || cur == Id::Members ||
+           cur == Id::Profile || cur == Id::UserPosts))
         router::go(Id::Setup);
       if (e.ok && e.code != 0 && (cur == Id::Setup || cur == Id::LoginForm)) router::go(Id::Home);
       break;

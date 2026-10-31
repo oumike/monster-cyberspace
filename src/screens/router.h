@@ -57,6 +57,8 @@ enum class Id {
   GuildList,
   Guild,
   Members,
+  Profile,
+  UserPosts,
 };
 
 struct Place {
@@ -66,8 +68,12 @@ struct Place {
 
 void go(Id id, const std::string& arg = "");
 Id current();
+// Where go() last went, with its argument.
+Place here();
 // The last place go() was given that is not Entry or Composer.
 Place lastBase();
+// Puts back a lastBase() saved earlier, before returning to an Entry.
+void setBase(const Place& p);
 Screen& screen();
 // The dedicated buttons (Messages, Home, C-Mail, Feed, Map). True when the
 // key was one of them.

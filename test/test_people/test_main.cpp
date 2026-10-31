@@ -160,7 +160,9 @@ void test_profile_text() {
   TEST_ASSERT_TRUE(hasLine(t, "supporter"));
   TEST_ASSERT_TRUE(hasLine(t, "I like night walks."));
   TEST_ASSERT_TRUE(t.find(U"you blocked them") == std::u32string::npos);
+  TEST_ASSERT_TRUE(t.find(U"you follow them") == std::u32string::npos);
   TEST_ASSERT_TRUE(hasLine(profileText(p, true, now), "you blocked them"));
+  TEST_ASSERT_TRUE(hasLine(profileText(p, false, now, true), "you follow them"));
 }
 
 void test_profile_text_bare() {

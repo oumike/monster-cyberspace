@@ -12,6 +12,5 @@ __attribute__((weak)) void deepSleep(uint64_t) {}
 __attribute__((weak)) bool wokeByTimer() { return false; }
 __attribute__((weak)) void powerOff() {}
 __attribute__((weak)) bool setRedraw(void (*)()) { return false; }
-__attribute__((weak)) int uiScale() { return 1; }
 
 }  // namespace board

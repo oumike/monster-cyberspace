@@ -110,20 +110,31 @@ void flushBand() {
 }
 
 // The bezel covers the panel's top rows: the UI starts this far down
-// (physical px).
+// (physical px, even).
 constexpr int kTopInset = 16;
+// The UI is laid out and drawn at half size (240 wide) and every pixel goes
+// to the panel as 2x2: text is readable, and the renderer's strip is a
+// quarter of the size.
+constexpr int kUiScale = 2;
+constexpr int kUiW = PANEL_W / kUiScale;
 
-// Portrait (x, y) is native (y, NATIVE_H - 1 - x): GxEPD2's rotation 3.
+// UI line y, kUiW pixels, to panel lines kTopInset + 2y and the next (one
+// band). Portrait (x, y) is native (y, NATIVE_H - 1 - x): GxEPD2's rotation 3.
 void packLine(const uint16_t* src, int y) {
-  y += kTopInset;
+  y = kTopInset + y * kUiScale;
   const int b = y >> 3;
   if (b < bandAt || b >= kBands) return;  // out of order: skipped
   while (bandAt < b) flushBand();         // lines never drawn stay white
-  const uint8_t bit = 0x80 >> (y & 7);
-  for (int x = 0; x < PANEL_W; ++x) {
-    uint8_t& v = band[NATIVE_H - 1 - x];
-    if (rc::rgb565Dark(src[x])) v &= ~bit;
-    else v |= bit;
+  const uint8_t bits = (0xC0 >> (y & 7));  // both lines
+  for (int x = 0; x < kUiW; ++x) {
+    uint8_t* v = &band[NATIVE_H - 2 - x * kUiScale];  // panel columns 2x and 2x+1
+    if (rc::rgb565Dark(src[x])) {
+      v[0] &= ~bits;
+      v[1] &= ~bits;
+    } else {
+      v[0] |= bits;
+      v[1] |= bits;
+    }
   }
 }
 
@@ -269,10 +280,7 @@ void begin() {
 
 const char* name() { return "X4"; }
 const char* otaSlug() { return "x4"; }
-// The UI at 2x: 240x400 as it lays out, every pixel drawn 2x2.
-constexpr int kUiScale = 2;
-int uiScale() { return kUiScale; }
-int panelWidth() { return PANEL_W / kUiScale; }
+int panelWidth() { return kUiW; }
 int panelHeight() { return (PANEL_H - kTopInset) / kUiScale; }
 
 bool setRedraw(void (*fn)()) {
@@ -289,7 +297,7 @@ void pushRows(const uint16_t* frame, int y0, int y1) {
     policy.changed(millis());
     return;
   }
-  for (int y = y0; y < y1; ++y) packLine(frame + size_t(y) * PANEL_W, y);
+  for (int y = y0; y < y1; ++y) packLine(frame + size_t(y) * kUiW, y);
 }
 
 void backlight(bool) {}

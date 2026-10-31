@@ -32,7 +32,7 @@ class Renderer {
   // The frame as last drawn, width() x height() RGB565 (null without memory,
   // or in strip mode).
   const uint16_t* frame() const { return strip_ ? nullptr : frame_; }
-  int width() const { return w_; }  // panel pixels, uiScale times the UI's
+  int width() const { return w_; }
   int height() const { return h_; }
   // Pull mode: draws the last main grid drawn, every panel line from the top,
   // a line at a time through board::pushRows. Leaves dirty flags alone. A
@@ -49,8 +49,7 @@ class Renderer {
     int gapY = -1;               // where the gap above the last row began
   };
   uint16_t* frame_ = nullptr;  // the whole frame, or the strip
-  int w_ = 0, h_ = 0;  // panel pixels
-  int ui_ = 1;         // board::uiScale()
+  int w_ = 0, h_ = 0;
   bool strip_ = false;
   bool pull_ = false;            // the board pulls lines (redrawAll)
   const Grid* pullGrid_ = nullptr;
@@ -70,8 +69,6 @@ class Renderer {
   void drawRow(const Grid& g, int r, const CellFont& font, RowSpan span, int yoff = 0);
   // Row r at span, in the big font when it is RowKind::Big or a header row 0.
   void drawGridRow(const Grid& g, int r, const CellFont& font, const CellFont& big, RowSpan span);
-  // rowSpans in panel pixels.
-  std::vector<RowSpan> spansFor(const Grid& g, const CellFont& font, const CellFont& big) const;
 };
 
 }  // namespace rc

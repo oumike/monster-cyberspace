@@ -70,6 +70,11 @@ void RoomScreen::enter(const std::string& slug) {
     return;
   }
   app().unreadMentions = 0;
+  {
+    auto& ms = app().mentions;
+    ms.erase(std::remove_if(ms.begin(), ms.end(), [&](const MentionNote& m) { return m.slug == slug_; }),
+             ms.end());
+  }
   chatSource().command(Command{CmdType::OpenRoom, slug_});
   if (app().cfg.drawerOpen || drawerDocked()) chatSource().command(Command{CmdType::OpenPresence});
 }

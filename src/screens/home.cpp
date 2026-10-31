@@ -14,8 +14,14 @@
 namespace rc {
 
 namespace {
-enum Item { kMessages, kRooms, kCmail, kFeed, kGuilds, kSettings };
-constexpr int kItems = 6;      // the list (keyed boards)
+enum Item { kMessages, kRooms, kCmail, kFeed, kGuilds, kSettings, kNotifications };
+// The list (keyed boards): boards that can't type (the X4) get Notifications
+// after Guilds.
+int listCount() { return board::canType() ? 6 : 7; }
+int listItem(int i) {
+  if (board::canType() || i < kSettings) return i;
+  return i == kSettings ? kNotifications : kSettings;
+}
 constexpr int kTileCount = 6;  // the tiles (touch boards); messages shows the mentions
 constexpr int kTilePercent = 90;  // of the area between the status bar and the hint
 
@@ -62,6 +68,9 @@ void HomeScreen::openItem(int item) {
       break;
     case kSettings:
       router::go(router::Id::Settings);
+      break;
+    case kNotifications:
+      router::go(router::Id::Notifications);
       break;
     default:
       break;
@@ -121,7 +130,7 @@ void HomeScreen::onKey(const KeyEvent& k) {
       break;
     case Action::Select:
     case Action::Right:
-      openItem(menu_.selected());
+      openItem(listItem(menu_.selected()));
       break;
     default:
       break;
@@ -256,16 +265,21 @@ void HomeScreen::render(Grid& g, const Theme& t, int64_t) {
   });
   field("active", active, t.fg);
 
-  menu_.setItems({
+  std::vector<ListItem> items = {
       ListItem{utf8ToU32("Messages  #" + a.cfg.lastRoom), U""},
       ListItem{U"Rooms", U""},
       ListItem{U"C-Mail", U""},
       ListItem{U"Feed", U""},
       ListItem{U"Guilds", U""},
-      ListItem{U"Settings", U""},
-  });
+  };
+  if (!board::canType()) {
+    const int n = int(a.mentions.size()) + feed;
+    items.push_back(ListItem{U"Notifications", n ? utf8ToU32(std::to_string(n)) : U"", ItemTone::Normal, n > 0});
+  }
+  items.push_back(ListItem{U"Settings", U""});
+  menu_.setItems(std::move(items));
   int bottom = g.rows() - 1;
-  menu_.render(g, bottom - kItems, bottom, 1, g.cols() - 2, t);
+  menu_.render(g, bottom - listCount(), bottom, 1, g.cols() - 2, t);
   drawHint(g, t, U"\u2191\u2193 pick  \u25CF open", U"tap to open");
 }
 

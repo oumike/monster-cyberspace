@@ -342,6 +342,16 @@ void handleEvent(const Event& e) {
       break;
     case EvtType::MentionAlert:
       ++app().unreadMentions;
+      {
+        // "@actor in #room: content"
+        const size_t at = e.text.find(" in #");
+        const size_t colon = at == std::string::npos ? at : e.text.find(':', at);
+        if (colon != std::string::npos) {
+          auto& ms = app().mentions;
+          ms.push_back(MentionNote{e.text.substr(at + 5, colon - at - 5), e.text});
+          if (ms.size() > 20) ms.erase(ms.begin());
+        }
+      }
       notifyMessage();
       if (app().cfg.buzzer) board::beep(2000, 80);
       banner(e.text, false);

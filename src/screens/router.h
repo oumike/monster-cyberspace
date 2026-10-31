@@ -57,6 +57,7 @@ enum class Id {
   GuildList,
   Guild,
   Members,
+  Notifications,
 };
 
 struct Place {

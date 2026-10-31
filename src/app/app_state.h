@@ -3,12 +3,18 @@
 #include <cstdint>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include "store/settings.h"
 #include "ui/grid.h"
 #include "ui/theme.h"
 
 namespace rc {
+
+// An unread cIRC mention, for the Notifications screen.
+struct MentionNote {
+  std::string slug, text;
+};
 
 // UI-side state, touched only by the UI task.
 struct AppState {
@@ -18,6 +24,7 @@ struct AppState {
   std::string user;      // signed-in username
   std::string authNote;  // the last auth error, for the login form
   int unreadMentions = 0;
+  std::vector<MentionNote> mentions;  // newest last; a room's go when it opens
 };
 
 AppState& app();

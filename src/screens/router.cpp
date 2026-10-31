@@ -29,6 +29,7 @@ WifiScreen wifiScreen;
 GuildListScreen guildList;
 FeedListScreen guild{FeedListScreen::Kind::Guild};
 MembersScreen members;
+NotificationsScreen notifications;
 
 Id cur = Id::Splash;
 Screen* active = &splash;
@@ -56,6 +57,7 @@ Screen* lookup(Id id) {
     case Id::GuildList: return &guildList;
     case Id::Guild: return &guild;
     case Id::Members: return &members;
+    case Id::Notifications: return &notifications;
   }
   return &home;
 }

@@ -1,5 +1,8 @@
 #pragma once
 
+#include <utility>
+#include <vector>
+
 #include "input/type_filter.h"
 #include "net/wifi_list.h"
 #include "screens/backup_picker.h"
@@ -290,6 +293,20 @@ class GuildListScreen : public Screen {
   bool dirty_ = true, failed_ = false, more_ = false, asked_ = false;
   int cols_ = 0;
   const Theme* theme_ = nullptr;
+};
+
+// Unread cIRC mentions, then unread Feed and guild notices, newest first
+// (Home on boards that can't type, the X4).
+class NotificationsScreen : public Screen {
+ public:
+  void onKey(const KeyEvent&) override;
+  void render(Grid&, const Theme&, int64_t nowMs) override;
+
+ private:
+  void open(int index);
+  ListView list_;
+  // Per row: a room slug, or an Entry arg ("postId\nnoticeId").
+  std::vector<std::pair<bool, std::string>> targets_;
 };
 
 class ComingSoonScreen : public Screen {

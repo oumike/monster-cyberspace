@@ -17,6 +17,8 @@ bool parseProfile(std::string_view body, Profile& out);
 bool parseBlockedUsers(std::string_view body, std::vector<std::string>& out);
 // GET /v1/follows. `cursor` is "" when null or absent.
 bool parseFollowPage(std::string_view body, std::vector<Follow>& out, std::string& cursor);
+// Usernames match without regard to ASCII case.
+bool hasUsername(const std::vector<std::string>& names, const std::string& username);
 // POST /v1/follows: data.followId.
 bool parseFollowId(std::string_view body, std::string& followId);
 

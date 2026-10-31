@@ -2,6 +2,8 @@
 
 #include <ArduinoJson.h>
 
+#include <cctype>
+
 #include "feed/feed_parse.h"
 #include "feed/markdown_text.h"
 
@@ -80,6 +82,17 @@ bool parseFollowPage(std::string_view body, std::vector<Follow>& out, std::strin
   }
   cursor = cursorOf(doc["cursor"]);
   return true;
+}
+
+bool hasUsername(const std::vector<std::string>& names, const std::string& username) {
+  auto low = [](unsigned char c) { return std::tolower(c); };
+  for (const std::string& n : names) {
+    if (n.size() != username.size()) continue;
+    bool same = true;
+    for (size_t i = 0; i < n.size() && same; ++i) same = low(n[i]) == low(username[i]);
+    if (same) return true;
+  }
+  return false;
 }
 
 bool parseFollowId(std::string_view body, std::string& followId) {

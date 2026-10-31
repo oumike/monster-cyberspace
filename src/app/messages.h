@@ -61,6 +61,12 @@ enum class CmdType {
   JoinGuild,             // a = slug
   LeaveGuild,            // a = slug
   PromoteGuild,          // a = slug
+  // People.
+  OpenProfile,           // a = username
+  Follow,                // a = userId, b = username
+  Unfollow,              // a = userId, b = username
+  Poke,                  // a = username
+  OpenUserPosts,         // a = username; n = 1 to append the next page
 };
 
 struct Command {
@@ -99,6 +105,9 @@ enum class EvtType {
   GuildUpdated,         // ok=false; code = 404 when the guild is gone
   MembersUpdated,       // ok=false on a failed load
   GuildWriteDone,       // join/leave/promote: ok; text = error or the success banner
+  // People.
+  ProfileUpdated,       // ok=false on a failed load; code = 404 when there's no such user
+  PeopleWriteDone,      // follow/unfollow/poke: ok; text = error or the success banner
   // The device's Wi-Fi screen.
   WifiScanned,          // text = rc::encodeWifiScan
   // code 0 joining (text = SSID), 1 joined (text = SSID), 2 forgotten

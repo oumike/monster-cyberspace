@@ -75,6 +75,9 @@ void test_blocked_users() {
   TEST_ASSERT_EQUAL(2, int(b.size()));
   TEST_ASSERT_EQUAL_STRING("troll", b[0].c_str());
   TEST_ASSERT_EQUAL_STRING("Spammer", b[1].c_str());
+  TEST_ASSERT_TRUE(hasUsername(b, "spammer"));
+  TEST_ASSERT_TRUE(hasUsername(b, "TROLL"));
+  TEST_ASSERT_FALSE(hasUsername(b, "troll2"));
   TEST_ASSERT_TRUE(parseBlockedUsers(fx::kProfileBare, b));
   TEST_ASSERT_EQUAL(0, int(b.size()));
   TEST_ASSERT_FALSE(parseBlockedUsers("nope", b));

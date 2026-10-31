@@ -9,6 +9,7 @@
 #include "feed/entry.h"
 #include "guild/guild.h"
 #include "net/https_client.h"
+#include "people/profile.h"
 
 namespace rc {
 
@@ -31,8 +32,9 @@ class CsApi {
   // The result of the latest refresh (ok when none failed).
   const ApiError& lastRefreshError() const { return refreshErr_; }
 
-  // The signed-in username (GET /v1/users/me).
-  ApiError me(std::string& username);
+  // The signed-in username (GET /v1/users/me), and the usernames I blocked
+  // on the website when `blocked` is set.
+  ApiError me(std::string& username, std::vector<std::string>* blocked = nullptr);
 
   // cIRC.
   ApiError rooms(std::vector<RoomInfo>&);
@@ -100,6 +102,20 @@ class CsApi {
   ApiError promoteGuild(const std::string& slug, std::string& role);
   ApiError leaveGuild(const std::string& slug);
 
+  // People. There is no block endpoint: blocking happens on the website.
+  // A 404 from profile() reaches the caller as http 404.
+  ApiError profile(const std::string& username, Profile&);
+  // My following list (GET /v1/follows?type=following).
+  ApiError following(const std::string& cursor, int limit, std::vector<Follow>&,
+                     std::string& next);
+  ApiError follow(const std::string& userId, std::string& followId);
+  ApiError unfollow(const std::string& followId);
+  // Only an accepted (or server rate-limited) poke counts locally, as on the
+  // server: a refused one (400/403/404) doesn't use up the hour.
+  ApiError poke(const std::string& username);
+  ApiError userPosts(const std::string& username, const std::string& cursor, int limit,
+                     std::vector<Entry>&, std::string& next);
+
   const Tokens& tokens() const { return tokens_; }
   bool signedIn() const { return !tokens_.refreshToken.empty(); }
   // Restores a session from the refresh token saved in NVS.
@@ -120,6 +136,7 @@ class CsApi {
   RateLimiter sendL_, presenceL_, deleteL_, flagL_, readL_, resendL_;
   RateLimiter cmailSendL_, startL_, cmailReadL_, typingL_;
   RateLimiter entryL_, replyL_, bookmarkL_, watchL_, membershipL_;
+  RateLimiter followL_, unfollowL_, pokeL_;
 };
 
 }  // namespace rc

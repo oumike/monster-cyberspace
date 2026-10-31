@@ -16,6 +16,7 @@
 #include <set>
 
 #include "app/feed_worker.h"
+#include "app/people_worker.h"
 #include "app/queues.h"
 #include "cs/cs_api.h"
 #include "cs/rtdb.h"
@@ -114,7 +115,7 @@ void finishLogin(const LoginResult& r) {
 
 class Worker {
  public:
-  explicit Worker(const Settings& s) : api_(http_), feed_(api_), email_(s.email) {
+  explicit Worker(const Settings& s) : api_(http_), feed_(api_), people_(api_), email_(s.email) {
     if (!s.refreshToken.empty()) api_.setRefreshToken(s.refreshToken);
   }
 
@@ -150,6 +151,7 @@ class Worker {
     if (deadToken) {
       closeRoom();
       feed_.signOut();
+      people_.signOut();
       api_.signOut();
       self_.clear();
       ready_ = false;
@@ -560,6 +562,10 @@ class Worker {
     if (c.type == CmdType::JoinGuild || c.type == CmdType::LeaveGuild ||
         c.type == CmdType::PromoteGuild)
       post(EvtType::GuildWriteDone, 0, why, false);
+    if (c.type == CmdType::OpenProfile) post(EvtType::ProfileUpdated, 0, "", false);
+    if (c.type == CmdType::Follow || c.type == CmdType::Unfollow || c.type == CmdType::Poke)
+      post(EvtType::PeopleWriteDone, 0, why, false);
+    if (c.type == CmdType::OpenUserPosts) post(EvtType::SideListUpdated, 0, "", false);
     return false;
   }
 
@@ -622,6 +628,7 @@ class Worker {
       case CmdType::Logout:
         closeRoom();
         feed_.signOut();
+        people_.signOut();
         api_.signOut();
         self_.clear();
         ready_ = false;
@@ -635,6 +642,10 @@ class Worker {
     if (!needNet(c)) return;
     if (FeedWorker::isFeedCommand(c.type)) {
       feed_.handle(c);
+      return;
+    }
+    if (PeopleWorker::isPeopleCommand(c.type)) {
+      people_.handle(c);
       return;
     }
     switch (c.type) {
@@ -781,6 +792,7 @@ class Worker {
   HttpsClient http_;
   CsApi api_;
   FeedWorker feed_;
+  PeopleWorker people_;
   SseClient msgSse_, presSse_;
   std::string email_, self_, room_;
   std::map<std::string, std::string> roomIds_;  // slug → id

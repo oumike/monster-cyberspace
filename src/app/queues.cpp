@@ -60,6 +60,7 @@ void refuseCommand(const Command& c) {
     case CmdType::OpenBookmarks:
     case CmdType::OpenGuild:
     case CmdType::GuildThreadsMore:
+    case CmdType::OpenUserPosts:
       postEvent(Event{EvtType::SideListUpdated, "", 0, false});
       break;
     case CmdType::OpenGuilds:
@@ -75,6 +76,14 @@ void refuseCommand(const Command& c) {
     case CmdType::LeaveGuild:
     case CmdType::PromoteGuild:
       postEvent(Event{EvtType::GuildWriteDone, busy, 0, false});
+      return;
+    case CmdType::OpenProfile:
+      postEvent(Event{EvtType::ProfileUpdated, "", 0, false});
+      break;
+    case CmdType::Follow:
+    case CmdType::Unfollow:
+    case CmdType::Poke:
+      postEvent(Event{EvtType::PeopleWriteDone, busy, 0, false});
       return;
     default:
       break;

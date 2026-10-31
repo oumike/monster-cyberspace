@@ -176,6 +176,21 @@ void test_log_outlines_whole_message() {
   TEST_ASSERT_EQUAL(U' ', g.at(9, 1).cp);  // it all fits: no bar
 }
 
+void test_grid_copy_cell() {
+  Grid g(4, 2);
+  g.put(0, 0, U'x', 0x1234, 0x5678);
+  g.embolden(0, 0, 0);
+  g.clearDirty();
+  g.copyCell(0, 0, 3, 1);
+  TEST_ASSERT_TRUE(g.at(3, 1) == g.at(0, 0));
+  TEST_ASSERT_TRUE(g.at(3, 1).bold);
+  TEST_ASSERT_TRUE(g.rowDirty(1));
+  TEST_ASSERT_FALSE(g.rowDirty(0));
+  g.copyCell(0, 0, 4, 1);  // out of range: ignored
+  g.copyCell(-1, 0, 2, 1);
+  TEST_ASSERT_EQUAL(U' ', g.at(2, 1).cp);
+}
+
 void test_grid_outline() {
   Grid g(6, 4);
   g.clearDirty();
@@ -1610,6 +1625,7 @@ int main() {
   RUN_TEST(test_log_follow_and_select);
   RUN_TEST(test_log_render_follow_and_select);
   RUN_TEST(test_log_outlines_whole_message);
+  RUN_TEST(test_grid_copy_cell);
   RUN_TEST(test_grid_outline);
   RUN_TEST(test_cursor_hidden);
   RUN_TEST(test_log_preserves_selection_on_setLines);

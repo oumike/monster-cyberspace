@@ -109,10 +109,7 @@ void EntryList::render(Grid& g, int top, int bottom, const Theme& t, int rightRe
   const int barBottom = big ? std::min(bottom, top + 2 * visible) : bottom;
   drawScrollBar(g, barCol, top, barBottom, total, visible, first, t, t.bg);
   if (big && needsScrollBar(total, visible))
-    for (int k = 0; k < visible; ++k) {
-      const Cell& c = g.at(barCol, top + 2 * k);
-      g.put(headBar, top + 2 * k, c.cp, c.fg, c.bg);
-    }
+    for (int k = 0; k < visible; ++k) g.copyCell(barCol, top + 2 * k, headBar, top + 2 * k);
 }
 
 }  // namespace rc

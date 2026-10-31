@@ -50,7 +50,7 @@ void Grid::addEdges(int col, int row, uint8_t edges, uint16_t color) {
   if (col < 0 || row < 0 || col >= cols_ || row >= rows_) return;
   Cell& cell = cells_[static_cast<size_t>(row) * cols_ + col];
   cell.edges |= edges;
-  cell.edgeColor = color;
+  cell.setEdgeColor(color);
 }
 
 void Grid::fillRow(int row, uint16_t bg) {
@@ -86,7 +86,7 @@ void Grid::outline(int c0, int r0, int c1, int r1, uint16_t color) {
       if (!e) continue;
       Cell& cell = cells_[static_cast<size_t>(r) * cols_ + c];
       cell.edges |= e;
-      cell.edgeColor = color;
+      cell.setEdgeColor(color);
     }
   }
 }
@@ -125,6 +125,13 @@ uint64_t Grid::rowHash(int row) const {
         uint32_t(c->edges ? c->edgeColor : 0) << 8);
   }
   return h;
+}
+
+void Grid::copyCell(int fromCol, int fromRow, int toCol, int toRow) {
+  if (fromCol < 0 || fromRow < 0 || fromCol >= cols_ || fromRow >= rows_) return;
+  if (toCol < 0 || toRow < 0 || toCol >= cols_ || toRow >= rows_) return;
+  cells_[static_cast<size_t>(toRow) * cols_ + toCol] =
+      cells_[static_cast<size_t>(fromRow) * cols_ + fromCol];
 }
 
 bool Grid::rowDirty(int row) const {

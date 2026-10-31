@@ -77,7 +77,7 @@ void Renderer::drawRow(const Grid& g, int r, const CellFont& font, RowSpan span,
   const int rb = rowBytes(font);
   const int cols = std::min(g.cols(), (w_ - ox) / cw);
   const int used = ox + cols * cw;
-  const uint16_t bg0 = g.cols() > 0 ? g.at(0, r).bg : 0;
+  const uint16_t bg0 = g.cols() > 0 ? cellColor(g.at(0, r).bg) : 0;
   int barX = -1;  // a scroll bar's left px in this row
   uint16_t barColor = 0;
   const int barW = std::max(2, cw / 4);
@@ -88,7 +88,7 @@ void Renderer::drawRow(const Grid& g, int r, const CellFont& font, RowSpan span,
     if (cell.cp == kScrollBarCp) {
       // The last cell's bar goes on the panel edge, as its right edge does.
       barX = (c == cols - 1 ? w_ : ox + (c + 1) * cw) - barW;
-      barColor = cell.fg;
+      barColor = cellColor(cell.fg);
     } else {
       glyphs_[c] = cellGlyph(font, cell.cp);
     }
@@ -123,9 +123,10 @@ void Renderer::drawRow(const Grid& g, int r, const CellFont& font, RowSpan span,
           if (prev->bold) sb |= sb >> 1;
           bits |= uint16_t(sb << (cw - half));
         }
-        for (int x = 0; x < cw; ++x) cp[x] = (bits & (0x8000 >> x)) ? cell.fg : cell.bg;
+        const uint16_t fg = cellColor(cell.fg), bg = cellColor(cell.bg);
+        for (int x = 0; x < cw; ++x) cp[x] = (bits & (0x8000 >> x)) ? fg : bg;
         if (cell.edges) {
-          const uint16_t ec = cell.edgeColor;
+          const uint16_t ec = cellColor(cell.edgeColor);
           if ((gy == 0 && (cell.edges & kEdgeTop)) || (gy == ch - 1 && (cell.edges & kEdgeBottom)))
             for (int x = 0; x < cw; ++x) cp[x] = ec;
           if (cell.edges & kEdgeLeft) cp[0] = ec;
@@ -137,10 +138,10 @@ void Renderer::drawRow(const Grid& g, int r, const CellFont& font, RowSpan span,
       // Pixels right of the last whole cell take the last cell's background.
       if (used < w_ && cols > 0) {
         const Cell& last = g.at(cols - 1, r);
-        const uint16_t ec = last.edgeColor;
+        const uint16_t ec = cellColor(last.edgeColor);
         const bool line =
             (gy == 0 && (last.edges & kEdgeTop)) || (gy == ch - 1 && (last.edges & kEdgeBottom));
-        for (int x = used; x < w_; ++x) px[x] = line ? ec : last.bg;
+        for (int x = used; x < w_; ++x) px[x] = line ? ec : cellColor(last.bg);
         if (last.edges & kEdgeRight) px[w_ - 1] = ec;
       }
     }
@@ -180,7 +181,7 @@ void Renderer::draw(Grid& g, TextSize s, int firstRow, int offsetPx) {
     const int gapY = top + spans[n - 2].y + spans[n - 2].h;
     const int gapEnd = std::min(top + spans[n - 1].y, h_);
     if (gapY < gapEnd && (gapY != layer.gapY || aboveGapChanged || !sameShape)) {
-      const uint16_t bg = g.at(0, n - 2).bg;
+      const uint16_t bg = cellColor(g.at(0, n - 2).bg);
       // In strip mode a strip at a time.
       for (int y0 = gapY; y0 < gapEnd;) {
         const int y1 = strip_ ? std::min(gapEnd, y0 + stripRows_) : gapEnd;

@@ -731,8 +731,8 @@ The serial log says only whether there's a fix and satellite counts.
 
 After the screen timeout (Settings or web config, 30 s by default) with no
 key press or touch, the backlight dims for the last 10 seconds and then the
-screen locks: either the **screensaver**, the monster bouncing slowly round a
-dim screen, or **screen off**, as set by **At timeout**. Any input during the
+screen locks: either the **screensaver**, Fluffy (the monster from the boot
+splash) bouncing slowly round a dim screen, or **screen off**, as set by **At timeout**. Any input during the
 dim wakes it back to full. Incoming messages neither wake the screen nor
 restart the timeout.
 

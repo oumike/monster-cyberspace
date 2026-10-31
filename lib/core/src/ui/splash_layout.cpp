@@ -9,7 +9,8 @@ namespace rc {
 
 namespace {
 
-// Lines share a left edge, so pad nothing on the right.
+// Fluffy, the project's mascot. Lines share a left edge, so pad nothing on
+// the right.
 const char* const kArt[] = {
     R"( /\       /\)",
     R"(/  '-----'  \)",

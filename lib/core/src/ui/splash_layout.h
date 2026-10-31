@@ -18,17 +18,18 @@ struct SplashLine {
   int scale = 1;
 };
 
-// The boot splash: a text-art monster over the name, `detail` (version and
-// board) and a "> booting" prompt, centred in a cols x rows grid. The art is
-// left out when it doesn't fit; text is clipped to the width. A non-empty
-// `say` puts a speech bubble beside the monster, its tail pointing at it,
-// wrapped to fit; it is left out when there isn't room. maxScale > 1 lets the
-// art grow, up to that many times, on a grid with room for it (the X4's tall
-// panel); the bubble then sits above it, its tail pointing down.
+// The boot splash: Fluffy, the text-art monster mascot, over the name,
+// `detail` (version and board) and a "> booting" prompt, centred in a
+// cols x rows grid. The art is left out when it doesn't fit; text is clipped
+// to the width. A non-empty `say` puts a speech bubble beside Fluffy, its
+// tail pointing at him, wrapped to fit; it is left out when there isn't room.
+// maxScale > 1 lets the art grow, up to that many times, on a grid with room
+// for it (the X4's tall panel); the bubble then sits above it, its tail
+// pointing down.
 std::vector<SplashLine> splashLayout(int cols, int rows, std::string_view detail,
                                      std::string_view say = {}, int maxScale = 1);
 
-// What the monster says in its bubble.
+// What Fluffy says in his bubble.
 constexpr int kMonsterWordCount = 6;
 extern const char* const kMonsterWords[kMonsterWordCount];
 

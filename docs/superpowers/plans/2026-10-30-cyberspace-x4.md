@@ -29,7 +29,7 @@ Spec: `docs/superpowers/specs/2026-10-30-cyberspace-x4-design.md`. Branch `x4`.
 - [x] 2. Settings: `phrases` (≤10 × ≤80 bytes), `webConfig` (on),
   `idleSecs` (300), `wakeMins` (15); portable phrase helpers; NVS and backup
   YAML. Tests in `test_backup_yaml`, `test_phrases`.
-- [ ] 3. `power/power_policy`: idle-on-battery → sleep, timed wake, critical
+- [x] 3. `power/power_policy`: idle-on-battery → sleep, timed wake, critical
   battery → off. Test `test_power_policy`.
 - [ ] 4. Canned picker (`ui/widgets/canned_picker`): phrases then the tray
   emoji; screens open it instead of a text field when `!board::canType()`;

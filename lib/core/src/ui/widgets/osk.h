@@ -18,7 +18,8 @@ struct OskKey {
   char32_t ch = 0;  // Char: the lower-case/base character
   std::u32string label;
   OskPage to = OskPage::Letters;  // Page: the page it opens
-  int col = 0, row = 0, w = 0, h = 0;  // cells within the keyboard grid
+  int col = 0, row = 0, w = 0, h = 0;  // cells within the keyboard grid (h: 3 rows,
+                                       // pad, label, pad)
 };
 
 struct OskOutput {
@@ -27,6 +28,7 @@ struct OskOutput {
 };
 
 constexpr uint32_t kShiftLockMs = 400;  // second Shift tap within this locks caps
+constexpr uint32_t kOskFlashMs = 150;   // a touched key stays lit this long after
 
 // The on-screen keyboard: three pages of keys laid out in a grid, driven by
 // taps resolved to a key index. It emits KeyEvents for the focused screen and
@@ -34,7 +36,10 @@ constexpr uint32_t kShiftLockMs = 400;  // second Shift tap within this locks ca
 class Osk {
  public:
   static int keyRows(TextSize s);  // 2 Comfortable (32 px), 3 Compact (36 px)
-  static int rows(TextSize s);     // 4 * keyRows(s)
+  static int rows(TextSize s);     // 4 * keyRows(s): the screen rows it takes
+  // The keyboard grid's rows: each key row is three (a pad, the labels, a pad,
+  // so labels sit in the middle), then one more taking the grid's bottom pad.
+  static int gridRows();
   void layout(int cols, TextSize s);  // rebuilds keys() for the current page
   void reset();                       // Letters page, Shift off (each time it is shown)
   const std::vector<OskKey>& keys() const { return keys_; }
@@ -42,14 +47,20 @@ class Osk {
   bool shifted() const { return shifted_; }
   bool capsLock() const { return caps_; }
   OskOutput press(int i, uint32_t nowMs);
-  // Fills g (a rows()-row grid) and registers one Osk target per key.
-  void render(Grid& g, const Theme& t) const;
+  // A finger is on key i: it is drawn lit until kOskFlashMs after the last
+  // call. A new page or layout puts the light out.
+  void touch(int i, uint32_t nowMs);
+  // Fills g (a gridRows()-row grid, stacked, with the pads) and registers one
+  // Osk target per key.
+  void render(Grid& g, const Theme& t, uint32_t nowMs) const;
 
  private:
   std::vector<OskKey> keys_;
   OskPage page_ = OskPage::Letters;
   bool shifted_ = false, caps_ = false;
   uint32_t lastShiftMs_ = 0;
+  int lit_ = -1;
+  uint32_t litUntil_ = 0;
   int cols_ = 0;
   TextSize size_ = TextSize::Comfortable;
 };

@@ -76,14 +76,15 @@ std::vector<Row> pageRows(OskPage p) {
 
 int Osk::keyRows(TextSize s) { return s == TextSize::Compact ? 3 : 2; }
 int Osk::rows(TextSize s) { return 4 * keyRows(s); }
+int Osk::gridRows() { return 4 * 3 + 1; }
 
 void Osk::layout(int cols, TextSize s) {
   cols_ = cols;
   size_ = s;
   keys_.clear();
+  lit_ = -1;
   const int unit = cols / 10;
   const int margin = (cols - unit * 10) / 2;
-  const int h = keyRows(s);
   std::vector<Row> rows = pageRows(page_);
   for (int r = 0; r < int(rows.size()); ++r) {
     int col = margin + (rows[r].halfOffset ? unit / 2 : 0);
@@ -94,9 +95,9 @@ void Osk::layout(int cols, TextSize s) {
       k.label = sp.label;
       k.to = sp.to;
       k.col = col;
-      k.row = r * h;
+      k.row = r * 3;
       k.w = sp.wUnits * unit;
-      k.h = h;
+      k.h = 3;
       keys_.push_back(k);
       col += sp.wUnits * unit;
     }
@@ -159,18 +160,39 @@ OskOutput Osk::press(int i, uint32_t nowMs) {
   return o;
 }
 
-void Osk::render(Grid& g, const Theme& t) const {
+void Osk::touch(int i, uint32_t nowMs) {
+  if (i < 0 || i >= int(keys_.size())) return;
+  lit_ = i;
+  litUntil_ = nowMs + kOskFlashMs;
+}
+
+void Osk::render(Grid& g, const Theme& t, uint32_t nowMs) const {
   g.fill(t.bg);
+  g.setStacked(true);
+  const int rowH = cellSize(size_).h;
+  const int band = keyRows(size_) * rowH;
+  const int above = (band - rowH) / 2;
+  for (int b = 0; b < 4; ++b) {
+    g.setRowPad(b * 3, above);
+    g.setRowPad(b * 3 + 1, rowH);
+    g.setRowPad(b * 3 + 2, band - rowH - above);
+  }
+  g.setRowPad(4 * 3, 0);
+  const int lit = lit_ >= 0 && int32_t(litUntil_ - nowMs) > 0 ? lit_ : -1;
   for (int i = 0; i < int(keys_.size()); ++i) {
     const OskKey& k = keys_[i];
     const bool activeShift = k.kind == OskKind::Shift && (shifted_ || caps_);
-    const uint16_t bg = activeShift ? t.selectBg : t.inputBg;
-    const uint16_t fg = activeShift ? t.selectFg : t.fg;
+    const bool on = activeShift || i == lit;
+    const uint16_t bg = on ? t.selectBg : t.inputBg;
+    const uint16_t fg = on ? t.selectFg : t.fg;
     const int c1 = k.col + k.w - 1, r1 = k.row + k.h - 1;
     for (int r = k.row; r <= r1; ++r)
       for (int c = k.col; c <= c1; ++c) g.put(c, r, U' ', fg, bg);
-    const int lc = k.col + std::max(0, k.w - textWidth(k.label)) / 2;
-    g.putText(lc, k.row + k.h / 2, k.label, fg, bg, k.w);
+    const int tw = textWidth(k.label);
+    const int spare = k.w - tw;
+    const int lc = k.col + std::max(0, spare) / 2;
+    g.putText(lc, k.row + 1, k.label, fg, bg, k.w);
+    if (spare > 0 && spare % 2) g.nudge(lc, lc + tw - 1, k.row + 1);
     g.outline(k.col, k.row, c1, r1, t.dim);
     if (activeTaps()) {
       Target tt;

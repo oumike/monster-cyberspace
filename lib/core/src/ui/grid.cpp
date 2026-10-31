@@ -68,6 +68,12 @@ void Grid::embolden(int c0, int c1, int row) {
     cells_[static_cast<size_t>(row) * cols_ + c].bold = true;
 }
 
+void Grid::nudge(int c0, int c1, int row) {
+  if (row < 0 || row >= rows_) return;
+  for (int c = std::max(c0, 0); c <= std::min(c1, cols_ - 1); ++c)
+    cells_[static_cast<size_t>(row) * cols_ + c].nudge = true;
+}
+
 void Grid::outline(int c0, int r0, int c1, int r1, uint16_t color) {
   c0 = std::max(c0, 0);
   r0 = std::max(r0, 0);
@@ -191,6 +197,18 @@ std::vector<RowSpan> rowSpans(const Grid& g, int rowH, int bigH) {
   const int n = g.rows();
   std::vector<RowSpan> out(n, RowSpan{0, 0});
   if (n == 0) return out;
+  if (g.stacked()) {
+    int y = 0;
+    for (int r = 0; r < n; ++r) {
+      RowKind k = g.rowKind(r);
+      int h = k == RowKind::Skip ? 0 : k == RowKind::Big ? bigH : rowH;
+      if (g.rowPad(r) >= 0) h = g.rowPad(r);
+      if (r == n - 1) h += g.bottomPad();
+      out[r] = RowSpan{y, h, g.rowShift(r)};
+      y += h;
+    }
+    return out;
+  }
   const int headPx = g.header().px;
   const int lastY = (n - 1) * rowH + (headPx > 0 && n > 1 ? std::max(0, headPx - rowH) : 0);
   int y = 0;

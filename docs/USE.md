@@ -110,8 +110,8 @@ Every screen works by touch. Touch never wakes a dark screen.
   a highlighted outline.
 
 **Keyboard.** Tapping a text field docks a keyboard at the bottom; the screen
-above it gets shorter. Picking Reply in a feed entry's or reply's menu docks
-it too.
+above it gets shorter. Picking Reply in a chat message's, feed entry's or
+reply's menu, or Mention in a person's, docks it too.
 
 - `⇧` shifts the next letter; tap it twice quickly to lock caps, and once
   more to unlock.

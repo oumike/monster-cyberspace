@@ -79,12 +79,23 @@ int64_t lastInputMs = 0, lockedAt = INT64_MIN / 2, nextBounce = 0;
 Power lockedTo = Power::Dark;  // where a peek returns to
 uint8_t lit = 255;             // the backlight level set while the screen is lit
 Bouncer bouncer;
+// The monster's word on the screensaver, a new one every kSayMs.
+MonsterWords words;
+const char* saying = "";
+int64_t sayUntil = 0;
+constexpr int64_t kSayMs = 20000;
 bool needResize = true;
 // The text size the grid was last sized for: the saved one, or Compact on a
 // screen that asks for it.
 TextSize gridSize = TextSize::Comfortable;
 
+// The splash and the monster screensaver look the same at every text size.
+bool fixedSize() {
+  return router::current() == router::Id::Splash || power == Power::Bounce || power == Power::Dark;
+}
+
 TextSize wantedSize() {
+  if (fixedSize()) return TextSize::Comfortable;
   return router::screen().compactText() ? TextSize::Compact : app().cfg.textSize;
 }
 
@@ -98,7 +109,8 @@ void resizeGrid() {
   const int rowH = cellSize(ts).h;
   // Touch boards without a keyboard or without keys that move a selection get
   // a taller status bar, easier to tap.
-  const HeaderSize hd = board::hasTouch() && (!board::hasKeyboard() || !board::hasKeys())
+  const HeaderSize hd = !fixedSize() && board::hasTouch() &&
+                                (!board::hasKeyboard() || !board::hasKeys())
                             ? touchHeader(board::panelWidth(), ts)
                             : HeaderSize{};
   gridDims(board::panelWidth(), board::panelHeight(), ts, cols, rows, hd.px);
@@ -110,7 +122,7 @@ void resizeGrid() {
     const int k = Osk::rows(ts);
     grid.resize(cols, rows - k);
     grid.setBottomPad(0);
-    oskGrid.resize(cols, k);
+    oskGrid.resize(cols, Osk::gridRows());
     oskGrid.setBottomPad(slack);
     osk.layout(cols, ts);
   } else {
@@ -221,6 +233,8 @@ void goDark() {
   // An e-paper panel keeps its last image with the power off, so it is left
   // showing the still screensaver rather than a frozen screen.
   if (board::eink()) {
+    sayUntil = 0;
+    if (wantedSize() != gridSize) resizeGrid();
     drawBounce(currentTheme());
     renderer.draw(grid, gridSize);
   }
@@ -230,11 +244,15 @@ void goDark() {
 // The splash monster and name, bouncing slowly around a black screen. On
 // e-paper it sits still in the middle.
 void drawBounce(const Theme& t) {
-  std::vector<SplashLine> ls = splashLayout(grid.cols(), grid.rows(), "");
+  if (nowMs() >= sayUntil) {
+    saying = words.next(esp_random());
+    sayUntil = nowMs() + kSayMs;
+  }
+  std::vector<SplashLine> ls = splashLayout(grid.cols(), grid.rows(), "", saying);
   int minC = grid.cols(), minR = grid.rows(), maxC = 0, maxR = 0;
   ls.erase(std::remove_if(ls.begin(), ls.end(),
                           [](const SplashLine& l) {
-                            return l.role != SplashRole::Art && l.role != SplashRole::Title;
+                            return l.role == SplashRole::Detail || l.role == SplashRole::Prompt;
                           }),
            ls.end());
   for (const SplashLine& l : ls) {
@@ -261,6 +279,7 @@ void lockScreen(int64_t now) {
   if (!app().cfg.screenSaver) return goDark();
   showOsk(false);
   power = lockedTo = Power::Bounce;
+  sayUntil = 0;
   bouncer = Bouncer{int(random(0, 1000)), int(random(0, 1000)), random(0, 2) ? 1 : -1,
                     random(0, 2) ? 1 : -1};
   nextBounce = now;
@@ -502,6 +521,11 @@ void taskMain(void*) {
         lastInputMs = nowMs();
         setLit(255);
       }
+      // A key of the on-screen keyboard lights while a finger is on it.
+      if (down && oskShown && !touchSwallow) {
+        const Target h = taps.hit(tx, ty);
+        if (h.kind == TargetKind::Osk) osk.touch(h.index, millis());
+      }
       Gesture g;
       if (!touchSwallow && gestures.feed(down, tx, ty, millis(), g)) {
         TouchOutput out;
@@ -518,6 +542,7 @@ void taskMain(void*) {
             showOsk(true);
         }
         if (out.oskKey >= 0 && oskShown) {
+          osk.touch(out.oskKey, millis());
           OskOutput o = osk.press(out.oskKey, millis());
           if (o.key.action != Action::None) handleKey(o.key);
           if (o.hide) showOsk(false);
@@ -541,6 +566,7 @@ void taskMain(void*) {
     if (power == Power::Saver && now >= saverUntil) {
       if (lockedTo == Power::Bounce) {
         power = Power::Bounce;
+        sayUntil = 0;
         nextBounce = now;
         setLit(kSaverLevel);
       } else {
@@ -602,7 +628,8 @@ void taskMain(void*) {
       renderer.draw(grid, gridSize);
       if (oskShown) {
         taps.setOrigin(cellSize(gridSize), grid.rows(), oskOffsetPx);
-        osk.render(oskGrid, t);
+        osk.render(oskGrid, t, millis());
+        taps.mapRows(grid.rows(), rowSpans(oskGrid, cellSize(gridSize).h, bigCellSize(gridSize).h));
         renderer.draw(oskGrid, gridSize, grid.rows(), oskOffsetPx);
       }
     } else if (power == Power::Saver) {
@@ -649,6 +676,8 @@ void cycleTextSize() { setTextSize(nextTextSize(app().cfg.textSize)); }
 void setRotation(uint8_t r) { applyRotation(r); }
 
 bool fromTouch() { return touchKey; }
+
+const char* monsterWord() { return words.next(esp_random()); }
 
 void showKeyboard() { oskWanted = true; }
 

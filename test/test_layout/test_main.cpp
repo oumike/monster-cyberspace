@@ -703,6 +703,71 @@ void test_splash_art_is_one_block() {
   TEST_ASSERT_TRUE(n >= 4);
 }
 
+static std::vector<const SplashLine*> bubble(const std::vector<SplashLine>& v) {
+  std::vector<const SplashLine*> out;
+  for (const auto& l : v)
+    if (l.role == SplashRole::Bubble) out.push_back(&l);
+  return out;
+}
+
+void test_splash_bubble_beside_the_monster() {
+  auto v = splashLayout(40, 15, "v0.1.0 \u00b7 M9", "boo");
+  auto b = bubble(v);
+  TEST_ASSERT_EQUAL(3, int(b.size()));
+  const SplashLine* art = findRole(v, SplashRole::Art);
+  TEST_ASSERT_NOT_NULL(art);
+  TEST_ASSERT_EQUAL_STRING(".-----.", b[0]->text.c_str());
+  TEST_ASSERT_EQUAL_STRING("< boo |", b[1]->text.c_str());
+  TEST_ASSERT_EQUAL_STRING("'-----'", b[2]->text.c_str());
+  TEST_ASSERT_EQUAL(art->row, b[0]->row);
+  TEST_ASSERT_TRUE(b[0]->col > art->col + 12);
+  for (const auto& l : v) TEST_ASSERT_TRUE(l.col + int(utf8Length(l.text)) <= 40);
+}
+
+void test_splash_bubble_wraps_long_words() {
+  const char* say = "We've been trying to reach you about your car's extended warranty.";
+  for (int cols : {30, 40, 60}) {
+    auto v = splashLayout(cols, 20, "v0.1.0", say);
+    auto b = bubble(v);
+    TEST_ASSERT_TRUE(b.size() >= 4);
+    std::string joined;
+    for (size_t i = 1; i + 1 < b.size(); ++i) {
+      const std::string& t = b[i]->text;
+      TEST_ASSERT_EQUAL(int(utf8Length(b[0]->text)), int(utf8Length(t)));
+      TEST_ASSERT_EQUAL_CHAR(i == 1 ? '<' : '|', t[0]);
+      joined += t.substr(2, t.size() - 4);
+    }
+    TEST_ASSERT_TRUE(joined.find("warranty.") != std::string::npos);
+    for (const auto& l : v) {
+      TEST_ASSERT_TRUE(l.col >= 0 && l.col + int(utf8Length(l.text)) <= cols);
+      TEST_ASSERT_TRUE(l.row >= 0 && l.row < 20);
+    }
+  }
+}
+
+void test_splash_drops_bubble_without_room() {
+  auto v = splashLayout(16, 15, "v0.1.0", "meow");
+  TEST_ASSERT_NOT_NULL(findRole(v, SplashRole::Art));
+  TEST_ASSERT_TRUE(bubble(v).empty());
+}
+
+void test_monster_words_shuffle() {
+  MonsterWords w;
+  const char* last = nullptr;
+  uint32_t r = 7;
+  for (int round = 0; round < 20; ++round) {
+    std::vector<std::string> seen;
+    for (int i = 0; i < kMonsterWordCount; ++i) {
+      r = r * 1103515245u + 12345u;
+      const char* s = w.next(r);
+      TEST_ASSERT_TRUE(s != last);  // never the same twice running
+      last = s;
+      for (const auto& x : seen) TEST_ASSERT_FALSE(x == s);
+      seen.push_back(s);
+    }
+  }
+}
+
 void test_splash_drops_art_when_too_small() {
   auto v = splashLayout(24, 6, "v0.1.0 \u00b7 WioL2");
   TEST_ASSERT_NULL(findRole(v, SplashRole::Art));
@@ -896,6 +961,10 @@ int main() {
   RUN_TEST(test_splash_fits_both_text_sizes);
   RUN_TEST(test_splash_art_is_one_block);
   RUN_TEST(test_splash_drops_art_when_too_small);
+  RUN_TEST(test_splash_bubble_beside_the_monster);
+  RUN_TEST(test_splash_bubble_wraps_long_words);
+  RUN_TEST(test_splash_drops_bubble_without_room);
+  RUN_TEST(test_monster_words_shuffle);
   RUN_TEST(test_button_grid_three_columns);
   RUN_TEST(test_guild_row_counts_role);
   RUN_TEST(test_guild_row_no_apprentices);

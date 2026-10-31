@@ -456,6 +456,7 @@ void RoomScreen::pickMenu() {
       if (key == "mention") {
         insertText(utf8ToU32("@" + target_ + " "));
         setDrawer(false);
+        ui::showKeyboard();
       } else if (app().conn == 0) {
         ui::banner("Offline: not sent", true);
       } else {
@@ -474,6 +475,7 @@ void RoomScreen::pickMenu() {
       if (key == "reply") {
         insertText(utf8ToU32("@" + m.username + " "));
         log_.follow();
+        ui::showKeyboard();
       } else if (key == "reveal") {
         lockedChat().with([&](ChatState& s) { s.revealed.insert(target_); });
         relayout_ = true;

@@ -22,6 +22,7 @@ class SplashScreen : public Screen {
 
  private:
   int64_t since_ = -1;
+  const char* say_ = "";
 };
 
 class SetupScreen : public Screen {

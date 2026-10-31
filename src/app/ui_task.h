@@ -23,6 +23,8 @@ void banner(const std::string& text, bool error);
 // The key being handled came from the touch screen (a tap, drag or the
 // on-screen keyboard), not a button or keyboard.
 bool fromTouch();
+// The next word for the monster's speech bubble (ui/splash_layout.h).
+const char* monsterWord();
 // Docks the on-screen keyboard after this key, on touch boards without a
 // keyboard, if the screen then takes text.
 void showKeyboard();

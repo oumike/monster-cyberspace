@@ -16,8 +16,10 @@ struct Cell {
   uint8_t edges = 0;
   uint16_t edgeColor = 0;
   bool bold = false;
+  bool nudge = false;  // the glyph is drawn half a cell right (Grid::nudge)
   bool operator==(const Cell& o) const {
     return cp == o.cp && fg == o.fg && bg == o.bg && edges == o.edges && bold == o.bold &&
+           nudge == o.nudge &&
            (!edges || edgeColor == o.edgeColor);
   }
   bool operator!=(const Cell& o) const { return !(*this == o); }
@@ -56,6 +58,10 @@ class Grid {
   // Draws cells [c0..c1] of a row bold. Call it after writing the cells: put()
   // clears it.
   void embolden(int c0, int c1, int row);
+  // Draws the glyphs of cells [c0..c1] of a row half a cell to the right, into
+  // the cell after c1, for centring text to the pixel. Call it after writing
+  // the cells: put() clears it.
+  void nudge(int c0, int c1, int row);
   // ORs edges into one cell's edges, in color.
   void addEdges(int col, int row, uint8_t edges, uint16_t color);
   void setRowKind(int row, RowKind k);
@@ -76,6 +82,11 @@ class Grid {
   // and resize().
   void setBottomPad(int px) { bottomPad_ = px < 0 ? 0 : px; }
   int bottomPad() const { return bottomPad_; }
+  // Stacked: every row, the last too, goes straight under the one before at
+  // its own height (pad or kind), and the bottom pad goes under the last; no
+  // header. Kept across fill() and resize().
+  void setStacked(bool on) { stacked_ = on; }
+  bool stacked() const { return stacked_; }
   const Cell& at(int col, int row) const;
   bool rowDirty(int row) const;
   void clearDirty();
@@ -90,6 +101,7 @@ class Grid {
   std::vector<int16_t> pads_, shifts_;
   HeaderSize header_;
   int bottomPad_ = 0;
+  bool stacked_ = false;
 };
 
 // The values are saved on the device and sent by the web page: never reorder.
@@ -121,7 +133,8 @@ HeaderSize touchHeader(int panelW, TextSize s);
 // (Normal rowH, Big bigH, Skip 0) or by their pad height; the last row stays at (rows-1)*rowH, so
 // the hint keeps its place, and a row reaching past it is cut short. A header
 // (Grid::setHeader) makes row 0 its px tall and moves the last row down by the
-// difference; the last row also takes the grid's bottom pad.
+// difference; the last row also takes the grid's bottom pad. A stacked grid
+// (Grid::setStacked) just stacks every row.
 struct RowSpan {
   int y, h;
   int x = 0;  // the row's shift (Grid::setRowShift)

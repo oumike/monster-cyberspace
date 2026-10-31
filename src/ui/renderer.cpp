@@ -70,10 +70,25 @@ void Renderer::drawRow(const Grid& g, int r, const CellFont& font, RowSpan span,
       barColor = cell.fg;
     }
     const uint8_t* glyph = cell.cp == kScrollBarCp ? nullptr : cellGlyph(font, cell.cp);
+    // A nudged cell's glyph sits half a cell right, its right part in the
+    // next cell.
+    const Cell* prev = c > 0 ? &g.at(c - 1, r) : nullptr;
+    const uint8_t* spill =
+        prev && prev->nudge && prev->cp != kScrollBarCp ? cellGlyph(font, prev->cp) : nullptr;
+    const int half = cw / 2;
+    auto rowBits = [&](const uint8_t* gl, int y) -> uint16_t {
+      return rb == 1 ? gl[y] << 8 : (gl[y * 2] << 8) | gl[y * 2 + 1];
+    };
     for (int y = 0; y < ch; ++y) {
       uint16_t bits = 0;
-      if (glyph) bits = rb == 1 ? glyph[y] << 8 : (glyph[y * 2] << 8) | glyph[y * 2 + 1];
+      if (glyph) bits = rowBits(glyph, y);
       if (cell.bold) bits |= bits >> 1;
+      if (cell.nudge) bits >>= half;
+      if (spill) {
+        uint16_t sb = rowBits(spill, y);
+        if (prev->bold) sb |= sb >> 1;
+        bits |= uint16_t(sb << (cw - half));
+      }
       uint16_t* px = frame_ + static_cast<size_t>(y0 + y) * w_ + x0;
       for (int x = 0; x < cw; ++x) px[x] = (bits & (0x8000 >> x)) ? cell.fg : cell.bg;
     }

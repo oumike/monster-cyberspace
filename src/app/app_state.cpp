@@ -1,9 +1,12 @@
 #include "app/app_state.h"
 
+#include <esp_timer.h>
 #include <sys/time.h>
+
 
 #include "hal/board.h"
 #include "net/wifi_mgr.h"
+#include "power/battery_meter.h"
 #include "screens/router.h"
 #include "ui/timefmt.h"
 #include "ui/widgets/status_bar.h"
@@ -21,6 +24,13 @@ int64_t nowEpochMs() {
   timeval tv;
   gettimeofday(&tv, nullptr);
   return int64_t(tv.tv_sec) * 1000 + tv.tv_usec / 1000;
+}
+
+int batteryShown() {
+  static BatteryMeter meter;
+  const int64_t now = esp_timer_get_time() / 1000;
+  if (meter.due(now)) meter.feed(board::batteryPercent(), now);
+  return meter.shown();
 }
 
 std::string clockText() {
@@ -49,7 +59,7 @@ bool setupApHasPassword() { return wifimgr::apHasPassword(); }
 void drawStatus(Grid& g, const Theme& t, std::u32string_view title, int count, bool menu) {
   char32_t marker = app().conn == 2 ? U'\u25CF' : app().conn == 1 ? U'\u25CC' : U'\u2715';
   StatusTouch touch{board::hasTouch(), router::current() != router::Id::Home, menu};
-  renderStatusBar(g, t, title, count, marker, wifiBars(), board::batteryPercent(), clockText(),
+  renderStatusBar(g, t, title, count, marker, wifiBars(), batteryShown(), clockText(),
                   touch);
 }
 

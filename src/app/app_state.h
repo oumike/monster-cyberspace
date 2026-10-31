@@ -51,5 +51,8 @@ int wifiBars();
 // A local-time "HH:MM", or "--:--" before SNTP has set the clock.
 std::string clockText();
 int64_t nowEpochMs();
+// The battery percent to show (-1 unknown), steadied by a BatteryMeter. UI
+// task only; it reads the board every 2 s.
+int batteryShown();
 
 }  // namespace rc

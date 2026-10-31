@@ -95,6 +95,7 @@ void EntryScreen::closeOverlays() {
 }
 
 void EntryScreen::leaveToList() {
+  if (router::backToOrigin()) return;
   const router::Place base = router::lastBase();
   if (base.id == router::Id::Guild) router::go(router::Id::Guild, base.arg);
   else router::go(router::Id::FeedList);

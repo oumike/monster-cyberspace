@@ -103,9 +103,13 @@ Every screen works by touch. Touch never wakes a dark screen.
   outside an open menu or confirm closes it. A tap on a banner dismisses it.
 - **Scroll:** drag a list or log to move line by line; swipe up or down to
   move a page. Dragging past the end of a list stops there.
-- **Home** shows six large tiles: messages, rooms, c-mail, feed, guilds and
-  settings. The messages tile shows the last room, or how many mentions are
-  unread (in the accent colour) while there are any. They fill about 90% of the space below the status bar, centred
+- **Home** shows seven large tiles: **unread** across the top, then messages,
+  rooms, c-mail, feed, guilds and settings two to a row. The unread tile shows
+  how many things are unread (see [Unread](#unread)), in the accent colour
+  while there are any. The messages tile shows the last room, or how many
+  mentions are unread (in the accent colour) while there are any. If the tiles
+  don't fit (a small screen at a large text size), Home is the list the
+  keyed boards use. They fill about 90% of the space below the status bar, centred
   and spaced apart, with their labels in a larger font. The selected tile has
   a highlighted outline.
 
@@ -529,6 +533,26 @@ colour. The other themes draw nicks
 in the text colour, and yours in the dim one. QR codes stay
 black on white in every theme. The T-Deck Pro's e-paper has one theme of its
 own, black on white with outlined selections, and no Theme item.
+
+## Unread
+
+**Unread** lists everything waiting for you in one place, newest first:
+unread C-Mail conversations, cIRC mentions of you, and Feed and guild alerts.
+Open it from Home on every board: it is the second item in the Home list,
+after Messages (`Unread  N`, marked while N is above 0), and the full-width
+tile at the top of the Home tiles on touch boards. The status bar shows the
+total; with nothing waiting it says "nothing unread".
+
+- Each row starts with what it is: `mail` (`@name: last message`, with the
+  conversation's unread count on the right), `irc` (`@name in #room: …`) or
+  `feed` (`@name replied: …`, or a new guild thread).
+- Up/Down pick, Centre or Right opens (tap on touch boards); Left or Back
+  goes Home.
+- Opening a row opens the conversation, the room (which becomes your last
+  room) or the entry, and marks it read the way opening it anywhere else
+  does. Back from there returns to Unread, so you can work down the list.
+- Nothing is fetched for this screen: it shows what the device already knows
+  from the checks described under [Alerts](#alerts).
 
 ## Alerts
 

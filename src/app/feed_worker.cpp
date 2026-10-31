@@ -736,7 +736,7 @@ void FeedWorker::onNotice(const Mention& m, bool buzzer) {
     lockedFeed().with([&](FeedState& s) {
       for (const auto& n : s.notices)
         if (n.id == m.id) return;
-      s.notices.push_back(FeedNotice{m.id, m.targetId, text});
+      s.notices.push_back(FeedNotice{m.id, m.targetId, text, m.at});
       if (s.notices.size() > kMaxNotices) s.notices.erase(s.notices.begin());
     });
     post(EvtType::FeedAlert, text, buzzer ? 1 : 0);
@@ -758,7 +758,7 @@ void FeedWorker::onNotice(const Mention& m, bool buzzer) {
   lockedFeed().with([&](FeedState& s) {
     for (const auto& n : s.notices)
       if (n.id == m.id) return;
-    s.notices.push_back(FeedNotice{m.id, m.targetId, text});
+    s.notices.push_back(FeedNotice{m.id, m.targetId, text, m.at});
     if (s.notices.size() > kMaxNotices) s.notices.erase(s.notices.begin());
   });
   post(EvtType::FeedAlert, text, buzzer ? 1 : 0);

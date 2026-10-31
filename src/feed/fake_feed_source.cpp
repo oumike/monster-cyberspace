@@ -1032,7 +1032,7 @@ void FakeFeedSource::notice() {
   truncateCodePoints(preview, kPreviewCodePoints);
   std::string alert = "@" + who + " replied: " + preview;
   lockedFeed().with([&](FeedState& s) {
-    s.notices.push_back(FeedNotice{noticeId, postId, alert});
+    s.notices.push_back(FeedNotice{noticeId, postId, alert, epochMs()});
     if (s.notices.size() > kMaxNotices) s.notices.erase(s.notices.begin());
   });
   // The UI decides on the beep with its buzzer setting.

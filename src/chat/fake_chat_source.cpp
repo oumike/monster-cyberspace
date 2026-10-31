@@ -373,9 +373,13 @@ void FakeChatSource::scripted() {
   });
   ++step_;
   postEvent(Event{EvtType::RoomChanged});
-  if (mention)
-    postEvent(Event{EvtType::MentionAlert,
-                    std::string("@") + who + " in #" + room + ": @" + kSelf + " are you there?"});
+  if (mention) {
+    Event ev{EvtType::MentionAlert,
+             std::string("@") + who + " in #" + room + ": @" + kSelf + " are you there?"};
+    ev.arg = room;
+    ev.at = epochMs();
+    postEvent(std::move(ev));
+  }
 }
 
 void FakeChatSource::run() {

@@ -521,6 +521,7 @@ class Worker {
       return;
     }
     for (auto& m : ms) {
+      if (m.at <= 0) m.at = epochMs();
       if (!m.type.empty() && m.type != "chat_mention") {
         // The UI decides on the beep with its buzzer setting.
         feed_.onNotice(m, true);
@@ -528,8 +529,11 @@ class Worker {
       }
       if (!seenMentions_.insert(m.id).second) continue;
       pendingMentions_.emplace(m.roomSlug, m.id);
-      post(EvtType::MentionAlert, 0,
-           "@" + m.actorUsername + " in #" + m.roomSlug + ": " + m.messageContent);
+      Event ev{EvtType::MentionAlert,
+               "@" + m.actorUsername + " in #" + m.roomSlug + ": " + m.messageContent};
+      ev.arg = m.roomSlug;
+      ev.at = m.at;
+      postEvent(std::move(ev));
     }
     if (seenMentions_.size() > 200) seenMentions_.clear();
   }

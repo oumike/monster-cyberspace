@@ -11,5 +11,6 @@ __attribute__((weak)) float batteryVolts() { return 0.0f; }
 __attribute__((weak)) void deepSleep(uint64_t) {}
 __attribute__((weak)) bool wokeByTimer() { return false; }
 __attribute__((weak)) void powerOff() {}
+__attribute__((weak)) bool setRedraw(void (*)()) { return false; }
 
 }  // namespace board

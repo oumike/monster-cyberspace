@@ -19,141 +19,151 @@
 #include "ui/eink.h"
 
 // Xteink X4 (ESP32-C3, no PSRAM), from rhino-moshi's x4.h, panel_x4.cpp,
-// buttons.cpp and power.cpp. The UI draws RGB565 strips (ui/renderer's strip
-// mode); pushRows packs them, turned to the panel's native landscape, into
-// one 48 KB 1-bit frame, which goes to the panel by rc::EinkPolicy's timing.
+// buttons.cpp and power.cpp. There is no RAM for a 48 KB 1-bit frame next to
+// Wi-Fi and TLS, so the panel's own RAM is the frame: at refresh time the UI
+// redraws every line (board::setRedraw), and each 8 portrait lines, packed and
+// turned to the panel's native landscape, go to the panel as one 480-byte
+// column. rc::EinkPolicy says when.
 
 namespace board {
 namespace {
 
 using namespace x4;
 
-constexpr int kRowBytes = NATIVE_W / 8;  // a native row
-constexpr size_t kMonoBytes = size_t(kRowBytes) * NATIVE_H;
+constexpr int kBands = NATIVE_W / 8;  // native byte columns, 8 portrait lines each
 
-// GxEPD2 clocks a frame out a byte at a time (~170 ms for 48 KB); whole
-// frames go out in one burst instead (rhino-moshi's panel_x4.cpp). Anything
-// else, and the first write after init, falls through to the library.
 class X4Panel : public GxEPD2_426_GDEQ0426T82 {
  public:
   using Base = GxEPD2_426_GDEQ0426T82;
   using Base::Base;
 
-  void writeImage(const uint8_t bitmap[], int16_t x, int16_t y, int16_t w, int16_t h, bool invert = false,
-                  bool mirror_y = false, bool pgm = false) {
-    if (!fast(0x24, bitmap, x, y, w, h, invert, mirror_y, pgm))
-      Base::writeImage(bitmap, x, y, w, h, invert, mirror_y, pgm);
+  // The driver's first write clears the panel with a full refresh; do that
+  // up front, outside a pass.
+  void ready() {
+    if (!_init_display_done || _initial_write) writeScreenBuffer();
   }
-  void writeImageForFullRefresh(const uint8_t bitmap[], int16_t x, int16_t y, int16_t w, int16_t h,
-                                bool invert = false, bool mirror_y = false, bool pgm = false) {
-    if (fast(0x26, bitmap, x, y, w, h, invert, mirror_y, pgm)) fast(0x24, bitmap, x, y, w, h, invert, mirror_y, pgm);
-    else Base::writeImageForFullRefresh(bitmap, x, y, w, h, invert, mirror_y, pgm);
-  }
-  void writeImageAgain(const uint8_t bitmap[], int16_t x, int16_t y, int16_t w, int16_t h, bool invert = false,
-                       bool mirror_y = false, bool pgm = false) {
-    if (fast(0x26, bitmap, x, y, w, h, invert, mirror_y, pgm)) fast(0x24, bitmap, x, y, w, h, invert, mirror_y, pgm);
-    else Base::writeImageAgain(bitmap, x, y, w, h, invert, mirror_y, pgm);
-  }
-
- private:
-  bool fast(uint8_t ram, const uint8_t* bitmap, int16_t x, int16_t y, int16_t w, int16_t h, bool invert,
-            bool mirror_y, bool pgm) {
-    if (x || y || w != WIDTH || h != HEIGHT || invert || mirror_y || pgm || !_init_display_done || _initial_write)
-      return false;
-    // The whole RAM, as the driver's _setPartialRamArea(0, 0, WIDTH, HEIGHT) sets it: y counts down.
+  // One native byte column, all NATIVE_H rows, to RAM ram (0x24 new, 0x26
+  // old), in one burst (GxEPD2 clocks a byte at a time). Addressed as the
+  // driver's _setPartialRamArea does: y counts down.
+  void writeBand(uint8_t ram, int band, const uint8_t* bits) {
+    const int x0 = band * 8, x1 = x0 + 7;
     _writeCommand(0x11);
     _writeData(0x01);
     _writeCommand(0x44);
-    _writeData(0);
-    _writeData(0);
-    _writeData((WIDTH - 1) % 256);
-    _writeData((WIDTH - 1) / 256);
+    _writeData(x0 % 256);
+    _writeData(x0 / 256);
+    _writeData(x1 % 256);
+    _writeData(x1 / 256);
     _writeCommand(0x45);
     _writeData((HEIGHT - 1) % 256);
     _writeData((HEIGHT - 1) / 256);
     _writeData(0);
     _writeData(0);
     _writeCommand(0x4e);
-    _writeData(0);
-    _writeData(0);
+    _writeData(x0 % 256);
+    _writeData(x0 / 256);
     _writeCommand(0x4f);
     _writeData((HEIGHT - 1) % 256);
     _writeData((HEIGHT - 1) / 256);
     _writeCommand(ram);
     _startTransfer();
-    _pSPIx->writeBytes(bitmap, uint32_t(WIDTH) * HEIGHT / 8);
+    _pSPIx->writeBytes(bits, HEIGHT);
     _endTransfer();
-    return true;
   }
 };
 
-// The driver alone: our frame is the buffer, so GxEPD2_BW's isn't needed.
+// The driver alone: no GxEPD2_BW buffer.
 X4Panel epd(EPD_CS, EPD_DC, EPD_RST, EPD_BUSY);
-uint8_t* mono = nullptr;  // native landscape, 1 = white
+void (*redraw)() = nullptr;
 rc::EinkPolicy policy;
 bool sleeping = false;
 
-// What the panel shows, as a hash per native byte column (8 portrait rows
-// each), instead of a second 48 KB frame: enough to see "nothing changed"
+// What the panel shows, as a hash per band: enough to see "nothing changed"
 // and "a new screen".
-uint32_t shownHash[kRowBytes] = {};
+uint32_t shownHash[kBands] = {};
 uint32_t lastRefreshMs = 0;
 // New content with no key press behind it redraws at most this often (spec §4.6).
 constexpr uint32_t kPassiveGapMs = 2000;
 
+// A pass: redraw's lines, packed a band at a time and written to the RAMs in
+// passRams (bit 0: 0x24, bit 1: 0x26), hashed into passHash.
+bool passing = false;
+uint8_t passRams = 0;
+uint32_t passHash[kBands];
+uint8_t band[NATIVE_H];  // native rows, 1 = white
+int bandAt = 0;          // the band being packed; bands below it are written
+
+void flushBand() {
+  uint32_t h = 2166136261u;
+  for (int i = 0; i < NATIVE_H; ++i) h = (h ^ band[i]) * 16777619u;
+  passHash[bandAt] = h;
+  if (passRams & 1) epd.writeBand(0x24, bandAt, band);
+  if (passRams & 2) epd.writeBand(0x26, bandAt, band);
+  memset(band, 0xFF, sizeof band);
+  ++bandAt;
+}
+
 // Portrait (x, y) is native (y, NATIVE_H - 1 - x): GxEPD2's rotation 3.
-void packRows(const uint16_t* frame, int y0, int y1) {
-  for (int y = y0; y < y1; ++y) {
-    const uint16_t* src = frame + size_t(y) * PANEL_W;
-    const int col = y >> 3;
-    const uint8_t bit = 0x80 >> (y & 7);
-    for (int x = 0; x < PANEL_W; ++x) {
-      uint8_t& b = mono[size_t(NATIVE_H - 1 - x) * kRowBytes + col];
-      if (rc::rgb565Dark(src[x])) b &= ~bit;
-      else b |= bit;
-    }
+void packLine(const uint16_t* src, int y) {
+  const int b = y >> 3;
+  if (b < bandAt || b >= kBands) return;  // out of order: skipped
+  while (bandAt < b) flushBand();         // lines never drawn stay white
+  const uint8_t bit = 0x80 >> (y & 7);
+  for (int x = 0; x < PANEL_W; ++x) {
+    uint8_t& v = band[NATIVE_H - 1 - x];
+    if (rc::rgb565Dark(src[x])) v &= ~bit;
+    else v |= bit;
   }
 }
 
-void columnHashes(uint32_t* out) {
-  for (int c = 0; c < kRowBytes; ++c) out[c] = 2166136261u;
-  for (int r = 0; r < NATIVE_H; ++r) {
-    const uint8_t* row = mono + size_t(r) * kRowBytes;
-    for (int c = 0; c < kRowBytes; ++c) out[c] = (out[c] ^ row[c]) * 16777619u;
-  }
+void pass(uint8_t rams) {
+  passing = true;
+  passRams = rams;
+  bandAt = 0;
+  memset(band, 0xFF, sizeof band);
+  redraw();
+  while (bandAt < kBands) flushBand();
+  passing = false;
+}
+
+int changedBands() {
+  int diff = 0;
+  for (int c = 0; c < kBands; ++c) diff += passHash[c] != shownHash[c];
+  return diff;
 }
 
 volatile uint32_t lastInput = 0;
 
+// Pass 1 (new image to 0x24, hashed) has run. Full: old = new too, then a
+// full refresh. Partial: refresh, then old = new for the next one.
 void refresh(bool full) {
   if (full) {
-    epd.writeImageForFullRefresh(mono, 0, 0, NATIVE_W, NATIVE_H);
+    pass(2);
     epd.refresh(false);
   } else {
-    epd.writeImage(mono, 0, 0, NATIVE_W, NATIVE_H);
     epd.refresh(true);
+    pass(3);
   }
-  epd.writeImageAgain(mono, 0, 0, NATIVE_W, NATIVE_H);
   epd.powerOff();
+  memcpy(shownHash, passHash, sizeof shownHash);
   lastRefreshMs = millis();
 }
 
 void serviceDisplay() {
-  if (!mono || sleeping || !policy.pending()) return;
+  if (!redraw || sleeping || !policy.pending()) return;
   const uint32_t now = millis();
   if (now - lastInput > rc::kEinkTypingMaxMs && now - lastRefreshMs < kPassiveGapMs) return;
-  uint32_t hash[kRowBytes];
-  columnHashes(hash);
-  int diff = 0;
-  for (int c = 0; c < kRowBytes; ++c) diff += hash[c] != shownHash[c];
-  const rc::EinkRefresh r = policy.due(now, lastInput, diff * 3 > kRowBytes);
-  if (r == rc::EinkRefresh::None) return;
+  // A big change only turns a partial into a full: check before drawing.
+  if (policy.due(now, lastInput, false) == rc::EinkRefresh::None) return;
+  epd.ready();
+  pass(1);
+  const int diff = changedBands();
+  const rc::EinkRefresh r = policy.due(now, lastInput, diff * 3 > kBands);
   if (r == rc::EinkRefresh::Partial && diff == 0) {
     policy.drop();
     return;
   }
   refresh(r == rc::EinkRefresh::Full);
-  memcpy(shownHash, hash, sizeof hash);
   policy.sent(r, millis());
 }
 
@@ -230,9 +240,6 @@ void begin() {
   digitalWrite(SD_CS, HIGH);
   analogSetAttenuation(ADC_11db);
 
-  mono = static_cast<uint8_t*>(malloc(kMonoBytes));
-  if (mono) memset(mono, 0xFF, kMonoBytes);
-  else Serial.println("[x4] no RAM for the e-paper frame");
   // GxEPD2 writes these before setting their mode, which logs a warning.
   for (int p : {EPD_CS, EPD_DC, EPD_RST}) {
     pinMode(p, OUTPUT);
@@ -254,12 +261,21 @@ const char* otaSlug() { return "x4"; }
 int panelWidth() { return PANEL_W; }
 int panelHeight() { return PANEL_H; }
 
-// frame points at row 0 of the full frame; only rows [y0, y1) are valid (the
+bool setRedraw(void (*fn)()) {
+  redraw = fn;
+  return true;
+}
+
+// Outside a pass, only which rows changed (frame is null). In a pass, frame
+// points at row 0 of the full frame and only rows [y0, y1) are valid (the
 // renderer's strip).
 void pushRows(const uint16_t* frame, int y0, int y1) {
-  if (!mono || y1 <= y0) return;
-  packRows(frame, y0, y1);
-  policy.changed(millis());
+  if (y1 <= y0) return;
+  if (!passing || !frame) {
+    policy.changed(millis());
+    return;
+  }
+  for (int y = y0; y < y1; ++y) packLine(frame + size_t(y) * PANEL_W, y);
 }
 
 void backlight(bool) {}
@@ -270,9 +286,10 @@ void backlightLevel(uint8_t) {}
 void displaySleep(bool sleep) {
   if (sleep == sleeping) return;
   if (sleep) {
-    if (mono && policy.pending()) {
+    if (redraw && policy.pending()) {
+      epd.ready();
+      pass(1);
       refresh(true);
-      columnHashes(shownHash);
       policy.sent(rc::EinkRefresh::Full, millis());
     }
     sleeping = true;
@@ -350,7 +367,8 @@ bool hasSdSlot() { return true; }
 // On the panel's SPI bus. Slower clocks are tried for cards that won't start.
 fs::FS* sdMount() {
   for (uint32_t hz : {4000000u, 1000000u}) {
-    if (SD.begin(SD_CS, SPI, hz) && SD.cardType() != CARD_NONE) return &SD;
+    // Two files open at most (a folder and an entry): each costs ~4.6 KB.
+    if (SD.begin(SD_CS, SPI, hz, "/sd", 2) && SD.cardType() != CARD_NONE) return &SD;
     SD.end();
   }
   return nullptr;

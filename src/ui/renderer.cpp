@@ -47,9 +47,23 @@ void Renderer::push(int y0, int y1) {
   board::pushRows(reinterpret_cast<const uint16_t*>(shifted), y0, y1);
 }
 
+namespace {
+Renderer* pulling = nullptr;
+void redrawPulled() {
+  if (pulling) pulling->redrawAll();
+}
+
+void fontsFor(TextSize s, const CellFont*& font, const CellFont*& big) {
+  font = s == TextSize::Compact ? &cell6x12 : s == TextSize::Large ? &cell10x18 : &cell8x16;
+  big = s == TextSize::Compact ? &cell8x14 : s == TextSize::Large ? &cell12x24 : &cell10x18;
+}
+}  // namespace
+
 bool Renderer::begin() {
   w_ = board::panelWidth();
   h_ = board::panelHeight();
+  pulling = this;
+  pull_ = board::setRedraw(redrawPulled);
   return allocate();
 }
 
@@ -154,10 +168,50 @@ void Renderer::drawRow(const Grid& g, int r, const CellFont& font, RowSpan span,
   if (!strip_) push(span.y, span.y + span.h);
 }
 
+void Renderer::drawGridRow(const Grid& g, int r, const CellFont& font, const CellFont& big, RowSpan span) {
+  const bool head = r == 0 && g.header().px > 0;
+  drawRow(g, r, head || g.rowKind(r) == RowKind::Big ? big : font, span, head ? (span.h - big.h) / 2 : 0);
+}
+
+void Renderer::redrawAll() {
+  if (!pullGrid_ || !frame_) return;
+  const Grid& g = *pullGrid_;
+  const CellFont *font, *big;
+  fontsFor(pullSize_, font, big);
+  const std::vector<RowSpan> spans = rowSpans(g, font->h, big->h);
+  const int n = std::min<int>(g.rows(), spans.size());
+  int y = 0;
+  // Lines no row covers (the gap above the last row, below the last) take
+  // the background of the row above.
+  auto fill = [&](int y1, uint16_t c) {
+    for (; y < y1; ++y) {
+      base_ = y;
+      uint16_t* px = row(y);
+      for (int x = 0; x < w_; ++x) px[x] = c;
+      push(y, y + 1);
+    }
+  };
+  auto bgOf = [&](int r) -> uint16_t { return g.cols() > 0 && r >= 0 ? cellColor(g.at(0, r).bg) : 0xFFFF; };
+  for (int r = 0; r < n; ++r) {
+    const RowSpan sp = spans[r];
+    if (sp.h <= 0 || sp.y < y || sp.y + sp.h > h_) continue;
+    fill(sp.y, bgOf(r - 1));
+    drawGridRow(g, r, *font, *big, sp);
+    y = sp.y + sp.h;
+  }
+  fill(h_, bgOf(n - 1));
+}
+
 void Renderer::draw(Grid& g, TextSize s, int firstRow, int offsetPx) {
   if (!frame_) return;
-  const CellFont& font = s == TextSize::Compact ? cell6x12 : s == TextSize::Large ? cell10x18 : cell8x16;
-  const CellFont& big = s == TextSize::Compact ? cell8x14 : s == TextSize::Large ? cell12x24 : cell10x18;
+  const CellFont *fontP, *bigP;
+  fontsFor(s, fontP, bigP);
+  const CellFont& font = *fontP;
+  const CellFont& big = *bigP;
+  if (pull_ && firstRow == 0) {
+    pullGrid_ = &g;
+    pullSize_ = s;
+  }
   Layer& layer = firstRow == 0 ? main_ : docked_;
   const int top = firstRow * font.h + offsetPx;
   if (layer.firstRow != firstRow || layer.top != top) layer = Layer{firstRow, top};
@@ -172,15 +226,17 @@ void Renderer::draw(Grid& g, TextSize s, int firstRow, int offsetPx) {
     if (!moved && !g.rowDirty(r)) continue;
     if (r == n - 2) aboveGapChanged = true;
     if (sp.h <= 0 || top + sp.y + sp.h > h_) continue;
-    const bool head = r == 0 && g.header().px > 0;
-    drawRow(g, r, head || g.rowKind(r) == RowKind::Big ? big : font,
-            RowSpan{top + sp.y, sp.h, sp.x}, head ? (sp.h - big.h) / 2 : 0);
+    // Pull mode: the board only needs to know; it draws at refresh time.
+    if (pull_) board::pushRows(nullptr, top + sp.y, top + sp.y + sp.h);
+    else drawGridRow(g, r, font, big, RowSpan{top + sp.y, sp.h, sp.x});
   }
   // Rows of other heights can leave a gap above the last row; clear it.
   if (n >= 2) {
     const int gapY = top + spans[n - 2].y + spans[n - 2].h;
     const int gapEnd = std::min(top + spans[n - 1].y, h_);
-    if (gapY < gapEnd && (gapY != layer.gapY || aboveGapChanged || !sameShape)) {
+    if (gapY < gapEnd && (gapY != layer.gapY || aboveGapChanged || !sameShape) && pull_) {
+      board::pushRows(nullptr, gapY, gapEnd);
+    } else if (gapY < gapEnd && (gapY != layer.gapY || aboveGapChanged || !sameShape)) {
       const uint16_t bg = cellColor(g.at(0, n - 2).bg);
       // In strip mode a strip at a time.
       for (int y0 = gapY; y0 < gapEnd;) {

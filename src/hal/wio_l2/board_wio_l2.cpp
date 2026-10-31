@@ -72,7 +72,7 @@ uint32_t battReadMs = 0;
 
 // The sense divider is switched on only for the reading. Cached: a reading
 // costs ~30 ms of I2C.
-float batteryVolts() {
+float readBatteryVolts() {
   wio::I2cGuard g;  // also keeps the UI and web tasks off the cache together
   uint32_t now = millis();
   if (battReadMs && now - battReadMs < kBatteryMs) return battVolts;
@@ -148,7 +148,7 @@ void begin() {
   if (!nv3031b::begin()) Serial.println("[wio] panel init failed");
   gt911::begin({&Wire, wio::TOUCH_ADDR, wio::i2cLock, wio::i2cUnlock});
   pinMode(wio::BOOT_BUTTON, INPUT_PULLUP);
-  batteryVolts();
+  readBatteryVolts();
   es8311::begin({wio::CODEC_ADDR, wio::I2S_MCLK, wio::I2S_BCK, wio::I2S_WS, wio::I2S_DOUT,
                  wio::AMP_SETTLE_MS, [](bool on) { wio::ioSet(wio::EXP_AUDIO_PA, on); },
                  wio::i2cLock, wio::i2cUnlock});
@@ -192,12 +192,12 @@ bool pollKey(rc::KeyEvent& key) {
   return true;
 }
 
-int batteryPercent() { return rc::batteryPercentFromVolts(batteryVolts()); }
+int batteryPercent() { return rc::batteryPercentFromVolts(readBatteryVolts()); }
 
 // No charger status on this board. A USB host seen on the S3's own USB port
 // means USB power; otherwise, as on the M9, a cell held above its resting
 // maximum means it's charging. A plain USB charger is only caught by the latter.
-bool externalPower() { return HWCDC::isPlugged() || batteryVolts() > 4.25f; }
+bool externalPower() { return HWCDC::isPlugged() || readBatteryVolts() > 4.25f; }
 
 void beep(int freqHz, int ms) { es8311::beep(freqHz, ms); }
 

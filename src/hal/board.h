@@ -22,6 +22,11 @@ int panelWidth();
 int panelHeight();
 // Sends rows [y0, y1) of a full panelWidth() x panelHeight() RGB565 frame.
 void pushRows(const uint16_t* frame, int y0, int y1);
+// A board that keeps no frame (the X4, without PSRAM) takes redraw and
+// returns true: the UI then calls pushRows(nullptr, y0, y1) to say which rows
+// changed, and redraw, called from pollKey, draws every line from the top
+// through pushRows. Default: false (redraw unused).
+bool setRedraw(void (*redraw)());
 void backlight(bool on);
 // Dims the backlight: 255 is the board's normal on level, 0 off. Boards with
 // an on/off backlight treat any level above 0 as on.

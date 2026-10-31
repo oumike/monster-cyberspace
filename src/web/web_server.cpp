@@ -16,6 +16,7 @@
 #include "app/queues.h"
 #include "app/restart.h"
 #include "app/time_service.h"
+#include "app/ui_task.h"
 #include "chat/chat_source.h"
 #include "config/backup_yaml.h"
 #include "config/phrases.h"
@@ -32,6 +33,7 @@
 #include "ui/screen_timeout.h"
 #include "web/page.h"
 #include "web/web_access.h"
+#include "web/compose_req.h"
 #include "web/web_util.h"
 
 namespace web {
@@ -93,13 +95,8 @@ bool served(httpd_req_t* req, const Settings& s) {
   return false;
 }
 
-bool authorized(httpd_req_t* req) {
-  Settings s = current();
-  if (!served(req, s)) {
-    wipe(s.pagePassword);
-    wipe(s.apPassword);
-    return false;
-  }
+// The page password, without answering. Settings s is wiped by the caller.
+bool passwordOk(httpd_req_t* req, const Settings& s) {
   std::string header;
   size_t n = httpd_req_get_hdr_value_len(req, "Authorization");
   if (n > 0 && n < 512) {
@@ -109,15 +106,28 @@ bool authorized(httpd_req_t* req) {
     else
       header.clear();
   }
-  bool ok = rc::checkBasicAuth(header, s.pagePassword);
-  wipe(s.pagePassword);
-  wipe(s.apPassword);
-  if (ok) return true;
+  const bool ok = rc::checkBasicAuth(header, s.pagePassword);
+  wipe(header);
+  return ok;
+}
+
+void askPassword(httpd_req_t* req) {
   httpd_resp_set_status(req, "401 Unauthorized");
   httpd_resp_set_hdr(req, "WWW-Authenticate", "Basic realm=\"Monster for Cyberspace\"");
   httpd_resp_set_type(req, "text/plain");
   httpd_resp_sendstr(req, "Password required");
-  return false;
+}
+
+bool authorized(httpd_req_t* req) {
+  Settings s = current();
+  bool ok = served(req, s);
+  if (ok && !passwordOk(req, s)) {
+    askPassword(req);
+    ok = false;
+  }
+  wipe(s.pagePassword);
+  wipe(s.apPassword);
+  return ok;
 }
 
 esp_err_t sendJson(httpd_req_t* req, const JsonDocument& doc, const char* status = "200 OK") {
@@ -197,11 +207,74 @@ esp_err_t sendYamlAttachment(httpd_req_t* req, std::string& yaml, const std::str
 
 // ---- handlers ----
 
-esp_err_t getPage(httpd_req_t* req) {
-  if (!authorized(req)) return ESP_OK;
+esp_err_t sendHtml(httpd_req_t* req, const char* html) {
   httpd_resp_set_type(req, "text/html; charset=utf-8");
   httpd_resp_set_hdr(req, "Cache-Control", "no-store");
-  return httpd_resp_send(req, kPage, HTTPD_RESP_USE_STRLEN);
+  return httpd_resp_send(req, html, HTTPD_RESP_USE_STRLEN);
+}
+
+// "/": the config page. With web compose (the X4) and a page password the
+// page asks for, the send page instead: sending needs no password, and
+// /config asks for it.
+esp_err_t getPage(httpd_req_t* req) {
+  if (board::webCompose()) {
+    Settings s = current();
+    const bool serve = served(req, s), ok = serve && passwordOk(req, s);
+    wipe(s.pagePassword);
+    wipe(s.apPassword);
+    if (!serve) return ESP_OK;
+    return sendHtml(req, ok ? kPage : kSendPage);
+  }
+  if (!authorized(req)) return ESP_OK;
+  return sendHtml(req, kPage);
+}
+
+esp_err_t getConfig(httpd_req_t* req) {
+  if (!authorized(req)) return ESP_OK;
+  return sendHtml(req, kPage);
+}
+
+// Web compose: the web config switch applies, the page password doesn't.
+bool composeServed(httpd_req_t* req) {
+  if (!board::webCompose()) {
+    httpd_resp_send_404(req);
+    return false;
+  }
+  Settings s = current();
+  const bool ok = served(req, s);
+  wipe(s.pagePassword);
+  wipe(s.apPassword);
+  return ok;
+}
+
+esp_err_t getSend(httpd_req_t* req) {
+  if (!composeServed(req)) return ESP_OK;
+  return sendHtml(req, kSendPage);
+}
+
+esp_err_t getCompose(httpd_req_t* req) {
+  if (!composeServed(req)) return ESP_OK;
+  const rc::ui::ComposeView v = rc::ui::composeView();
+  JsonDocument d;
+  d["label"] = v.label;
+  d["takesText"] = v.takesText;
+  return sendJson(req, d);
+}
+
+// One request, one send: the page never retries.
+esp_err_t postCompose(httpd_req_t* req) {
+  if (!composeServed(req)) return ESP_OK;
+  if (req->content_len > 6144) return fail(req, "413 Payload Too Large", "Text over 4096 characters");
+  std::string body;
+  if (!readBody(req, body, 6144)) return fail(req, "400 Bad Request", "Bad request");
+  rc::ComposeReq r;
+  std::string err = rc::parseCompose(body, r);
+  if (!err.empty()) return fail(req, "400 Bad Request", err);
+  if (rc::networker::authState() != 1) return fail(req, "409 Conflict", "The device isn't signed in");
+  if (rc::app().conn == 0) return fail(req, "409 Conflict", "The device is offline");
+  err = rc::ui::webCompose(std::move(r));
+  if (!err.empty()) return fail(req, "409 Conflict", err);
+  return okReply(req, "Handed to the device");
 }
 
 esp_err_t getStatus(httpd_req_t* req) {
@@ -701,7 +774,7 @@ void begin() {
   if (server) return;
   httpd_config_t cfg = HTTPD_DEFAULT_CONFIG();
   cfg.server_port = 80;
-  cfg.max_uri_handlers = 32;
+  cfg.max_uri_handlers = 36;
   cfg.stack_size = 8192;
   cfg.core_id = 0;
   cfg.lru_purge_enable = true;
@@ -717,6 +790,10 @@ void begin() {
   };
   static const Route routes[] = {
       {"/", HTTP_GET, getPage},
+      {"/config", HTTP_GET, getConfig},
+      {"/send", HTTP_GET, getSend},
+      {"/api/compose", HTTP_GET, getCompose},
+      {"/api/compose", HTTP_POST, postCompose},
       {"/api/status", HTTP_GET, getStatus},
       {"/api/wifi/scan", HTTP_GET, getScan},
       {"/api/wifi", HTTP_POST, postWifi},

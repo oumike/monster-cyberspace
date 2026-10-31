@@ -3,10 +3,13 @@
 #include <Arduino.h>
 
 #include <algorithm>
+#include <mutex>
 
 #include "app/app_state.h"
 #include "app/queues.h"
 #include "chat/chat_source.h"
+#include "feed/compose.h"
+#include "feed/feed_source.h"
 #include "hal/board.h"
 #include "input/backspace.h"
 #include "input/double_tap.h"
@@ -359,6 +362,29 @@ void handleEvent(const Event& e) {
       if (e.code == 1 && app().cfg.buzzer) board::beep(1800, 80);
       banner(e.text, false);
       break;
+    case EvtType::ConversationStarted:
+      // A web-composed C-Mail: open the conversation and send the text there.
+      if (!mailText.empty()) {
+        std::string text = std::move(mailText);
+        mailText.clear();
+        if (!e.ok) {
+          banner(e.text.empty() ? std::string("Couldn't start a C-Mail") : e.text, true);
+        } else {
+          router::go(Id::Conversation, e.text);
+          if (router::screen().acceptsText()) sendCanned(utf8ToU32(text));
+        }
+        return;  // not the C-Mail list's, which didn't ask
+      }
+      break;
+    case EvtType::EntryPosted:
+      if (threadPosting) {
+        threadPosting = false;
+        banner(e.ok ? std::string("Thread posted")
+                    : e.text.empty() ? std::string("Thread not posted") : e.text,
+               !e.ok);
+        return;
+      }
+      break;
     default:
       break;
   }
@@ -379,6 +405,76 @@ void wake() {
 
 // A canned reply goes in as typing, then Select sends it through the
 // screen's own send path.
+// Web compose: one request waits in the slot until the UI task takes it.
+std::mutex composeMu;
+ComposeReq composeSlot;
+bool composeWaiting = false;
+ComposeView composeShown;
+bool composeBusy = false;  // a C-Mail or thread from the page still settling
+std::string mailText;  // a new C-Mail's text, sent once its conversation opens
+bool threadPosting = false;
+
+ComposeView currentComposeView() {
+  ComposeView v;
+  const router::Id id = router::current();
+  v.takesText = router::screen().acceptsText();
+  if (id == router::Id::Room || id == router::Id::Conversation) {
+    lockedChat().with([&](ChatState& s) {
+      if (!s.dm) {
+        v.label = "#" + s.roomSlug;
+        return;
+      }
+      for (const auto& c : s.conversations)
+        if (c.id == s.roomSlug) v.label = "C-Mail with @" + c.partner;
+      if (v.label.empty()) v.label = "a C-Mail conversation";
+    });
+  } else if (id == router::Id::Entry) {
+    v.label = "replies to the open post";
+  }
+  if (v.label.empty()) v.takesText = false;
+  return v;
+}
+
+void sendCanned(const std::u32string& text);
+
+void runWebCompose() {
+  ComposeReq r;
+  {
+    std::lock_guard<std::mutex> l(composeMu);
+    composeShown = currentComposeView();
+    composeBusy = !mailText.empty() || threadPosting;
+    if (!composeWaiting) return;
+    composeWaiting = false;
+    r = std::move(composeSlot);
+    composeBusy = r.kind != ComposeKind::Open;
+  }
+  switch (r.kind) {
+    case ComposeKind::Open:
+      if (!router::screen().acceptsText()) {
+        banner("Web compose: nothing open takes text", true);
+        break;
+      }
+      canned.close();
+      router::screen().onKey(KeyEvent{Action::ClearLine});
+      sendCanned(utf8ToU32(r.text));
+      break;
+    case ComposeKind::Mail:
+      mailText = std::move(r.text);
+      chatSource().command(Command{CmdType::StartConversation, r.to});
+      banner("Starting a C-Mail to @" + r.to + "\u2026", false);
+      break;
+    case ComposeKind::Thread: {
+      EntryDraft d;
+      d.title = r.title;
+      d.body = r.text;
+      threadPosting = true;
+      feedSource().command(Command{CmdType::PostGuildThread, r.guild, guildThreadJson(d)});
+      banner("Posting a thread in " + r.guild + "\u2026", false);
+      break;
+    }
+  }
+}
+
 void sendCanned(const std::u32string& text) {
   for (char32_t c : text) {
     KeyEvent k;
@@ -602,6 +698,7 @@ void taskMain(void*) {
     applyKbLight();
     Event e;
     while (nextEvent(e)) handleEvent(e);
+    if (board::webCompose()) runWebCompose();
     applyNotifyLight();
 
     int64_t now = nowMs();
@@ -733,6 +830,21 @@ bool fromTouch() { return touchKey; }
 const char* monsterWord() { return words.next(esp_random()); }
 
 void showKeyboard() { oskWanted = true; }
+
+ComposeView composeView() {
+  std::lock_guard<std::mutex> l(composeMu);
+  return composeShown;
+}
+
+std::string webCompose(ComposeReq r) {
+  std::lock_guard<std::mutex> l(composeMu);
+  if (composeWaiting || composeBusy) return "Still sending the last one";
+  std::string err = checkCompose(r, composeShown.takesText);
+  if (!err.empty()) return err;
+  composeSlot = std::move(r);
+  composeWaiting = true;
+  return "";
+}
 
 bool typingElsewhere(const char* what) {
   if (board::canType()) return false;

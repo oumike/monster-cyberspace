@@ -38,6 +38,9 @@ boards and Cyberspace features come later.
   runs the live checklist in `docs/TESTING.md`.
 - Every write the firmware makes must come from a user's key press. No
   automation, and no automatic retries of sends.
+  One exception, on the Xteink X4 only (`board::webCompose()`): text sent
+  from the web config page's Send box, one request per send, still no
+  retries (`/api/compose`, `ui::webCompose`).
 - **No captive portal.** The setup AP (`Monster-Cyberspace-<BOARD>-Setup`,
   without `-Setup` when that passes 32 characters) is open unless a password
   is configured in web config. The page is served at

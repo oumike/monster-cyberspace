@@ -5,6 +5,7 @@
 
 #include "ui/grid.h"
 #include "ui/notify_light.h"
+#include "web/compose_req.h"
 
 namespace rc::ui {
 
@@ -31,6 +32,15 @@ void showKeyboard();
 // Boards that can't type (board::canType): shows "<what> from web config"
 // and returns true, so the caller skips its text field.
 bool typingElsewhere(const char* what);
+// Web compose (board::webCompose): what the device has open, read from any
+// task, and a request handed to the UI task, which sends it as the device
+// would. webCompose returns "" when taken, else why not.
+struct ComposeView {
+  std::string label;  // "#room", "C-Mail with @ann", "replies to the open post"; "" when none
+  bool takesText = false;
+};
+ComposeView composeView();
+std::string webCompose(ComposeReq r);
 // Forces every row to be redrawn on the next frame.
 void redrawAll();
 // One double blink of the new-message light in c (board::hasNotifyLight).

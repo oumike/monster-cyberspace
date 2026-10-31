@@ -2,24 +2,13 @@
 
 #include <algorithm>
 
+#include "mascot/mascot.h"
 #include "ui/wrap.h"
 #include "util/utf8.h"
 
 namespace rc {
 
 namespace {
-
-// Fluffy, the project's mascot. Lines share a left edge, so pad nothing on
-// the right.
-const char* const kArt[] = {
-    R"( /\       /\)",
-    R"(/  '-----'  \)",
-    R"(|  (o) (o)  |)",
-    R"(|   .VVV.   |)",
-    R"( \  '^^^'  /)",
-    R"(  '-.___.-')",
-};
-constexpr int kArtRows = sizeof(kArt) / sizeof(kArt[0]);
 
 int width(std::string_view s) { return static_cast<int>(utf8Length(s)); }
 
@@ -54,11 +43,6 @@ std::vector<std::string> bubbleRows(std::string_view say, int maxW, bool tailDow
 
 }  // namespace
 
-const char* const kMonsterWords[kMonsterWordCount] = {
-    "boo", "moo", "bop!", "meow", "hi!",
-    "We've been trying to reach you about your car's extended warranty.",
-};
-
 const char* MonsterWords::next(uint32_t rnd) {
   if (pos_ >= kMonsterWordCount) {
     for (int i = 0; i < kMonsterWordCount; ++i) order_[i] = i;
@@ -73,13 +57,15 @@ const char* MonsterWords::next(uint32_t rnd) {
     pos_ = 0;
   }
   last_ = order_[pos_++];
-  return kMonsterWords[last_];
+  return defaultMascotPhrases()[last_].c_str();
 }
 
 std::vector<SplashLine> splashLayout(int cols, int rows, std::string_view detail,
                                      std::string_view say, int maxScale) {
+  const std::vector<std::string>& kArt = defaultMascotArt();
+  const int kArtRows = static_cast<int>(kArt.size());
   int artW = 0;
-  for (const char* l : kArt) artW = std::max(artW, width(l));
+  for (const std::string& l : kArt) artW = std::max(artW, width(l));
   // Art (and its bubble), a blank row, title, detail, a blank row, prompt.
   constexpr int kTextRows = 4;
   // A scaled monster: the biggest that leaves a margin each side and room

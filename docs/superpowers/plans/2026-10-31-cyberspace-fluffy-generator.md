@@ -49,15 +49,15 @@
   - `const std::vector<std::string>& rc::defaultMascotArt()`, `const std::vector<std::string>& rc::defaultMascotPhrases()` — Fluffy (moved from `splash_layout.cpp`) and the six words.
   - Uses `crc32Update` from `ui/screenshot.h`.
 
-- [ ] **Step 1: Write the golden fixture.** `test/fixtures/mascot_golden.h` defines `constexpr const char* kMascotGoldenHex` — the 10+N+4 meaningful bytes (no 0xFF padding), lowercase hex, space-separated — for art `{"/\\_/\\", "(o o)"}` and phrases `{"boo", "meow"}`. Generate the hex with:
+- [x] **Step 1: Write the golden fixture.** `test/fixtures/mascot_golden.h` defines `constexpr const char* kMascotGoldenHex` — the 10+N+4 meaningful bytes (no 0xFF padding), lowercase hex, space-separated — for art `{"/\\_/\\", "(o o)"}` and phrases `{"boo", "meow"}`. Generate the hex with:
   ```sh
   python3 -c "import zlib,struct;L=[b'/\\\\_/\\\\',b'(o o)',b'boo',b'meow'];p=b''.join(bytes([len(x)])+x for x in L);h=b'FLUF'+bytes([1,2,2,0])+struct.pack('<H',len(p))+p;print((h+struct.pack('<I',zlib.crc32(h))).hex(' '))"
   ```
-- [ ] **Step 2: Write failing tests** in `test/test_mascot/test_main.cpp`: `test_golden` (encode equals hex then 0xFF to 4096), `test_round_trip`, `test_bad_magic`, `test_bad_crc`, `test_bad_version`, `test_erased_is_none`, `test_reject_long_line` (14 chars), `test_reject_seven_rows`, `test_reject_eleven_phrases`, `test_reject_long_phrase` (81), `test_reject_non_ascii` (0x7F and "é"), `test_art_only` / `test_phrases_only` (other vector empty after decode), `test_trim_art` (`{"ab  ", "", "c", "", ""}` → `{"ab", "", "c"}`), `test_defaults` (Fluffy is 6 rows, widest 13; six phrases, first "boo").
-- [ ] **Step 3: Run** `nice pio test -e native -f test_mascot` — expect build failure (no header).
-- [ ] **Step 4: Implement** `mascot.{h,cpp}`; move `kArt` and the words' text out of `splash_layout.cpp` into the defaults (splash_layout keeps compiling by calling the defaults).
-- [ ] **Step 5: Run** `nice pio test -e native` — all green.
-- [ ] **Step 6: Commit** `Mascot codec: blob format, validation, defaults`.
+- [x] **Step 2: Write failing tests** in `test/test_mascot/test_main.cpp`: `test_golden` (encode equals hex then 0xFF to 4096), `test_round_trip`, `test_bad_magic`, `test_bad_crc`, `test_bad_version`, `test_erased_is_none`, `test_reject_long_line` (14 chars), `test_reject_seven_rows`, `test_reject_eleven_phrases`, `test_reject_long_phrase` (81), `test_reject_non_ascii` (0x7F and "é"), `test_art_only` / `test_phrases_only` (other vector empty after decode), `test_trim_art` (`{"ab  ", "", "c", "", ""}` → `{"ab", "", "c"}`), `test_defaults` (Fluffy is 6 rows, widest 13; six phrases, first "boo").
+- [x] **Step 3: Run** `nice pio test -e native -f test_mascot` — expect build failure (no header).
+- [x] **Step 4: Implement** `mascot.{h,cpp}`; move `kArt` and the words' text out of `splash_layout.cpp` into the defaults (splash_layout keeps compiling by calling the defaults).
+- [x] **Step 5: Run** `nice pio test -e native` — all green.
+- [x] **Step 6: Commit** `Mascot codec: blob format, validation, defaults`.
 
 ### Task 2: Splash and bubble take the mascot
 

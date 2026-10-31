@@ -29,9 +29,8 @@ struct SplashLine {
 std::vector<SplashLine> splashLayout(int cols, int rows, std::string_view detail,
                                      std::string_view say = {}, int maxScale = 1);
 
-// What Fluffy says in his bubble.
+// How many words Fluffy says in his bubble (defaultMascotPhrases()).
 constexpr int kMonsterWordCount = 6;
-extern const char* const kMonsterWords[kMonsterWordCount];
 
 // Hands out the words in random order: each once per round, and never the
 // same word twice running. `rnd` is any random number.

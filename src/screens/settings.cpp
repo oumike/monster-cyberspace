@@ -128,8 +128,14 @@ std::u32string wakeLabel(uint32_t mins) {
   return widen((std::to_string(mins) + " min").c_str());
 }
 
+#ifndef RC_LOW_MEM
+#define RC_LOW_MEM 0
+#endif
+
 // The text size picker's rows, in size order.
 constexpr TextSize kSizeOrder[] = {TextSize::Compact, TextSize::Comfortable, TextSize::Large};
+// Low-memory boards (no PSRAM) offer no Compact: its grid does not fit.
+constexpr int kFirstSize = RC_LOW_MEM ? 1 : 0;
 }  // namespace
 
 void SettingsScreen::enter(const std::string&) {
@@ -256,8 +262,8 @@ void SettingsScreen::confirmKey(const KeyEvent& k) {
         break;
       }
       if (c == Confirm::TextSize) {
-        const int i = confirmBox_.selected();
-        if (i >= 0 && i < 3 && kSizeOrder[i] != app().cfg.textSize) ui::setTextSize(kSizeOrder[i]);
+        const int i = confirmBox_.selected() + kFirstSize;
+        if (i >= kFirstSize && i < 3 && kSizeOrder[i] != app().cfg.textSize) ui::setTextSize(kSizeOrder[i]);
         break;
       }
       if (confirmBox_.selected() != 1) break;
@@ -332,11 +338,11 @@ void SettingsScreen::activate(int item) {
     case kTextSize: {
       std::vector<ListItem> rows;
       int sel = 0;
-      for (int i = 0; i < 3; ++i) {
+      for (int i = kFirstSize; i < 3; ++i) {
         ListItem it{textSizeLabel(kSizeOrder[i]), U""};
         if (kSizeOrder[i] == app().cfg.textSize) {
           it.marker = true;
-          sel = i;
+          sel = i - kFirstSize;
         }
         rows.push_back(std::move(it));
       }

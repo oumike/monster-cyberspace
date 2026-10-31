@@ -10,13 +10,16 @@ namespace rc {
 // Cell edges drawn as 1 px lines, for outlining a selection.
 constexpr uint8_t kEdgeTop = 1, kEdgeBottom = 2, kEdgeLeft = 4, kEdgeRight = 8;
 
+// 12 bytes: a 480x800 grid, kept twice, has to fit a board without PSRAM.
 struct Cell {
-  char32_t cp = U' ';
-  uint16_t fg = 0, bg = 0;
-  uint8_t edges = 0;
-  uint16_t edgeColor = 0;
-  bool bold = false;
-  bool nudge = false;  // the glyph is drawn half a cell right (Grid::nudge)
+  Cell(char32_t c = U' ', uint16_t f = 0, uint16_t b = 0)
+      : cp(c), fg(f), bg(b), edgeColor(0), edges(0), bold(false), nudge(false) {}
+  char32_t cp;
+  uint16_t fg, bg;
+  uint16_t edgeColor;
+  uint8_t edges : 4;
+  bool bold : 1;
+  bool nudge : 1;  // the glyph is drawn half a cell right (Grid::nudge)
   bool operator==(const Cell& o) const {
     return cp == o.cp && fg == o.fg && bg == o.bg && edges == o.edges && bold == o.bold &&
            nudge == o.nudge &&
@@ -24,6 +27,7 @@ struct Cell {
   }
   bool operator!=(const Cell& o) const { return !(*this == o); }
 };
+static_assert(sizeof(Cell) == 12, "Cell grew; the X4 grid no longer fits");
 
 // How tall a row is drawn: Normal in the text size's font, Big in the next
 // font up (fewer columns fit), Skip not at all.

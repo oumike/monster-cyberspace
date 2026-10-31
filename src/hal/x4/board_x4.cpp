@@ -233,6 +233,11 @@ void begin() {
   mono = static_cast<uint8_t*>(malloc(kMonoBytes));
   if (mono) memset(mono, 0xFF, kMonoBytes);
   else Serial.println("[x4] no RAM for the e-paper frame");
+  // GxEPD2 writes these before setting their mode, which logs a warning.
+  for (int p : {EPD_CS, EPD_DC, EPD_RST}) {
+    pinMode(p, OUTPUT);
+    digitalWrite(p, HIGH);
+  }
   SPI.begin(EPD_SCLK, SPI_MISO, EPD_MOSI, EPD_CS);
   // 0: no GxEPD2 diagnostics (it would call Serial.begin again).
   epd.selectSPI(SPI, SPISettings(EPD_SPI_HZ, MSBFIRST, SPI_MODE0));

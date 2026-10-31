@@ -2,6 +2,8 @@
 
 #include <Arduino.h>
 
+#include <esp_heap_caps.h>
+
 #include <algorithm>
 #include <mutex>
 
@@ -105,7 +107,12 @@ bool fixedSize() {
 
 TextSize wantedSize() {
   if (fixedSize()) return TextSize::Comfortable;
-  return router::screen().compactText() ? TextSize::Compact : app().cfg.textSize;
+  const TextSize s = router::screen().compactText() ? TextSize::Compact : app().cfg.textSize;
+#if RC_LOW_MEM
+  // Without PSRAM a Compact grid on a big panel does not fit beside Wi-Fi.
+  if (s == TextSize::Compact) return TextSize::Comfortable;
+#endif
+  return s;
 }
 
 int64_t nowMs() { return int64_t(millis()); }
@@ -851,6 +858,11 @@ void taskMain(void*) {
 
 void start() {
   if (board::canRotate()) board::setRotation(app().cfg.rotation);
+#if RC_LOW_MEM
+  if (app().cfg.textSize == TextSize::Compact) app().cfg.textSize = TextSize::Comfortable;
+#endif
+  Serial.printf("[mem] ui start: int %u blk %u\n", unsigned(heap_caps_get_free_size(MALLOC_CAP_INTERNAL)),
+                unsigned(heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL)));
   power_service::begin();
   if (!renderer.begin()) Serial.println("[ui] no memory for the frame buffer");
   setActiveTaps(board::hasTouch() ? &taps : nullptr);

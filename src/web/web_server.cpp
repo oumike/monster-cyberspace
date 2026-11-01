@@ -606,7 +606,7 @@ esp_err_t postPhrases(httpd_req_t* req) {
 esp_err_t getMascot(httpd_req_t* req) {
   if (!authorized(req)) return ESP_OK;
   rc::Mascot m;
-  mascotstore::load(m);
+  if (!mascotstore::load(m)) return fail(req, "500 Internal Server Error", "Couldn't read the mascot");
   const bool customArt = !m.art.empty(), customPhrases = !m.phrases.empty();
   JsonDocument d;
   JsonArray art = d["art"].to<JsonArray>();

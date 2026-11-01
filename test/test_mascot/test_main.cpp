@@ -111,8 +111,8 @@ void test_short_buffer() {
   std::vector<uint8_t> b = encodeMascot(sample());
   Mascot m;
   TEST_ASSERT_FALSE(decodeMascot(b.data(), 20, m));
-  b[8] = 0xF0;  // payload length past the buffer
-  b[9] = 0x0F;
+  b[8] = 0xFF;  // payload length past the buffer
+  b[9] = 0xFF;
   TEST_ASSERT_FALSE(decodes(b));
 }
 

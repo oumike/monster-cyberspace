@@ -54,12 +54,14 @@ async function updateManifest() {
   const gen = ++generation;
   if (select.disabled || !select.value) return;
   const normal = `manifests/${select.value}.json`;
-  updateStatus();
   if (isDefault(state, defaults)) {
     install.setAttribute("manifest", normal);
     revokeBlobs();
+    updateStatus();
     return;
   }
+  // Install still points at the previous manifest until the swap below.
+  status.textContent = "Preparing…";
   try {
     const manifestUrl = new URL(normal, location.href).href;
     const manifest = await (await fetch(manifestUrl, { cache: "no-cache" })).json();
@@ -78,6 +80,7 @@ async function updateManifest() {
     revokeBlobs();
     blobUrls = [blob, json];
     install.setAttribute("manifest", json);
+    updateStatus();
     console.log("[fluffy] manifest", manifest);
   } catch (e) {
     if (gen !== generation) return;
@@ -119,7 +122,12 @@ function el(tag, attrs = {}, ...kids) {
 function modal(title, opener, body, onClose) {
   const d = el("dialog", { class: "fluffy-modal", "aria-label": title },
     el("h2", {}, title), ...body);
-  d.addEventListener("click", (e) => { if (e.target === d) d.close(); });
+  // Clicks on the dialog's own padding also target `d`; only outside its box closes.
+  d.addEventListener("click", (e) => {
+    if (e.target !== d) return;
+    const r = d.getBoundingClientRect();
+    if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) d.close();
+  });
   d.addEventListener("close", () => { onClose(); opener.focus(); });
   document.body.append(d);
   return d;

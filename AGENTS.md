@@ -216,7 +216,7 @@ mascot art and phrases in a 4 KB `mascot` partition at 0xcb0000
 flasher's Make your Fluffy and Phrases modals or web config's Mascot section.
 The native suite is green: 637/637
 (`pio test -e native`), and `scripts/build-upload-monitor.sh -B` builds all
-eight firmware envs.
+nine firmware envs.
 
 Notes for whoever continues:
 - Each task follows test-driven development: write the plan's tests first, run

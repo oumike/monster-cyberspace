@@ -402,7 +402,7 @@ void handleEvent(const Event& e) {
       app().cfg.phrases = splitPhrases(e.text);
       break;
     case EvtType::MascotChanged:
-      mascotstore::load(app().mascot);
+      mascotstore::load(app().mascot);  // a failed read keeps the current one
       break;
     case EvtType::FeedAlert:
       // code 1 asks for a beep; post_cooldown (code 0) is a banner only.

@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "config/phrases.h"
+#include "features.h"
 #include "config/yaml_scalar.h"
 #include "power/power_policy.h"
 #include "tz/zones.h"
@@ -547,10 +548,11 @@ bool backupFromYaml(std::string_view yaml, Settings& inOut, std::string& err, st
   if (st.rotation.has) inOut.rotation = rotationFromIndex(rotation);
   if (st.drawerOpen.has) inOut.drawerOpen = st.drawerOpen.v;
   if (st.buzzer.has) inOut.buzzer = st.buzzer.v;
-  if (st.autoUpdate.has) inOut.autoUpdate = st.autoUpdate.v;
+  // A board built without a feature ignores its setting.
+  if (RC_FEAT_OTA && st.autoUpdate.has) inOut.autoUpdate = st.autoUpdate.v;
   if (st.screenOnSecs.has) inOut.screenOnSecs = uint32_t(screenOnSecs);
   if (st.screenSaver.has) inOut.screenSaver = st.screenSaver.v;
-  if (st.spellCheck.has) inOut.spellCheck = st.spellCheck.v;
+  if (RC_FEAT_SPELL && st.spellCheck.has) inOut.spellCheck = st.spellCheck.v;
   if (st.kbLight.has) inOut.kbLight = kbLight;
   if (st.notifyLight.has) inOut.notifyLight = notifyLight;
   if (st.notifyTimeout.has) inOut.notifyTimeoutSecs = uint16_t(notifyTimeout);

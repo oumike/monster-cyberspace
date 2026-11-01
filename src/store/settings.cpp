@@ -3,6 +3,7 @@
 #include <Preferences.h>
 
 #include "config/phrases.h"
+#include "features.h"
 #include "hal/board.h"
 #include "power/power_policy.h"
 #include "tz/zones.h"
@@ -230,9 +231,9 @@ void saveAll(const rc::Settings& s) {
   saveNtpServer(s.ntpServer);
   saveSecurity(s.pagePassword, s.apPassword);
   saveUiPrefs(s);
-  saveAutoUpdate(s.autoUpdate);
+  if (RC_FEAT_OTA) saveAutoUpdate(s.autoUpdate);
   saveScreen(s.screenOnSecs, s.screenSaver);
-  saveSpellCheck(s.spellCheck);
+  if (RC_FEAT_SPELL) saveSpellCheck(s.spellCheck);
   saveNotifyLight(s.notifyLight);
   saveNotifyTimeout(s.notifyTimeoutSecs);
   savePhrases(s.phrases);

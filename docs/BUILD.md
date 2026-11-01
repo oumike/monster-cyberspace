@@ -23,7 +23,7 @@
 | `tdeck_pro` | The firmware for the LilyGO T-Deck Pro (e-paper, keyboard, touch; not yet tried on hardware) |
 | `mesh_deck` | The firmware for the Attaky Mesh Deck (d-pad, touch, keyboard module, notification light; boots on hardware, the rest not yet checked) |
 | `x4` | The firmware for the Xteink X4 (ESP32-C3, no PSRAM, e-paper, buttons only; a mostly passive client with text sent from web config; not yet built or tried on hardware) |
-| `cardputer_adv` | The firmware for the M5Stack Cardputer ADV (ESP32-S3FN8: 8 MB flash, no PSRAM; keyboard, 240x135 panel; cIRC rooms only, no OTA; not yet tried on hardware) |
+| `cardputer_adv` | The firmware for the M5Stack Cardputer ADV (ESP32-S3FN8: 8 MB flash, no PSRAM; keyboard, 240x135 panel; cIRC rooms and C-Mail, no OTA; not yet tried on hardware) |
 | `native` | Host unit tests for `lib/core` |
 
 ```sh
@@ -73,7 +73,7 @@ wide emoji draws `?` in its two cells), `RC_FEAT_OTA` and `RC_FEAT_MASCOT`.
 `RC_FEAT_ENTRIES` and `RC_FEAT_COMPOSER` follow from them. A feature's own
 `.cpp` files wrap their body in `#if RC_FEAT_X`; Home, Settings, web config
 and backup restore leave out what is off. Only `cardputer_adv` turns any off
-(all nine: cIRC rooms only). `RC_LOW_MEM` shrinks caches for boards without
+(all but C-Mail). `RC_LOW_MEM` shrinks caches for boards without
 PSRAM (the X4, the Cardputer); `RC_MONO_CELLS` (defaults to `RC_LOW_MEM`)
 stores 1-bit cells, so the Cardputer sets it to 0 to keep colour.
 `src/sys/string_instances.cpp` keeps Matter and BLE out of the link.

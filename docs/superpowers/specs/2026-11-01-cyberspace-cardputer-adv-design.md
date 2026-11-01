@@ -11,8 +11,10 @@ and send to it from the keyboard. No flashing until the user says so.
 
 User decisions:
 
-- **Rooms only, compiled out.** C-Mail, Feed, Guilds, People and Unread are
-  not in this build at all, to save flash and RAM.
+- **Rooms and C-Mail, the rest compiled out.** Feed, Guilds, People and
+  Unread are not in this build at all, to save flash and RAM. (C-Mail was
+  added on 2026-11-01 at the user's request; a conversation reuses the
+  room's two streams, so it adds no TLS connection.)
 - **6×12 cells** (the existing Compact font): 40 columns × 11 rows.
 - **Single app partition, no OTA, no mascot partition.** Updates come over USB
   or the browser flasher. Fluffy is always the default (mascot is low

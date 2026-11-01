@@ -32,6 +32,14 @@ struct HomeLayout {
 HomeLayout homeLayout(int panelW, int areaPx, int gridRows, CellSize cell, int count,
                       int percent, bool gaps = true, bool spanFirst = false);
 
+// The fallback when homeLayout fits no grid: one column of tiles 3 rows tall,
+// as many as fit (at most count), each `percent` of the panel's width, and
+// the screen scrolls through the rest. Pads and centring as in homeLayout;
+// with gaps false the tiles touch. tiles holds the visible slots, top first,
+// and is empty when not even one fits or a tile would be under 10 cols wide.
+HomeLayout homeColumn(int panelW, int areaPx, int gridRows, CellSize cell, int count,
+                      int percent, bool gaps = true);
+
 // How many cells of unitPx make `percent` of an areaPx span (rounded, never
 // more than fit), and the padding before them that centres them; the rest,
 // padPx or one more, goes after.

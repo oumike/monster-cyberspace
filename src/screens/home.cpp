@@ -55,6 +55,7 @@ const std::vector<Item>& listItems() {
   }();
   return v;
 }
+int tileCount() { return int(tiles().size()); }
 constexpr int kTilePercent = 90;  // of the area between the status bar and the hint
 
 #if RC_FEAT_FEED
@@ -95,6 +96,7 @@ void HomeScreen::enter(const std::string&) {
   menu_.setSelected(0);
   tileSel_ = 0;
   tileHidden_ = ui::fromTouch();
+  colTop_ = colCarry_ = 0;
 }
 
 void HomeScreen::openItem(int item) {
@@ -143,6 +145,14 @@ void HomeScreen::onKey(const KeyEvent& k) {
     // Select only brings it back.
     if (ui::fromTouch()) {
       tileHidden_ = true;
+      // In the column a drag sends Up/Down a row at a time: scroll by tiles.
+      if (column_ && (k.action == Action::Up || k.action == Action::Down)) {
+        colCarry_ += k.action == Action::Down ? 1 : -1;
+        const int tiles = colCarry_ / colStride_;
+        colCarry_ -= tiles * colStride_;
+        colTop_ = std::max(0, std::min(colTop_ + tiles, tileCount() - colVisible_));
+        return;
+      }
       if (k.action != Action::Activate && k.action != Action::Select) return;
     } else if (tileHidden_) {
       switch (k.action) {
@@ -152,6 +162,8 @@ void HomeScreen::onKey(const KeyEvent& k) {
         case Action::Right:
         case Action::Select:
           tileHidden_ = false;
+          // The cursor comes back on a tile in view.
+          if (column_ && (tileSel_ < colTop_ || tileSel_ >= colTop_ + colVisible_)) tileSel_ = colTop_;
           return;
         default:
           break;
@@ -162,7 +174,15 @@ void HomeScreen::onKey(const KeyEvent& k) {
       case Action::Down:
       case Action::Left:
       case Action::Right:
-        tileSel_ = tileMove(tileSel_, int(tiles().size()), k.action, true);
+        if (column_) {
+          if (k.action == Action::Up || k.action == Action::Down)
+            tileSel_ = std::max(0, std::min(tileCount() - 1, tileSel_ + (k.action == Action::Down ? 1 : -1)));
+          // Keep the selection in view.
+          colTop_ = std::min(colTop_, tileSel_);
+          colTop_ = std::max(colTop_, tileSel_ - colVisible_ + 1);
+        } else {
+          tileSel_ = tileMove(tileSel_, tileCount(), k.action, true);
+        }
         break;
       case Action::Select:
         openItem(tiles()[tileSel_]);
@@ -199,7 +219,7 @@ void HomeScreen::onKey(const KeyEvent& k) {
 }
 
 void HomeScreen::renderTiles(Grid& g, const Theme& t, const std::vector<TileRect>& tiles,
-                             int cellW) {
+                             int cellW, int first, bool column) {
   const AppState& a = app();
   const std::vector<Item>& items = rc::tiles();
   const int count = int(items.size());
@@ -235,9 +255,10 @@ void HomeScreen::renderTiles(Grid& g, const Theme& t, const std::vector<TileRect
     }
   };
 
-  if (activeTaps()) activeTaps()->setList(ListId::Main, tileHidden_ ? -1 : tileSel_, count, false);
-  for (int i = 0; i < count && i < int(tiles.size()); ++i) {
-    const TileRect& r = tiles[i];
+  if (activeTaps()) activeTaps()->setList(ListId::Main, tileHidden_ ? -1 : tileSel_, tileCount(), false);
+  for (int slot = 0; slot < int(tiles.size()) && first + slot < tileCount(); ++slot) {
+    const int i = first + slot;
+    const TileRect& r = tiles[slot];
     const TileInfo it = infoFor(items[i]);
     const bool sel = i == tileSel_ && !tileHidden_;
     // The cursor is the outline alone: the selected tile's in the accent.
@@ -248,9 +269,15 @@ void HomeScreen::renderTiles(Grid& g, const Theme& t, const std::vector<TileRect
     const int mid = (r.r0 + r.r1) / 2;
     const int inW = r.c1 - r.c0 - 1;  // inside the outline
     const uint16_t labelFg = it.unread ? t.selectBg : t.fg;
+    // A wide column tile has room for the sub line beside the label.
+    const bool beside = column && !it.sub.empty() && mid + 1 > r.r1 - 1 &&
+                        int(it.label.size() + 2 + it.sub.size()) <= inW;
+    const int lineW = beside ? int(it.label.size() + 2 + it.sub.size()) : int(it.label.size());
     int lw = std::min<int>(int(it.label.size()), inW);
-    g.putText(r.c0 + 1 + std::max(0, (inW - lw) / 2), mid, it.label, labelFg, bg, lw);
-    if (!it.sub.empty() && mid + 1 <= r.r1 - 1) {
+    const int lc = r.c0 + 1 + std::max(0, (inW - std::min(lineW, inW)) / 2);
+    g.putText(lc, mid, it.label, labelFg, bg, lw);
+    if (beside) g.putText(lc + lw + 2, mid, it.sub, t.dim, bg, int(it.sub.size()));
+    if (!beside && !it.sub.empty() && mid + 1 <= r.r1 - 1) {
       const uint16_t subFg = t.dim;
       int sw = std::min<int>(int(it.sub.size()), inW);
       g.putText(r.c0 + 1 + std::max(0, (inW - sw) / 2), mid + 1, it.sub, subFg, bg, sw);
@@ -265,8 +292,21 @@ void HomeScreen::renderTiles(Grid& g, const Theme& t, const std::vector<TileRect
       tt.kind = TargetKind::Row;
       tt.list = ListId::Main;
       tt.index = static_cast<int16_t>(i);
-      activeTaps()->addCells(r.c0, r.r0, r.c1, r.r1, tt, cellW);
+      // The column registers a row at a time, so a swipe's page of steps
+      // (TapMap::visibleRows) is counted in rows, as drags are.
+      if (column) {
+        for (int row = r.r0; row <= r.r1; ++row) activeTaps()->addCells(r.c0, row, r.c1, row, tt, cellW);
+      } else {
+        activeTaps()->addCells(r.c0, r.r0, r.c1, r.r1, tt, cellW);
+      }
     }
+  }
+  // More tiles above or below the column: arrows on the outline (e-paper only).
+  if (column && board::eink() && !tiles.empty()) {
+    const TileRect& top = tiles.front();
+    const TileRect& bot = tiles.back();
+    if (first > 0) g.put(top.c1 - 2, top.r0, U'\u25B2', t.fg, t.bg);
+    if (first + int(tiles.size()) < tileCount()) g.put(bot.c1 - 2, bot.r1, U'\u25BC', t.fg, t.bg);
   }
   drawHint(g, t, U"\u2191\u2193 pick  \u25CF open", U"tap to open");
 }
@@ -295,6 +335,28 @@ void HomeScreen::render(Grid& g, const Theme& t, int64_t) {
       }
       if (!lay.tiles.empty()) break;
     }
+    // No grid fits (short panels at the larger sizes): one scrolling column,
+    // gapped while that still shows three tiles, else touching.
+    column_ = lay.tiles.empty();
+    if (column_) {
+      const int want = std::min(3, tileCount());
+      HomeLayout best;
+      bool bestBig = false;
+      for (bool gaps : {true, false}) {
+        for (bool tryBig : {true, false}) {
+          HomeLayout c = homeColumn(board::panelWidth(), areaPx, g.rows(),
+                                    tryBig ? bigCellSize(ts) : cellSize(ts), tileCount(), kTilePercent, gaps);
+          if (c.tiles.size() > best.tiles.size()) {
+            best = c;
+            bestBig = tryBig;
+          }
+          if (int(c.tiles.size()) >= want) break;
+        }
+        if (int(best.tiles.size()) >= want) break;
+      }
+      lay = best;
+      big = bestBig;
+    }
   }
   const int cellW = big ? bigCellSize(a.cfg.textSize).w : 0;
   tileMode_ = !lay.tiles.empty();
@@ -310,7 +372,14 @@ void HomeScreen::render(Grid& g, const Theme& t, int64_t) {
     for (const auto& p : lay.pads) g.setRowPad(p.first, p.second);
     // @user stays in the status bar; the list-mode fields are dropped.
     drawStatus(g, t, a.user.empty() ? std::u32string(U"home") : utf8ToU32("@" + a.user), -1);
-    renderTiles(g, t, lay.tiles, cellW);
+    int first = 0;
+    if (column_) {
+      colVisible_ = int(lay.tiles.size());
+      colStride_ = colVisible_ > 1 ? lay.tiles[1].r0 - lay.tiles[0].r0 : 3;
+      colTop_ = std::max(0, std::min(colTop_, tileCount() - colVisible_));
+      first = colTop_;
+    }
+    renderTiles(g, t, lay.tiles, cellW, first, column_);
     return;
   }
 

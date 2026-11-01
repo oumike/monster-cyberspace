@@ -44,6 +44,33 @@ HomeLayout homeLayout(int panelW, int areaPx, int gridRows, CellSize cell, int c
   return out;
 }
 
+HomeLayout homeColumn(int panelW, int areaPx, int gridRows, CellSize cell, int count,
+                      int percent, bool gaps) {
+  HomeLayout out;
+  if (count <= 0 || cell.w <= 0 || cell.h <= 0 || areaPx <= 0) return out;
+  const int across = tileSpan(panelW, cell.w, percent).cells;
+  if (across < 10) return out;
+  constexpr int h = 3;
+  const int gap = gaps ? cell.w : 0;
+  const int gapRows = gaps ? 1 : 0;
+  auto totalPx = [&](int n) { return n * h * cell.h + (n - 1) * gap; };
+  auto lastRow = [&](int n) { return 1 + n * h + (n - 1) * gapRows; };
+  int n = 0;
+  while (n < count && totalPx(n + 1) <= areaPx && lastRow(n + 1) <= gridRows - 2) ++n;
+  if (n == 0) return out;
+
+  out.shiftPx = (panelW - across * cell.w) / 2;
+  out.lastRow = lastRow(n);
+  out.pads.emplace_back(1, (areaPx - totalPx(n)) / 2);
+  out.tiles.reserve(n);
+  for (int i = 0; i < n; ++i) {
+    const int r0 = 2 + i * (h + gapRows);
+    if (gaps && i + 1 < n) out.pads.emplace_back(r0 + h, gap);
+    out.tiles.push_back(TileRect{0, r0, across - 1, r0 + h - 1});
+  }
+  return out;
+}
+
 TileSpan tileSpan(int areaPx, int unitPx, int percent) {
   if (areaPx <= 0 || unitPx <= 0) return TileSpan{0, 0};
   int cells = (areaPx * percent / 100 + unitPx / 2) / unitPx;

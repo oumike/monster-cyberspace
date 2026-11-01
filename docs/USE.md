@@ -109,9 +109,9 @@ Every screen works by touch. Touch never wakes a dark screen.
   rooms, c-mail, feed, guilds and settings two to a row. The unread tile shows
   how many things are unread (see [Unread](#unread)), in the accent colour
   while there are any. The messages tile shows the last room, or how many
-  mentions are unread (in the accent colour) while there are any. If the tiles
-  don't fit (a small screen at a large text size), Home is the list the
-  keyed boards use. They fill about 90% of the space below the status bar, centred
+  mentions are unread (in the accent colour) while there are any. If two
+  columns don't fit (a short screen at a large text size), the tiles stand in
+  one column of wide buttons that scrolls: drag it, or use Up and Down. They fill about 90% of the space below the status bar, centred
   and spaced apart, with their labels in a larger font. The selected tile has
   a highlighted outline.
 

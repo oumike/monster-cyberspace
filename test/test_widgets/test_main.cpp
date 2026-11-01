@@ -1194,6 +1194,29 @@ void test_home_layout_span_first() {
   TEST_ASSERT_EQUAL(6, homeLayout(240, 288, 26, CellSize{8, 14}, 6, 90, true, true).tiles.size());
 }
 
+// The Wio Tracker L2 landscape at Large: no grid fits, so one column of
+// 3-row tiles, gapped while three still fit, else touching.
+void test_home_column() {
+  const CellSize large{10, 18};
+  TEST_ASSERT_EQUAL(0, homeLayout(320, 180, 12, large, 7, 90, false, true).tiles.size());
+  TEST_ASSERT_EQUAL(2, homeColumn(320, 180, 12, large, 7, 90).tiles.size());
+  HomeLayout l = homeColumn(320, 180, 12, large, 7, 90, false);
+  TEST_ASSERT_EQUAL(3, l.tiles.size());
+  TEST_ASSERT_EQUAL(0, l.tiles[0].c0);
+  TEST_ASSERT_EQUAL(28, l.tiles[0].c1);  // 90% of 32 cells
+  TEST_ASSERT_EQUAL(2, l.tiles[0].r0);
+  TEST_ASSERT_EQUAL(4, l.tiles[0].r1);
+  TEST_ASSERT_EQUAL(5, l.tiles[1].r0);
+  TEST_ASSERT_EQUAL(10, l.tiles[2].r1);
+  TEST_ASSERT_EQUAL(10, l.lastRow);
+  TEST_ASSERT_EQUAL(1, l.pads.size());
+  TEST_ASSERT_EQUAL(9, l.pads[0].second);  // (180 - 162) / 2
+  TEST_ASSERT_EQUAL(15, l.shiftPx);        // (320 - 290) / 2
+  // Never more slots than tiles, and none when even one can't fit.
+  TEST_ASSERT_EQUAL(2, homeColumn(240, 800, 60, large, 2, 90).tiles.size());
+  TEST_ASSERT_EQUAL(0, homeColumn(320, 40, 4, large, 7, 90).tiles.size());
+}
+
 void test_tile_span_centre() {
   // 208 px between the status bar and the hint, 18 px rows, 90%: 187 px is
   // 10 rows (180 px), leaving 14 px above and 14 below.
@@ -1730,6 +1753,7 @@ int main() {
   RUN_TEST(test_home_layout_too_small);
   RUN_TEST(test_home_layout_without_gaps);
   RUN_TEST(test_home_layout_span_first);
+  RUN_TEST(test_home_column);
   RUN_TEST(test_tile_span_centre);
   RUN_TEST(test_tile_move);
   RUN_TEST(test_tile_move_span_first);

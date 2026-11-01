@@ -59,17 +59,28 @@ KeyEvent CardputerKeys::key(uint8_t keyNum, bool pressed, uint32_t ms) {
     return action(Action::Backspace);
   }
   if (c == kEnter) return action(Action::Select);
-  if (c == '`') return action(Action::Back);
-  if (fn_) {
+  const bool typing = textActive_ && !leftText_;
+  if (c == '`') {
+    if (!typing) return action(Action::Back);
+    leftText_ = true;
+    return action(Action::Up);
+  }
+  if (fn_ || !typing) {
     if (c == ';') return action(Action::Up);
     if (c == '.') return action(Action::Down);
     if (c == ',') return action(Action::Left);
     if (c == '/') return action(Action::Right);
   }
   if (c < ' ') return {};  // Tab, Ctrl, Opt, Alt
+  leftText_ = false;
   KeyEvent e = action(Action::Char);
   e.ch = static_cast<char32_t>(k[shift_ ? 1 : 0]);
   return e;
+}
+
+void CardputerKeys::setTextActive(bool active) {
+  if (!active) leftText_ = false;
+  textActive_ = active;
 }
 
 KeyEvent CardputerKeys::poll(uint32_t ms) {

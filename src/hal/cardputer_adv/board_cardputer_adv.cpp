@@ -90,7 +90,7 @@ bool backspaceIsBack() { return true; }
 bool anyInputWakes() { return true; }
 bool upDownOnly() { return false; }
 bool sideNav() { return false; }
-void textEntry(bool) {}
+void textEntry(bool active) { cardputer_kb::textActive(active); }
 bool hasKbLight() { return false; }
 uint8_t kbLightDefault() { return 0; }
 void kbLight(uint8_t, bool) {}

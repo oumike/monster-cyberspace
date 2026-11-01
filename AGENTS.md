@@ -148,7 +148,7 @@ true (web config's Send box, `/api/compose`, `web/compose_req`), and
 PSRAM; `partitions_8mb.csv`: one factory app, `nvs` at 0x7D0000): an ST7789
 240x135 through the shared `st7789` driver (MADCTL 0x60, offsets col 40 /
 row 53), a TCA8418 keyboard (`CardputerKeys` in `input/keymap_cardputer_adv`:
-Fn+; . , / arrows, ` Back, Fn+Backspace Home), the Wio's `es8311` driver
+Fn+; . , / arrows, plain ones outside text fields; ` leaves a text field, else Back; Fn+Backspace Home), the Wio's `es8311` driver
 clocked from BCLK (`mclkFromBclk`), battery ADC and SD; no touch, RTC or GPS.
 Text is fixed at Compact 6x12 (`board::fixedTextSize`; Text size hidden in
 Settings and web config). Feature flags in `lib/core/src/features.h`

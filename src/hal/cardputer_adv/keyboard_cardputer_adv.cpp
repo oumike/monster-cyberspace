@@ -108,6 +108,8 @@ bool begin() {
   return present;
 }
 
+void textActive(bool active) { keys.setTextActive(active); }
+
 bool poll(rc::KeyEvent& key) {
   if (!present) return false;
   const uint32_t now = millis();

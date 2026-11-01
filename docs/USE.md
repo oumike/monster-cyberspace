@@ -334,8 +334,9 @@ lists what it has.
 |---|---|
 | Keys | Type. Shift applies while held |
 | Fn + `;` `.` `,` `/` | Up, Down, Left, Right (the arrows printed on those keys) |
+| `;` `.` `,` `/` | The same arrows, without Fn, whenever you aren't typing |
 | Enter | Select (send, in a room) |
-| `` ` `` (Esc) | Back |
+| `` ` `` (Esc) | In a text field: leaves it for the screen (in a room, the newest message), so the plain arrows work; any other key types again. Elsewhere: Back |
 | Backspace | Deletes while there's text to delete; otherwise Back. Hold it to repeat |
 | Fn + Backspace | Home |
 

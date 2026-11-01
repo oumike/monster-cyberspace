@@ -55,6 +55,7 @@ void test_fn_arrows() {
 
 void test_esc_is_back() {
   CardputerKeys k;
+  k.setTextActive(false);
   expectAction(k.key(kBacktick, true, 0), Action::Back);
 }
 
@@ -104,7 +105,7 @@ void test_release_sends_nothing() {
 // 1.1.1: TCA8418.cpp get_key_event_raw (n - 1 = 10 * row + col) and remap
 // (layout column 2 * row, +1 for cols 4-7; layout row col % 4) into Keyboard.h's
 // _key_value_map. Char rows give normal and Shift output; other rows give the
-// action for both layers (0 = Action::None).
+// action for both layers (0 = Action::None), in a text field.
 struct KeyRow {
   uint8_t num;
   char normal, shifted;
@@ -112,7 +113,7 @@ struct KeyRow {
 };
 
 constexpr KeyRow kAllKeys[] = {
-    {1, 0, 0, Action::Back},       {2, 0, 0, Action::None},  // ` (Esc), Tab
+    {1, 0, 0, Action::Up},         {2, 0, 0, Action::None},  // ` (Esc: leaves the field), Tab
     {3, 0, 0, Action::None},       {4, 0, 0, Action::None},  // Fn, Ctrl
     {5, '1', '!', Action::Char},   {6, 'q', 'Q', Action::Char},
     {7, 0, 0, Action::None},       {8, 0, 0, Action::None},  // Shift, Opt
@@ -185,6 +186,43 @@ void test_tab_sends_nothing() {
   expectAction(k.key(kTab, true, 50), Action::None);
 }
 
+void test_no_text_field_plain_keys_navigate() {
+  CardputerKeys k;
+  k.setTextActive(false);
+  expectAction(k.key(kSemicolon, true, 0), Action::Up);
+  expectAction(k.key(kPeriod, true, 10), Action::Down);
+  expectAction(k.key(kComma, true, 20), Action::Left);
+  expectAction(k.key(kSlash, true, 30), Action::Right);
+  k.key(kShift, true, 40);
+  expectAction(k.key(kComma, true, 50), Action::Left);  // the < key
+  k.key(kShift, false, 60);
+  expectAction(k.key(kBacktick, true, 70), Action::Back);
+  expectChar(k.key(kA, true, 80), 'a');
+}
+
+void test_esc_leaves_text_field_then_typing_returns() {
+  CardputerKeys k;
+  k.setTextActive(true);
+  expectChar(k.key(kSemicolon, true, 0), ';');
+  // Esc moves to the conversation: Up selects the newest message.
+  expectAction(k.key(kBacktick, true, 10), Action::Up);
+  expectAction(k.key(kSemicolon, true, 20), Action::Up);
+  expectAction(k.key(kPeriod, true, 30), Action::Down);
+  expectAction(k.key(kBacktick, true, 40), Action::Back);
+  // A letter goes back to the text field and is typed.
+  expectChar(k.key(kA, true, 50), 'a');
+  expectChar(k.key(kPeriod, true, 60), '.');
+}
+
+void test_new_text_field_starts_typing() {
+  CardputerKeys k;
+  k.setTextActive(true);
+  k.key(kBacktick, true, 0);
+  k.setTextActive(false);
+  k.setTextActive(true);
+  expectChar(k.key(kSemicolon, true, 10), ';');
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_letters_and_shift);
@@ -198,5 +236,8 @@ int main() {
   RUN_TEST(test_whole_key_table);
   RUN_TEST(test_unwired_numbers_send_nothing);
   RUN_TEST(test_tab_sends_nothing);
+  RUN_TEST(test_no_text_field_plain_keys_navigate);
+  RUN_TEST(test_esc_leaves_text_field_then_typing_returns);
+  RUN_TEST(test_new_text_field_starts_typing);
   return UNITY_END();
 }

@@ -8,6 +8,8 @@ namespace cardputer_kb {
 
 bool begin();  // starts Wire too
 bool poll(rc::KeyEvent& key);
+// Whether the screen takes text (CardputerKeys::setTextActive).
+void textActive(bool active);
 
 // Held around every transfer on the bus (the UI and audio tasks share it).
 // Recursive.

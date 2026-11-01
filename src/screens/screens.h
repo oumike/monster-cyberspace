@@ -76,11 +76,18 @@ class HomeScreen : public Screen {
  private:
   void openItem(int item);
   // cellW: the tiles' cell width in px when drawn on RowKind::Big rows, else 0.
-  void renderTiles(Grid&, const Theme&, const std::vector<TileRect>&, int cellW);
+  // tiles are slots for tiles first.. on; a column (homeColumn) scrolls.
+  void renderTiles(Grid&, const Theme&, const std::vector<TileRect>&, int cellW, int first,
+                   bool column);
   ListView menu_;
   int tileSel_ = 0;      // selected tile (touch boards)
   bool tileMode_ = false;  // set each render: tiles shown this frame
   bool tileHidden_ = false;  // touch hides the tile cursor until an arrow or Select
+  // The single column (homeColumn): the top tile shown, how many fit, rows
+  // from one tile to the next, and touch Up/Down steps (a row each) not yet
+  // a whole tile.
+  bool column_ = false;
+  int colTop_ = 0, colVisible_ = 1, colStride_ = 3, colCarry_ = 0;
 };
 
 // On-device settings: the setup AP, log out, factory reset.

@@ -46,11 +46,11 @@
   `constexpr rc::Features rc::kBuiltFeatures` (from the macros),
   `std::vector<HomeItem> rc::homeItems(const Features& f)` where `enum class rc::HomeItem { Unread, Messages, Rooms, Cmail, Feed, Guilds, Settings }`.
 
-- [ ] **Step 1: Write the failing tests**: `test_all_features_keeps_todays_order` (all true → `Unread, Messages, Rooms, Cmail, Feed, Guilds, Settings`); `test_rooms_only` (all false → `Messages, Rooms, Settings`); `test_unread_off_only_drops_unread`. ("Messages" is today's last-room tile, part of rooms.)
-- [ ] **Step 2: Run** `nice pio test -e native -f test_home_items`. Expected: build failure (missing header).
-- [ ] **Step 3: Implement** `features.h` and `homeItems()`; switch `home.cpp` to build its tiles from `homeItems(kBuiltFeatures)` (map `HomeItem` to its existing `Item`), with tile count from the vector's size.
-- [ ] **Step 4: Run** `nice pio test -e native`. Expected: all pass. Then `nice pio run -e m9`. Expected: SUCCESS.
-- [ ] **Step 5: Commit** `git commit -m "Feature flags and a Home tile list that follows them"`
+- [x] **Step 1: Write the failing tests**: `test_all_features_keeps_todays_order` (all true → `Unread, Messages, Rooms, Cmail, Feed, Guilds, Settings`); `test_rooms_only` (all false → `Messages, Rooms, Settings`); `test_unread_off_only_drops_unread`. ("Messages" is today's last-room tile, part of rooms.)
+- [x] **Step 2: Run** `nice pio test -e native -f test_home_items`. Expected: build failure (missing header).
+- [x] **Step 3: Implement** `features.h` and `homeItems()`; switch `home.cpp` to build its tiles from `homeItems(kBuiltFeatures)` (map `HomeItem` to its existing `Item`), with tile count from the vector's size.
+- [x] **Step 4: Run** `nice pio test -e native`. Expected: all pass. Then `nice pio run -e m9`. Expected: SUCCESS.
+- [x] **Step 5: Commit** `git commit -m "Feature flags and a Home tile list that follows them"`
 
 ### Task 2: Cardputer ADV keymap
 

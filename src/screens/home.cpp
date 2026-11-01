@@ -5,6 +5,7 @@
 #include "screens/screens.h"
 #include "store/locked_chat.h"
 #include "store/locked_feed.h"
+#include "ui/home_items.h"
 #include "ui/home_tiles.h"
 #include "ui/tap_map.h"
 
@@ -15,11 +16,42 @@ namespace rc {
 
 namespace {
 enum Item { kMessages, kUnread, kRooms, kCmail, kFeed, kGuilds, kSettings };
-constexpr int kItems = 7;  // the list (keyed boards), in Item order
-// The tiles (touch boards): unread spans the first row; messages shows the
-// mentions.
-constexpr Item kTiles[] = {kUnread, kMessages, kRooms, kCmail, kFeed, kGuilds, kSettings};
-constexpr int kTileCount = int(sizeof(kTiles) / sizeof(kTiles[0]));
+
+Item toItem(HomeItem h) {
+  switch (h) {
+    case HomeItem::Unread: return kUnread;
+    case HomeItem::Messages: return kMessages;
+    case HomeItem::Rooms: return kRooms;
+    case HomeItem::Cmail: return kCmail;
+    case HomeItem::Feed: return kFeed;
+    case HomeItem::Guilds: return kGuilds;
+    case HomeItem::Settings: return kSettings;
+  }
+  return kSettings;
+}
+
+// The tiles (touch boards), from the built features: unread spans the first
+// row; messages shows the mentions.
+const std::vector<Item>& tiles() {
+  static const std::vector<Item> v = [] {
+    std::vector<Item> out;
+    for (HomeItem h : homeItems(kBuiltFeatures)) out.push_back(toItem(h));
+    return out;
+  }();
+  return v;
+}
+
+// The list (keyed boards): the same items, messages first.
+const std::vector<Item>& listItems() {
+  static const std::vector<Item> v = [] {
+    std::vector<Item> out;
+    for (Item i : tiles())
+      if (i != kUnread) out.push_back(i);
+    if (kBuiltFeatures.unread) out.insert(out.begin() + 1, kUnread);
+    return out;
+  }();
+  return v;
+}
 constexpr int kTilePercent = 90;  // of the area between the status bar and the hint
 
 // The newest unread Feed notice as an Entry arg ("postId\nnoticeId"), or "".
@@ -99,13 +131,13 @@ void HomeScreen::onKey(const KeyEvent& k) {
       case Action::Down:
       case Action::Left:
       case Action::Right:
-        tileSel_ = tileMove(tileSel_, kTileCount, k.action, true);
+        tileSel_ = tileMove(tileSel_, int(tiles().size()), k.action, true);
         break;
       case Action::Select:
-        openItem(kTiles[tileSel_]);
+        openItem(tiles()[tileSel_]);
         break;
       case Action::Activate:
-        if (k.target == uint8_t(ListId::Main) && k.index >= 0 && k.index < kTileCount) {
+        if (k.target == uint8_t(ListId::Main) && k.index >= 0 && k.index < int(tiles().size())) {
           tileSel_ = k.index;
           onKey(KeyEvent{k.then});
         }
@@ -127,7 +159,8 @@ void HomeScreen::onKey(const KeyEvent& k) {
       break;
     case Action::Select:
     case Action::Right:
-      openItem(menu_.selected());
+      if (menu_.selected() >= 0 && menu_.selected() < int(listItems().size()))
+        openItem(listItems()[menu_.selected()]);
       break;
     default:
       break;
@@ -137,7 +170,9 @@ void HomeScreen::onKey(const KeyEvent& k) {
 void HomeScreen::renderTiles(Grid& g, const Theme& t, const std::vector<TileRect>& tiles,
                              int cellW) {
   const AppState& a = app();
-  if (tileSel_ < 0 || tileSel_ >= kTileCount) tileSel_ = 0;
+  const std::vector<Item>& items = rc::tiles();
+  const int count = int(items.size());
+  if (tileSel_ < 0 || tileSel_ >= count) tileSel_ = 0;
 
   struct TileInfo {
     std::u32string label, sub;
@@ -145,23 +180,34 @@ void HomeScreen::renderTiles(Grid& g, const Theme& t, const std::vector<TileRect
   };
   const int mentions = int(a.mentions.size()), cmail = cmailUnread(), feed = feedUnread();
   const int unread = unreadTotal(gatherUnread());
-  TileInfo info[kTileCount] = {
-      {U"unread", utf8ToU32(std::to_string(unread) + " unread"), unread > 0},
-      {U"messages",
-       mentions > 0 ? utf8ToU32(std::to_string(mentions) + (mentions == 1 ? " mention" : " mentions"))
+  auto infoFor = [&](Item item) -> TileInfo {
+    switch (item) {
+      case kUnread:
+        return {U"unread", utf8ToU32(std::to_string(unread) + " unread"), unread > 0};
+      case kMessages:
+        return {U"messages",
+                mentions > 0
+                    ? utf8ToU32(std::to_string(mentions) + (mentions == 1 ? " mention" : " mentions"))
                     : utf8ToU32("#" + a.cfg.lastRoom),
-       mentions > 0},
-      {U"rooms", U"", false},
-      {U"c-mail", utf8ToU32(std::to_string(cmail) + " unread"), cmail > 0},
-      {U"feed", utf8ToU32(std::to_string(feed) + " unread"), feed > 0},
-      {U"guilds", U"", false},
-      {U"settings", U"", false},
+                mentions > 0};
+      case kRooms:
+        return {U"rooms", U"", false};
+      case kCmail:
+        return {U"c-mail", utf8ToU32(std::to_string(cmail) + " unread"), cmail > 0};
+      case kFeed:
+        return {U"feed", utf8ToU32(std::to_string(feed) + " unread"), feed > 0};
+      case kGuilds:
+        return {U"guilds", U"", false};
+      case kSettings:
+      default:
+        return {U"settings", U"", false};
+    }
   };
 
-  if (activeTaps()) activeTaps()->setList(ListId::Main, tileHidden_ ? -1 : tileSel_, kTileCount, false);
-  for (int i = 0; i < kTileCount && i < int(tiles.size()); ++i) {
+  if (activeTaps()) activeTaps()->setList(ListId::Main, tileHidden_ ? -1 : tileSel_, count, false);
+  for (int i = 0; i < count && i < int(tiles.size()); ++i) {
     const TileRect& r = tiles[i];
-    const TileInfo& it = info[i];
+    const TileInfo it = infoFor(items[i]);
     const bool sel = i == tileSel_ && !tileHidden_;
     // The cursor is the outline alone: the selected tile's in the accent.
     const uint16_t bg = t.bg;
@@ -210,7 +256,7 @@ void HomeScreen::render(Grid& g, const Theme& t, int64_t) {
     for (bool gaps : {true, false}) {
       for (bool tryBig : {true, false}) {
         lay = homeLayout(board::panelWidth(), areaPx, g.rows(), tryBig ? bigCellSize(ts) : cellSize(ts),
-                         kTileCount, kTilePercent, gaps, true);
+                         int(tiles().size()), kTilePercent, gaps, true);
         if (!lay.tiles.empty()) {
           big = tryBig;
           break;
@@ -266,18 +312,25 @@ void HomeScreen::render(Grid& g, const Theme& t, int64_t) {
   field("active", active, t.fg);
 
   const int unread = unreadTotal(gatherUnread());
-  menu_.setItems({
-      ListItem{utf8ToU32("Messages  #" + a.cfg.lastRoom), U""},
-      ListItem{utf8ToU32("Unread  " + std::to_string(unread)), U"", ItemTone::Normal, unread > 0},
-      ListItem{U"Rooms", U""},
-      ListItem{U"C-Mail", U""},
-      ListItem{U"Feed", U""},
-      ListItem{U"Guilds", U""},
-      ListItem{U"Settings", U""},
-  });
+  std::vector<ListItem> rows;
+  for (Item item : listItems()) {
+    switch (item) {
+      case kMessages: rows.push_back(ListItem{utf8ToU32("Messages  #" + a.cfg.lastRoom), U""}); break;
+      case kUnread:
+        rows.push_back(ListItem{utf8ToU32("Unread  " + std::to_string(unread)), U"", ItemTone::Normal, unread > 0});
+        break;
+      case kRooms: rows.push_back(ListItem{U"Rooms", U""}); break;
+      case kCmail: rows.push_back(ListItem{U"C-Mail", U""}); break;
+      case kFeed: rows.push_back(ListItem{U"Feed", U""}); break;
+      case kGuilds: rows.push_back(ListItem{U"Guilds", U""}); break;
+      case kSettings: rows.push_back(ListItem{U"Settings", U""}); break;
+    }
+  }
+  const int nItems = int(rows.size());
+  menu_.setItems(std::move(rows));
   int bottom = g.rows() - 1;
   // A short grid scrolls the menu rather than draw it over the fields.
-  menu_.render(g, std::max(r, bottom - kItems), bottom, 1, g.cols() - 2, t);
+  menu_.render(g, std::max(r, bottom - nItems), bottom, 1, g.cols() - 2, t);
   drawHint(g, t, U"\u2191\u2193 pick  \u25CF open", U"tap to open");
 }
 

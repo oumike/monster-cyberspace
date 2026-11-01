@@ -4,7 +4,7 @@
 // blob-URL manifest that also writes the mascot blob to its partition.
 import {
   ART_ROWS, ART_COLS, MAX_PHRASES, PHRASE_MAX, MASCOT_OFFSET,
-  blobMascot, cleanMascot, encodeMascot, isDefault, validateMascot,
+  blobMascot, cleanMascot, encodeMascot, hasMascot, isDefault, validateMascot,
 } from "./mascot.mjs";
 
 const STORE_KEY = "monster.fluffy";
@@ -13,6 +13,7 @@ const install = document.getElementById("install");
 const status = document.getElementById("fluffy-status");
 const fluffyBtn = document.getElementById("fluffy-open");
 const phrasesBtn = document.getElementById("phrases-open");
+const fluffyButtons = document.getElementById("fluffy-buttons");
 
 let presets = [];
 let defaults = { art: [], phrases: [] };
@@ -54,7 +55,10 @@ async function updateManifest() {
   const gen = ++generation;
   if (select.disabled || !select.value) return;
   const normal = `manifests/${select.value}.json`;
-  if (isDefault(state, defaults)) {
+  // A board without the mascot partition: no buttons, no blob.
+  const mascot = hasMascot(select.value);
+  fluffyButtons.hidden = status.hidden = !mascot;
+  if (!mascot || isDefault(state, defaults)) {
     install.setAttribute("manifest", normal);
     revokeBlobs();
     updateStatus();

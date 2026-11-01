@@ -17,6 +17,13 @@ RELEASE_ENVS=(
     tdeck_pro
     mesh_deck
     x4
+    cardputer_adv
+)
+
+# Release envs built with OTA off (RC_FEAT_OTA=0, no second app slot): they
+# ship the factory image only, with no -ota.bin, .sig or checks of either.
+NO_OTA_ENVS=(
+    cardputer_adv
 )
 
 # Every release image is merged with this esptool. esptool 5 renamed merge_bin
@@ -45,16 +52,18 @@ env_label() {
         tdeck_pro)   echo "LilyGO T-Deck Pro" ;;
         mesh_deck)   echo "Attaky Mesh Deck" ;;
         x4)          echo "Xteink X4" ;;
+        cardputer_adv) echo "M5Stack Cardputer ADV" ;;
         *)           echo "$1" ;;
     esac
 }
 
-# Every board here has 16 MB of flash, and all but the X4 (an ESP32-C3) are
-# ESP32-S3s. Kept as functions so a board that differs only has to add a case.
-# Artifact names use dashes.
+# Every board here has 16 MB of flash but the Cardputer ADV (8 MB), and all
+# but the X4 (an ESP32-C3) are ESP32-S3s. Kept as functions so a board that
+# differs only has to add a case. Artifact names use dashes.
 env_out_name()   { echo "${1//_/-}"; }
 env_chip()       { case "$1" in x4) echo "esp32c3" ;; *) echo "esp32s3" ;; esac; }
-env_flash_size() { echo "16MB"; }
+env_flash_size() { case "$1" in cardputer_adv) echo "8MB" ;; *) echo "16MB" ;; esac; }
+env_has_ota()    { case " ${NO_OTA_ENVS[*]} " in *" $1 "*) return 1 ;; *) return 0 ;; esac; }
 # DIO in the image header boots on every QIO-capable part, and is what the
 # platy-aprs and camillia-mt images for the same boards ship with.
 env_flash_mode() { echo "dio"; }
@@ -82,7 +91,18 @@ validate_release_targets() {
             echo "  ERROR: [env:$env_name] does not run tools/set_app_version.py" >&2
             failed=true
         fi
-        printf '  %-12s -> monster-cyberspace-%s-<tag>.bin\n' "$env_name" "$out_name"
+        if ! env_has_ota "$env_name" \
+           && ! sed -n "/^\[env:$env_name\]/,/^\[/p" platformio.ini | grep -q 'RC_FEAT_OTA=0'; then
+            echo "  ERROR: $env_name is in NO_OTA_ENVS but [env:$env_name] does not set RC_FEAT_OTA=0" >&2
+            failed=true
+        fi
+        printf '  %-13s -> monster-cyberspace-%s-<tag>.bin\n' "$env_name" "$out_name"
+    done
+    for e in "${NO_OTA_ENVS[@]}"; do
+        case " ${RELEASE_ENVS[*]} " in
+            *" $e "*) ;;
+            *) echo "  ERROR: NO_OTA_ENVS lists '$e', which is not in RELEASE_ENVS" >&2; failed=true ;;
+        esac
     done
     # Every firmware env should be released; a new board that is not is a slip.
     local e
@@ -204,6 +224,7 @@ build_release_envs() {
 # dist/monster-cyberspace-<board>-<tag>-ota.bin      app only, what devices download
 # dist/monster-cyberspace-<board>-<tag>-ota.bin.sig  its ECDSA P-256 signature
 # dist/monster-cyberspace-<board>-<tag>.elf          symbols for crash decoding (not published)
+# NO_OTA_ENVS get the factory image and .elf only.
 merge_assets() {
     local tag="$1" env_name d out
     shift
@@ -217,8 +238,9 @@ merge_assets() {
             0x8000  "$d/partitions.bin" \
             0xe000  "$d/boot_app0.bin" \
             0x10000 "$d/firmware.bin" >/dev/null
-        cp "$d/firmware.bin" "$out-ota.bin"
         cp "$d/firmware.elf" "$out.elf"
+        env_has_ota "$env_name" || continue
+        cp "$d/firmware.bin" "$out-ota.bin"
         if [[ "$SIGN_ASSETS" == true ]]; then
             openssl dgst -sha256 -sign "$SIGNING_KEY" -out "$out-ota.bin.sig" "$out-ota.bin"
         fi
@@ -232,6 +254,18 @@ verify_assets() {
     echo "Verifying release assets..."
     for env_name in "$@"; do
         out="dist/monster-cyberspace-$(env_out_name "$env_name")-$tag"
+        if ! env_has_ota "$env_name"; then
+            if [[ ! -s "$out.bin" ]]; then
+                echo "Error: missing or empty release asset: $out.bin" >&2
+                return 1
+            fi
+            if [[ -e "$out-ota.bin" || -e "$out-ota.bin.sig" ]]; then
+                echo "Error: $env_name has OTA off but $out-ota.bin(.sig) exists" >&2
+                return 1
+            fi
+            echo "  OK $env_name: $(basename "$out.bin") (no OTA)"
+            continue
+        fi
         for asset in "$out.bin" "$out-ota.bin"; do
             if [[ ! -s "$asset" ]]; then
                 echo "Error: missing or empty release asset: $asset" >&2
@@ -362,6 +396,7 @@ ${b}OUTPUT${r} (dist/)
                                                  ota_signing_key.pem here; a device will
                                                  not install an unsigned image)
   monster-cyberspace-<board>-vX.Y.Z.elf          symbols for decoding crashes (not published)
+  Boards with OTA off (${NO_OTA_ENVS[*]}) get the factory .bin and .elf only.
   flash.sh  BUILD-INFO.txt  SHA256SUMS
 
 ${b}EXAMPLES${r}

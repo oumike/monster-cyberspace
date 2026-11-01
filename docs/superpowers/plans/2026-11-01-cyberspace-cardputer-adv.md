@@ -146,7 +146,7 @@ With emoji off the symbol table (non-emoji symbols) stays; only the emoji tray a
 - Modify docs: `AGENTS.md` (board list, commands block `pio run -e cardputer_adv`, `-C`, Layout paragraph for `src/hal/cardputer_adv/`, the feature flags in one line, nine→ten envs), `docs/BUILD.md` (env, 8 MB layout, no OTA for it, feature flags), `docs/USE.md` (Cardputer keys: Fn arrows, Esc Back, Fn+Backspace Home), `docs/TESTING.md` ("Open hardware checks": panel MADCTL/offsets, every key, backlight, battery, beep, SD backup, sign-in free heap, room read/send)
 - Test: `site/*.test.mjs` if the hide logic is testable there
 
-- [ ] **Step 1: Update the scripts and release**; run `bash -n scripts/release.sh scripts/build-upload-monitor.sh` and `scripts/release.sh --dist-only --only cardputer_adv --no-clean`. Expected: `dist/` has `monster-cyberspace-cardputer-adv-v*.bin` and no `-ota.bin`; the script reports OK.
-- [ ] **Step 2: Update the site**; run `node --test site/*.test.mjs`. Expected: all pass.
-- [ ] **Step 3: Update the docs.**
-- [ ] **Step 4: Commit** `git commit -m "Cardputer ADV in scripts, release, flasher and docs"`
+- [x] **Step 1: Update the scripts and release**; run `bash -n scripts/release.sh scripts/build-upload-monitor.sh` and `scripts/release.sh --dist-only --only cardputer_adv --no-clean`. Expected: `dist/` has `monster-cyberspace-cardputer-adv-v*.bin` and no `-ota.bin`; the script reports OK.
+- [x] **Step 2: Update the site**; run `node --test site/*.test.mjs`. Expected: all pass.
+- [x] **Step 3: Update the docs.**
+- [x] **Step 4: Commit** `git commit -m "Cardputer ADV in scripts, release, flasher and docs"`

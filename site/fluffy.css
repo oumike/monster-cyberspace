@@ -1,5 +1,6 @@
 /* The flasher's Fluffy and Phrases modals (fluffy.js), in index.html's look. */
 .fluffy-buttons { display: flex; gap: .75rem; margin-top: 1rem; flex-wrap: wrap; }
+.fluffy-buttons[hidden] { display: none; }
 .fluffy-buttons button, .fluffy-modal button {
   font: inherit; color: #cfc; background: #000; border: 1px solid #6a6;
   padding: .4rem .8rem; cursor: pointer;

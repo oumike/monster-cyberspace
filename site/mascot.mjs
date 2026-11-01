@@ -11,6 +11,14 @@ export const MAX_PHRASES = 10;
 export const PHRASE_MAX = 80;
 export const MASCOT_OFFSET = 0xcb0000;
 
+// Release slugs built without the mascot partition (RC_FEAT_MASCOT=0): the
+// flasher hides Make your Fluffy and Phrases and flashes no blob for them.
+export const NO_MASCOT_BOARDS = ["cardputer-adv"];
+
+export function hasMascot(slug) {
+  return !NO_MASCOT_BOARDS.includes(slug);
+}
+
 const CRC_TABLE = (() => {
   const t = new Uint32Array(256);
   for (let n = 0; n < 256; n++) {

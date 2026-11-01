@@ -7,8 +7,8 @@
   into `.pio-core/`, kept apart from the shared `~/.platformio`.
 - A USB data cable. The ThinkNode M9's console runs through its USB-to-UART
   bridge at 115200 baud, and so do the CrowPanels' and the Mesh Deck's (a CH340); the Wio Tracker
-  L2's and the T-Deck Plus's run through the ESP32-S3's own USB, and the
-  Xteink X4's through the ESP32-C3's.
+  L2's, the T-Deck Plus's and the Cardputer ADV's run through the ESP32-S3's
+  own USB, and the Xteink X4's through the ESP32-C3's.
 
 ## Environments
 
@@ -23,6 +23,7 @@
 | `tdeck_pro` | The firmware for the LilyGO T-Deck Pro (e-paper, keyboard, touch; not yet tried on hardware) |
 | `mesh_deck` | The firmware for the Attaky Mesh Deck (d-pad, touch, keyboard module, notification light; boots on hardware, the rest not yet checked) |
 | `x4` | The firmware for the Xteink X4 (ESP32-C3, no PSRAM, e-paper, buttons only; a mostly passive client with text sent from web config; not yet built or tried on hardware) |
+| `cardputer_adv` | The firmware for the M5Stack Cardputer ADV (ESP32-S3FN8: 8 MB flash, no PSRAM; keyboard, 240x135 panel; cIRC rooms only, no OTA; not yet tried on hardware) |
 | `native` | Host unit tests for `lib/core` |
 
 ```sh
@@ -36,6 +37,7 @@ pio run -e pager                      # build for the T-LoRa Pager
 pio run -e tdeck_pro                  # build for the T-Deck Pro
 pio run -e mesh_deck                  # build for the Mesh Deck
 pio run -e x4                         # build for the Xteink X4
+pio run -e cardputer_adv              # build for the Cardputer ADV
 scripts/build-upload-monitor.sh m9    # build, flash, then open the serial monitor
 ```
 
@@ -52,6 +54,7 @@ scripts/build-upload-monitor.sh m9    # build, flash, then open the serial monit
 | `--tdeck-pro`/`-D` | Board flag: LilyGO T-Deck Pro (`tdeck_pro`) |
 | `--mesh-deck`/`-M` | Board flag: Attaky Mesh Deck (`mesh_deck`) |
 | `--x4`/`-X` | Board flag: Xteink X4 (`x4`) |
+| `--cardputer-adv`/`-C` | Board flag: M5Stack Cardputer ADV (`cardputer_adv`) |
 | `ENV` | Or name any firmware env directly; with neither, a menu lists every firmware env |
 | `--port`/`-p PORT` | Serial port for upload and monitor (default: auto-detect) |
 | `--erase`/`-E` | Erase the whole flash in the same esptool session as the upload (`upload_erase` target); wipes saved settings |
@@ -60,6 +63,20 @@ scripts/build-upload-monitor.sh m9    # build, flash, then open the serial monit
 
 If a first build fails while installing a tool package, run it again. A
 one-off PlatformIO install error has been seen on the first run.
+
+### Feature flags
+
+`lib/core/src/features.h` holds compile-time flags, each 1 unless an env sets
+`-DRC_FEAT_X=0`: `RC_FEAT_CMAIL`, `RC_FEAT_FEED`, `RC_FEAT_GUILDS`,
+`RC_FEAT_PEOPLE`, `RC_FEAT_UNREAD`, `RC_FEAT_SPELL`, `RC_FEAT_EMOJI` (off, a
+wide emoji draws `?` in its two cells), `RC_FEAT_OTA` and `RC_FEAT_MASCOT`.
+`RC_FEAT_ENTRIES` and `RC_FEAT_COMPOSER` follow from them. A feature's own
+`.cpp` files wrap their body in `#if RC_FEAT_X`; Home, Settings, web config
+and backup restore leave out what is off. Only `cardputer_adv` turns any off
+(all nine: cIRC rooms only). `RC_LOW_MEM` shrinks caches for boards without
+PSRAM (the X4, the Cardputer); `RC_MONO_CELLS` (defaults to `RC_LOW_MEM`)
+stores 1-bit cells, so the Cardputer sets it to 0 to keep colour.
+`src/sys/string_instances.cpp` keeps Matter and BLE out of the link.
 
 ## Screenshots
 
@@ -99,7 +116,9 @@ scripts/release.sh --from-main -y              # release origin/main as it is on
 `tools/set_app_version.py`. `dist/` holds, per board,
 `monster-cyberspace-<board>-vX.Y.Z.bin` (factory image, flash at `0x0`; keeps
 settings), `-ota.bin` (the app image devices download), `-ota.bin.sig` (its
-signature) and `.elf` (symbols), plus `flash.sh`, `BUILD-INFO.txt` and `SHA256SUMS`. A dist-only build
+signature) and `.elf` (symbols), plus `flash.sh`, `BUILD-INFO.txt` and `SHA256SUMS`.
+Envs in `NO_OTA_ENVS` (`cardputer_adv`, built with `RC_FEAT_OTA=0`) get the
+factory image and `.elf` only; `--check-targets` checks they set the flag. A dist-only build
 is versioned from `VERSION`, with `+<commit>` (and `.custom` for uncommitted
 changes) unless it is the tagged release commit.
 
@@ -121,11 +140,14 @@ The browser flasher (<https://oumike.github.io/monster-cyberspace/>) is
 to GitHub Pages after each release: `scripts/pages-site.sh` copies the latest
 release's factory images into the site (browsers can't fetch release assets
 directly) and writes a manifest per board. A new board needs a name in the
-page's `LABELS`. Pages must be set to deploy from GitHub Actions.
+page's `LABELS`. Pages must be set to deploy from GitHub Actions. Boards
+without the mascot partition (`NO_MASCOT_BOARDS` in `site/mascot.mjs`) hide
+Make your Fluffy and Phrases and flash the factory image alone; boards without
+OTA (`NO_OTA` in `site/index.html`) say updates come from the page.
 
 ### Flash layout
 
-Every env uses `partitions_16mb.csv`: two 6.25 MB app slots at `0x10000` and
+Every env but `cardputer_adv` uses `partitions_16mb.csv`: two 6.25 MB app slots at `0x10000` and
 `0x650000`, and the settings (`nvs`) at `0xC90000`, past anything a factory
 image writes. `0x9000` is `nvs_old`, where the stock `default_16MB.csv` kept
 them; `src/store/nvs_migrate.cpp` moves anything there into `nvs` at boot and
@@ -134,6 +156,11 @@ erases it. The custom mascot (`mascot`, 4 KB) sits at `0xCB0000`, right after
 it is read and written at that address raw. Keep the app slots where they
 are: the OTA code refuses to update a board whose layout differs
 (`layoutSupportsUpdate`).
+
+The Cardputer ADV (8 MB) uses `partitions_8mb.csv`: one `factory` app at
+`0x10000` (size `0x7C0000`), `nvs` at `0x7D0000` (`0x20000`) and `coredump` at
+`0x7F0000`. No `otadata`, second slot or `mascot`; settings sit past the app,
+so a factory image at `0x0` keeps them, and `nvs_migrate` finds no `nvs_old`.
 
 ### Mascot
 

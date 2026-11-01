@@ -46,7 +46,7 @@
     <span slot="not-allowed">Flashing needs a secure (https) page.</span>
   </esp-web-install-button>
 
-  <div class="fluffy-buttons">
+  <div class="fluffy-buttons" id="fluffy-buttons">
     <button type="button" id="fluffy-open" disabled>Make your Fluffy</button>
     <button type="button" id="phrases-open" disabled>Phrases</button>
   </div>
@@ -55,7 +55,7 @@
   <div class="note muted">
     Plug the board in over USB, pick it above and press Install. Choosing
     <em>erase</em> clears saved Wi-Fi, sign-in and settings; without it they
-    are kept. After this, updates come over the air (Settings → Firmware).
+    are kept. <span id="ota-note">After this, updates come over the air (Settings → Firmware).</span>
     <br><br>
     Images come from the latest
     <a href="https://github.com/oumike/monster-cyberspace/releases/latest">release</a>.
@@ -74,7 +74,10 @@
     "pager": "LilyGO T-LoRa Pager",
     "mesh-deck": "Attaky Mesh Deck",
     "x4": "Xteink X4",
+    "cardputer-adv": "M5Stack Cardputer ADV",
   };
+  // Boards built with OTA off: updates are a reflash from this page.
+  const NO_OTA = ["cardputer-adv"];
   const select = document.getElementById("board");
   const install = document.getElementById("install");
   fetch("boards.json", { cache: "no-cache" })
@@ -89,6 +92,9 @@
       // fluffy.js swaps in a manifest with the custom mascot on board-picked.
       const pick = () => {
         install.setAttribute("manifest", `manifests/${select.value}.json`);
+        document.getElementById("ota-note").textContent = NO_OTA.includes(select.value)
+          ? "This board has no over-the-air updates: update it from this page."
+          : "After this, updates come over the air (Settings → Firmware).";
         select.dispatchEvent(new Event("board-picked"));
       };
       select.addEventListener("change", pick);

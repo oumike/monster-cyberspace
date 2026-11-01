@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 import {
-  crc32, cleanMascot, validateMascot, encodeMascot, isDefault, blobMascot,
+  crc32, cleanMascot, validateMascot, encodeMascot, isDefault, blobMascot, hasMascot,
 } from "./mascot.mjs";
 
 const golden = readFileSync(new URL("../test/fixtures/mascot_golden.h", import.meta.url), "utf8");
@@ -61,4 +61,10 @@ test("a part equal to the default is stored empty", () => {
     { art: [], phrases: ["yo "] });
   assert.deepEqual(blobMascot({ art: ["(o o)  "], phrases: defaults.phrases }, defaults),
     { art: ["(o o)"], phrases: [] });
+});
+
+test("boards without the mascot partition", () => {
+  assert.equal(hasMascot("cardputer-adv"), false);
+  assert.equal(hasMascot("m9"), true);
+  assert.equal(hasMascot("x4"), true);
 });

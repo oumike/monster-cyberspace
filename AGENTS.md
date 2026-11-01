@@ -6,7 +6,8 @@ web config page, on the Elecrow ThinkNode M9. The Seeed Wio Tracker L2 and
 the LilyGO T-Deck Plus followed, then the Elecrow CrowPanel Advance 3.5" and
 5.0", the LilyGO T-LoRa Pager, the LilyGO T-Deck Pro and the Attaky Mesh Deck
 (all built, not yet tried on hardware; the Mesh Deck boots). The Xteink X4
-(branch `x4`) is written but has never been built. More
+(branch `x4`) is written but has never been built. The M5Stack Cardputer ADV
+(8 MB, no PSRAM, cIRC rooms only) is built, not yet tried on hardware. More
 boards and Cyberspace features come later.
 
 - **Design spec:** `docs/superpowers/specs/2026-10-25-cyberspace-m9-circ-design.md`
@@ -30,6 +31,8 @@ boards and Cyberspace features come later.
   plan `docs/superpowers/plans/2026-10-29-cyberspace-mesh-deck.md`.
 - **Xteink X4:** spec `docs/superpowers/specs/2026-10-30-cyberspace-x4-design.md`,
   plan `docs/superpowers/plans/2026-10-30-cyberspace-x4.md`.
+- **M5Stack Cardputer ADV:** spec `docs/superpowers/specs/2026-11-01-cyberspace-cardputer-adv-design.md`,
+  plan `docs/superpowers/plans/2026-11-01-cyberspace-cardputer-adv.md`.
 - **Fluffy Generator (custom mascot):** spec
   `docs/superpowers/specs/2026-10-31-cyberspace-fluffy-generator-design.md`,
   plan `docs/superpowers/plans/2026-10-31-cyberspace-fluffy-generator.md`.
@@ -78,7 +81,8 @@ pio run -e pager            # LilyGO T-LoRa Pager
 pio run -e tdeck_pro        # LilyGO T-Deck Pro (e-paper)
 pio run -e mesh_deck        # Attaky Mesh Deck
 pio run -e x4               # Xteink X4 (ESP32-C3, no PSRAM)
-scripts/build-upload-monitor.sh m9   # flash + serial monitor (115200); -w for the Wio L2, -t for the T-Deck Plus, -3/-5 for the CrowPanels, -P for the Pager, -D for the T-Deck Pro, -M for the Mesh Deck, -X for the X4; --help for options
+pio run -e cardputer_adv    # M5Stack Cardputer ADV (8 MB, no PSRAM, rooms only)
+scripts/build-upload-monitor.sh m9   # flash + serial monitor (115200); -w for the Wio L2, -t for the T-Deck Plus, -3/-5 for the CrowPanels, -P for the Pager, -D for the T-Deck Pro, -M for the Mesh Deck, -X for the X4, -C for the Cardputer ADV; --help for options
 scripts/build-upload-monitor.sh -B   # build every firmware env, no device needed
 scripts/screenshot.py PORT [--watch]  # PNG screenshots over the serial console (no device writes)
 # demo build for screenshots, no network (never release): docs/BUILD.md "Screenshots"
@@ -140,6 +144,20 @@ SD. `board::canType()` is false (text fields open the canned picker,
 `ui/widgets/canned_picker`, with phrases from web config), `webCompose()` is
 true (web config's Send box, `/api/compose`, `web/compose_req`), and
 `sleepsOnBattery()` drives `app/power_service` (`power/power_policy`).
+`src/hal/cardputer_adv/` is the M5Stack Cardputer ADV (ESP32-S3FN8, 8 MB, no
+PSRAM; `partitions_8mb.csv`: one factory app, `nvs` at 0x7D0000): an ST7789
+240x135 through the shared `st7789` driver (MADCTL 0x60, offsets col 40 /
+row 53), a TCA8418 keyboard (`CardputerKeys` in `input/keymap_cardputer_adv`:
+Fn+; . , / arrows, ` Back, Fn+Backspace Home), the Wio's `es8311` driver
+clocked from BCLK (`mclkFromBclk`), battery ADC and SD; no touch, RTC or GPS.
+Text is fixed at Compact 6x12 (`board::fixedTextSize`; Text size hidden in
+Settings and web config). Feature flags in `lib/core/src/features.h`
+(`RC_FEAT_CMAIL`/`FEED`/`GUILDS`/`PEOPLE`/`UNREAD`/`SPELL`/`EMOJI`/`OTA`/`MASCOT`,
+all 1 by default; `RC_FEAT_ENTRIES`/`COMPOSER` follow) are all 0 there: rooms
+only, a wide emoji draws `?`. `RC_MONO_CELLS` (default `RC_LOW_MEM`) is 0 so
+it keeps colour; `src/sys/string_instances.cpp` keeps Matter/BLE out of the
+link. `NO_OTA_ENVS` in `scripts/release.sh` ships it a factory image only,
+and the flasher hides Make your Fluffy and Phrases for it.
 Touch: `lib/core` turns samples into gestures and resolves them against the
 per-frame `TapMap` widgets fill as they draw (`input/gestures`, `ui/tap_map`,
 `input/touch_resolve`, the `Osk` keyboard); `ui_task` feeds `handleKey` and
@@ -187,7 +205,7 @@ The Attaky Mesh Deck HAL (env `mesh_deck`) and the notification light were
 added on 2026-10-29 (flashed: it boots and finds touch, gauge and keyboard;
 the panel, touch mapping, keys and LEDs await the hardware check).
 **Still open:** the unticked items under "Open hardware checks" in
-`docs/TESTING.md` (themes, device Settings, touch UI, Wio L2, T-Deck Plus, CrowPanels, Pager, T-Deck Pro, GPS time, API
+`docs/TESTING.md` (themes, device Settings, touch UI, Wio L2, T-Deck Plus, CrowPanels, Pager, T-Deck Pro, Cardputer ADV, GPS time, API
 assumptions, settings backup, OTA, Fluffy Generator), then the human live checklist on the `m9` build.
 CI (`.github/workflows/build.yml`) runs on GitHub.
 OTA updates were added on 2026-10-28 (built without flashing): signed images
@@ -214,9 +232,14 @@ T-Deck Plus hardware check and the flasher browser check are open): custom
 mascot art and phrases in a 4 KB `mascot` partition at 0xcb0000
 (`lib/core/src/mascot/`, `src/store/mascot_store.cpp`), set from the
 flasher's Make your Fluffy and Phrases modals or web config's Mascot section.
-The native suite is green: 637/637
+The M5Stack Cardputer ADV (env `cardputer_adv`) was added on 2026-11-01
+(built without flashing; RAM 61,368 B, flash 1,953,452 B): compile-time
+feature flags (`lib/core/src/features.h`) cut it to cIRC rooms, with no OTA
+or mascot partition. Its panel offsets, ES8311 clock, push speed, key map and
+TLS heap headroom await the hardware check (docs/TESTING.md).
+The native suite is green: 660/660
 (`pio test -e native`), and `scripts/build-upload-monitor.sh -B` builds all
-nine firmware envs.
+ten firmware envs.
 
 Notes for whoever continues:
 - Each task follows test-driven development: write the plan's tests first, run

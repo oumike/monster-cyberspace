@@ -326,6 +326,22 @@ Buttons: BOOT tap = Back, BOOT hold (0.6 s) = Home; Wake tap = screen off
 - [ ] Notifications: a mention and a Feed reply show on the Notifications screen and its Home count; Confirm opens each
 - [ ] Wi-Fi setup (nothing saved): the AP is named `Monster-Cyberspace-X4-Setup` and `http://192.168.4.1` loads
 
+**Cardputer ADV (`cardputer_adv`):**
+
+- [ ] Boots: the USB-CDC log shows `[boot] Monster for Cyberspace … on Cardputer` and no TCA8418 or ES8311 errors
+- [ ] Panel: landscape, upright, not mirrored, colours right, nothing cut off at any edge (`PANEL_MADCTL` 0x60, column offset 40, row offset 53, inverted); colour themes show in colour (`RC_MONO_CELLS=0`)
+- [ ] Panel push speed with no PSRAM: scrolling a room and moving through lists redraw without visible tearing or lag (frames go out a strip of rows at a time)
+- [ ] Keyboard map: every key types the right character, with Shift held; Fn + `;` `.` `,` `/` are Up, Down, Left, Right; `` ` `` is Back; Enter selects; Backspace deletes and repeats when held, then goes back; Fn + Backspace goes Home; Fn, Ctrl, Opt, Alt and Tab alone type nothing
+- [ ] Backlight: on at boot; off after the screen timeout and back on with any key (that key does nothing else)
+- [ ] Battery %: Settings shows a sensible value; the charging state follows the USB cable
+- [ ] Beep: a mention beeps through the speaker (ES8311 clocked from BCLK, no MCLK line: reg 0x01 = 0xB5, 0x02 = 0x18); if silent or distorted, log the codec's register reads
+- [ ] SD (FAT32 card): Back up to SD card, then Restore from SD card…, both work; restoring another board's backup keeps Compact and skips OTA, mascot and text-size keys
+- [ ] TLS heap headroom: after signing in, the log's `[mem] signed in: heap free … largest …` line; note both, then open a room and send, and watch for out-of-memory or TLS errors
+- [ ] Room read and send: the room list loads, a room shows its messages and new ones arrive live; a typed message sends once; a wide emoji in a message shows `?` in two cells and the line stays aligned
+- [ ] Home and Settings show only cIRC items: no C-Mail, Feed, Guilds, People, Unread, Firmware, Mascot, Text size, spell or emoji entries, and web config has none of their sections
+- [ ] Wi-Fi setup (nothing saved): the AP is named `Monster-Cyberspace-Cardputer` and `http://192.168.4.1` loads
+- [ ] Flasher: picking M5Stack Cardputer ADV hides Make your Fluffy and Phrases, and Install writes the 8 MB factory image; a reflash without erase keeps the settings
+
 **GPS time, RTC and time zone (`m9`):**
 
 - [ ] With Wi-Fi in range, `[time] NTP sync` and `[time] RTC written` appear, then `[gps] off`

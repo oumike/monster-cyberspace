@@ -5,8 +5,9 @@ On the Elecrow ThinkNode M9 (keyboard and d-pad), the Seeed Wio Tracker L2
 trackball and touch; see T-Deck Plus below), and the Elecrow CrowPanel
 Advance 3.5" and 5.0" (touch only; see CrowPanel below), and the Attaky Mesh
 Deck (d-pad, touch and keyboard; see Mesh Deck below), and the Xteink X4
-(e-paper and six buttons, a mostly passive client; see Xteink X4 below). Key
-names in this guide are the M9's.
+(e-paper and six buttons, a mostly passive client; see Xteink X4 below), and
+the M5Stack Cardputer ADV (keyboard, cIRC rooms only; see Cardputer ADV
+below). Key names in this guide are the M9's.
 
 ## First setup
 
@@ -321,6 +322,33 @@ from time to time to clear ghosting. Screenshots aren't available (there is
 no full frame in memory). Backups go to the microSD slot. The setup AP is
 **`Monster-Cyberspace-X4-Setup`**. The serial console is the USB-C port.
 
+## Cardputer ADV
+
+The M5Stack Cardputer ADV has a small keyboard, a 240×135 screen and no
+touch. It has no PSRAM, so it carries **cIRC rooms only**: no C-Mail, Feed,
+Guilds, People or Unread, no spell check, no emoji tray (a wide emoji in a
+message shows as `?`), no over-the-air updates and no custom mascot. Home
+lists what it has.
+
+| Key | Action |
+|---|---|
+| Keys | Type. Shift applies while held |
+| Fn + `;` `.` `,` `/` | Up, Down, Left, Right (the arrows printed on those keys) |
+| Enter | Select (send, in a room) |
+| `` ` `` (Esc) | Back |
+| Backspace | Deletes while there's text to delete; otherwise Back. Hold it to repeat |
+| Fn + Backspace | Home |
+
+Ctrl, Opt, Alt and Tab do nothing. **Screen off:** after the screen timeout;
+any key wakes it, and that key does nothing else.
+
+Text is always Compact (6×12, a 40×11 grid), so Settings and web config have
+no Text size item. The screen stays landscape. There is no RTC or GPS (time
+comes from NTP), a microSD slot for backups and a speaker for beeps. Updates
+are a USB install from the flasher page. The setup AP is
+**`Monster-Cyberspace-Cardputer`** (the name is too long for `-Setup`). The
+serial console is the USB-C port.
+
 ## CrowPanel
 
 The CrowPanel Advance 3.5" and 5.0" work by touch alone, as described under
@@ -584,7 +612,8 @@ without a key press.
 
 ## Text sizes
 
-Pick one in **Settings** → **Text size** (a box with all three), or switch
+(The Cardputer ADV always uses Compact and has no Text size item.) Pick one
+in **Settings** → **Text size** (a box with all three), or switch
 in the Feed palette, an entry's menu or the web page, where each switch steps
 Compact → Comfortable → Large. The choice is saved. Settings itself always
 uses Compact, so its items fit.
@@ -823,6 +852,9 @@ If the saved networks fail for 5 minutes, the setup AP comes up by itself.
 It goes away again once Wi-Fi is back and nobody is joined to it.
 
 ## Firmware updates
+
+(Not on the Cardputer ADV, which has no over-the-air updates: install new
+releases from the flasher page over USB.)
 
 The device looks for a new release 20 seconds after joining Wi-Fi and then
 once a day, straight from this project's GitHub releases over HTTPS. It only

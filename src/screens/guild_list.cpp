@@ -1,3 +1,6 @@
+#include "features.h"
+#if RC_FEAT_GUILDS
+
 #include "app/app_state.h"
 #include "app/ui_task.h"
 #include "feed/feed_source.h"
@@ -220,3 +223,5 @@ void GuildListScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
 }
 
 }  // namespace rc
+
+#endif  // RC_FEAT_GUILDS

@@ -32,6 +32,12 @@
 #define RC_FEAT_MASCOT 1
 #endif
 
+// Shared by several features: the entry lists, the Entry screen and the
+// network side that loads them serve the Feed, guild threads and a user's
+// posts; the Composer writes Feed posts and guild threads.
+#define RC_FEAT_ENTRIES (RC_FEAT_FEED || RC_FEAT_GUILDS || RC_FEAT_PEOPLE)
+#define RC_FEAT_COMPOSER (RC_FEAT_FEED || RC_FEAT_GUILDS)
+
 namespace rc {
 
 // The features that shape portable choices (Home's tiles, Settings items).

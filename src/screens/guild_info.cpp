@@ -1,3 +1,6 @@
+#include "features.h"
+#if RC_FEAT_ENTRIES
+
 #include "screens/guild_info.h"
 
 #include "screens/draw.h"
@@ -52,3 +55,5 @@ void GuildInfoView::render(Grid& g, const Theme& t) {
 }
 
 }  // namespace rc
+
+#endif  // RC_FEAT_ENTRIES

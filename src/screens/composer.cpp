@@ -1,3 +1,6 @@
+#include "features.h"
+#if RC_FEAT_COMPOSER
+
 #include "screens/composer.h"
 
 #include <algorithm>
@@ -403,3 +406,5 @@ void ComposerScreen::render(Grid& g, const Theme& t, int64_t) {
 }
 
 }  // namespace rc
+
+#endif  // RC_FEAT_COMPOSER

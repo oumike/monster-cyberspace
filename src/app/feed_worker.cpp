@@ -1,3 +1,6 @@
+#include "features.h"
+#if RC_FEAT_ENTRIES
+
 #if !RC_FAKE_API
 
 #include "app/feed_worker.h"
@@ -767,3 +770,5 @@ void FeedWorker::onNotice(const Mention& m, bool buzzer) {
 }  // namespace rc
 
 #endif
+
+#endif  // RC_FEAT_ENTRIES

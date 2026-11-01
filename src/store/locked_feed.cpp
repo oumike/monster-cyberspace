@@ -1,3 +1,6 @@
+#include "features.h"
+#if RC_FEAT_ENTRIES
+
 #include "store/locked_feed.h"
 
 namespace rc {
@@ -8,3 +11,5 @@ LockedFeed& lockedFeed() {
 }
 
 }  // namespace rc
+
+#endif  // RC_FEAT_ENTRIES

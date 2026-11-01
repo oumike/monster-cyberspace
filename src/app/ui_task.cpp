@@ -10,8 +10,11 @@
 #include "app/power_service.h"
 #include "app/queues.h"
 #include "chat/chat_source.h"
+#include "features.h"
 #include "feed/compose.h"
+#if RC_FEAT_GUILDS
 #include "feed/feed_source.h"
+#endif
 #include "hal/board.h"
 #include "input/backspace.h"
 #include "input/double_tap.h"
@@ -236,7 +239,11 @@ void applyNotifyLight() {
   if (!board::hasNotifyLight()) return;
   uint8_t rgb = 0;
   if (blinker.active()) {
+#if RC_FEAT_CMAIL
     const bool unread = !app().mentions.empty() || cmailUnread() > 0;
+#else
+    const bool unread = !app().mentions.empty();
+#endif
     rgb = blinker.tick(millis(), app().cfg.notifyLight, app().cfg.notifyTimeoutSecs, unread);
   }
   if (rgb == notifyShown) return;
@@ -317,7 +324,9 @@ void lockScreen(int64_t now) {
 }
 
 // Web compose waiting on the network (runWebCompose below).
+#if RC_FEAT_CMAIL
 std::string mailText;  // a new C-Mail's text, sent once its conversation opens
+#endif
 bool threadPosting = false;
 void sendCanned(const std::u32string& text);
 
@@ -391,12 +400,14 @@ void handleEvent(const Event& e) {
       banner(e.text, false);
       break;
     }
+#if RC_FEAT_CMAIL
     case EvtType::CmailAlert:
       // The unread count lives in the conversation list (Home sums it).
       notifyMessage();
       if (app().cfg.buzzer) board::beep(1600, 80);
       banner(e.text, false);
       break;
+#endif
     case EvtType::NotifyPreview:
       notifyLightPreview(ledColorFromIndex(e.code));
       break;
@@ -406,11 +417,14 @@ void handleEvent(const Event& e) {
     case EvtType::MascotChanged:
       mascotstore::load(app().mascot);  // a failed read keeps the current one
       break;
+#if RC_FEAT_ENTRIES
     case EvtType::FeedAlert:
       // code 1 asks for a beep; post_cooldown (code 0) is a banner only.
       if (e.code == 1 && app().cfg.buzzer) board::beep(1800, 80);
       banner(e.text, false);
       break;
+#endif
+#if RC_FEAT_CMAIL
     case EvtType::ConversationStarted:
       // A web-composed C-Mail: open the conversation and send the text there.
       if (!mailText.empty()) {
@@ -425,6 +439,8 @@ void handleEvent(const Event& e) {
         return;  // not the C-Mail list's, which didn't ask
       }
       break;
+#endif
+#if RC_FEAT_GUILDS
     case EvtType::EntryPosted:
       if (threadPosting) {
         threadPosting = false;
@@ -434,11 +450,14 @@ void handleEvent(const Event& e) {
         return;
       }
       break;
+#endif
     default:
       break;
   }
+#if RC_FEAT_COMPOSER
   // A post that settles after the Composer was left still clears its draft.
   if (cur != Id::Composer) composerBackgroundEvent(e);
+#endif
   router::screen().onEvent(e);
 }
 
@@ -495,9 +514,12 @@ ComposeView currentComposeView() {
         if (c.id == s.roomSlug) v.label = "C-Mail with @" + c.partner;
       if (v.label.empty()) v.label = "a C-Mail conversation";
     });
-  } else if (id == router::Id::Entry) {
+  }
+#if RC_FEAT_ENTRIES
+  else if (id == router::Id::Entry) {
     v.label = "replies to the open post";
   }
+#endif
   if (v.label.empty()) v.takesText = false;
   return v;
 }
@@ -509,7 +531,11 @@ void runWebCompose() {
   {
     std::lock_guard<std::mutex> l(composeMu);
     composeShown = currentComposeView();
+#if RC_FEAT_CMAIL
     composeBusy = !mailText.empty() || threadPosting;
+#else
+    composeBusy = threadPosting;
+#endif
     if (!composeWaiting) return;
     composeWaiting = false;
     r = std::move(composeSlot);
@@ -525,11 +551,14 @@ void runWebCompose() {
       router::screen().onKey(KeyEvent{Action::ClearLine});
       sendCanned(utf8ToU32(r.text));
       break;
+#if RC_FEAT_CMAIL
     case ComposeKind::Mail:
       mailText = std::move(r.text);
       chatSource().command(Command{CmdType::StartConversation, r.to});
       banner("Starting a C-Mail to @" + r.to + "\u2026", false);
       break;
+#endif
+#if RC_FEAT_GUILDS
     case ComposeKind::Thread: {
       EntryDraft d;
       d.title = r.title;
@@ -539,6 +568,9 @@ void runWebCompose() {
       banner("Posting a thread in " + r.guild + "\u2026", false);
       break;
     }
+#endif
+    default:
+      break;  // webCompose turned away a target not built
   }
 }
 
@@ -955,6 +987,8 @@ ComposeView composeView() {
 std::string webCompose(ComposeReq r) {
   std::lock_guard<std::mutex> l(composeMu);
   if (composeWaiting || composeBusy) return "Still sending the last one";
+  if (r.kind == ComposeKind::Mail && !RC_FEAT_CMAIL) return "C-Mail is not on this device";
+  if (r.kind == ComposeKind::Thread && !RC_FEAT_GUILDS) return "Guilds are not on this device";
   std::string err = checkCompose(r, composeShown.takesText);
   if (!err.empty()) return err;
   composeSlot = std::move(r);

@@ -1,3 +1,6 @@
+#include "features.h"
+#if RC_FEAT_ENTRIES
+
 #include "screens/entry.h"
 
 #include <algorithm>
@@ -586,3 +589,5 @@ void EntryScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
 }
 
 }  // namespace rc
+
+#endif  // RC_FEAT_ENTRIES

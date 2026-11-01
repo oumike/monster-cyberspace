@@ -1,3 +1,6 @@
+#include "features.h"
+#if RC_FEAT_PEOPLE
+
 #include "screens/people_nav.h"
 
 #include <vector>
@@ -36,3 +39,5 @@ void back() {
 }
 
 }  // namespace rc::people
+
+#endif  // RC_FEAT_PEOPLE

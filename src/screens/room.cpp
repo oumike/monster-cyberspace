@@ -6,9 +6,12 @@
 #include "app/app_state.h"
 #include "app/ui_task.h"
 #include "chat/chat_source.h"
+#include "features.h"
 #include "hal/board.h"
 #include "screens/draw.h"
+#if RC_FEAT_PEOPLE
 #include "screens/people_nav.h"
+#endif
 #include "store/locked_chat.h"
 #include "ui/widgets/palette.h"
 #include "ui/widgets/scroll_bar.h"
@@ -244,7 +247,11 @@ void RoomScreen::typingKey(const KeyEvent& k) {
     case Action::Back:
       if (drawer) setDrawer(false);
       else if (!log_.following()) log_.follow();
+#if RC_FEAT_CMAIL
       else if (!router::backToOrigin()) router::go(dm_ ? router::Id::CmailList : router::Id::RoomList);
+#else
+      else if (!router::backToOrigin()) router::go(router::Id::RoomList);
+#endif
       break;
     default:
       break;
@@ -339,13 +346,21 @@ void RoomScreen::openMenu(Menu m, std::u32string title, std::vector<ListItem> it
 }
 
 void RoomScreen::openRoomMenu() {
+#if RC_FEAT_CMAIL
   if (dm_) {
+#if RC_FEAT_PEOPLE
     menuKeys_ = {"profile", "read", "close"};
     openMenu(Menu::Room, utf8ToU32("@" + partner_),
              {ListItem{U"Profile", U""}, ListItem{U"Mark read", U""},
               ListItem{U"Close conversation", U""}});
+#else
+    menuKeys_ = {"read", "close"};
+    openMenu(Menu::Room, utf8ToU32("@" + partner_),
+             {ListItem{U"Mark read", U""}, ListItem{U"Close conversation", U""}});
+#endif
     return;
   }
+#endif
   menuKeys_ = {"who", "mute", "unmute", "read", "leave"};
   openMenu(Menu::Room, utf8ToU32("#" + slug_),
            {ListItem{U"Who's here", U""}, ListItem{U"Mute\u2026", U""},
@@ -356,10 +371,16 @@ void RoomScreen::openRoomMenu() {
 void RoomScreen::openPersonMenu(const std::string& name) {
   target_ = name;
   bool muted = isMuted(name);
+#if RC_FEAT_PEOPLE
   menuKeys_ = {"mention", muted ? "unmute1" : "mute1", "profile"};
   openMenu(Menu::Person, utf8ToU32(name),
            {ListItem{U"Mention", U""}, ListItem{muted ? U"Unmute" : U"Mute", U""},
             ListItem{U"Profile", U""}});
+#else
+  menuKeys_ = {"mention", muted ? "unmute1" : "mute1"};
+  openMenu(Menu::Person, utf8ToU32(name),
+           {ListItem{U"Mention", U""}, ListItem{muted ? U"Unmute" : U"Mute", U""}});
+#endif
 }
 
 void RoomScreen::openMessageMenu() {
@@ -387,7 +408,9 @@ void RoomScreen::openMessageMenu() {
     if (hasStyle(m, "spoiler") && !revealed) add(U"Reveal", "reveal");
     else if (hasStyle(m, "art") || m.content.size() > 200) add(U"Show full", "full");
     if (!firstUrl(m).empty()) add(U"Show link", "link");
+#if RC_FEAT_PEOPLE
     if (!m.username.empty() && !dm_) add(U"Profile", "profile");
+#endif
     // C-Mail has no delete or report.
     if (dm_) {
     } else if (own) {
@@ -453,10 +476,14 @@ void RoomScreen::pickMenu() {
         lastMarkRead_ = nowEpochMs();
       } else if (key == "leave") {
         router::go(router::Id::RoomList);
+#if RC_FEAT_CMAIL
       } else if (key == "close") {
         router::go(router::Id::CmailList);
+#endif
+#if RC_FEAT_PEOPLE
       } else if (key == "profile") {
         if (!partner_.empty()) people::openProfile(partner_);
+#endif
       }
       break;
     case Menu::MutePick:
@@ -473,8 +500,10 @@ void RoomScreen::pickMenu() {
         insertText(utf8ToU32("@" + target_ + " "));
         setDrawer(false);
         ui::showKeyboard();
+#if RC_FEAT_PEOPLE
       } else if (key == "profile") {
         people::openProfile(target_);
+#endif
       } else if (app().conn == 0) {
         ui::banner("Offline: not sent", true);
       } else {
@@ -501,8 +530,10 @@ void RoomScreen::pickMenu() {
         openReader(m);
       } else if (key == "link") {
         openLink(firstUrl(m));
+#if RC_FEAT_PEOPLE
       } else if (key == "profile") {
         people::openProfile(m.username);
+#endif
       } else if (key == "delete") {
         menuKeys_ = {"cancel", "delete"};
         openMenu(Menu::ConfirmDelete, U"delete this message?",

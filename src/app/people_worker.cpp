@@ -1,3 +1,6 @@
+#include "features.h"
+#if RC_FEAT_PEOPLE
+
 #if !RC_FAKE_API
 
 #include "app/people_worker.h"
@@ -225,3 +228,5 @@ void PeopleWorker::openUserPosts(const std::string& username, bool append) {
 }  // namespace rc
 
 #endif
+
+#endif  // RC_FEAT_PEOPLE

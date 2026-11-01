@@ -1,3 +1,6 @@
+#include "features.h"
+#if RC_FEAT_ENTRIES
+
 #if RC_FAKE_API
 
 #include <ArduinoJson.h>
@@ -1173,3 +1176,5 @@ void FakeFeedSource::openUserPosts(const std::string& username) {
 }  // namespace rc
 
 #endif
+
+#endif  // RC_FEAT_ENTRIES

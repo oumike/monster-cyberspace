@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "chat/message.h"
+#include "features.h"
 #include "screens/link_view.h"
 #include "screens/router.h"
 #include "ui/widgets/drawer.h"
@@ -22,7 +23,11 @@ namespace rc {
 // no reply, delete or report.
 class RoomScreen : public Screen {
  public:
+#if RC_FEAT_CMAIL
   explicit RoomScreen(bool dm = false) : dm_(dm) {}
+#else
+  RoomScreen() = default;
+#endif
   // slug: a room slug, or a conversation id when dm.
   void enter(const std::string& slug) override;
   void leave() override;
@@ -66,7 +71,11 @@ class RoomScreen : public Screen {
   void noteTyping();
   void stopTyping();
 
+#if RC_FEAT_CMAIL
   const bool dm_;
+#else
+  static constexpr bool dm_ = false;  // without C-Mail every RoomScreen is a room
+#endif
   std::string slug_;
   std::string partner_;         // the other person, when dm
   bool typingOn_ = false;       // we told the server we're typing

@@ -1,3 +1,6 @@
+#include "features.h"
+#if RC_FEAT_UNREAD
+
 #include <algorithm>
 
 #include "app/app_state.h"
@@ -159,3 +162,5 @@ void NotificationsScreen::render(Grid& g, const Theme& t, int64_t) {
 }
 
 }  // namespace rc
+
+#endif  // RC_FEAT_UNREAD

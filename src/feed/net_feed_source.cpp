@@ -1,3 +1,6 @@
+#include "features.h"
+#if RC_FEAT_ENTRIES
+
 #if !RC_FAKE_API
 
 #include "app/queues.h"
@@ -24,3 +27,5 @@ FeedSource& feedSource() {
 }  // namespace rc
 
 #endif
+
+#endif  // RC_FEAT_ENTRIES

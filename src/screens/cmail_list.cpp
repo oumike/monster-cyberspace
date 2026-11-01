@@ -1,3 +1,6 @@
+#include "features.h"
+#if RC_FEAT_CMAIL
+
 #include "app/app_state.h"
 #include "app/ui_task.h"
 #include "chat/chat_source.h"
@@ -147,3 +150,5 @@ void CmailListScreen::render(Grid& g, const Theme& t, int64_t) {
 }
 
 }  // namespace rc
+
+#endif  // RC_FEAT_CMAIL

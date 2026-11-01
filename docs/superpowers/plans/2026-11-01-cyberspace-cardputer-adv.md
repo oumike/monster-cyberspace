@@ -117,11 +117,11 @@ HAL: follow `src/hal/pager/` (keyboard over TCA8418 with `CardputerKeys`, I²C o
 
 Rooms (`room_list.cpp`, `room.cpp` as a room, not `RoomScreen{true}` the conversation) stay. `RoomScreen{true}` (`Id::Conversation`) is C-Mail and goes with it. Mentions in rooms still beep (speaker kept); the Unread screen is gone.
 
-- [ ] **Step 1: Set the five flags in the env; run** `nice pio run -e cardputer_adv`. Expected: compile/link errors listing every wiring point.
-- [ ] **Step 2: Guard each wiring point and wrap each feature file** until it builds.
-- [ ] **Step 3: Check the reachability**: `grep -n "router::go(router::Id::\(CmailList\|Conversation\|FeedList\|Entry\|Composer\|Watched\|Bookmarks\|GuildList\|Guild\|Members\|Profile\|UserPosts\|Notifications\)" src -r` — every hit sits under the matching `#if RC_FEAT_X`. Record the result in the report.
-- [ ] **Step 4: Build** `nice pio run -e cardputer_adv` and `nice pio run -e m9`; run `nice pio test -e native`. Expected: SUCCESS, SUCCESS, all pass. Report cardputer flash/RAM vs Task 4.
-- [ ] **Step 5: Commit** `git commit -m "Compile out C-Mail, Feed, Guilds, People and Unread"`
+- [x] **Step 1: Set the five flags in the env; run** `nice pio run -e cardputer_adv`. Expected: compile/link errors listing every wiring point.
+- [x] **Step 2: Guard each wiring point and wrap each feature file** until it builds.
+- [x] **Step 3: Check the reachability**: `grep -n "router::go(router::Id::\(CmailList\|Conversation\|FeedList\|Entry\|Composer\|Watched\|Bookmarks\|GuildList\|Guild\|Members\|Profile\|UserPosts\|Notifications\)" src -r` — every hit sits under the matching `#if RC_FEAT_X`. Record the result in the report.
+- [x] **Step 4: Build** `nice pio run -e cardputer_adv` and `nice pio run -e m9`; run `nice pio test -e native`. Expected: SUCCESS, SUCCESS, all pass. Report cardputer flash/RAM vs Task 4.
+- [x] **Step 5: Commit** `git commit -m "Compile out C-Mail, Feed, Guilds, People and Unread"`
 
 ### Task 6: Compile out spell check, emoji, OTA and mascot
 

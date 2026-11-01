@@ -1,5 +1,7 @@
 #pragma once
 
+#include "features.h"
+
 // The web config page: inline HTML, CSS and JS with no external requests.
 namespace web {
 
@@ -18,11 +20,23 @@ ul{padding-left:1.2em;margin:.3em 0}li button{padding:.1em .4em;font-size:.85em}
 a{color:#6cf}
 )CSS"
 
+// The send targets each built feature adds (features.h).
+#if RC_FEAT_CMAIL
+#define RC_SEND_MAIL_OPT R"HTML(<option value="mail">A new C-Mail</option>)HTML"
+#else
+#define RC_SEND_MAIL_OPT ""
+#endif
+#if RC_FEAT_GUILDS
+#define RC_SEND_THREAD_OPT R"HTML(<option value="thread">A new guild thread</option>)HTML"
+#else
+#define RC_SEND_THREAD_OPT ""
+#endif
+
 // Web compose (board::webCompose): hidden until /api/compose answers.
 #define RC_SEND_HTML R"HTML(<div id="sendblock" hidden>
 <h2>Send</h2>
 <div class="dim">The device sends this as if typed on it.</div>
-<label>To<select id="skind" onchange="sendKind()"><option value="open">What the device has open</option><option value="mail">A new C-Mail</option><option value="thread">A new guild thread</option></select></label>
+<label>To<select id="skind" onchange="sendKind()"><option value="open">What the device has open</option>)HTML" RC_SEND_MAIL_OPT RC_SEND_THREAD_OPT R"HTML(</select></label>
 <div id="sopen" class="dim"></div>
 <label id="storow" hidden>Recipient<input id="sto" autocomplete="off" placeholder="@name"></label>
 <label id="sguildrow" hidden>Guild (its short name)<input id="sguild" autocomplete="off"></label>

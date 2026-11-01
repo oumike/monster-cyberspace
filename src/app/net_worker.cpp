@@ -15,8 +15,13 @@
 #include <mutex>
 #include <set>
 
+#include "features.h"
+#if RC_FEAT_ENTRIES
 #include "app/feed_worker.h"
+#endif
+#if RC_FEAT_PEOPLE
 #include "app/people_worker.h"
+#endif
 #include "app/queues.h"
 #include "cs/cs_api.h"
 #include "cs/rtdb.h"
@@ -25,7 +30,9 @@
 #include "net/tls_alloc.h"
 #include "net/wifi_mgr.h"
 #include "store/locked_chat.h"
+#if RC_FEAT_ENTRIES
 #include "store/locked_feed.h"
+#endif
 #include "web/web_server.h"
 
 namespace rc::networker {
@@ -127,7 +134,15 @@ void finishLogin(const LoginResult& r) {
 
 class Worker {
  public:
-  explicit Worker(const Settings& s) : api_(http_), feed_(api_), people_(api_), email_(s.email) {
+  explicit Worker(const Settings& s)
+      : api_(http_),
+#if RC_FEAT_ENTRIES
+        feed_(api_),
+#endif
+#if RC_FEAT_PEOPLE
+        people_(api_),
+#endif
+        email_(s.email) {
     if (!s.refreshToken.empty()) api_.setRefreshToken(s.refreshToken);
   }
 
@@ -150,6 +165,16 @@ class Worker {
     post(EvtType::ConnState, code);
   }
 
+  // The feature workers forget the signed-in user.
+  void signOutWorkers() {
+#if RC_FEAT_ENTRIES
+    feed_.signOut();
+#endif
+#if RC_FEAT_PEOPLE
+    people_.signOut();
+#endif
+  }
+
   // Treats an auth failure that the refresh can't fix as a sign-out.
   void checkAuthError(const ApiError& e) {
     if (e.code == "EMAIL_NOT_VERIFIED") {
@@ -162,8 +187,7 @@ class Worker {
     bool deadToken = e.http == 401 || (!r.ok() && (r.http == 400 || r.http == 401));
     if (deadToken) {
       closeRoom();
-      feed_.signOut();
-      people_.signOut();
+      signOutWorkers();
       api_.signOut();
       self_.clear();
       ready_ = false;
@@ -197,7 +221,9 @@ class Worker {
 #endif
     refreshRooms();
     loadMutes();
+#if RC_FEAT_CMAIL
     refreshConversations();
+#endif
     nextWatch_ = mono() + kWatchMs;
   }
 
@@ -242,7 +268,9 @@ class Worker {
     if (!dm_ && !room_.empty() && presenceSent_ && online()) api_.leave(roomKey(room_));
     presenceSent_ = false;
     room_.clear();
+#if RC_FEAT_CMAIL
     dm_ = false;
+#endif
     historyLoaded_ = false;
     lockedChat().with([](ChatState& s) {
       s.store.clear();
@@ -263,7 +291,9 @@ class Worker {
     }
     closeRoom();
     room_ = slug;
+#if RC_FEAT_CMAIL
     dm_ = dm;
+#endif
     lockedChat().with([&](ChatState& s) {
       s.roomSlug = slug;
       s.dm = dm;
@@ -357,8 +387,13 @@ class Worker {
     if (t.rtdbUrl.empty() || t.idToken.empty()) return;
     int64_t newest = lockedChat().with([](ChatState& s) { return s.store.newestTimestamp(); });
     // dm_messages rejects a limitToLast above 100.
+#if RC_FEAT_CMAIL
     RtdbQuery q{true, newest, newest < 0 ? 50 : (dm_ ? 100 : 1000)};
     std::string path = (dm_ ? "dm_messages/" : "chat_messages/") + roomKey(room_);
+#else
+    RtdbQuery q{true, newest, newest < 0 ? 50 : 1000};
+    std::string path = "chat_messages/" + roomKey(room_);
+#endif
     std::string url = rtdbStreamUrl(t.rtdbUrl, path, t.idToken, q);
     msgDown_ = false;
     msgSse_.start(
@@ -378,6 +413,7 @@ class Worker {
   void openPresStream() {
     const Tokens& t = api_.tokens();
     if (room_.empty() || t.rtdbUrl.empty() || t.idToken.empty()) return;
+#if RC_FEAT_CMAIL
     if (dm_) {
       // In a conversation this slot carries the typing flags.
       std::string url = rtdbStreamUrl(t.rtdbUrl, "dm_presence/" + room_, t.idToken, {});
@@ -392,6 +428,7 @@ class Worker {
           [](bool) {});
       return;
     }
+#endif
     std::string url = rtdbStreamUrl(t.rtdbUrl, "chat_presence/" + roomKey(room_), t.idToken, {});
     presSse_.start(
         url,
@@ -466,6 +503,7 @@ class Worker {
 
   void markRead(const std::string& slug) {
     if (slug.empty()) return;
+#if RC_FEAT_CMAIL
     if (dm_) {
       if (slug != room_) return;
       if (!api_.cmailRead(slug).ok()) return;
@@ -477,6 +515,7 @@ class Worker {
       post(EvtType::ConversationsUpdated);
       return;
     }
+#endif
     ApiError e = api_.markRead(roomKey(slug));
     if (!e.ok()) return;
     lockedChat().with([&](ChatState& s) {
@@ -491,22 +530,26 @@ class Worker {
     pendingMentions_.erase(range.first, range.second);
   }
 
+#if RC_FEAT_UNREAD
   // Unread's Mark all read, from one key press: every notification (mentions
   // and Feed notices) in one call, then each unread conversation. Not retried.
   void markAllRead() {
     ApiError e = api_.markAllNotificationsRead();
     if (e.ok()) {
       pendingMentions_.clear();
+#if RC_FEAT_ENTRIES
       lockedFeed().with([](FeedState& s) { s.notices.clear(); });
+#endif
     } else {
       checkAuthError(e);
     }
+    bool mailOk = true;
+#if RC_FEAT_CMAIL
     std::vector<std::string> ids;
     lockedChat().with([&](ChatState& s) {
       for (const auto& c : s.conversations)
         if (c.unread > 0) ids.push_back(c.id);
     });
-    bool mailOk = true;
     for (const auto& id : ids) {
       if (!api_.cmailRead(id).ok()) {
         mailOk = false;
@@ -518,12 +561,15 @@ class Worker {
       });
     }
     if (!ids.empty()) post(EvtType::ConversationsUpdated);
+#endif
     const bool ok = e.ok() && mailOk;
     post(EvtType::AllRead, 0,
          ok ? std::string("Marked all read") : e.ok() ? std::string("Some C-Mail stayed unread") : e.message,
          e.ok());
   }
+#endif
 
+#if RC_FEAT_CMAIL
   // ---- C-Mail ----
 
   // Refreshes the list and raises one alert per conversation each time a new
@@ -576,6 +622,7 @@ class Worker {
       api_.cmailTypingClear(room_);
     }
   }
+#endif
 
   void logMemory() {
     size_t msgs = 0, pres = 0, convs = 0, feed = 0, replies = 0;
@@ -584,10 +631,12 @@ class Worker {
       pres = s.presence.size();
       convs = s.conversations.size();
     });
+#if RC_FEAT_ENTRIES
     lockedFeed().with([&](FeedState& s) {
       feed = s.store.feed().size();
       replies = s.store.replies().size();
     });
+#endif
     Serial.printf(
         "[mem] int %u blk %u min %u psram %u | msgs %u pres %u convs %u seen %u feed %u "
         "replies %u\n",
@@ -608,7 +657,9 @@ class Worker {
   void watch() {
     logMemory();
     refreshRooms();
+#if RC_FEAT_CMAIL
     refreshConversations();
+#endif
     std::vector<Mention> ms;
     ApiError e = api_.mentions(ms);
     if (!e.ok()) {
@@ -618,8 +669,10 @@ class Worker {
     for (auto& m : ms) {
       if (m.at <= 0) m.at = epochMs();
       if (!m.type.empty() && m.type != "chat_mention") {
+#if RC_FEAT_ENTRIES
         // The UI decides on the beep with its buzzer setting.
         feed_.onNotice(m, true);
+#endif
         continue;
       }
       if (!seenMentions_.insert(m.id).second) continue;
@@ -675,9 +728,11 @@ class Worker {
       case CmdType::OpenRoom:
         openRoom(c.a, false);
         return;
+#if RC_FEAT_CMAIL
       case CmdType::OpenConversation:
         openRoom(c.a, true);
         return;
+#endif
       case CmdType::CloseRoom:
         closeRoom();
         return;
@@ -709,6 +764,7 @@ class Worker {
       case CmdType::Login:
         login(c);
         return;
+#if RC_FEAT_ENTRIES
       case CmdType::CloseFeed:
       case CmdType::CloseGuild:
         feed_.handle(c);
@@ -716,6 +772,7 @@ class Worker {
       case CmdType::OpenFeed:
         feed_.markOpen();
         break;
+#endif
       case CmdType::SetupAp:
         wifimgr::setSetupAp(c.n != 0);
         return;
@@ -726,27 +783,32 @@ class Worker {
         return;
       case CmdType::Logout:
         closeRoom();
-        feed_.signOut();
-        people_.signOut();
+        signOutWorkers();
         api_.signOut();
         self_.clear();
         ready_ = false;
+#if RC_FEAT_CMAIL
         alertedAt_.clear();
         lockedChat().with([](ChatState& s) { s.conversations.clear(); });
+#endif
         post(EvtType::AuthState, auth_ = 0);
         return;
       default:
         break;
     }
     if (!needNet(c)) return;
+#if RC_FEAT_ENTRIES
     if (FeedWorker::isFeedCommand(c.type)) {
       feed_.handle(c);
       return;
     }
+#endif
+#if RC_FEAT_PEOPLE
     if (PeopleWorker::isPeopleCommand(c.type)) {
       people_.handle(c);
       return;
     }
+#endif
     switch (c.type) {
       case CmdType::Send: {
         std::string id, reply;
@@ -781,12 +843,15 @@ class Worker {
       case CmdType::MarkRead:
         markRead(c.a.empty() ? room_ : c.a);
         break;
+#if RC_FEAT_UNREAD
       case CmdType::MarkAllRead:
         markAllRead();
         break;
+#endif
       case CmdType::RefreshRooms:
         refreshRooms();
         break;
+#if RC_FEAT_CMAIL
       case CmdType::RefreshConversations:
         refreshConversations();
         break;
@@ -796,6 +861,7 @@ class Worker {
       case CmdType::Typing:
         typing(c);
         break;
+#endif
       case CmdType::ResendVerification: {
         ApiError e = api_.resendVerification(api_.tokens().idToken);
         banner(e.ok() ? "Verification email sent" : e.message, e.ok());
@@ -861,7 +927,9 @@ class Worker {
       if (!ready_) return;
     }
 
+#if RC_FEAT_ENTRIES
     feed_.tick(now, screenOn_);
+#endif
 
     if (msgLive_.exchange(false)) {
       backoffMs_ = 1000;
@@ -902,17 +970,27 @@ class Worker {
 
   HttpsClient http_;
   CsApi api_;
+#if RC_FEAT_ENTRIES
   FeedWorker feed_;
+#endif
+#if RC_FEAT_PEOPLE
   PeopleWorker people_;
+#endif
   SseClient msgSse_, presSse_;
   std::string email_, self_, room_;
   std::map<std::string, std::string> roomIds_;  // slug → id
   std::set<std::string> seenMentions_;
   std::multimap<std::string, std::string> pendingMentions_;  // slug → notification id
+#if RC_FEAT_CMAIL
   std::map<std::string, int64_t> alertedAt_;  // conversation id → lastMessageAt alerted
+#endif
 
   std::atomic<bool> msgLive_{false}, msgDown_{false}, authRevoked_{false};
+#if RC_FEAT_CMAIL
   bool dm_ = false;  // room_ is a C-Mail conversation id
+#else
+  static constexpr bool dm_ = false;
+#endif
   bool ready_ = false, historyLoaded_ = false, presenceSent_ = false, presenceWanted_ = false;
   bool screenOn_ = true, wasOnline_ = false, pausedBanner_ = false;
   int conn_ = -1, auth_ = -1;

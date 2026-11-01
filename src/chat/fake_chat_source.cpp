@@ -11,6 +11,7 @@
 
 #include "app/queues.h"
 #include "chat/chat_source.h"
+#include "features.h"
 #include "cs/rate_limiter.h"
 #include "feed/feed_source.h"
 #include "store/locked_chat.h"
@@ -168,7 +169,9 @@ void FakeChatSource::start() {
   postEvent(Event{EvtType::RoomsUpdated});
   postEvent(Event{EvtType::ConversationsUpdated});
   xTaskCreatePinnedToCore(taskMain, "fake", 8192, this, 3, nullptr, 0);
+#if RC_FEAT_ENTRIES
   feedSource();  // seeds the fake Feed and starts its 90 s reply notices
+#endif
 }
 
 void FakeChatSource::command(const Command& c) {
@@ -274,7 +277,9 @@ void FakeChatSource::command(const Command& c) {
       lockedChat().with([](ChatState& s) {
         for (auto& cv : s.conversations) cv.unread = 0;
       });
+#if RC_FEAT_ENTRIES
       lockedFeed().with([](FeedState& s) { s.notices.clear(); });
+#endif
       postEvent(Event{EvtType::ConversationsUpdated});
       postEvent(Event{EvtType::AllRead, "Marked all read"});
       break;

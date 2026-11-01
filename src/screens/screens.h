@@ -3,15 +3,20 @@
 #include <utility>
 #include <vector>
 
+#include "features.h"
 #include "input/type_filter.h"
 #include "net/wifi_list.h"
 #include "screens/backup_picker.h"
 #include "screens/button_pad.h"
+#if RC_FEAT_ENTRIES
 #include "screens/guild_info.h"
+#endif
 #include "screens/link_view.h"
 #include "screens/router.h"
 #include "ui/home_tiles.h"
+#if RC_FEAT_UNREAD
 #include "ui/unread_inbox.h"
+#endif
 #include "ui/widgets/entry_list.h"
 #include "ui/widgets/input_line.h"
 #include "ui/widgets/list_view.h"
@@ -178,6 +183,7 @@ class RoomListScreen : public Screen {
   bool buttons_ = false;
 };
 
+#if RC_FEAT_CMAIL
 // C-Mail: "New conversation…" and the conversations, unread first.
 class CmailListScreen : public Screen {
  public:
@@ -203,7 +209,9 @@ class CmailListScreen : public Screen {
   InputLine input_;  // the username for a new conversation
   bool editing_ = false, busy_ = false;
 };
+#endif
 
+#if RC_FEAT_ENTRIES
 // The Feed, Watched threads and Bookmarks lists: one class, three router
 // instances (spec §5).
 class FeedListScreen : public Screen {
@@ -253,7 +261,9 @@ class FeedListScreen : public Screen {
   int64_t builtAt_ = 0;    // for the ages ("3h")
   const Theme* theme_ = nullptr;  // the rows bake its colours
 };
+#endif
 
+#if RC_FEAT_GUILDS
 // A guild's members, read-only and paged (spec §5).
 class MembersScreen : public Screen {
  public:
@@ -269,7 +279,9 @@ class MembersScreen : public Screen {
   std::vector<std::string> names_;  // usernames by row, for Select
   bool more_ = false, asked_ = false, failed_ = false;
 };
+#endif
 
+#if RC_FEAT_PEOPLE
 // A user's profile (People spec): scrolling text; Centre or the menu opens
 // its actions. Back returns where it was opened from (people::back).
 class ProfileScreen : public Screen {
@@ -306,7 +318,9 @@ class ProfileScreen : public Screen {
   bool dirty_ = true;
   int64_t builtAt_ = 0;
 };
+#endif
 
+#if RC_FEAT_GUILDS
 // Every guild: mine first (pinned), then the browse list (spec §5).
 class GuildListScreen : public Screen {
  public:
@@ -335,7 +349,9 @@ class GuildListScreen : public Screen {
   int cols_ = 0;
   const Theme* theme_ = nullptr;
 };
+#endif
 
+#if RC_FEAT_UNREAD
 // Everything the Unread screen lists, newest first.
 std::vector<UnreadItem> gatherUnread();
 
@@ -368,6 +384,7 @@ class NotificationsScreen : public Screen {
   bool confirm_ = false;  // box_ asks to mark all read
   bool marking_ = false;  // a MarkAllRead is in flight
 };
+#endif
 
 class ComingSoonScreen : public Screen {
  public:

@@ -1,3 +1,6 @@
+#include "features.h"
+#if RC_FEAT_PEOPLE
+
 #include <cctype>
 
 #include "app/app_state.h"
@@ -314,3 +317,5 @@ void ProfileScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
 }
 
 }  // namespace rc
+
+#endif  // RC_FEAT_PEOPLE

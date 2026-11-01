@@ -1,10 +1,13 @@
 #include "app/app_state.h"
 #include "app/ui_task.h"
+#include "features.h"
 #include "hal/board.h"
 #include "screens/draw.h"
 #include "screens/screens.h"
 #include "store/locked_chat.h"
+#if RC_FEAT_FEED
 #include "store/locked_feed.h"
+#endif
 #include "ui/home_items.h"
 #include "ui/home_tiles.h"
 #include "ui/tap_map.h"
@@ -54,6 +57,7 @@ const std::vector<Item>& listItems() {
 }
 constexpr int kTilePercent = 90;  // of the area between the status bar and the hint
 
+#if RC_FEAT_FEED
 // The newest unread Feed notice as an Entry arg ("postId\nnoticeId"), or "".
 std::string newestNotice() {
   return lockedFeed().with([](FeedState& s) {
@@ -65,6 +69,25 @@ std::string newestNotice() {
 
 int feedUnread() {
   return lockedFeed().with([](FeedState& s) { return int(s.notices.size()); });
+}
+#else
+int feedUnread() { return 0; }
+#endif
+
+int unreadCount() {
+#if RC_FEAT_UNREAD
+  return unreadTotal(gatherUnread());
+#else
+  return 0;
+#endif
+}
+
+int mailUnread() {
+#if RC_FEAT_CMAIL
+  return cmailUnread();
+#else
+  return 0;
+#endif
 }
 }  // namespace
 
@@ -79,15 +102,20 @@ void HomeScreen::openItem(int item) {
     case kMessages:
       router::go(router::Id::Room, app().cfg.lastRoom);
       break;
+#if RC_FEAT_UNREAD
     case kUnread:
       router::go(router::Id::Notifications);
       break;
+#endif
     case kRooms:
       router::go(router::Id::RoomList);
       break;
+#if RC_FEAT_CMAIL
     case kCmail:
       router::go(router::Id::CmailList);
       break;
+#endif
+#if RC_FEAT_FEED
     case kFeed: {
       // With an unread notice, straight to its entry; else the list.
       std::string arg = newestNotice();
@@ -95,9 +123,12 @@ void HomeScreen::openItem(int item) {
       else router::go(router::Id::Entry, arg);
       break;
     }
+#endif
+#if RC_FEAT_GUILDS
     case kGuilds:
       router::go(router::Id::GuildList);
       break;
+#endif
     case kSettings:
       router::go(router::Id::Settings);
       break;
@@ -178,8 +209,8 @@ void HomeScreen::renderTiles(Grid& g, const Theme& t, const std::vector<TileRect
     std::u32string label, sub;
     bool unread;
   };
-  const int mentions = int(a.mentions.size()), cmail = cmailUnread(), feed = feedUnread();
-  const int unread = unreadTotal(gatherUnread());
+  const int mentions = int(a.mentions.size()), cmail = mailUnread(), feed = feedUnread();
+  const int unread = unreadCount();
   auto infoFor = [&](Item item) -> TileInfo {
     switch (item) {
       case kUnread:
@@ -293,14 +324,18 @@ void HomeScreen::render(Grid& g, const Theme& t, int64_t) {
         t.fg);
   const int mentions = int(a.mentions.size());
   field("mentions", std::to_string(mentions) + " unread", mentions ? t.selectBg : t.fg);
+#if RC_FEAT_CMAIL
   int cmail = lockedChat().with([](ChatState& s) {
     int n = 0;
     for (const auto& c : s.conversations) n += c.unread;
     return n;
   });
   field("c-mail", std::to_string(cmail) + " unread", cmail ? t.selectBg : t.fg);
-  int feed = lockedFeed().with([](FeedState& s) { return int(s.notices.size()); });
+#endif
+#if RC_FEAT_FEED
+  int feed = feedUnread();
   field("feed", std::to_string(feed) + " unread", feed ? t.selectBg : t.fg);
+#endif
   std::string active = lockedChat().with([](ChatState& s) {
     std::string out;
     for (const auto& room : s.rooms) {
@@ -311,7 +346,7 @@ void HomeScreen::render(Grid& g, const Theme& t, int64_t) {
   });
   field("active", active, t.fg);
 
-  const int unread = unreadTotal(gatherUnread());
+  const int unread = unreadCount();
   std::vector<ListItem> rows;
   for (Item item : listItems()) {
     switch (item) {

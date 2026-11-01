@@ -1,3 +1,6 @@
+#include "features.h"
+#if RC_FEAT_ENTRIES
+
 #include <algorithm>
 
 #include "app/app_state.h"
@@ -421,3 +424,5 @@ void FeedListScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
 }
 
 }  // namespace rc
+
+#endif  // RC_FEAT_ENTRIES

@@ -28,7 +28,7 @@ class SplashScreen : public Screen {
 
  private:
   int64_t since_ = -1;
-  const char* say_ = "";
+  std::string say_;
 };
 
 class SetupScreen : public Screen {

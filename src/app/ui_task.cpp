@@ -92,7 +92,7 @@ uint8_t lit = 255;             // the backlight level set while the screen is li
 Bouncer bouncer;
 // The monster's word on the screensaver, a new one every kSayMs.
 MonsterWords words;
-const char* saying = "";
+std::string saying;
 #ifndef RC_SPLASH_SCALE
 #define RC_SPLASH_SCALE 1
 #endif
@@ -264,12 +264,13 @@ void goDark() {
 // e-paper it sits still in the middle.
 void drawBounce(const Theme& t) {
   if (nowMs() >= sayUntil) {
-    saying = words.next(esp_random());
+    saying = words.next(esp_random(), {});
     sayUntil = nowMs() + kSayMs;
   }
   // E-paper keeps it still, so it may be the splash's big monster.
   std::vector<SplashLine> ls =
-      splashLayout(grid.cols(), grid.rows(), "", saying, board::eink() ? RC_SPLASH_SCALE : 1);
+      splashLayout(grid.cols(), grid.rows(), "", saying,
+                   board::eink() ? RC_SPLASH_SCALE : 1, nullptr);
   int minC = grid.cols(), minR = grid.rows(), maxC = 0, maxR = 0;
   ls.erase(std::remove_if(ls.begin(), ls.end(),
                           [](const SplashLine& l) {
@@ -931,7 +932,7 @@ void setRotation(uint8_t r) { applyRotation(r); }
 
 bool fromTouch() { return touchKey; }
 
-const char* monsterWord() { return words.next(esp_random()); }
+std::string monsterWord() { return words.next(esp_random(), {}); }
 
 void showKeyboard() { oskWanted = true; }
 

@@ -8,6 +8,7 @@
 #include <string>
 
 #include "feed/entry.h"
+#include "mascot/mascot.h"
 #include "ui/button_grid.h"
 #include "ui/feed_layout.h"
 #include "ui/grid.h"
@@ -798,18 +799,72 @@ void test_splash_scale_needs_room() {
 
 void test_monster_words_shuffle() {
   MonsterWords w;
-  const char* last = nullptr;
+  const std::vector<std::string>& words = defaultMascotPhrases();
+  std::string last;
   uint32_t r = 7;
   for (int round = 0; round < 20; ++round) {
     std::vector<std::string> seen;
-    for (int i = 0; i < kMonsterWordCount; ++i) {
+    for (size_t i = 0; i < words.size(); ++i) {
       r = r * 1103515245u + 12345u;
-      const char* s = w.next(r);
+      std::string s = w.next(r, words);
       TEST_ASSERT_TRUE(s != last);  // never the same twice running
       last = s;
       for (const auto& x : seen) TEST_ASSERT_FALSE(x == s);
       seen.push_back(s);
     }
+  }
+}
+
+void test_words_empty_means_defaults() {
+  MonsterWords w;
+  const std::vector<std::string>& words = defaultMascotPhrases();
+  for (uint32_t r = 1; r < 20; ++r) {
+    std::string s = w.next(r * 2654435761u, {});
+    TEST_ASSERT_TRUE(std::find(words.begin(), words.end(), s) != words.end());
+  }
+}
+
+void test_words_custom() {
+  MonsterWords w;
+  w.next(3, defaultMascotPhrases());  // a changed list restarts the round
+  const std::vector<std::string> ab = {"a", "b"};
+  std::string last;
+  uint32_t r = 11;
+  for (int i = 0; i < 20; ++i) {
+    r = r * 1103515245u + 12345u;
+    std::string s = w.next(r, ab);
+    TEST_ASSERT_TRUE(s == "a" || s == "b");
+    TEST_ASSERT_TRUE(s != last);
+    last = s;
+  }
+}
+
+void test_words_single() {
+  MonsterWords w;
+  for (uint32_t r = 0; r < 10; ++r) TEST_ASSERT_EQUAL_STRING("x", w.next(r, {"x"}).c_str());
+}
+
+void test_splash_custom_art() {
+  const std::vector<std::string> art = {"(o o)", "/|_|\\"};
+  auto v = splashLayout(40, 15, "v0.1.0", {}, 1, &art);
+  std::vector<const SplashLine*> a;
+  for (const auto& l : v)
+    if (l.role == SplashRole::Art) a.push_back(&l);
+  TEST_ASSERT_EQUAL(2, int(a.size()));
+  TEST_ASSERT_EQUAL_STRING("(o o)", a[0]->text.c_str());
+  TEST_ASSERT_EQUAL_STRING("/|_|\\", a[1]->text.c_str());
+  TEST_ASSERT_EQUAL((40 - 5) / 2, a[0]->col);  // widest line 5, centred
+  TEST_ASSERT_EQUAL(a[0]->col, a[1]->col);
+  TEST_ASSERT_EQUAL(a[0]->row + 1, a[1]->row);
+}
+
+void test_splash_blank_art_is_fluffy() {
+  const std::vector<std::string> blank = {"  ", ""}, none;
+  auto fluffy = splashLayout(40, 15, "v0.1.0");
+  for (const auto* art : {&blank, &none}) {
+    auto v = splashLayout(40, 15, "v0.1.0", {}, 1, art);
+    TEST_ASSERT_EQUAL(int(fluffy.size()), int(v.size()));
+    for (size_t i = 0; i < v.size(); ++i) TEST_ASSERT_EQUAL_STRING(fluffy[i].text.c_str(), v[i].text.c_str());
   }
 }
 
@@ -1013,6 +1068,11 @@ int main() {
   RUN_TEST(test_splash_scales_art_on_a_big_grid);
   RUN_TEST(test_splash_scale_needs_room);
   RUN_TEST(test_monster_words_shuffle);
+  RUN_TEST(test_words_empty_means_defaults);
+  RUN_TEST(test_words_custom);
+  RUN_TEST(test_words_single);
+  RUN_TEST(test_splash_custom_art);
+  RUN_TEST(test_splash_blank_art_is_fluffy);
   RUN_TEST(test_button_grid_three_columns);
   RUN_TEST(test_guild_row_counts_role);
   RUN_TEST(test_guild_row_no_apprentices);

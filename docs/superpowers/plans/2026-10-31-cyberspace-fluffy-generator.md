@@ -72,11 +72,11 @@
   - `std::string MonsterWords::next(uint32_t rnd, const std::vector<std::string>& phrases)` — empty list = defaults; a changed list restarts the round. `kMonsterWordCount`/`kMonsterWords` are removed.
   - `std::string ui::monsterWord()`; `SplashScreen::say_` becomes `std::string`.
 
-- [ ] **Step 1: Failing tests** in test_layout: `test_splash_custom_art` (2-line art `{"(o o)", "/|_|\\"}` at 40×15: two Art lines, widest 5, centred); `test_words_custom` (with `{"a","b"}` 20 draws give only a/b, never the same twice running); `test_words_single` (`{"x"}` always "x"); update the existing `MonsterWords` test to pass the defaults.
-- [ ] **Step 2: Run** `nice pio test -e native -f test_layout` — fails to compile.
-- [ ] **Step 3: Implement** the signatures above; art width is measured per mascot.
-- [ ] **Step 4: Wire the firmware** to pass `&app().mascot.art` / `app().mascot.phrases` (Task 3 adds the field; until then pass nullptr / `{}`). Run `nice pio test -e native` and `nice pio run -e tdeck`.
-- [ ] **Step 5: Commit** `Splash and bubble draw a given mascot`.
+- [x] **Step 1: Failing tests** in test_layout: `test_splash_custom_art` (2-line art `{"(o o)", "/|_|\\"}` at 40×15: two Art lines, widest 5, centred); `test_words_custom` (with `{"a","b"}` 20 draws give only a/b, never the same twice running); `test_words_single` (`{"x"}` always "x"); update the existing `MonsterWords` test to pass the defaults.
+- [x] **Step 2: Run** `nice pio test -e native -f test_layout` — fails to compile.
+- [x] **Step 3: Implement** the signatures above; art width is measured per mascot.
+- [x] **Step 4: Wire the firmware** to pass `&app().mascot.art` / `app().mascot.phrases` (Task 3 adds the field; until then pass nullptr / `{}`). Run `nice pio test -e native` and `nice pio run -e tdeck`.
+- [x] **Step 5: Commit** `Splash and bubble draw a given mascot`.
 
 ### Task 3: Partition, store, app state
 

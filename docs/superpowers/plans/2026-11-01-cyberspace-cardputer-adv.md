@@ -63,11 +63,11 @@
 
 The TCA8418 key-number → physical-key table and the Fn layer come from M5Cardputer 1.1.x's TCA8418 reader (`https://github.com/m5stack/M5Cardputer`, `src/utility/Keyboard/KeyboardReader/TCA8418.*` and the shared key map `KeyboardReader.h`/`Keyboard_def.h`). Fetch those files read-only and copy the mapping into a table with a comment citing the file and tag. Rules: Shift and Fn are held modifiers (pressed while the key is pressed, unlike the Pager's one-shot); Fn+`;` Up, Fn+`.` Down, Fn+`,` Left, Fn+`/` Right; the `` ` `` key (Esc) is Back; Enter is Select; Backspace deletes and repeats like the Pager's (same delay/interval constants); Fn+Backspace is Home (as Sym+Backspace on the Pager); Ctrl, Opt and Alt alone produce nothing.
 
-- [ ] **Step 1: Write the failing tests**: `test_letters_and_shift` (`a`, Shift+`a` → `A`); `test_fn_arrows` (the four arrows); `test_esc_is_back`; `test_enter_selects`; `test_backspace_repeats` (held 500 ms then every 70 ms via `poll`); `test_fn_backspace_is_home`; `test_modifiers_alone_send_nothing` (Fn, Shift, Ctrl, Opt, Alt presses and releases → `Action::None`); `test_release_sends_nothing`.
-- [ ] **Step 2: Run** `nice pio test -e native -f test_keymap_cardputer_adv`. Expected: build failure.
-- [ ] **Step 3: Implement** `CardputerKeys`.
-- [ ] **Step 4: Run** `nice pio test -e native -f test_keymap_cardputer_adv`. Expected: PASS.
-- [ ] **Step 5: Commit** `git commit -m "Cardputer ADV keymap"`
+- [x] **Step 1: Write the failing tests**: `test_letters_and_shift` (`a`, Shift+`a` → `A`); `test_fn_arrows` (the four arrows); `test_esc_is_back`; `test_enter_selects`; `test_backspace_repeats` (held 500 ms then every 70 ms via `poll`); `test_fn_backspace_is_home`; `test_modifiers_alone_send_nothing` (Fn, Shift, Ctrl, Opt, Alt presses and releases → `Action::None`); `test_release_sends_nothing`.
+- [x] **Step 2: Run** `nice pio test -e native -f test_keymap_cardputer_adv`. Expected: build failure.
+- [x] **Step 3: Implement** `CardputerKeys`.
+- [x] **Step 4: Run** `nice pio test -e native -f test_keymap_cardputer_adv`. Expected: PASS.
+- [x] **Step 5: Commit** `git commit -m "Cardputer ADV keymap"`
 
 ### Task 3: Splash fit on small grids and the emoji placeholder
 

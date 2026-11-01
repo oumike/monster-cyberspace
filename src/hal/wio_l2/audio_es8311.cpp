@@ -1,4 +1,4 @@
-#if defined(BOARD_WIO_L2) || defined(BOARD_PAGER)
+#if defined(BOARD_WIO_L2) || defined(BOARD_PAGER) || defined(BOARD_CARDPUTER_ADV)
 
 #include "hal/wio_l2/audio_es8311.h"
 
@@ -13,7 +13,8 @@
 
 // Ported from platy-aprs's src/hal/audio.cpp (itself from camillia-mt's
 // pager/T-Deck tone players), on Arduino 3's ESP_I2S instead of the legacy
-// I2S driver. Shared by the Wio Tracker L2 and the T-LoRa Pager.
+// I2S driver. Shared by the Wio Tracker L2, the T-LoRa Pager and the
+// Cardputer ADV.
 
 namespace es8311 {
 namespace {
@@ -24,6 +25,24 @@ constexpr float kAmplitude = 7800.0f;
 constexpr uint8_t kVolActive = 50, kVolIdle = 10;
 
 Config cfg{};
+
+void amp(bool on) {
+  if (cfg.amp) cfg.amp(on);
+}
+
+// ES8311 clock manager registers, as M5Unified programs them for the
+// Cardputer ADV (no MCLK line): 0x01 = 0xB5, MCLK from BCLK with the DAC
+// (speaker) path clocked; 0x02 = 0x18, BCLK multiplied by 8 (16-bit stereo
+// BCLK is 32 fs, so 256 fs).
+constexpr uint8_t kRegClk1 = 0x01, kRegClk2 = 0x02;
+constexpr uint8_t kClk1FromBclk = 0xB5, kClk2FromBclk = 0x18;
+
+bool writeCodec(uint8_t reg, uint8_t v) {
+  Wire.beginTransmission(cfg.addr);
+  Wire.write(reg);
+  Wire.write(v);
+  return Wire.endTransmission() == 0;
+}
 
 struct Guard {
   Guard() {
@@ -49,8 +68,11 @@ bool codecBegin() {
   static bool pinsSet = false;
   if (!pinsSet) {
     pins.addI2C(audio_driver::PinFunction::CODEC, Wire);
-    pins.addI2S(audio_driver::PinFunction::CODEC, cfg.mclk, cfg.bck, cfg.ws, cfg.dout, -1);
+    pins.addI2S(audio_driver::PinFunction::CODEC, cfg.mclkFromBclk ? -1 : cfg.mclk, cfg.bck,
+                cfg.ws, cfg.dout, -1);
     (void)codec.driver().setI2CAddress(cfg.addr);
+    if (cfg.mclkFromBclk)
+      audio_driver::AudioDriverES8311.setMasterClockSource(audio_driver::ES8311::FROM_SCLK_PIN);
     pinsSet = true;
   }
   audio_driver::CodecConfig c;
@@ -63,15 +85,18 @@ bool codecBegin() {
   c.i2s.mode = audio_driver::MODE_SLAVE;
   Guard g;
   if (!codec.begin(c)) return false;
+  if (cfg.mclkFromBclk &&
+      !(writeCodec(kRegClk1, kClk1FromBclk) && writeCodec(kRegClk2, kClk2FromBclk)))
+    return false;
   codec.setVolume(kVolIdle);
   // Muted and unpowered between sounds: an idle DAC and amp click.
   codec.setMute(true);
-  cfg.amp(false);
+  amp(false);
   return true;
 }
 
 bool i2sBegin() {
-  i2s.setPins(cfg.bck, cfg.ws, cfg.dout, -1, cfg.mclk);
+  i2s.setPins(cfg.bck, cfg.ws, cfg.dout, -1, cfg.mclkFromBclk ? -1 : cfg.mclk);
   if (!i2s.begin(I2S_MODE_STD, kRate, I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_STEREO)) {
     Serial.println("[audio] i2s setup failed");
     return false;
@@ -131,7 +156,7 @@ void writeTone(uint16_t hz, uint16_t ms) {
 }
 
 void play(const Job& job) {
-  cfg.amp(true);
+  amp(true);
   delay(cfg.ampSettleMs);
   {
     Guard g;
@@ -149,7 +174,7 @@ void play(const Job& job) {
     codec.setMute(true);
     codec.setVolume(kVolIdle);
   }
-  cfg.amp(false);
+  amp(false);
 }
 
 void task(void*) {

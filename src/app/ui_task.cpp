@@ -110,6 +110,8 @@ bool fixedSize() {
 }
 
 TextSize wantedSize() {
+  // A board with one text size uses it everywhere, splash and screensaver too.
+  if (TextSize only; board::fixedTextSize(only)) return only;
   if (fixedSize()) return TextSize::Comfortable;
   const TextSize s = router::screen().compactText() ? TextSize::Compact : app().cfg.textSize;
 #if RC_LOW_MEM
@@ -899,9 +901,13 @@ void taskMain(void*) {
 
 void start() {
   if (board::canRotate()) board::setRotation(app().cfg.rotation);
+  if (TextSize only; board::fixedTextSize(only)) {
+    app().cfg.textSize = only;
+  } else {
 #if RC_LOW_MEM
-  if (app().cfg.textSize == TextSize::Compact) app().cfg.textSize = TextSize::Comfortable;
+    if (app().cfg.textSize == TextSize::Compact) app().cfg.textSize = TextSize::Comfortable;
 #endif
+  }
   power_service::begin();
   if (!renderer.begin()) Serial.println("[ui] no memory for the frame buffer");
   setActiveTaps(board::hasTouch() ? &taps : nullptr);
@@ -923,6 +929,7 @@ void start() {
 }
 
 void setTextSize(TextSize s) {
+  if (TextSize only; board::fixedTextSize(only)) s = only;
   app().cfg.textSize = s;
   settings::saveUiPrefs(app().cfg);
   needResize = true;

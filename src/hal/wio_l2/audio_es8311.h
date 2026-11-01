@@ -8,12 +8,14 @@ namespace es8311 {
 
 struct Config {
   uint8_t addr;  // codec I2C address, on Wire
-  int mclk, bck, ws, dout;
+  int mclk, bck, ws, dout;  // mclk < 0: no MCLK line
   uint32_t ampSettleMs;
-  void (*amp)(bool on);
+  void (*amp)(bool on);  // null: no amplifier to switch
   // The shared I2C bus's lock, held around codec transfers.
   void (*lock)();
   void (*unlock)();
+  // No MCLK line (the Cardputer ADV): the codec makes its clock from BCLK.
+  bool mclkFromBclk = false;
 };
 
 void begin(const Config& c);

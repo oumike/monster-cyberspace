@@ -10,6 +10,10 @@ namespace fs {
 class FS;
 }
 
+namespace rc {
+enum class TextSize;  // ui/grid.h
+}
+
 // The hardware abstraction each board implements. One implementation is
 // compiled per firmware env (src/hal/<board>/).
 namespace board {
@@ -97,6 +101,10 @@ bool canType();
 bool webCompose();
 // Boards that sleep on battery and wake on a timer (the X4). Defaults: none.
 bool sleepsOnBattery();
+// A board whose panel takes one text size only (the Cardputer ADV's 240x135:
+// Compact) sets out and returns true; the UI then uses it on every screen and
+// hides the text-size choice. Default false.
+bool fixedTextSize(rc::TextSize& out);
 // Battery volts, 0 when unknown. Default 0.
 float batteryVolts();
 // Deep sleep: wakes on the board's wake button, or after timerUs (0: no

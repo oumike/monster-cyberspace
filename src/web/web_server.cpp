@@ -415,7 +415,7 @@ esp_err_t getPrefs(httpd_req_t* req) {
   if (!authorized(req)) return ESP_OK;
   Settings s = current();
   JsonDocument d;
-  d["textSize"] = rc::textSizeKey(s.textSize);
+  if (rc::TextSize only; !board::fixedTextSize(only)) d["textSize"] = rc::textSizeKey(s.textSize);
   d["buzzer"] = s.buzzer;
   d["screenOnSecs"] = s.screenOnSecs;
   d["screenSaver"] = s.screenSaver;
@@ -465,6 +465,7 @@ esp_err_t postPrefs(httpd_req_t* req) {
   rc::TextSize size = s.textSize;
   if (doc["textSize"].is<const char*>() && !rc::parseTextSize(doc["textSize"].as<const char*>(), size))
     return fail(req, "400 Bad Request", "Text size: compact, comfortable or large");
+  if (rc::TextSize only; board::fixedTextSize(only)) size = only;
   bool buzzer = doc["buzzer"].is<bool>() ? doc["buzzer"].as<bool>() : s.buzzer;
   rc::ThemeId theme = s.theme;
   if (doc["theme"].is<const char*>() && !rc::parseThemeId(doc["theme"].as<const char*>(), theme))

@@ -100,7 +100,7 @@ static const char kPage[] = R"HTML(<!doctype html>
 <div id="acctmsg" class="msg"></div>
 
 <h2>Display</h2>
-<label>Text size<select id="tsize"><option value="compact">Compact (6×12, 53×20)</option><option value="comfortable">Comfortable (8×16, 40×15)</option><option value="large">Large (10×18, 32×13)</option></select></label>
+<label id="tsizerow">Text size<select id="tsize"><option value="compact">Compact (6×12, 53×20)</option><option value="comfortable">Comfortable (8×16, 40×15)</option><option value="large">Large (10×18, 32×13)</option></select></label>
 <label id="themerow" hidden>Theme<select id="theme"><option value="default">Default (terminal green)</option><option value="bw">Black &amp; white (white on black)</option><option value="wb">White &amp; black (black on white)</option><optgroup label="cyberspace.online"><option value="dark">Dark</option><option value="light">Light</option><option value="lcd">LCD</option><option value="c64">C64</option><option value="vt320">VT320</option><option value="matrix">Matrix</option><option value="poetry">Poetry</option><option value="brutalist">Brutalist</option><option value="grid">GRiD</option><option value="crypt">Crypt</option><option value="bubblegum">Bubblegum</option><option value="top8">Top8</option></optgroup><optgroup label="Dark takes"><option value="bubblegumdark">Bubblegum Dark</option><option value="top8dark">Top8 Dark</option></optgroup></select></label>
 <label id="rotrow" hidden>Orientation<select id="rot"><option value="0">Landscape</option><option value="2">Landscape 180</option><option value="1">Portrait</option><option value="3">Portrait 180</option></select></label>
 <label>Screen timeout<select id="scrsecs"><option value="15">15 s</option><option value="30">30 s</option><option value="60">1 min</option><option value="120">2 min</option><option value="300">5 min</option><option value="600">10 min</option><option value="1800">30 min</option><option value="3600">60 min</option><option value="0">Never</option></select></label>
@@ -216,7 +216,7 @@ function fillZones(sel,custom){sel.innerHTML='';
   if(custom){const o=document.createElement('option');o.value='';o.textContent='Custom (POSIX)';sel.appendChild(o);}}
 async function loadZones(){const r=await call('GET','/api/zones');zones=Array.isArray(r)?r:[];fillZones($('tzpick'),true);fillZones($('wtz'),true);}
 async function loadPrefs(){const p=await call('GET','/api/prefs');if(p.tz===undefined)return;
-  $('tsize').value=p.textSize;if(p.theme){$('themerow').hidden=false;$('theme').value=p.theme;}$('buzzer').checked=p.buzzer;$('spell').checked=p.spellCheck!==false;$('tz').value=p.tz;
+  $('tsizerow').hidden=!p.textSize;if(p.textSize)$('tsize').value=p.textSize;if(p.theme){$('themerow').hidden=false;$('theme').value=p.theme;}$('buzzer').checked=p.buzzer;$('spell').checked=p.spellCheck!==false;$('tz').value=p.tz;
   $('scrsecs').value=String(p.screenOnSecs);$('scrsaver').value=p.screenSaver?'1':'0';
   if(p.rotation!==undefined){$('rotrow').hidden=false;$('rot').value=String(p.rotation);}
   if(p.kbLight){$('kbrow').hidden=false;$('kblight').value=p.kbLight;}
@@ -240,9 +240,9 @@ async function addWifi(){
   const r=await post('/api/wifi',{ssid:$('ssid').value,password:$('wpass').value},'wifimsg');if(r.ok)$('wpass').value='';}
 async function login(){$('acctmsg').textContent='Signing in…';$('acctmsg').className='msg dim';
   const r=await call('POST','/api/login',{email:$('email').value,password:$('cpass').value});$('cpass').value='';show('acctmsg',r);load();}
-function savePrefs(){const b={textSize:$('tsize').value,buzzer:$('buzzer').checked,spellCheck:$('spell').checked,
+function savePrefs(){const b={buzzer:$('buzzer').checked,spellCheck:$('spell').checked,
     screenOnSecs:parseInt($('scrsecs').value,10),screenSaver:$('scrsaver').value==='1'};
-  if(!$('themerow').hidden)b.theme=$('theme').value;
+  if(!$('tsizerow').hidden)b.textSize=$('tsize').value;if(!$('themerow').hidden)b.theme=$('theme').value;
   if(!$('rotrow').hidden)b.rotation=parseInt($('rot').value,10);
   if(!$('kbrow').hidden)b.kbLight=$('kblight').value;if(!$('ledrow').hidden){b.notifyLight=$('ledcolor').value;b.notifyTimeout=+$('ledtime').value;}post('/api/prefs',b,'prefmsg');}
 function savePhrases(){post('/api/phrases',{phrases:$('phrases').value.split('\n')},'phrasemsg').then(loadPrefs);}

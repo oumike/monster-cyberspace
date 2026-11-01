@@ -189,6 +189,12 @@ class Worker {
     lockedChat().with([&](ChatState& s) { s.self = name; });
     ready_ = true;
     post(EvtType::AuthState, auth_ = 1, name);
+#if RC_LOW_MEM
+    // For the hardware check on boards without PSRAM: the heap left once signed in.
+    Serial.printf("[mem] signed in: heap free %u largest %u\n",
+                  unsigned(heap_caps_get_free_size(MALLOC_CAP_INTERNAL)),
+                  unsigned(heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL)));
+#endif
     refreshRooms();
     loadMutes();
     refreshConversations();

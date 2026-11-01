@@ -99,11 +99,11 @@ Env: `board = esp32-s3-devkitc-1`, `board_build.flash_size = 8MB`, `board_upload
 
 HAL: follow `src/hal/pager/` (keyboard over TCA8418 with `CardputerKeys`, I²C on SDA 8 / SCL 9, INT 11) and the shared `st7789` driver's `Config` (240×135 landscape, offsets 53/40 — set MADCTL for landscape; the exact value awaits the hardware check, note it in a comment), backlight PWM on GPIO 38, battery from ADC1 GPIO 10 with a ×2 divider mapped like the other ADC boards, SD on its own SPI bus (SCK 40, MOSI 14, MISO 39, CS 12) mounted per operation like `sd_pager.cpp`, beeps through `es8311` with `mclkFromBclk = true`, no amp callback. Flags: `hasKeyboard`/`canType`/`hasKeys` true; touch, rotate, eink, notify light, GPS, RTC false. `otaSlug()` returns `"cardputer-adv"`. Free heap is printed on the console after sign-in (one `Serial.printf`, `RC_LOW_MEM` builds only).
 
-- [ ] **Step 1: Add the env and partitions; run** `nice pio run -e cardputer_adv`. Expected: link fails on missing `board::` functions.
-- [ ] **Step 2: Implement the HAL and `fixedTextSize`**; in `ui_task.cpp` `wantedSize()` returns the fixed size for every screen (splash and screensaver too) when `fixedTextSize` is true, and `start()` skips the `RC_LOW_MEM` Compact→Comfortable rewrite in that case.
-- [ ] **Step 3: Hide the text-size item** in device Settings and web config when the size is fixed; a backup restore that carries a text size leaves the fixed size in effect.
-- [ ] **Step 4: Build** `nice pio run -e cardputer_adv`, `nice pio run -e pager`, `nice pio run -e wio_l2`. Expected: all SUCCESS. Report the cardputer RAM/flash summary lines.
-- [ ] **Step 5: Commit** `git commit -m "Cardputer ADV board, 8 MB layout, fixed text size"`
+- [x] **Step 1: Add the env and partitions; run** `nice pio run -e cardputer_adv`. Expected: link fails on missing `board::` functions.
+- [x] **Step 2: Implement the HAL and `fixedTextSize`**; in `ui_task.cpp` `wantedSize()` returns the fixed size for every screen (splash and screensaver too) when `fixedTextSize` is true, and `start()` skips the `RC_LOW_MEM` Compact→Comfortable rewrite in that case.
+- [x] **Step 3: Hide the text-size item** in device Settings and web config when the size is fixed; a backup restore that carries a text size leaves the fixed size in effect.
+- [x] **Step 4: Build** `nice pio run -e cardputer_adv`, `nice pio run -e pager`, `nice pio run -e wio_l2`. Expected: all SUCCESS. Report the cardputer RAM/flash summary lines.
+- [x] **Step 5: Commit** `git commit -m "Cardputer ADV board, 8 MB layout, fixed text size"`
 
 ### Task 5: Compile out C-Mail, Feed, Guilds, People and Unread
 

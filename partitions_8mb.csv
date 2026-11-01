@@ -1,0 +1,7 @@
+# Name,   Type, SubType, Offset,   Size,     Flags
+# The M5Stack Cardputer ADV (8 MB, OTA and the custom mascot off): one app.
+# Settings live past it, as in partitions_16mb.csv, so writing a factory image
+# at 0x0 never reaches them.
+factory,  app,  factory, 0x10000,  0x7C0000,
+nvs,      data, nvs,     0x7D0000, 0x20000,
+coredump, data, coredump,0x7F0000, 0x10000,

@@ -921,11 +921,22 @@ class Worker {
       reconnectAt_ = 0;
     }
 
+    // Wi-Fi is up, so nothing here is offline any more: raise the state to
+    // "reconnecting" instead of leaving it at 0. Until now only an open room's
+    // stream went live and set 2, so with no room open the state stayed 0 and
+    // the Feed, Entry, Composer and C-Mail screens (which read 0 as "no
+    // network") said "offline" and refused to send on a working network.
+    if (screenOn_ && conn_ <= 0) setConn(1);
+
     if (!ready_) {
       if (api_.signedIn() && now >= nextBootstrap_) bootstrap();
       if (!api_.signedIn() && auth_ != 0) post(EvtType::AuthState, auth_ = 0);
       if (!ready_) return;
     }
+    // With no room open there is no stream to report live, so settle on 2 once
+    // the account is usable: the status marker would otherwise sit on
+    // "reconnecting" for as long as the user stays out of a chat room.
+    if (screenOn_ && room_.empty() && conn_ != 2) setConn(2);
 
 #if RC_FEAT_ENTRIES
     feed_.tick(now, screenOn_);

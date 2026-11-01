@@ -28,6 +28,8 @@ void saveNotifyLight(rc::LedColor color);
 void saveNotifyTimeout(uint16_t secs);
 // The device's Settings and web config: spell suggestions while typing.
 void saveSpellCheck(bool on);
+// Friends added from a message's menu, kept on the device.
+void saveFriends(const std::vector<std::string>& friends);
 // Web config: the canned replies (config/phrases.h).
 void savePhrases(const std::vector<std::string>& phrases);
 // The device's Settings and web config: serve web config on the joined network.

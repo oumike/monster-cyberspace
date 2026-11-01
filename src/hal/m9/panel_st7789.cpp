@@ -1,5 +1,5 @@
 #if defined(BOARD_M9) || defined(BOARD_TDECK) || defined(BOARD_PAGER) || defined(BOARD_MESH_DECK) || \
-    defined(BOARD_CARDPUTER_ADV)
+    defined(BOARD_CARDPUTER_ADV) || defined(BOARD_CYBER_DECK_PLUS)
 
 #include "hal/m9/panel_st7789.h"
 

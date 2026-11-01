@@ -113,6 +113,11 @@ void FeedListScreen::onKey(const KeyEvent& k) {
     case Action::Select:
     case Action::Right: {
       int i = list_.selected();
+      // The Feed's New entry row: its id is empty, and it composes.
+      if (kind_ == Kind::Feed && i >= 0 && i < int(ids_.size()) && ids_[i].empty()) {
+        router::go(router::Id::Composer);
+        break;
+      }
       if (i < 0 || i >= int(ids_.size())) break;
       // A bookmarked reply opens its entry with that reply selected.
       std::string reply = i < int(replyIds_.size()) ? replyIds_[i] : std::string();
@@ -332,9 +337,23 @@ void FeedListScreen::rebuild(int cols, const Theme& t) {
   if (!loaded_) more_ = false;
   int64_t now = nowEpochMs();
   std::vector<FeedRow> rows;
-  rows.reserve(entries.size());
+  rows.reserve(entries.size() + 1);
   ids_.clear();
   replyIds_ = std::move(replyIds);
+  // The Feed's first row composes: one Select opens the Composer, with no menu
+  // in the way, so a d-pad and Select alone can write a post.
+  const bool composeRow = kind_ == Kind::Feed;
+  if (composeRow) {
+    const int headW = std::max(1, headCols() - EntryList::kBarCols);
+    std::u32string head = utf8ToU32("+ New entry");
+    if (int(head.size()) > headW) head.resize(headW);
+    std::u32string detail =
+        utf8ToU32(board::hasTouch() ? "tap to write a post" : "press \u25CF to write a post");
+    if (int(detail.size()) > cols) detail.resize(cols);
+    rows.push_back(FeedRow{head, detail, t.fg, t.dim});
+    ids_.push_back(std::string());
+  }
+  empty_ = entries.empty();
   for (size_t i = 0; i < entries.size(); ++i) {
     // With the side strip, the head lines stay in the plain font (FeedList render).
     rows.push_back(layoutFeedRow(entries[i], marked[i], now, cols, t, board::sideNav() ? cols : headCols() - EntryList::kBarCols));
@@ -342,7 +361,7 @@ void FeedListScreen::rebuild(int cols, const Theme& t) {
     if (side && sel < 0 && entries[i].id == selId_) sel = int(i);
   }
   list_.setRows(std::move(rows));
-  if (sel >= 0) list_.setSelected(sel);
+  if (sel >= 0) list_.setSelected(sel + (composeRow ? 1 : 0));
   remember();
 }
 
@@ -392,7 +411,7 @@ void FeedListScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
   if (palette_ || nav > 0) list_.setBigHeads(0, 0, 0);
   else list_.setBigHeads(cellSize(ts).h, bigCellSize(ts).h, headCols());
   list_.render(g, 1, bottom, t, nav);
-  if (list_.size() == 0) {
+  if (empty_) {
     // An empty feed with pages to come hasn't loaded yet.
     bool waiting = !loaded_ || loading || (kind_ == Kind::Feed && more_);
     const char* empty = waiting && app().conn == 0 ? "offline"
@@ -404,7 +423,8 @@ void FeedListScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
                         : kind_ == Kind::Guild   ? "no threads yet"
                         : kind_ == Kind::User    ? "no public entries"
                                                  : "no bookmarks";
-    putLine(g, 1, 2, empty, t.dim, t.bg);
+    // Below the New entry row, which takes the first two.
+    putLine(g, 1, kind_ == Kind::Feed ? 3 : 2, empty, t.dim, t.bg);
   }
 
   if (nav > 0) renderSideNav(g, 1, bottom, nav, t);

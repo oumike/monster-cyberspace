@@ -37,7 +37,10 @@ constexpr int I2S_BCK = 41, I2S_WS = 43, I2S_DOUT = 42, I2S_DIN = 46;
 constexpr int BATT_ADC = 10;
 constexpr float BATT_DIV = 2.0f;
 
-// microSD on an SPI bus of its own.
+// microSD, on the bus the expansion port shares: an M5Stack LoRa-1262 Cap's
+// SX1262 sits on it with its chip select on GPIO5, held high so a fitted cap
+// can't drive MISO (camillia-mt's hw_cardputer.h, config_io.cpp sdBegin).
 constexpr int SD_SCK = 40, SD_MOSI = 14, SD_MISO = 39, SD_CS = 12;
+constexpr int CAP_LORA_CS = 5;
 
 }  // namespace cardputer

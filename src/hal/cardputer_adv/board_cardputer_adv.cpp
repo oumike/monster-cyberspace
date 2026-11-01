@@ -16,6 +16,9 @@
 namespace board {
 
 void begin() {
+  // A fitted LoRa cap's radio stays off the SD bus (pins_cardputer_adv.h).
+  pinMode(cardputer::CAP_LORA_CS, OUTPUT);
+  digitalWrite(cardputer::CAP_LORA_CS, HIGH);
   // The panel has the default SPI bus to itself (MISO unused).
   st7789::Config panel{cardputer::TFT_SCK, cardputer::TFT_MOSI, -1,
                        cardputer::TFT_CS,  cardputer::TFT_DC,   cardputer::TFT_RST,

@@ -7,7 +7,7 @@ the LilyGO T-Deck Plus followed, then the Elecrow CrowPanel Advance 3.5" and
 5.0", the LilyGO T-LoRa Pager, the LilyGO T-Deck Pro and the Attaky Mesh Deck
 (all built, not yet tried on hardware; the Mesh Deck boots). The Xteink X4
 (branch `x4`) is written but has never been built. The M5Stack Cardputer ADV
-(8 MB, no PSRAM, no Guilds or Unread) is built, not yet tried on hardware. More
+(8 MB, no PSRAM, no Unread) is built, not yet tried on hardware. More
 boards and Cyberspace features come later.
 
 - **Design spec:** `docs/superpowers/specs/2026-10-25-cyberspace-m9-circ-design.md`
@@ -81,7 +81,7 @@ pio run -e pager            # LilyGO T-LoRa Pager
 pio run -e tdeck_pro        # LilyGO T-Deck Pro (e-paper)
 pio run -e mesh_deck        # Attaky Mesh Deck
 pio run -e x4               # Xteink X4 (ESP32-C3, no PSRAM)
-pio run -e cardputer_adv    # M5Stack Cardputer ADV (8 MB, no PSRAM, no Guilds or Unread)
+pio run -e cardputer_adv    # M5Stack Cardputer ADV (8 MB, no PSRAM, no Unread)
 scripts/build-upload-monitor.sh m9   # flash + serial monitor (115200); -w for the Wio L2, -t for the T-Deck Plus, -3/-5 for the CrowPanels, -P for the Pager, -D for the T-Deck Pro, -M for the Mesh Deck, -X for the X4, -C for the Cardputer ADV; --help for options
 scripts/build-upload-monitor.sh -B   # build every firmware env, no device needed
 scripts/screenshot.py PORT [--watch]  # PNG screenshots over the serial console (no device writes)

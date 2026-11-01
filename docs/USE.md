@@ -6,7 +6,7 @@ trackball and touch; see T-Deck Plus below), and the Elecrow CrowPanel
 Advance 3.5" and 5.0" (touch only; see CrowPanel below), and the Attaky Mesh
 Deck (d-pad, touch and keyboard; see Mesh Deck below), and the Xteink X4
 (e-paper and six buttons, a mostly passive client; see Xteink X4 below), and
-the M5Stack Cardputer ADV (keyboard; no Guilds or Unread; see Cardputer ADV
+the M5Stack Cardputer ADV (keyboard; no Unread; see Cardputer ADV
 below). Key names in this guide are the M9's.
 
 ## First setup
@@ -325,8 +325,8 @@ no full frame in memory). Backups go to the microSD slot. The setup AP is
 ## Cardputer ADV
 
 The M5Stack Cardputer ADV has a small keyboard, a 240×135 screen and no
-touch. It has no PSRAM, so it leaves some things out: **no Guilds or Unread**, no
-spell check, no emoji tray (a wide emoji in a
+touch. It has no PSRAM, so it leaves some things out: **no Unread**, no spell
+check, no emoji tray (a wide emoji in a
 message shows as `?`), no over-the-air updates and no custom mascot. Home
 lists what it has.
 

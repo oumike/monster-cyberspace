@@ -9,7 +9,14 @@
 
 namespace rc {
 
-constexpr size_t kMaxGuilds = 200, kMaxMembers = 200, kGuildBioBytes = 280;
+// Boards without PSRAM lower the caps (the browse list ends there).
+#ifndef RC_MAX_GUILDS
+#define RC_MAX_GUILDS 200
+#endif
+#ifndef RC_MAX_MEMBERS
+#define RC_MAX_MEMBERS 200
+#endif
+constexpr size_t kMaxGuilds = RC_MAX_GUILDS, kMaxMembers = RC_MAX_MEMBERS, kGuildBioBytes = 280;
 
 // My guilds, the browse list, the open guild and its members. References
 // returned here are invalidated by the next mutation.

@@ -40,6 +40,7 @@ CannedPicker::Out CannedPicker::key(const KeyEvent& k) {
 }
 
 void CannedPicker::render(Grid& g, int top, int bottom, const Theme& t) const {
+  if (!isOpen()) return;
   box_.render(g, top, bottom, 0, OverlayPlace::Centre, t);
 }
 

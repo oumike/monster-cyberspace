@@ -4,6 +4,8 @@
 #include <vector>
 
 #include "input/key_event.h"
+#include "ui/grid.h"
+#include "ui/theme.h"
 #include "ui/widgets/canned_picker.h"
 
 using namespace rc;
@@ -61,6 +63,16 @@ void test_hold_confirm_is_ignored() {
   TEST_ASSERT_TRUE(p.isOpen());
 }
 
+// A closed picker draws nothing; it once left an empty title bar mid-screen.
+void test_closed_draws_nothing() {
+  CannedPicker p;
+  Grid g(60, 13);
+  const Grid before = g;
+  p.render(g, 0, g.rows() - 1, defaultTheme());
+  for (int r = 0; r < g.rows(); ++r)
+    for (int c = 0; c < g.cols(); ++c) TEST_ASSERT_TRUE(g.at(c, r) == before.at(c, r));
+}
+
 int main(int, char**) {
   UNITY_BEGIN();
   RUN_TEST(test_phrases_then_emoji_row);
@@ -68,5 +80,6 @@ int main(int, char**) {
   RUN_TEST(test_back_cancels_and_left_right_do_not);
   RUN_TEST(test_no_phrases_opens_on_emoji);
   RUN_TEST(test_hold_confirm_is_ignored);
+  RUN_TEST(test_closed_draws_nothing);
   return UNITY_END();
 }

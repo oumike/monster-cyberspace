@@ -2,7 +2,10 @@
 #include <Arduino.h>
 
 #include "app/app_state.h"
+#include "features.h"
+#if RC_FEAT_OTA
 #include "app/ota_service.h"
+#endif
 #include "app/time_service.h"
 #include "app/ui_task.h"
 #include "chat/chat_source.h"
@@ -57,7 +60,8 @@ enum Item {
 // text size on a board with one size, orientation appears only on a board
 // that can rotate and the SD-card items
 // only on a board with a slot, so item indices and the menu height follow
-// from this.
+// from this. Spell check and Auto-update go when their features are compiled
+// out; Firmware then just shows the version.
 std::vector<Item> menuItems() {
   std::vector<Item> v;
   if (!board::eink()) v.push_back(kTheme);
@@ -71,7 +75,7 @@ std::vector<Item> menuItems() {
     v.push_back(kNotifyLight);
     v.push_back(kNotifyTimeout);
   }
-  if (board::canType()) v.push_back(kSpellCheck);
+  if (RC_FEAT_SPELL && board::canType()) v.push_back(kSpellCheck);
   if (board::sleepsOnBattery()) {
     v.push_back(kIdle);
     v.push_back(kWake);
@@ -80,7 +84,7 @@ std::vector<Item> menuItems() {
   v.push_back(kWebConfig);
   v.push_back(kSetupAp);
   v.push_back(kFirmware);
-  v.push_back(kAutoUpdate);
+  if (RC_FEAT_OTA) v.push_back(kAutoUpdate);
   if (board::hasSdSlot()) {
     v.push_back(kBackup);
     v.push_back(kRestore);
@@ -96,6 +100,7 @@ std::u32string widen(const char* s) {
   return out;
 }
 
+#if RC_FEAT_OTA
 // The Firmware item's value: the running version, or what an update is doing.
 std::u32string firmwareValue(const ota::Status& s) {
   switch (s.state) {
@@ -118,6 +123,7 @@ std::u32string firmwareValue(const ota::Status& s) {
   }
   return widen("v" RC_VERSION);
 }
+#endif
 
 std::u32string idleLabel(uint32_t secs) {
   return widen((std::to_string(secs / 60) + " min").c_str());
@@ -268,10 +274,12 @@ void SettingsScreen::confirmKey(const KeyEvent& k) {
         break;
       }
       if (confirmBox_.selected() != 1) break;
+#if RC_FEAT_OTA
       if (c == Confirm::Update) {
         if (!ota::startInstall()) ui::banner("Can't update now: is Wi-Fi up?", true);
         break;
       }
+#endif
       if (c == Confirm::Logout) {
         chatSource().command(Command{CmdType::Logout});
       } else {
@@ -473,6 +481,7 @@ void SettingsScreen::activate(int item) {
       break;
     }
     case kFirmware: {
+#if RC_FEAT_OTA
       const ota::Status st = ota::status();
       if (!st.layoutOk) {
         ui::banner("Updates need a USB install of a release first", true);
@@ -487,6 +496,7 @@ void SettingsScreen::activate(int item) {
         break;
       }
       if (!ota::startCheck()) ui::banner("Can't check now: is Wi-Fi up?", true);
+#endif
       break;
     }
     case kAutoUpdate: {
@@ -583,10 +593,14 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
           rows.push_back(ListItem{ap ? U"Turn setup AP off" : U"Turn setup AP on", U""});
         break;
       case kFirmware: {
+#if RC_FEAT_OTA
         const ota::Status st = ota::status();
         rows.push_back(ListItem{U"Firmware", firmwareValue(st),
                                 st.state == ota::State::Failed ? ItemTone::Error : ItemTone::Normal,
                                 st.state == ota::State::Available});
+#else
+        rows.push_back(ListItem{U"Firmware", widen("v" RC_VERSION)});
+#endif
         break;
       }
       case kAutoUpdate:

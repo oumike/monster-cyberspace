@@ -1,3 +1,6 @@
+#include "features.h"
+
+#if RC_FEAT_OTA
 #include "app/ota_service.h"
 
 #include <Arduino.h>
@@ -413,3 +416,5 @@ int percent(const Status& s) {
 }
 
 }  // namespace ota
+
+#endif  // RC_FEAT_OTA

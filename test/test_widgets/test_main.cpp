@@ -1289,6 +1289,18 @@ void test_symbols_commands_row() {
   TEST_ASSERT_FALSE(s.isOpen());
 }
 
+// A build without the emoji tray (RC_FEAT_EMOJI 0): Symbols again is a repeat.
+void test_symbols_without_emoji_stays_on_symbols() {
+  SymbolTable s;
+  s.setEmoji(false);
+  s.open(U"");
+  s.key(K(Action::Right));
+  TEST_ASSERT_EQUAL(int(SymbolTable::Kind::None), int(s.key(K(Action::Symbols)).kind));
+  TEST_ASSERT_TRUE(s.isOpen());
+  TEST_ASSERT_EQUAL(int(SymbolTable::Set::Symbols), int(s.set()));
+  TEST_ASSERT_EQUAL(1, s.selected());
+}
+
 void test_symbols_repeat_ignored_back_closes_other_passes() {
   SymbolTable s;
   s.open(U"");
@@ -1725,6 +1737,7 @@ int main() {
   RUN_TEST(test_symbols_move_wraps_in_two_dimensions);
   RUN_TEST(test_symbols_commands_row);
   RUN_TEST(test_symbols_repeat_ignored_back_closes_other_passes);
+  RUN_TEST(test_symbols_without_emoji_stays_on_symbols);
   RUN_TEST(test_symbols_render_highlights_selection);
   RUN_TEST(test_emoji_tray_inserts_and_stays_open);
   RUN_TEST(test_symbols_linear_steps_one_cell_and_wraps);

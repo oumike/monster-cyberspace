@@ -134,10 +134,10 @@ Rooms (`room_list.cpp`, `room.cpp` as a room, not `RoomScreen{true}` the convers
 
 With emoji off the symbol table (non-emoji symbols) stays; only the emoji tray and its bitmaps go.
 
-- [ ] **Step 1: Set the four flags; run** `nice pio run -e cardputer_adv`. Expected: errors at the wiring points.
-- [ ] **Step 2: Guard and wrap** until it builds; confirm `emoji_cells.h` and the spell dictionary are absent from the cardputer image (`nice pio run -e cardputer_adv -v` link map or `xtensa-esp32s3-elf-nm` on `firmware.elf` shows no `kEmojiCells`/dictionary symbols).
-- [ ] **Step 3: Build** `nice pio run -e cardputer_adv`, `nice pio run -e tdeck`, `nice pio run -e x4`; run `nice pio test -e native`. Expected: SUCCESS ×3, all pass. Report cardputer flash/RAM.
-- [ ] **Step 4: Commit** `git commit -m "Compile out spell check, emoji, OTA and mascot"`
+- [x] **Step 1: Set the four flags; run** `nice pio run -e cardputer_adv`. Expected: errors at the wiring points.
+- [x] **Step 2: Guard and wrap** until it builds; confirm `emoji_cells.h` and the spell dictionary are absent from the cardputer image (`nice pio run -e cardputer_adv -v` link map or `xtensa-esp32s3-elf-nm` on `firmware.elf` shows no `kEmojiCells`/dictionary symbols).
+- [x] **Step 3: Build** `nice pio run -e cardputer_adv`, `nice pio run -e tdeck`, `nice pio run -e x4`; run `nice pio test -e native`. Expected: SUCCESS ×3, all pass. Report cardputer flash/RAM.
+- [x] **Step 4: Commit** `git commit -m "Compile out spell check, emoji, OTA and mascot"`
 
 ### Task 7: Scripts, release, flasher and docs
 

@@ -12,7 +12,9 @@
 #include "ui/fonts/cell6x12.h"
 #include "ui/fonts/cell8x14.h"
 #include "ui/fonts/cell8x16.h"
+#if RC_FEAT_EMOJI
 #include "ui/fonts/emoji_cells.h"
+#endif
 #include "ui/widgets/scroll_bar.h"
 
 namespace rc {

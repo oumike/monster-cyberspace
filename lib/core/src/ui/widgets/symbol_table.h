@@ -41,6 +41,8 @@ class SymbolTable {
   void open(std::u32string commands, Set set = Set::Symbols, bool linear = false);
   // Boards where Backspace doubles as Back: Backspace closes the table.
   void setBackspaceCloses(bool on) { backspaceCloses_ = on; }
+  // Builds without the emoji tray: Symbols never switches to it.
+  void setEmoji(bool on) { emoji_ = on; }
   void close() { open_ = false; }
   bool isOpen() const { return open_; }
   int selected() const { return sel_; }
@@ -65,6 +67,7 @@ class SymbolTable {
   Set set_ = Set::Symbols;
   bool linear_ = false;
   bool backspaceCloses_ = false;
+  bool emoji_ = true;
   int sel_ = 0;
   mutable int emojiCols_ = kEmojiCols;  // set by render to fit the screen
   mutable bool big_ = false;            // set by render: large emoji fit

@@ -57,7 +57,7 @@ SymbolTable::Out SymbolTable::key(const KeyEvent& k) {
     pick.action = Action::Select;
     return key(pick);
   }
-  if (a == Action::Symbols && !emojiSet) {
+  if (a == Action::Symbols && !emojiSet && emoji_) {
     set_ = Set::Emoji;
     sel_ = 0;
     return o;

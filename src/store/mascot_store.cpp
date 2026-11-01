@@ -1,3 +1,6 @@
+#include "features.h"
+
+#if RC_FEAT_MASCOT
 #include "store/mascot_store.h"
 
 #include <Arduino.h>
@@ -95,3 +98,5 @@ bool save(const rc::Mascot& m) {
 }
 
 }  // namespace mascotstore
+
+#endif  // RC_FEAT_MASCOT

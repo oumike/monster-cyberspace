@@ -153,12 +153,16 @@ void RoomScreen::onKey(const KeyEvent& k) {
 }
 
 void RoomScreen::typingKey(const KeyEvent& k) {
+#if RC_FEAT_SPELL
   if (spell_.key(k, input_)) return;
+#endif
   const bool drawer = drawerOpen();
   switch (k.action) {
     case Action::Char:
       input_.insert(k.ch);
+#if RC_FEAT_SPELL
       spell_.typed(input_, spell::english(), app().cfg.spellCheck);
+#endif
       noteTyping();
       break;
     case Action::Backspace:
@@ -735,7 +739,9 @@ void RoomScreen::render(Grid& g, const Theme& t, int64_t) {
     for (size_t i = 1; i < typers.size(); ++i) who += ", " + typers[i];
     putLine(g, 1, logBottom, who + " is typing\u2026", t.dim, t.bg);
   }
+#if RC_FEAT_SPELL
   if (spell_.visible() && view_ == View::None && !reasonMode_) spell_.render(g, --logBottom, t);
+#endif
   log_.render(g, 1, logBottom, reserve, t);
   if (shown) drawer_.render(g, 1, logBottom, t, docked);
   if (nav > 0) renderSideNav(g, 1, logBottom, nav, t);
@@ -745,7 +751,7 @@ void RoomScreen::render(Grid& g, const Theme& t, int64_t) {
 
   bool offline = app().conn == 0;
   input_.setDisabled(offline || view_ != View::None);
-  input_.setEmojiButton(true);
+  input_.setEmojiButton(RC_FEAT_EMOJI != 0);
   input_.render(g, inputRow, t, reasonMode_ ? U"reason> " : U"> ");
 
   {

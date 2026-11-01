@@ -25,7 +25,9 @@
 #include "screens/draw.h"
 #include "screens/router.h"
 #include "store/locked_chat.h"
+#if RC_FEAT_MASCOT
 #include "store/mascot_store.h"
+#endif
 #include "ui/kb_light.h"
 #include "ui/notify_light.h"
 #include "ui/renderer.h"
@@ -414,9 +416,11 @@ void handleEvent(const Event& e) {
     case EvtType::PhrasesChanged:
       app().cfg.phrases = splitPhrases(e.text);
       break;
+#if RC_FEAT_MASCOT
     case EvtType::MascotChanged:
       mascotstore::load(app().mascot);  // a failed read keeps the current one
       break;
+#endif
 #if RC_FEAT_ENTRIES
     case EvtType::FeedAlert:
       // code 1 asks for a beep; post_cooldown (code 0) is a banner only.
@@ -630,9 +634,11 @@ void handleKey(const KeyEvent& key) {
     if (o.kind == CannedPicker::Kind::Send) {
       sendCanned(o.text);
     } else if (o.kind == CannedPicker::Kind::Emoji) {
+#if RC_FEAT_EMOJI
       cannedEmoji = true;
       symbols.setBackspaceCloses(false);
       symbols.open(U"", SymbolTable::Set::Emoji, board::upDownOnly());
+#endif
     } else if (o.kind == CannedPicker::Kind::Closed) {
       router::screen().onKey(KeyEvent{Action::ClearLine});  // a reply's "@name "
     }
@@ -666,8 +672,10 @@ void handleKey(const KeyEvent& key) {
       symbols.setBackspaceCloses(board::backspaceIsBack());
       if (k.action == Action::Symbols)
         symbols.open(router::screen().paletteLabel(), SymbolTable::Set::Symbols, board::upDownOnly());
+#if RC_FEAT_EMOJI
       else
         symbols.open(U"", SymbolTable::Set::Emoji, board::upDownOnly());
+#endif
       return;
     }
     if (k.modifier) return;
@@ -932,6 +940,7 @@ void taskMain(void*) {
 }  // namespace
 
 void start() {
+  symbols.setEmoji(RC_FEAT_EMOJI != 0);
   if (board::canRotate()) board::setRotation(app().cfg.rotation);
   if (TextSize only; board::fixedTextSize(only)) {
     app().cfg.textSize = only;

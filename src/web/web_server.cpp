@@ -12,7 +12,10 @@
 #include "app/app_state.h"
 #include "app/messages.h"
 #include "app/net_worker.h"
+#include "features.h"
+#if RC_FEAT_OTA
 #include "app/ota_service.h"
+#endif
 #include "app/queues.h"
 #include "app/restart.h"
 #include "app/time_service.h"
@@ -27,13 +30,17 @@
 #include "net/wifi_mgr.h"
 #include "power/power_policy.h"
 #include "store/backup_store.h"
+#if RC_FEAT_MASCOT
 #include "store/mascot_store.h"
+#endif
 #include "store/settings.h"
 #include "tz/zones.h"
 #include "ui/kb_light.h"
 #include "ui/notify_light.h"
 #include "ui/screen_timeout.h"
+#if RC_FEAT_MASCOT
 #include "web/mascot_presets.h"
+#endif
 #include "web/page.h"
 #include "web/web_access.h"
 #include "web/compose_req.h"
@@ -419,7 +426,7 @@ esp_err_t getPrefs(httpd_req_t* req) {
   d["buzzer"] = s.buzzer;
   d["screenOnSecs"] = s.screenOnSecs;
   d["screenSaver"] = s.screenSaver;
-  d["spellCheck"] = s.spellCheck;
+  if (RC_FEAT_SPELL) d["spellCheck"] = s.spellCheck;
   if (!board::eink()) d["theme"] = rc::themeKey(s.theme);
   d["tz"] = s.tz;
   d["tzName"] = s.tzName;
@@ -559,7 +566,7 @@ esp_err_t postPrefs(httpd_req_t* req) {
     rc::app().cfg.wakeMins = wakeMins;
     settings::savePower(idleSecs, wakeMins);
   }
-  if (spellCheck != s.spellCheck) {
+  if (RC_FEAT_SPELL && spellCheck != s.spellCheck) {
     rc::app().cfg.spellCheck = spellCheck;
     settings::saveSpellCheck(spellCheck);
   }
@@ -605,6 +612,7 @@ esp_err_t postPhrases(httpd_req_t* req) {
   return okReply(req, "Saved");
 }
 
+#if RC_FEAT_MASCOT
 esp_err_t getMascot(httpd_req_t* req) {
   if (!authorized(req)) return ESP_OK;
   rc::Mascot m;
@@ -644,6 +652,7 @@ esp_err_t postMascot(httpd_req_t* req) {
   if (!mascotstore::save(m)) return fail(req, "500 Internal Server Error", "Couldn't save the mascot");
   return okReply(req, "Saved");
 }
+#endif
 
 esp_err_t postSecurity(httpd_req_t* req) {
   if (!authorized(req)) return ESP_OK;
@@ -671,6 +680,7 @@ esp_err_t postSecurity(httpd_req_t* req) {
   return okReply(req, "Saved. The setup-AP password applies the next time setup mode runs.");
 }
 
+#if RC_FEAT_OTA
 esp_err_t getOta(httpd_req_t* req) {
   if (!authorized(req)) return ESP_OK;
   const ota::Status st = ota::status();
@@ -710,6 +720,7 @@ esp_err_t postOtaAuto(httpd_req_t* req) {
   rc::app().cfg.autoUpdate = on;
   return okReply(req, on ? "Updates install on their own" : "Updates wait for you");
 }
+#endif
 
 esp_err_t postRestart(httpd_req_t* req) {
   if (!authorized(req)) return ESP_OK;
@@ -851,8 +862,10 @@ void begin() {
       {"/api/zones", HTTP_GET, getZones},
       {"/api/security", HTTP_POST, postSecurity},
       {"/api/phrases", HTTP_POST, postPhrases},
+#if RC_FEAT_MASCOT
       {"/api/mascot", HTTP_GET, getMascot},
       {"/api/mascot", HTTP_POST, postMascot},
+#endif
       {"/api/restart", HTTP_POST, postRestart},
       {"/api/factory-reset", HTTP_POST, postFactoryReset},
       {"/api/backup", HTTP_GET, getBackup},
@@ -862,10 +875,12 @@ void begin() {
       {"/api/backup/sd/restore", HTTP_POST, postBackupSdRestore},
       {"/api/backup/sd/download", HTTP_GET, getBackupSdDownload},
       {"/api/backup/sd/delete", HTTP_POST, postBackupSdDelete},
+#if RC_FEAT_OTA
       {"/api/ota", HTTP_GET, getOta},
       {"/api/ota/check", HTTP_POST, postOtaCheck},
       {"/api/ota/install", HTTP_POST, postOtaInstall},
       {"/api/ota/auto", HTTP_POST, postOtaAuto},
+#endif
   };
   for (const Route& r : routes) {
     httpd_uri_t u = {};

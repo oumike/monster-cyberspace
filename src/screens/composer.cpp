@@ -116,9 +116,11 @@ void ComposerScreen::fieldKey(const KeyEvent& k) {
       if (in) in->insert(k.ch);
       else if (focus_ == kBody) body_.insert(k.ch);
       // Titles and bodies are prose; topics and the CW are tags and labels.
+#if RC_FEAT_SPELL
       if (focus_ == kTitle) spell_.typed(title_, spell::english(), app().cfg.spellCheck);
       else if (focus_ == kBody) spell_.typed(body_, spell::english(), app().cfg.spellCheck);
       else spell_.hide();
+#endif
       save();
       break;
     case Action::Backspace:

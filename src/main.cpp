@@ -2,14 +2,19 @@
 #include <esp_heap_caps.h>
 
 #include "app/app_state.h"
+#include "features.h"
+#if RC_FEAT_OTA
 #include "app/ota_service.h"
+#endif
 #include "app/time_service.h"
 #include "app/ui_task.h"
 #include "chat/chat_source.h"
 #include "core_version.h"
 #include "hal/board.h"
 #include "store/backup_store.h"
+#if RC_FEAT_MASCOT
 #include "store/mascot_store.h"
+#endif
 #include "store/nvs_migrate.h"
 #include "store/settings.h"
 
@@ -35,14 +40,18 @@ void setup() {
   memMark("board");
   backupstore::begin();
   settings::load(app().cfg);
+#if RC_FEAT_MASCOT
   mascotstore::load(app().mascot);
+#endif
   timesvc::start(app().cfg);
   memMark("time");
   // The network source brings up Wi-Fi too; the demo build (RC_FAKE_API) has none.
   startChatSource(app().cfg);
   memMark("net");
   ui::start();
+#if RC_FEAT_OTA
   ota::start();
+#endif
   memMark("setup done");
 }
 

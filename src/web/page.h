@@ -32,6 +32,65 @@ a{color:#6cf}
 #define RC_SEND_THREAD_OPT ""
 #endif
 
+// The config page sections each built feature adds (features.h); the page
+// never asks for a missing one. The status table still shows the version.
+#if RC_FEAT_MASCOT
+#define RC_MASCOT_HTML R"HTML(<h2>Mascot</h2>
+<div class="dim">The monster on the splash and the screensaver: up to 6 lines of 13 plain ASCII characters, and up to 10 speech-bubble phrases of 80 characters, one per line.</div>
+<label>Preset<select id="mpreset" onchange="mascotPreset()"></select></label>
+<textarea id="mart" cols="13" rows="6" wrap="off" spellcheck="false" style="width:auto;white-space:pre;overflow-x:auto"></textarea>
+<textarea id="mphrases" rows="10" spellcheck="false"></textarea>
+<button onclick="saveMascot()">Save mascot</button>
+<button onclick="resetMascot()">Reset to Fluffy</button>
+<div id="mascotmsg" class="msg"></div>
+)HTML"
+#define RC_MASCOT_JS R"HTML(let mascotPresets=[];
+async function loadMascot(){const m=await call('GET','/api/mascot');if(!m.art)return;
+  mascotPresets=(m.presets&&m.presets.presets)||[];const sel=$('mpreset');sel.innerHTML='<option value="">pick a preset\u2026</option>';
+  mascotPresets.forEach((p,i)=>{const o=document.createElement('option');o.value=String(i);o.textContent=p.name;sel.appendChild(o);});
+  $('mart').value=m.art.join('\n');$('mphrases').value=m.phrases.join('\n');}
+function mascotPreset(){const p=mascotPresets[+$('mpreset').value];if($('mpreset').value!==''&&p)$('mart').value=p.art.join('\n');}
+const mascotLines=id=>$(id).value.replace(/\r/g,'').split('\n');
+async function saveMascot(){const r=await post('/api/mascot',{art:mascotLines('mart'),phrases:mascotLines('mphrases')},'mascotmsg');if(r.ok)loadMascot();}
+async function resetMascot(){if(!confirm("Reset the art to Fluffy and the phrases to his defaults?"))return;
+  const r=await post('/api/mascot',{reset:true},'mascotmsg');if(r.ok)loadMascot();}
+)HTML"
+#define RC_MASCOT_LOAD "loadMascot();"
+#else
+#define RC_MASCOT_JS ""
+#define RC_MASCOT_HTML ""
+#define RC_MASCOT_LOAD ""
+#endif
+#if RC_FEAT_OTA
+#define RC_OTA_HTML R"HTML(<h2>Firmware</h2>
+<div id="otastate" class="dim"></div>
+<button onclick="otaCheck()">Check for updates</button>
+<button id="otainst" hidden onclick="otaInstall()">Install</button>
+<label><input id="otaauto" type="checkbox" style="width:auto" onchange="post('/api/ota/auto',{auto:this.checked},'otamsg')"> Install updates automatically</label>
+<div class="dim">Updates come from this project's GitHub releases over HTTPS and are signature-checked before the device boots them. Settings are kept.</div>
+<div id="otamsg" class="msg"></div>
+)HTML"
+#define RC_OTA_JS R"HTML(let otaTimer=0;
+async function loadOta(){const o=await call('GET','/api/ota');if(o.state===undefined)return;
+  const t={idle:'v'+o.version,checking:'checking\u2026','up-to-date':'v'+o.version+', up to date',
+    available:o.latest+' available (running v'+o.version+')',
+    installing:'installing '+(o.latest||'')+(o.percent>=0?' '+o.percent+'%':'\u2026'),
+    done:'installed, restarting\u2026',failed:'v'+o.version+'; update failed: '+o.error}[o.state]||o.state;
+  $('otastate').textContent=o.supported?t:'v'+o.version+'; updates need a USB install of a release first';
+  $('otainst').hidden=o.state!=='available';$('otainst').textContent='Install '+(o.latest||'');
+  $('otaauto').checked=o.auto;
+  clearTimeout(otaTimer);if(o.state==='checking'||o.state==='installing')otaTimer=setTimeout(loadOta,1500);}
+async function otaCheck(){await post('/api/ota/check',{},'otamsg');loadOta();}
+async function otaInstall(){if(!confirm('Install '+$('otainst').textContent.slice(8)+'? The device restarts.'))return;
+  await post('/api/ota/install',{},'otamsg');loadOta();}
+)HTML"
+#define RC_OTA_LOAD "loadOta();"
+#else
+#define RC_OTA_JS ""
+#define RC_OTA_HTML ""
+#define RC_OTA_LOAD ""
+#endif
+
 // Web compose (board::webCompose): hidden until /api/compose answers.
 #define RC_SEND_HTML R"HTML(<div id="sendblock" hidden>
 <h2>Send</h2>
@@ -135,15 +194,7 @@ static const char kPage[] = R"HTML(<!doctype html>
 <div id="phrasemsg" class="msg"></div>
 </div>
 
-<h2>Mascot</h2>
-<div class="dim">The monster on the splash and the screensaver: up to 6 lines of 13 plain ASCII characters, and up to 10 speech-bubble phrases of 80 characters, one per line.</div>
-<label>Preset<select id="mpreset" onchange="mascotPreset()"></select></label>
-<textarea id="mart" cols="13" rows="6" wrap="off" spellcheck="false" style="width:auto;white-space:pre;overflow-x:auto"></textarea>
-<textarea id="mphrases" rows="10" spellcheck="false"></textarea>
-<button onclick="saveMascot()">Save mascot</button>
-<button onclick="resetMascot()">Reset to Fluffy</button>
-<div id="mascotmsg" class="msg"></div>
-
+)HTML" RC_MASCOT_HTML R"HTML(
 <div id="powerblock" hidden>
 <h2>Power</h2>
 <div class="dim">On battery the device sleeps when left alone, and wakes now and then to fetch what's new. On USB it stays awake.</div>
@@ -178,14 +229,7 @@ static const char kPage[] = R"HTML(<!doctype html>
 </div>
 <div id="backupmsg" class="msg"></div>
 
-<h2>Firmware</h2>
-<div id="otastate" class="dim"></div>
-<button onclick="otaCheck()">Check for updates</button>
-<button id="otainst" hidden onclick="otaInstall()">Install</button>
-<label><input id="otaauto" type="checkbox" style="width:auto" onchange="post('/api/ota/auto',{auto:this.checked},'otamsg')"> Install updates automatically</label>
-<div class="dim">Updates come from this project's GitHub releases over HTTPS and are signature-checked before the device boots them. Settings are kept.</div>
-<div id="otamsg" class="msg"></div>
-
+)HTML" RC_OTA_HTML R"HTML(
 <h2>Device</h2>
 <button onclick="if(confirm('Restart the device?'))post('/api/restart',{},'devmsg')">Restart</button>
 <button class="danger" onclick="reset()">Factory reset…</button>
@@ -230,7 +274,7 @@ function fillZones(sel,custom){sel.innerHTML='';
   if(custom){const o=document.createElement('option');o.value='';o.textContent='Custom (POSIX)';sel.appendChild(o);}}
 async function loadZones(){const r=await call('GET','/api/zones');zones=Array.isArray(r)?r:[];fillZones($('tzpick'),true);fillZones($('wtz'),true);}
 async function loadPrefs(){const p=await call('GET','/api/prefs');if(p.tz===undefined)return;
-  $('tsizerow').hidden=!p.textSize;if(p.textSize)$('tsize').value=p.textSize;if(p.theme){$('themerow').hidden=false;$('theme').value=p.theme;}$('buzzer').checked=p.buzzer;$('spell').checked=p.spellCheck!==false;$('tz').value=p.tz;
+  $('tsizerow').hidden=!p.textSize;if(p.textSize)$('tsize').value=p.textSize;if(p.theme){$('themerow').hidden=false;$('theme').value=p.theme;}$('buzzer').checked=p.buzzer;$('spell').checked=p.spellCheck!==false;$('spellrow').hidden=p.spellCheck===undefined;$('tz').value=p.tz;
   $('scrsecs').value=String(p.screenOnSecs);$('scrsaver').value=p.screenSaver?'1':'0';
   if(p.rotation!==undefined){$('rotrow').hidden=false;$('rot').value=String(p.rotation);}
   if(p.kbLight){$('kbrow').hidden=false;$('kblight').value=p.kbLight;}
@@ -260,17 +304,7 @@ function savePrefs(){const b={buzzer:$('buzzer').checked,spellCheck:$('spell').c
   if(!$('rotrow').hidden)b.rotation=parseInt($('rot').value,10);
   if(!$('kbrow').hidden)b.kbLight=$('kblight').value;if(!$('ledrow').hidden){b.notifyLight=$('ledcolor').value;b.notifyTimeout=+$('ledtime').value;}post('/api/prefs',b,'prefmsg');}
 function savePhrases(){post('/api/phrases',{phrases:$('phrases').value.split('\n')},'phrasemsg').then(loadPrefs);}
-let mascotPresets=[];
-async function loadMascot(){const m=await call('GET','/api/mascot');if(!m.art)return;
-  mascotPresets=(m.presets&&m.presets.presets)||[];const sel=$('mpreset');sel.innerHTML='<option value="">pick a preset\u2026</option>';
-  mascotPresets.forEach((p,i)=>{const o=document.createElement('option');o.value=String(i);o.textContent=p.name;sel.appendChild(o);});
-  $('mart').value=m.art.join('\n');$('mphrases').value=m.phrases.join('\n');}
-function mascotPreset(){const p=mascotPresets[+$('mpreset').value];if($('mpreset').value!==''&&p)$('mart').value=p.art.join('\n');}
-const mascotLines=id=>$(id).value.replace(/\r/g,'').split('\n');
-async function saveMascot(){const r=await post('/api/mascot',{art:mascotLines('mart'),phrases:mascotLines('mphrases')},'mascotmsg');if(r.ok)loadMascot();}
-async function resetMascot(){if(!confirm("Reset the art to Fluffy and the phrases to his defaults?"))return;
-  const r=await post('/api/mascot',{reset:true},'mascotmsg');if(r.ok)loadMascot();}
-function saveWebCfg(c){if(!c.checked&&!setupMode&&!confirm('Turn web config off? This page stops answering on this network; turn it back on from the device\'s Settings or the setup AP.')){c.checked=true;return;}
+)HTML" RC_MASCOT_JS R"HTML(function saveWebCfg(c){if(!c.checked&&!setupMode&&!confirm('Turn web config off? This page stops answering on this network; turn it back on from the device\'s Settings or the setup AP.')){c.checked=true;return;}
   post('/api/prefs',{webConfig:c.checked},'secmsg');}
 function saveTime(){post('/api/prefs',{tzName:$('tzpick').value,tz:$('tz').value,ntpServer:$('ntp').value},'timemsg');}
 async function saveSec(){const b={pagePassword:$('pagepw').value,apPassword:$('appw').value};
@@ -306,20 +340,7 @@ async function loadBackup(){
     li.appendChild(rb);li.appendChild(db);li.appendChild(xb);ul.appendChild(li);
   }
 }
-let otaTimer=0;
-async function loadOta(){const o=await call('GET','/api/ota');if(o.state===undefined)return;
-  const t={idle:'v'+o.version,checking:'checking\u2026','up-to-date':'v'+o.version+', up to date',
-    available:o.latest+' available (running v'+o.version+')',
-    installing:'installing '+(o.latest||'')+(o.percent>=0?' '+o.percent+'%':'\u2026'),
-    done:'installed, restarting\u2026',failed:'v'+o.version+'; update failed: '+o.error}[o.state]||o.state;
-  $('otastate').textContent=o.supported?t:'v'+o.version+'; updates need a USB install of a release first';
-  $('otainst').hidden=o.state!=='available';$('otainst').textContent='Install '+(o.latest||'');
-  $('otaauto').checked=o.auto;
-  clearTimeout(otaTimer);if(o.state==='checking'||o.state==='installing')otaTimer=setTimeout(loadOta,1500);}
-async function otaCheck(){await post('/api/ota/check',{},'otamsg');loadOta();}
-async function otaInstall(){if(!confirm('Install '+$('otainst').textContent.slice(8)+'? The device restarts.'))return;
-  await post('/api/ota/install',{},'otamsg');loadOta();}
-load();loadZones().then(loadPrefs);loadBackup();loadOta();loadSend();loadMascot();setInterval(load,10000);
+)HTML" RC_OTA_JS R"HTML(load();loadZones().then(loadPrefs);loadBackup();)HTML" RC_OTA_LOAD R"HTML(loadSend();)HTML" RC_MASCOT_LOAD R"HTML(setInterval(load,10000);
 </script></body></html>)HTML";
 
 }  // namespace web

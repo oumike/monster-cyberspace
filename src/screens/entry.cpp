@@ -130,7 +130,9 @@ void EntryScreen::typingKey(const KeyEvent& k) {
     case Action::Char:
       if (sending_) break;
       input_.insert(k.ch);
+#if RC_FEAT_SPELL
       spell_.typed(input_, spell::english(), app().cfg.spellCheck);
+#endif
       break;
     case Action::Backspace:
       if (!sending_) input_.backspace();
@@ -550,7 +552,7 @@ void EntryScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
   if (loaded_ && nav > 0) renderSideNav(g, 1, logBottom, nav, t);
 
   input_.setDisabled(offline || view_ != View::None || sending_ || !loaded_);
-  input_.setEmojiButton(true);
+  input_.setEmojiButton(RC_FEAT_EMOJI != 0);
   input_.render(g, inputRow, t, reasonMode_ ? U"reason> " : U"> ");
 
   if (small) {

@@ -338,7 +338,7 @@ Buttons: BOOT tap = Back, BOOT hold (0.6 s) = Home; Wake tap = screen off
 - [ ] SD (FAT32 card): Back up to SD card, then Restore from SD card…, both work; restoring another board's backup keeps Compact and skips OTA, mascot and text-size keys
 - [ ] TLS heap headroom: after signing in, the log's `[mem] signed in: heap free … largest …` line; note both, then open a room and send, and watch for out-of-memory or TLS errors
 - [ ] Room read and send: the room list loads, a room shows its messages and new ones arrive live; a typed message sends once; a wide emoji in a message shows `?` in two cells and the line stays aligned
-- [ ] Home and Settings show only cIRC items: no C-Mail, Feed, Guilds, People, Unread, Firmware, Mascot, Text size, spell or emoji entries, and web config has none of their sections
+- [ ] Home and Settings show only cIRC items: no C-Mail, Feed, Guilds, People, Unread, Auto-update, Mascot, Text size, spell or emoji entries (Settings' Firmware line shows only the version), and web config has none of their sections
 - [ ] Wi-Fi setup (nothing saved): the AP is named `Monster-Cyberspace-Cardputer` and `http://192.168.4.1` loads
 - [ ] Flasher: picking M5Stack Cardputer ADV hides Make your Fluffy and Phrases, and Install writes the 8 MB factory image; a reflash without erase keeps the settings
 

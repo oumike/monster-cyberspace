@@ -30,6 +30,10 @@ boards and Cyberspace features come later.
   plan `docs/superpowers/plans/2026-10-29-cyberspace-mesh-deck.md`.
 - **Xteink X4:** spec `docs/superpowers/specs/2026-10-30-cyberspace-x4-design.md`,
   plan `docs/superpowers/plans/2026-10-30-cyberspace-x4.md`.
+- **Fluffy Generator (custom mascot):** spec
+  `docs/superpowers/specs/2026-10-31-cyberspace-fluffy-generator-design.md`,
+  plan `docs/superpowers/plans/2026-10-31-cyberspace-fluffy-generator.md`.
+  The presets and default phrases have one source, `site/mascots.json`.
 - **User guide:** `docs/USE.md`. **Testing and the live checklist:** `docs/TESTING.md`.
 - **Implementation plan:** `docs/superpowers/plans/2026-10-25-cyberspace-m9-circ.md`.
   Work its tasks in order, tick each `- [ ]` box as you finish a step, and
@@ -65,6 +69,7 @@ boards and Cyberspace features come later.
 
 ```sh
 pio test -e native          # host unit tests (lib/core)
+node --test site/*.test.mjs # flasher site tests (not `node --test site/`)
 pio run -e m9               # firmware
 pio run -e wio_l2           # Seeed Wio Tracker L2 firmware
 pio run -e tdeck            # LilyGO T-Deck Plus firmware
@@ -183,7 +188,7 @@ added on 2026-10-29 (flashed: it boots and finds touch, gauge and keyboard;
 the panel, touch mapping, keys and LEDs await the hardware check).
 **Still open:** the unticked items under "Open hardware checks" in
 `docs/TESTING.md` (themes, device Settings, touch UI, Wio L2, T-Deck Plus, CrowPanels, Pager, T-Deck Pro, GPS time, API
-assumptions, settings backup, OTA), then the human live checklist on the `m9` build.
+assumptions, settings backup, OTA, Fluffy Generator), then the human live checklist on the `m9` build.
 CI (`.github/workflows/build.yml`) runs on GitHub.
 OTA updates were added on 2026-10-28 (built without flashing): signed images
 straight from GitHub releases over HTTPS (`src/app/ota_service.cpp`,
@@ -204,7 +209,12 @@ guild members (`lib/core/src/people/`, `src/app/people_worker.cpp`,
 Unread (issue #3) was added on 2026-10-31 (not built yet): one screen of unread
 C-Mail, mentions and Feed notices, newest first (`ui/unread_inbox`,
 `src/screens/notifications.cpp`, `router::goFrom` for Back), from Home on every board.
-The native suite is green: 541/541
+The Fluffy Generator was added on 2026-10-31 (built without flashing; the
+T-Deck Plus hardware check and the flasher browser check are open): custom
+mascot art and phrases in a 4 KB `mascot` partition at 0xcb0000
+(`lib/core/src/mascot/`, `src/store/mascot_store.cpp`), set from the
+flasher's Make your Fluffy and Phrases modals or web config's Mascot section.
+The native suite is green: 637/637
 (`pio test -e native`), and `scripts/build-upload-monitor.sh -B` builds all
 eight firmware envs.
 

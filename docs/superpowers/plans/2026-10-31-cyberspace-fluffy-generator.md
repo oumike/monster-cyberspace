@@ -119,14 +119,14 @@
 
 **Files:**
 - Create: `site/mascot.mjs` (pure: `crc32`, `cleanMascot`, `validateMascot`, `encodeMascot` → `Uint8Array(4096)`, `isDefault`), `site/fluffy.js` (modals, localStorage, manifest), `site/fluffy.css`, `site/mascot.test.mjs`
-- Modify: `site/index.html` (two buttons, a status line, the two script/link tags), `scripts/pages-site.sh` (copy `mascot.mjs`, `fluffy.js`, `fluffy.css`, `mascots.json`), `.github/workflows/build.yml` (a step `node --test site/` before the firmware builds)
+- Modify: `site/index.html` (two buttons, a status line, the two script/link tags), `scripts/pages-site.sh` (copy `mascot.mjs`, `fluffy.js`, `fluffy.css`, `mascots.json`), `.github/workflows/build.yml` (a step `node --test site/*.test.mjs` before the firmware builds)
 
 **Interfaces:**
 - Consumes: `site/mascots.json`; `test/fixtures/mascot_golden.h` (the test reads `kMascotGoldenHex` with a regex).
 - Produces: when not default, `install.manifest` = blob URL of `{"name","version","new_install_prompt_erase":true,"builds":[{"chipFamily", "parts":[{"path":<absolute firmware URL>,"offset":0},{"path":<blob URL of the 4 KB mascot>,"offset":13303808}]}]}` (0xcb0000), built from the board's normal manifest; recomputed when the board, art or phrases change.
 
-- [x] **Step 1: Failing tests** in `site/mascot.test.mjs`: `golden` (encoding the golden mascot matches `kMascotGoldenHex`, then 0xFF), `crc` (`crc32("123456789") === 0xCBF43926`), `limits` (14-char line, 7 rows, 11 phrases, 81-char phrase, "é" all rejected with a reason), `defaults need no blob` (`isDefault` true for the JSON's Fluffy and phrases, false after one change). Run `node --test site/` — fails.
-- [x] **Step 2:** Implement `mascot.mjs`; run `node --test site/` — green.
+- [x] **Step 1: Failing tests** in `site/mascot.test.mjs`: `golden` (encoding the golden mascot matches `kMascotGoldenHex`, then 0xFF), `crc` (`crc32("123456789") === 0xCBF43926`), `limits` (14-char line, 7 rows, 11 phrases, 81-char phrase, "é" all rejected with a reason), `defaults need no blob` (`isDefault` true for the JSON's Fluffy and phrases, false after one change). Run `node --test site/*.test.mjs` — fails.
+- [x] **Step 2:** Implement `mascot.mjs`; run `node --test site/*.test.mjs` — green.
 - [x] **Step 3:** Build the modals per spec §5 in `fluffy.js`/`fluffy.css` (match the page's existing look; Esc and the backdrop close; focus returns to the opening button) and the manifest swap; edit `index.html` minimally (the other agent edits its prose).
 - [x] **Step 4: Verify** locally: `scripts/pages-site.sh <latest tag> <dir with that release's images> /tmp/site` (download with `gh release download`), serve `/tmp/site` with `python3 -m http.server`, and in a browser check the modals, presets, counters, localStorage, and that the generated manifest JSON lists both parts (log it to the console). No device flash. *(Replaced by controller ruling: `scripts/pages-site.sh` run against a fake release dir, new files confirmed in the output, and `node --check site/fluffy.js`; a human does the browser check later.)*
 - [x] **Step 5: Commit** `Flasher: Fluffy and Phrases modals, mascot flashed as a second part`.
@@ -135,6 +135,6 @@
 
 **Files:** `docs/USE.md` (Mascot section: flasher, web config, survives OTA/reset), `docs/BUILD.md` (partition, second part, presets file and generator), `docs/TESTING.md` (open hardware checks per spec §8, T-Deck Plus), `AGENTS.md` (spec/plan pointers; `site/mascots.json` is the presets source).
 
-- [ ] **Step 1:** Write them.
-- [ ] **Step 2: Verify** `nice pio test -e native` green, `node --test site/` green, `scripts/build-upload-monitor.sh -B` only if the user allows the full build.
-- [ ] **Step 3: Commit** `Docs: Fluffy Generator`.
+- [x] **Step 1:** Write them.
+- [x] **Step 2: Verify** `nice pio test -e native` green, `node --test site/*.test.mjs` green, `scripts/build-upload-monitor.sh -B` only if the user allows the full build. (Native 637/637 and site tests green; `-B` was not run.)
+- [x] **Step 3: Commit** `Docs: Fluffy Generator`.

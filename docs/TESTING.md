@@ -372,6 +372,22 @@ Buttons: BOOT tap = Back, BOOT hold (0.6 s) = Home; Wake tap = screen off
 - [ ] Web config Firmware: Check, Install and the auto-update checkbox work and match the device
 - [ ] Off Wi-Fi, Settings → Firmware says `Can't check now: is Wi-Fi up?`
 
+**Fluffy Generator, flasher (a Chromium browser):**
+
+- [ ] Make your Fluffy: the editor stops at 13 columns and 6 rows and drops non-ASCII as you type; the preview follows; each preset (Fluffy, cat, dog, rhino, platypus) fills it; Reset to Fluffy and Done work
+- [ ] Phrases: ten rows, the six defaults then four blank, each with an `n/80` counter; Reset to defaults and Done work
+- [ ] Both choices survive a page reload, and the line under Install says what will be flashed
+- [ ] With only defaults, Install offers the normal one-part manifest
+
+**Fluffy Generator (`tdeck`):**
+
+- [ ] From the flasher with the cat and three custom phrases: the splash and the screensaver show the cat, and the bubble uses only those phrases; the log shows one `[mascot]` line
+- [ ] Web config Mascot: the section shows the cat and the phrases; another preset and new phrases, then Save mascot, show on the next screensaver without a restart
+- [ ] Web config Reset to Fluffy brings back Fluffy and his six phrases
+- [ ] A bad mascot (a 14-character line, or 11 phrases) is refused with the reason, and the device keeps the old one
+- [ ] A factory reset keeps the mascot; a backup file has no mascot in it
+- [ ] An OTA update keeps the mascot, including on a board whose partition table predates the `mascot` partition
+
 **CrowPanel double-tap wake (`crowpanel35`, `crowpanel50`):**
 
 - [ ] With the screen locked or off, one tap does nothing; two taps within half a second wake it, and neither tap acts on the screen

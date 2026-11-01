@@ -670,6 +670,7 @@ At `http://monster-cyberspace.local`, or the device IP, on your LAN:
   and keyboard light (boards with a lit keyboard)
 - Time: zone and NTP server (see Time and time zone below)
 - Security: page password and setup-AP password
+- Mascot: the splash and screensaver art and phrases (see Mascot below)
 - Restart and factory reset
 
 ### Security notes
@@ -742,6 +743,28 @@ Wake hold on the Wio Tracker L2, any input on the T-Deck Plus and the Pager,
 a double tap on the CrowPanels), and the waking input does nothing else. A peek (a centre or
 Wake tap) shows the last few messages for 10 s and then returns to the
 screensaver. **Never** keeps the screen on.
+
+## Mascot
+
+Fluffy, the monster on the boot splash and the screensaver, can be swapped
+for your own art, and his speech-bubble phrases for your own. Art is up to 6
+lines of 13 plain ASCII characters; phrases are up to 10, of 1 to 80
+characters each. Either can be left as Fluffy's.
+
+- **On the browser flasher:** **Make your Fluffy** opens an editor with a
+  live preview and presets (Fluffy, cat, dog, rhino, platypus); **Phrases**
+  opens ten rows, prefilled with Fluffy's six. The page remembers your
+  choices, and the line under Install says what will be flashed. Install
+  then writes your mascot along with the firmware.
+- **In web config:** the **Mascot** section has a preset picker, the art,
+  the phrases one per line, **Save mascot** and **Reset to Fluffy** (art and
+  phrases both). It shows on the next splash or screensaver, with no
+  restart.
+
+The mascot lives in its own part of the flash, so firmware updates and a
+factory reset keep it. It is not in backup files. Installing from the
+flasher with Fluffy's defaults does not clear an earlier mascot (unless you
+choose erase): use **Reset to Fluffy** in web config instead.
 
 ## Settings
 

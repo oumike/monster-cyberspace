@@ -131,8 +131,23 @@ image writes. `0x9000` is `nvs_old`, where the stock `default_16MB.csv` kept
 them; `src/store/nvs_migrate.cpp` moves anything there into `nvs` at boot and
 erases it. The custom mascot (`mascot`, 4 KB) sits at `0xCB0000`, right after
 `nvs`; OTA and factory reset leave it alone, and a board whose table predates
-it is read and written at that address raw. Keep the app slots where they are: the OTA code refuses to update a
-board whose layout differs (`layoutSupportsUpdate`).
+it is read and written at that address raw. Keep the app slots where they
+are: the OTA code refuses to update a board whose layout differs
+(`layoutSupportsUpdate`).
+
+### Mascot
+
+The mascot blob (magic `FLUF`, CRC32; format in the Fluffy Generator spec §3)
+is encoded by `lib/core/src/mascot/` on the device and `site/mascot.mjs` in
+the browser; both are checked against `test/fixtures/mascot_golden.h`.
+When a user changes the art or phrases, the flasher's manifest gets a second
+part: the 4 KB blob at `0xCB0000`. With the defaults it uses the normal
+one-part manifest and writes nothing there.
+
+The presets and default phrases have one source, `site/mascots.json`.
+`tools/gen_mascot_presets.py`, a `pre:` script in every env, generates the
+git-ignored `src/web/mascot_presets.h` from it for web config. Run the site
+tests with `node --test site/*.test.mjs` (CI does too).
 
 ### OTA signing
 

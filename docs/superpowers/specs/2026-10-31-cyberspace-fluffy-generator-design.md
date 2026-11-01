@@ -65,8 +65,9 @@ limit, any byte outside 0x20–0x7E, or a payload that doesn't end exactly at N.
 - `splashLayout` takes the art lines as a parameter; `MonsterWords` takes the
   phrase list (up to 10). Callers pass the current mascot.
 - `src/store/mascot_store.{h,cpp}`: `load()` at boot into app state; `save()`
-  erases and writes the 4 KB sector, then updates app state so the next
-  splash or screensaver shows it (no restart).
+  erases and writes the 4 KB sector, then posts `EvtType::MascotChanged`; the
+  UI task reloads `app().mascot`, so the next splash or screensaver shows it
+  (no restart).
 - Web server: `GET /api/mascot` (art and phrases as JSON, plus `custom`
   flags) and `POST /api/mascot` (validate, save; empty art or phrases reset
   that part), behind the page password like the other settings.
@@ -121,9 +122,9 @@ rhino           platypus
   a UTF-8 byte; art-only and phrases-only blobs fall back for the other part;
   erased flash (all 0xFF) is "no mascot"; `splashLayout` with custom art;
   `MonsterWords` with 1 and 10 phrases.
-- A golden blob (hex, in `test/fixtures/mascot_golden.hex`) is checked by the
-  native test and by `node --test site/` against `fluffy.js`'s encoder; CI
-  runs both.
+- A golden blob (hex, in `test/fixtures/mascot_golden.h`) is checked by the
+  native test and by `node --test site/*.test.mjs` against `mascot.mjs`'s
+  encoder; CI runs both.
 - Hardware (a human, on a T-Deck Plus): flash from the site with the cat and
   three custom phrases, check the splash and screensaver; change it in web
   config, check without a restart; factory reset keeps it; an OTA update

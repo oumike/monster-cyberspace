@@ -340,8 +340,7 @@ Buttons: BOOT tap = Back, BOOT hold (0.6 s) = Home; Wake tap = screen off
 - [ ] Room read and send: the room list loads, a room shows its messages and new ones arrive live; a typed message sends once; a wide emoji in a message shows `?` in two cells and the line stays aligned
 - [ ] C-Mail: the list loads, a conversation shows its messages and new ones arrive live, a typed message sends once, and a new conversation starts from the list; the heap stays clear of out-of-memory or TLS errors
 - [ ] Feed and profiles: the Feed loads, an entry opens with its replies (30 at most), a reply and a new post send once; Author's profile opens, and follow, unfollow and poke work; the heap stays clear of out-of-memory or TLS errors
-- [ ] Guilds: the list loads and All guilds stops at 40; a guild's info, threads and members (60 at most) open; join, leave and a new thread work; the heap stays clear of out-of-memory or TLS errors
-- [ ] Home and Settings show no Unread, Auto-update, Mascot, Text size, spell or emoji entries (Settings' Firmware line shows only the version), and web config has none of their sections
+- [ ] Home and Settings show no Guilds, Unread, Auto-update, Mascot, Text size, spell or emoji entries (Settings' Firmware line shows only the version), and web config has none of their sections
 - [ ] Wi-Fi setup (nothing saved): the AP is named `Monster-Cyberspace-Cardputer` and `http://192.168.4.1` loads
 - [ ] Flasher: picking M5Stack Cardputer ADV hides Make your Fluffy and Phrases, and Install writes the 8 MB factory image; a reflash without erase keeps the settings
 

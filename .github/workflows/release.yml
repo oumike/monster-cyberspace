@@ -56,6 +56,9 @@ jobs:
           # release.sh derives the next version from the full tag list, so a
           # shallow clone would pick the wrong one (or none at all).
           fetch-depth: 0
+          # A write deploy key: the "Protect main" ruleset lets deploy keys
+          # push the release commit; GITHUB_TOKEN can't bypass it here.
+          ssh-key: ${{ secrets.RELEASE_DEPLOY_KEY }}
 
       - name: Configure git for the release commit
         run: |

@@ -106,7 +106,8 @@ changes) unless it is the tagged release commit.
 A release ships only committed work on a branch in sync with origin. The script
 picks the version and dispatches `.github/workflows/release.yml`, which builds
 every board, commits `VERSION`, tags `v<version>`, publishes the images, and
-keeps the `.elf` files as a workflow artifact. `--build-local` does the same on
+keeps the `.elf` files as a workflow artifact. It pushes with the `RELEASE_DEPLOY_KEY` secret, a
+write deploy key that the "Protect main" ruleset lets bypass its pull-request rule. `--build-local` does the same on
 your machine. `--from-main` skips the local checks and releases `origin/main`
 as pushed, whatever branch or changes this clone has; unpushed commits are not
 included. `.github/workflows/build.yml` builds every board from a clean

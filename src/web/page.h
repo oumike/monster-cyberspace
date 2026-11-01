@@ -121,6 +121,15 @@ static const char kPage[] = R"HTML(<!doctype html>
 <div id="phrasemsg" class="msg"></div>
 </div>
 
+<h2>Mascot</h2>
+<div class="dim">The monster on the splash and the screensaver: up to 6 lines of 13 plain ASCII characters, and up to 10 speech-bubble phrases of 80 characters, one per line.</div>
+<label>Preset<select id="mpreset" onchange="mascotPreset()"></select></label>
+<textarea id="mart" cols="13" rows="6" wrap="off" spellcheck="false" style="width:auto;white-space:pre;overflow-x:auto"></textarea>
+<textarea id="mphrases" rows="10" spellcheck="false"></textarea>
+<button onclick="saveMascot()">Save mascot</button>
+<button onclick="resetMascot()">Reset to Fluffy</button>
+<div id="mascotmsg" class="msg"></div>
+
 <div id="powerblock" hidden>
 <h2>Power</h2>
 <div class="dim">On battery the device sleeps when left alone, and wakes now and then to fetch what's new. On USB it stays awake.</div>
@@ -237,6 +246,16 @@ function savePrefs(){const b={textSize:$('tsize').value,buzzer:$('buzzer').check
   if(!$('rotrow').hidden)b.rotation=parseInt($('rot').value,10);
   if(!$('kbrow').hidden)b.kbLight=$('kblight').value;if(!$('ledrow').hidden){b.notifyLight=$('ledcolor').value;b.notifyTimeout=+$('ledtime').value;}post('/api/prefs',b,'prefmsg');}
 function savePhrases(){post('/api/phrases',{phrases:$('phrases').value.split('\n')},'phrasemsg').then(loadPrefs);}
+let mascotPresets=[];
+async function loadMascot(){const m=await call('GET','/api/mascot');if(!m.art)return;
+  mascotPresets=(m.presets&&m.presets.presets)||[];const sel=$('mpreset');sel.innerHTML='<option value="">pick a preset\u2026</option>';
+  mascotPresets.forEach((p,i)=>{const o=document.createElement('option');o.value=String(i);o.textContent=p.name;sel.appendChild(o);});
+  $('mart').value=m.art.join('\n');$('mphrases').value=m.phrases.join('\n');}
+function mascotPreset(){const p=mascotPresets[+$('mpreset').value];if($('mpreset').value!==''&&p)$('mart').value=p.art.join('\n');}
+const mascotLines=id=>$(id).value.replace(/\r/g,'').split('\n');
+async function saveMascot(){const r=await post('/api/mascot',{art:mascotLines('mart'),phrases:mascotLines('mphrases')},'mascotmsg');if(r.ok)loadMascot();}
+async function resetMascot(){if(!confirm("Reset the art to Fluffy and the phrases to his defaults?"))return;
+  const r=await post('/api/mascot',{reset:true},'mascotmsg');if(r.ok)loadMascot();}
 function saveWebCfg(c){if(!c.checked&&!setupMode&&!confirm('Turn web config off? This page stops answering on this network; turn it back on from the device\'s Settings or the setup AP.')){c.checked=true;return;}
   post('/api/prefs',{webConfig:c.checked},'secmsg');}
 function saveTime(){post('/api/prefs',{tzName:$('tzpick').value,tz:$('tz').value,ntpServer:$('ntp').value},'timemsg');}
@@ -286,7 +305,7 @@ async function loadOta(){const o=await call('GET','/api/ota');if(o.state===undef
 async function otaCheck(){await post('/api/ota/check',{},'otamsg');loadOta();}
 async function otaInstall(){if(!confirm('Install '+$('otainst').textContent.slice(8)+'? The device restarts.'))return;
   await post('/api/ota/install',{},'otamsg');loadOta();}
-load();loadZones().then(loadPrefs);loadBackup();loadOta();loadSend();setInterval(load,10000);
+load();loadZones().then(loadPrefs);loadBackup();loadOta();loadSend();loadMascot();setInterval(load,10000);
 </script></body></html>)HTML";
 
 }  // namespace web

@@ -109,11 +109,11 @@
   - `GET /api/mascot` → `{"art":[...],"phrases":[...],"customArt":bool,"customPhrases":bool,"presets":<kMascotPresetsJson>}` (defaults filled in when not custom).
   - `POST /api/mascot` `{"art":[...],"phrases":[...]}` → `cleanMascot`, `validateMascot` (400 with the reason), art equal to the defaults stored as empty (same for phrases), `mascotstore::save`; `{"reset":true}` stores an all-default (erased) blob.
 
-- [ ] **Step 1:** Write `site/mascots.json`. Add `test_presets_match_defaults` to `test_mascot`: it includes `../../src/web/mascot_presets.h`, parses it with ArduinoJson, and checks that Fluffy's art and the phrases equal `defaultMascotArt()`/`defaultMascotPhrases()` and every preset passes `validateMascot`. Run it: fails (no header yet).
-- [ ] **Step 2:** Write the generator (validates every preset against spec §2 limits, exits non-zero on a violation); add it to the firmware envs and `[env:native]`. Run `nice pio test -e native` — green.
-- [ ] **Step 3:** Add the routes (same `authorized(req)` gate and `max_uri_handlers` headroom) and a **Mascot** section in `page.h` after Canned replies: a 13-col × 6-row `<textarea>`, preset `<select>`, a 10-line phrases `<textarea>`, Save and Reset to Fluffy buttons, message line.
-- [ ] **Step 4: Verify** `nice pio run -e tdeck` succeeds.
-- [ ] **Step 5: Commit** `Web config: Mascot section and /api/mascot`.
+- [x] **Step 1:** Write `site/mascots.json`. Add `test_presets_match_defaults` to `test_mascot`: it includes `../../src/web/mascot_presets.h`, parses it with ArduinoJson, and checks that Fluffy's art and the phrases equal `defaultMascotArt()`/`defaultMascotPhrases()` and every preset passes `validateMascot`. Run it: fails (no header yet).
+- [x] **Step 2:** Write the generator (validates every preset against spec §2 limits, exits non-zero on a violation); add it to the firmware envs and `[env:native]`. Run `nice pio test -e native` — green.
+- [x] **Step 3:** Add the routes (same `authorized(req)` gate and `max_uri_handlers` headroom) and a **Mascot** section in `page.h` after Canned replies: a 13-col × 6-row `<textarea>`, preset `<select>`, a 10-line phrases `<textarea>`, Save and Reset to Fluffy buttons, message line.
+- [x] **Step 4: Verify** `nice pio run -e tdeck` succeeds.
+- [x] **Step 5: Commit** `Web config: Mascot section and /api/mascot`.
 
 ### Task 5: Flasher modals and the second part
 

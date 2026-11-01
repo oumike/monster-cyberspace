@@ -1,3 +1,4 @@
+#include <ArduinoJson.h>
 #include <unity.h>
 
 #include <algorithm>
@@ -6,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "../../src/web/mascot_presets.h"
 #include "../fixtures/mascot_golden.h"
 #include "mascot/mascot.h"
 #include "ui/screenshot.h"
@@ -206,6 +208,30 @@ void test_defaults() {
   TEST_ASSERT_EQUAL_STRING("", validateMascot(Mascot{art, ph}).c_str());
 }
 
+static std::vector<std::string> strings(JsonArrayConst a) {
+  std::vector<std::string> out;
+  for (const char* s : a) out.push_back(s ? s : "");
+  return out;
+}
+
+// site/mascots.json (through the generated header) must agree with the
+// firmware's defaults, and every preset must fit the limits.
+void test_presets_match_defaults() {
+  JsonDocument doc;
+  TEST_ASSERT_FALSE(deserializeJson(doc, kMascotPresetsJson));
+  JsonArrayConst presets = doc["presets"];
+  TEST_ASSERT_EQUAL(5, presets.size());
+  TEST_ASSERT_EQUAL_STRING("Fluffy", presets[0]["name"]);
+  TEST_ASSERT_TRUE(strings(presets[0]["art"]) == defaultMascotArt());
+  const std::vector<std::string> phrases = strings(doc["phrases"]);
+  TEST_ASSERT_TRUE(phrases == defaultMascotPhrases());
+  for (JsonObjectConst p : presets) {
+    const Mascot m{strings(p["art"]), phrases};
+    TEST_ASSERT_EQUAL_STRING_MESSAGE("", validateMascot(m).c_str(), p["name"]);
+    TEST_ASSERT_TRUE(cleanMascot(m).art == m.art);
+  }
+}
+
 int main(int, char**) {
   UNITY_BEGIN();
   RUN_TEST(test_golden);
@@ -226,5 +252,6 @@ int main(int, char**) {
   RUN_TEST(test_phrases_only);
   RUN_TEST(test_trim_art);
   RUN_TEST(test_defaults);
+  RUN_TEST(test_presets_match_defaults);
   return UNITY_END();
 }

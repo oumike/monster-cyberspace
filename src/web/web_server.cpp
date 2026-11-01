@@ -21,16 +21,19 @@
 #include "config/backup_yaml.h"
 #include "config/phrases.h"
 #include "core_version.h"
+#include "mascot/mascot.h"
 #include "hal/board.h"
 #include "net/wifi_list.h"
 #include "net/wifi_mgr.h"
 #include "power/power_policy.h"
 #include "store/backup_store.h"
+#include "store/mascot_store.h"
 #include "store/settings.h"
 #include "tz/zones.h"
 #include "ui/kb_light.h"
 #include "ui/notify_light.h"
 #include "ui/screen_timeout.h"
+#include "web/mascot_presets.h"
 #include "web/page.h"
 #include "web/web_access.h"
 #include "web/compose_req.h"
@@ -600,6 +603,46 @@ esp_err_t postPhrases(httpd_req_t* req) {
   return okReply(req, "Saved");
 }
 
+esp_err_t getMascot(httpd_req_t* req) {
+  if (!authorized(req)) return ESP_OK;
+  rc::Mascot m;
+  mascotstore::load(m);
+  const bool customArt = !m.art.empty(), customPhrases = !m.phrases.empty();
+  JsonDocument d;
+  JsonArray art = d["art"].to<JsonArray>();
+  for (const std::string& l : customArt ? m.art : rc::defaultMascotArt()) art.add(l);
+  JsonArray phrases = d["phrases"].to<JsonArray>();
+  for (const std::string& p : customPhrases ? m.phrases : rc::defaultMascotPhrases()) phrases.add(p);
+  d["customArt"] = customArt;
+  d["customPhrases"] = customPhrases;
+  d["presets"] = serialized(kMascotPresetsJson);
+  return sendJson(req, d);
+}
+
+// {"art":[...],"phrases":[...]}, or {"reset":true} for Fluffy and his words.
+// Art or phrases equal to the defaults are stored empty (the default).
+esp_err_t postMascot(httpd_req_t* req) {
+  if (!authorized(req)) return ESP_OK;
+  std::string body;
+  if (!readBody(req, body, 4096)) return fail(req, "400 Bad Request", "Bad request");
+  JsonDocument doc;
+  if (deserializeJson(doc, body)) return fail(req, "400 Bad Request", "Bad request");
+  rc::Mascot m;
+  if (!(doc["reset"] | false)) {
+    if (!doc["art"].is<JsonArrayConst>() || !doc["phrases"].is<JsonArrayConst>())
+      return fail(req, "400 Bad Request", "Send {\"art\":[...],\"phrases\":[...]}");
+    for (JsonVariantConst v : doc["art"].as<JsonArrayConst>()) m.art.push_back(v | "");
+    for (JsonVariantConst v : doc["phrases"].as<JsonArrayConst>()) m.phrases.push_back(v | "");
+    m = rc::cleanMascot(std::move(m));
+    const std::string err = rc::validateMascot(m);
+    if (!err.empty()) return fail(req, "400 Bad Request", "Mascot: " + err);
+    if (m.art == rc::defaultMascotArt()) m.art.clear();
+    if (m.phrases == rc::defaultMascotPhrases()) m.phrases.clear();
+  }
+  if (!mascotstore::save(m)) return fail(req, "500 Internal Server Error", "Couldn't save the mascot");
+  return okReply(req, "Saved");
+}
+
 esp_err_t postSecurity(httpd_req_t* req) {
   if (!authorized(req)) return ESP_OK;
   std::string body;
@@ -806,6 +849,8 @@ void begin() {
       {"/api/zones", HTTP_GET, getZones},
       {"/api/security", HTTP_POST, postSecurity},
       {"/api/phrases", HTTP_POST, postPhrases},
+      {"/api/mascot", HTTP_GET, getMascot},
+      {"/api/mascot", HTTP_POST, postMascot},
       {"/api/restart", HTTP_POST, postRestart},
       {"/api/factory-reset", HTTP_POST, postFactoryReset},
       {"/api/backup", HTTP_GET, getBackup},

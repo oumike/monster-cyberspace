@@ -13,3 +13,6 @@ ota_signing_key.pem
 # Generated from dict/en.txt by tools/gen_spell_dict.py on every build.
 src/spell_dict_en.h
 /screenshots/
+
+# Generated from site/mascots.json by tools/gen_mascot_presets.py on every build.
+src/web/mascot_presets.h

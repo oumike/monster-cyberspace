@@ -1,3 +1,7 @@
+### Monster for Cyberspace 1.0.0
+
+The first major release: cIRC, C-Mail, the Feed, Guilds, profiles and Unread on ten boards, now including the M5Stack Cardputer ADV.
+
 ### New board: M5Stack Cardputer ADV
 
 - First release for the Cardputer ADV (ESP32-S3, 8 MB flash, no PSRAM): cIRC rooms, C-Mail, the Feed and profiles (follow, unfollow, poke), on its 240×135 screen in the Compact font.

@@ -66,7 +66,7 @@ one-off PlatformIO install error has been seen on the first run.
 
 ### Feature flags
 
-`lib/core/src/features.h` holds compile-time flags, each 1 unless an env sets
+`lib/core/src/feature_flags.h` holds compile-time flags, each 1 unless an env sets
 `-DRC_FEAT_X=0`: `RC_FEAT_CMAIL`, `RC_FEAT_FEED`, `RC_FEAT_GUILDS`,
 `RC_FEAT_PEOPLE`, `RC_FEAT_UNREAD`, `RC_FEAT_SPELL`, `RC_FEAT_EMOJI` (off, a
 wide emoji draws `?` in its two cells), `RC_FEAT_OTA` and `RC_FEAT_MASCOT`.

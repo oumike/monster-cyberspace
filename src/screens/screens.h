@@ -3,7 +3,7 @@
 #include <utility>
 #include <vector>
 
-#include "features.h"
+#include "feature_flags.h"
 #include "input/type_filter.h"
 #include "net/wifi_list.h"
 #include "screens/backup_picker.h"

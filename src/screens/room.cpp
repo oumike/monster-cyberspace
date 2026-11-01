@@ -6,7 +6,7 @@
 #include "app/app_state.h"
 #include "app/ui_task.h"
 #include "chat/chat_source.h"
-#include "features.h"
+#include "feature_flags.h"
 #include "hal/board.h"
 #include "screens/draw.h"
 #if RC_FEAT_PEOPLE

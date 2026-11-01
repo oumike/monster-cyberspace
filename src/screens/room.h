@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "chat/message.h"
-#include "features.h"
+#include "feature_flags.h"
 #include "screens/link_view.h"
 #include "screens/router.h"
 #include "ui/widgets/drawer.h"

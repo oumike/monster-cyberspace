@@ -1,6 +1,6 @@
 #include "app/app_state.h"
 #include "app/ui_task.h"
-#include "features.h"
+#include "feature_flags.h"
 #include "hal/board.h"
 #include "screens/draw.h"
 #include "screens/screens.h"

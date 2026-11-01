@@ -11,7 +11,7 @@
 
 #include "app/queues.h"
 #include "chat/chat_source.h"
-#include "features.h"
+#include "feature_flags.h"
 #include "cs/rate_limiter.h"
 #include "feed/feed_source.h"
 #include "store/locked_chat.h"

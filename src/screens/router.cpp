@@ -1,7 +1,7 @@
 #include "screens/router.h"
 
 #include "app/app_state.h"
-#include "features.h"
+#include "feature_flags.h"
 #include "screens/composer.h"
 #include "screens/entry.h"
 #include "screens/room.h"
@@ -20,7 +20,7 @@ SettingsScreen settingsScreen;
 ComingSoonScreen comingSoon;
 LoginFormScreen loginForm;
 WifiScreen wifiScreen;
-// Each feature's screens exist only when it is built (features.h).
+// Each feature's screens exist only when it is built (feature_flags.h).
 #if RC_FEAT_CMAIL
 CmailListScreen cmailList;
 RoomScreen conversation{true};

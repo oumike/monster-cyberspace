@@ -151,7 +151,7 @@ row 53), a TCA8418 keyboard (`CardputerKeys` in `input/keymap_cardputer_adv`:
 Fn+; . , / arrows, plain ones outside text fields; ` leaves a text field, else Back; Fn+Backspace Home), the Wio's `es8311` driver
 clocked from BCLK (`mclkFromBclk`), battery ADC and SD; no touch, RTC or GPS.
 Text is fixed at Compact 6x12 (`board::fixedTextSize`; Text size hidden in
-Settings and web config). Feature flags in `lib/core/src/features.h`
+Settings and web config). Feature flags in `lib/core/src/feature_flags.h`
 (`RC_FEAT_CMAIL`/`FEED`/`GUILDS`/`PEOPLE`/`UNREAD`/`SPELL`/`EMOJI`/`OTA`/`MASCOT`,
 all 1 by default; `RC_FEAT_ENTRIES`/`COMPOSER` follow) are all 0 there: rooms
 only, a wide emoji draws `?`. `RC_MONO_CELLS` (default `RC_LOW_MEM`) is 0 so
@@ -234,7 +234,7 @@ mascot art and phrases in a 4 KB `mascot` partition at 0xcb0000
 flasher's Make your Fluffy and Phrases modals or web config's Mascot section.
 The M5Stack Cardputer ADV (env `cardputer_adv`) was added on 2026-11-01
 (built without flashing; RAM 61,368 B, flash 1,953,452 B): compile-time
-feature flags (`lib/core/src/features.h`) cut it to cIRC rooms, with no OTA
+feature flags (`lib/core/src/feature_flags.h`) cut it to cIRC rooms, with no OTA
 or mascot partition. Its panel offsets, ES8311 clock, push speed, key map and
 TLS heap headroom await the hardware check (docs/TESTING.md).
 The native suite is green: 660/660

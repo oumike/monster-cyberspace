@@ -1,4 +1,4 @@
-#include "features.h"
+#include "feature_flags.h"
 #if RC_FEAT_CMAIL
 
 #include "app/app_state.h"

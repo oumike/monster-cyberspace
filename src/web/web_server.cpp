@@ -12,7 +12,7 @@
 #include "app/app_state.h"
 #include "app/messages.h"
 #include "app/net_worker.h"
-#include "features.h"
+#include "feature_flags.h"
 #if RC_FEAT_OTA
 #include "app/ota_service.h"
 #endif

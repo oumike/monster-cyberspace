@@ -1,6 +1,6 @@
 #pragma once
 
-#include "features.h"
+#include "feature_flags.h"
 
 // The web config page: inline HTML, CSS and JS with no external requests.
 namespace web {
@@ -20,7 +20,7 @@ ul{padding-left:1.2em;margin:.3em 0}li button{padding:.1em .4em;font-size:.85em}
 a{color:#6cf}
 )CSS"
 
-// The send targets each built feature adds (features.h).
+// The send targets each built feature adds (feature_flags.h).
 #if RC_FEAT_CMAIL
 #define RC_SEND_MAIL_OPT R"HTML(<option value="mail">A new C-Mail</option>)HTML"
 #else
@@ -32,7 +32,7 @@ a{color:#6cf}
 #define RC_SEND_THREAD_OPT ""
 #endif
 
-// The config page sections each built feature adds (features.h); the page
+// The config page sections each built feature adds (feature_flags.h); the page
 // never asks for a missing one. The status table still shows the version.
 #if RC_FEAT_MASCOT
 #define RC_MASCOT_HTML R"HTML(<h2>Mascot</h2>

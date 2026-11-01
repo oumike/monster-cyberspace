@@ -298,7 +298,7 @@ void EntryScreen::openEntryMenu() {
   add(marked ? U"Unbookmark" : U"Bookmark", marked ? "unbookmark" : "bookmark");
   add(watching ? U"Unwatch" : U"Watch", watching ? "unwatch" : "watch");
   add(U"Show link", "link");
-  if (!e.author.empty()) add(U"Author's profile", "author");
+  if (RC_FEAT_PEOPLE && !e.author.empty()) add(U"Author's profile", "author");
   if (!e.deleted) {
     if (isSelf(e.author)) add(U"Delete\u2026", "delete", ItemTone::Error);
     else add(U"Report\u2026", "report", ItemTone::Error);
@@ -338,7 +338,7 @@ void EntryScreen::openReplyMenu(const std::string& replyId) {
   if (!deleted) add(U"Reply", "reply");
   add(marked ? U"Unbookmark" : U"Bookmark", marked ? "unbookmark" : "bookmark");
   add(U"Show link", "link");
-  if (!author.empty()) add(U"Author's profile", "author");
+  if (RC_FEAT_PEOPLE && !author.empty()) add(U"Author's profile", "author");
   if (!deleted) {
     if (isSelf(author)) add(U"Delete\u2026", "delete", ItemTone::Error);
     else add(U"Report\u2026", "report", ItemTone::Error);
@@ -379,9 +379,11 @@ void EntryScreen::pickMenu() {
         feedSource().command(Command{CmdType::Unbookmark, target_});
       } else if (key == "watch" || key == "unwatch") {
         feedSource().command(Command{key == "watch" ? CmdType::Watch : CmdType::Unwatch, postId_});
+#if RC_FEAT_PEOPLE
       } else if (key == "author") {
         people::openProfile(author_);
         return;
+#endif
       } else if (key == "link") {
         link_.open(url_);
         view_ = View::Link;

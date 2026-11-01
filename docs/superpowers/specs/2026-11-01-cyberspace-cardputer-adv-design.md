@@ -11,10 +11,11 @@ and send to it from the keyboard. No flashing until the user says so.
 
 User decisions:
 
-- **Rooms and C-Mail, the rest compiled out.** Feed, Guilds, People and
-  Unread are not in this build at all, to save flash and RAM. (C-Mail was
-  added on 2026-11-01 at the user's request; a conversation reuses the
-  room's two streams, so it adds no TLS connection.)
+- **Guilds and Unread compiled out.** They are not in this build at all, to
+  save flash and RAM. (C-Mail, the Feed and People were added on 2026-11-01
+  at the user's request: a conversation reuses the room's two streams, the
+  Feed and profiles load over plain requests, so none adds a TLS connection;
+  replies are capped at 30, `RC_MAX_REPLIES`, as on the X4.)
 - **6×12 cells** (the existing Compact font): 40 columns × 11 rows.
 - **Single app partition, no OTA, no mascot partition.** Updates come over USB
   or the browser flasher. Fluffy is always the default (mascot is low

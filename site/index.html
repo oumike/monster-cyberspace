@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Monster for Cyberspace flasher</title>
 <script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module"></script>
+<link rel="stylesheet" href="fluffy.css">
+<script type="module" src="fluffy.js"></script>
 <style>
   :root { color-scheme: dark; }
   body {
@@ -44,6 +46,12 @@
     <span slot="not-allowed">Flashing needs a secure (https) page.</span>
   </esp-web-install-button>
 
+  <div class="fluffy-buttons">
+    <button type="button" id="fluffy-open" disabled>Make your Fluffy</button>
+    <button type="button" id="phrases-open" disabled>Phrases</button>
+  </div>
+  <div id="fluffy-status" class="muted"></div>
+
   <div class="note muted">
     Plug the board in over USB, pick it above and press Install. Choosing
     <em>erase</em> clears saved Wi-Fi, sign-in and settings; without it they
@@ -78,7 +86,11 @@
         .map((slug) => [slug, LABELS[slug] || slug])
         .sort((a, b) => a[1].localeCompare(b[1]))
         .forEach(([slug, label]) => select.add(new Option(label, slug)));
-      const pick = () => install.setAttribute("manifest", `manifests/${select.value}.json`);
+      // fluffy.js swaps in a manifest with the custom mascot on board-picked.
+      const pick = () => {
+        install.setAttribute("manifest", `manifests/${select.value}.json`);
+        select.dispatchEvent(new Event("board-picked"));
+      };
       select.addEventListener("change", pick);
       select.disabled = false;
       pick();

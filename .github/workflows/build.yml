@@ -63,5 +63,13 @@ jobs:
       - name: Unit tests
         run: pio test -e native
 
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Flasher site tests
+        run: node --test site/*.test.mjs
+
       - name: Build firmware (verify all environments compile)
         run: pio run -e m9 -e wio_l2 -e tdeck -e crowpanel35 -e crowpanel50 -e pager -e tdeck_pro -e mesh_deck -e x4

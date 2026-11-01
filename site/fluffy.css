@@ -1,0 +1,34 @@
+/* The flasher's Fluffy and Phrases modals (fluffy.js), in index.html's look. */
+.fluffy-buttons { display: flex; gap: .75rem; margin-top: 1rem; flex-wrap: wrap; }
+.fluffy-buttons button, .fluffy-modal button {
+  font: inherit; color: #cfc; background: #000; border: 1px solid #6a6;
+  padding: .4rem .8rem; cursor: pointer;
+}
+.fluffy-buttons button:hover, .fluffy-modal button:hover { border-color: #9f9; }
+.fluffy-buttons button:disabled { opacity: .5; cursor: default; }
+.fluffy-modal button.primary { color: #000; background: #9f9; border-color: #9f9; }
+#fluffy-status { margin-top: .5rem; font-size: .9rem; }
+
+.fluffy-modal {
+  color: #9f9; background: #000; border: 1px solid #6a6;
+  font: 16px/1.5 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  max-width: min(36rem, 92vw); padding: 1rem 1.25rem;
+}
+.fluffy-modal::backdrop { background: rgba(0, 0, 0, .75); }
+.fluffy-modal h2 { font-size: 1.1rem; margin: 0 0 .5rem; color: #cfc; }
+.fluffy-modal p { margin: 0 0 .75rem; font-size: .9rem; }
+.fluffy-modal textarea, .fluffy-modal input {
+  font: inherit; color: #cfc; background: #000; border: 1px solid #6a6; padding: .3rem .4rem;
+}
+.fluffy-modal textarea:focus, .fluffy-modal input:focus { outline: 1px solid #9f9; }
+.fluffy-art { width: 14ch; resize: none; white-space: pre; overflow: hidden; }
+.fluffy-split { display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: flex-start; }
+.fluffy-preview { margin: 0; color: #cfc; min-width: 14ch; }
+.fluffy-count { font-size: .8rem; }
+.fluffy-error { min-height: 1.5em; font-size: .9rem; color: #fc6; }
+.fluffy-row { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; margin-top: .75rem; }
+.fluffy-actions { justify-content: flex-end; }
+.fluffy-phrases { margin: .5rem 0 0; padding-left: 2.5ch; }
+.fluffy-phrases li { margin: .25rem 0; }
+.fluffy-phrases input { width: calc(100% - 7ch); }
+.fluffy-phrases .fluffy-count { display: inline-block; width: 6ch; text-align: right; }

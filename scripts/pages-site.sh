@@ -4,9 +4,10 @@
 #
 #   scripts/pages-site.sh <tag> <dir with monster-cyberspace-*-<tag>.bin> <out dir>
 #
-# Writes <out>/index.html (from site/), <out>/firmware/<image>.bin,
-# <out>/manifests/<board>.json (ESP Web Tools manifests: one merged image at
-# 0x0) and <out>/boards.json ({"version", "boards": [slug, ...]}) for the page.
+# Writes <out>/index.html and the Fluffy modals' files (from site/),
+# <out>/firmware/<image>.bin, <out>/manifests/<board>.json (ESP Web Tools
+# manifests: one merged image at 0x0; fluffy.js adds the mascot blob) and
+# <out>/boards.json ({"version", "boards": [slug, ...]}) for the page.
 # The images are copied because browsers cannot fetch GitHub release assets
 # (no CORS headers). Run by .github/workflows/pages.yml.
 #
@@ -14,14 +15,14 @@
 set -euo pipefail
 
 if [[ $# -ne 3 ]]; then
-    sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'
     exit 2
 fi
 tag="$1" src="$2" out="$3"
 
 cd "$(git rev-parse --show-toplevel)"
 mkdir -p "$out/firmware" "$out/manifests"
-cp site/index.html "$out/index.html"
+cp site/index.html site/fluffy.js site/fluffy.css site/mascot.mjs site/mascots.json "$out/"
 touch "$out/.nojekyll"
 
 slugs=()

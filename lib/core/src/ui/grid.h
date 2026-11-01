@@ -15,9 +15,14 @@ constexpr uint8_t kEdgeTop = 1, kEdgeBottom = 2, kEdgeLeft = 4, kEdgeRight = 8;
 #ifndef RC_LOW_MEM
 #define RC_LOW_MEM 0
 #endif
+// One-bit colour cells, for e-paper boards without PSRAM (the X4). Defaults
+// to RC_LOW_MEM; a colour board without PSRAM (the Cardputer ADV) sets it to 0.
+#ifndef RC_MONO_CELLS
+#define RC_MONO_CELLS RC_LOW_MEM
+#endif
 
-#if RC_LOW_MEM
-// A board without PSRAM (the X4, black and white e-paper): 4 bytes a cell,
+#if RC_MONO_CELLS
+// An e-paper board without PSRAM (the X4, black and white): 4 bytes a cell,
 // each colour kept only as light (1) or dark (0). Read colours through
 // cellColor().
 struct Cell {
@@ -39,7 +44,7 @@ struct Cell {
 static_assert(sizeof(Cell) == 4, "Cell grew; the X4 grid no longer fits");
 inline uint16_t cellColor(uint32_t c) { return c ? 0xFFFF : 0x0000; }
 #else
-// 12 bytes.
+// 12 bytes, full RGB565 colours; cellColor() is the identity.
 struct Cell {
   Cell(char32_t c = U' ', uint16_t f = 0, uint16_t b = 0)
       : cp(c), fg(f), bg(b), edgeColor(0), edges(0), bold(false), nudge(false) {}

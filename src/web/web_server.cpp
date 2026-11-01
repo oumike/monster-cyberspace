@@ -463,9 +463,10 @@ esp_err_t postPrefs(httpd_req_t* req) {
   if (!readJson(req, body, doc)) return fail(req, "400 Bad Request", "Bad request");
   Settings s = current();
   rc::TextSize size = s.textSize;
-  if (doc["textSize"].is<const char*>() && !rc::parseTextSize(doc["textSize"].as<const char*>(), size))
+  if (rc::TextSize only; board::fixedTextSize(only))
+    size = only;  // ignore any posted textSize
+  else if (doc["textSize"].is<const char*>() && !rc::parseTextSize(doc["textSize"].as<const char*>(), size))
     return fail(req, "400 Bad Request", "Text size: compact, comfortable or large");
-  if (rc::TextSize only; board::fixedTextSize(only)) size = only;
   bool buzzer = doc["buzzer"].is<bool>() ? doc["buzzer"].as<bool>() : s.buzzer;
   rc::ThemeId theme = s.theme;
   if (doc["theme"].is<const char*>() && !rc::parseThemeId(doc["theme"].as<const char*>(), theme))

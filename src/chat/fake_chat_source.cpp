@@ -20,7 +20,7 @@
 // The scripted fake API for the demo build (RC_FAKE_API): no network, no account.
 // Fixture rooms, a scripted message every 4 s, 12 people (3 idle), sends that
 // echo after 300 ms, a 400 for "/dice x" and the real local send limit.
-// C-Mail: rain (2 unread), moth and kiwi (empty). A DM send echoes, then the
+// C-Mail (RC_FEAT_CMAIL): rain (2 unread), moth and kiwi (empty). A DM send echoes, then the
 // partner types for 2 s and replies; rain writes every 45 s; starting a
 // conversation with "nobody" fails with "User not found".
 
@@ -83,6 +83,7 @@ struct Echo {
   std::string slug, text;
 };
 
+#if RC_FEAT_CMAIL
 enum class DmStep { Echo, TypingOn, Reply };
 
 struct DmEvent {
@@ -103,6 +104,7 @@ const char* kReplies[] = {
     "that's the best thing i've read all day",
     "ok, talk later",
 };
+#endif
 
 class FakeChatSource : public ChatSource {
  public:
@@ -114,22 +116,26 @@ class FakeChatSource : public ChatSource {
   void run();
   void scripted();
   void fillPresence(ChatState& s);
+#if RC_FEAT_CMAIL
   void seedCmail(int64_t now);
   void sendDm(const Command& c);
   void startConversation(const std::string& name);
   void appendDm(const std::string& conv, CircMessage m, bool alert);
   void setTyping(const std::string& conv, bool on);
   void runDm(int64_t now);
+#endif
 
   // Lock order: mu_, then lockedChat(); never the other way round.
   std::mutex mu_;  // guards echoes_, sendL_, paused_, olderPages_, dms_, dmEvents_
   std::vector<Echo> echoes_;
   RateLimiter sendL_ = makeCircSendLimiter();
+#if RC_FEAT_CMAIL
   RateLimiter cmailL_ = makeCmailSendLimiter();
   std::map<std::string, std::vector<CircMessage>> dms_;  // conversation id → messages
   std::vector<DmEvent> dmEvents_;
   int64_t nextRainDm_ = 0;
   int replyN_ = 0;
+#endif
   bool paused_ = false;
   int olderPages_ = 2;
   int step_ = 0, seq_ = 0;
@@ -163,11 +169,15 @@ void FakeChatSource::start() {
     s.readAt["music"] = now - 4 * 60 * kMin;  // linux shows as unread
     s.readAt["linux"] = now - 60 * kMin;
   });
+#if RC_FEAT_CMAIL
   seedCmail(now);
+#endif
   postEvent(Event{EvtType::AuthState, kSelf, 1});
   postEvent(Event{EvtType::ConnState, "", 2});
   postEvent(Event{EvtType::RoomsUpdated});
+#if RC_FEAT_CMAIL
   postEvent(Event{EvtType::ConversationsUpdated});
+#endif
   xTaskCreatePinnedToCore(taskMain, "fake", 8192, this, 3, nullptr, 0);
 #if RC_FEAT_ENTRIES
   feedSource();  // seeds the fake Feed and starts its 90 s reply notices
@@ -205,11 +215,13 @@ void FakeChatSource::command(const Command& c) {
       postEvent(Event{EvtType::RoomChanged});
       break;
     case CmdType::Send: {
+#if RC_FEAT_CMAIL
       bool dm = lockedChat().with([&](ChatState& s) { return s.dm && s.roomSlug == c.a; });
       if (dm) {
         sendDm(c);
         break;
       }
+#endif
       std::lock_guard<std::mutex> g(mu_);
       int64_t now = mono();
       if (c.b.rfind("/dice x", 0) == 0) {
@@ -268,21 +280,31 @@ void FakeChatSource::command(const Command& c) {
     case CmdType::MarkRead:
       lockedChat().with([&](ChatState& s) {
         s.readAt[c.a] = s.store.newestTimestamp();
+#if RC_FEAT_CMAIL
         for (auto& cv : s.conversations)
           if (cv.id == c.a) cv.unread = 0;
+#endif
       });
+#if RC_FEAT_CMAIL
       postEvent(Event{EvtType::ConversationsUpdated});
+#endif
       break;
+#if RC_FEAT_UNREAD
     case CmdType::MarkAllRead:
+#if RC_FEAT_CMAIL
       lockedChat().with([](ChatState& s) {
         for (auto& cv : s.conversations) cv.unread = 0;
       });
+#endif
 #if RC_FEAT_ENTRIES
       lockedFeed().with([](FeedState& s) { s.notices.clear(); });
 #endif
+#if RC_FEAT_CMAIL
       postEvent(Event{EvtType::ConversationsUpdated});
+#endif
       postEvent(Event{EvtType::AllRead, "Marked all read"});
       break;
+#endif
     case CmdType::OpenPresence:
     case CmdType::ClosePresence:
       postEvent(Event{EvtType::PresenceUpdated});
@@ -312,6 +334,7 @@ void FakeChatSource::command(const Command& c) {
       paused_ = false;
       break;
     }
+#if RC_FEAT_CMAIL
     case CmdType::OpenConversation: {
       std::vector<CircMessage> msgs;
       {
@@ -339,9 +362,14 @@ void FakeChatSource::command(const Command& c) {
     case CmdType::RefreshConversations:
       postEvent(Event{EvtType::ConversationsUpdated});
       break;
+#endif
     case CmdType::Activity:
     case CmdType::Typing:  // the fake has no one to show our typing to
       break;
+#if !RC_FEAT_CMAIL || !RC_FEAT_UNREAD
+    default:  // commands of compiled-out features
+      break;
+#endif
   }
 }
 
@@ -430,7 +458,9 @@ void FakeChatSource::run() {
       postEvent(Event{EvtType::SendDone});
       postEvent(Event{EvtType::RoomChanged});
     }
+#if RC_FEAT_CMAIL
     runDm(now);
+#endif
     if (!paused && now >= nextScript) {
       nextScript = now + 4000;
       scripted();
@@ -439,6 +469,8 @@ void FakeChatSource::run() {
 }
 
 // ---- C-Mail ----
+
+#if RC_FEAT_CMAIL
 
 void FakeChatSource::seedCmail(int64_t now) {
   auto dm = [&](const std::string& who, const std::string& text, int64_t ts) {
@@ -596,6 +628,8 @@ void FakeChatSource::runDm(int64_t now) {
     appendDm("c-rain", msg(id, "rain", lines[seq_ % 4], epochMs()), true);
   }
 }
+
+#endif  // RC_FEAT_CMAIL
 
 FakeChatSource& fake() {
   static FakeChatSource f;

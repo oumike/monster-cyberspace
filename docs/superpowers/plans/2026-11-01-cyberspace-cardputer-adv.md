@@ -79,11 +79,11 @@ The TCA8418 key-number → physical-key table and the Fn layer come from M5Cardp
 **Interfaces:**
 - Produces: `char32_t rc::emojiPlaceholder()` (returns `U'?'`-like glyph Terminus has; pick one in `ui/glyph_set.h`, e.g. U+25A1 `□` if present, else `?`), used by the renderer for both cells' left/right halves: left cell draws the placeholder, right (tail) cell draws a blank.
 
-- [ ] **Step 1: Write the failing tests**: in the splash test, `test_fits_40x11` (every line's row in [0,11), every line's `col + width ≤ 40`, art rows don't overlap other roles), `test_drops_detail_then_bubble_when_short` (rows 9 → no Detail; rows 7 → no Bubble either), `test_long_phrase_never_overruns` (80-char phrase at 40 cols); `test_emoji_placeholder_is_one_narrow_glyph` (width of placeholder is 1 and it's in the cell font's set per `ui/glyph_set.h`).
-- [ ] **Step 2: Run** them. Expected: the new cases fail.
-- [ ] **Step 3: Implement** the drop order (Detail first, then Bubble) in `splashLayout`, and the placeholder; the renderer uses it only under `#if !RC_FEAT_EMOJI`.
-- [ ] **Step 4: Run** `nice pio test -e native`. Expected: all pass.
-- [ ] **Step 5: Commit** `git commit -m "Splash fits small grids; emoji placeholder"`
+- [x] **Step 1: Write the failing tests**: in the splash test, `test_fits_40x11` (every line's row in [0,11), every line's `col + width ≤ 40`, art rows don't overlap other roles), `test_drops_detail_then_bubble_when_short` (rows 9 → no Detail; rows 7 → no Bubble either), `test_long_phrase_never_overruns` (80-char phrase at 40 cols); `test_emoji_placeholder_is_one_narrow_glyph` (width of placeholder is 1 and it's in the cell font's set per `ui/glyph_set.h`).
+- [x] **Step 2: Run** them. Expected: the new cases fail.
+- [x] **Step 3: Implement** the drop order (Detail first, then Bubble) in `splashLayout`, and the placeholder; the renderer uses it only under `#if !RC_FEAT_EMOJI`.
+- [x] **Step 4: Run** `nice pio test -e native`. Expected: all pass.
+- [x] **Step 5: Commit** `git commit -m "Splash fits small grids; emoji placeholder"`
 
 ### Task 4: The board: env, partitions, HAL, text-size hook
 

@@ -105,15 +105,37 @@ std::vector<SplashLine> splashLayout(int cols, int rows, std::string_view detail
     centred("> booting", SplashRole::Prompt);
     return out;
   }
-  bool showArt = artW <= cols && artRows + 1 + kTextRows <= rows;
+  // A short grid keeps the art by giving up, in turn, the detail line, the
+  // blank rows and then the bubble.
+  struct Fit {
+    bool detail, gap1, gap2;
+  };
+  constexpr Fit kFits[] = {{true, true, true}, {false, true, true}, {false, true, false},
+                           {false, false, false}};
+  auto textRows = [](const Fit& f) { return 2 + f.detail + f.gap1 + f.gap2; };
+  Fit fit = kFits[0];
+  auto pick = [&](int h) {
+    for (const Fit& f : kFits)
+      if (h + textRows(f) <= rows) {
+        fit = f;
+        return true;
+      }
+    return false;
+  };
+  bool showArt = false;
   std::vector<std::string> bub;
-  if (showArt) {
+  if (artW <= cols) {
     bub = bubbleRows(say, cols - artW - 1);
-    if (std::max(artRows, int(bub.size())) + 1 + kTextRows > rows) bub.clear();
+    showArt = pick(std::max(artRows, int(bub.size())));
+    if (!showArt) {
+      bub.clear();
+      showArt = pick(artRows);
+    }
   }
+  if (!showArt) fit = Fit{true, false, true};
   const int bubW = bub.empty() ? 0 : width(bub[0]);
   const int artH = std::max(artRows, int(bub.size()));
-  int height = showArt ? artH + 1 + kTextRows : kTextRows;
+  int height = (showArt ? artH : 0) + textRows(fit);
   int row = std::max((rows - height) / 2, 0);
 
   std::vector<SplashLine> out;
@@ -123,15 +145,15 @@ std::vector<SplashLine> splashLayout(int cols, int rows, std::string_view detail
     for (int i = 0; i < artRows; ++i) out.push_back({col, row + i, artLines[i], SplashRole::Art});
     for (int i = 0; i < int(bub.size()); ++i)
       out.push_back({col + artW + 1, row + i, bub[i], SplashRole::Bubble});
-    row += artH + 1;
+    row += artH + fit.gap1;
   }
   auto centred = [&](std::string_view s, SplashRole role) {
     std::string t = clip(s, cols);
     out.push_back({(cols - width(t)) / 2, row++, t, role});
   };
   centred("Monster for Cyberspace", SplashRole::Title);
-  centred(detail, SplashRole::Detail);
-  ++row;
+  if (fit.detail) centred(detail, SplashRole::Detail);
+  row += fit.gap2;
   centred("> booting", SplashRole::Prompt);
   return out;
 }

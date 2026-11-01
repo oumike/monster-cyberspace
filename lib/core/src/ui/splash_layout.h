@@ -20,8 +20,9 @@ struct SplashLine {
 
 // The boot splash: the text-art monster mascot (`art`; nullptr, empty or all
 // blank lines mean Fluffy) over the name, `detail` (version and board) and a
-// "> booting" prompt, centred in a cols x rows grid. The art is left out when
-// it doesn't fit; text is clipped to the width. A non-empty `say` puts a
+// "> booting" prompt, centred in a cols x rows grid. A short grid keeps the
+// art by dropping the detail line, then the blank rows, then the bubble; the
+// art is left out when it still doesn't fit. Text is clipped to the width. A non-empty `say` puts a
 // speech bubble beside the monster, its tail pointing at him, wrapped to fit;
 // it is left out when there isn't room. maxScale > 1 lets the art grow, up to
 // that many times, on a grid with room for it (the X4's tall panel); the

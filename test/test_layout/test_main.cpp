@@ -875,6 +875,69 @@ void test_splash_drops_art_when_too_small() {
   for (const auto& l : v) TEST_ASSERT_TRUE(l.col + static_cast<int>(utf8Length(l.text)) <= 24);
 }
 
+// Every line inside the grid, and nothing drawn over the art.
+static void checkInside(const std::vector<SplashLine>& v, int cols, int rows) {
+  for (const auto& l : v) {
+    TEST_ASSERT_TRUE(l.row >= 0 && l.row < rows);
+    TEST_ASSERT_TRUE(l.col >= 0 && l.col + int(utf8Length(l.text)) <= cols);
+  }
+  for (const auto& a : v) {
+    if (a.role != SplashRole::Art) continue;
+    for (const auto& l : v) {
+      if (l.role == SplashRole::Art || l.row != a.row) continue;
+      const bool apart = l.col >= a.col + int(utf8Length(a.text)) ||
+                         a.col >= l.col + int(utf8Length(l.text));
+      TEST_ASSERT_TRUE(apart);
+    }
+  }
+}
+
+void test_splash_fits_40x11() {
+  // The Cardputer ADV: 240 x 135 at 6 x 12 cells.
+  auto v = splashLayout(40, 11, "v0.1.9 \u00b7 Cardputer ADV", "boo");
+  checkInside(v, 40, 11);
+  TEST_ASSERT_NOT_NULL(findRole(v, SplashRole::Art));
+  TEST_ASSERT_EQUAL(3, int(bubble(v).size()));
+  TEST_ASSERT_NOT_NULL(findRole(v, SplashRole::Title));
+  TEST_ASSERT_NOT_NULL(findRole(v, SplashRole::Detail));
+  TEST_ASSERT_NOT_NULL(findRole(v, SplashRole::Prompt));
+}
+
+void test_splash_drops_detail_then_bubble_when_short() {
+  auto v = splashLayout(40, 9, "v0.1.9", "boo");
+  checkInside(v, 40, 9);
+  TEST_ASSERT_NOT_NULL(findRole(v, SplashRole::Art));
+  TEST_ASSERT_NULL(findRole(v, SplashRole::Detail));
+  TEST_ASSERT_FALSE(bubble(v).empty());
+  TEST_ASSERT_NOT_NULL(findRole(v, SplashRole::Title));
+  TEST_ASSERT_NOT_NULL(findRole(v, SplashRole::Prompt));
+  // A three-row monster under a six-row bubble: at 7 rows the bubble goes too.
+  const std::vector<std::string> art = {"(o o)", "/|_|\\", " ^ ^"};
+  const char* say = "We've been trying to reach you about your car's extended warranty.";
+  v = splashLayout(40, 11, "v0.1.9", say, 1, &art);
+  TEST_ASSERT_NOT_NULL(findRole(v, SplashRole::Detail));
+  TEST_ASSERT_TRUE(bubble(v).size() > art.size());
+  v = splashLayout(40, 9, "v0.1.9", say, 1, &art);
+  checkInside(v, 40, 9);
+  TEST_ASSERT_NULL(findRole(v, SplashRole::Detail));
+  TEST_ASSERT_FALSE(bubble(v).empty());
+  v = splashLayout(40, 7, "v0.1.9", say, 1, &art);
+  checkInside(v, 40, 7);
+  TEST_ASSERT_NOT_NULL(findRole(v, SplashRole::Art));
+  TEST_ASSERT_NULL(findRole(v, SplashRole::Detail));
+  TEST_ASSERT_TRUE(bubble(v).empty());
+  TEST_ASSERT_NOT_NULL(findRole(v, SplashRole::Prompt));
+}
+
+void test_splash_long_phrase_never_overruns() {
+  // One 80-character word, and 80 characters of short words.
+  std::string words;
+  while (words.size() < 80) words += "mo ";
+  const std::string detail = "v0.1.9 \u00b7 " + std::string(60, 'd');
+  for (const std::string& say : {std::string(80, 'x'), words.substr(0, 80)})
+    for (int rows : {7, 9, 11}) checkInside(splashLayout(40, rows, detail, say), 40, rows);
+}
+
 void test_button_grid_three_columns() {
   // 53 cols, rows 2..18: four rows of 3-row buttons with a blank row between.
   ButtonGrid b = buttonGrid(53, 2, 19, 14, 3, 0);
@@ -1062,6 +1125,9 @@ int main() {
   RUN_TEST(test_splash_fits_both_text_sizes);
   RUN_TEST(test_splash_art_is_one_block);
   RUN_TEST(test_splash_drops_art_when_too_small);
+  RUN_TEST(test_splash_fits_40x11);
+  RUN_TEST(test_splash_drops_detail_then_bubble_when_short);
+  RUN_TEST(test_splash_long_phrase_never_overruns);
   RUN_TEST(test_splash_bubble_beside_the_monster);
   RUN_TEST(test_splash_bubble_wraps_long_words);
   RUN_TEST(test_splash_drops_bubble_without_room);

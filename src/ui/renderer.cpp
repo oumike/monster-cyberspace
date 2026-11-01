@@ -4,7 +4,9 @@
 
 #include <algorithm>
 
+#include "features.h"
 #include "hal/board.h"
+#include "ui/emoji_placeholder.h"
 #include "ui/fonts/cell10x18.h"
 #include "ui/fonts/cell12x24.h"
 #include "ui/fonts/cell6x12.h"
@@ -107,7 +109,11 @@ void Renderer::drawRow(const Grid& g, int r, const CellFont& font, RowSpan span,
       barX = (c == cols - 1 ? w_ : ox + (c + 1) * cw) - barW;
       barColor = cellColor(cell.fg);
     } else {
+#if RC_FEAT_EMOJI
       glyphs_[c] = cellGlyph(font, cell.cp);
+#else
+      glyphs_[c] = glyphFor(font, emojiStandIn(cell.cp));
+#endif
     }
   }
   const int half = fw / 2;

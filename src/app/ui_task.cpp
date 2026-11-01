@@ -22,6 +22,7 @@
 #include "screens/draw.h"
 #include "screens/router.h"
 #include "store/locked_chat.h"
+#include "store/mascot_store.h"
 #include "ui/kb_light.h"
 #include "ui/notify_light.h"
 #include "ui/renderer.h"
@@ -264,13 +265,13 @@ void goDark() {
 // e-paper it sits still in the middle.
 void drawBounce(const Theme& t) {
   if (nowMs() >= sayUntil) {
-    saying = words.next(esp_random(), {});
+    saying = words.next(esp_random(), app().mascot.phrases);
     sayUntil = nowMs() + kSayMs;
   }
   // E-paper keeps it still, so it may be the splash's big monster.
   std::vector<SplashLine> ls =
       splashLayout(grid.cols(), grid.rows(), "", saying,
-                   board::eink() ? RC_SPLASH_SCALE : 1, nullptr);
+                   board::eink() ? RC_SPLASH_SCALE : 1, &app().mascot.art);
   int minC = grid.cols(), minR = grid.rows(), maxC = 0, maxR = 0;
   ls.erase(std::remove_if(ls.begin(), ls.end(),
                           [](const SplashLine& l) {
@@ -399,6 +400,9 @@ void handleEvent(const Event& e) {
       break;
     case EvtType::PhrasesChanged:
       app().cfg.phrases = splitPhrases(e.text);
+      break;
+    case EvtType::MascotChanged:
+      mascotstore::load(app().mascot);
       break;
     case EvtType::FeedAlert:
       // code 1 asks for a beep; post_cooldown (code 0) is a banner only.
@@ -932,7 +936,7 @@ void setRotation(uint8_t r) { applyRotation(r); }
 
 bool fromTouch() { return touchKey; }
 
-std::string monsterWord() { return words.next(esp_random(), {}); }
+std::string monsterWord() { return words.next(esp_random(), app().mascot.phrases); }
 
 void showKeyboard() { oskWanted = true; }
 

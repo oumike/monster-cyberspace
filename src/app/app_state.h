@@ -5,6 +5,7 @@
 #include <string_view>
 #include <vector>
 
+#include "mascot/mascot.h"
 #include "store/settings.h"
 #include "ui/grid.h"
 #include "ui/theme.h"
@@ -20,6 +21,7 @@ struct MentionNote {
 // UI-side state, touched only by the UI task.
 struct AppState {
   Settings cfg;
+  Mascot mascot;  // the splash and screensaver monster; empty parts are defaults
   int conn = 0;          // 0 offline, 1 reconnecting, 2 live
   int auth = -1;         // -1 unknown, 0 signed out, 1 signed in, 2 email unverified
   std::string user;      // signed-in username

@@ -117,6 +117,7 @@ enum class EvtType {
   NotifyPreview,        // from the web page: code = rc::LedColor index, one double blink
   AllRead,              // MarkAllRead: ok when the notifications were marked; text = banner
   PhrasesChanged,       // from the web page: text = the canned replies, one per line
+  MascotChanged,        // from the web page: the mascot partition was rewritten
 };
 
 struct Event {

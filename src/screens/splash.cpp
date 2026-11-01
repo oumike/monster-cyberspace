@@ -1,4 +1,5 @@
 #include "core_version.h"
+#include "app/app_state.h"
 #include "app/ui_task.h"
 #include "hal/board.h"
 #include "screens/draw.h"
@@ -29,7 +30,7 @@ void SplashScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
   if (since_ < 0) since_ = nowMs;
   g.fill(t.bg);
   std::string detail = std::string("v") + RC_VERSION + " \u00b7 " + board::name();
-  for (const auto& l : splashLayout(g.cols(), g.rows(), detail, say_, RC_SPLASH_SCALE, nullptr)) {
+  for (const auto& l : splashLayout(g.cols(), g.rows(), detail, say_, RC_SPLASH_SCALE, &app().mascot.art)) {
     switch (l.role) {
       case SplashRole::Art:
         putLine(g, l.col, l.row, l.text, t.selectBg, t.bg);

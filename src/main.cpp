@@ -9,6 +9,7 @@
 #include "core_version.h"
 #include "hal/board.h"
 #include "store/backup_store.h"
+#include "store/mascot_store.h"
 #include "store/nvs_migrate.h"
 #include "store/settings.h"
 
@@ -34,6 +35,7 @@ void setup() {
   memMark("board");
   backupstore::begin();
   settings::load(app().cfg);
+  mascotstore::load(app().mascot);
   timesvc::start(app().cfg);
   memMark("time");
   // The network source brings up Wi-Fi too; the demo build (RC_FAKE_API) has none.

@@ -91,10 +91,10 @@
   - `bool mascotstore::save(const Mascot&)` — erase + write the 4 KB; then `postEvent(Event{EvtType::MascotChanged})`. Without the partition entry, raw `esp_flash_erase_region`/`esp_flash_write` at 0xcb0000.
   - `EvtType::MascotChanged` — UI task reloads with `load(app().mascot)`.
 
-- [ ] **Step 1:** Add the partition line (spec §3) and a comment that it survives OTA and factory reset.
-- [ ] **Step 2:** Implement the store; call `load` in `main.cpp` before `ui::start()`; handle `MascotChanged` in `ui_task.cpp`; switch Task 2's placeholders to `app().mascot`.
-- [ ] **Step 3: Verify** `nice pio run -e tdeck -e x4` succeed and `nice pio test -e native` is green.
-- [ ] **Step 4: Commit** `Mascot partition and store`.
+- [x] **Step 1:** Add the partition line (spec §3) and a comment that it survives OTA and factory reset.
+- [x] **Step 2:** Implement the store; call `load` in `main.cpp` before `ui::start()`; handle `MascotChanged` in `ui_task.cpp`; switch Task 2's placeholders to `app().mascot`.
+- [x] **Step 3: Verify** `nice pio run -e tdeck -e x4` succeed and `nice pio test -e native` is green.
+- [x] **Step 4: Commit** `Mascot partition and store`.
 
 ### Task 4: Web config Mascot section
 

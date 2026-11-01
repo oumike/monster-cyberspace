@@ -129,7 +129,9 @@ Every env uses `partitions_16mb.csv`: two 6.25 MB app slots at `0x10000` and
 `0x650000`, and the settings (`nvs`) at `0xC90000`, past anything a factory
 image writes. `0x9000` is `nvs_old`, where the stock `default_16MB.csv` kept
 them; `src/store/nvs_migrate.cpp` moves anything there into `nvs` at boot and
-erases it. Keep the app slots where they are: the OTA code refuses to update a
+erases it. The custom mascot (`mascot`, 4 KB) sits at `0xCB0000`, right after
+`nvs`; OTA and factory reset leave it alone, and a board whose table predates
+it is read and written at that address raw. Keep the app slots where they are: the OTA code refuses to update a
 board whose layout differs (`layoutSupportsUpdate`).
 
 ### OTA signing

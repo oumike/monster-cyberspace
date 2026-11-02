@@ -28,6 +28,7 @@
 #if RC_FEAT_MASCOT
 #include "store/mascot_store.h"
 #endif
+#include "ui/haptics.h"
 #include "ui/kb_light.h"
 #include "ui/notify_light.h"
 #include "ui/renderer.h"
@@ -399,6 +400,7 @@ void handleEvent(const Event& e) {
       if (ms.size() > kMaxMentionNotes) ms.erase(ms.begin());
       notifyMessage();
       if (app().cfg.buzzer) board::beep(2000, 80);
+      if (app().cfg.alertVibrate && board::hasHaptic()) board::haptic(kAlertBuzzMs);
       banner(e.text, false);
       break;
     }
@@ -407,6 +409,7 @@ void handleEvent(const Event& e) {
       // The unread count lives in the conversation list (Home sums it).
       notifyMessage();
       if (app().cfg.buzzer) board::beep(1600, 80);
+      if (app().cfg.alertVibrate && board::hasHaptic()) board::haptic(kAlertBuzzMs);
       banner(e.text, false);
       break;
 #endif
@@ -425,6 +428,7 @@ void handleEvent(const Event& e) {
     case EvtType::FeedAlert:
       // code 1 asks for a beep; post_cooldown (code 0) is a banner only.
       if (e.code == 1 && app().cfg.buzzer) board::beep(1800, 80);
+      if (e.code == 1 && app().cfg.alertVibrate && board::hasHaptic()) board::haptic(kAlertBuzzMs);
       banner(e.text, false);
       break;
 #endif
@@ -798,6 +802,7 @@ void taskMain(void*) {
       if (!touchSwallow && gestures.feed(down, tx, ty, millis(), g)) {
         TouchOutput out;
         resolver.resolve(g, taps, out);
+        if (app().cfg.tapVibrate && board::hasHaptic() && tapBuzz(g, out)) board::haptic(kTapBuzzMs);
         if (out.hideBanner) topBanner.hide();
         const bool menuBefore = Overlay::anyOpen();
         touchKey = true;

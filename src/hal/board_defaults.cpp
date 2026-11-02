@@ -13,5 +13,8 @@ __attribute__((weak)) void deepSleep(uint64_t) {}
 __attribute__((weak)) bool wokeByTimer() { return false; }
 __attribute__((weak)) void powerOff() {}
 __attribute__((weak)) bool setRedraw(void (*)()) { return false; }
+__attribute__((weak)) bool hasHaptic() { return false; }
+__attribute__((weak)) void haptic(int) {}
+__attribute__((weak)) uint8_t defaultRotation() { return 0; }
 
 }  // namespace board

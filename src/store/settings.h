@@ -28,6 +28,9 @@ void saveNotifyLight(rc::LedColor color);
 void saveNotifyTimeout(uint16_t secs);
 // The device's Settings and web config: spell suggestions while typing.
 void saveSpellCheck(bool on);
+// The device's Settings and web config: buzz on a tap and on an alert
+// (board::hasHaptic).
+void saveVibrate(bool tap, bool alert);
 // Friends added from a message's menu, kept on the device.
 void saveFriends(const std::vector<std::string>& friends);
 // Web config: the canned replies (config/phrases.h).

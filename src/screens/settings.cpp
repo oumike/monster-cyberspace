@@ -40,6 +40,8 @@ enum Item {
   kScreenTimeout,
   kAtTimeout,
   kKbLight,
+  kTapVibrate,
+  kAlertVibrate,
   kNotifyLight,
   kNotifyTimeout,
   kSpellCheck,
@@ -71,6 +73,10 @@ std::vector<Item> menuItems() {
   v.push_back(kScreenTimeout);
   v.push_back(kAtTimeout);
   if (board::hasKbLight()) v.push_back(kKbLight);
+  if (board::hasHaptic()) {
+    v.push_back(kTapVibrate);
+    v.push_back(kAlertVibrate);
+  }
   if (board::hasNotifyLight()) {
     v.push_back(kNotifyLight);
     v.push_back(kNotifyTimeout);
@@ -444,6 +450,14 @@ void SettingsScreen::activate(int item) {
       settings::saveScreen(a.cfg.screenOnSecs, a.cfg.screenSaver);
       break;
     }
+    case kTapVibrate:
+    case kAlertVibrate: {
+      AppState& a = app();
+      bool& on = item == kTapVibrate ? a.cfg.tapVibrate : a.cfg.alertVibrate;
+      on = !on;
+      settings::saveVibrate(a.cfg.tapVibrate, a.cfg.alertVibrate);
+      break;
+    }
     case kSpellCheck:
       app().cfg.spellCheck = !app().cfg.spellCheck;
       settings::saveSpellCheck(app().cfg.spellCheck);
@@ -560,6 +574,12 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
         break;
       case kKbLight:
         rows.push_back(ListItem{U"Keyboard light", kbLightLabel(a.cfg.kbLight)});
+        break;
+      case kTapVibrate:
+        rows.push_back(ListItem{U"Tap vibration", a.cfg.tapVibrate ? U"on" : U"off"});
+        break;
+      case kAlertVibrate:
+        rows.push_back(ListItem{U"Alert vibration", a.cfg.alertVibrate ? U"on" : U"off"});
         break;
       case kNotifyLight:
         rows.push_back(ListItem{U"Notify light", ledColorLabel(a.cfg.notifyLight)});

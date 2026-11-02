@@ -56,6 +56,12 @@ int batteryPercent();  // -1 when unknown
 bool externalPower();
 // Returns at once; the tone plays in the background.
 void beep(int freqHz, int ms);
+// A vibration motor. hasHaptic: the board has one; haptic buzzes it for ms
+// and returns at once. Default: none, and haptic does nothing.
+bool hasHaptic();
+void haptic(int ms);
+// The rc::Rotation index before any is saved. Default: 0.
+uint8_t defaultRotation();
 // Raw touch, for boards with a touch panel. readTouch is true while a finger
 // is down, with x, y in the panelWidth() x panelHeight() frame.
 bool hasTouch();

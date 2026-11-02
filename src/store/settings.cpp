@@ -67,13 +67,15 @@ void load(rc::Settings& s) {
   if (!rc::validScreenTimeout(s.screenOnSecs)) s.screenOnSecs = 30;
   s.screenSaver = p.getBool("scrsaver", true);
   s.spellCheck = p.getBool("spell", true);
+  s.tapVibrate = p.getBool("tapVib", true);
+  s.alertVibrate = p.getBool("alertVib", true);
   s.kbLight = rc::kbLightFromIndex(p.getUChar("kblight", board::kbLightDefault()),
                                    rc::kbLightFromIndex(board::kbLightDefault()));
   s.notifyLight = rc::ledColorFromIndex(p.getUChar("ledcolor", uint8_t(rc::LedColor::Blue)),
                                        rc::LedColor::Blue);
   s.notifyTimeoutSecs = rc::snapNotifyTimeout(p.getUShort("ledtime", 15));
   s.theme = rc::themeFromIndex(p.getUChar("theme", 0));
-  s.rotation = rc::rotationFromIndex(p.getUChar("rot", 0));
+  s.rotation = rc::rotationFromIndex(p.getUChar("rot", board::defaultRotation()));
   s.lastRoom = getStr(p, "room", s.lastRoom);
   // Friends, one name per line: a username can't contain a newline.
   const std::string frd = getStr(p, "friends", "");
@@ -203,6 +205,14 @@ void saveSpellCheck(bool on) {
   p.end();
 }
 
+void saveVibrate(bool tap, bool alert) {
+  Preferences p;
+  if (!p.begin(kNs, false)) return;
+  p.putBool("tapVib", tap);
+  p.putBool("alertVib", alert);
+  p.end();
+}
+
 void savePhrases(const std::vector<std::string>& phrases) {
   Preferences p;
   if (!p.begin(kNs, false)) return;
@@ -256,6 +266,7 @@ void saveAll(const rc::Settings& s) {
   if (RC_FEAT_OTA) saveAutoUpdate(s.autoUpdate);
   saveScreen(s.screenOnSecs, s.screenSaver);
   if (RC_FEAT_SPELL) saveSpellCheck(s.spellCheck);
+  saveVibrate(s.tapVibrate, s.alertVibrate);
   saveFriends(s.friends);
   saveNotifyLight(s.notifyLight);
   saveNotifyTimeout(s.notifyTimeoutSecs);

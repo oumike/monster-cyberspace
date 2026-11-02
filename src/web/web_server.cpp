@@ -433,6 +433,10 @@ esp_err_t getPrefs(httpd_req_t* req) {
   d["ntpServer"] = s.ntpServer;
   if (board::canRotate()) d["rotation"] = s.rotation;
   if (board::hasKbLight()) d["kbLight"] = rc::kbLightKey(s.kbLight);
+  if (board::hasHaptic()) {
+    d["tapVibrate"] = s.tapVibrate;
+    d["alertVibrate"] = s.alertVibrate;
+  }
   if (board::hasNotifyLight()) {
     d["notifyLight"] = rc::ledColorKey(s.notifyLight);
     d["notifyTimeout"] = s.notifyTimeoutSecs;
@@ -493,6 +497,9 @@ esp_err_t postPrefs(httpd_req_t* req) {
   }
   const bool screenSaver = doc["screenSaver"].is<bool>() ? doc["screenSaver"].as<bool>() : s.screenSaver;
   const bool spellCheck = doc["spellCheck"].is<bool>() ? doc["spellCheck"].as<bool>() : s.spellCheck;
+  const bool tapVibrate = doc["tapVibrate"].is<bool>() ? doc["tapVibrate"].as<bool>() : s.tapVibrate;
+  const bool alertVibrate =
+      doc["alertVibrate"].is<bool>() ? doc["alertVibrate"].as<bool>() : s.alertVibrate;
   rc::KbLight kbLight = s.kbLight;
   if (!doc["kbLight"].isNull() &&
       (!doc["kbLight"].is<const char*>() || !rc::parseKbLight(doc["kbLight"].as<const char*>(), kbLight)))
@@ -569,6 +576,11 @@ esp_err_t postPrefs(httpd_req_t* req) {
   if (RC_FEAT_SPELL && spellCheck != s.spellCheck) {
     rc::app().cfg.spellCheck = spellCheck;
     settings::saveSpellCheck(spellCheck);
+  }
+  if (board::hasHaptic() && (tapVibrate != s.tapVibrate || alertVibrate != s.alertVibrate)) {
+    rc::app().cfg.tapVibrate = tapVibrate;
+    rc::app().cfg.alertVibrate = alertVibrate;
+    settings::saveVibrate(tapVibrate, alertVibrate);
   }
   // The UI task picks the new level up on its next pass.
   if (board::hasKbLight() && kbLight != s.kbLight) {

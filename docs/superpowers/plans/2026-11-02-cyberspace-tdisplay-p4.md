@@ -178,10 +178,10 @@ void test_tap_buzz() {
 - Produces: `uint8_t board::defaultRotation();` `bool board::hasHaptic();` `void board::haptic(int ms);` (returns at once).
 - Consumes: Task 3's fields, `tapBuzz`, `kTapBuzzMs`, `kAlertBuzzMs`.
 
-- [ ] **Step 1: Make the changes listed above.**
-- [ ] **Step 2: Native suite still green** — `pio test -e native`
-- [ ] **Step 3: Every existing env builds** — `scripts/build-upload-monitor.sh -B` (exit 0)
-- [ ] **Step 4: Commit** — `git commit -m "Board default rotation and haptics hooks; vibration in Settings and web config"`
+- [x] **Step 1: Make the changes listed above.**
+- [x] **Step 2: Native suite still green** — `pio test -e native`
+- [x] **Step 3: Every existing env builds** — `scripts/build-upload-monitor.sh -B` (exit 0)
+- [x] **Step 4: Commit** — `git commit -m "Board default rotation and haptics hooks; vibration in Settings and web config"`
 
 ### Task 5: Env, expander, display and the board skeleton
 

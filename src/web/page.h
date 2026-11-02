@@ -182,6 +182,7 @@ static const char kPage[] = R"HTML(<!doctype html>
 <label id="ledrow" hidden>Notify light<select id="ledcolor"><option value="red">Red</option><option value="green">Green</option><option value="blue">Blue</option><option value="yellow">Yellow</option><option value="cyan">Cyan</option><option value="magenta">Magenta</option><option value="white">White</option><option value="off">Off</option></select></label>
 <label id="ledtrow" hidden>Light timeout<select id="ledtime"><option value="15">15 s</option><option value="30">30 s</option><option value="60">1 min</option><option value="300">5 min</option><option value="0">Until read</option></select></label>
 <label><input id="buzzer" type="checkbox" style="width:auto"> Buzzer on mentions</label>
+<div id="vibrow" hidden><label><input id="tapvib" type="checkbox" style="width:auto"> Vibrate on tap</label><label><input id="alertvib" type="checkbox" style="width:auto"> Vibrate on alerts</label></div>
 <label id="spellrow"><input id="spell" type="checkbox" style="width:auto"> Spell check while typing</label>
 <button onclick="savePrefs()">Save display</button>
 <div id="prefmsg" class="msg"></div>
@@ -278,6 +279,7 @@ async function loadPrefs(){const p=await call('GET','/api/prefs');if(p.tz===unde
   $('scrsecs').value=String(p.screenOnSecs);$('scrsaver').value=p.screenSaver?'1':'0';
   if(p.rotation!==undefined){$('rotrow').hidden=false;$('rot').value=String(p.rotation);}
   if(p.kbLight){$('kbrow').hidden=false;$('kblight').value=p.kbLight;}
+  $('vibrow').hidden=p.tapVibrate===undefined;if(p.tapVibrate!==undefined){$('tapvib').checked=p.tapVibrate;$('alertvib').checked=p.alertVibrate;}
   if(p.notifyLight){$('ledrow').hidden=$('ledtrow').hidden=false;$('ledcolor').value=p.notifyLight;$('ledtime').value=String(p.notifyTimeout);}
   $('webcfg').checked=p.webConfig!==false;
   if(p.phrases){$('phraseblock').hidden=false;$('spellrow').hidden=true;$('phrases').value=p.phrases.join('\n');}
@@ -302,6 +304,7 @@ function savePrefs(){const b={buzzer:$('buzzer').checked,spellCheck:$('spell').c
     screenOnSecs:parseInt($('scrsecs').value,10),screenSaver:$('scrsaver').value==='1'};
   if(!$('tsizerow').hidden)b.textSize=$('tsize').value;if(!$('themerow').hidden)b.theme=$('theme').value;
   if(!$('rotrow').hidden)b.rotation=parseInt($('rot').value,10);
+  if(!$('vibrow').hidden){b.tapVibrate=$('tapvib').checked;b.alertVibrate=$('alertvib').checked;}
   if(!$('kbrow').hidden)b.kbLight=$('kblight').value;if(!$('ledrow').hidden){b.notifyLight=$('ledcolor').value;b.notifyTimeout=+$('ledtime').value;}post('/api/prefs',b,'prefmsg');}
 function savePhrases(){post('/api/phrases',{phrases:$('phrases').value.split('\n')},'phrasemsg').then(loadPrefs);}
 )HTML" RC_MASCOT_JS R"HTML(function saveWebCfg(c){if(!c.checked&&!setupMode&&!confirm('Turn web config off? This page stops answering on this network; turn it back on from the device\'s Settings or the setup AP.')){c.checked=true;return;}

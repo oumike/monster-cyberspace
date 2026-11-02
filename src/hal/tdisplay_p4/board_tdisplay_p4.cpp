@@ -8,12 +8,14 @@
 #include <esp_system.h>
 #include <hal/wdt_hal.h>
 
+#include <algorithm>
 #include <cstring>
 
 #include "hal/board.h"
 #include "hal/tdisplay_p4/io_xl9535.h"
 #include "hal/tdisplay_p4/panel_rm69a10.h"
 #include "hal/tdisplay_p4/pins_tdisplay_p4.h"
+#include "hal/tdisplay_p4/touch_gt9895.h"
 #include "ui/scale2x.h"
 
 namespace board {
@@ -108,11 +110,25 @@ bool pollButton(rc::KeyEvent& key) {
   return true;
 }
 
+// Native panel rows [pendingY0, pendingY1) written but not yet flushed out of
+// the cache. In landscape every frame row spans the panel's full height, so
+// pushRows only gathers them and pollKey, once per UI loop, flushes them.
+int pendingY0 = PANEL_H, pendingY1 = 0;
+
+void flushPending() {
+  if (pendingY0 >= pendingY1) return;
+  panel::flush(pendingY0, pendingY1);
+  pendingY0 = PANEL_H;
+  pendingY1 = 0;
+}
+
 void clearPanel() {
   uint16_t* fb = panel::frame();
   if (!fb) return;
   memset(fb, 0, size_t(PANEL_W) * PANEL_H * 2);
   panel::flush(0, PANEL_H);
+  pendingY0 = PANEL_H;
+  pendingY1 = 0;
 }
 
 }  // namespace
@@ -123,6 +139,7 @@ void begin() {
   if (xl9535::begin()) xl9535::powerOnSequence();
   if (!panel::begin()) Serial.println("[tdp4] no panel");
   Serial.println(radioSleep() ? "[tdp4] LoRa radio asleep" : "[tdp4] no LoRa radio");
+  touch::begin();
   pinMode(SIDE_BUTTON, INPUT_PULLUP);
 }
 
@@ -147,6 +164,8 @@ int panelHeight() {
 void pushRows(const uint16_t* frame, int y0, int y1) {
   uint16_t* fb = panel::frame();
   if (!fb || !frame) return;
+  y1 = std::min(y1, panelHeight());
+  if (y0 >= y1) return;
   const int w = panelWidth();
   for (int y = y0; y < y1; ++y) {
     const s2x::Pt a = s2x::frameToNative(0, y, NATIVE_W, NATIVE_H, rotation);
@@ -164,7 +183,8 @@ void pushRows(const uint16_t* frame, int y0, int y1) {
   }
   int ny0, ny1;
   s2x::nativeRows(y0, y1, NATIVE_W, NATIVE_H, rotation, ny0, ny1);
-  panel::flush(2 * ny0, 2 * ny1);
+  pendingY0 = std::min(pendingY0, 2 * ny0);
+  pendingY1 = std::max(pendingY1, 2 * ny1);
 }
 
 void setRotation(uint8_t r) {
@@ -180,13 +200,26 @@ void backlight(bool on) { backlightLevel(on ? 255 : 0); }
 void backlightLevel(uint8_t level) { panel::brightness(level); }
 void displaySleep(bool sleep) { panel::sleep(sleep); }
 
-bool pollKey(rc::KeyEvent& key) { return pollButton(key); }
+bool pollKey(rc::KeyEvent& key) {
+  flushPending();
+  return pollButton(key);
+}
 
 const char* wakeHint() { return "press the side button to wake"; }
 
-// Touch arrives in Task 6, the keyboard expansion in Task 7.
 bool hasTouch() { return true; }
-bool readTouch(int16_t&, int16_t&) { return false; }
+
+bool readTouch(int16_t& x, int16_t& y) {
+  int16_t rx, ry;
+  if (!touch::read(rx, ry)) return false;
+  const s2x::Pt n = s2x::rawToNative(rx, ry, TOUCH_RAW_W, TOUCH_RAW_H, NATIVE_W, NATIVE_H);
+  const s2x::Pt f = s2x::nativeToFrame(n.x, n.y, NATIVE_W, NATIVE_H, rotation);
+  x = int16_t(f.x);
+  y = int16_t(f.y);
+  return true;
+}
+
+// The keyboard expansion arrives in Task 7.
 bool hasKeyboard() { return false; }
 bool hasKeys() { return false; }
 bool backspaceIsBack() { return false; }

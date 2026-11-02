@@ -249,9 +249,9 @@ Board behaviour in this task:
 - Consumes: `scale2x::rawToNative(rx, ry, 1060, 2400, 284, 616)`, `scale2x::nativeToFrame(…, rotation)`.
 - Produces: `board::readTouch(x, y)` in frame coordinates.
 
-- [ ] **Step 1: Implement and wire `readTouch`.** `doubleTapWakes()` false, `anyInputWakes()` false (Task 7 sets it with the keyboard).
-- [ ] **Step 2: Build** — `pio run -e tdisplay_p4` SUCCESS
-- [ ] **Step 3: Commit** — `git commit -m "T-Display P4: GT9895 touch"`
+- [x] **Step 1: Implement and wire `readTouch`.** `doubleTapWakes()` false, `anyInputWakes()` false (Task 7 sets it with the keyboard).
+- [x] **Step 2: Build** — `pio run -e tdisplay_p4` SUCCESS
+- [x] **Step 3: Commit** — `git commit -m "T-Display P4: GT9895 touch"`
 
 ### Task 7: Shared Wire1 and the keyboard expansion
 

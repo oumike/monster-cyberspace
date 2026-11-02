@@ -48,6 +48,12 @@ std::vector<UnreadItem> gatherUnread() {
   return mergeUnread(std::move(cmail), std::move(mentions), std::move(feed));
 }
 
+int countUnread() {
+  int cmail = lockedChat().with([](ChatState& s) { return unreadCmailCount(s.conversations); });
+  size_t notices = lockedFeed().with([](FeedState& s) { return s.notices.size(); });
+  return cmail + unreadCount({}, app().mentions.size(), notices);
+}
+
 void NotificationsScreen::askMarkAll() {
   if (marking_) return;
   confirm_ = true;
@@ -134,22 +140,29 @@ void NotificationsScreen::onEvent(const Event& e) {
   if (e.type == EvtType::AllRead) marking_ = false;
 }
 
-void NotificationsScreen::render(Grid& g, const Theme& t, int64_t) {
-  items_ = gatherUnread();
-  std::vector<ListItem> rows;
-  rows.reserve(items_.size() + 1);
-  if (!items_.empty())
-    rows.push_back(ListItem{marking_ ? U"marking all read\u2026" : U"\u2713 Mark all read", U""});
-  for (const auto& it : items_) {
-    std::u32string right = it.kind == UnreadKind::Cmail ? utf8ToU32(std::to_string(it.count)) : U"";
-    rows.push_back(ListItem{utf8ToU32(std::string(tag(it.kind)) + it.text), std::move(right),
-                            ItemTone::Normal, true});
+void NotificationsScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
+  constexpr int64_t kRefreshMs = 1000;
+  const int count = countUnread();
+  if (count != shownCount_ || marking_ != shownMarking_ || nowMs - builtAt_ >= kRefreshMs) {
+    shownCount_ = count;
+    shownMarking_ = marking_;
+    builtAt_ = nowMs;
+    items_ = gatherUnread();
+    std::vector<ListItem> rows;
+    rows.reserve(items_.size() + 1);
+    if (!items_.empty())
+      rows.push_back(ListItem{marking_ ? U"marking all read\u2026" : U"\u2713 Mark all read", U""});
+    for (const auto& it : items_) {
+      std::u32string right = it.kind == UnreadKind::Cmail ? utf8ToU32(std::to_string(it.count)) : U"";
+      rows.push_back(ListItem{utf8ToU32(std::string(tag(it.kind)) + it.text), std::move(right),
+                              ItemTone::Normal, true});
+    }
+    list_.setItems(std::move(rows));  // keeps the selection, clamped
   }
   g.fill(t.bg);
   drawStatus(g, t, U"unread", unreadTotal(items_));
   const int bottom = g.rows() - 1;
   const int nav = sideNavWidth(g);
-  list_.setItems(std::move(rows));
   list_.render(g, 1, bottom, 0, g.cols() - nav, t);
   if (nav > 0) renderSideNav(g, 1, bottom, nav, t);
   if (items_.empty()) putLine(g, 1, 2, "nothing unread", t.dim, t.bg);

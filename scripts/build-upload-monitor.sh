@@ -33,6 +33,7 @@ env_label() {
 		pager)  echo "LilyGO T-LoRa Pager" ;;
 		tdeck_pro) echo "LilyGO T-Deck Pro" ;;
 		mesh_deck) echo "Attaky Mesh Deck" ;;
+		cyber_deck_plus) echo "Attaky Cyber Deck Plus" ;;
 		x4) echo "Xteink X4" ;;
 		cardputer_adv) echo "M5Stack Cardputer ADV" ;;
 		*)      echo "$1" ;;
@@ -82,7 +83,7 @@ prompt_for_device() {
 
 show_usage() {
 	cat <<USAGE
-Usage: $0 [ENV] [--m9|-9] [--wio-l2|-w] [--tdeck|-t] [--crowpanel35|-3] [--crowpanel50|-5] [--pager|-P] [--tdeck-pro|-D] [--mesh-deck|-M] [--x4|-X] [--cardputer-adv|-C] [--port|-p PORT] [--erase|-E] [--fullclean|-F] [--just-build|-B]
+Usage: $0 [ENV] [--m9|-9] [--wio-l2|-w] [--tdeck|-t] [--crowpanel35|-3] [--crowpanel50|-5] [--pager|-P] [--tdeck-pro|-D] [--mesh-deck|-M] [--cyber-deck-plus|-K] [--x4|-X] [--cardputer-adv|-C] [--port|-p PORT] [--erase|-E] [--fullclean|-F] [--just-build|-B]
   ENV               Any firmware environment in platformio.ini (e.g. m9, tdeck).
   Board flags (one per supported board):
   --m9, -9          Elecrow ThinkNode M9 (m9)
@@ -93,6 +94,7 @@ Usage: $0 [ENV] [--m9|-9] [--wio-l2|-w] [--tdeck|-t] [--crowpanel35|-3] [--crowp
   --pager, -P       LilyGO T-LoRa Pager (pager)
   --tdeck-pro, -D   LilyGO T-Deck Pro (tdeck_pro)
   --mesh-deck, -M   Attaky Mesh Deck (mesh_deck)
+  --cyber-deck-plus, -K Attaky Cyber Deck Plus (cyber_deck_plus)
   --x4, -X          Xteink X4 (x4)
   --cardputer-adv, -C M5Stack Cardputer ADV (cardputer_adv)
                     With no board or environment given, you'll be prompted.
@@ -126,6 +128,7 @@ while [ "$#" -gt 0 ]; do
 		--pager|-P)      BOARD=pager ;;
 		--tdeck-pro|-D)  BOARD=tdeck_pro ;;
 		--mesh-deck|-M)  BOARD=mesh_deck ;;
+		--cyber-deck-plus|-K) BOARD=cyber_deck_plus ;;
 		--x4|-X)         BOARD=x4 ;;
 		--cardputer-adv|-C) BOARD=cardputer_adv ;;
 		--port|-p)

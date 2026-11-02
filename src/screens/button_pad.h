@@ -33,6 +33,13 @@ class ButtonPad {
   int key(const KeyEvent& k);
   // The cursor is in the first column, where Left leaves the grid.
   bool atLeftEdge() const { return !hidden_ && selected_ % cols_ == 0; }
+  // The cursor is on the first row, where Up leaves the grid.
+  bool atTopEdge() const { return !hidden_ && selected_ < cols_; }
+  // Shows the cursor on button i (a screen moving its focus into the grid).
+  void showCursorAt(int i) {
+    hidden_ = false;
+    selected_ = i;
+  }
   // Over grid rows [top, bottom). keepRight shortens the label rather than
   // dropping `right` when both don't fit. columns 0: columns(). header:
   // rows the caller draws above the buttons, from `top`; they scroll away a

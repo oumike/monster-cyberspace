@@ -17,8 +17,26 @@ static void expectItems(const std::vector<HomeItem>& want, const std::vector<Hom
 void test_all_features_keeps_todays_order() {
   Features f{true, true, true, true, true};
   expectItems({HomeItem::Unread, HomeItem::Messages, HomeItem::Rooms, HomeItem::Cmail, HomeItem::Feed,
+               HomeItem::Guilds, HomeItem::Profile, HomeItem::Settings},
+              homeItems(f));
+}
+
+// Your own profile, before Settings, only with People built.
+void test_profile_needs_people() {
+  Features f{true, true, true, false, true};
+  expectItems({HomeItem::Unread, HomeItem::Messages, HomeItem::Rooms, HomeItem::Cmail, HomeItem::Feed,
                HomeItem::Guilds, HomeItem::Settings},
               homeItems(f));
+  Features p{false, false, false, true, false};
+  expectItems({HomeItem::Messages, HomeItem::Rooms, HomeItem::Profile, HomeItem::Settings}, homeItems(p));
+}
+
+// Unread takes a row of its own only when the rest then fill their rows.
+void test_span_first_only_with_full_rows() {
+  TEST_ASSERT_FALSE(homeSpanFirst(homeItems(Features{true, true, true, true, true})));   // 8: a 4x2 grid
+  TEST_ASSERT_TRUE(homeSpanFirst(homeItems(Features{true, true, true, false, true})));   // 7: 1 + 3x2
+  TEST_ASSERT_FALSE(homeSpanFirst(homeItems(Features{true, true, true, true, false})));  // no unread
+  TEST_ASSERT_FALSE(homeSpanFirst({}));
 }
 
 void test_rooms_only() {
@@ -29,7 +47,7 @@ void test_rooms_only() {
 void test_unread_off_only_drops_unread() {
   Features f{true, true, true, true, false};
   expectItems({HomeItem::Messages, HomeItem::Rooms, HomeItem::Cmail, HomeItem::Feed, HomeItem::Guilds,
-               HomeItem::Settings},
+               HomeItem::Profile, HomeItem::Settings},
               homeItems(f));
 }
 
@@ -38,5 +56,7 @@ int main(int, char**) {
   RUN_TEST(test_all_features_keeps_todays_order);
   RUN_TEST(test_rooms_only);
   RUN_TEST(test_unread_off_only_drops_unread);
+  RUN_TEST(test_profile_needs_people);
+  RUN_TEST(test_span_first_only_with_full_rows);
   return UNITY_END();
 }

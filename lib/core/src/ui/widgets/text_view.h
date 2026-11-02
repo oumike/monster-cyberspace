@@ -30,6 +30,8 @@ class TextView {
   void pageUp();
   void pageDown();
   int top() const { return top_; }
+  // Scrolled to the last line (or the text fits), as of the last render.
+  bool atEnd() const { return top_ >= maxTop(); }
   // Draws rows [top, bottom) in columns [left, left + width).
   void render(Grid& g, int top, int bottom, int left, int width, const Theme& t);
 

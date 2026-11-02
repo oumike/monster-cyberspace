@@ -5,9 +5,11 @@ a retro text-only social network. Milestone 1 is cIRC chat plus a device-served
 web config page, on the Elecrow ThinkNode M9. The Seeed Wio Tracker L2 and
 the LilyGO T-Deck Plus followed, then the Elecrow CrowPanel Advance 3.5" and
 5.0", the LilyGO T-LoRa Pager, the LilyGO T-Deck Pro and the Attaky Mesh Deck
-(all built, not yet tried on hardware; the Mesh Deck boots). The Xteink X4
+(all built, not yet tried on hardware; the Mesh Deck boots), and the Attaky
+Cyber Deck Plus (contributed in PR #6; an early version was used on hardware by
+its contributor). The Xteink X4
 (branch `x4`) is written but has never been built. The M5Stack Cardputer ADV
-(8 MB, no PSRAM, no Guilds or Unread) is built, not yet tried on hardware. More
+(8 MB, no PSRAM, no Guilds) is built, not yet tried on hardware. More
 boards and Cyberspace features come later.
 
 - **Design spec:** `docs/superpowers/specs/2026-10-25-cyberspace-m9-circ-design.md`
@@ -31,6 +33,8 @@ boards and Cyberspace features come later.
   plan `docs/superpowers/plans/2026-10-29-cyberspace-mesh-deck.md`.
 - **Xteink X4:** spec `docs/superpowers/specs/2026-10-30-cyberspace-x4-design.md`,
   plan `docs/superpowers/plans/2026-10-30-cyberspace-x4.md`.
+- **Attaky Cyber Deck Plus:** spec `docs/superpowers/specs/2026-11-01-cyberspace-cyber-deck-plus-design.md`,
+  plan `docs/superpowers/plans/2026-11-01-cyberspace-cyber-deck-plus.md`.
 - **M5Stack Cardputer ADV:** spec `docs/superpowers/specs/2026-11-01-cyberspace-cardputer-adv-design.md`,
   plan `docs/superpowers/plans/2026-11-01-cyberspace-cardputer-adv.md`.
 - **Fluffy Generator (custom mascot):** spec
@@ -80,9 +84,10 @@ pio run -e crowpanel35      # Elecrow CrowPanel Advance 3.5" (crowpanel50: the 5
 pio run -e pager            # LilyGO T-LoRa Pager
 pio run -e tdeck_pro        # LilyGO T-Deck Pro (e-paper)
 pio run -e mesh_deck        # Attaky Mesh Deck
+pio run -e cyber_deck_plus  # Attaky Cyber Deck Plus
 pio run -e x4               # Xteink X4 (ESP32-C3, no PSRAM)
-pio run -e cardputer_adv    # M5Stack Cardputer ADV (8 MB, no PSRAM, no Guilds or Unread)
-scripts/build-upload-monitor.sh m9   # flash + serial monitor (115200); -w for the Wio L2, -t for the T-Deck Plus, -3/-5 for the CrowPanels, -P for the Pager, -D for the T-Deck Pro, -M for the Mesh Deck, -X for the X4, -C for the Cardputer ADV; --help for options
+pio run -e cardputer_adv    # M5Stack Cardputer ADV (8 MB, no PSRAM, no Guilds)
+scripts/build-upload-monitor.sh m9   # flash + serial monitor (115200); -w for the Wio L2, -t for the T-Deck Plus, -3/-5 for the CrowPanels, -P for the Pager, -D for the T-Deck Pro, -M for the Mesh Deck, -K for the Cyber Deck Plus, -X for the X4, -C for the Cardputer ADV; --help for options
 scripts/build-upload-monitor.sh -B   # build every firmware env, no device needed
 scripts/screenshot.py PORT [--watch]  # PNG screenshots over the serial console (no device writes)
 # demo build for screenshots, no network (never release): docs/BUILD.md "Screenshots"
@@ -124,8 +129,12 @@ keyboard (`keymap_tdeck_pro`), raw CST328/CST3530 touch, the side button as
 ScreenOff, BQ27220/BQ25896 battery, GPS and SD. `board::eink()` makes the app
 use `paperTheme()` (outlined selections, `Theme::outlined`), hide the Theme
 item, and keep the splash cursor and screensaver still.
+`src/hal/attaky/` is the Attaky Core both Attaky decks share
+(`pins_attaky_core.h`, `attaky_core.{h,cpp}`: panel pins, bus recovery, the
+AW9523 front expander and keyboard module, FT6636, MAX17048, LEDs).
 `src/hal/mesh_deck/` is the Attaky Mesh Deck 1.0 (from camillia-mt's
-`hw_mesh_deck.h` and platy-aprs's `mesh_deck_io.cpp`, `pins_mesh_deck.h`): an
+`hw_mesh_deck.h` and platy-aprs's `mesh_deck_io.cpp`, `pins_mesh_deck.h`; its
+GPS and SX1262 sleep, the rest through `src/hal/attaky/`): an
 ST7789 through the shared `st7789` driver (MADCTL 0xA0, panel mounted 180°),
 FT6636 touch, the AW9523 front buttons (`MeshDeckPad`) and keyboard module
 (`MeshDeckKeys`, both in `input/keymap_mesh_deck`), MAX17048 gauge and GPS; no
@@ -133,6 +142,13 @@ RTC, SD or buzzer. The LoRa module's SX1262, when fitted, is unused: `radioSleep
 puts it to sleep at boot (awake, it whines). Console: UART0 (CH340). Its RGB LEDs are the notification
 light (`board::hasNotifyLight`/`notifyLight`; the blinker, colours and
 timeouts in `ui/notify_light`, settings `notifyLight`/`notifyTimeoutSecs`).
+`src/hal/cyber_deck_plus/` is the Attaky Cyber Deck Plus 1.0 (PR #6, from the
+Attaky "cyberdeck plus 1.0" datasheet): the Mesh Deck's Core through
+`src/hal/attaky/`, plus a gamepad of two TCA9555s at 0x22/0x26
+(`CyberDeckGamepad` in `input/keymap_cyber_deck`: D-pad arrows, A Select, B and
+L1 Back, holds as the Core's), Media I/O's NS4168 amplifier on I2S
+(IO17/18/21; the channel idles after 1 s of silence) and microSD over 1-bit
+SDMMC. No GPS, LoRa or RTC; `wakeHint()` is R2.
 `src/hal/x4/` is the Xteink X4 (from rhino-moshi's `include/boards/x4.h`,
 `panel_x4.cpp`, `buttons.cpp`, `power.cpp`): an ESP32-C3 with no PSRAM, so
 the renderer draws in strips (`ui/renderer`, `sys/mem`) and `RC_CHAT_CAP` /
@@ -153,8 +169,11 @@ clocked from BCLK (`mclkFromBclk`), battery ADC and SD; no touch, RTC or GPS.
 Text is fixed at Compact 6x12 (`board::fixedTextSize`; Text size hidden in
 Settings and web config). Feature flags in `lib/core/src/feature_flags.h`
 (`RC_FEAT_CMAIL`/`FEED`/`GUILDS`/`PEOPLE`/`UNREAD`/`SPELL`/`EMOJI`/`OTA`/`MASCOT`,
-all 1 by default; `RC_FEAT_ENTRIES`/`COMPOSER` follow) are all 0 there: rooms
-only, a wide emoji draws `?`. `RC_MONO_CELLS` (default `RC_LOW_MEM`) is 0 so
+all 1 by default; `RC_FEAT_ENTRIES`/`COMPOSER` follow): there `GUILDS`,
+`SPELL`, `EMOJI`, `OTA` and `MASCOT` are 0, so it has cIRC, C-Mail, the Feed,
+People and Unread, and a wide emoji draws `?`. Unread's Home count is
+`countUnread()` (no copies, it runs every frame) and its screen rebuilds its
+rows only when the count changes or once a second. `RC_MONO_CELLS` (default `RC_LOW_MEM`) is 0 so
 it keeps colour; `src/sys/string_instances.cpp` keeps Matter/BLE out of the
 link. `NO_OTA_ENVS` in `scripts/release.sh` ships it a factory image only,
 and the flasher hides Make your Fluffy and Phrases for it.
@@ -205,7 +224,7 @@ The Attaky Mesh Deck HAL (env `mesh_deck`) and the notification light were
 added on 2026-10-29 (flashed: it boots and finds touch, gauge and keyboard;
 the panel, touch mapping, keys and LEDs await the hardware check).
 **Still open:** the unticked items under "Open hardware checks" in
-`docs/TESTING.md` (themes, device Settings, touch UI, Wio L2, T-Deck Plus, CrowPanels, Pager, T-Deck Pro, Cardputer ADV, GPS time, API
+`docs/TESTING.md` (themes, device Settings, touch UI, Wio L2, T-Deck Plus, CrowPanels, Pager, T-Deck Pro, Mesh Deck, Cyber Deck Plus, Cardputer ADV, GPS time, API
 assumptions, settings backup, OTA, Fluffy Generator), then the human live checklist on the `m9` build.
 CI (`.github/workflows/build.yml`) runs on GitHub.
 OTA updates were added on 2026-10-28 (built without flashing): signed images
@@ -224,9 +243,21 @@ People were added on 2026-10-31 (not built yet): profiles, follow, unfollow,
 poke and a user's entries, opened from rooms, conversations, entries and
 guild members (`lib/core/src/people/`, `src/app/people_worker.cpp`,
 `src/screens/profile.cpp`). Blocking is website-only (no API call).
+My profile was added on 2026-11-01 (branch `my-profile`, its own PR and
+release): a Home **Profile** tile and row (with People) opening your own
+profile, whose Entries lists your posts; with eight tiles Unread no longer
+spans the top row (`ui/home_items` `homeSpanFirst`).
 Unread (issue #3) was added on 2026-10-31 (not built yet): one screen of unread
 C-Mail, mentions and Feed notices, newest first (`ui/unread_inbox`,
 `src/screens/notifications.cpp`, `router::goFrom` for Back), from Home on every board.
+The Attaky Cyber Deck Plus (env `cyber_deck_plus`) came in PR #6 on
+2026-11-01 with three app changes for every board: a pinned "+ New entry" row
+first in the Feed, the connection state reaching live with no room open (and
+staying offline while signed out), and Tab opening the entry menu; plus
+Friends (Add/Remove friend in a message's menu, on the device only; its intent
+is an open question on the PR). The maintainer review moved the Core code both
+Attaky decks share into `src/hal/attaky/`; the Mesh Deck and Cyber Deck Plus
+hardware checks are open (docs/TESTING.md).
 The Fluffy Generator was added on 2026-10-31 (built without flashing; the
 T-Deck Plus hardware check and the flasher browser check are open): custom
 mascot art and phrases in a 4 KB `mascot` partition at 0xcb0000
@@ -237,9 +268,9 @@ The M5Stack Cardputer ADV (env `cardputer_adv`) was added on 2026-11-01
 feature flags (`lib/core/src/feature_flags.h`) cut it to cIRC rooms, with no OTA
 or mascot partition. Its panel offsets, ES8311 clock, push speed, key map and
 TLS heap headroom await the hardware check (docs/TESTING.md).
-The native suite is green: 660/660
+The native suite is green: 678/678
 (`pio test -e native`), and `scripts/build-upload-monitor.sh -B` builds all
-ten firmware envs.
+eleven firmware envs.
 
 Notes for whoever continues:
 - Each task follows test-driven development: write the plan's tests first, run

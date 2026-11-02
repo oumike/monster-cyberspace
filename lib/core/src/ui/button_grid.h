@@ -27,6 +27,11 @@ struct ButtonGrid {
 ButtonGrid buttonGrid(int cols, int top, int bottom, int count, int columns, int scrollRow,
                       int height = kButtonRows);
 
+// The most columns, up to count, whose buttons in a `cols` wide grid (as
+// buttonGrid lays them out) fit a label `longest` cells long inside their
+// outline; at least 1.
+int buttonColumnsFor(int cols, int count, int longest);
+
 // `s` on one line no wider than `width` cells: line breaks and runs of
 // spaces become one space, the ends are trimmed, and a cut ends in "…".
 std::u32string oneLine(std::u32string_view s, int width);

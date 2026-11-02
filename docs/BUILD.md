@@ -6,7 +6,7 @@
   build downloads the pioarduino platform (Arduino core 3.3 / ESP-IDF 5.5)
   into `.pio-core/`, kept apart from the shared `~/.platformio`.
 - A USB data cable. The ThinkNode M9's console runs through its USB-to-UART
-  bridge at 115200 baud, and so do the CrowPanels' and the Mesh Deck's (a CH340); the Wio Tracker
+  bridge at 115200 baud, and so do the CrowPanels', the Mesh Deck's and the Cyber Deck Plus's (a CH340); the Wio Tracker
   L2's, the T-Deck Plus's and the Cardputer ADV's run through the ESP32-S3's
   own USB, and the Xteink X4's through the ESP32-C3's.
 
@@ -22,8 +22,9 @@
 | `pager` | The firmware for the LilyGO T-LoRa Pager (keyboard and side wheel, no touch; not yet tried on hardware) |
 | `tdeck_pro` | The firmware for the LilyGO T-Deck Pro (e-paper, keyboard, touch; not yet tried on hardware) |
 | `mesh_deck` | The firmware for the Attaky Mesh Deck (d-pad, touch, keyboard module, notification light; boots on hardware, the rest not yet checked) |
+| `cyber_deck_plus` | The firmware for the Attaky Cyber Deck Plus (the Mesh Deck's Core plus a gamepad, Media I/O speaker and microSD; no GPS or LoRa; an early version was used on hardware by its contributor) |
 | `x4` | The firmware for the Xteink X4 (ESP32-C3, no PSRAM, e-paper, buttons only; a mostly passive client with text sent from web config; not yet built or tried on hardware) |
-| `cardputer_adv` | The firmware for the M5Stack Cardputer ADV (ESP32-S3FN8: 8 MB flash, no PSRAM; keyboard, 240x135 panel; no Guilds or Unread, no OTA; not yet tried on hardware) |
+| `cardputer_adv` | The firmware for the M5Stack Cardputer ADV (ESP32-S3FN8: 8 MB flash, no PSRAM; keyboard, 240x135 panel; no Guilds, no OTA; not yet tried on hardware) |
 | `native` | Host unit tests for `lib/core` |
 
 ```sh
@@ -36,6 +37,7 @@ pio run -e crowpanel50                # build for the CrowPanel Advance 5.0"
 pio run -e pager                      # build for the T-LoRa Pager
 pio run -e tdeck_pro                  # build for the T-Deck Pro
 pio run -e mesh_deck                  # build for the Mesh Deck
+pio run -e cyber_deck_plus            # build for the Cyber Deck Plus
 pio run -e x4                         # build for the Xteink X4
 pio run -e cardputer_adv              # build for the Cardputer ADV
 scripts/build-upload-monitor.sh m9    # build, flash, then open the serial monitor
@@ -53,6 +55,7 @@ scripts/build-upload-monitor.sh m9    # build, flash, then open the serial monit
 | `--pager`/`-P` | Board flag: LilyGO T-LoRa Pager (`pager`) |
 | `--tdeck-pro`/`-D` | Board flag: LilyGO T-Deck Pro (`tdeck_pro`) |
 | `--mesh-deck`/`-M` | Board flag: Attaky Mesh Deck (`mesh_deck`) |
+| `--cyber-deck-plus`/`-K` | Board flag: Attaky Cyber Deck Plus (`cyber_deck_plus`) |
 | `--x4`/`-X` | Board flag: Xteink X4 (`x4`) |
 | `--cardputer-adv`/`-C` | Board flag: M5Stack Cardputer ADV (`cardputer_adv`) |
 | `ENV` | Or name any firmware env directly; with neither, a menu lists every firmware env |
@@ -140,7 +143,9 @@ The browser flasher (<https://oumike.github.io/monster-cyberspace/>) is
 to GitHub Pages after each release: `scripts/pages-site.sh` copies the latest
 release's factory images into the site (browsers can't fetch release assets
 directly) and writes a manifest per board. A new board needs a name in the
-page's `LABELS`. Pages must be set to deploy from GitHub Actions. Boards
+page's `LABELS`, and one in `src/boards.js` of
+[monster-cyberspace-web](https://github.com/oumike/monster-cyberspace-web)
+(<https://monster.sumat.org/>). Pages must be set to deploy from GitHub Actions. Boards
 without the mascot partition (`NO_MASCOT_BOARDS` in `site/mascot.mjs`) hide
 Make your Fluffy and Phrases and flash the factory image alone; boards without
 OTA (`NO_OTA` in `site/index.html`) say updates come from the page.

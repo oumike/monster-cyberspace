@@ -161,6 +161,9 @@ void EntryScreen::typingKey(const KeyEvent& k) {
     case Action::Select:
       select();
       break;
+    // Tab opens the same menu as Options: on a keyboard-only deck it is the
+    // only key that can reach Reply without emptying the input line.
+    case Action::Palette:
     case Action::Options:
       openEntryMenu();
       break;

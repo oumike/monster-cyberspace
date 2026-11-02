@@ -6,6 +6,14 @@
 
 namespace rc {
 
+int buttonColumnsFor(int cols, int count, int longest) {
+  for (int c = count; c > 1; --c) {
+    const int width = (cols - 1) / c - 1;  // as buttonGrid
+    if (width - 2 >= longest) return c;
+  }
+  return 1;
+}
+
 ButtonGrid buttonGrid(int cols, int top, int bottom, int count, int columns, int scrollRow,
                       int height) {
   ButtonGrid out;

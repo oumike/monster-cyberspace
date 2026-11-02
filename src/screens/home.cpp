@@ -3,6 +3,9 @@
 #include "feature_flags.h"
 #include "hal/board.h"
 #include "screens/draw.h"
+#if RC_FEAT_PEOPLE
+#include "screens/people_nav.h"
+#endif
 #include "screens/screens.h"
 #include "store/locked_chat.h"
 #if RC_FEAT_FEED
@@ -18,7 +21,7 @@
 namespace rc {
 
 namespace {
-enum Item { kMessages, kUnread, kRooms, kCmail, kFeed, kGuilds, kSettings };
+enum Item { kMessages, kUnread, kRooms, kCmail, kFeed, kGuilds, kProfile, kSettings };
 
 Item toItem(HomeItem h) {
   switch (h) {
@@ -28,13 +31,14 @@ Item toItem(HomeItem h) {
     case HomeItem::Cmail: return kCmail;
     case HomeItem::Feed: return kFeed;
     case HomeItem::Guilds: return kGuilds;
+    case HomeItem::Profile: return kProfile;
     case HomeItem::Settings: return kSettings;
   }
   return kSettings;
 }
 
 // The tiles (touch boards), from the built features: unread spans the first
-// row; messages shows the mentions.
+// row when spanFirst(); messages shows the mentions; profile is yours.
 const std::vector<Item>& tiles() {
   static const std::vector<Item> v = [] {
     std::vector<Item> out;
@@ -56,6 +60,11 @@ const std::vector<Item>& listItems() {
   return v;
 }
 int tileCount() { return int(tiles().size()); }
+// Unread spans the first row only when the rest fill their rows of two.
+bool spanFirst() {
+  static const bool v = homeSpanFirst(homeItems(kBuiltFeatures));
+  return v;
+}
 constexpr int kTilePercent = 90;  // of the area between the status bar and the hint
 
 #if RC_FEAT_FEED
@@ -77,7 +86,7 @@ int feedUnread() { return 0; }
 
 int unreadCount() {
 #if RC_FEAT_UNREAD
-  return unreadTotal(gatherUnread());
+  return countUnread();  // no copies: this runs every frame
 #else
   return 0;
 #endif
@@ -131,6 +140,13 @@ void HomeScreen::openItem(int item) {
       router::go(router::Id::GuildList);
       break;
 #endif
+#if RC_FEAT_PEOPLE
+    case kProfile:
+      // Your own profile: its Entries item lists your posts.
+      if (app().user.empty()) ui::banner("Not signed in", true);
+      else people::openProfile(app().user);
+      break;
+#endif
     case kSettings:
       router::go(router::Id::Settings);
       break;
@@ -181,7 +197,7 @@ void HomeScreen::onKey(const KeyEvent& k) {
           colTop_ = std::min(colTop_, tileSel_);
           colTop_ = std::max(colTop_, tileSel_ - colVisible_ + 1);
         } else {
-          tileSel_ = tileMove(tileSel_, tileCount(), k.action, true);
+          tileSel_ = tileMove(tileSel_, tileCount(), k.action, spanFirst());
         }
         break;
       case Action::Select:
@@ -249,6 +265,8 @@ void HomeScreen::renderTiles(Grid& g, const Theme& t, const std::vector<TileRect
         return {U"feed", utf8ToU32(std::to_string(feed) + " unread"), feed > 0};
       case kGuilds:
         return {U"guilds", U"", false};
+      case kProfile:
+        return {U"profile", a.user.empty() ? std::u32string() : utf8ToU32("@" + a.user), false};
       case kSettings:
       default:
         return {U"settings", U"", false};
@@ -327,7 +345,7 @@ void HomeScreen::render(Grid& g, const Theme& t, int64_t) {
     for (bool gaps : {true, false}) {
       for (bool tryBig : {true, false}) {
         lay = homeLayout(board::panelWidth(), areaPx, g.rows(), tryBig ? bigCellSize(ts) : cellSize(ts),
-                         int(tiles().size()), kTilePercent, gaps, true);
+                         int(tiles().size()), kTilePercent, gaps, spanFirst());
         if (!lay.tiles.empty()) {
           big = tryBig;
           break;
@@ -427,6 +445,7 @@ void HomeScreen::render(Grid& g, const Theme& t, int64_t) {
       case kCmail: rows.push_back(ListItem{U"C-Mail", U""}); break;
       case kFeed: rows.push_back(ListItem{U"Feed", U""}); break;
       case kGuilds: rows.push_back(ListItem{U"Guilds", U""}); break;
+      case kProfile: rows.push_back(ListItem{U"Profile", U""}); break;
       case kSettings: rows.push_back(ListItem{U"Settings", U""}); break;
     }
   }

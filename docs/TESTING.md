@@ -308,7 +308,56 @@ Buttons: BOOT tap = Back, BOOT hold (0.6 s) = Home; Wake tap = screen off
 - [ ] With the LoRa/GPS module: the log shows `[meshdeck] LoRa radio asleep` and the high-pitched whine is gone; without one, `[meshdeck] no LoRa radio`
 - [ ] After flashing, the board restarts on its own; if the screen stays dark, note it (camillia-mt needed a power cycle there)
 - [ ] Wi-Fi setup (nothing saved): the AP is named `Monster-Cyberspace-MeshDeck` and `http://192.168.4.1` loads
-- [ ] Home is seven tiles, unread across the top, in every text size and orientation, with and without the keyboard module (messages shows `N mentions` while unread); Settings is a button grid: the d-pad moves the highlighted outline and scrolls to it, Select opens, Left from the first column and L1 go Home, taps work; dragging or tapping hides the outline (Settings and Home), and the next d-pad press only brings it back
+- [ ] Home is eight tiles in a 4x2 grid (unread first), in every text size and orientation, with and without the keyboard module (messages shows `N mentions` while unread); Settings is a button grid: the d-pad moves the highlighted outline and scrolls to it, Select opens, Left from the first column and L1 go Home, taps work; dragging or tapping hides the outline (Settings and Home), and the next d-pad press only brings it back
+
+**My profile from Home (any board with People):**
+
+- [ ] Touch boards: Home is eight tiles, two to a row, with `profile` and `@you` before settings; no tile is alone on a row; the d-pad moves between them in the grid (no wide first row); a build without People (none today) still has unread across the top
+- [ ] Keyed boards (M9, Pager, T-Deck Pro list, Cardputer ADV): the Home list has **Profile** before Settings
+- [ ] Profile opens your own profile, with no Follow, Message or Poke and no ⋯; Back goes Home
+- [ ] Under the bio (any profile): touch boards show Entries, Guild (with a guild), Website (with a website) and Refresh as one row of outlined buttons, or two rows when the labels don't fit (Large text, narrow panels); each tap opens it; keyed boards show them as a list
+- [ ] With keys (M9, Mesh Deck, T-Deck Plus, Pager, Cardputer ADV): Down scrolls the profile, then at its end moves into the links (outlined); the arrows pick, Centre opens; Up from the first link goes back to scrolling; Centre on your own profile goes straight to the links
+- [ ] Someone else's profile: Centre or ⋯ opens only Follow/Unfollow, Message and Poke; Entries, Guild, Website and Refresh are no longer in that menu
+- [ ] A long bio still scrolls fully above the links (drag and keys), and the links never cover it; a profile that fails to load says "couldn't load: try Refresh" and Refresh works
+- [ ] Entries lists your entries, newest first, pages with Down, and Centre opens one; Back returns to the list, then the profile
+- [ ] Live (human only): does the list include your non-public entries? (`GET /v1/users/<you>/posts`; note the answer in docs/USE.md's People section)
+- [ ] With no entries, the list says "no entries yet"; signed out, Profile shows "Not signed in"
+
+- [ ] After the shared Attaky Core code (`src/hal/attaky/`, 2026-11-01): it still boots with `[meshdeck] FT6636 ready`, `MAX17048 ready` and both keyboard halves found, and the d-pad, keyboard, touch, LEDs and battery behave as before
+
+**Cyber Deck Plus (`cyber_deck_plus`):**
+
+The contributor flashed PR #6's first version and used the panel, touch,
+keyboard, gamepad and the Feed on the device (2026-11-02); the HAL has
+changed since (shared Core code, audio idle, key queue), so every line below
+is open.
+
+- [ ] Boots: the serial log (UART0, CH340) shows the `[INFO] [APP] … on Cyber Deck Plus 1.0` banner, `[cyberdeck] FT6636 ready`, `MAX17048 ready`, `NS4168 ready`, both keyboard halves and both gamepad halves found, and `microSD card mounted` with a card in
+- [ ] Panel: landscape, upright, not mirrored, colours right (`PANEL_MADCTL` 0xA0, inverted)
+- [ ] Touch: a tap lands where the finger is in every corner (`TOUCH_ROT` 0), and a swipe scrolls
+- [ ] Core buttons as on the Mesh Deck: d-pad, Select (held: screen off and on), L1 (held: Home), R2 and BOOT toggle the screen; the screen-off hint reads "press R2 to wake" and R2 does wake it
+- [ ] Gamepad: the D-pad moves and repeats when held; A selects, held turns the screen off and on; B and L1 go back, held go Home; A never also moves Right; X, Y, L2, R1, R2 and the FN keys do nothing
+- [ ] Unplugging and replugging the gamepad: input keeps working from the Core and keyboard; after replugging, `gamepad … half found` and it works again
+- [ ] Keyboard module: every key as on the Mesh Deck; unplug and replug as there
+- [ ] Mashing keys on the keyboard, the gamepad and the Core at once drops nothing that matters and never hangs
+- [ ] Speaker: with the buzzer on, a mention and a C-Mail beep cleanly (no click at the start or end); with nothing playing there is no hiss, hum or pop, including the moment, 1 s after a beep, when the I2S channel stops, and the next beep after it
+- [ ] Speaker at boot: no pop or noise from power-on to the splash
+- [ ] SD (FAT32 card): Back up to SD card, then Restore from SD card…, both work; with no card, Settings says so
+- [ ] Notification light: as on the Mesh Deck
+- [ ] Battery %: Settings shows a sensible value; the charging state follows the USB cable
+- [ ] Wi-Fi setup (nothing saved): the AP is named `Monster-Cyberspace-CyberDeckPlus` and `http://192.168.4.1` loads
+- [ ] The flasher (GitHub Pages and monster.sumat.org) lists "Attaky Cyber Deck Plus" and flashes the release image; OTA finds `cyber-deck-plus` images
+
+**Feed New entry row, connection state and Friends (any board, PR #6):**
+
+- [ ] The Feed opens with **+ New entry** selected; Centre (or a tap) opens New entry; Down moves to the newest entry; the empty, loading and offline lines show under the row, not over it, in every text size
+- [ ] On the X4 the row says to write from web config instead of opening the composer
+- [ ] Returning from an entry to the Feed keeps that entry selected, not the New entry row
+- [ ] With Wi-Fi up, signed in and no room open (after boot, and after the screen goes off and on), the status marker is ● and the Feed, Entry, Composer and C-Mail don't say "offline"
+- [ ] Signed out (Log out, Wi-Fi up), the marker is ✕, not ◌
+- [ ] In a room, the marker goes ◌ while the stream reconnects and ● once it's live
+- [ ] Entry: Tab (on keyboard boards) opens the entry menu, also with text in the line, and the text stays
+- [ ] Friends: Add friend on someone's message, then the menu says Remove friend, also after a restart; Remove friend takes them off; your own messages offer neither; the same in a C-Mail conversation
 
 **Xteink X4 (`x4`):**
 
@@ -321,6 +370,7 @@ Buttons: BOOT tap = Back, BOOT hold (0.6 s) = Home; Wake tap = screen off
 - [ ] Web compose: `/` shows the Send box without a password; it names the open screen; text goes to the open room and to an open C-Mail; a C-Mail to a user and a new guild thread work; a second Send while one is going says so; with the page password, `/config` asks for it
 - [ ] Web config off (Settings → Web config): the page and `/api/compose` answer 403 on the network but still load on the setup AP
 - [ ] Sleep on battery: after Sleep after with no button, "Sleeping — updated hh:mm" shows and the board sleeps; it wakes after Wake every, rejoins and redraws, then sleeps again; a button during that keeps it awake; on USB it never sleeps
+- [ ] Timed wake with no room open (Home or the Feed showing): the counts and the Feed's first page are drawn before it sleeps again (since PR #6 the connection reads live with no room open, which starts the 15 s settle timer)
 - [ ] Battery %: Settings shows a sensible value; the charging state follows the USB cable
 - [ ] SD (FAT32 card): Back up to SD card, then Restore from SD card…, both work
 - [ ] Notifications: a mention and a Feed reply show on the Notifications screen and its Home count; Confirm opens each
@@ -340,8 +390,10 @@ Buttons: BOOT tap = Back, BOOT hold (0.6 s) = Home; Wake tap = screen off
 - [ ] Room read and send: the room list loads, a room shows its messages and new ones arrive live; a typed message sends once; a wide emoji in a message shows `?` in two cells and the line stays aligned
 - [ ] C-Mail: the list loads, a conversation shows its messages and new ones arrive live, a typed message sends once, and a new conversation starts from the list; the heap stays clear of out-of-memory or TLS errors
 - [ ] Feed and profiles: the Feed loads, an entry opens with its replies (30 at most), a reply and a new post send once; Author's profile opens, and follow, unfollow and poke work; the heap stays clear of out-of-memory or TLS errors
-- [ ] Home and Settings show no Guilds, Unread, Auto-update, Mascot, Text size, spell or emoji entries (Settings' Firmware line shows only the version), and web config has none of their sections
+- [ ] Home and Settings show no Guilds, Auto-update, Mascot, Text size, spell or emoji entries (Settings' Firmware line shows only the version), and web config has none of their sections
 - [ ] Wi-Fi setup (nothing saved): the AP is named `Monster-Cyberspace-Cardputer` and `http://192.168.4.1` loads
+- [ ] Unread: Home lists `Unread  N` second (after Messages); it opens the Unread screen with C-Mail, mentions and Feed notices newest first; opening one goes there and Back returns; Mark all read asks, then clears them
+- [ ] Unread heap: with a full inbox (several unread C-Mails, mentions and Feed notices), sit on Home, then on the Unread screen, for a minute each with Wi-Fi up; the `[mem]` free and largest-block numbers stay steady (no slow fall), and a room still opens and sends without out-of-memory or TLS errors
 - [ ] Flasher: picking M5Stack Cardputer ADV hides Make your Fluffy and Phrases, and Install writes the 8 MB factory image; a reflash without erase keeps the settings
 
 **GPS time, RTC and time zone (`m9`):**

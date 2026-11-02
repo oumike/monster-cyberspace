@@ -10,8 +10,13 @@ std::vector<HomeItem> homeItems(const Features& f) {
   if (f.cmail) out.push_back(HomeItem::Cmail);
   if (f.feed) out.push_back(HomeItem::Feed);
   if (f.guilds) out.push_back(HomeItem::Guilds);
+  if (f.people) out.push_back(HomeItem::Profile);
   out.push_back(HomeItem::Settings);
   return out;
+}
+
+bool homeSpanFirst(const std::vector<HomeItem>& items) {
+  return !items.empty() && items.front() == HomeItem::Unread && items.size() % 2 == 1;
 }
 
 }  // namespace rc

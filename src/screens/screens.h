@@ -259,6 +259,7 @@ class FeedListScreen : public Screen {
   std::vector<std::string> ids_;
   std::vector<std::string> replyIds_;  // Bookmarks: the bookmarked reply per row, or ""
   std::string selId_;      // the selected entry, kept across updates
+  bool empty_ = true;      // the feed holds no entries (its New entry row aside)
   bool dirty_ = true;      // rows need a rebuild
   bool loaded_ = false;    // a list arrived since enter
   bool failed_ = false;    // a side list failed before it ever loaded
@@ -309,6 +310,10 @@ class ProfileScreen : public Screen {
   void menuKey(const KeyEvent&);
   void ask(int act);  // the confirm before a follow, unfollow or poke
   void send(int act);
+  void doAct(int act);  // a picked action or link
+  void buildLinks();    // links_ for the profile shown
+  void renderLinks(Grid& g, const Theme& t, int top, int bottom);
+  int linksTop(const Grid& g) const;  // the first row of the links under the text
 
   std::string user_;
   TextView text_;
@@ -317,6 +322,14 @@ class ProfileScreen : public Screen {
   Overlay box_;
   LinkView link_;
   std::vector<int> acts_;  // the menu's rows, as ProfileAct values
+  // Under the text: Entries, Guild, Website, Refresh, as buttons on touch
+  // boards and a list elsewhere. With keys, Down at the text's end moves the
+  // focus into them and Up from their first row moves it back.
+  std::vector<int> linkActs_;
+  std::vector<ListItem> links_;
+  ButtonPad pad_;
+  bool linksFocus_ = false;
+  int linkSel_ = 0;  // the list's selection (boards without touch)
   int pending_ = 0;        // the act the confirm sends
   bool menu_ = false, confirm_ = false, linkOpen_ = false;
   bool loaded_ = false, failed_ = false, missing_ = false;
@@ -361,6 +374,9 @@ class GuildListScreen : public Screen {
 #if RC_FEAT_UNREAD
 // Everything the Unread screen lists, newest first.
 std::vector<UnreadItem> gatherUnread();
+// unreadTotal(gatherUnread()) without copying anything: Home shows it every
+// frame, and the Unread screen rebuilds its rows only when it changes.
+int countUnread();
 
 // Unread: unread C-Mail conversations, cIRC mentions and Feed/guild notices
 // together, newest first (ui/unread_inbox.h). Back from what it opens comes
@@ -370,6 +386,7 @@ class NotificationsScreen : public Screen {
   void enter(const std::string&) override {
     closeOverlays();
     marking_ = false;
+    shownCount_ = -1;  // rebuild on the first frame
   }
   void leave() override { closeOverlays(); }
   void onKey(const KeyEvent&) override;
@@ -388,6 +405,12 @@ class NotificationsScreen : public Screen {
   ListView list_;
   Overlay box_;
   std::vector<UnreadItem> items_;  // as drawn
+  // The rows are rebuilt when the count or marking_ changes, and once a
+  // second for edited text, not every frame: on boards without PSRAM the
+  // copies would churn the heap 30 times a second.
+  int shownCount_ = -1;
+  bool shownMarking_ = false;
+  int64_t builtAt_ = 0;
   bool confirm_ = false;  // box_ asks to mark all read
   bool marking_ = false;  // a MarkAllRead is in flight
 };

@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+#include "cs/api_parse.h"
+
 namespace rc {
 
 // One row of the Unread screen: an unread C-Mail conversation, cIRC mention
@@ -26,5 +28,12 @@ std::vector<UnreadItem> mergeUnread(std::vector<UnreadItem> cmail, std::vector<U
 
 // The sum of the items' counts.
 int unreadTotal(const std::vector<UnreadItem>& items);
+
+// The unread C-Mail messages the Unread screen lists: conversations with
+// unread messages whose partner isn't deleted.
+int unreadCmailCount(const std::vector<ConversationInfo>& conversations);
+// unreadTotal of the rows the screen would build, without building them (Home
+// shows it every frame): the C-Mail count plus one per mention and notice.
+int unreadCount(const std::vector<ConversationInfo>& conversations, size_t mentions, size_t notices);
 
 }  // namespace rc

@@ -180,12 +180,12 @@ void begin() {
 
 const char* name() { return "TDeckPro"; }
 const char* otaSlug() { return "tdeck-pro"; }
-int panelWidth() { return PANEL_W; }
+int panelWidth() { return UI_W; }
 int panelHeight() { return PANEL_H; }
 
 void pushRows(const uint16_t* frame, int y0, int y1) {
   if (!mono || y1 <= y0) return;
-  rc::packMono(frame, PANEL_W, y0, y1, mono);
+  rc::packMono(frame, UI_W, y0, y1, mono, PANEL_W, PANEL_LEFT_INSET);
   policy.changed(millis());
 }
 
@@ -229,7 +229,11 @@ void beep(int, int) {}
 const char* wakeHint() { return "press the side button to wake"; }
 
 bool hasTouch() { return tdeck_pro_touch::present(); }
-bool readTouch(int16_t& x, int16_t& y) { return tdeck_pro_touch::read(x, y); }
+bool readTouch(int16_t& x, int16_t& y) {
+  if (!tdeck_pro_touch::read(x, y)) return false;
+  x = int16_t(x < PANEL_LEFT_INSET ? 0 : x - PANEL_LEFT_INSET);
+  return true;
+}
 bool hasKeyboard() { return true; }
 // The keyboard has no good arrows: navigation is by touch, with the side strip.
 bool hasKeys() { return false; }

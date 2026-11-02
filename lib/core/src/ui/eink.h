@@ -7,8 +7,11 @@ namespace rc {
 // RGB565 to the 1-bit frame an e-paper panel takes: 1 is white, MSB first,
 // (w + 7) / 8 bytes a row. A pixel is black below half luminance.
 bool rgb565Dark(uint16_t c);
-// Packs rows [y0, y1) of a w-wide RGB565 frame into the same rows of mono.
-void packMono(const uint16_t* frame, int w, int y0, int y1, uint8_t* mono);
+// Packs rows [y0, y1) of a w-wide RGB565 frame into the same rows of mono,
+// which is monoW wide (0: w) with the frame starting at column x0; columns
+// outside the frame are white.
+void packMono(const uint16_t* frame, int w, int y0, int y1, uint8_t* mono, int monoW = 0,
+              int x0 = 0);
 
 enum class EinkRefresh : uint8_t { None, Partial, Full };
 

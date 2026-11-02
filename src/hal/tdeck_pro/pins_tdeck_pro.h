@@ -10,6 +10,10 @@
 namespace tdeck_pro {
 
 constexpr int PANEL_W = 240, PANEL_H = 320;
+// The bezel covers the panel's leftmost columns: the UI is drawn this far in,
+// and is that much narrower.
+constexpr int PANEL_LEFT_INSET = 6;
+constexpr int UI_W = PANEL_W - PANEL_LEFT_INSET;
 
 // Shared SPI bus: e-paper, SX1262 and microSD.
 constexpr int SPI_SCK = 36, SPI_MISO = 47, SPI_MOSI = 33;

@@ -7,16 +7,17 @@ bool rgb565Dark(uint16_t c) {
   return (r * 77 + g * 150 + b * 29) >> 8 < 128;
 }
 
-void packMono(const uint16_t* frame, int w, int y0, int y1, uint8_t* mono) {
-  const int stride = (w + 7) / 8;
+void packMono(const uint16_t* frame, int w, int y0, int y1, uint8_t* mono, int monoW, int x0) {
+  if (monoW <= 0) monoW = w;
+  const int stride = (monoW + 7) / 8;
   for (int y = y0; y < y1; ++y) {
     const uint16_t* src = frame + y * w;
     uint8_t* dst = mono + y * stride;
     for (int bx = 0; bx < stride; ++bx) {
       uint8_t byte = 0xFF;
       for (int bit = 0; bit < 8; ++bit) {
-        const int x = bx * 8 + bit;
-        if (x < w && rgb565Dark(src[x])) byte &= uint8_t(~(0x80 >> bit));
+        const int x = bx * 8 + bit - x0;
+        if (x >= 0 && x < w && rgb565Dark(src[x])) byte &= uint8_t(~(0x80 >> bit));
       }
       dst[bx] = byte;
     }

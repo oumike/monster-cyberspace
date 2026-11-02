@@ -37,6 +37,17 @@ void test_pack_rows_msb_first_white_is_one() {
   TEST_ASSERT_EQUAL_HEX8(0xAA, mono[4]);
 }
 
+void test_pack_rows_at_offset_into_wider_frame() {
+  // A 6-wide frame packed 3 px in from the left of a 12-wide mono frame: the
+  // first three columns and the right padding stay white.
+  uint16_t frame[6 * 1];
+  for (uint16_t& p : frame) p = 0x0000;
+  uint8_t mono[2] = {0x00, 0x00};
+  packMono(frame, 6, 0, 1, mono, 12, 3);
+  TEST_ASSERT_EQUAL_HEX8(0xE0, mono[0]);  // x 3..7 black
+  TEST_ASSERT_EQUAL_HEX8(0x7F, mono[1]);  // x 8 black, 9..15 white
+}
+
 void test_first_refresh_is_full() {
   EinkPolicy p;
   expectDue(EinkRefresh::None, p.due(0, 0, false));
@@ -115,6 +126,7 @@ int main(int, char**) {
   UNITY_BEGIN();
   RUN_TEST(test_dark_threshold);
   RUN_TEST(test_pack_rows_msb_first_white_is_one);
+  RUN_TEST(test_pack_rows_at_offset_into_wider_frame);
   RUN_TEST(test_first_refresh_is_full);
   RUN_TEST(test_min_gap_between_refreshes);
   RUN_TEST(test_waits_for_typing_to_pause);

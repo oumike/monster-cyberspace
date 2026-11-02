@@ -275,6 +275,7 @@ Buttons: BOOT tap = Back, BOOT hold (0.6 s) = Home; Wake tap = screen off
 
 - [ ] Boots: the serial log (USB) shows `[boot] … on TDeckPro`, `[kb] keyboard found` and `[touch] CST328` or `[touch] CST3530`
 - [ ] E-paper: portrait, black on white, nothing cut off; the first frame is a full refresh, typing updates with partial refreshes once you pause, and ghosting clears every so often
+- [ ] The left edge of the text clears the bezel (`PANEL_LEFT_INSET`, 6 px, in `pins_tdeck_pro.h`), and taps still land on what they touch
 - [ ] Selections, the Home tiles, the symbol table and error banners are outlined, not filled; the splash cursor doesn't blink
 - [ ] Settings and web config show no Theme item
 - [ ] Every key types the right character, with Shift and Sym; holding Backspace repeats; Alt + W/A/S/D move, and repeat when held

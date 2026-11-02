@@ -314,7 +314,11 @@ Buttons: BOOT tap = Back, BOOT hold (0.6 s) = Home; Wake tap = screen off
 
 - [ ] Touch boards: Home is eight tiles, two to a row, with `profile` and `@you` before settings; no tile is alone on a row; the d-pad moves between them in the grid (no wide first row); a build without People (none today) still has unread across the top
 - [ ] Keyed boards (M9, Pager, T-Deck Pro list, Cardputer ADV): the Home list has **Profile** before Settings
-- [ ] Profile opens your own profile, with no Follow, Message or Poke; Entries is the first action; Back goes Home
+- [ ] Profile opens your own profile, with no Follow, Message or Poke and no ⋯; Back goes Home
+- [ ] Under the bio (any profile): touch boards show Entries, Guild (with a guild), Website (with a website) and Refresh as one row of outlined buttons, or two rows when the labels don't fit (Large text, narrow panels); each tap opens it; keyed boards show them as a list
+- [ ] With keys (M9, Mesh Deck, T-Deck Plus, Pager, Cardputer ADV): Down scrolls the profile, then at its end moves into the links (outlined); the arrows pick, Centre opens; Up from the first link goes back to scrolling; Centre on your own profile goes straight to the links
+- [ ] Someone else's profile: Centre or ⋯ opens only Follow/Unfollow, Message and Poke; Entries, Guild, Website and Refresh are no longer in that menu
+- [ ] A long bio still scrolls fully above the links (drag and keys), and the links never cover it; a profile that fails to load says "couldn't load: try Refresh" and Refresh works
 - [ ] Entries lists your entries, newest first, pages with Down, and Centre opens one; Back returns to the list, then the profile
 - [ ] Live (human only): does the list include your non-public entries? (`GET /v1/users/<you>/posts`; note the answer in docs/USE.md's People section)
 - [ ] With no entries, the list says "no entries yet"; signed out, Profile shows "Not signed in"

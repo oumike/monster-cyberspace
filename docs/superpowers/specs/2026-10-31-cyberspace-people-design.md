@@ -33,8 +33,12 @@ only, so the device shows no follower names. Blocking stays website-only.
   `FeedListScreen` of `Kind::User`). `screens/people_nav` remembers where a
   profile was opened (up to 8 places), so Back returns there, Entry's base
   list included.
-- Menu: Follow/Unfollow, Message, Poke, Entries, Guild, Website, Refresh.
-  Self: no Follow, Message or Poke. Blocked: no Follow, Message or Poke.
+- Menu: Follow/Unfollow, Message, Poke. Self: no Follow, Message or Poke.
+  Blocked: no Follow, Message or Poke. With no actions there is no menu.
+- Links under the text (2026-11-01): Entries, Guild, Website, Refresh, as
+  outlined buttons on touch boards (`ButtonPad`, side by side when the labels
+  fit, `buttonColumnsFor`) and a list on the others. With keys, Down at the
+  text's end moves into them and Up from their first row moves back.
 - Entry points: room person menu, room message menu, conversation menu,
   entry and reply menus, guild members.
 - The demo build (`RC_FAKE_API`) has made-up profiles; `nobody` is 404, the

@@ -556,29 +556,38 @@ A profile shows someone's name, guild, Cyberspace number, join date, when
 they were last active, follower and entry counts, location, website and bio.
 You must be signed in. Open one from:
 
-- Home: **Profile** (the profile tile on touch boards) opens your own. Its
-  first action, **Entries**, lists the entries you've posted, newest first,
-  so you can go back to them; Centre opens one, Back returns to the list,
-  then to your profile
+- Home: **Profile** (the profile tile on touch boards) opens your own.
+  **Entries**, under your bio, lists the entries you've posted, newest
+  first, so you can go back to them; Centre opens one, Back returns to the
+  list, then to your profile
 - a room: the person menu (in Who's here) or a message's menu → **Profile**
 - a conversation: the room menu → **Profile**
 - an entry or a reply: its menu → **Author's profile**
 - a guild's **Members**: Centre or Right on a member (tap on touch boards)
 
-**On a profile:** Up/Down scroll. Centre, Right or **Ctrl** (⋯ on touch)
-opens the actions:
+**On a profile:** Up/Down scroll. Under the bio are **Entries**, **Guild**
+(when they have one), **Website** (when they have one) and **Refresh**:
+buttons in a row on touch boards (tap one), a list on the others. With keys,
+Down at the end of the profile moves into them (the d-pad picks, Centre
+opens) and Up from the first goes back to scrolling. Centre, Right or
+**Ctrl** (⋯ on touch) opens the actions, on someone else's profile:
 
 - **Follow** / **Unfollow** ask first, with the limit: "Follow @rain? (3 per
   minute, 15 per day)". The profile then says `you follow them`.
 - **Message** opens a C-Mail conversation with them.
 - **Poke** asks first: "Poke @rain? (1 an hour, 8 a day)". A refused poke
   ("Can't poke @rain") doesn't count against the limit.
+
+Under the bio:
+
 - **Entries** lists their public entries (on your own profile, yours; it says
   "no entries yet" until you post), paged like the Feed; Back returns to the
-  profile. Your own profile has no Follow, Message or Poke, so Entries is
-  first.
+  profile.
 - **Guild** opens their guild, **Website** shows the link with its QR code,
-  **Refresh** reloads the profile.
+  **Refresh** reloads the profile (also when it couldn't load).
+
+Your own profile, and one you blocked, has no actions, so there is no ⋯ and
+Centre goes straight to the links.
 
 Back returns to where you opened the profile. Nothing is retried; over a
 limit you get "Slow down: try in Ns" and nothing is sent.

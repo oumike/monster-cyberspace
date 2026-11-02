@@ -960,6 +960,26 @@ void test_button_grid_three_columns() {
   TEST_ASSERT_EQUAL(0, int(buttonGrid(9, 2, 19, 5, 3, 0).rects.size()));
 }
 
+// The profile's links: side by side when every label fits inside its outline.
+void test_button_columns_fit() {
+  // 40 cols: four buttons of (39 / 4) - 1 = 8, inside 6; "Website" is 7.
+  TEST_ASSERT_EQUAL(3, buttonColumnsFor(40, 4, 7));
+  TEST_ASSERT_EQUAL(4, buttonColumnsFor(40, 4, 6));
+  // 53 cols: four of 12, inside 10.
+  TEST_ASSERT_EQUAL(4, buttonColumnsFor(53, 4, 7));
+  // Every button laid out at the chosen count has the label's room.
+  for (int cols : {20, 26, 30, 40, 53, 80}) {
+    const int c = buttonColumnsFor(cols, 4, 7);
+    ButtonGrid b = buttonGrid(cols, 2, 30, 4, c, 0);
+    TEST_ASSERT_FALSE(b.rects.empty());
+    if (c > 1) TEST_ASSERT_TRUE(b.rects[0].c1 - b.rects[0].c0 - 1 >= 7);
+  }
+  // Never more columns than buttons, never fewer than one.
+  TEST_ASSERT_EQUAL(2, buttonColumnsFor(80, 2, 7));
+  TEST_ASSERT_EQUAL(1, buttonColumnsFor(10, 4, 7));
+  TEST_ASSERT_EQUAL(1, buttonColumnsFor(80, 0, 7));
+}
+
 void test_button_grid_taller_buttons() {
   // 4-row buttons: a pitch of 5, so rows 2..18 hold three button rows.
   ButtonGrid b = buttonGrid(53, 2, 19, 7, 1, 0, 4);
@@ -1082,6 +1102,7 @@ void test_guild_notice_text() {
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_button_grid_taller_buttons);
+  RUN_TEST(test_button_columns_fit);
   RUN_TEST(test_one_line_blurb);
   RUN_TEST(test_grid_dims);
   RUN_TEST(test_big_cells);

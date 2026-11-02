@@ -309,6 +309,10 @@ class ProfileScreen : public Screen {
   void menuKey(const KeyEvent&);
   void ask(int act);  // the confirm before a follow, unfollow or poke
   void send(int act);
+  void doAct(int act);  // a picked action or link
+  void buildLinks();    // links_ for the profile shown
+  void renderLinks(Grid& g, const Theme& t, int top, int bottom);
+  int linksTop(const Grid& g) const;  // the first row of the links under the text
 
   std::string user_;
   TextView text_;
@@ -317,6 +321,14 @@ class ProfileScreen : public Screen {
   Overlay box_;
   LinkView link_;
   std::vector<int> acts_;  // the menu's rows, as ProfileAct values
+  // Under the text: Entries, Guild, Website, Refresh, as buttons on touch
+  // boards and a list elsewhere. With keys, Down at the text's end moves the
+  // focus into them and Up from their first row moves it back.
+  std::vector<int> linkActs_;
+  std::vector<ListItem> links_;
+  ButtonPad pad_;
+  bool linksFocus_ = false;
+  int linkSel_ = 0;  // the list's selection (boards without touch)
   int pending_ = 0;        // the act the confirm sends
   bool menu_ = false, confirm_ = false, linkOpen_ = false;
   bool loaded_ = false, failed_ = false, missing_ = false;

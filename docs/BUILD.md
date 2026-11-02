@@ -24,7 +24,7 @@
 | `mesh_deck` | The firmware for the Attaky Mesh Deck (d-pad, touch, keyboard module, notification light; boots on hardware, the rest not yet checked) |
 | `cyber_deck_plus` | The firmware for the Attaky Cyber Deck Plus (the Mesh Deck's Core plus a gamepad, Media I/O speaker and microSD; no GPS or LoRa; an early version was used on hardware by its contributor) |
 | `x4` | The firmware for the Xteink X4 (ESP32-C3, no PSRAM, e-paper, buttons only; a mostly passive client with text sent from web config; not yet built or tried on hardware) |
-| `cardputer_adv` | The firmware for the M5Stack Cardputer ADV (ESP32-S3FN8: 8 MB flash, no PSRAM; keyboard, 240x135 panel; no Guilds or Unread, no OTA; not yet tried on hardware) |
+| `cardputer_adv` | The firmware for the M5Stack Cardputer ADV (ESP32-S3FN8: 8 MB flash, no PSRAM; keyboard, 240x135 panel; no Guilds, no OTA; not yet tried on hardware) |
 | `native` | Host unit tests for `lib/core` |
 
 ```sh

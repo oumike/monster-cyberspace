@@ -374,6 +374,9 @@ class GuildListScreen : public Screen {
 #if RC_FEAT_UNREAD
 // Everything the Unread screen lists, newest first.
 std::vector<UnreadItem> gatherUnread();
+// unreadTotal(gatherUnread()) without copying anything: Home shows it every
+// frame, and the Unread screen rebuilds its rows only when it changes.
+int countUnread();
 
 // Unread: unread C-Mail conversations, cIRC mentions and Feed/guild notices
 // together, newest first (ui/unread_inbox.h). Back from what it opens comes
@@ -383,6 +386,7 @@ class NotificationsScreen : public Screen {
   void enter(const std::string&) override {
     closeOverlays();
     marking_ = false;
+    shownCount_ = -1;  // rebuild on the first frame
   }
   void leave() override { closeOverlays(); }
   void onKey(const KeyEvent&) override;
@@ -401,6 +405,12 @@ class NotificationsScreen : public Screen {
   ListView list_;
   Overlay box_;
   std::vector<UnreadItem> items_;  // as drawn
+  // The rows are rebuilt when the count or marking_ changes, and once a
+  // second for edited text, not every frame: on boards without PSRAM the
+  // copies would churn the heap 30 times a second.
+  int shownCount_ = -1;
+  bool shownMarking_ = false;
+  int64_t builtAt_ = 0;
   bool confirm_ = false;  // box_ asks to mark all read
   bool marking_ = false;  // a MarkAllRead is in flight
 };

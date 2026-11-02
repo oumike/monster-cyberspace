@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 
+#include "cs/api_parse.h"
 #include "ui/unread_inbox.h"
 
 using namespace rc;
@@ -63,6 +64,27 @@ void test_empty() {
   TEST_ASSERT_EQUAL(0, unreadTotal(out));
 }
 
+// Home's count, without building the rows: the same conversations the Unread
+// screen lists (unread, partner not deleted), plus one per mention and notice.
+void test_count_matches_the_rows() {
+  std::vector<ConversationInfo> convs(4);
+  convs[0].unread = 3;
+  convs[1].unread = 0;
+  convs[2].unread = 2;
+  convs[2].partnerDeleted = true;  // not listed, so not counted
+  convs[3].unread = 1;
+  TEST_ASSERT_EQUAL(4, unreadCmailCount(convs));
+  TEST_ASSERT_EQUAL(4 + 2 + 5, unreadCount(convs, 2, 5));
+  // The rows the screen would build from the same data total the same.
+  std::vector<UnreadItem> cmail;
+  for (const auto& c : convs)
+    if (c.unread > 0 && !c.partnerDeleted) cmail.push_back(item(UnreadKind::Cmail, "c", 1, c.unread));
+  std::vector<UnreadItem> mentions(2, item(UnreadKind::Mention, "m", 1));
+  std::vector<UnreadItem> feed(5, item(UnreadKind::Feed, "f", 1));
+  TEST_ASSERT_EQUAL(unreadTotal(mergeUnread(cmail, mentions, feed)), unreadCount(convs, 2, 5));
+  TEST_ASSERT_EQUAL(0, unreadCount({}, 0, 0));
+}
+
 int main(int, char**) {
   UNITY_BEGIN();
   RUN_TEST(test_merges_newest_first_across_sources);
@@ -70,5 +92,6 @@ int main(int, char**) {
   RUN_TEST(test_unknown_times_go_last_in_source_order);
   RUN_TEST(test_total_counts_cmail_messages);
   RUN_TEST(test_empty);
+  RUN_TEST(test_count_matches_the_rows);
   return UNITY_END();
 }

@@ -390,8 +390,10 @@ is open.
 - [ ] Room read and send: the room list loads, a room shows its messages and new ones arrive live; a typed message sends once; a wide emoji in a message shows `?` in two cells and the line stays aligned
 - [ ] C-Mail: the list loads, a conversation shows its messages and new ones arrive live, a typed message sends once, and a new conversation starts from the list; the heap stays clear of out-of-memory or TLS errors
 - [ ] Feed and profiles: the Feed loads, an entry opens with its replies (30 at most), a reply and a new post send once; Author's profile opens, and follow, unfollow and poke work; the heap stays clear of out-of-memory or TLS errors
-- [ ] Home and Settings show no Guilds, Unread, Auto-update, Mascot, Text size, spell or emoji entries (Settings' Firmware line shows only the version), and web config has none of their sections
+- [ ] Home and Settings show no Guilds, Auto-update, Mascot, Text size, spell or emoji entries (Settings' Firmware line shows only the version), and web config has none of their sections
 - [ ] Wi-Fi setup (nothing saved): the AP is named `Monster-Cyberspace-Cardputer` and `http://192.168.4.1` loads
+- [ ] Unread: Home lists `Unread  N` second (after Messages); it opens the Unread screen with C-Mail, mentions and Feed notices newest first; opening one goes there and Back returns; Mark all read asks, then clears them
+- [ ] Unread heap: with a full inbox (several unread C-Mails, mentions and Feed notices), sit on Home, then on the Unread screen, for a minute each with Wi-Fi up; the `[mem]` free and largest-block numbers stay steady (no slow fall), and a room still opens and sends without out-of-memory or TLS errors
 - [ ] Flasher: picking M5Stack Cardputer ADV hides Make your Fluffy and Phrases, and Install writes the 8 MB factory image; a reflash without erase keeps the settings
 
 **GPS time, RTC and time zone (`m9`):**

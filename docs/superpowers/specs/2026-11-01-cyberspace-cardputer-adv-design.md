@@ -11,8 +11,10 @@ and send to it from the keyboard. No flashing until the user says so.
 
 User decisions:
 
-- **Guilds and Unread compiled out.** They are not in this build at all, to
-  save flash and RAM. (C-Mail, the Feed and People were added on 2026-11-01
+- **Guilds compiled out.** It is not in this build at all, to save flash and
+  RAM. (Unread was added later at the user's request: it stores nothing new,
+  costs ~12 KB of flash, and its count is taken without copying, since Home
+  shows it every frame. C-Mail, the Feed and People were added on 2026-11-01
   at the user's request: a conversation reuses the room's two streams, the
   Feed and profiles load over plain requests, so none adds a TLS connection;
   replies are capped at 30, `RC_MAX_REPLIES`, as on the X4.)

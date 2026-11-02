@@ -9,7 +9,7 @@ the LilyGO T-Deck Plus followed, then the Elecrow CrowPanel Advance 3.5" and
 Cyber Deck Plus (contributed in PR #6; an early version was used on hardware by
 its contributor). The Xteink X4
 (branch `x4`) is written but has never been built. The M5Stack Cardputer ADV
-(8 MB, no PSRAM, no Guilds or Unread) is built, not yet tried on hardware. More
+(8 MB, no PSRAM, no Guilds) is built, not yet tried on hardware. More
 boards and Cyberspace features come later.
 
 - **Design spec:** `docs/superpowers/specs/2026-10-25-cyberspace-m9-circ-design.md`
@@ -86,7 +86,7 @@ pio run -e tdeck_pro        # LilyGO T-Deck Pro (e-paper)
 pio run -e mesh_deck        # Attaky Mesh Deck
 pio run -e cyber_deck_plus  # Attaky Cyber Deck Plus
 pio run -e x4               # Xteink X4 (ESP32-C3, no PSRAM)
-pio run -e cardputer_adv    # M5Stack Cardputer ADV (8 MB, no PSRAM, no Guilds or Unread)
+pio run -e cardputer_adv    # M5Stack Cardputer ADV (8 MB, no PSRAM, no Guilds)
 scripts/build-upload-monitor.sh m9   # flash + serial monitor (115200); -w for the Wio L2, -t for the T-Deck Plus, -3/-5 for the CrowPanels, -P for the Pager, -D for the T-Deck Pro, -M for the Mesh Deck, -K for the Cyber Deck Plus, -X for the X4, -C for the Cardputer ADV; --help for options
 scripts/build-upload-monitor.sh -B   # build every firmware env, no device needed
 scripts/screenshot.py PORT [--watch]  # PNG screenshots over the serial console (no device writes)
@@ -169,8 +169,11 @@ clocked from BCLK (`mclkFromBclk`), battery ADC and SD; no touch, RTC or GPS.
 Text is fixed at Compact 6x12 (`board::fixedTextSize`; Text size hidden in
 Settings and web config). Feature flags in `lib/core/src/feature_flags.h`
 (`RC_FEAT_CMAIL`/`FEED`/`GUILDS`/`PEOPLE`/`UNREAD`/`SPELL`/`EMOJI`/`OTA`/`MASCOT`,
-all 1 by default; `RC_FEAT_ENTRIES`/`COMPOSER` follow) are all 0 there: rooms
-only, a wide emoji draws `?`. `RC_MONO_CELLS` (default `RC_LOW_MEM`) is 0 so
+all 1 by default; `RC_FEAT_ENTRIES`/`COMPOSER` follow): there `GUILDS`,
+`SPELL`, `EMOJI`, `OTA` and `MASCOT` are 0, so it has cIRC, C-Mail, the Feed,
+People and Unread, and a wide emoji draws `?`. Unread's Home count is
+`countUnread()` (no copies, it runs every frame) and its screen rebuilds its
+rows only when the count changes or once a second. `RC_MONO_CELLS` (default `RC_LOW_MEM`) is 0 so
 it keeps colour; `src/sys/string_instances.cpp` keeps Matter/BLE out of the
 link. `NO_OTA_ENVS` in `scripts/release.sh` ships it a factory image only,
 and the flasher hides Make your Fluffy and Phrases for it.
@@ -265,7 +268,7 @@ The M5Stack Cardputer ADV (env `cardputer_adv`) was added on 2026-11-01
 feature flags (`lib/core/src/feature_flags.h`) cut it to cIRC rooms, with no OTA
 or mascot partition. Its panel offsets, ES8311 clock, push speed, key map and
 TLS heap headroom await the hardware check (docs/TESTING.md).
-The native suite is green: 677/677
+The native suite is green: 678/678
 (`pio test -e native`), and `scripts/build-upload-monitor.sh -B` builds all
 eleven firmware envs.
 

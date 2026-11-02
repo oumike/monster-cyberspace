@@ -86,7 +86,7 @@ int feedUnread() { return 0; }
 
 int unreadCount() {
 #if RC_FEAT_UNREAD
-  return unreadTotal(gatherUnread());
+  return countUnread();  // no copies: this runs every frame
 #else
   return 0;
 #endif

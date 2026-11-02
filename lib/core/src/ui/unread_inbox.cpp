@@ -22,4 +22,15 @@ int unreadTotal(const std::vector<UnreadItem>& items) {
   return n;
 }
 
+int unreadCmailCount(const std::vector<ConversationInfo>& conversations) {
+  int n = 0;
+  for (const auto& c : conversations)
+    if (c.unread > 0 && !c.partnerDeleted) n += c.unread;
+  return n;
+}
+
+int unreadCount(const std::vector<ConversationInfo>& conversations, size_t mentions, size_t notices) {
+  return unreadCmailCount(conversations) + int(mentions) + int(notices);
+}
+
 }  // namespace rc

@@ -57,6 +57,7 @@ Place base{Id::Splash, ""};
 struct Origin {
   bool set = false;
   Id from = Id::Home, to = Id::Home;
+  std::string fromArg;  // from's argument, when goFrom left it
 } origin;
 
 Screen* lookup(Id id) {
@@ -123,13 +124,14 @@ void go(Id id, const std::string& arg) {
 }
 
 void goFrom(Id from, Id id, const std::string& arg) {
+  std::string fromArg = curPlace.id == from ? curPlace.arg : std::string();
   go(id, arg);
-  origin = Origin{true, from, id};
+  origin = Origin{true, from, id, fromArg};
 }
 
 bool backToOrigin() {
   if (!origin.set || cur != origin.to) return false;
-  go(origin.from);
+  go(origin.from, origin.fromArg);
   return true;
 }
 

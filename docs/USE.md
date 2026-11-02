@@ -600,8 +600,10 @@ You must be signed in. Open one from:
 - an entry or a reply: its menu → **Author's profile**
 - a guild's **Members**: Centre or Right on a member (tap on touch boards)
 
-**On a profile:** Up/Down scroll. Under the bio are **Entries**, **Guild**
-(when they have one), **Website** (when they have one) and **Refresh**:
+**On a profile:** Up/Down scroll. Under the bio are **Entries**,
+**Bookmarks** (on your own profile: the Feed's Bookmarks list, and Back
+returns to the profile), **Guild** (when they have one), **Website** (when
+they have one) and **Refresh**:
 buttons in a row on touch boards (tap one), a list on the others. With keys,
 Down at the end of the profile moves into them (the d-pad picks, Centre
 opens) and Up from the first goes back to scrolling. Centre, Right or

@@ -133,6 +133,7 @@ void FeedListScreen::onKey(const KeyEvent& k) {
         router::go(router::Id::Profile, slug_);
         break;
       }
+      if (kind_ == Kind::Bookmarks && router::backToOrigin()) break;
       router::go(kind_ == Kind::Feed    ? router::Id::Home
                  : kind_ == Kind::Guild ? router::Id::GuildList
                                         : router::Id::FeedList);

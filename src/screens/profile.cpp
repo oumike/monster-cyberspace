@@ -26,7 +26,9 @@ namespace {
 
 constexpr int64_t kAgeRefreshMs = 60000;  // re-lay so "active 3m ago" keeps up
 
-enum ProfileAct { kFollow, kUnfollow, kMessage, kPoke, kEntries, kGuild, kWebsite, kRefresh };
+enum ProfileAct {
+  kFollow, kUnfollow, kMessage, kPoke, kEntries, kBookmarks, kGuild, kWebsite, kRefresh
+};
 
 std::string lower(std::string s) {
   for (char& c : s) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
@@ -57,8 +59,8 @@ View snapshot(const std::string& user) {
   return v;
 }
 
-// The actions menu: what you can do to someone else. Entries, Guild, Website
-// and Refresh are links under the text instead (ProfileScreen::buildLinks).
+// The actions menu: what you can do to someone else. Entries, Bookmarks (your
+// own profile), Guild, Website and Refresh are links under the text instead (ProfileScreen::buildLinks).
 std::vector<std::pair<int, const char32_t*>> actionsFor(const View& v) {
   std::vector<std::pair<int, const char32_t*>> out;
   if (!v.loaded || isSelf(v.p.username)) return out;
@@ -200,6 +202,7 @@ void ProfileScreen::buildLinks() {
   };
   if (v.loaded) {
     add(kEntries, U"Entries");
+    if (isSelf(v.p.username)) add(kBookmarks, U"Bookmarks");
     if (!v.p.guildSlug.empty()) add(kGuild, U"Guild");
     if (!v.p.websiteUrl.empty()) add(kWebsite, U"Website");
   }
@@ -330,6 +333,9 @@ void ProfileScreen::doAct(int act) {
       break;
     case kEntries:
       router::go(router::Id::UserPosts, user_);
+      break;
+    case kBookmarks:
+      router::goFrom(router::Id::Profile, router::Id::Bookmarks);
       break;
     case kGuild:
       if (!v.p.guildSlug.empty()) router::go(router::Id::Guild, v.p.guildSlug);

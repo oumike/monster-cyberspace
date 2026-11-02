@@ -3,6 +3,8 @@
 #include <Arduino.h>
 #include <Wire.h>
 
+#include "hal/attaky/attaky_core.h"
+#include "hal/attaky/pins_attaky_core.h"
 #include "hal/board.h"
 #include "hal/m9/panel_st7789.h"
 #include "hal/mesh_deck/io_mesh_deck.h"
@@ -29,14 +31,14 @@ void scan() {
   const uint32_t now = millis();
   if (now - probeMs >= kProbeMs) {
     probeMs = now;
-    mesh_deck::keyboardProbe();
+    attaky_core::keyboardProbe();
   }
-  mesh_deck::KeyChange ch[8];
-  const int n = mesh_deck::keyboardScan(ch, 8);
+  attaky_core::KeyChange ch[8];
+  const int n = attaky_core::keyboardScan(ch, 8);
   for (int i = 0; i < n; ++i) push(keys.key(ch[i].pos, ch[i].pressed, now));
   push(keys.poll(now));
   uint8_t pressed;
-  if (mesh_deck::readButtons(pressed)) {
+  if (attaky_core::readButtons(pressed)) {
     rc::KeyEvent ev[4];
     const int m = pad.update(pressed, now, ev, 4);
     for (int i = 0; i < m; ++i) push(ev[i]);
@@ -49,27 +51,27 @@ void begin() {
   Serial.printf("[INFO] [APP] Monster for Cyberspace v%s on Mesh Deck 1.0\n", RC_VERSION);
   Serial.printf("[INFO] [APP] Build: %s %s / toolchain: PlatformIO\n", __DATE__, __TIME__);
   Serial.println(mesh_deck::radioSleep() ? "[meshdeck] LoRa radio asleep" : "[meshdeck] no LoRa radio");
-  st7789::begin({mesh_deck::TFT_SCK, mesh_deck::TFT_MOSI, -1, mesh_deck::TFT_CS, mesh_deck::TFT_DC,
-                 mesh_deck::TFT_RST, mesh_deck::TFT_SPI_HZ, mesh_deck::PANEL_MADCTL, true});
-  ledcAttach(mesh_deck::TFT_BL, mesh_deck::TFT_BL_FREQ, 8);
+  st7789::begin({attaky_core::TFT_SCK, attaky_core::TFT_MOSI, -1, attaky_core::TFT_CS, attaky_core::TFT_DC,
+                 attaky_core::TFT_RST, attaky_core::TFT_SPI_HZ, attaky_core::PANEL_MADCTL, true});
+  ledcAttach(attaky_core::TFT_BL, attaky_core::TFT_BL_FREQ, 8);
   backlight(false);
-  mesh_deck::ioBegin();
-  mesh_deck::keyboardProbe();
+  attaky_core::ioBegin("meshdeck");
+  attaky_core::keyboardProbe();
   probeMs = millis();
-  if (!mesh_deck::keyboardPresent()) Serial.println("[meshdeck] no keyboard module");
+  if (!attaky_core::keyboardPresent()) Serial.println("[meshdeck] no keyboard module");
 }
 
 const char* name() { return "MeshDeck"; }
 const char* otaSlug() { return "mesh-deck"; }
-int panelWidth() { return mesh_deck::PANEL_W; }
-int panelHeight() { return mesh_deck::PANEL_H; }
+int panelWidth() { return attaky_core::PANEL_W; }
+int panelHeight() { return attaky_core::PANEL_H; }
 
 void pushRows(const uint16_t* frame, int y0, int y1) {
-  st7789::pushRows(frame, mesh_deck::PANEL_W, y0, y1);
+  st7789::pushRows(frame, attaky_core::PANEL_W, y0, y1);
 }
 
 void backlight(bool on) { backlightLevel(on ? 255 : 0); }
-void backlightLevel(uint8_t level) { ledcWrite(mesh_deck::TFT_BL, level); }
+void backlightLevel(uint8_t level) { ledcWrite(attaky_core::TFT_BL, level); }
 
 void displaySleep(bool sleep) {
   if (sleep) {
@@ -90,22 +92,16 @@ bool pollKey(rc::KeyEvent& key) {
   return true;
 }
 
-int batteryPercent() { return mesh_deck::batteryPercent(); }
+int batteryPercent() { return attaky_core::batteryPercent(); }
 
-// No charger status line: the gauge's charge rate rising, or a cell held
-// above its resting maximum, means USB power.
-bool externalPower() {
-  int16_t rate;
-  if (mesh_deck::batteryRate(rate) && rate > 20) return true;
-  return mesh_deck::batteryMv() > 4150;
-}
+bool externalPower() { return attaky_core::externalPower(); }
 
 void beep(int, int) {}  // no buzzer
 
 const char* wakeHint() { return "press R2 to wake"; }
 
 bool hasTouch() { return true; }
-bool hasKeyboard() { return mesh_deck::keyboardPresent(); }
+bool hasKeyboard() { return attaky_core::keyboardPresent(); }
 bool hasKeys() { return true; }
 bool backspaceIsBack() { return true; }
 bool anyInputWakes() { return false; }
@@ -117,13 +113,13 @@ bool hasKbLight() { return false; }
 uint8_t kbLightDefault() { return 0; }
 void kbLight(uint8_t, bool) {}
 bool hasNotifyLight() { return true; }
-void notifyLight(uint8_t rgb) { mesh_deck::setLed(rgb); }
+void notifyLight(uint8_t rgb) { attaky_core::setLed(rgb); }
 bool eink() { return false; }
 
 bool readTouch(int16_t& x, int16_t& y) {
   int16_t rx, ry;
-  if (!mesh_deck::readTouch(rx, ry)) return false;
-  rc::touchToFrame(rx, ry, mesh_deck::PANEL_NATIVE_W, mesh_deck::PANEL_NATIVE_H, mesh_deck::TOUCH_ROT,
+  if (!attaky_core::readTouch(rx, ry)) return false;
+  rc::touchToFrame(rx, ry, attaky_core::PANEL_NATIVE_W, attaky_core::PANEL_NATIVE_H, attaky_core::TOUCH_ROT,
                    x, y);
   return true;
 }

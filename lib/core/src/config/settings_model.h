@@ -35,6 +35,9 @@ struct Settings {
   ThemeId theme = ThemeId::Default;
   uint8_t rotation = 0;  // touch boards: see ui/rotation.h
   std::string lastRoom = "general";
+  // People added as friends from a message's menu. The server has no friends
+  // list, so this lives on the device.
+  std::vector<std::string> friends;
   // tz is the POSIX string applied; tzName its IANA name from the zone list,
   // empty for a custom string.
   std::string tzName = "Etc/UTC";

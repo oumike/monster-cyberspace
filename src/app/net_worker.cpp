@@ -921,11 +921,29 @@ class Worker {
       reconnectAt_ = 0;
     }
 
+    // Wi-Fi is up and an account is signed in, so nothing here is offline any
+    // more: raise the state to "reconnecting" instead of leaving it at 0.
+    // Only an open room's stream used to set 2, so with no room open the state
+    // stayed 0 and the Feed, Entry, Composer and C-Mail screens (which read 0
+    // as "no network") said "offline" and refused to send on a working
+    // network. Signed out, it stays 0 (✕): there is nothing to reconnect to.
+    if (screenOn_ && conn_ <= 0 && api_.signedIn()) setConn(1);
+
     if (!ready_) {
       if (api_.signedIn() && now >= nextBootstrap_) bootstrap();
-      if (!api_.signedIn() && auth_ != 0) post(EvtType::AuthState, auth_ = 0);
+      if (!api_.signedIn()) {
+        if (auth_ != 0) post(EvtType::AuthState, auth_ = 0);
+        setConn(0);
+      }
       if (!ready_) return;
     }
+    // With no room open there is no stream to report live, so settle on 2 once
+    // the account is usable: the status marker would otherwise sit on
+    // "reconnecting" for as long as the user stays out of a chat room.
+    // bootstrap() has already fetched the rooms and conversations by now, so
+    // the X4's timed wake (app/power_service.cpp), which waits for 2 to hold
+    // kSettleMs, still sees the counts in before it sleeps.
+    if (screenOn_ && room_.empty() && conn_ != 2) setConn(2);
 
 #if RC_FEAT_ENTRIES
     feed_.tick(now, screenOn_);

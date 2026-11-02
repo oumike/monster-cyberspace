@@ -16,6 +16,7 @@ RELEASE_ENVS=(
     pager
     tdeck_pro
     mesh_deck
+    cyber_deck_plus
     x4
     cardputer_adv
 )
@@ -51,6 +52,7 @@ env_label() {
         pager)       echo "LilyGO T-LoRa Pager" ;;
         tdeck_pro)   echo "LilyGO T-Deck Pro" ;;
         mesh_deck)   echo "Attaky Mesh Deck" ;;
+        cyber_deck_plus) echo "Attaky Cyber Deck Plus" ;;
         x4)          echo "Xteink X4" ;;
         cardputer_adv) echo "M5Stack Cardputer ADV" ;;
         *)           echo "$1" ;;

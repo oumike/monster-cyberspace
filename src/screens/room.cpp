@@ -13,6 +13,7 @@
 #include "screens/people_nav.h"
 #endif
 #include "store/locked_chat.h"
+#include "store/settings.h"
 #include "ui/widgets/palette.h"
 #include "ui/widgets/scroll_bar.h"
 #include "ui/wrap.h"
@@ -46,6 +47,27 @@ std::string firstUrl(const CircMessage& m) {
   return m.content.substr(p, e == std::string::npos ? std::string::npos : e - p);
 }
 
+
+bool isFriend(const std::string& name) {
+  if (name.empty()) return false;
+  const std::string key = lower(name);
+  const auto& f = app().cfg.friends;
+  return std::any_of(f.begin(), f.end(),
+                     [&](const std::string& n) { return lower(n) == key; });
+}
+
+// The server has no friends list, so this is kept on the device. Any message
+// from someone else offers it, in a room or in a conversation.
+void setFriend(const std::string& name, bool on) {
+  if (name.empty()) return;
+  auto& f = app().cfg.friends;
+  const std::string key = lower(name);
+  f.erase(std::remove_if(f.begin(), f.end(), [&](const std::string& n) { return lower(n) == key; }),
+          f.end());
+  if (on) f.push_back(name);
+  settings::saveFriends(f);
+  ui::banner(on ? "Friend added: " + name : "Friend removed: " + name, false);
+}
 
 }  // namespace
 
@@ -407,8 +429,11 @@ void RoomScreen::openMessageMenu() {
     menuKeys_.push_back(key);
   };
   bool own = lower(m.username) == lower(self_);
+  const bool friend_ = isFriend(m.username);
   if (!m.deleted) {
     if (!own && !dm_) add(U"Reply", "reply");
+    if (!own && !m.username.empty())
+      add(friend_ ? U"Remove friend" : U"Add friend", friend_ ? "unfriend" : "friend");
     if (hasStyle(m, "spoiler") && !revealed) add(U"Reveal", "reveal");
     else if (hasStyle(m, "art") || m.content.size() > 200) add(U"Show full", "full");
     if (!firstUrl(m).empty()) add(U"Show link", "link");
@@ -527,6 +552,10 @@ void RoomScreen::pickMenu() {
         insertText(utf8ToU32("@" + m.username + " "));
         log_.follow();
         ui::showKeyboard();
+      } else if (key == "friend") {
+        setFriend(m.username, true);
+      } else if (key == "unfriend") {
+        setFriend(m.username, false);
       } else if (key == "reveal") {
         lockedChat().with([&](ChatState& s) { s.revealed.insert(target_); });
         relayout_ = true;

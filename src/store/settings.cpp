@@ -3,7 +3,7 @@
 #include <Preferences.h>
 
 #include "config/phrases.h"
-#include "features.h"
+#include "feature_flags.h"
 #include "hal/board.h"
 #include "power/power_policy.h"
 #include "tz/zones.h"

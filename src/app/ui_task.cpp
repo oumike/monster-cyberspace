@@ -10,7 +10,7 @@
 #include "app/power_service.h"
 #include "app/queues.h"
 #include "chat/chat_source.h"
-#include "features.h"
+#include "feature_flags.h"
 #include "feed/compose.h"
 #if RC_FEAT_GUILDS
 #include "feed/feed_source.h"

@@ -4,7 +4,7 @@
 
 #include <algorithm>
 
-#include "features.h"
+#include "feature_flags.h"
 #include "hal/board.h"
 #include "ui/emoji_placeholder.h"
 #include "ui/fonts/cell10x18.h"

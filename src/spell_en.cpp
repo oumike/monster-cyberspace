@@ -1,6 +1,6 @@
 // The compiled-in English word list (tools/gen_spell_dict.py). Firmware only:
 // the host tests link lib/core's engine with a list of their own.
-#include "features.h"
+#include "feature_flags.h"
 
 #if RC_FEAT_SPELL
 #include "spell/spell.h"

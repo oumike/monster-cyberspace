@@ -15,7 +15,7 @@
 - Read `AGENTS.md` first; its hard rules bind every task (never call the live Cyberspace API; every write from a key press; no captive portal; never log passwords or tokens).
 - Hardware access outside `src/hal/` only through `src/hal/board.h`; never include `src/hal/<board>/` headers elsewhere.
 - Every `RC_FEAT_*` defaults to 1; with all of them 1, every existing board's behaviour is unchanged.
-- The flags: `RC_FEAT_CMAIL`, `RC_FEAT_FEED`, `RC_FEAT_GUILDS`, `RC_FEAT_PEOPLE`, `RC_FEAT_UNREAD`, `RC_FEAT_SPELL`, `RC_FEAT_EMOJI`, `RC_FEAT_OTA`, `RC_FEAT_MASCOT`, defined in `lib/core/src/features.h`.
+- The flags: `RC_FEAT_CMAIL`, `RC_FEAT_FEED`, `RC_FEAT_GUILDS`, `RC_FEAT_PEOPLE`, `RC_FEAT_UNREAD`, `RC_FEAT_SPELL`, `RC_FEAT_EMOJI`, `RC_FEAT_OTA`, `RC_FEAT_MASCOT`, defined in `lib/core/src/feature_flags.h`.
 - A feature's own `.cpp` files wrap their whole body in `#if RC_FEAT_X` (as HAL files do with `#if defined(BOARD_X)`); no `build_src_filter`.
 - Board macro `BOARD_CARDPUTER_ADV`; env name `cardputer_adv`; release file slug `cardputer-adv`; flasher label "M5Stack Cardputer ADV".
 - Pins (spec §2): panel SPI3 SCK 36, MOSI 35, CS 37, DC 34, RST 33, BL 38, 240×135, offsets X 53 / Y 40, inverted; TCA8418 I²C SDA 8, SCL 9, addr 0x34, INT 11; ES8311 addr 0x18, I²S BCLK 41, LRCK 43, DOUT 42, no MCLK; battery ADC GPIO 10; SD SCK 40, MOSI 14, MISO 39, CS 12.
@@ -36,19 +36,19 @@
 ### Task 1: Feature flags and Home's tile list
 
 **Files:**
-- Create: `lib/core/src/features.h`, `lib/core/src/ui/home_items.h`, `lib/core/src/ui/home_items.cpp`
+- Create: `lib/core/src/feature_flags.h`, `lib/core/src/ui/home_items.h`, `lib/core/src/ui/home_items.cpp`
 - Modify: `src/screens/home.cpp` (replace the fixed `kTiles[]` array, lines ~21-22, and everything indexed by `kTileCount`)
 - Test: `test/test_home_items/test_main.cpp`
 
 **Interfaces:**
-- Produces: `features.h` with the nine `#ifndef RC_FEAT_X / #define RC_FEAT_X 1` blocks, and
+- Produces: `feature_flags.h` with the nine `#ifndef RC_FEAT_X / #define RC_FEAT_X 1` blocks, and
   `struct rc::Features { bool cmail, feed, guilds, people, unread; };`,
   `constexpr rc::Features rc::kBuiltFeatures` (from the macros),
   `std::vector<HomeItem> rc::homeItems(const Features& f)` where `enum class rc::HomeItem { Unread, Messages, Rooms, Cmail, Feed, Guilds, Settings }`.
 
 - [x] **Step 1: Write the failing tests**: `test_all_features_keeps_todays_order` (all true → `Unread, Messages, Rooms, Cmail, Feed, Guilds, Settings`); `test_rooms_only` (all false → `Messages, Rooms, Settings`); `test_unread_off_only_drops_unread`. ("Messages" is today's last-room tile, part of rooms.)
 - [x] **Step 2: Run** `nice pio test -e native -f test_home_items`. Expected: build failure (missing header).
-- [x] **Step 3: Implement** `features.h` and `homeItems()`; switch `home.cpp` to build its tiles from `homeItems(kBuiltFeatures)` (map `HomeItem` to its existing `Item`), with tile count from the vector's size.
+- [x] **Step 3: Implement** `feature_flags.h` and `homeItems()`; switch `home.cpp` to build its tiles from `homeItems(kBuiltFeatures)` (map `HomeItem` to its existing `Item`), with tile count from the vector's size.
 - [x] **Step 4: Run** `nice pio test -e native`. Expected: all pass. Then `nice pio run -e m9`. Expected: SUCCESS.
 - [x] **Step 5: Commit** `git commit -m "Feature flags and a Home tile list that follows them"`
 
@@ -113,7 +113,7 @@ HAL: follow `src/hal/pager/` (keyboard over TCA8418 with `CardputerKeys`, I²C o
 - Modify: `platformio.ini` (`cardputer_adv` gets `-DRC_FEAT_CMAIL=0 -DRC_FEAT_FEED=0 -DRC_FEAT_GUILDS=0 -DRC_FEAT_PEOPLE=0 -DRC_FEAT_UNREAD=0`)
 
 **Interfaces:**
-- Consumes: `features.h` (Task 1). `router::Id` keeps every value.
+- Consumes: `feature_flags.h` (Task 1). `router::Id` keeps every value.
 
 Rooms (`room_list.cpp`, `room.cpp` as a room, not `RoomScreen{true}` the conversation) stay. `RoomScreen{true}` (`Id::Conversation`) is C-Mail and goes with it. Mentions in rooms still beep (speaker kept); the Unread screen is gone.
 

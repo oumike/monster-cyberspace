@@ -45,7 +45,7 @@ or RTC; time comes from NTP.
 
 ## 3. Feature flags
 
-New compile-time flags in one header, `lib/core/src/features.h`, each
+New compile-time flags in one header, `lib/core/src/feature_flags.h`, each
 defaulting to 1 so every existing board builds as it does today:
 
 `RC_FEAT_CMAIL`, `RC_FEAT_FEED`, `RC_FEAT_GUILDS`, `RC_FEAT_PEOPLE`,

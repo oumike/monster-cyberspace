@@ -1,4 +1,4 @@
-#include "features.h"
+#include "feature_flags.h"
 #if RC_FEAT_PEOPLE
 
 #include <cctype>

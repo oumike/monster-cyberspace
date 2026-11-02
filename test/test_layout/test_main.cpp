@@ -1013,6 +1013,20 @@ static Guild sampleGuild() {
   return g;
 }
 
+void test_topic_row() {
+  const Theme& t = defaultTheme();
+  FeedRow r = layoutTopicRow(Topic{"music", 42}, 40, t);
+  TEST_ASSERT_EQUAL_STRING("#music", u32ToUtf8(r.line1).c_str());
+  TEST_ASSERT_EQUAL_STRING("42 entries", u32ToUtf8(r.line2).c_str());
+  TEST_ASSERT_EQUAL_HEX16(t.fg, r.fg1);
+  TEST_ASSERT_EQUAL_HEX16(t.dim, r.fg2);
+  r = layoutTopicRow(Topic{"linux", 1}, 40, t);
+  TEST_ASSERT_EQUAL_STRING("1 entry", u32ToUtf8(r.line2).c_str());
+  r = layoutTopicRow(Topic{"averylongtopicname", 3}, 6, t, 4);
+  TEST_ASSERT_EQUAL(4, (int)r.line1.size());
+  TEST_ASSERT_EQUAL(6, (int)r.line2.size());
+}
+
 void test_guild_row_counts_role() {
   Guild g = sampleGuild();
   g.role = "member";
@@ -1161,6 +1175,7 @@ int main() {
   RUN_TEST(test_splash_custom_art);
   RUN_TEST(test_splash_blank_art_is_fluffy);
   RUN_TEST(test_button_grid_three_columns);
+  RUN_TEST(test_topic_row);
   RUN_TEST(test_guild_row_counts_role);
   RUN_TEST(test_guild_row_no_apprentices);
   RUN_TEST(test_row_without_icon_or_name);

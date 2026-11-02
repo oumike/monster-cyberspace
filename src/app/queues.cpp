@@ -61,6 +61,7 @@ void refuseCommand(const Command& c) {
       break;
     case CmdType::OpenWatched:
     case CmdType::OpenBookmarks:
+    case CmdType::OpenTopic:
     case CmdType::OpenGuild:
     case CmdType::GuildThreadsMore:
     case CmdType::OpenUserPosts:
@@ -68,6 +69,9 @@ void refuseCommand(const Command& c) {
       break;
     case CmdType::OpenGuilds:
       postEvent(Event{EvtType::GuildsUpdated, "", 0, false});
+      break;
+    case CmdType::OpenTopics:
+      postEvent(Event{EvtType::TopicsUpdated, "", 0, false});
       break;
     case CmdType::OpenMembers:
       postEvent(Event{EvtType::MembersUpdated, "", 0, false});

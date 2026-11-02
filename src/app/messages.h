@@ -51,6 +51,8 @@ enum class CmdType {
   Unwatch,               // a = postId
   OpenWatched,           // n = 1 to append the next page
   OpenBookmarks,         // n = 1 to append the next page
+  OpenTopics,            // every topic, most entries first
+  OpenTopic,             // a = topic name; n = 1 to append the next page
   // Guilds.
   OpenGuilds,            // n = 1 to append the next page
   OpenGuild,             // a = slug; loads the guild and its first threads
@@ -101,6 +103,7 @@ enum class EvtType {
   FeedWriteDone,        // a reply's result: ok; text = error message when !ok
   EntryPosted,          // text = postId; !ok: text = error (the entry wasn't posted)
   FeedAlert,            // text = banner; code = 1 to beep
+  TopicsUpdated,        // ok=false on a failed load
   // Guilds.
   GuildsUpdated,        // ok=false on a failed load
   GuildUpdated,         // ok=false; code = 404 when the guild is gone

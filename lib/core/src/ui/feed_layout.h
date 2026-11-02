@@ -27,6 +27,9 @@ struct FeedRow {
 FeedRow layoutFeedRow(const Entry& e, bool bookmarked, int64_t nowMs, int cols, const Theme& t,
                       int headCols = -1);
 
+// line1: "#name", cut to headCols (cols when negative); line2 dim: "42 entries".
+FeedRow layoutTopicRow(const Topic& topic, int cols, const Theme& t, int headCols = -1);
+
 struct EntryLayoutOptions {
   int cols = 53;
   TextSize size = TextSize::Compact;

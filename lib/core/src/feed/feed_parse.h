@@ -22,5 +22,8 @@ bool parseCreatedId(std::string_view body, std::string& id);
 bool parseBookmarks(std::string_view body, std::vector<Bookmark>& out, std::string& cursor);
 bool parseWatches(std::string_view body, std::vector<std::string>& postIds, std::string& cursor);
 bool parseWatching(std::string_view body, bool& watching);
+// GET /v1/topics, in the order given, at most `cap`; a topic with no name is
+// dropped. Any cursor is ignored (the docs show none).
+bool parseTopics(std::string_view body, std::vector<Topic>& out, size_t cap);
 
 }  // namespace rc

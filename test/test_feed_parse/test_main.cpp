@@ -128,6 +128,24 @@ void test_parse_bookmarks_watches() {
   TEST_ASSERT_TRUE(watching);
 }
 
+void test_parse_topics() {
+  std::vector<Topic> t{Topic{"stale", 1}};
+  TEST_ASSERT_TRUE(parseTopics(fx::kTopics, t, 10));
+  TEST_ASSERT_EQUAL(3, (int)t.size());
+  TEST_ASSERT_EQUAL_STRING("music", t[0].name.c_str());
+  TEST_ASSERT_EQUAL(42, t[0].posts);
+  TEST_ASSERT_EQUAL_STRING("linux", t[1].name.c_str());
+  TEST_ASSERT_EQUAL_STRING("synths", t[2].name.c_str());
+  TEST_ASSERT_EQUAL(0, t[2].posts);
+
+  TEST_ASSERT_TRUE(parseTopics(fx::kTopics, t, 2));
+  TEST_ASSERT_EQUAL(2, (int)t.size());
+  TEST_ASSERT_EQUAL_STRING("linux", t[1].name.c_str());
+
+  TEST_ASSERT_FALSE(parseTopics("<html>", t, 10));
+  TEST_ASSERT_FALSE(parseTopics("{\"data\":null}", t, 10));
+}
+
 void test_parse_rejects_garbage() {
   const char* bad[] = {"<html>", "{\"data\":null}"};
   for (const char* body : bad) {
@@ -159,6 +177,7 @@ int main(int, char**) {
   RUN_TEST(test_parse_replies_threading);
   RUN_TEST(test_parse_created_ids);
   RUN_TEST(test_parse_bookmarks_watches);
+  RUN_TEST(test_parse_topics);
   RUN_TEST(test_parse_rejects_garbage);
   return UNITY_END();
 }

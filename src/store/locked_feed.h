@@ -21,6 +21,8 @@ struct FeedState {
   FeedStore store;
   GuildStore guilds;
   std::vector<FeedNotice> notices;  // unread Feed notifications, newest last
+  std::vector<Topic> topics;        // GET /v1/topics, most entries first
+  bool topicsLoaded = false;
   bool loading = false;
 };
 

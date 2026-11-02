@@ -49,5 +49,13 @@ static const char* kWatches = R"({"data":[
 ],"cursor":"w2"})";
 
 static const char* kWatching = R"({"data":{"watching":true}})";
+// GET /v1/topics: most entries first; the docs show no cursor. One without a
+// name is dropped.
+static const char* kTopics = R"({"data":[
+  {"topicId":"t1","name":"music","postsCount":42,"createdAt":"2026-03-27T10:12:01.516Z"},
+  {"topicId":"t2","name":"linux","postsCount":1},
+  {"topicId":"t3","postsCount":9},
+  {"topicId":"t4","name":"synths"}
+]})";
 
 }  // namespace fx

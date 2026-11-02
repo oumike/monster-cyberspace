@@ -60,6 +60,8 @@ enum class Id {
   Profile,
   UserPosts,
   Notifications,  // the Unread screen
+  Topics,         // every topic, from the Feed's commands
+  Topic,          // a topic's entries; arg = its name
 };
 
 struct Place {

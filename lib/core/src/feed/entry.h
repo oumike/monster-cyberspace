@@ -25,4 +25,10 @@ struct Bookmark {
   std::string id, postId, replyId;  // id = bookmarkId
 };
 
+// A topic from GET /v1/topics. Its name is also the slug for its entries.
+struct Topic {
+  std::string name;
+  int posts = 0;  // postsCount
+};
+
 }  // namespace rc

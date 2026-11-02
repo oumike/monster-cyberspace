@@ -21,6 +21,11 @@ namespace {
 constexpr int64_t kRefreshMs = 120000;
 constexpr int kFeedLimit = 10, kReplyLimit = 20, kBookmarkMapLimit = 50, kBookmarkMapPages = 4;
 constexpr int kSideLimit = 10;
+#if RC_LOW_MEM
+constexpr size_t kMaxTopics = 60;
+#else
+constexpr size_t kMaxTopics = 200;
+#endif
 constexpr size_t kPreviewCodePoints = 80;
 constexpr size_t kMaxSeen = 200, kMaxNotices = 50;
 
@@ -88,6 +93,8 @@ bool FeedWorker::isFeedCommand(CmdType t) {
     case CmdType::Unwatch:
     case CmdType::OpenWatched:
     case CmdType::OpenBookmarks:
+    case CmdType::OpenTopics:
+    case CmdType::OpenTopic:
     case CmdType::OpenGuilds:
     case CmdType::OpenGuild:
     case CmdType::GuildThreadsMore:
@@ -126,6 +133,8 @@ void FeedWorker::handle(const Command& c) {
     case CmdType::Unwatch: watch(c, false); break;
     case CmdType::OpenWatched: openWatched(c.n == 1); break;
     case CmdType::OpenBookmarks: openBookmarks(c.n == 1); break;
+    case CmdType::OpenTopics: openTopics(); break;
+    case CmdType::OpenTopic: openTopic(c.a, c.n == 1); break;
     case CmdType::OpenGuilds: openGuilds(c.n == 1); break;
     case CmdType::OpenGuild: openGuild(c.a); break;
     case CmdType::GuildThreadsMore: guildThreadsMore(c.a); break;
@@ -160,6 +169,8 @@ void FeedWorker::signOut() {
     s.store.clear();
     s.guilds.clear();
     s.notices.clear();
+    s.topics.clear();
+    s.topicsLoaded = false;
     s.loading = false;
   });
   post(EvtType::FeedUpdated);
@@ -519,6 +530,56 @@ bool FeedWorker::resolveSide(const std::vector<std::string>& postIds, const std:
   });
   post(EvtType::SideListUpdated);
   return true;
+}
+
+// ---- topics ----
+
+void FeedWorker::openTopics() {
+  setLoading(true);
+  std::vector<Topic> topics;
+  ApiError e = api_.topics(topics, kMaxTopics);
+  setLoading(false);
+  if (!e.ok()) {
+    fail(e);
+    post(EvtType::TopicsUpdated, "", 0, false);
+    return;
+  }
+  lockedFeed().with([&](FeedState& s) {
+    s.topics = std::move(topics);
+    s.topicsLoaded = true;
+  });
+  post(EvtType::TopicsUpdated);
+}
+
+void FeedWorker::openTopic(const std::string& name, bool append) {
+  std::string cursor;
+  if (append) {
+    cursor = lockedFeed().with([](FeedState& s) { return s.store.sideCursor(); });
+    if (cursor.empty()) {
+      post(EvtType::SideListUpdated);
+      return;
+    }
+  } else {
+    lockedFeed().with([](FeedState& s) { s.store.setSideList({}, "", false); });
+  }
+  setLoading(true);
+  std::vector<Entry> entries;
+  std::string next;
+  ApiError e = fetchList(kSideLimit, [&](int limit) {
+    entries.clear();
+    return api_.topicPosts(name, cursor, limit, entries, next);
+  });
+  if (!e.ok()) {
+    setLoading(false);
+    fail(e);
+    post(EvtType::SideListUpdated, "", 0, false);
+    return;
+  }
+  lockedFeed().with([&](FeedState& s) {
+    s.store.setSideList(std::move(entries), next, append);
+    s.loading = false;
+  });
+  post(EvtType::SideListUpdated);
 }
 
 // ---- guilds ----

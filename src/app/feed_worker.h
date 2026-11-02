@@ -45,6 +45,8 @@ class FeedWorker {
   void watch(const Command& c, bool on);
   void openWatched(bool append);
   void openBookmarks(bool append);
+  void openTopics();
+  void openTopic(const std::string& name, bool append);
   // replyIds: parallel to postIds (Bookmarks only), the bookmarked reply or "".
   bool resolveSide(const std::vector<std::string>& postIds, const std::string& next, bool append,
                    const std::vector<std::string>& replyIds = {});

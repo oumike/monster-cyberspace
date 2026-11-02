@@ -29,6 +29,8 @@ RoomScreen conversation{true};
 FeedListScreen feedList{FeedListScreen::Kind::Feed};
 FeedListScreen watched{FeedListScreen::Kind::Watched};
 FeedListScreen bookmarks{FeedListScreen::Kind::Bookmarks};
+TopicsScreen topics;
+FeedListScreen topic{FeedListScreen::Kind::Topic};
 #endif
 #if RC_FEAT_ENTRIES
 EntryScreen entry;
@@ -79,6 +81,8 @@ Screen* lookup(Id id) {
     case Id::FeedList: return &feedList;
     case Id::Watched: return &watched;
     case Id::Bookmarks: return &bookmarks;
+    case Id::Topics: return &topics;
+    case Id::Topic: return &topic;
 #endif
 #if RC_FEAT_ENTRIES
     case Id::Entry: return &entry;

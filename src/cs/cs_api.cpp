@@ -500,6 +500,21 @@ ApiError CsApi::addBookmark(const std::string& postId, const std::string& replyI
   return e;
 }
 
+ApiError CsApi::topics(std::vector<Topic>& out, size_t cap) {
+  HttpResult r;
+  ApiError e = call("GET", "/v1/topics", "", r);
+  if (e.ok() && !parseTopics(r.body, out, cap)) return badBody(r.status);
+  return e;
+}
+
+ApiError CsApi::topicPosts(const std::string& name, const std::string& cursor, int limit,
+                           std::vector<Entry>& out, std::string& next) {
+  HttpResult r;
+  ApiError e = call("GET", "/v1/topics/" + enc(name) + "/posts" + pageQuery(limit, cursor), "", r);
+  if (e.ok() && !parseFeedPage(r.body, out, next)) return badBody(r.status);
+  return e;
+}
+
 ApiError CsApi::removeBookmark(const std::string& bookmarkId) {
   ApiError l = limited(bookmarkL_);
   if (!l.ok()) return l;

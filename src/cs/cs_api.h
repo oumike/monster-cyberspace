@@ -90,6 +90,11 @@ class CsApi {
   ApiError addBookmark(const std::string& postId, const std::string& replyId,
                        std::string& bookmarkId);
   ApiError removeBookmark(const std::string& bookmarkId);
+  // Topics: GET /v1/topics (no cursor documented; at most `cap` kept) and a
+  // topic's entries, by its name.
+  ApiError topics(std::vector<Topic>&, size_t cap);
+  ApiError topicPosts(const std::string& name, const std::string& cursor, int limit,
+                      std::vector<Entry>&, std::string& next);
 
   // Guilds. Cursors are "" at the end; a 404 from guild() reaches the caller as http 404.
   ApiError guilds(const std::string& cursor, int limit, std::vector<Guild>&, std::string& next);

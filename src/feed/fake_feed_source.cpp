@@ -189,6 +189,8 @@ class FakeFeedSource : public FeedSource {
   void follow(const Command& c, bool on);
   void poke(const Command& c);
   void openUserPosts(const std::string& username);
+  void openTopics();
+  void openTopic(const std::string& name);
 
   // Lock order: mu_, then lockedFeed(); never the other way round.
   std::mutex mu_;  // guards everything below
@@ -452,6 +454,11 @@ void FakeFeedSource::command(const Command& c) {
     case CmdType::Follow: follow(c, true); break;
     case CmdType::Unfollow: follow(c, false); break;
     case CmdType::Poke: poke(c); break;
+    case CmdType::OpenTopics: openTopics(); break;
+    case CmdType::OpenTopic:
+      if (c.n == 1) post(EvtType::SideListUpdated);  // one page
+      else openTopic(c.a);
+      break;
     case CmdType::OpenUserPosts:
       if (c.n == 1) post(EvtType::SideListUpdated);  // one page
       else openUserPosts(c.a);
@@ -1165,6 +1172,41 @@ void FakeFeedSource::openUserPosts(const std::string& username) {
     std::lock_guard<std::mutex> g(mu_);
     for (const Entry& e : entries_)
       if (e.author == username && entries.size() < size_t(kSidePage)) entries.push_back(e);
+  }
+  lockedFeed().with([&](FeedState& s) {
+    s.store.setSideList(std::move(entries), "", false);
+    s.loading = false;
+  });
+  post(EvtType::SideListUpdated);
+}
+
+// Topics: counted from the scripted entries, most entries first.
+void FakeFeedSource::openTopics() {
+  std::map<std::string, int> counts;
+  {
+    std::lock_guard<std::mutex> g(mu_);
+    for (const Entry& e : entries_)
+      for (const auto& t : e.topics) ++counts[t];
+  }
+  std::vector<Topic> topics;
+  for (const auto& kv : counts) topics.push_back(Topic{kv.first, kv.second});
+  std::stable_sort(topics.begin(), topics.end(),
+                   [](const Topic& a, const Topic& b) { return a.posts > b.posts; });
+  lockedFeed().with([&](FeedState& s) {
+    s.topics = std::move(topics);
+    s.topicsLoaded = true;
+  });
+  post(EvtType::TopicsUpdated);
+}
+
+void FakeFeedSource::openTopic(const std::string& name) {
+  std::vector<Entry> entries;
+  {
+    std::lock_guard<std::mutex> g(mu_);
+    for (const Entry& e : entries_) {
+      if (entries.size() >= size_t(kSidePage)) break;
+      if (std::find(e.topics.begin(), e.topics.end(), name) != e.topics.end()) entries.push_back(e);
+    }
   }
   lockedFeed().with([&](FeedState& s) {
     s.store.setSideList(std::move(entries), "", false);

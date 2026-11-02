@@ -101,7 +101,8 @@ void EntryScreen::closeOverlays() {
 void EntryScreen::leaveToList() {
   if (router::backToOrigin()) return;
   const router::Place base = router::lastBase();
-  if (base.id == router::Id::Guild || base.id == router::Id::UserPosts)
+  if (base.id == router::Id::Guild || base.id == router::Id::UserPosts ||
+      base.id == router::Id::Topic)
     router::go(base.id, base.arg);
   else router::go(router::Id::FeedList);
 }

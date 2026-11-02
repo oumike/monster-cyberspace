@@ -214,4 +214,18 @@ bool parseWatching(std::string_view body, bool& watching) {
   return true;
 }
 
+bool parseTopics(std::string_view body, std::vector<Topic>& out, size_t cap) {
+  JsonDocument doc;
+  std::string cursor;
+  if (!loadList(body, doc, cursor)) return false;
+  out.clear();
+  for (JsonVariantConst v : doc["data"].as<JsonArrayConst>()) {
+    if (out.size() >= cap) break;
+    std::string name = str(v["name"]);
+    if (name.empty()) continue;
+    out.push_back(Topic{std::move(name), v["postsCount"] | 0});
+  }
+  return true;
+}
+
 }  // namespace rc

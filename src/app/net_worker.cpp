@@ -703,8 +703,9 @@ class Worker {
     if (c.type == CmdType::OpenFeed || c.type == CmdType::FeedMore ||
         c.type == CmdType::FeedRefresh)
       post(EvtType::FeedUpdated);
+    if (c.type == CmdType::OpenTopics) post(EvtType::TopicsUpdated, 0, "", false);
     if (c.type == CmdType::OpenWatched || c.type == CmdType::OpenBookmarks ||
-        c.type == CmdType::OpenGuild || c.type == CmdType::GuildThreadsMore)
+        c.type == CmdType::OpenTopic || c.type == CmdType::OpenGuild || c.type == CmdType::GuildThreadsMore)
       post(EvtType::SideListUpdated, 0, "", false);
     if (c.type == CmdType::OpenGuilds) post(EvtType::GuildsUpdated, 0, "", false);
     if (c.type == CmdType::OpenMembers) post(EvtType::MembersUpdated, 0, "", false);

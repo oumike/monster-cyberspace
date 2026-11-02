@@ -49,6 +49,15 @@ void pushWrapped(std::vector<DisplayLine>& out, const std::u32string& text, uint
 
 }  // namespace
 
+FeedRow layoutTopicRow(const Topic& topic, int cols, const Theme& t, int headCols) {
+  FeedRow r;
+  r.line1 = cut(U"#" + utf8ToU32(topic.name), headCols < 0 ? cols : headCols);
+  r.line2 = cut(utf8ToU32(std::to_string(topic.posts) + (topic.posts == 1 ? " entry" : " entries")), cols);
+  r.fg1 = t.fg;
+  r.fg2 = t.dim;
+  return r;
+}
+
 std::string relativeAge(int64_t createdMs, int64_t nowMs) {
   int64_t s = std::max<int64_t>(nowMs - createdMs, 0) / 1000;
   if (s < 60) return "now";

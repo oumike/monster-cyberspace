@@ -220,10 +220,10 @@ class CmailListScreen : public Screen {
 
 #if RC_FEAT_ENTRIES
 // The Feed, Watched threads and Bookmarks lists: one class, three router
-// instances (spec §5).
+// instances (spec §5); also a guild's threads, a user's and a topic's entries.
 class FeedListScreen : public Screen {
  public:
-  enum class Kind { Feed, Watched, Bookmarks, Guild, User };
+  enum class Kind { Feed, Watched, Bookmarks, Guild, User, Topic };
   explicit FeedListScreen(Kind kind) : kind_(kind) {}
   void enter(const std::string&) override;
   void leave() override;
@@ -254,7 +254,7 @@ class FeedListScreen : public Screen {
   bool confirm_ = false;       // box_ holds a membership confirm
   CmdType pending_ = CmdType::OpenGuilds;  // the command that confirm sends
   std::vector<int> acts_;      // the palette's items, as PaletteItem values
-  std::string slug_;           // Guild: the open guild; User: the username
+  std::string slug_;           // Guild: the open guild; User: the username; Topic: its name
   GuildInfoView info_;
   std::vector<std::string> ids_;
   std::vector<std::string> replyIds_;  // Bookmarks: the bookmarked reply per row, or ""
@@ -268,6 +268,36 @@ class FeedListScreen : public Screen {
   int cols_ = 0;
   int64_t builtAt_ = 0;    // for the ages ("3h")
   const Theme* theme_ = nullptr;  // the rows bake its colours
+};
+#endif
+
+#if RC_FEAT_FEED
+// Every topic, most entries first (GET /v1/topics, read-only); one opens its
+// entries. Reached from the Feed's commands.
+class TopicsScreen : public Screen {
+ public:
+  void enter(const std::string&) override;
+  void leave() override { palette_ = false; }
+  void onKey(const KeyEvent&) override;
+  void onEvent(const Event&) override;
+  void render(Grid&, const Theme&, int64_t nowMs) override;
+  bool hasOverlay() const override { return palette_; }
+  void closeOverlays() override { palette_ = false; }
+
+ private:
+  void paletteKey(const KeyEvent&);
+  void open();
+  void rebuild(int cols, const Theme& t);
+  void remember();
+
+  EntryList list_;
+  Overlay box_;
+  bool palette_ = false;
+  std::vector<std::string> names_;  // per row
+  std::string selName_;
+  bool dirty_ = true, failed_ = false, waiting_ = false;
+  int cols_ = 0;
+  const Theme* theme_ = nullptr;
 };
 #endif
 

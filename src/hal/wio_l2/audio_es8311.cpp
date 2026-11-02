@@ -1,4 +1,5 @@
-#if defined(BOARD_WIO_L2) || defined(BOARD_PAGER) || defined(BOARD_CARDPUTER_ADV)
+#if defined(BOARD_WIO_L2) || defined(BOARD_PAGER) || defined(BOARD_CARDPUTER_ADV) || \
+    defined(BOARD_TDISPLAY_P4)
 
 #include "hal/wio_l2/audio_es8311.h"
 
@@ -14,7 +15,7 @@
 // Ported from platy-aprs's src/hal/audio.cpp (itself from camillia-mt's
 // pager/T-Deck tone players), on Arduino 3's ESP_I2S instead of the legacy
 // I2S driver. Shared by the Wio Tracker L2, the T-LoRa Pager and the
-// Cardputer ADV.
+// Cardputer ADV, and the T-Display P4.
 
 namespace es8311 {
 namespace {
@@ -37,19 +38,26 @@ void amp(bool on) {
 constexpr uint8_t kRegClk1 = 0x01, kRegClk2 = 0x02;
 constexpr uint8_t kClk1FromBclk = 0xB5, kClk2FromBclk = 0x18;
 
+TwoWire& wire() { return cfg.wire ? *cfg.wire : Wire; }
+
 bool writeCodec(uint8_t reg, uint8_t v) {
-  Wire.beginTransmission(cfg.addr);
-  Wire.write(reg);
-  Wire.write(v);
-  return Wire.endTransmission() == 0;
+  wire().beginTransmission(cfg.addr);
+  wire().write(reg);
+  wire().write(v);
+  return wire().endTransmission() == 0;
 }
 
+// Holds the bus; ok is false when tryLock gave up, and nothing may be sent.
 struct Guard {
+  bool ok = true;
   Guard() {
-    if (cfg.lock) cfg.lock();
+    if (cfg.tryLock)
+      ok = cfg.tryLock();
+    else if (cfg.lock)
+      cfg.lock();
   }
   ~Guard() {
-    if (cfg.unlock) cfg.unlock();
+    if (ok && cfg.unlock) cfg.unlock();
   }
 };
 
@@ -64,10 +72,12 @@ I2SClass i2s;
 audio_driver::DriverPins pins;
 audio_driver::AudioBoard codec(audio_driver::AudioDriverES8311, pins);
 
-bool codecBegin() {
+// busy: the bus was not free, which does not count as a failed attempt.
+bool codecBegin(bool& busy) {
+  busy = false;
   static bool pinsSet = false;
   if (!pinsSet) {
-    pins.addI2C(audio_driver::PinFunction::CODEC, Wire);
+    pins.addI2C(audio_driver::PinFunction::CODEC, wire());
     pins.addI2S(audio_driver::PinFunction::CODEC, cfg.mclkFromBclk ? -1 : cfg.mclk, cfg.bck,
                 cfg.ws, cfg.dout, -1);
     (void)codec.driver().setI2CAddress(cfg.addr);
@@ -84,6 +94,10 @@ bool codecBegin() {
   c.i2s.fmt = audio_driver::I2S_NORMAL;
   c.i2s.mode = audio_driver::MODE_SLAVE;
   Guard g;
+  if (!g.ok) {
+    busy = true;
+    return false;
+  }
   if (!codec.begin(c)) return false;
   if (cfg.mclkFromBclk &&
       !(writeCodec(kRegClk1, kClk1FromBclk) && writeCodec(kRegClk2, kClk2FromBclk)))
@@ -108,12 +122,15 @@ bool i2sBegin() {
 bool ensureReady() {
   if (ready) return true;
   if (tries >= 3) return false;
-  ++tries;
   // Codec, then I2S: the order platy-aprs runs on this board.
-  if (!codecBegin()) {
+  bool busy;
+  if (!codecBegin(busy)) {
+    if (busy) return false;
+    ++tries;
     Serial.println("[audio] ES8311 init failed");
     return false;
   }
+  ++tries;
   if (!i2sBegin()) return false;
   ready = true;
   Serial.println("[audio] ready");
@@ -155,24 +172,32 @@ void writeTone(uint16_t hz, uint16_t ms) {
   }
 }
 
+// A transfer that could not get the bus drops the tone (tryLock only).
 void play(const Job& job) {
   amp(true);
   delay(cfg.ampSettleMs);
+  bool on;
   {
     Guard g;
-    codec.setVolume(kVolActive);  // raised while still muted: inaudible
+    on = g.ok;
+    if (on) codec.setVolume(kVolActive);  // raised while still muted: inaudible
   }
-  writeSilence(6);  // prime the DMA so the start isn't clipped
-  {
+  if (on) {
+    writeSilence(6);  // prime the DMA so the start isn't clipped
     Guard g;
-    codec.setMute(false);
+    on = g.ok;
+    if (on) codec.setMute(false);
   }
-  writeTone(job.hz, job.ms);
-  writeSilence(20);
+  if (on) {
+    writeTone(job.hz, job.ms);
+    writeSilence(20);
+  }
   {
     Guard g;
-    codec.setMute(true);
-    codec.setVolume(kVolIdle);
+    if (g.ok) {
+      codec.setMute(true);
+      codec.setVolume(kVolIdle);
+    }
   }
   amp(false);
 }

@@ -12,11 +12,14 @@
 #include <cstring>
 
 #include "hal/board.h"
+#include "hal/tdisplay_p4/haptic_aw86224.h"
+#include "hal/tdisplay_p4/i2c1_tdisplay_p4.h"
 #include "hal/tdisplay_p4/io_xl9535.h"
 #include "hal/tdisplay_p4/keyboard_tdisplay_p4.h"
 #include "hal/tdisplay_p4/panel_rm69a10.h"
 #include "hal/tdisplay_p4/pins_tdisplay_p4.h"
 #include "hal/tdisplay_p4/touch_gt9895.h"
+#include "hal/wio_l2/audio_es8311.h"
 #include "input/keymap_tdisplay_p4.h"
 #include "ui/kb_light.h"
 #include "ui/scale2x.h"
@@ -150,6 +153,18 @@ bool pollKeyboard(rc::KeyEvent& key) {
   return key.action != rc::Action::None;
 }
 
+// The codec shares Wire1 with the keyboard expansion; a bus busy for longer
+// than this drops the tone.
+bool audioBusTake() { return i2c1::acquire(i2c1::Audio, 50) != nullptr; }
+void audioBusGive() { i2c1::release(); }
+
+// Bit 6 is the 5V rail the power-on sequence leaves on, and other parts sit
+// on it, so a beep only makes sure it is on and never turns it off. The
+// NS4150B amplifier has no enable line of its own.
+void audioPower(bool on) {
+  if (on) xl9535::set(EXP_AUDIO_POWER, true);
+}
+
 void clearPanel() {
   uint16_t* fb = panel::frame();
   if (!fb) return;
@@ -172,6 +187,12 @@ void begin() {
   pinMode(SIDE_BUTTON, INPUT_PULLUP);
   kbFitted = keyboard::detect();
   if (kbFitted) rotation = 0;
+  es8311::Config audio{CODEC_ADDR, I2S_MCLK, I2S_BCK, I2S_WS, I2S_DOUT, 8, audioPower, nullptr,
+                       audioBusGive};
+  audio.wire = &Wire1;
+  audio.tryLock = audioBusTake;
+  es8311::begin(audio);
+  tdp4::haptic::begin();
 }
 
 const char* name() { return "TDisplayP4"; }
@@ -269,8 +290,11 @@ bool hasNotifyLight() { return false; }
 void notifyLight(uint8_t) {}
 bool eink() { return false; }
 
-// Sound arrives in Task 8; GPS, RTC, battery and SD in Task 9.
-void beep(int, int) {}
+void beep(int freqHz, int ms) { es8311::beep(freqHz, ms); }
+bool hasHaptic() { return true; }
+void haptic(int ms) { tdp4::haptic::buzz(ms); }
+
+// GPS, RTC, battery and SD arrive in Task 9.
 int batteryPercent() { return -1; }
 bool externalPower() { return false; }
 bool hasGps() { return false; }

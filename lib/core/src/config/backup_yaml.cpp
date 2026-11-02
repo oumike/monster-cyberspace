@@ -66,7 +66,7 @@ struct Staged {
   Str format, version, timezone, tzName, ntpServer, pagePassword, apPassword, textSize, theme,
       rotation, lastRoom, email, refreshToken, screenOnSecs, kbLight,
       notifyLight, notifyTimeout, idleSecs, wakeMins;
-  Bool drawerOpen, buzzer, autoUpdate, screenSaver, spellCheck, webConfig;
+  Bool drawerOpen, buzzer, tapVibrate, alertVibrate, autoUpdate, screenSaver, spellCheck, webConfig;
   bool hasWifi = false, hasPhrases = false;
   std::vector<Item> wifi;
   std::vector<std::string> phrases;
@@ -287,7 +287,8 @@ bool parse(std::string_view yaml, Staged& st, std::string& err) {
              : key == "wakeMins"     ? &st.wakeMins
                                      : nullptr;
     Str ignored;
-    bool isBool = key == "drawerOpen" || key == "buzzer" || key == "autoUpdate" ||
+    bool isBool = key == "drawerOpen" || key == "buzzer" || key == "tapVibrate" ||
+                  key == "alertVibrate" || key == "autoUpdate" ||
                   key == "screenSaver" || key == "spellCheck" || key == "webConfig";
     bool known = s || isBool;
     if (key == "board" || key == "firmware" || key == "created") {
@@ -300,12 +301,14 @@ bool parse(std::string_view yaml, Staged& st, std::string& err) {
         return false;
       }
       if (isBool) {
-        Bool& dst = key == "buzzer"       ? st.buzzer
-                    : key == "autoUpdate"  ? st.autoUpdate
-                    : key == "screenSaver" ? st.screenSaver
-                    : key == "spellCheck"  ? st.spellCheck
-                    : key == "webConfig"   ? st.webConfig
-                                           : st.drawerOpen;
+        Bool& dst = key == "buzzer"         ? st.buzzer
+                    : key == "tapVibrate"   ? st.tapVibrate
+                    : key == "alertVibrate" ? st.alertVibrate
+                    : key == "autoUpdate"   ? st.autoUpdate
+                    : key == "screenSaver"  ? st.screenSaver
+                    : key == "spellCheck"   ? st.spellCheck
+                    : key == "webConfig"    ? st.webConfig
+                                            : st.drawerOpen;
         if (!readBool(rest, l.no, dst, err)) return false;
       } else {
         bool empty;
@@ -411,6 +414,8 @@ std::string backupToYaml(const Settings& s, const BackupMeta& m) {
        "  # 0 landscape, 1 portrait, 2 landscape 180, 3 portrait 180\n";
   o += std::string("drawerOpen: ") + boolStr(s.drawerOpen) + "\n";
   o += std::string("buzzer: ") + boolStr(s.buzzer) + "\n";
+  o += std::string("tapVibrate: ") + boolStr(s.tapVibrate) + "\n";
+  o += std::string("alertVibrate: ") + boolStr(s.alertVibrate) + "\n";
   o += std::string("autoUpdate: ") + boolStr(s.autoUpdate) + "  # install firmware updates on its own\n";
   o += "screenOnSecs: " + std::to_string(s.screenOnSecs) + "  # screen timeout; 0 never\n";
   o += std::string("screenSaver: ") + boolStr(s.screenSaver) + "  # at the timeout; false: screen off\n";
@@ -548,6 +553,8 @@ bool backupFromYaml(std::string_view yaml, Settings& inOut, std::string& err, st
   if (st.rotation.has) inOut.rotation = rotationFromIndex(rotation);
   if (st.drawerOpen.has) inOut.drawerOpen = st.drawerOpen.v;
   if (st.buzzer.has) inOut.buzzer = st.buzzer.v;
+  if (st.tapVibrate.has) inOut.tapVibrate = st.tapVibrate.v;
+  if (st.alertVibrate.has) inOut.alertVibrate = st.alertVibrate.v;
   // A board built without a feature ignores its setting.
   if (RC_FEAT_OTA && st.autoUpdate.has) inOut.autoUpdate = st.autoUpdate.v;
   if (st.screenOnSecs.has) inOut.screenOnSecs = uint32_t(screenOnSecs);

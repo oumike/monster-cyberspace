@@ -83,6 +83,8 @@ Settings full() {
   s.textSize = TextSize::Comfortable;
   s.drawerOpen = true;
   s.buzzer = false;
+  s.tapVibrate = false;
+  s.alertVibrate = false;
   s.autoUpdate = true;
   s.screenOnSecs = 300;
   s.screenSaver = false;
@@ -122,6 +124,8 @@ void expectSame(const Settings& a, const Settings& b) {
   TEST_ASSERT_TRUE(a.textSize == b.textSize);
   TEST_ASSERT_EQUAL(a.drawerOpen, b.drawerOpen);
   TEST_ASSERT_EQUAL(a.buzzer, b.buzzer);
+  TEST_ASSERT_EQUAL(a.tapVibrate, b.tapVibrate);
+  TEST_ASSERT_EQUAL(a.alertVibrate, b.alertVibrate);
   TEST_ASSERT_EQUAL(a.autoUpdate, b.autoUpdate);
   TEST_ASSERT_EQUAL_UINT32(a.screenOnSecs, b.screenOnSecs);
   TEST_ASSERT_EQUAL(a.screenSaver, b.screenSaver);
@@ -241,6 +245,30 @@ void test_bom_crlf_no_final_newline() {
   std::string err, note;
   TEST_ASSERT_TRUE_MESSAGE(run(y, s, err, note), err.c_str());
   TEST_ASSERT_FALSE(s.buzzer);
+}
+
+void test_vibrate_round_trip() {
+  Settings in;
+  in.tapVibrate = false;
+  in.alertVibrate = false;
+  std::string y = backupToYaml(in, {"M9", "0.1.0", 0});
+  TEST_ASSERT_NOT_EQUAL(std::string::npos,
+                        y.find("buzzer: true\ntapVibrate: false\nalertVibrate: false\n"));
+  Settings out;
+  std::string err, note;
+  TEST_ASSERT_TRUE_MESSAGE(run(y, out, err, note), err.c_str());
+  TEST_ASSERT_FALSE(out.tapVibrate);
+  TEST_ASSERT_FALSE(out.alertVibrate);
+}
+
+void test_vibrate_missing_keeps_current() {
+  Settings s;
+  s.tapVibrate = false;
+  s.alertVibrate = true;
+  std::string err, note;
+  TEST_ASSERT_TRUE_MESSAGE(run(std::string(kHead) + "buzzer: false\n", s, err, note), err.c_str());
+  TEST_ASSERT_FALSE(s.tapVibrate);
+  TEST_ASSERT_TRUE(s.alertVibrate);
 }
 
 void test_missing_keys_keep_current() {
@@ -503,6 +531,8 @@ int main(int, char**) {
   RUN_TEST(test_comment_only_value_is_empty);
   RUN_TEST(test_nul_rejected);
   RUN_TEST(test_bom_crlf_no_final_newline);
+  RUN_TEST(test_vibrate_round_trip);
+  RUN_TEST(test_vibrate_missing_keeps_current);
   RUN_TEST(test_missing_keys_keep_current);
   RUN_TEST(test_empty_wifi_list_clears);
   RUN_TEST(test_empty_token_replaces_current);

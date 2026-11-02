@@ -9,6 +9,7 @@
 #include "input/touch_resolve.h"
 #include "ui/tap_map.h"
 #include "ui/grid.h"
+#include "ui/haptics.h"
 #include "ui/rotation.h"
 
 using namespace rc;
@@ -692,6 +693,20 @@ void test_double_tap_wakes() {
   TEST_ASSERT_FALSE(d.feed(true, 5100));
 }
 
+void test_tap_buzz() {
+  Gesture tap;
+  tap.kind = GestureKind::Tap;
+  TouchOutput none, hit, osk;
+  hit.keys.push_back(KeyEvent{Action::Select});
+  osk.oskKey = 3;
+  TEST_ASSERT_FALSE(tapBuzz(tap, none));
+  TEST_ASSERT_TRUE(tapBuzz(tap, hit));
+  TEST_ASSERT_TRUE(tapBuzz(tap, osk));
+  Gesture drag;
+  drag.kind = GestureKind::Drag;
+  TEST_ASSERT_FALSE(tapBuzz(drag, hit));
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_tap);
@@ -735,5 +750,6 @@ int main() {
   RUN_TEST(test_rotation_labels_and_order);
   RUN_TEST(test_rotation_from_index_out_of_range);
   RUN_TEST(test_double_tap_wakes);
+  RUN_TEST(test_tap_buzz);
   return UNITY_END();
 }

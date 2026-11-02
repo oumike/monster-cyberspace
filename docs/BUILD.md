@@ -192,16 +192,17 @@ after a first build, and is the one camillia-mt releases as
 Neither our factory image nor OTA touches the C6: a P4 update leaves it as it
 was. Boards that already run a 2.12.13 C6 image (LilyGO's ESP-Hosted
 examples, camillia-mt, wadamesh) need nothing more. Otherwise provision it once
-through the board's **3.3 V UART** connector for the C6, as camillia-mt's
-BUILD.md describes:
+through the board's **3.3 V UART** connector for the C6:
 
 1. Power the T-Display P4 and connect a 3.3 V USB-to-UART adapter: adapter
    TX to board RX, adapter RX to board TX, GND to GND. Never use 5 V logic.
 2. Hold the coprocessor's BOOT button, tap its RESET button, then release BOOT.
-3. Write the image with camillia-mt's `scripts/flash-tdisplay-p4-c6.sh`:
+3. Write the image with `scripts/flash-tdisplay-p4-c6.sh` (from camillia-mt;
+   it needs esptool, which `.pio-core` has after a first build, and finds the
+   image there when you leave the path off):
 
    ```sh
-   ../../camillia/camillia-mt/scripts/flash-tdisplay-p4-c6.sh <c6-uart-port> \
+   scripts/flash-tdisplay-p4-c6.sh <c6-uart-port> \
      .pio-core/packages/framework-arduinoespressif32-libs/hosted/esp32c6-v2.12.13.bin
    ```
 

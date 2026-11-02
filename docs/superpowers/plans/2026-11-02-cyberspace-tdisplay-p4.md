@@ -234,10 +234,10 @@ Board behaviour in this task:
 - `pollKey`: side button press (debounced 30 ms, on press) → `Action::ScreenOff`. `wakeHint()` "press the side button to wake".
 - `hasTouch()` true (reads nothing until Task 6), `hasSdSlot()` true (null mount until Task 9), the rest return "none".
 
-- [ ] **Step 1: Make the changes above.**
-- [ ] **Step 2: Build** — `pio run -e tdisplay_p4`. Expected: SUCCESS. Fix P4-only compile errors in shared code with the smallest guard (e.g. S3-only headers); note each in the commit message.
-- [ ] **Step 3: Native suite still green** — `pio test -e native`
-- [ ] **Step 4: Commit** — `git commit -m "T-Display P4: env, XL9535, RM69A10 panel at 2x, board skeleton"`
+- [x] **Step 1: Make the changes above.**
+- [x] **Step 2: Build** — `pio run -e tdisplay_p4`. Expected: SUCCESS. Fix P4-only compile errors in shared code with the smallest guard (e.g. S3-only headers); note each in the commit message.
+- [x] **Step 3: Native suite still green** — `pio test -e native`
+- [x] **Step 4: Commit** — `git commit -m "T-Display P4: env, XL9535, RM69A10 panel at 2x, board skeleton"`
 
 ### Task 6: GT9895 touch
 

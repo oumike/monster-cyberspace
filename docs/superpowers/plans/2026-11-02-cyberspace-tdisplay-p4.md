@@ -298,9 +298,9 @@ Behaviour:
 **Interfaces:**
 - Produces: `hasGps`, `gpsPower`, `gpsRead`, `rtcRead`, `rtcWrite`, `batteryPercent`, `batteryVolts`, `externalPower`, `hasSdSlot`, `sdMount`, `sdUnmount` per `board.h`. Model on the Pager's `gps_rtc_pager.cpp` and `sd_pager.cpp`.
 
-- [ ] **Step 1: Implement.**
-- [ ] **Step 2: Build** — `pio run -e tdisplay_p4` SUCCESS
-- [ ] **Step 3: Commit** — `git commit -m "T-Display P4: GPS, RTC, battery, SD"`
+- [x] **Step 1: Implement.**
+- [x] **Step 2: Build** — `pio run -e tdisplay_p4` SUCCESS
+- [x] **Step 3: Commit** — `git commit -m "T-Display P4: GPS, RTC, battery, SD"`
 
 ### Task 10: Tooling and docs
 

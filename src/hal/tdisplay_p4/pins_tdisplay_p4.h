@@ -54,8 +54,10 @@ constexpr uint8_t KB_EXP_TCA_RST = 6;
 constexpr int GPS_RX = 22, GPS_TX = 23;
 constexpr uint32_t GPS_BAUD = 9600;
 
-// microSD, SD_MMC 4-bit.
+// microSD, SDMMC slot 0, 4-bit. These are the slot's IO_MUX pins, fixed in
+// silicon; its pads (GPIO39-48) run from the on-chip LDO channel 4.
 constexpr int SD_CLK = 43, SD_CMD = 44, SD_D0 = 39, SD_D1 = 40, SD_D2 = 41, SD_D3 = 42;
+constexpr int SD_LDO_CHAN = 4;
 
 // SX1262, unused: reset (EXP_RADIO_RST), then put to sleep.
 constexpr int LORA_SCK = 2, LORA_MOSI = 3, LORA_MISO = 4, LORA_CS = 24, LORA_BUSY = 6;

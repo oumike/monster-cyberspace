@@ -181,6 +181,9 @@ void begin() {
   Wire.begin(I2C_SDA, I2C_SCL, I2C_HZ);
   Wire.setTimeOut(20);  // touch is polled every frame: a stuck read must not stall the UI
   if (xl9535::begin()) xl9535::powerOnSequence();
+  // GPS and SD stay off until gpsPower() and sdMount() (peripherals_tdisplay_p4.cpp).
+  xl9535::set(EXP_GPS_WAKE, false);
+  xl9535::set(EXP_SD_POWER, true);
   if (!panel::begin()) Serial.println("[tdp4] no panel");
   Serial.println(radioSleep() ? "[tdp4] LoRa radio asleep" : "[tdp4] no LoRa radio");
   touch::begin();
@@ -293,18 +296,6 @@ bool eink() { return false; }
 void beep(int freqHz, int ms) { es8311::beep(freqHz, ms); }
 bool hasHaptic() { return true; }
 void haptic(int ms) { tdp4::haptic::buzz(ms); }
-
-// GPS, RTC, battery and SD arrive in Task 9.
-int batteryPercent() { return -1; }
-bool externalPower() { return false; }
-bool hasGps() { return false; }
-void gpsPower(bool) {}
-size_t gpsRead(uint8_t*, size_t) { return 0; }
-bool rtcRead(int64_t&) { return false; }
-bool rtcWrite(int64_t) { return false; }
-bool hasSdSlot() { return true; }
-fs::FS* sdMount() { return nullptr; }
-void sdUnmount() {}
 
 }  // namespace board
 

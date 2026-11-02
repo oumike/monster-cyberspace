@@ -37,7 +37,7 @@ octal (IO00-IO07, IO10-IO17); the table gives bit numbers.
 | AW86224 haptic | Wire1 on 20/21, 0x58 | LRA, waveform played from its SRAM |
 | Keyboard expansion | Wire1 on SDA 46 / SCL 45 | TCA8418 at 0x34 (7x10), XL9555 at 0x20 (bit 6 TCA reset, bits 3-5 LEDs); INT 48, backlight PWM 47 |
 | L76K GPS | UART: P4 RX 22, TX 23, 9600 | wake on XL9535 bit 9 |
-| microSD | SD_MMC CLK 43, CMD 44, D0-D3 39-42 | 4-bit |
+| microSD | SDMMC slot 0 (IO_MUX) CLK 43, CMD 44, D0-D3 39-42 | 4-bit, ESP-IDF `esp_vfs_fat_sdmmc_mount` |
 | C6 (ESP-Hosted) | SDIO CLK 18, CMD 19, D0-D3 14-17 | enable on XL9535 bit 12 |
 | SX1262 | SPI SCK 2, MOSI 3, MISO 4, CS 24, BUSY 6 | unused; reset, then put to sleep |
 | Side button | GPIO35, active low | |
@@ -84,7 +84,7 @@ octal (IO00-IO07, IO10-IO17); the table gives bit numbers.
 - **Keys** (`lib/core/src/input/keymap_tdisplay_p4`, from wadamesh's
   `P4Keyboard.cpp` map): letters, digits and symbols with Shift, Sym and Caps
   Lock, as one-shot modifiers that lapse after 1.5 s. Arrows are Up, Down,
-  Left and Right; Enter is Select; Esc is Back; Tab is Tab; Backspace
+  Left and Right; Enter is Select; Esc is Back; Tab opens the palette (Palette); Backspace
   repeats; the emoji key opens the emoji tray. F11 steps the backlight
   (`KbLight`, saved as the other boards save it). The expansion's LEDs light
   with Caps Lock.
@@ -152,10 +152,12 @@ acquire and release.
   9600; off reverses it.
 - **RTC:** PCF8563, read and written in UTC; the voltage-low flag makes
   `rtcRead` false.
-- **Battery:** BQ27220 state of charge and voltage; `externalPower()` from its
-  current sign.
-- **SD:** SD_MMC 4-bit, powered through XL9535 bit 13 (active low) for each
-  mount, as the other boards mount per operation.
+- **Battery:** BQ27220 state of charge and voltage; `externalPower()` is its
+  current sign (charging) or USB plugged in (`HWCDC::isPlugged()`).
+- **SD:** 4-bit SDMMC through ESP-IDF's `esp_vfs_fat_sdmmc_mount`, not
+  Arduino's SD_MMC (which drives GPIO45, the keyboard's Wire1 SCL, as its
+  power pin and turns off the slot pull-ups); powered through XL9535 bit 13
+  (active low) for each mount, as the other boards mount per operation.
 - **LoRa:** the SX1262 is reset through the XL9535, then sent `SetSleep`.
 - **Notification light:** none.
 

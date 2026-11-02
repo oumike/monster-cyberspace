@@ -85,17 +85,47 @@ bool setRamAddr(uint16_t addr) {
   return writeN(kRegRamAddrH, a, sizeof a);
 }
 
+bool take() {
+  bus = i2c1::acquire(i2c1::Audio, kBusWaitMs);
+  return bus != nullptr;
+}
+
+void give() {
+  bus = nullptr;
+  i2c1::release();
+}
+
+enum class Stop { Done, Failed, Busy };
+
 // The stop flag and forced standby, until the chip reports standby (about
-// 100 ms at most).
-bool stop() {
-  if (!update(kRegPlayCfg4, 0x02, 0x02) || !update(kRegSysCtrl2, 0x40, 0x40)) return false;
+// 100 ms at most). Called with the bus free: it is taken per read and given
+// back between polls, so the codec's mute and the keyboard are not held up.
+Stop stop() {
+  if (!take()) return Stop::Busy;
+  const bool asked = update(kRegPlayCfg4, 0x02, 0x02) && update(kRegSysCtrl2, 0x40, 0x40);
+  give();
+  if (!asked) return Stop::Failed;
   bool idle = false;
-  for (int i = 0; i < 100 && !idle; ++i) {
-    uint8_t st;
-    idle = read(kRegGlbRd5, st) && (st & 0x0F) == 0;
+  const TickType_t start = xTaskGetTickCount();
+  while (!idle && xTaskGetTickCount() - start < pdMS_TO_TICKS(100)) {
+    if (take()) {
+      uint8_t st;
+      idle = read(kRegGlbRd5, st) && (st & 0x0F) == 0;
+      give();
+    }
     if (!idle) vTaskDelay(pdMS_TO_TICKS(1));
   }
-  return update(kRegSysCtrl2, 0x40, 0x00) && idle;
+  // Forced standby has to come off, so a busy bus gets a few more turns.
+  bool cleared = false;
+  for (int i = 0; i < 5 && !cleared; ++i) {
+    if (!take()) {
+      vTaskDelay(pdMS_TO_TICKS(1));
+      continue;
+    }
+    cleared = update(kRegSysCtrl2, 0x40, 0x00);
+    give();
+  }
+  return idle && cleared ? Stop::Done : Stop::Failed;
 }
 
 // The chip keeps its SRAM across a P4 reset while it stays powered, so it is
@@ -119,12 +149,10 @@ bool sramLoad() {
   return true;
 }
 
-// The sample rate, then (with SRAM access on) the base address, FIFO
-// thresholds and the waveform.
-bool init(bool& reloaded) {
+// With the chip stopped and the bus held: (with SRAM access on) the base
+// address, FIFO thresholds and the waveform.
+bool load(bool& reloaded) {
   reloaded = false;
-  if (!update(kRegSysCtrl2, 0x03, 0x02)) return false;  // 12 kHz waveform data
-  if (!stop()) return false;
   if (!update(kRegSysCtrl1, 0x08, 0x08)) return false;  // RAM init on
   delayMicroseconds(500);
   const uint16_t ae = kBase >> 1, af = kBase - (kBase >> 2);  // the vendor's formula
@@ -138,16 +166,6 @@ bool init(bool& reloaded) {
   }
   const bool ramOff = update(kRegSysCtrl1, 0x08, 0x00);  // RAM init off
   return ok && ramOff;
-}
-
-bool take() {
-  bus = i2c1::acquire(i2c1::Audio, kBusWaitMs);
-  return bus != nullptr;
-}
-
-void give() {
-  bus = nullptr;
-  i2c1::release();
 }
 
 QueueHandle_t queue = nullptr;
@@ -164,8 +182,12 @@ bool ensureReady() {
   uint8_t id = 0;
   bool reloaded = false;
   const bool present = read(kRegId, id);
-  ready = present && init(reloaded);
+  const bool rate = present && update(kRegSysCtrl2, 0x03, 0x02);  // 12 kHz waveform data
   give();
+  if (rate && stop() == Stop::Done && take()) {
+    ready = load(reloaded);
+    give();
+  }
   if (ready)
     Serial.printf("[haptic] AW86224 up (id 0x%02X, waveform %s)\n", id,
                   reloaded ? "loaded" : "kept");
@@ -186,13 +208,16 @@ void play(int ms) {
   if (!started) return;
   vTaskDelay(pdMS_TO_TICKS(ms));
   // The loop count is forever, so the stop is never dropped: it waits its
-  // turn on the bus, 50 ms at a time.
-  bool stopped = false;
-  for (int fails = 0; !stopped;) {
-    if (!take()) continue;
-    stopped = stop();
-    give();
-    if (!stopped && ++fails >= 3) {
+  // turn on the bus, 50 ms at a time (and a tick between tries, so a bus
+  // that fails at once cannot spin this core).
+  for (int fails = 0;;) {
+    const Stop r = stop();
+    if (r == Stop::Done) break;
+    if (r == Stop::Busy) {
+      vTaskDelay(pdMS_TO_TICKS(1));
+      continue;
+    }
+    if (++fails >= 3) {
       Serial.println("[haptic] stop failed");
       break;
     }

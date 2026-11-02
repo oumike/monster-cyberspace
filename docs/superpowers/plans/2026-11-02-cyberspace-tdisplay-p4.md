@@ -60,7 +60,7 @@ licence must allow it (check `LICENSE` before Task 5 and keep each ported file's
   - r=1: `n = (x, y)`; r=3: `n = (nw-1-x, nh-1-y)`;
   - r=0: `n = (nw-1-y, x)`; r=2: `n = (y, nh-1-x)`.
 
-- [ ] **Step 1: Write the failing tests** (nw=284, nh=616)
+- [x] **Step 1: Write the failing tests** (nw=284, nh=616)
 
 ```cpp
 void test_frame_size() { int w, h; frameSize(284, 616, 1, w, h); TEST_ASSERT_EQUAL(284, w); TEST_ASSERT_EQUAL(616, h);
@@ -84,10 +84,10 @@ void test_raw_to_native() {
 }
 ```
 
-- [ ] **Step 2: Run, expect a compile failure** — `pio test -e native -f test_scale2x`
-- [ ] **Step 3: Implement `lib/core/src/ui/scale2x.{h,cpp}`** with the mapping above.
-- [ ] **Step 4: Run, expect PASS** — `pio test -e native -f test_scale2x`
-- [ ] **Step 5: Commit** — `git commit -m "scale2x: 2x panel scale and rotation maths"`
+- [x] **Step 2: Run, expect a compile failure** — `pio test -e native -f test_scale2x`
+- [x] **Step 3: Implement `lib/core/src/ui/scale2x.{h,cpp}`** with the mapping above.
+- [x] **Step 4: Run, expect PASS** — `pio test -e native -f test_scale2x`
+- [x] **Step 5: Commit** — `git commit -m "scale2x: 2x panel scale and rotation maths"`
 
 ### Task 2: Keyboard map (`input/keymap_tdisplay_p4`)
 
@@ -101,7 +101,7 @@ void test_raw_to_native() {
   - `class TdisplayP4Keys { public: KeyEvent key(uint8_t keyNum, bool pressed, uint32_t ms); KeyEvent poll(uint32_t ms); bool capsLock() const; bool takeLightStep(); };`
 - Key numbers are the TCA8418's (1-based, `row*10+col+1`), table from wadamesh `P4Keyboard.cpp` `kMap` (base, shift, sym). Specials: 11, 12 Esc → `Back`; 31 Caps Lock (toggles); 41 Alt (ignored); 51, 58 Sym (one-shot sym layer); 53 Shift (one-shot); 50 Up, 60 Down, 59 Left, 68 Right; 54 Tab → `Palette`; 55–57 space; 63 Backspace (repeats); 64, 66 Enter → `Select`; 65 → `Emoji`; 61 (F11) → `None` and sets the light-step flag; 1–10 (F1–F10) → `None`. Up/Down/Left/Right repeat like Backspace. Releases return `None` except they stop a repeat.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```cpp
 void test_letters()   { TdisplayP4Keys k; expectChar(k.key(21, true, 0), 'q'); expectChar(k.key(32, true, 0), 'a'); expectChar(k.key(48, true, 0), 'm'); expectChar(k.key(56, true, 0), ' '); }
@@ -126,10 +126,10 @@ void test_ignored()   { TdisplayP4Keys k; expectAction(k.key(21, false, 0), Acti
                         expectAction(k.key(69, true, 0), Action::None); expectAction(k.key(41, true, 0), Action::None); expectAction(k.key(1, true, 0), Action::None); }
 ```
 
-- [ ] **Step 2: Run, expect a compile failure** — `pio test -e native -f test_tdisplay_p4_input`
-- [ ] **Step 3: Implement `TdisplayP4Keys`** (model on `keymap_pager.cpp`).
-- [ ] **Step 4: Run, expect PASS**
-- [ ] **Step 5: Commit** — `git commit -m "T-Display P4: keyboard map"`
+- [x] **Step 2: Run, expect a compile failure** — `pio test -e native -f test_tdisplay_p4_input`
+- [x] **Step 3: Implement `TdisplayP4Keys`** (model on `keymap_pager.cpp`).
+- [x] **Step 4: Run, expect PASS**
+- [x] **Step 5: Commit** — `git commit -m "T-Display P4: keyboard map"`
 
 ### Task 3: Vibration settings and the tap-buzz rule (portable)
 
@@ -144,7 +144,7 @@ void test_ignored()   { TdisplayP4Keys k; expectAction(k.key(21, false, 0), Acti
   `namespace rc { constexpr int kTapBuzzMs = 15, kAlertBuzzMs = 120; bool tapBuzz(const Gesture& g, const TouchOutput& out); }` — true when `g.kind == GestureKind::Tap` and (`!out.keys.empty()` or `out.oskKey >= 0`).
 - Backup writes `tapVibrate: true|false` and `alertVibrate: true|false` after `buzzer:`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```cpp
 // test_backup_yaml: round trip — set both false, write, parse, TEST_ASSERT_FALSE for both.
@@ -158,10 +158,10 @@ void test_tap_buzz() {
 }
 ```
 
-- [ ] **Step 2: Run, expect failures** — `pio test -e native -f test_backup_yaml -f test_touch_input`
-- [ ] **Step 3: Implement** the fields, the backup keys and `tapBuzz`.
-- [ ] **Step 4: Run the whole native suite, expect PASS** — `pio test -e native`
-- [ ] **Step 5: Commit** — `git commit -m "Tap and alert vibration settings, backup keys"`
+- [x] **Step 2: Run, expect failures** — `pio test -e native -f test_backup_yaml -f test_touch_input`
+- [x] **Step 3: Implement** the fields, the backup keys and `tapBuzz`.
+- [x] **Step 4: Run the whole native suite, expect PASS** — `pio test -e native`
+- [x] **Step 5: Commit** — `git commit -m "Tap and alert vibration settings, backup keys"`
 
 ### Task 4: App wiring — default rotation, haptics, Settings and web config
 
@@ -285,9 +285,9 @@ Behaviour:
 - Consumes: `tdp4::i2c1::acquire(Route::Audio, 50)` / `release()` as the es8311 `lock`/`unlock` (a failed acquire drops the tone).
 - Produces: `board::beep`, `board::hasHaptic()` true, `board::haptic(ms)`.
 
-- [ ] **Step 1: Implement.** es8311 `Config{addr 0x18, mclk 13, bck 12, ws 9, dout 10, ampSettleMs 8, amp: XL9535 bit 6, lock/unlock as above, wire &Wire1}`.
-- [ ] **Step 2: Build** — `pio run -e tdisplay_p4 -e pager -e wio_l2 -e cardputer_adv` SUCCESS (the shared driver changed)
-- [ ] **Step 3: Commit** — `git commit -m "T-Display P4: ES8311 beeps, AW86224 haptics"`
+- [x] **Step 1: Implement.** es8311 `Config{addr 0x18, mclk 13, bck 12, ws 9, dout 10, ampSettleMs 8, amp: XL9535 bit 6, lock/unlock as above, wire &Wire1}`.
+- [x] **Step 2: Build** — `pio run -e tdisplay_p4 -e pager -e wio_l2 -e cardputer_adv` SUCCESS (the shared driver changed)
+- [x] **Step 3: Commit** — `git commit -m "T-Display P4: ES8311 beeps, AW86224 haptics"`
 
 ### Task 9: GPS, RTC, battery, SD
 

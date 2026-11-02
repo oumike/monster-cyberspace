@@ -6,8 +6,11 @@
 
 #include <Arduino.h>
 #include <FS.h>
+#include <HWCDC.h>
 #include <Wire.h>
 #include <driver/sdmmc_host.h>
+// ldoSdmmc*() are esp32-hal-ldo internals, written against Arduino-ESP32
+// core 3.3.12 (framework-arduinoespressif32); recheck them when it changes.
 #include <esp32-hal-ldo.h>
 #include <esp_vfs_fat.h>
 #include <sd_pwr_ctrl_by_on_chip_ldo.h>
@@ -186,7 +189,7 @@ float batteryVolts() {
 
 bool externalPower() {
   gaugeSample();
-  return charging;
+  return charging || HWCDC::isPlugged();
 }
 
 bool hasSdSlot() { return true; }

@@ -118,7 +118,7 @@ echo "Reading the C6 partition table..."
     --before no_reset --after no_reset \
     read_flash 0x8000 0xC00 "$WORK/partitions.bin"
 
-# Prints "<app offset> <otadata offset> <otadata size>" (otadata 0 0 if none).
+# Prints "<app offset> <otadata offset> <app label>" (otadata offset 0 if none).
 LAYOUT="$("$PYTHON" - "$WORK/partitions.bin" "$FIRMWARE" "$WORK/otadata-blank.bin" <<'PY'
 import os, struct, sys
 pt = open(sys.argv[1], 'rb').read()

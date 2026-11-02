@@ -4,7 +4,9 @@ On the Elecrow ThinkNode M9 (keyboard and d-pad), the Seeed Wio Tracker L2
 (touch screen; see Touch below) and the LilyGO T-Deck Plus (keyboard,
 trackball and touch; see T-Deck Plus below), and the Elecrow CrowPanel
 Advance 3.5" and 5.0" (touch only; see CrowPanel below), and the Attaky Mesh
-Deck (d-pad, touch and keyboard; see Mesh Deck below), and the Xteink X4
+Deck (d-pad, touch and keyboard; see Mesh Deck below), and the Attaky Cyber
+Deck Plus (the Mesh Deck's d-pad, touch and keyboard plus a gamepad, speaker
+and microSD; see Cyber Deck Plus below), and the Xteink X4
 (e-paper and six buttons, a mostly passive client; see Xteink X4 below), and
 the M5Stack Cardputer ADV (keyboard; no Guilds or Unread; see Cardputer ADV
 below). Key names in this guide are the M9's.
@@ -274,6 +276,30 @@ and backups go through web config. The setup AP is
 (a CH340). Right after flashing, if the screen stays dark, switch the
 Mesh Deck off and on.
 
+## Cyber Deck Plus
+
+The Attaky Cyber Deck Plus is the Mesh Deck's Core (the same d-pad, Select,
+L1, R2, touch screen and keyboard module, all as in the Mesh Deck table
+above) with a gamepad underneath and Media I/O's speaker and microSD slot. It
+has no GPS or LoRa module. The gamepad and the keyboard module can each be
+plugged in while it runs.
+
+| Gamepad | Action |
+|---|---|
+| D-pad | Up, Down, Left, Right (hold to repeat), like the Core's d-pad |
+| A | Select; hold it to turn the screen off, and on again |
+| B or L1 | Back; hold it for Home |
+| X, Y, L2, R1, R2, FN keys | Not used yet |
+
+The Core's **R2** (or BOOT) turns the screen off and on, as on the Mesh Deck.
+The notification light works as on the Mesh Deck.
+
+The speaker beeps for mentions and C-Mail when the buzzer is on in web config;
+between beeps it is idle. Backups go to the microSD slot. There is no RTC or
+GPS: the clock comes from Wi-Fi. The setup AP is
+**`Monster-Cyberspace-CyberDeckPlus`**. The serial console is the USB-C port
+(a CH340).
+
 ## Xteink X4
 
 The Xteink X4 is an e-paper reader with no keyboard or touch: it shows cIRC,
@@ -402,9 +428,14 @@ The keyboard always types into the input line at the bottom.
 - **Scroll:** Up/Down highlight messages. Up at the top loads older history.
   Down past the newest message returns you to typing.
 - **Message menu:** Centre on a highlighted message. It has Reply (`@name `),
-  Reveal (spoilers), Show full (long or art messages), Show link (as text and
-  a QR code), Delete (your own, with confirmation) and Report (with
-  confirmation and an optional reason).
+  Add friend / Remove friend (on someone else's message), Reveal (spoilers),
+  Show full (long or art messages), Show link (as text and a QR code), Delete
+  (your own, with confirmation) and Report (with confirmation and an optional
+  reason).
+- **Friends:** Add friend keeps that name on this device (the server has no
+  friends list; it isn't the same as following someone, see People). The
+  list is saved with the device's settings. The same item, Remove friend,
+  takes them off again. C-Mail conversations offer it too.
 - **Cursor:** Left/Right move the text cursor.
 - **Who's here drawer:** Right with the cursor at the end of the line opens
   it. Up/Down pick a person, Centre opens their menu (mention, mute or
@@ -432,8 +463,8 @@ C-Mail is private, one-to-one messaging. Open it with Fn under Home, or
 - **A conversation** works like a room, titled `@name`: type and press Centre
   to send. Scrolling, the reader and links work the same way. There is no
   drawer. Its menu (Centre on an empty line) has Mark read and Close
-  conversation. The message menu has Reveal, Show full and Show link;
-  C-Mail has no reply, delete or report.
+  conversation. The message menu has Add friend / Remove friend, Reveal,
+  Show full and Show link; C-Mail has no reply, delete or report.
 - **Typing:** while you type, the other person sees "…is typing". The device
   tells the server only as you press keys, and clears it when you empty the
   line or leave. When they type, "name is typing…" shows above your input
@@ -447,6 +478,9 @@ Feed alerts; with one waiting, **Feed** opens its entry instead of the list.
 
 **The list:**
 
+- The first row is **+ New entry**: Centre (or a tap) on it opens New
+  entry, below. It is selected when the Feed opens. Boards that can't type
+  (the X4) send you to web config instead.
 - Each entry takes two lines: `nick · 3h · ↩5` (replies), plus `★` if you
   bookmarked it, one font size larger, then the title or the first line of
   the body, dimmed. While the command palette is open both lines are the
@@ -473,14 +507,15 @@ Feed alerts; with one waiting, **Feed** opens its entry instead of the list.
 - **Reply:** type, then Centre or Enter. With a reply selected, you answer it
   and `↳ @name` shows above the input line; otherwise you answer the entry.
   Nothing is retried: a failed reply stays in the line.
-- **Entry menu** (Centre on an empty line): Bookmark/Unbookmark,
+- **Entry menu** (Centre on an empty line, or Tab, which opens it with text
+  in the line too): Reply, Bookmark/Unbookmark,
   Watch/Unwatch, Show link (text and a QR code), Delete… on your own entry or
   Report… on others' (both confirm; a report takes an optional reason), and
   Text size.
 - **Reply menu** (Centre on a selected reply): Reply, Bookmark/Unbookmark,
   Show link, and Delete… (yours) or Report… (others').
 
-**New entry** (palette → New entry):
+**New entry** (the + New entry row, or palette → New entry):
 
 - Fields: Title, Body, Topics (comma-separated, up to 3), Public [ ],
   NSFW [ ] and CW.

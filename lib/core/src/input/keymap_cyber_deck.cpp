@@ -24,7 +24,8 @@ Action arrow(int half, int b) {
 }
 
 // The Core's L1 is Back (hold: Home) and its Select is Select (hold: ScreenOff).
-// The gamepad's B and A are the same two buttons, on either half's L1 and on A.
+// The gamepad repeats them: Back is the left half's L1 and the right half's B,
+// Select is the right half's A.
 bool isBack(int half, uint8_t m) {
   return (half == 0 && m == kCyberDeckL1) || (half == 1 && m == kCyberDeckB);
 }

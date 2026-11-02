@@ -259,6 +259,7 @@ class FeedListScreen : public Screen {
   std::vector<std::string> ids_;
   std::vector<std::string> replyIds_;  // Bookmarks: the bookmarked reply per row, or ""
   std::string selId_;      // the selected entry, kept across updates
+  bool empty_ = true;      // the feed holds no entries (its New entry row aside)
   bool dirty_ = true;      // rows need a rebuild
   bool loaded_ = false;    // a list arrived since enter
   bool failed_ = false;    // a side list failed before it ever loaded

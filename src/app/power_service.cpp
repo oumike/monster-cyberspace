@@ -11,7 +11,9 @@ namespace {
 PowerPolicy policy;
 bool on = false;
 // A timed wake counts as refreshed once the connection has been live this
-// long: the open screen and the counts have come in and been drawn.
+// long: the open screen and the counts have come in and been drawn. Live (2)
+// is an open room's stream, or, with no room open, a signed-in account whose
+// rooms and conversations bootstrap has already fetched (net_worker tick()).
 constexpr uint32_t kSettleMs = 15'000;
 uint32_t liveSince = 0;
 

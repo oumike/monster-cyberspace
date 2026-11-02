@@ -113,9 +113,11 @@ void FeedListScreen::onKey(const KeyEvent& k) {
     case Action::Select:
     case Action::Right: {
       int i = list_.selected();
-      // The Feed's New entry row: its id is empty, and it composes.
+      // The Feed's New entry row: its id is empty, and it composes, behind the
+      // same check as the commands menu's New entry (boards that can't type
+      // write from web config instead).
       if (kind_ == Kind::Feed && i >= 0 && i < int(ids_.size()) && ids_[i].empty()) {
-        router::go(router::Id::Composer);
+        if (!ui::typingElsewhere("Write entries")) router::go(router::Id::Composer);
         break;
       }
       if (i < 0 || i >= int(ids_.size())) break;

@@ -268,7 +268,7 @@ The M5Stack Cardputer ADV (env `cardputer_adv`) was added on 2026-11-01
 feature flags (`lib/core/src/feature_flags.h`) cut it to cIRC rooms, with no OTA
 or mascot partition. Its panel offsets, ES8311 clock, push speed, key map and
 TLS heap headroom await the hardware check (docs/TESTING.md).
-The native suite is green: 678/678
+The native suite is green: 680/680
 (`pio test -e native`), and `scripts/build-upload-monitor.sh -B` builds all
 eleven firmware envs.
 

@@ -359,6 +359,17 @@ is open.
 - [ ] Entry: Tab (on keyboard boards) opens the entry menu, also with text in the line, and the text stays
 - [ ] Friends: Add friend on someone's message, then the menu says Remove friend, also after a restart; Remove friend takes them off; your own messages offer neither; the same in a C-Mail conversation
 
+**Feed Topics (any board with the Feed; the demo build first):**
+
+- [ ] The Feed's palette (Ctrl/Sym, ⋯ on touch boards) has **Topics** after Bookmarks; it opens a list titled `Topics`, busiest first, each row `#name` (one size up) over `N entries` (`1 entry` for one)
+- [ ] While it loads it says "loading…"; offline it says "offline"; a failed fetch says "couldn't load: Ctrl, Refresh" (`⋯, Refresh` on touch) and Refresh works
+- [ ] Leaving and reopening Topics doesn't fetch again; Refresh does; after Log out and back in it fetches again
+- [ ] Centre, Right or a tap opens a topic: the title is `#name`, its entries newest first; Down on the last loads the next page; an empty topic says "no entries"
+- [ ] Back: entry → the topic → Topics (same topic selected) → the Feed
+- [ ] Palette in a topic's list has only Refresh and Text size; in Topics, Refresh and Text size
+- [ ] Every text size, and the T-Deck Pro's side strip, Cardputer ADV and X4: rows fit and nothing overlaps
+- [ ] Live (human only): Topics matches the website's topics and counts; is `GET /v1/topics` paged (does the device list stop short of the website's)? A topic's entries match the website
+
 **Xteink X4 (`x4`):**
 
 - [ ] `pio run -e x4` builds (it never has: everything X4 was written without a build)

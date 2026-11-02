@@ -493,7 +493,7 @@ Feed alerts; with one waiting, **Feed** opens its entry instead of the list.
   is loaded it wraps to the top, and Up on the first wraps to the last.
 - Centre or Right opens the entry. Left or Back goes Home.
 - **Sym** (on the M9) opens the palette: **New entry**, **Refresh**, **Watched
-  threads**, **Bookmarks** and **Text size**.
+  threads**, **Bookmarks**, **Topics** and **Text size**.
 - **Auto-refresh:** while the list is on screen and the screen is on, it
   re-fetches the first page every 2 minutes (the title reads `Feed ↻ 2m`).
   New entries appear at the top and your selection stays put. Refresh in the
@@ -534,6 +534,15 @@ Feed alerts; with one waiting, **Feed** opens its entry instead of the list.
 **Watched threads and Bookmarks** are lists in the same style, from the
 palette. Centre opens the entry; a bookmarked reply opens its entry with that
 reply selected. Left or Back returns to the Feed list.
+
+**Topics** (palette → Topics) lists every topic, busiest first: `#music`
+one font size larger, then `42 entries`, dimmed. The list holds the first
+200 (60 on low-memory boards such as the Cardputer ADV and X4). It is fetched
+once per sign-in; the palette's **Refresh** fetches it again. Centre or Right
+opens a topic's entries, newest first, in the same style as the Feed (Down on
+the last loads more). Back goes from an entry to its topic, then to Topics,
+then to the Feed. Topics only read: there is no following or muting a topic
+on the device.
 
 ## Guilds
 

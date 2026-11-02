@@ -25,8 +25,6 @@
 namespace rc {
 
 namespace {
-// The keyboard light picker's order.
-constexpr KbLight kKbLightOrder[] = {KbLight::Low, KbLight::Medium, KbLight::High, KbLight::Off};
 // The notify light picker's order.
 constexpr LedColor kLedColorOrder[] = {LedColor::Red,  LedColor::Green,   LedColor::Blue,
                                        LedColor::Yellow, LedColor::Cyan, LedColor::Magenta,

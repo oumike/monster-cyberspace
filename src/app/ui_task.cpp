@@ -633,6 +633,14 @@ void handleKey(const KeyEvent& key) {
     goDark();
     return;
   }
+  if (k.action == Action::KbLightStep) {
+    if (board::hasKbLight()) {
+      app().cfg.kbLight = nextKbLight(app().cfg.kbLight);
+      settings::saveKbLight(app().cfg.kbLight);
+      applyKbLight();
+    }
+    return;
+  }
   if (canned.isOpen()) {
     CannedPicker::Out o = canned.key(k);
     if (o.kind == CannedPicker::Kind::Send) {

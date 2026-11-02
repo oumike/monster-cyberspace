@@ -66,11 +66,22 @@ void test_kb_light_levels() {
   TEST_ASSERT_EQUAL_STRING("high", rc::kbLightKey(KbLight::High));
 }
 
+// F11's step follows Settings' order and wraps through Off.
+void test_kb_light_step_follows_settings_order() {
+  using rc::KbLight;
+  TEST_ASSERT(rc::nextKbLight(KbLight::Low) == KbLight::Medium);
+  TEST_ASSERT(rc::nextKbLight(KbLight::Medium) == KbLight::High);
+  TEST_ASSERT(rc::nextKbLight(KbLight::High) == KbLight::Off);
+  TEST_ASSERT(rc::nextKbLight(KbLight::Off) == KbLight::Low);
+  TEST_ASSERT(rc::nextKbLight(static_cast<KbLight>(9)) == KbLight::Low);
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_timeout_options_cycle_and_labels);
   RUN_TEST(test_idle_phases);
   RUN_TEST(test_bouncer_stays_inside_and_reflects);
   RUN_TEST(test_kb_light_levels);
+  RUN_TEST(test_kb_light_step_follows_settings_order);
   return UNITY_END();
 }

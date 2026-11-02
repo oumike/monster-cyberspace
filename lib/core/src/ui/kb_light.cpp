@@ -29,4 +29,10 @@ bool parseKbLight(std::string_view key, KbLight& out) {
   return false;
 }
 
+KbLight nextKbLight(KbLight l) {
+  for (int i = 0; i < kKbLightCount; ++i)
+    if (kKbLightOrder[i] == l) return kKbLightOrder[(i + 1) % kKbLightCount];
+  return kKbLightOrder[0];
+}
+
 }  // namespace rc

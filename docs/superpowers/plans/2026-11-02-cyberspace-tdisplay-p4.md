@@ -270,9 +270,9 @@ Behaviour:
 - `pollKey`: `keyboard::poll()`, each event through `TdisplayP4Keys::key`, then `TdisplayP4Keys::poll(millis())`; after each key, `leds(keys.capsLock())`; on `takeLightStep()` step `app` kb light — post the next `KbLight` through the existing kb-light path (find how the T-Deck Pro or Pager steps it; reuse it).
 - Without it: everything as Task 5/6.
 
-- [ ] **Step 1: Implement.**
-- [ ] **Step 2: Build** — `pio run -e tdisplay_p4` SUCCESS
-- [ ] **Step 3: Commit** — `git commit -m "T-Display P4: shared Wire1, keyboard expansion found at boot"`
+- [x] **Step 1: Implement.**
+- [x] **Step 2: Build** — `pio run -e tdisplay_p4` SUCCESS
+- [x] **Step 3: Commit** — `git commit -m "T-Display P4: shared Wire1, keyboard expansion found at boot"`
 
 ### Task 8: Speaker and haptics
 

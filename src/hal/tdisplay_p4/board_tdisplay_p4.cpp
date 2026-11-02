@@ -13,9 +13,12 @@
 
 #include "hal/board.h"
 #include "hal/tdisplay_p4/io_xl9535.h"
+#include "hal/tdisplay_p4/keyboard_tdisplay_p4.h"
 #include "hal/tdisplay_p4/panel_rm69a10.h"
 #include "hal/tdisplay_p4/pins_tdisplay_p4.h"
 #include "hal/tdisplay_p4/touch_gt9895.h"
+#include "input/keymap_tdisplay_p4.h"
+#include "ui/kb_light.h"
 #include "ui/scale2x.h"
 
 namespace board {
@@ -25,6 +28,12 @@ using namespace tdp4;
 namespace s2x = rc::scale2x;
 
 uint8_t rotation = 1;  // defaultRotation(); the UI sets the saved one
+
+// The keyboard expansion, found once at boot (it is fitted with the power
+// off). With it the board stays at rotation 0, landscape above the keys.
+bool kbFitted = false;
+rc::TdisplayP4Keys keys;
+bool ledsShown = false;
 
 // esp_restart() on the P4 is a CPU reset that leaves the MIPI-DSI host half
 // set up, and the panel then stays dark. A shutdown handler turns every
@@ -122,6 +131,25 @@ void flushPending() {
   pendingY1 = 0;
 }
 
+// The expansion's events through the key map, then a held key's repeats. The
+// LEDs follow Caps Lock; F11 asks the app for the next light step.
+bool pollKeyboard(rc::KeyEvent& key) {
+  if (!kbFitted) return false;
+  keyboard::poll();
+  uint8_t keyNum;
+  bool pressed;
+  bool got = false;
+  while (!got && keyboard::next(keyNum, pressed)) {
+    key = keys.key(keyNum, pressed, millis());
+    if (keys.takeLightStep()) key = rc::KeyEvent{rc::Action::KbLightStep};
+    got = key.action != rc::Action::None;
+  }
+  if (keys.capsLock() != ledsShown && keyboard::leds(keys.capsLock())) ledsShown = keys.capsLock();
+  if (got) return true;
+  key = keys.poll(millis());
+  return key.action != rc::Action::None;
+}
+
 void clearPanel() {
   uint16_t* fb = panel::frame();
   if (!fb) return;
@@ -136,11 +164,14 @@ void clearPanel() {
 void begin() {
   installFullRestart();
   Wire.begin(I2C_SDA, I2C_SCL, I2C_HZ);
+  Wire.setTimeOut(20);  // touch is polled every frame: a stuck read must not stall the UI
   if (xl9535::begin()) xl9535::powerOnSequence();
   if (!panel::begin()) Serial.println("[tdp4] no panel");
   Serial.println(radioSleep() ? "[tdp4] LoRa radio asleep" : "[tdp4] no LoRa radio");
   touch::begin();
   pinMode(SIDE_BUTTON, INPUT_PULLUP);
+  kbFitted = keyboard::detect();
+  if (kbFitted) rotation = 0;
 }
 
 const char* name() { return "TDisplayP4"; }
@@ -188,21 +219,25 @@ void pushRows(const uint16_t* frame, int y0, int y1) {
 }
 
 void setRotation(uint8_t r) {
+  if (kbFitted) return;
   r &= 3;
   if (r == rotation) return;
   rotation = r;
   clearPanel();
 }
 
-bool canRotate() { return true; }
+bool canRotate() { return !kbFitted; }
 
 void backlight(bool on) { backlightLevel(on ? 255 : 0); }
 void backlightLevel(uint8_t level) { panel::brightness(level); }
-void displaySleep(bool sleep) { panel::sleep(sleep); }
+void displaySleep(bool sleep) {
+  flushPending();
+  panel::sleep(sleep);
+}
 
 bool pollKey(rc::KeyEvent& key) {
   flushPending();
-  return pollButton(key);
+  return pollButton(key) || pollKeyboard(key);
 }
 
 const char* wakeHint() { return "press the side button to wake"; }
@@ -219,18 +254,17 @@ bool readTouch(int16_t& x, int16_t& y) {
   return true;
 }
 
-// The keyboard expansion arrives in Task 7.
-bool hasKeyboard() { return false; }
-bool hasKeys() { return false; }
-bool backspaceIsBack() { return false; }
-bool anyInputWakes() { return false; }
+bool hasKeyboard() { return kbFitted; }
+bool hasKeys() { return kbFitted; }
+bool backspaceIsBack() { return kbFitted; }
+bool anyInputWakes() { return kbFitted; }
 bool doubleTapWakes() { return false; }
 bool upDownOnly() { return false; }
 bool sideNav() { return false; }
 void textEntry(bool) {}
-bool hasKbLight() { return false; }
-uint8_t kbLightDefault() { return 0; }
-void kbLight(uint8_t, bool) {}
+bool hasKbLight() { return kbFitted; }
+uint8_t kbLightDefault() { return uint8_t(rc::KbLight::Medium); }
+void kbLight(uint8_t duty, bool screenOn) { keyboard::light(duty, screenOn); }
 bool hasNotifyLight() { return false; }
 void notifyLight(uint8_t) {}
 bool eink() { return false; }

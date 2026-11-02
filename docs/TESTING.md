@@ -308,7 +308,16 @@ Buttons: BOOT tap = Back, BOOT hold (0.6 s) = Home; Wake tap = screen off
 - [ ] With the LoRa/GPS module: the log shows `[meshdeck] LoRa radio asleep` and the high-pitched whine is gone; without one, `[meshdeck] no LoRa radio`
 - [ ] After flashing, the board restarts on its own; if the screen stays dark, note it (camillia-mt needed a power cycle there)
 - [ ] Wi-Fi setup (nothing saved): the AP is named `Monster-Cyberspace-MeshDeck` and `http://192.168.4.1` loads
-- [ ] Home is seven tiles, unread across the top, in every text size and orientation, with and without the keyboard module (messages shows `N mentions` while unread); Settings is a button grid: the d-pad moves the highlighted outline and scrolls to it, Select opens, Left from the first column and L1 go Home, taps work; dragging or tapping hides the outline (Settings and Home), and the next d-pad press only brings it back
+- [ ] Home is eight tiles in a 4x2 grid (unread first), in every text size and orientation, with and without the keyboard module (messages shows `N mentions` while unread); Settings is a button grid: the d-pad moves the highlighted outline and scrolls to it, Select opens, Left from the first column and L1 go Home, taps work; dragging or tapping hides the outline (Settings and Home), and the next d-pad press only brings it back
+
+**My profile from Home (any board with People):**
+
+- [ ] Touch boards: Home is eight tiles, two to a row, with `profile` and `@you` before settings; no tile is alone on a row; the d-pad moves between them in the grid (no wide first row); a build without People (none today) still has unread across the top
+- [ ] Keyed boards (M9, Pager, T-Deck Pro list, Cardputer ADV): the Home list has **Profile** before Settings
+- [ ] Profile opens your own profile, with no Follow, Message or Poke; Entries is the first action; Back goes Home
+- [ ] Entries lists your entries, newest first, pages with Down, and Centre opens one; Back returns to the list, then the profile
+- [ ] Live (human only): does the list include your non-public entries? (`GET /v1/users/<you>/posts`; note the answer in docs/USE.md's People section)
+- [ ] With no entries, the list says "no entries yet"; signed out, Profile shows "Not signed in"
 
 **Xteink X4 (`x4`):**
 

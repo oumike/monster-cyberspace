@@ -43,5 +43,7 @@ only, so the device shows no follower names. Blocking stays website-only.
 ## Not done (follow-ups)
 
 - Poke and new-follower notifications.
-- A Home tile or a "find user" box (Home is left alone to avoid clashing
-  with the Unread view, issue #3).
+- A "find user" box.
+- Done 2026-11-01: a Home **Profile** item (tile and row) opening your own
+  profile, whose Entries lists your posts. With eight tiles Unread no longer
+  spans the top row (`homeSpanFirst`: only when the rest fill their rows).

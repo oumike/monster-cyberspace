@@ -105,8 +105,11 @@ Every screen works by touch. Touch never wakes a dark screen.
   outside an open menu or confirm closes it. A tap on a banner dismisses it.
 - **Scroll:** drag a list or log to move line by line; swipe up or down to
   move a page. Dragging past the end of a list stops there.
-- **Home** shows seven large tiles: **unread** across the top, then messages,
-  rooms, c-mail, feed, guilds and settings two to a row. The unread tile shows
+- **Home** shows eight large tiles, two to a row: unread, messages, rooms,
+  c-mail, feed, guilds, profile and settings. On a build without one of them
+  (People, say), **unread** takes the top row on its own, so no tile is left
+  alone at the bottom. The profile tile shows `@you` and opens your own
+  profile (see [People](#people)). The unread tile shows
   how many things are unread (see [Unread](#unread)), in the accent colour
   while there are any. The messages tile shows the last room, or how many
   mentions are unread (in the accent colour) while there are any. If two
@@ -553,6 +556,10 @@ A profile shows someone's name, guild, Cyberspace number, join date, when
 they were last active, follower and entry counts, location, website and bio.
 You must be signed in. Open one from:
 
+- Home: **Profile** (the profile tile on touch boards) opens your own. Its
+  first action, **Entries**, lists the entries you've posted, newest first,
+  so you can go back to them; Centre opens one, Back returns to the list,
+  then to your profile
 - a room: the person menu (in Who's here) or a message's menu → **Profile**
 - a conversation: the room menu → **Profile**
 - an entry or a reply: its menu → **Author's profile**
@@ -566,8 +573,10 @@ opens the actions:
 - **Message** opens a C-Mail conversation with them.
 - **Poke** asks first: "Poke @rain? (1 an hour, 8 a day)". A refused poke
   ("Can't poke @rain") doesn't count against the limit.
-- **Entries** lists their public entries, paged like the Feed; Back returns
-  to the profile.
+- **Entries** lists their public entries (on your own profile, yours; it says
+  "no entries yet" until you post), paged like the Feed; Back returns to the
+  profile. Your own profile has no Follow, Message or Poke, so Entries is
+  first.
 - **Guild** opens their guild, **Website** shows the link with its QR code,
   **Refresh** reloads the profile.
 
@@ -653,8 +662,9 @@ own, black on white with outlined selections, and no Theme item.
 **Unread** lists everything waiting for you in one place, newest first:
 unread C-Mail conversations, cIRC mentions of you, and Feed and guild alerts.
 Open it from Home on every board: it is the second item in the Home list,
-after Messages (`Unread  N`, marked while N is above 0), and the full-width
-tile at the top of the Home tiles on touch boards. The status bar shows the
+after Messages (`Unread  N`, marked while N is above 0), and the first of
+the Home tiles on touch boards (full-width when the tile count leaves it a row
+of its own). The status bar shows the
 total; with nothing waiting it says "nothing unread".
 
 - Each row starts with what it is: `mail` (`@name: last message`, with the

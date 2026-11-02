@@ -224,6 +224,10 @@ People were added on 2026-10-31 (not built yet): profiles, follow, unfollow,
 poke and a user's entries, opened from rooms, conversations, entries and
 guild members (`lib/core/src/people/`, `src/app/people_worker.cpp`,
 `src/screens/profile.cpp`). Blocking is website-only (no API call).
+My profile was added on 2026-11-01 (branch `my-profile`, its own PR and
+release): a Home **Profile** tile and row (with People) opening your own
+profile, whose Entries lists your posts; with eight tiles Unread no longer
+spans the top row (`ui/home_items` `homeSpanFirst`).
 Unread (issue #3) was added on 2026-10-31 (not built yet): one screen of unread
 C-Mail, mentions and Feed notices, newest first (`ui/unread_inbox`,
 `src/screens/notifications.cpp`, `router::goFrom` for Back), from Home on every board.
@@ -237,7 +241,7 @@ The M5Stack Cardputer ADV (env `cardputer_adv`) was added on 2026-11-01
 feature flags (`lib/core/src/feature_flags.h`) cut it to cIRC rooms, with no OTA
 or mascot partition. Its panel offsets, ES8311 clock, push speed, key map and
 TLS heap headroom await the hardware check (docs/TESTING.md).
-The native suite is green: 660/660
+The native suite is green: 666/666
 (`pio test -e native`), and `scripts/build-upload-monitor.sh -B` builds all
 ten firmware envs.
 

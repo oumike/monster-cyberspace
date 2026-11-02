@@ -11,6 +11,7 @@
 #include "screens/screens.h"
 #include "store/locked_feed.h"
 #include "ui/feed_layout.h"
+#include "ui/nick_color.h"
 
 namespace rc {
 
@@ -395,6 +396,7 @@ void FeedListScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
   if (list_.size() == 0) {
     // An empty feed with pages to come hasn't loaded yet.
     bool waiting = !loaded_ || loading || (kind_ == Kind::Feed && more_);
+    const bool self = kind_ == Kind::User && !app().user.empty() && sameUsername(slug_, app().user);
     const char* empty = waiting && app().conn == 0 ? "offline"
                         : !loaded_ && failed_    ? (board::hasTouch() ? "couldn't load: \u22ef, Refresh"
                                                                       : "couldn't load: Ctrl, Refresh")
@@ -402,7 +404,7 @@ void FeedListScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
                         : kind_ == Kind::Feed    ? "no entries yet"
                         : kind_ == Kind::Watched ? "no watched threads"
                         : kind_ == Kind::Guild   ? "no threads yet"
-                        : kind_ == Kind::User    ? "no public entries"
+                        : kind_ == Kind::User    ? (self ? "no entries yet" : "no public entries")
                                                  : "no bookmarks";
     putLine(g, 1, 2, empty, t.dim, t.bg);
   }

@@ -314,6 +314,6 @@ Behaviour:
 - Modify: `docs/USE.md` (the three ways to hold it; Tap/Alert vibration)
 - Modify: `docs/TESTING.md` (open hardware checks, spec §5 list)
 
-- [ ] **Step 1: Make the changes.**
-- [ ] **Step 2: Verify** — `node --test site/*.test.mjs`, `pio test -e native`, `scripts/build-upload-monitor.sh -B` all pass
-- [ ] **Step 3: Tick this plan's boxes; commit** — `git commit -m "T-Display P4: scripts, release, flasher and docs"`
+- [x] **Step 1: Make the changes.**
+- [x] **Step 2: Verify** — `node --test site/*.test.mjs`, `pio test -e native`, `scripts/build-upload-monitor.sh -B` all pass
+- [x] **Step 3: Tick this plan's boxes; commit** — `git commit -m "T-Display P4: scripts, release, flasher and docs"`

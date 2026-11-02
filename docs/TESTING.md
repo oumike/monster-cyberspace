@@ -408,6 +408,32 @@ is open.
 - [ ] Unread heap: with a full inbox (several unread C-Mails, mentions and Feed notices), sit on Home, then on the Unread screen, for a minute each with Wi-Fi up; the `[mem]` free and largest-block numbers stay steady (no slow fall), and a room still opens and sends without out-of-memory or TLS errors
 - [ ] Flasher: picking M5Stack Cardputer ADV hides Make your Fluffy and Phrases, and Install writes the 8 MB factory image; a reflash without erase keeps the settings
 
+**T-Display P4 (`tdisplay_p4`):**
+
+- [ ] Boots: the USB log shows `[boot] … on TDisplayP4`, `[tdp4] RM69A10 up 568x1232`, `[haptic] AW86224 up …` and `[tdp4] LoRa radio asleep` (or `no LoRa radio`), and no `XL9535 not found`, `no GT9895 touch` or Wire1 errors
+- [ ] Panel: lights at boot, colours right (no red/blue swap), nothing cut off; every logical pixel is a clean 2x2 block in all four rotations
+- [ ] Tearing: scrolling a room or a long list and switching screens show no torn or half-drawn frames (the DPI frame buffer is written with no vsync); note any in the log of this check
+- [ ] Panel sleep: the screen timeout and the side button turn it dark and back on, lit and correct (`displaySleep` sends display off 0x28 and sleep in 0x10, then sleep out 0x11 and display on 0x29; wadamesh used only 0x28/0x29); if it stays dark after waking, try dropping 0x10/0x11
+- [ ] Restart: Settings → Restart, an OTA install and web config's restart all bring the panel back lit (`[tdp4] restarted (full reset)` in the log)
+- [ ] First boot (factory reset): portrait (rotation 1), the right way up
+- [ ] Touch axes: in each of the four orientations (no keyboard), a tap lands where the finger is at all four corners and the middle, and a swipe scrolls the right way
+- [ ] Touch address: the GT9895 answers at 0x5D (the probe tries only that; the log says `no GT9895 touch at 0x5D` otherwise, then try 0x14)
+- [ ] Wi-Fi through the C6 (ESP-Hosted 2.12.13 image, docs/BUILD.md): Settings → Wi-Fi scans and joins; web config loads; the setup AP is named `Monster-Cyberspace-TDisplayP4` and `http://192.168.4.1` loads; a P4 OTA install leaves Wi-Fi working
+- [ ] Keyboard expansion fitted with the power off: the log shows `[tdp4] keyboard expansion found`; the screen is landscape above the keys (rotation 0); Settings and web config show no Orientation; a cursor is drawn and no on-screen keyboard docks
+- [ ] Keyboard removed with the power off: `no keyboard expansion`, and the orientation saved before comes back
+- [ ] Keys: every key types the right character, with Shift, Sym and Caps Lock (Caps Lock lights the keyboard's LEDs); modifiers lapse after 1.5 s; arrows move and repeat; Backspace deletes, repeats, then goes back; Esc and Alt + Backspace go back; Enter selects; Tab opens the palette; the emoji key opens the tray while typing
+- [ ] Keyboard light: F11 steps Low, Medium, High, Off (Medium on first boot); Settings → Keyboard light matches; the keys go dark with the screen and come back when it wakes
+- [ ] Keyboard with an SD card fitted: keys still work while the slot is unpowered between backups (SD power off, GPIO45 is the keyboard's SCL), and after a backup and a restore
+- [ ] Haptics: a tap on a button, row or tile buzzes briefly (about 15 ms); a tap on nothing doesn't; a mention, C-Mail and Feed reply each buzz longer (about 120 ms), with the buzzer on or off
+- [ ] Haptics settings: Settings → Tap vibration and Alert vibration off stop each buzz; web config's Vibrate on tap and Vibrate on alerts (Display) do the same; both survive a restart and a backup and restore; no other board shows them
+- [ ] Speaker: with the buzzer on, a mention and a C-Mail beep through the speaker (ES8311 at 44.1 kHz on Wire1), clean, with no click between beeps; beeps and buzzes together don't stall the UI
+- [ ] GPS: outdoors with Wi-Fi off, `[time] set from GPS` within 15 min, then `[gps] off` (wake on XL9535 bit 9)
+- [ ] RTC: the time set by NTP or GPS survives a power cycle with Wi-Fi off
+- [ ] Battery gauge (BQ27220): Settings shows a sensible percentage; the charging state follows the USB cable
+- [ ] SD (FAT32 card, 4-bit, mounted through ESP-IDF): Back up to SD card, then Restore from SD card…, both work
+- [ ] Side button: turns the screen off, and on again; without the keyboard a touch doesn't wake it, with it any key or touch does (and does nothing else)
+- [ ] Flasher: picking LilyGO T-Display P4 installs the factory image (ESP32-P4 chip family, bootloader at 0x2000) and it boots; a reflash without erase keeps the settings
+
 **GPS time, RTC and time zone (`m9`):**
 
 - [ ] With Wi-Fi in range, `[time] NTP sync` and `[time] RTC written` appear, then `[gps] off`

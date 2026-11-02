@@ -9,7 +9,8 @@ the LilyGO T-Deck Plus followed, then the Elecrow CrowPanel Advance 3.5" and
 Cyber Deck Plus (contributed in PR #6; an early version was used on hardware by
 its contributor). The Xteink X4
 (branch `x4`) is written but has never been built. The M5Stack Cardputer ADV
-(8 MB, no PSRAM, no Guilds) is built, not yet tried on hardware. More
+(8 MB, no PSRAM, no Guilds) is built, not yet tried on hardware, and so is
+the LilyGO T-Display P4 (ESP32-P4, AMOLED). More
 boards and Cyberspace features come later.
 
 - **Design spec:** `docs/superpowers/specs/2026-10-25-cyberspace-m9-circ-design.md`
@@ -37,6 +38,8 @@ boards and Cyberspace features come later.
   plan `docs/superpowers/plans/2026-11-01-cyberspace-cyber-deck-plus.md`.
 - **M5Stack Cardputer ADV:** spec `docs/superpowers/specs/2026-11-01-cyberspace-cardputer-adv-design.md`,
   plan `docs/superpowers/plans/2026-11-01-cyberspace-cardputer-adv.md`.
+- **LilyGO T-Display P4:** spec `docs/superpowers/specs/2026-11-02-cyberspace-tdisplay-p4-design.md`,
+  plan `docs/superpowers/plans/2026-11-02-cyberspace-tdisplay-p4.md`.
 - **Fluffy Generator (custom mascot):** spec
   `docs/superpowers/specs/2026-10-31-cyberspace-fluffy-generator-design.md`,
   plan `docs/superpowers/plans/2026-10-31-cyberspace-fluffy-generator.md`.
@@ -87,7 +90,8 @@ pio run -e mesh_deck        # Attaky Mesh Deck
 pio run -e cyber_deck_plus  # Attaky Cyber Deck Plus
 pio run -e x4               # Xteink X4 (ESP32-C3, no PSRAM)
 pio run -e cardputer_adv    # M5Stack Cardputer ADV (8 MB, no PSRAM, no Guilds)
-scripts/build-upload-monitor.sh m9   # flash + serial monitor (115200); -w for the Wio L2, -t for the T-Deck Plus, -3/-5 for the CrowPanels, -P for the Pager, -D for the T-Deck Pro, -M for the Mesh Deck, -K for the Cyber Deck Plus, -X for the X4, -C for the Cardputer ADV; --help for options
+pio run -e tdisplay_p4      # LilyGO T-Display P4 (ESP32-P4, AMOLED)
+scripts/build-upload-monitor.sh m9   # flash + serial monitor (115200); -w for the Wio L2, -t for the T-Deck Plus, -3/-5 for the CrowPanels, -P for the Pager, -D for the T-Deck Pro, -M for the Mesh Deck, -K for the Cyber Deck Plus, -X for the X4, -C for the Cardputer ADV, -4 for the T-Display P4; --help for options
 scripts/build-upload-monitor.sh -B   # build every firmware env, no device needed
 scripts/screenshot.py PORT [--watch]  # PNG screenshots over the serial console (no device writes)
 # demo build for screenshots, no network (never release): docs/BUILD.md "Screenshots"
@@ -177,6 +181,28 @@ rows only when the count changes or once a second. `RC_MONO_CELLS` (default `RC_
 it keeps colour; `src/sys/string_instances.cpp` keeps Matter/BLE out of the
 link. `NO_OTA_ENVS` in `scripts/release.sh` ships it a factory image only,
 and the flasher hides Make your Fluffy and Phrases for it.
+`src/hal/tdisplay_p4/` is the LilyGO T-Display P4 with the 4.1" AMOLED (ESP32-P4,
+`esp32p4_es`, 32 MB PSRAM; ported from `../../wadamesh` `variants/tdisplay_p4/`,
+pins as camillia-mt's `hw_tdisplay_p4.h`): an XL9535 expander at 0x20 on Wire
+7/8 (`io_xl9535`; rails, resets, GPS wake bit 9, C6 enable, SD power), the
+RM69A10 over MIPI-DSI (`esp_lcd_rm69a10`, `panel_rm69a10`) whose native
+568x1232 frame the UI fills at 2x as a 284x616 panel (`ui/scale2x`), GT9895
+touch, the clip-on keyboard expansion (`keyboard_tdisplay_p4`: XL9555 +
+TCA8418 on Wire1 46/45, found once in `board::begin()`; `TdisplayP4Keys` in
+`input/keymap_tdisplay_p4`, F11 steps the light, `Action::KbLightStep`,
+`nextKbLight`), the ES8311 speaker through the Wio's `es8311` driver (44.1 kHz,
+`wire`/`tryLock` config) and the AW86224 haptic driver (`haptic_aw86224`, on
+its own task) taking turns on Wire1 20/21 (`i2c1_tdisplay_p4`), GPS, PCF8563
+RTC, BQ27220 gauge and 4-bit SD mounted with ESP-IDF's
+`esp_vfs_fat_sdmmc_mount` (Arduino `SD_MMC` drives GPIO45, the keyboard's SCL)
+in `peripherals_tdisplay_p4.cpp`. Rotation 1, portrait, is its first-boot
+default (`board::defaultRotation()`); with the keyboard fitted it locks to
+rotation 0 (landscape above the keys) and leaves the saved one alone.
+`board::hasHaptic`/`haptic` drive tap (`ui/haptics` `tapBuzz`, 15 ms) and alert
+(120 ms) buzzes, switched by settings `tapVibrate`/`alertVibrate`. Wi-Fi goes
+through the on-board ESP32-C6 running ESP-Hosted 2.12.13 (docs/BUILD.md);
+P4 OTA never updates the C6. Its ROM loads the bootloader from 0x2000
+(`env_boot_offset` in `scripts/release.sh`).
 Touch: `lib/core` turns samples into gestures and resolves them against the
 per-frame `TapMap` widgets fill as they draw (`input/gestures`, `ui/tap_map`,
 `input/touch_resolve`, the `Osk` keyboard); `ui_task` feeds `handleKey` and
@@ -224,7 +250,7 @@ The Attaky Mesh Deck HAL (env `mesh_deck`) and the notification light were
 added on 2026-10-29 (flashed: it boots and finds touch, gauge and keyboard;
 the panel, touch mapping, keys and LEDs await the hardware check).
 **Still open:** the unticked items under "Open hardware checks" in
-`docs/TESTING.md` (themes, device Settings, touch UI, Wio L2, T-Deck Plus, CrowPanels, Pager, T-Deck Pro, Mesh Deck, Cyber Deck Plus, Cardputer ADV, GPS time, API
+`docs/TESTING.md` (themes, device Settings, touch UI, Wio L2, T-Deck Plus, CrowPanels, Pager, T-Deck Pro, Mesh Deck, Cyber Deck Plus, Cardputer ADV, T-Display P4, GPS time, API
 assumptions, settings backup, OTA, Fluffy Generator), then the human live checklist on the `m9` build.
 CI (`.github/workflows/build.yml`) runs on GitHub.
 OTA updates were added on 2026-10-28 (built without flashing): signed images
@@ -268,9 +294,17 @@ The M5Stack Cardputer ADV (env `cardputer_adv`) was added on 2026-11-01
 feature flags (`lib/core/src/feature_flags.h`) cut it to cIRC rooms, with no OTA
 or mascot partition. Its panel offsets, ES8311 clock, push speed, key map and
 TLS heap headroom await the hardware check (docs/TESTING.md).
-The native suite is green: 680/680
+The LilyGO T-Display P4 (env `tdisplay_p4`) was added on 2026-11-02 (built
+without flashing): portrait, landscape, or landscape with the keyboard
+expansion; tap and alert vibration settings (`tapVibrate`/`alertVibrate`, shown
+only where `board::hasHaptic()`). Its panel, touch axes, keyboard, haptics,
+speaker, C6 Wi-Fi, GPS, RTC, gauge and SD await the hardware check
+(docs/TESTING.md). Also on 2026-11-02: the T-Deck Pro draws 6 px in from the
+left (`PANEL_LEFT_INSET` in `pins_tdeck_pro.h`, `packMono` x0) so the bezel
+doesn't cover text; its check is open too.
+The native suite is green: 707/707
 (`pio test -e native`), and `scripts/build-upload-monitor.sh -B` builds all
-eleven firmware envs.
+twelve firmware envs.
 
 Notes for whoever continues:
 - Each task follows test-driven development: write the plan's tests first, run

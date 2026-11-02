@@ -19,6 +19,7 @@ RELEASE_ENVS=(
     cyber_deck_plus
     x4
     cardputer_adv
+    tdisplay_p4
 )
 
 # Release envs built with OTA off (RC_FEAT_OTA=0, no second app slot): they
@@ -55,15 +56,19 @@ env_label() {
         cyber_deck_plus) echo "Attaky Cyber Deck Plus" ;;
         x4)          echo "Xteink X4" ;;
         cardputer_adv) echo "M5Stack Cardputer ADV" ;;
+        tdisplay_p4) echo "LilyGO T-Display P4" ;;
         *)           echo "$1" ;;
     esac
 }
 
 # Every board here has 16 MB of flash but the Cardputer ADV (8 MB), and all
-# but the X4 (an ESP32-C3) are ESP32-S3s. Kept as functions so a board that
-# differs only has to add a case. Artifact names use dashes.
+# but the X4 (an ESP32-C3) and the T-Display P4 (an ESP32-P4) are ESP32-S3s.
+# Kept as functions so a board that differs only has to add a case. Artifact
+# names use dashes.
 env_out_name()   { echo "${1//_/-}"; }
-env_chip()       { case "$1" in x4) echo "esp32c3" ;; *) echo "esp32s3" ;; esac; }
+env_chip()       { case "$1" in x4) echo "esp32c3" ;; tdisplay_p4) echo "esp32p4" ;; *) echo "esp32s3" ;; esac; }
+# Where the chip's ROM looks for the second-stage bootloader: 0x2000 on the P4.
+env_boot_offset() { case "$(env_chip "$1")" in esp32p4) echo "0x2000" ;; *) echo "0x0" ;; esac; }
 env_flash_size() { case "$1" in cardputer_adv) echo "8MB" ;; *) echo "16MB" ;; esac; }
 env_has_ota()    { case " ${NO_OTA_ENVS[*]} " in *" $1 "*) return 1 ;; *) return 0 ;; esac; }
 # DIO in the image header boots on every QIO-capable part, and is what the
@@ -236,7 +241,7 @@ merge_assets() {
         echo "  $env_name -> $out.bin"
         "${ESPTOOL[@]}" --chip "$(env_chip "$env_name")" merge_bin -o "$out.bin" \
             -fm "$(env_flash_mode "$env_name")" -ff 80m -fs "$(env_flash_size "$env_name")" \
-            0x0     "$d/bootloader.bin" \
+            "$(env_boot_offset "$env_name")" "$d/bootloader.bin" \
             0x8000  "$d/partitions.bin" \
             0xe000  "$d/boot_app0.bin" \
             0x10000 "$d/firmware.bin" >/dev/null

@@ -8,7 +8,8 @@
 - A USB data cable. The ThinkNode M9's console runs through its USB-to-UART
   bridge at 115200 baud, and so do the CrowPanels', the Mesh Deck's and the Cyber Deck Plus's (a CH340); the Wio Tracker
   L2's, the T-Deck Plus's and the Cardputer ADV's run through the ESP32-S3's
-  own USB, and the Xteink X4's through the ESP32-C3's.
+  own USB, the Xteink X4's through the ESP32-C3's, and the T-Display P4's
+  through the ESP32-P4's.
 
 ## Environments
 
@@ -25,6 +26,7 @@
 | `cyber_deck_plus` | The firmware for the Attaky Cyber Deck Plus (the Mesh Deck's Core plus a gamepad, Media I/O speaker and microSD; no GPS or LoRa; an early version was used on hardware by its contributor) |
 | `x4` | The firmware for the Xteink X4 (ESP32-C3, no PSRAM, e-paper, buttons only; a mostly passive client with text sent from web config; not yet built or tried on hardware) |
 | `cardputer_adv` | The firmware for the M5Stack Cardputer ADV (ESP32-S3FN8: 8 MB flash, no PSRAM; keyboard, 240x135 panel; no Guilds, no OTA; not yet tried on hardware) |
+| `tdisplay_p4` | The firmware for the LilyGO T-Display P4 (ESP32-P4, 4.1" AMOLED drawn at 2x, touch, optional keyboard expansion, haptics; Wi-Fi through its ESP32-C6; not yet tried on hardware) |
 | `native` | Host unit tests for `lib/core` |
 
 ```sh
@@ -40,6 +42,7 @@ pio run -e mesh_deck                  # build for the Mesh Deck
 pio run -e cyber_deck_plus            # build for the Cyber Deck Plus
 pio run -e x4                         # build for the Xteink X4
 pio run -e cardputer_adv              # build for the Cardputer ADV
+pio run -e tdisplay_p4                # build for the T-Display P4
 scripts/build-upload-monitor.sh m9    # build, flash, then open the serial monitor
 ```
 
@@ -58,6 +61,7 @@ scripts/build-upload-monitor.sh m9    # build, flash, then open the serial monit
 | `--cyber-deck-plus`/`-K` | Board flag: Attaky Cyber Deck Plus (`cyber_deck_plus`) |
 | `--x4`/`-X` | Board flag: Xteink X4 (`x4`) |
 | `--cardputer-adv`/`-C` | Board flag: M5Stack Cardputer ADV (`cardputer_adv`) |
+| `--tdisplay-p4`/`-4` | Board flag: LilyGO T-Display P4 (`tdisplay_p4`) |
 | `ENV` | Or name any firmware env directly; with neither, a menu lists every firmware env |
 | `--port`/`-p PORT` | Serial port for upload and monitor (default: auto-detect) |
 | `--erase`/`-E` | Erase the whole flash in the same esptool session as the upload (`upload_erase` target); wipes saved settings |
@@ -166,6 +170,50 @@ The Cardputer ADV (8 MB) uses `partitions_8mb.csv`: one `factory` app at
 `0x10000` (size `0x7C0000`), `nvs` at `0x7D0000` (`0x20000`) and `coredump` at
 `0x7F0000`. No `otadata`, second slot or `mascot`; settings sit past the app,
 so a factory image at `0x0` keeps them, and `nvs_migrate` finds no `nvs_old`.
+
+Every board is an ESP32-S3 but the X4 (ESP32-C3) and the T-Display P4
+(ESP32-P4), whose ROM loads the bootloader from `0x2000` instead of `0x0`
+(`env_chip` and `env_boot_offset` in `scripts/release.sh`). Its factory image
+is still flashed at `0x0` (the merge pads the gap), `scripts/pages-site.sh`
+gives its manifest the `ESP32-P4` chip family, and `flash.sh` lets esptool
+detect the chip.
+
+### T-Display P4: the ESP32-C6 Wi-Fi image
+
+The T-Display P4 has no radio of its own: Arduino `WiFi` goes over SDIO to
+the on-board ESP32-C6, which runs ESP-Hosted from its own 4 MB flash. The C6
+must run the ESP-Hosted **2.12.13** image, the version of the host libraries in
+this project's platform (pioarduino 55.03.312, Arduino 3.3.12). That image
+ships with the platform, at
+`.pio-core/packages/framework-arduinoespressif32-libs/hosted/esp32c6-v2.12.13.bin`
+after a first build, and is the one camillia-mt releases as
+`camillia-mt-tdisplay-p4-c6-esp-hosted-v2.12.13.bin`.
+
+Neither our factory image nor OTA touches the C6: a P4 update leaves it as it
+was. Boards that already run a 2.12.13 C6 image (LilyGO's ESP-Hosted
+examples, camillia-mt, wadamesh) need nothing more. Otherwise provision it once
+through the board's **3.3 V UART** connector for the C6, as camillia-mt's
+BUILD.md describes:
+
+1. Power the T-Display P4 and connect a 3.3 V USB-to-UART adapter: adapter
+   TX to board RX, adapter RX to board TX, GND to GND. Never use 5 V logic.
+2. Hold the coprocessor's BOOT button, tap its RESET button, then release BOOT.
+3. Write the image with camillia-mt's `scripts/flash-tdisplay-p4-c6.sh`:
+
+   ```sh
+   ../../camillia/camillia-mt/scripts/flash-tdisplay-p4-c6.sh <c6-uart-port> \
+     .pio-core/packages/framework-arduinoespressif32-libs/hosted/esp32c6-v2.12.13.bin
+   ```
+
+4. Tap the coprocessor's RESET button and restart the P4.
+
+The file is an ESP-Hosted application image, not a merged one: no bootloader
+or partition table. The script reads the C6's partition table, writes the
+image into its app partition (factory, or `ota_0`) and blanks `otadata`; it
+stops without writing if there is no valid table or the image doesn't fit.
+Never write it at `0x0` by hand, and don't use LilyGO's ESP-AT image: the
+firmware uses Arduino's transparent `WiFi` over ESP-Hosted. The C6's enable
+line is on the XL9535 expander, so a wedged C6 needs a board restart.
 
 ### Mascot
 

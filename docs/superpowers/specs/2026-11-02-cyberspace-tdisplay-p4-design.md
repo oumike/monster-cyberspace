@@ -1,6 +1,6 @@
 # LilyGO T-Display P4 (AMOLED) — design
 
-Date: 2026-11-02. Status: approved design, not built yet.
+Date: 2026-11-02. Status: built, not yet tried on hardware.
 Plan: `docs/superpowers/plans/2026-11-02-cyberspace-tdisplay-p4.md`.
 
 ## 1. Goal
@@ -127,11 +127,12 @@ acquire and release.
 ### 3.6 Sound and haptics
 
 - `board::beep` queues a tone for a task that plays it through the shared
-  `es8311` driver (the Wio's) on I2S, 16 kHz, 16-bit, the codec brought up on
-  the first beep.
+  `es8311` driver (the Wio's) on I2S, 44.1 kHz, 16-bit, the codec brought up
+  on the first beep.
 - New HAL calls, defaulted in `board_defaults.cpp`: `hasHaptic()` (false) and
-  `haptic(int ms)` (a no-op). On this board, `haptic` queues a buzz for the
-  same task, which plays wadamesh's AW86224 RAM waveform, looped for `ms`.
+  `haptic(int ms)` (a no-op). On this board, `haptic` queues a buzz for its
+  own task (separate from the beep task), which plays wadamesh's AW86224 RAM
+  waveform, looped for `ms`.
 - New settings in `rc::Settings`: `tapVibrate` and `alertVibrate`, both true by
   default. They're shown only where `board::hasHaptic()`, in device Settings
   ("Tap vibration: On/Off", "Alert vibration: On/Off"), in web config (two

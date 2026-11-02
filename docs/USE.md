@@ -9,7 +9,8 @@ Deck Plus (the Mesh Deck's d-pad, touch and keyboard plus a gamepad, speaker
 and microSD; see Cyber Deck Plus below), and the Xteink X4
 (e-paper and six buttons, a mostly passive client; see Xteink X4 below), and
 the M5Stack Cardputer ADV (keyboard; no Guilds; see Cardputer ADV
-below). Key names in this guide are the M9's.
+below), and the LilyGO T-Display P4 (touch, in portrait or landscape, or
+landscape with its keyboard expansion; see T-Display P4 below). Key names in this guide are the M9's.
 
 ## First setup
 
@@ -302,6 +303,53 @@ between beeps it is idle. Backups go to the microSD slot. There is no RTC or
 GPS: the clock comes from Wi-Fi. The setup AP is
 **`Monster-Cyberspace-CyberDeckPlus`**. The serial console is the USB-C port
 (a CH340).
+
+## T-Display P4
+
+The LilyGO T-Display P4 has a 4.1" AMOLED touch screen, a side button and a
+clip-on keyboard expansion. The screen is drawn at half its resolution, so
+every pixel is a 2×2 block and text is the size it is on the other boards.
+There are three ways to hold it:
+
+- **Portrait**, touch only, with the docked on-screen keyboard. This is how it
+  starts the first time.
+- **Landscape**, touch only, with the docked on-screen keyboard. Pick
+  Portrait or Landscape (or either turned 180°) under **Settings** →
+  **Orientation**, or Display in web config, as on the Wio Tracker L2.
+- **Landscape with the keyboard expansion.** The keyboard is looked for only
+  when the board starts, so fit or remove it with the power off. With it on,
+  the screen turns to landscape above the keys and stays there (there is no
+  Orientation item), a cursor is drawn, and the on-screen keyboard stays
+  hidden; the touch screen still works. Take it off and restart, and the
+  orientation you picked before comes back.
+
+| Key | Action |
+|---|---|
+| Keys | Type. Shift, Sym and Alt are tapped for the next key (they lapse after 1.5 s); Sym gives the symbols printed on the keys. Caps Lock locks capitals and lights the keyboard's LEDs |
+| Arrows | Up, Down, Left, Right (hold to repeat) |
+| Enter | Select (send, in a room) |
+| Backspace | Deletes while there's text to delete; otherwise Back. Hold it to repeat |
+| Esc, or Alt + Backspace | Back |
+| Tab | The command palette |
+| Emoji key, while typing | The emoji tray |
+| F11 | Steps the keyboard light: Low, Medium, High, Off (also **Keyboard light** in Settings) |
+
+**Side button:** turns the screen off, and on again. With the keyboard on,
+any key or touch wakes it too (that press does nothing else); without it,
+only the side button does.
+
+**Vibration:** a short buzz when a tap lands on something (**Tap
+vibration**), and a longer one for each mention, C-Mail or Feed reply alert
+(**Alert vibration**), whether or not the buzzer is on. Both are on by default; switch them in
+Settings, or with **Vibrate on tap** and **Vibrate on alerts** under Display in
+web config.
+
+Wi-Fi goes through the board's ESP32-C6, which needs the matching ESP-Hosted
+image (see docs/BUILD.md; a firmware update doesn't change it). The speaker
+beeps for alerts when the buzzer is on. The GPS and the RTC keep the clock,
+Settings shows the battery, and backups go to the microSD slot. The setup AP
+is **`Monster-Cyberspace-TDisplayP4`** (no `-Setup`: Wi-Fi names stop at 32
+characters). The serial console is the USB-C port (the ESP32-P4's own USB).
 
 ## Xteink X4
 
@@ -762,7 +810,8 @@ At `http://monster-cyberspace.local`, or the device IP, on your LAN:
 - Wi-Fi: scan, add, and remove saved networks (up to 5)
 - Cyberspace account: sign in, sign out, resend verification
 - Display: text size, theme, buzzer, spell check, orientation (touch boards),
-  and keyboard light (boards with a lit keyboard)
+  keyboard light (boards with a lit keyboard), and vibrate on tap and on
+  alerts (the T-Display P4)
 - Time: zone and NTP server (see Time and time zone below)
 - Security: page password and setup-AP password
 - Mascot: the splash and screensaver art and phrases (see Mascot below)
@@ -887,14 +936,19 @@ shown without moving or opening anything.
   60 min, and Never; picking one saves it. 30 s by default. See Screen timeout.
 - **At timeout: screensaver / screen off.** Centre switches what the screen
   timeout does and saves it.
-- **Keyboard light: …** (M9, T-Deck Plus, T-Deck Pro, Pager) Opens a box with
+- **Keyboard light: …** (M9, T-Deck Plus, T-Deck Pro, Pager, T-Display P4 with
+  its keyboard) Opens a box with
   Low, Medium, High and Off; picking one saves it (also under Display in web
   config). The keys are lit only while
-  the screen is on. Off by default, except on the M9, where it is High and its
+  the screen is on. Off by default, except on the T-Display P4 (Medium, and F11
+  steps it) and the M9, where it is High and its
   keyboard lights the keys itself after a press; Off there switches that light
   off until the M9 is power cycled.
 - **Notify light: …** and **Light timeout: …** (Mesh Deck) Open a box with
   the colours (or Off) and the timeouts; see Mesh Deck.
+- **Tap vibration: on / off** and **Alert vibration: on / off** (T-Display
+  P4) Centre switches the buzz on taps or on alerts and saves it; see
+  T-Display P4. Both on by default.
 - **Spell check: on / off.** Centre switches suggestions while typing (see
   Spell check). On by default.
 - **Wi-Fi: …** Shows the joined network and opens Wi-Fi on the device (see

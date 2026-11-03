@@ -135,8 +135,8 @@ void test_ignored() {
 
 void test_function_keys() {
   TdisplayP4Keys k;
-  expectAction(k.key(1, true, 0), Action::OpenCirc);
-  expectAction(k.key(2, true, 0), Action::OpenRooms);
+  expectAction(k.key(1, true, 0), Action::OpenHome);
+  expectAction(k.key(2, true, 0), Action::OpenCirc);
   expectAction(k.key(3, true, 0), Action::OpenCmail);
   expectAction(k.key(4, true, 0), Action::OpenFeed);
   expectAction(k.key(5, true, 0), Action::OpenMap);

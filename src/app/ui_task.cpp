@@ -598,6 +598,20 @@ void sendCanned(const std::u32string& text) {
 // F10's table: a centred box over the screen; a tap anywhere closes it.
 void renderKeysHelp(Grid& g, const Theme& t) {
   const int n = int(std::size(kFunctionKeys));
+  // Rows drawn big, shifted, scaled, padded or skipped (Home's tiles) don't
+  // line up with plain cells: then the box goes on a blank screen.
+  bool odd = false;
+  for (int r = 1; r < g.rows(); ++r)
+    odd = odd || g.rowKind(r) != RowKind::Normal || g.rowShift(r) != 0 || g.rowScale(r) != 1 ||
+          g.rowPad(r) >= 0;
+  if (odd)
+    for (int r = 1; r < g.rows(); ++r) {
+      g.setRowKind(r, RowKind::Normal);
+      g.setRowShift(r, 0);
+      g.setRowScale(r, 1);
+      g.setRowPad(r, -1);
+      g.fillRow(r, t.bg);
+    }
   // The title and the keys, with a blank row above and below when they fit.
   const int content = n + 1, pad = g.rows() >= content + 2 ? 1 : 0;
   const int w = std::min(g.cols() - 2, 26), h = std::min(g.rows(), content + 2 * pad);

@@ -15,7 +15,7 @@ struct FunctionKey {
 };
 
 constexpr FunctionKey kFunctionKeys[] = {
-    {U"F1", U"messages", Action::OpenCirc},     {U"F2", U"rooms", Action::OpenRooms},
+    {U"F1", U"home", Action::OpenHome},         {U"F2", U"messages", Action::OpenCirc},
     {U"F3", U"c-mail", Action::OpenCmail},      {U"F4", U"feed", Action::OpenFeed},
     {U"F5", U"guilds", Action::OpenMap},        {U"F6", U"profile", Action::OpenProfile},
     {U"F7", U"settings", Action::OpenSettings}, {U"F10", U"navigational help", Action::KeysHelp},
@@ -25,8 +25,8 @@ constexpr FunctionKey kFunctionKeys[] = {
 // The action of function key n (1-based), or None.
 constexpr Action functionKeyAction(int n) {
   switch (n) {
-    case 1: return Action::OpenCirc;
-    case 2: return Action::OpenRooms;
+    case 1: return Action::OpenHome;
+    case 2: return Action::OpenCirc;
     case 3: return Action::OpenCmail;
     case 4: return Action::OpenFeed;
     case 5: return Action::OpenMap;

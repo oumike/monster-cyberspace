@@ -31,9 +31,10 @@ using namespace tdp4;
 namespace s2x = rc::scale2x;
 
 uint8_t rotation = 1;  // defaultRotation(); the UI sets the saved one
+constexpr uint8_t kKeyboardRotation = 2;  // landscape, upright above the keys
 
 // The keyboard expansion, found once at boot (it is fitted with the power
-// off). With it the board stays at rotation 0, landscape above the keys.
+// off). With it the board stays at rotation 2, landscape above the keys.
 bool kbFitted = false;
 rc::TdisplayP4Keys keys;
 bool ledsShown = false;
@@ -189,7 +190,7 @@ void begin() {
   touch::begin();
   pinMode(SIDE_BUTTON, INPUT_PULLUP);
   kbFitted = keyboard::detect();
-  if (kbFitted) rotation = 0;
+  if (kbFitted) rotation = kKeyboardRotation;
   es8311::Config audio{CODEC_ADDR, I2S_MCLK, I2S_BCK, I2S_WS, I2S_DOUT, 8, audioPower, nullptr,
                        audioBusGive};
   audio.wire = &Wire1;
@@ -202,16 +203,17 @@ const char* name() { return "TDisplayP4"; }
 const char* otaSlug() { return "tdisplay-p4"; }
 uint8_t defaultRotation() { return 1; }
 
+// The UI's panel is the rotated native frame less CORNER_INSET on each side.
 int panelWidth() {
   int w, h;
   s2x::frameSize(NATIVE_W, NATIVE_H, rotation, w, h);
-  return w;
+  return w - 2 * CORNER_INSET;
 }
 
 int panelHeight() {
   int w, h;
   s2x::frameSize(NATIVE_W, NATIVE_H, rotation, w, h);
-  return h;
+  return h - 2 * CORNER_INSET;
 }
 
 // Each frame pixel becomes a 2x2 block of the panel's frame buffer, turned
@@ -219,12 +221,14 @@ int panelHeight() {
 void pushRows(const uint16_t* frame, int y0, int y1) {
   uint16_t* fb = panel::frame();
   if (!fb || !frame) return;
+  y0 = std::max(y0, 0);
   y1 = std::min(y1, panelHeight());
   if (y0 >= y1) return;
   const int w = panelWidth();
+  constexpr int I = CORNER_INSET;
   for (int y = y0; y < y1; ++y) {
-    const s2x::Pt a = s2x::frameToNative(0, y, NATIVE_W, NATIVE_H, rotation);
-    const s2x::Pt b = s2x::frameToNative(1, y, NATIVE_W, NATIVE_H, rotation);
+    const s2x::Pt a = s2x::frameToNative(I, y + I, NATIVE_W, NATIVE_H, rotation);
+    const s2x::Pt b = s2x::frameToNative(I + 1, y + I, NATIVE_W, NATIVE_H, rotation);
     const ptrdiff_t step = 2 * (ptrdiff_t(b.y - a.y) * PANEL_W + (b.x - a.x));
     uint16_t* d = fb + 2 * (ptrdiff_t(a.y) * PANEL_W + a.x);
     const uint16_t* s = frame + size_t(y) * w;
@@ -237,7 +241,7 @@ void pushRows(const uint16_t* frame, int y0, int y1) {
     }
   }
   int ny0, ny1;
-  s2x::nativeRows(y0, y1, NATIVE_W, NATIVE_H, rotation, ny0, ny1);
+  s2x::nativeRows(y0 + I, y1 + I, NATIVE_W, NATIVE_H, rotation, ny0, ny1);
   pendingY0 = std::min(pendingY0, 2 * ny0);
   pendingY1 = std::max(pendingY1, 2 * ny1);
 }
@@ -273,8 +277,9 @@ bool readTouch(int16_t& x, int16_t& y) {
   if (!touch::read(rx, ry)) return false;
   const s2x::Pt n = s2x::rawToNative(rx, ry, TOUCH_RAW_W, TOUCH_RAW_H, NATIVE_W, NATIVE_H);
   const s2x::Pt f = s2x::nativeToFrame(n.x, n.y, NATIVE_W, NATIVE_H, rotation);
-  x = int16_t(f.x);
-  y = int16_t(f.y);
+  // A touch in the corner margin lands on the nearest UI pixel.
+  x = int16_t(std::clamp(f.x - CORNER_INSET, 0, panelWidth() - 1));
+  y = int16_t(std::clamp(f.y - CORNER_INSET, 0, panelHeight() - 1));
   return true;
 }
 

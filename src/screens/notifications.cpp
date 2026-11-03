@@ -6,6 +6,8 @@
 #include "app/app_state.h"
 #include "chat/chat_source.h"
 #include "app/ui_task.h"
+#include "hal/board.h"
+#include "screens/button_pad.h"
 #include "screens/draw.h"
 #include "screens/screens.h"
 #include "store/locked_chat.h"
@@ -21,6 +23,15 @@ const char* tag(UnreadKind k) {
     case UnreadKind::Cmail: return "mail  ";
     case UnreadKind::Mention: return "irc   ";
     case UnreadKind::Feed: return "feed  ";
+  }
+  return "";
+}
+
+const char* kindName(UnreadKind k) {
+  switch (k) {
+    case UnreadKind::Cmail: return "C-Mail";
+    case UnreadKind::Mention: return "Mention";
+    case UnreadKind::Feed: return "Feed";
   }
   return "";
 }
@@ -113,6 +124,10 @@ void NotificationsScreen::onKey(const KeyEvent& k) {
     }
     return;
   }
+  // With keys, Left moves through the buttons until the first column.
+  const bool leave = k.action == Action::Back ||
+                     (k.action == Action::Left && (!board::hasKeys() || pad_.atLeftEdge()));
+  if (buttons_ && !leave) return open(pad_.key(k));
   switch (k.action) {
     case Action::Up:
       list_.up();
@@ -142,36 +157,51 @@ void NotificationsScreen::onEvent(const Event& e) {
 
 void NotificationsScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
   constexpr int64_t kRefreshMs = 1000;
+  // Every touch board gets buttons, as the room list does; with keys, a cursor.
+  const bool buttons = board::hasTouch();
+  if (buttons != buttons_) shownCount_ = -1;
+  buttons_ = buttons;
+  pad_.setCursor(board::hasKeys());
   const int count = countUnread();
   if (count != shownCount_ || marking_ != shownMarking_ || nowMs - builtAt_ >= kRefreshMs) {
     shownCount_ = count;
     shownMarking_ = marking_;
     builtAt_ = nowMs;
     items_ = gatherUnread();
-    std::vector<ListItem> rows;
-    rows.reserve(items_.size() + 1);
+    rows_.clear();
+    rows_.reserve(items_.size() + 1);
     if (!items_.empty())
-      rows.push_back(ListItem{marking_ ? U"marking all read\u2026" : U"\u2713 Mark all read", U""});
+      rows_.push_back(ListItem{marking_ ? U"marking all read\u2026" : U"\u2713 Mark all read", U""});
     for (const auto& it : items_) {
       std::u32string right = it.kind == UnreadKind::Cmail ? utf8ToU32(std::to_string(it.count)) : U"";
-      rows.push_back(ListItem{utf8ToU32(std::string(tag(it.kind)) + it.text), std::move(right),
-                              ItemTone::Normal, true});
+      ListItem row{utf8ToU32(std::string(tag(it.kind)) + it.text), std::move(right), ItemTone::Normal, true};
+      // Buttons put the text on a line of its own under the kind.
+      if (buttons_) {
+        row.label = utf8ToU32(kindName(it.kind));
+        row.detail = utf8ToU32(it.text);
+      }
+      rows_.push_back(std::move(row));
     }
-    list_.setItems(std::move(rows));  // keeps the selection, clamped
+    list_.setItems(rows_);  // keeps the selection, clamped
   }
   g.fill(t.bg);
   drawStatus(g, t, U"unread", unreadTotal(items_));
   const int bottom = g.rows() - 1;
-  const int nav = sideNavWidth(g);
-  list_.render(g, 1, bottom, 0, g.cols() - nav, t);
-  if (nav > 0) renderSideNav(g, 1, bottom, nav, t);
+  const int nav = buttons_ ? 0 : sideNavWidth(g);
+  if (buttons_) {
+    pad_.render(g, t, rows_, 2, bottom, true, 1);
+  } else {
+    list_.render(g, 1, bottom, 0, g.cols() - nav, t);
+    if (nav > 0) renderSideNav(g, 1, bottom, nav, t);
+  }
   if (items_.empty()) putLine(g, 1, 2, "nothing unread", t.dim, t.bg);
   if (confirm_) {
     box_.render(g, 1, bottom, nav, OverlayPlace::BottomRight, t);
     drawHint(g, t, U"\u2191\u2193 pick  \u25CF choose  back: cancel", U"tap: choose  outside: cancel");
     return;
   }
-  drawHint(g, t, U"\u2191\u2193 pick  \u25CF open  \u2190 home", U"tap to open  swipe to scroll");
+  drawHint(g, t, U"\u2191\u2193 pick  \u25CF open  \u2190 home",
+           buttons_ ? U"tap to open  drag to scroll" : U"tap to open  swipe to scroll");
 }
 
 }  // namespace rc

@@ -46,6 +46,10 @@ on 2026-10-27; the sections marked `m9_fake` passed on it before then.
 - [ ] Touch Home: the unread tile spans the top row; Up from either tile of
       the next row goes to it and Down from it goes to the left tile; taps
       open every tile. With nothing unread, Unread says "nothing unread".
+- [ ] Touch boards (the T-Display P4 too): Unread's rows are two-line buttons
+      (C-Mail, Mention or Feed over the text, the C-Mail count on the right),
+      "✓ Mark all read" first; a tap opens one, a drag scrolls; with keys
+      (T-Deck Plus, the P4's keyboard) the arrows move a cursor and Centre opens.
 
 **Wi-Fi on the device (any board):**
 
@@ -412,6 +416,7 @@ is open.
 
 - [ ] Boots: the USB log shows `[boot] … on TDisplayP4`, `[tdp4] RM69A10 up 568x1232`, `[haptic] AW86224 up …` and `[tdp4] LoRa radio asleep` (or `no LoRa radio`), and no `XL9535 not found`, `no GT9895 touch` or Wire1 errors
 - [ ] Panel: lights at boot, colours right (no red/blue swap), nothing cut off; every logical pixel is a clean 2x2 block in all four rotations
+- [ ] Rounded corners: in every rotation (and with the keyboard), the status bar, hint line and button corners sit clear of the glass's corner arcs, with no wider black border than needed; tune `CORNER_INSET` in `pins_tdisplay_p4.h` (8 native px, 16 panel px); taps in the black margin land on the nearest edge
 - [ ] Tearing: scrolling a room or a long list and switching screens show no torn or half-drawn frames (the DPI frame buffer is written with no vsync); note any in the log of this check
 - [ ] Panel sleep: the screen timeout and the side button turn it dark and back on, lit and correct (`displaySleep` sends display off 0x28 and sleep in 0x10, then sleep out 0x11 and display on 0x29; wadamesh used only 0x28/0x29); if it stays dark after waking, try dropping 0x10/0x11
 - [ ] Restart: Settings → Restart, an OTA install and web config's restart all bring the panel back lit (`[tdp4] restarted (full reset)` in the log)
@@ -419,7 +424,7 @@ is open.
 - [ ] Touch axes: in each of the four orientations (no keyboard), a tap lands where the finger is at all four corners and the middle, and a swipe scrolls the right way
 - [ ] Touch address: the GT9895 answers at 0x5D (the probe tries only that; the log says `no GT9895 touch at 0x5D` otherwise, then try 0x14)
 - [ ] Wi-Fi through the C6 (ESP-Hosted 2.12.13 image, docs/BUILD.md): Settings → Wi-Fi scans and joins; web config loads; the setup AP is named `Monster-Cyberspace-TDisplayP4` and `http://192.168.4.1` loads; a P4 OTA install leaves Wi-Fi working
-- [ ] Keyboard expansion fitted with the power off: the log shows `[tdp4] keyboard expansion found`; the screen is landscape above the keys (rotation 0); Settings and web config show no Orientation; a cursor is drawn and no on-screen keyboard docks
+- [ ] Keyboard expansion fitted with the power off: the log shows `[tdp4] keyboard expansion found`; the screen is landscape above the keys and the right way up (rotation 2); Settings and web config show no Orientation; a cursor is drawn and no on-screen keyboard docks
 - [ ] Keyboard removed with the power off: `no keyboard expansion`, and the orientation saved before comes back
 - [ ] Keys: every key types the right character, with Shift, Sym and Caps Lock (Caps Lock lights the keyboard's LEDs); modifiers lapse after 1.5 s; arrows move and repeat; Backspace deletes, repeats, then goes back; Esc and Alt + Backspace go back; Enter selects; Tab opens the palette; the emoji key opens the tray while typing
 - [ ] Keyboard light: F11 steps Low, Medium, High, Off (Medium on first boot); Settings → Keyboard light matches; the keys go dark with the screen and come back when it wakes

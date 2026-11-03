@@ -71,7 +71,7 @@ octal (IO00-IO07, IO10-IO17); the table gives bit numbers.
   expansion is only fitted with the power off). Detection: the expansion's
   XL9555 answers at 0x20 on the 46/45 route, its TCA8418 is reset through
   it, and the TCA8418 answers at 0x34.
-- **Keyboard found:** the board turns to rotation 0 and stays there.
+- **Keyboard found:** the board turns to rotation 2 and stays there.
   `canRotate()` is false, so Settings and web config hide Rotation and
   `ui_task` never calls `setRotation`; the saved rotation is left untouched.
   `hasKeyboard()`, `hasKeys()` and `hasKbLight()` are true: no on-screen

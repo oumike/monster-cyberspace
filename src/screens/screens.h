@@ -417,6 +417,7 @@ class NotificationsScreen : public Screen {
     closeOverlays();
     marking_ = false;
     shownCount_ = -1;  // rebuild on the first frame
+    pad_.reset();
   }
   void leave() override { closeOverlays(); }
   void onKey(const KeyEvent&) override;
@@ -433,6 +434,9 @@ class NotificationsScreen : public Screen {
   void open(int row);
   void askMarkAll();
   ListView list_;
+  ButtonPad pad_;  // touch boards: rows as buttons (a cursor with keys)
+  bool buttons_ = false;
+  std::vector<ListItem> rows_;  // the button labels, rebuilt with items_
   Overlay box_;
   std::vector<UnreadItem> items_;  // as drawn
   // The rows are rebuilt when the count or marking_ changes, and once a

@@ -309,6 +309,8 @@ GPS: the clock comes from Wi-Fi. The setup AP is
 The LilyGO T-Display P4 has a 4.1" AMOLED touch screen, a side button and a
 clip-on keyboard expansion. The screen is drawn at half its resolution, so
 every pixel is a 2×2 block and text is the size it is on the other boards.
+The glass has rounded corners, so the picture sits a little in from every
+edge, inside a thin black border.
 There are three ways to hold it:
 
 - **Portrait**, touch only, with the docked on-screen keyboard. This is how it
@@ -318,7 +320,7 @@ There are three ways to hold it:
   **Orientation**, or Display in web config, as on the Wio Tracker L2.
 - **Landscape with the keyboard expansion.** The keyboard is looked for only
   when the board starts, so fit or remove it with the power off. With it on,
-  the screen turns to landscape above the keys and stays there (there is no
+  the screen turns to landscape, upright above the keys, and stays there (there is no
   Orientation item), a cursor is drawn, and the on-screen keyboard stays
   hidden; the touch screen still works. Take it off and restart, and the
   orientation you picked before comes back.
@@ -775,6 +777,11 @@ total; with nothing waiting it says "nothing unread".
   `feed` (`@name replied: …`, or a new guild thread).
 - Up/Down pick, Centre or Right opens (tap on touch boards); Left or Back
   goes Home.
+- On touch boards the rows are buttons: what it is (C-Mail, Mention or Feed)
+  on top, the text dim under it, and a C-Mail's count on the right. Tap one
+  to open it and drag to scroll. With keys too (T-Deck Plus, the T-Display
+  P4's keyboard), the arrows move the selection through them and Centre
+  opens one.
 - Opening a row opens the conversation, the room (which becomes your last
   room) or the entry, and marks it read the way opening it anywhere else
   does. Back from there returns to Unread, so you can work down the list.

@@ -197,7 +197,8 @@ RTC, BQ27220 gauge and 4-bit SD mounted with ESP-IDF's
 `esp_vfs_fat_sdmmc_mount` (Arduino `SD_MMC` drives GPIO45, the keyboard's SCL)
 in `peripherals_tdisplay_p4.cpp`. Rotation 1, portrait, is its first-boot
 default (`board::defaultRotation()`); with the keyboard fitted it locks to
-rotation 0 (landscape above the keys) and leaves the saved one alone.
+rotation 2 (landscape above the keys) and leaves the saved one alone. The UI
+is drawn `CORNER_INSET` (8 px) in from every edge, clear of the rounded corners.
 `board::hasHaptic`/`haptic` drive tap (`ui/haptics` `tapBuzz`, 15 ms) and alert
 (120 ms) buzzes, switched by settings `tapVibrate`/`alertVibrate`. Wi-Fi goes
 through the on-board ESP32-C6 running ESP-Hosted 2.12.13 (docs/BUILD.md);

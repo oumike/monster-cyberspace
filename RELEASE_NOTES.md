@@ -1,3 +1,26 @@
+### Monster for Cyberspace 1.2.1
+
+### T-Display P4: function keys
+
+- With the keyboard on, the function keys work from any screen, including while typing: **F1** Home, **F2** your last room (press it again in the room for the room list, and again to go back), **F3** C-Mail, **F4** Feed, **F5** Guilds, **F6** your profile, **F7** Settings.
+- **F10** shows navigational help, a table of these keys; any key or tap closes it. **F11** still steps the keyboard light.
+- Settings pickers (Theme and the rest) show a cursor you can move with the arrows. Enter sets your choice and Esc cancels.
+
+### Monster for Cyberspace 1.2.0
+
+### New board: LilyGO T-Display P4
+
+- First release for the LilyGO T-Display P4 with the 4.1" AMOLED. It works in portrait, in landscape, and in landscape with the clip-on keyboard. The UI stays clear of the screen's rounded corners.
+- Wi-Fi goes through the on-board ESP32-C6. It also has the speaker, GPS, clock, battery gauge and microSD. Flash it from the flasher page; later updates arrive over the air.
+- **Vibration:** tap and alert vibration, each switched on or off in Settings and web config.
+
+### Other changes
+
+- **Touch boards:** Unread's rows, Settings pickers, the time zone list, confirms and Restore from SD are now big buttons. A new entry's Title has more room around it, so it's easier to tap.
+- **Who's here:** your own name in the right-hand panel now has the same colour as in the chat (every board except the T-Deck Pro).
+- **T-Deck Pro:** text starts a little further from the left edge, so the bezel no longer covers it.
+- **Feed:** Topics (read-only) in the Feed's commands. **Profile:** Bookmarks on your own profile.
+
 ### Monster for Cyberspace 1.0.1
 
 ### Cardputer ADV: Unread

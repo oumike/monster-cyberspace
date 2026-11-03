@@ -423,7 +423,7 @@ is open.
 
 - [ ] Boots: the USB log shows `[boot] … on TDisplayP4`, `[tdp4] RM69A10 up 568x1232`, `[haptic] AW86224 up …` and `[tdp4] LoRa radio asleep` (or `no LoRa radio`), and no `XL9535 not found`, `no GT9895 touch` or Wire1 errors
 - [ ] Panel: lights at boot, colours right (no red/blue swap), nothing cut off; every logical pixel is a clean 2x2 block in all four rotations
-- [ ] Rounded corners: in every rotation (and with the keyboard), the status bar, hint line and button corners sit clear of the glass's corner arcs, with no wider black border than needed; tune `CORNER_INSET` in `pins_tdisplay_p4.h` (8 native px, 16 panel px); taps in the black margin land on the nearest edge
+- [ ] Rounded corners: in every rotation (and with the keyboard), the status bar, hint line and button corners sit clear of the glass's corner arcs, with no wider black border than needed; tune `CORNER_INSET` in `pins_tdisplay_p4.h` (16 native px, 32 panel px); taps in the black margin land on the nearest edge
 - [ ] Tearing: scrolling a room or a long list and switching screens show no torn or half-drawn frames (the DPI frame buffer is written with no vsync); note any in the log of this check
 - [ ] Panel sleep: the screen timeout and the side button turn it dark and back on, lit and correct (`displaySleep` sends display off 0x28 and sleep in 0x10, then sleep out 0x11 and display on 0x29; wadamesh used only 0x28/0x29); if it stays dark after waking, try dropping 0x10/0x11
 - [ ] Restart: Settings → Restart, an OTA install and web config's restart all bring the panel back lit (`[tdp4] restarted (full reset)` in the log)

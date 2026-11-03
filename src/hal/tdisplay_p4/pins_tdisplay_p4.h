@@ -27,9 +27,10 @@ constexpr int PANEL_W = 568, PANEL_H = 1232;
 // The UI's logical panel, drawn 2x (ui/scale2x).
 constexpr int NATIVE_W = PANEL_W / 2, NATIVE_H = PANEL_H / 2;
 // The glass has rounded corners. The UI is drawn this many native pixels in
-// from every edge (16 panel pixels, wadamesh's corner safe area) and the
-// margin stays black, so nothing lands under the arcs. Tune on hardware.
-constexpr int CORNER_INSET = 8;
+// from every edge (32 panel pixels; 16, wadamesh's safe area, still clipped
+// the corner text) and the margin stays black, so nothing lands under the
+// arcs. Tune on hardware.
+constexpr int CORNER_INSET = 16;
 constexpr int DSI_LANES = 2;
 constexpr uint32_t DSI_LANE_MBPS = 1000;
 constexpr uint32_t DPI_MHZ = 60;

@@ -49,7 +49,6 @@ class SetupScreen : public Screen {
   void activate(int item);
   ListView menu_;
   BackupPicker picker_;
-  Slider volume_;  // the alert sound, on boards with board::hasVolume
   bool hasRestore_ = false;  // the SD list held backups on enter
   bool buttons_ = false;     // touch-only boards: the options as buttons
   ButtonPad pad_;
@@ -138,6 +137,7 @@ class SettingsScreen : public Screen {
   ListView menu_, zoneList_;
   Overlay confirmBox_;
   BackupPicker picker_;
+  Slider volume_;  // the alert sound, on boards with board::hasVolume
   Confirm confirm_ = Confirm::None;
   bool picking_ = false;  // the time zone list is open
   ButtonPad pad_;         // touch boards: the menu as buttons

@@ -182,6 +182,7 @@ static const char kPage[] = R"HTML(<!doctype html>
 <label id="ledrow" hidden>Notify light<select id="ledcolor"><option value="red">Red</option><option value="green">Green</option><option value="blue">Blue</option><option value="yellow">Yellow</option><option value="cyan">Cyan</option><option value="magenta">Magenta</option><option value="white">White</option><option value="off">Off</option></select></label>
 <label id="ledtrow" hidden>Light timeout<select id="ledtime"><option value="15">15 s</option><option value="30">30 s</option><option value="60">1 min</option><option value="300">5 min</option><option value="0">Until read</option></select></label>
 <label id="buzzrow" hidden><input id="buzzer" type="checkbox" style="width:auto"> Sound on alerts (mentions, C-Mail, Feed)</label>
+<label id="volrow" hidden>Alert sound (mentions, C-Mail, Feed): <span id="volval"></span><input id="vol" type="range" min="0" max="100" step="20" oninput="volShow()"></label>
 <div id="vibrow" hidden><label><input id="tapvib" type="checkbox" style="width:auto"> Vibrate on tap</label><label><input id="alertvib" type="checkbox" style="width:auto"> Vibrate on alerts</label></div>
 <label id="spellrow"><input id="spell" type="checkbox" style="width:auto"> Spell check while typing</label>
 <button onclick="savePrefs()">Save display</button>
@@ -275,7 +276,7 @@ function fillZones(sel,custom){sel.innerHTML='';
   if(custom){const o=document.createElement('option');o.value='';o.textContent='Custom (POSIX)';sel.appendChild(o);}}
 async function loadZones(){const r=await call('GET','/api/zones');zones=Array.isArray(r)?r:[];fillZones($('tzpick'),true);fillZones($('wtz'),true);}
 async function loadPrefs(){const p=await call('GET','/api/prefs');if(p.tz===undefined)return;
-  $('tsizerow').hidden=!p.textSize;if(p.textSize)$('tsize').value=p.textSize;if(p.theme){$('themerow').hidden=false;$('theme').value=p.theme;}$('buzzrow').hidden=p.buzzer===undefined;$('buzzer').checked=!!p.buzzer;$('spell').checked=p.spellCheck!==false;$('spellrow').hidden=p.spellCheck===undefined;$('tz').value=p.tz;
+  $('tsizerow').hidden=!p.textSize;if(p.textSize)$('tsize').value=p.textSize;if(p.theme){$('themerow').hidden=false;$('theme').value=p.theme;}$('buzzrow').hidden=p.buzzer===undefined||p.volume!==undefined;$('buzzer').checked=!!p.buzzer;$('volrow').hidden=p.volume===undefined;if(p.volume!==undefined){$('vol').value=p.buzzer?p.volume:0;volShow();}$('spell').checked=p.spellCheck!==false;$('spellrow').hidden=p.spellCheck===undefined;$('tz').value=p.tz;
   $('scrsecs').value=String(p.screenOnSecs);$('scrsaver').value=p.screenSaver?'1':'0';
   if(p.rotation!==undefined){$('rotrow').hidden=false;$('rot').value=String(p.rotation);}
   if(p.kbLight){$('kbrow').hidden=false;$('kblight').value=p.kbLight;}
@@ -300,10 +301,11 @@ async function addWifi(){
   const r=await post('/api/wifi',{ssid:$('ssid').value,password:$('wpass').value},'wifimsg');if(r.ok)$('wpass').value='';}
 async function login(){$('acctmsg').textContent='Signing in…';$('acctmsg').className='msg dim';
   const r=await call('POST','/api/login',{email:$('email').value,password:$('cpass').value});$('cpass').value='';show('acctmsg',r);load();}
+function volShow(){const v=+$('vol').value;$('volval').textContent=v?v+'%':'Off';}
 function savePrefs(){const b={spellCheck:$('spell').checked,
     screenOnSecs:parseInt($('scrsecs').value,10),screenSaver:$('scrsaver').value==='1'};
   if(!$('tsizerow').hidden)b.textSize=$('tsize').value;if(!$('themerow').hidden)b.theme=$('theme').value;
-  if(!$('rotrow').hidden)b.rotation=parseInt($('rot').value,10);if(!$('buzzrow').hidden)b.buzzer=$('buzzer').checked;
+  if(!$('rotrow').hidden)b.rotation=parseInt($('rot').value,10);if(!$('buzzrow').hidden)b.buzzer=$('buzzer').checked;if(!$('volrow').hidden){const v=parseInt($('vol').value,10);b.buzzer=v>0;if(v>0)b.volume=v;}
   if(!$('vibrow').hidden){b.tapVibrate=$('tapvib').checked;b.alertVibrate=$('alertvib').checked;}
   if(!$('kbrow').hidden)b.kbLight=$('kblight').value;if(!$('ledrow').hidden){b.notifyLight=$('ledcolor').value;b.notifyTimeout=+$('ledtime').value;}post('/api/prefs',b,'prefmsg');}
 function savePhrases(){post('/api/phrases',{phrases:$('phrases').value.split('\n')},'phrasemsg').then(loadPrefs);}

@@ -92,6 +92,7 @@ Settings full() {
   s.kbLight = KbLight::Medium;
   s.notifyLight = LedColor::Magenta;
   s.notifyTimeoutSecs = 0;
+  s.volume = 80;
   s.theme = ThemeId::WhiteBlack;
   s.rotation = 3;
   s.lastRoom = "random";
@@ -133,6 +134,7 @@ void expectSame(const Settings& a, const Settings& b) {
   TEST_ASSERT_TRUE(a.kbLight == b.kbLight);
   TEST_ASSERT_TRUE(a.notifyLight == b.notifyLight);
   TEST_ASSERT_EQUAL_UINT16(a.notifyTimeoutSecs, b.notifyTimeoutSecs);
+  TEST_ASSERT_EQUAL_UINT8(a.volume, b.volume);
   TEST_ASSERT_TRUE(a.theme == b.theme);
   TEST_ASSERT_EQUAL(a.rotation, b.rotation);
   TEST_ASSERT_EQUAL_STRING(a.lastRoom.c_str(), b.lastRoom.c_str());
@@ -378,6 +380,8 @@ void test_bad_values_rejected() {
        "line 3: notify light: off, red, green, blue, yellow, cyan, magenta or white"},
       {"notifyTimeout: 45\n", "line 3: light timeout: 15, 30, 60, 300 or 0 (until read)"},
       {"notifyTimeout: -1\n", "line 3: light timeout: 15, 30, 60, 300 or 0 (until read)"},
+      {"volume: 50\n", "line 3: volume: 20, 40, 60, 80 or 100"},
+      {"volume: loud\n", "line 3: volume: 20, 40, 60, 80 or 100"},
       {"rotation: up\n", "line 3: orientation: 0 to 3"},
       {"buzzer: maybe\n", "line 3: expected true or false"},
       {"wifi:\n  - ssid: A\n    password: \"\"\n  - ssid: A\n    password: \"\"\n",

@@ -8,6 +8,7 @@
 #include <freertos/queue.h>
 
 #include "hal/tdeck/pins_tdeck.h"
+#include "ui/volume.h"
 
 namespace tdeck_audio {
 namespace {
@@ -21,6 +22,7 @@ struct Job {
 };
 
 QueueHandle_t queue = nullptr;
+volatile int16_t amplitude = kAmplitude;  // setVolume
 I2SClass i2s;
 
 bool interrupted() { return uxQueueMessagesWaiting(queue) > 0; }
@@ -42,7 +44,7 @@ void writeTone(uint16_t hz, uint16_t ms) {
   int16_t pcm[kChunk];
   for (uint32_t i = 0; i < total && !interrupted();) {
     int n = total - i > (uint32_t)kChunk ? kChunk : (int)(total - i);
-    for (int k = 0; k < n; ++k, ++i) pcm[k] = (i / half) & 1 ? -kAmplitude : kAmplitude;
+    for (int k = 0; k < n; ++k, ++i) pcm[k] = (i / half) & 1 ? -amplitude : amplitude;
     i2s.write(reinterpret_cast<const uint8_t*>(pcm), (size_t)n * sizeof(int16_t));
   }
 }
@@ -85,6 +87,8 @@ void beep(int freqHz, int ms) {
   Job job{(uint16_t)freqHz, (uint16_t)(ms > 2000 ? 2000 : ms)};
   xQueueOverwrite(queue, &job);
 }
+
+void setVolume(uint8_t pct) { amplitude = int16_t(kAmplitude * rc::volumeGain(pct)); }
 
 }  // namespace tdeck_audio
 

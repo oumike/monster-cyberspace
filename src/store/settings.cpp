@@ -62,6 +62,7 @@ void load(rc::Settings& s) {
   if (rc::TextSize only; board::fixedTextSize(only)) s.textSize = only;
   s.drawerOpen = p.getBool("drawer", false);
   s.buzzer = p.getBool("buzz", true);
+  s.volume = rc::snapVolume(p.getUChar("vol", rc::kVolumeDefault));
   s.autoUpdate = p.getBool("otaauto", false);
   s.screenOnSecs = p.getUInt("scrsecs", 30);
   if (!rc::validScreenTimeout(s.screenOnSecs)) s.screenOnSecs = 30;
@@ -101,6 +102,7 @@ void saveUiPrefs(const rc::Settings& s) {
   p.putUChar("tsize", static_cast<uint8_t>(s.textSize));
   p.putBool("drawer", s.drawerOpen);
   p.putBool("buzz", s.buzzer);
+  p.putUChar("vol", s.volume);
   p.putUChar("theme", static_cast<uint8_t>(s.theme));
   p.putUChar("rot", s.rotation);
   p.putUChar("kblight", static_cast<uint8_t>(s.kbLight));
@@ -161,6 +163,13 @@ void saveScreen(uint32_t onSecs, bool saver) {
   if (!p.begin(kNs, false)) return;
   p.putUInt("scrsecs", onSecs);
   p.putBool("scrsaver", saver);
+  p.end();
+}
+
+void saveVolume(uint8_t pct) {
+  Preferences p;
+  if (!p.begin(kNs, false)) return;
+  p.putUChar("vol", pct);
   p.end();
 }
 

@@ -58,6 +58,10 @@ bool externalPower();
 // a buzzer or speaker (default true); without one beep does nothing.
 bool hasSound();
 void beep(int freqHz, int ms);
+// hasVolume: beeps can be made louder or softer (default false). setVolume
+// takes a percent from ui/volume.h and applies to the next beep.
+bool hasVolume();
+void setVolume(uint8_t pct);
 // A vibration motor. hasHaptic: the board has one; haptic buzzes it for ms
 // and returns at once. Default: none, and haptic does nothing.
 bool hasHaptic();

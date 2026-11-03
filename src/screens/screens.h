@@ -116,7 +116,7 @@ class SettingsScreen : public Screen {
  private:
   enum class Confirm {
     None, Logout, Reset, Rotation, TextSize, Timeout, KbLight, NotifyLight, NotifyTimeout, Theme,
-    Update, Idle, Wake
+    Update, Idle, Wake, Volume
   };
   void activate(int item);
   void openZones();

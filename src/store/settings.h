@@ -8,7 +8,7 @@ void load(rc::Settings&);
 // Each saver writes only its own keys, so the UI task and the web server
 // never overwrite each other's changes.
 // The UI's own preferences: text size, theme, orientation, drawer, buzzer,
-// keyboard light, last room.
+// volume, keyboard light, last room.
 void saveUiPrefs(const rc::Settings&);
 // Web config only. Networks beyond kMaxWifiNets are dropped.
 void saveWifi(const std::vector<rc::WifiNet>&);
@@ -22,6 +22,8 @@ void saveAutoUpdate(bool on);
 void saveScreen(uint32_t onSecs, bool saver);
 // The device's Settings and web config: the keyboard light.
 void saveKbLight(rc::KbLight level);
+// The alert sound's volume, a percent from ui/volume.h.
+void saveVolume(uint8_t pct);
 // The device's Settings and web config: the new-message light's colour and
 // how long it blinks (board::hasNotifyLight).
 void saveNotifyLight(rc::LedColor color);

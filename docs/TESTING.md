@@ -47,6 +47,7 @@ on 2026-10-27; the sections marked `m9_fake` passed on it before then.
       the next row goes to it and Down from it goes to the left tile; taps
       open every tile. With nothing unread, Unread says "nothing unread".
 - [ ] Settings → Alert sound (boards with a speaker or buzzer): switching it on beeps once and mentions beep; off, they don't; web config's Sound on alerts follows it both ways; the item and the checkbox are absent on the Mesh Deck, T-Deck Pro, CrowPanels and X4
+- [ ] Alert sound volume (Wio L2, T-Deck Plus, Pager, Cyber Deck Plus, Cardputer ADV, T-Display P4): Settings → Alert sound opens Off / 20–100%; each level beeps at that loudness, 100% without clipping, 20% still audible; the level survives a reboot and a backup restore; web config shows a slider instead of the checkbox (far left Off), saving a new level beeps once; the M9 keeps the on/off toggle
 - [ ] Touch boards (the T-Display P4 too): every Settings picker and confirm,
       and Restore from SD card (Settings and Setup), opens as full-screen
       buttons (one column when labels are long, the time zones too); a tap

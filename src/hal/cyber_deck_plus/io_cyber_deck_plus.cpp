@@ -7,6 +7,7 @@
 
 #include "hal/attaky/attaky_core.h"
 #include "hal/cyber_deck_plus/pins_cyber_deck_plus.h"
+#include "ui/volume.h"
 
 // The Core's own devices (AW9523 expanders, FT6636 touch, MAX17048 gauge, the
 // keyboard module) are hal/attaky/attaky_core.cpp, shared with the Mesh Deck.
@@ -42,6 +43,7 @@ i2s_chan_handle_t gTx = nullptr;
 TaskHandle_t gTask = nullptr;
 portMUX_TYPE gMux = portMUX_INITIALIZER_UNLOCKED;
 volatile int gPendingFreq = 0, gPendingMs = 0;
+volatile float gVolume = 1.0f;  // audioVolume
 
 void audioTask(void*) {
   static int16_t buf[kFrames * 2];
@@ -77,7 +79,7 @@ void audioTask(void*) {
         if (down < gain) gain = down;
         const float up = float(total - left) / kRampFrames;
         if (up < gain) gain = up;
-        s = int16_t(sinf(phase) * kToneAmp * gain);
+        s = int16_t(sinf(phase) * kToneAmp * gVolume * gain);
         --left;
         silent = 0;
       } else {
@@ -196,6 +198,8 @@ void audioTone(int freqHz, int ms) {
   portEXIT_CRITICAL(&gMux);
   xTaskNotifyGive(gTask);  // wakes the task if the channel is idle
 }
+
+void audioVolume(uint8_t pct) { gVolume = rc::volumeGain(pct); }
 
 }  // namespace cyber_deck_plus
 

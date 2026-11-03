@@ -11,6 +11,8 @@
 #include <freertos/queue.h>
 #include <math.h>
 
+#include "ui/volume.h"
+
 
 // Ported from platy-aprs's src/hal/audio.cpp (itself from camillia-mt's
 // pager/T-Deck tone players), on Arduino 3's ESP_I2S instead of the legacy
@@ -26,6 +28,7 @@ constexpr float kAmplitude = 7800.0f;
 constexpr uint8_t kVolActive = 50, kVolIdle = 10;
 
 Config cfg{};
+volatile float gain = 1.0f;  // setVolume
 
 void amp(bool on) {
   if (cfg.amp) cfg.amp(on);
@@ -163,7 +166,7 @@ void writeTone(uint16_t hz, uint16_t ms) {
       float env = 1.0f;
       if (i < ramp) env = (float)i / ramp;
       if (total - i < ramp) env = fminf(env, (float)(total - i) / ramp);
-      int16_t v = (int16_t)(sinf(phase) * kAmplitude * env);
+      int16_t v = (int16_t)(sinf(phase) * kAmplitude * gain * env);
       pcm[k * 2] = pcm[k * 2 + 1] = v;
       phase += step;
       if (phase >= 2.0f * (float)M_PI) phase -= 2.0f * (float)M_PI;
@@ -224,6 +227,8 @@ void beep(int freqHz, int ms) {
   Job job{(uint16_t)freqHz, (uint16_t)(ms > 2000 ? 2000 : ms)};
   xQueueOverwrite(queue, &job);
 }
+
+void setVolume(uint8_t pct) { gain = rc::volumeGain(pct); }
 
 }  // namespace es8311
 

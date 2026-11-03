@@ -30,6 +30,12 @@ constexpr LedColor kLedColorOrder[] = {LedColor::Red,  LedColor::Green,   LedCol
                                        LedColor::Yellow, LedColor::Cyan, LedColor::Magenta,
                                        LedColor::White, LedColor::Off};
 
+std::u32string volumeLabel(uint8_t pct) {
+  std::u32string s;
+  for (char ch : std::to_string(pct)) s += char32_t(ch);
+  return s + U"%";
+}
+
 enum Item {
   kTheme,
   kTextSize,
@@ -240,6 +246,18 @@ void SettingsScreen::applyChoice(Confirm c, int i) {
     if (i >= 0 && i < kThemeCount) {
       app().cfg.theme = themeFromIndex(i);
       settings::saveUiPrefs(app().cfg);
+    }
+    return;
+  }
+  if (c == Confirm::Volume) {
+    // Off, then the steps.
+    if (i >= 0 && i <= int(std::size(kVolumeSteps))) {
+      AppState& a = app();
+      a.cfg.buzzer = i > 0;
+      if (i > 0) a.cfg.volume = kVolumeSteps[i - 1];
+      settings::saveUiPrefs(a.cfg);
+      board::setVolume(a.cfg.volume);
+      if (a.cfg.buzzer) board::beep(2000, 80);
     }
     return;
   }
@@ -486,6 +504,23 @@ void SettingsScreen::activate(int item) {
     }
     case kSound: {
       AppState& a = app();
+      if (board::hasVolume()) {
+        std::vector<ListItem> rows;
+        ListItem off{U"Off", U""};
+        off.marker = !a.cfg.buzzer;
+        rows.push_back(std::move(off));
+        int sel = 0;
+        for (size_t i = 0; i < std::size(kVolumeSteps); ++i) {
+          ListItem it{volumeLabel(kVolumeSteps[i]), U""};
+          if (a.cfg.buzzer && kVolumeSteps[i] == a.cfg.volume) {
+            it.marker = true;
+            sel = int(i) + 1;
+          }
+          rows.push_back(std::move(it));
+        }
+        openChoice(Confirm::Volume, U"alert sound", std::move(rows), sel);
+        break;
+      }
       a.cfg.buzzer = !a.cfg.buzzer;
       settings::saveUiPrefs(a.cfg);
       if (a.cfg.buzzer) board::beep(2000, 80);
@@ -613,7 +648,9 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
         rows.push_back(ListItem{U"Keyboard light", kbLightLabel(a.cfg.kbLight)});
         break;
       case kSound:
-        rows.push_back(ListItem{U"Alert sound", a.cfg.buzzer ? U"on" : U"off"});
+        rows.push_back(ListItem{U"Alert sound", !a.cfg.buzzer        ? std::u32string(U"off")
+                                                : board::hasVolume() ? volumeLabel(a.cfg.volume)
+                                                                     : std::u32string(U"on")});
         break;
       case kTapVibrate:
         rows.push_back(ListItem{U"Tap vibration", a.cfg.tapVibrate ? U"on" : U"off"});
@@ -770,7 +807,7 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
                       confirm_ == Confirm::Timeout || confirm_ == Confirm::KbLight ||
                       confirm_ == Confirm::NotifyLight || confirm_ == Confirm::NotifyTimeout ||
                       confirm_ == Confirm::Theme || confirm_ == Confirm::Idle ||
-                      confirm_ == Confirm::Wake;
+                      confirm_ == Confirm::Wake || confirm_ == Confirm::Volume;
     confirmBox_.render(g, 1, bottom, 0, pick ? OverlayPlace::Centre : OverlayPlace::Bottom, t);
     if (pick)
       drawHint(g, t, U"\u2191\u2193 pick  \u25CF set  back: cancel",

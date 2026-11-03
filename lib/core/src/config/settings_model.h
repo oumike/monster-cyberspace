@@ -9,6 +9,7 @@
 #include "ui/kb_light.h"
 #include "ui/notify_light.h"
 #include "ui/theme.h"
+#include "ui/volume.h"
 
 namespace rc {
 
@@ -21,6 +22,7 @@ struct Settings {
   std::string email, refreshToken, tz = "UTC0", pagePassword, apPassword;
   TextSize textSize = TextSize::Compact;
   bool drawerOpen = false, buzzer = true;
+  uint8_t volume = kVolumeDefault;  // alert sound, percent (ui/volume.h)
   bool tapVibrate = true, alertVibrate = true;  // boards with a vibration motor
   bool autoUpdate = false;  // install a newer release without asking
   uint32_t screenOnSecs = 30;  // screen timeout (ui/screen_timeout.h); 0 never

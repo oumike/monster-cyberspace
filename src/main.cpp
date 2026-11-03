@@ -40,6 +40,7 @@ void setup() {
   memMark("board");
   backupstore::begin();
   settings::load(app().cfg);
+  board::setVolume(app().cfg.volume);
 #if RC_FEAT_MASCOT
   mascotstore::load(app().mascot);
 #endif

@@ -128,6 +128,8 @@ bool externalPower() { return attaky_core::externalPower(); }
 
 // Media I/O's NS4168, through the I2S task.
 void beep(int freqHz, int ms) { cyber_deck_plus::audioTone(freqHz, ms); }
+bool hasVolume() { return true; }
+void setVolume(uint8_t pct) { cyber_deck_plus::audioVolume(pct); }
 
 // The Core's R2 (rc::kPadR2) toggles the screen, as on the Mesh Deck. The
 // gamepad's R1 is left unmapped.

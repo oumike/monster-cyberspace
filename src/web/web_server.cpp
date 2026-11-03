@@ -424,6 +424,7 @@ esp_err_t getPrefs(httpd_req_t* req) {
   JsonDocument d;
   if (rc::TextSize only; !board::fixedTextSize(only)) d["textSize"] = rc::textSizeKey(s.textSize);
   if (board::hasSound()) d["buzzer"] = s.buzzer;
+  if (board::hasVolume()) d["volume"] = s.volume;
   d["screenOnSecs"] = s.screenOnSecs;
   d["screenSaver"] = s.screenSaver;
   if (RC_FEAT_SPELL) d["spellCheck"] = s.spellCheck;
@@ -479,6 +480,12 @@ esp_err_t postPrefs(httpd_req_t* req) {
   else if (doc["textSize"].is<const char*>() && !rc::parseTextSize(doc["textSize"].as<const char*>(), size))
     return fail(req, "400 Bad Request", "Text size: compact, comfortable or large");
   bool buzzer = doc["buzzer"].is<bool>() ? doc["buzzer"].as<bool>() : s.buzzer;
+  uint8_t volume = s.volume;
+  if (!doc["volume"].isNull()) {
+    if (!doc["volume"].is<int>() || !rc::validVolume(doc["volume"].as<int>()))
+      return fail(req, "400 Bad Request", "Volume: 20, 40, 60, 80 or 100");
+    volume = uint8_t(doc["volume"].as<int>());
+  }
   rc::ThemeId theme = s.theme;
   if (doc["theme"].is<const char*>() && !rc::parseThemeId(doc["theme"].as<const char*>(), theme))
     return fail(req, "400 Bad Request", "Theme: default, bw or wb");
@@ -596,6 +603,12 @@ esp_err_t postPrefs(httpd_req_t* req) {
   if (board::hasNotifyLight() && notifyTimeout != s.notifyTimeoutSecs) {
     rc::app().cfg.notifyTimeoutSecs = notifyTimeout;
     settings::saveNotifyTimeout(notifyTimeout);
+  }
+  if (board::hasVolume() && volume != s.volume) {
+    rc::app().cfg.volume = volume;
+    settings::saveVolume(volume);
+    board::setVolume(volume);
+    if (buzzer) board::beep(2000, 80);  // a sample of the new level
   }
   // The UI task owns text size, theme and buzzer; it applies and saves them.
   if (!doc["textSize"].isNull() || !doc["buzzer"].isNull() || !doc["theme"].isNull())

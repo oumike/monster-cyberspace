@@ -73,6 +73,8 @@ int batteryPercent() { return rc::batteryPercentFromVolts(batteryVolts()); }
 bool externalPower() { return HWCDC::isPlugged() || batteryVolts() > 4.25f; }
 
 void beep(int freqHz, int ms) { es8311::beep(freqHz, ms); }
+bool hasVolume() { return true; }
+void setVolume(uint8_t pct) { es8311::setVolume(pct); }
 
 const char* wakeHint() { return "press any key to wake"; }
 

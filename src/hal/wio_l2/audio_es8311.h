@@ -28,5 +28,7 @@ struct Config {
 void begin(const Config& c);
 // Returns at once. A beep asked for while one is waiting replaces it.
 void beep(int freqHz, int ms);
+// The next beep's loudness, as a percent (ui/volume.h).
+void setVolume(uint8_t pct);
 
 }  // namespace es8311

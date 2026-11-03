@@ -5,6 +5,8 @@
 namespace board {
 
 __attribute__((weak)) bool hasSound() { return true; }
+__attribute__((weak)) bool hasVolume() { return false; }
+__attribute__((weak)) void setVolume(uint8_t) {}
 __attribute__((weak)) bool canType() { return true; }
 __attribute__((weak)) bool webCompose() { return false; }
 __attribute__((weak)) bool sleepsOnBattery() { return false; }

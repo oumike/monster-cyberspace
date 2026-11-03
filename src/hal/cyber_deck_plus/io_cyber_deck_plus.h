@@ -29,5 +29,7 @@ bool audioBegin();
 bool audioReady();
 // Queues a tone; returns at once and the task plays it.
 void audioTone(int freqHz, int ms);
+// The next tone's loudness, as a percent (ui/volume.h).
+void audioVolume(uint8_t pct);
 
 }  // namespace cyber_deck_plus

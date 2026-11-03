@@ -299,6 +299,8 @@ void notifyLight(uint8_t) {}
 bool eink() { return false; }
 
 void beep(int freqHz, int ms) { es8311::beep(freqHz, ms); }
+bool hasVolume() { return true; }
+void setVolume(uint8_t pct) { es8311::setVolume(pct); }
 bool hasHaptic() { return true; }
 void haptic(int ms) { tdp4::haptic::buzz(ms); }
 

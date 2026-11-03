@@ -65,7 +65,7 @@ struct Item {
 struct Staged {
   Str format, version, timezone, tzName, ntpServer, pagePassword, apPassword, textSize, theme,
       rotation, lastRoom, email, refreshToken, screenOnSecs, kbLight,
-      notifyLight, notifyTimeout, idleSecs, wakeMins;
+      notifyLight, notifyTimeout, idleSecs, wakeMins, volume;
   Bool drawerOpen, buzzer, tapVibrate, alertVibrate, autoUpdate, screenSaver, spellCheck, webConfig;
   bool hasWifi = false, hasPhrases = false;
   std::vector<Item> wifi;
@@ -285,6 +285,7 @@ bool parse(std::string_view yaml, Staged& st, std::string& err) {
              : key == "lastRoom"     ? &st.lastRoom
              : key == "idleSecs"     ? &st.idleSecs
              : key == "wakeMins"     ? &st.wakeMins
+             : key == "volume"       ? &st.volume
                                      : nullptr;
     Str ignored;
     bool isBool = key == "drawerOpen" || key == "buzzer" || key == "tapVibrate" ||
@@ -416,6 +417,7 @@ std::string backupToYaml(const Settings& s, const BackupMeta& m) {
   o += std::string("buzzer: ") + boolStr(s.buzzer) + "\n";
   o += std::string("tapVibrate: ") + boolStr(s.tapVibrate) + "\n";
   o += std::string("alertVibrate: ") + boolStr(s.alertVibrate) + "\n";
+  o += "volume: " + std::to_string(s.volume) + "  # alert sound: 20, 40, 60, 80 or 100\n";
   o += std::string("autoUpdate: ") + boolStr(s.autoUpdate) + "  # install firmware updates on its own\n";
   o += "screenOnSecs: " + std::to_string(s.screenOnSecs) + "  # screen timeout; 0 never\n";
   o += std::string("screenSaver: ") + boolStr(s.screenSaver) + "  # at the timeout; false: screen off\n";
@@ -489,7 +491,7 @@ bool backupFromYaml(std::string_view yaml, Settings& inOut, std::string& err, st
   ThemeId theme = inOut.theme;
   KbLight kbLight = inOut.kbLight;
   LedColor notifyLight = inOut.notifyLight;
-  int rotation = 0, screenOnSecs = 0, notifyTimeout = 0, idleSecs = 0, wakeMins = 0;
+  int rotation = 0, screenOnSecs = 0, notifyTimeout = 0, idleSecs = 0, wakeMins = 0, volume = 0;
   if (st.apPassword.has && !validApPassword(st.apPassword.v)) {
     err = at(st.apPassword.line, "setup-AP password: 8-63 printable characters, or empty");
   } else if (st.pagePassword.has &&
@@ -514,6 +516,8 @@ bool backupFromYaml(std::string_view yaml, Settings& inOut, std::string& err, st
              (!plainInt(st.notifyTimeout, notifyTimeout) || notifyTimeout < 0 ||
               !validNotifyTimeout(uint32_t(notifyTimeout)))) {
     err = at(st.notifyTimeout.line, "light timeout: 15, 30, 60, 300 or 0 (until read)");
+  } else if (st.volume.has && (!plainInt(st.volume, volume) || !validVolume(volume))) {
+    err = at(st.volume.line, "volume: 20, 40, 60, 80 or 100");
   } else if (st.timezone.has && !validPosixTz(st.timezone.v)) {
     err = at(st.timezone.line, "time zone: 1-63 printable characters");
   } else if (st.tzName.has && (st.tzName.v.size() > 63 || !printable(st.tzName.v))) {
@@ -553,6 +557,7 @@ bool backupFromYaml(std::string_view yaml, Settings& inOut, std::string& err, st
   if (st.rotation.has) inOut.rotation = rotationFromIndex(rotation);
   if (st.drawerOpen.has) inOut.drawerOpen = st.drawerOpen.v;
   if (st.buzzer.has) inOut.buzzer = st.buzzer.v;
+  if (st.volume.has) inOut.volume = uint8_t(volume);
   if (st.tapVibrate.has) inOut.tapVibrate = st.tapVibrate.v;
   if (st.alertVibrate.has) inOut.alertVibrate = st.alertVibrate.v;
   // A board built without a feature ignores its setting.

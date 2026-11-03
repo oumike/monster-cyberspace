@@ -963,7 +963,12 @@ shown without moving or opening anything.
 - **Alert sound: on / off** (boards with a buzzer or speaker: not the Mesh
   Deck, T-Deck Pro, CrowPanels or X4) Centre switches the beep for mentions,
   C-Mail and Feed alerts and saves it, with one beep when it goes on. Also
-  **Sound on alerts** under Display in web config. On by default.
+  **Sound on alerts** under Display in web config. On by default. On boards
+  with a speaker (Wio L2, T-Deck Plus, Pager, Cyber Deck Plus, Cardputer ADV,
+  T-Display P4) it reads **Alert sound: 60%** and opens a box instead: Off,
+  20%, 40%, 60%, 80% or 100%, with a beep at the new level; web config shows
+  an **Alert sound** slider (far left is Off). 60% is the default. The M9's
+  buzzer is on or off only.
 - **Tap vibration: on / off** and **Alert vibration: on / off** (T-Display
   P4) Centre switches the buzz on taps or on alerts and saves it; see
   T-Display P4. Both on by default.

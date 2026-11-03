@@ -598,15 +598,17 @@ void sendCanned(const std::u32string& text) {
 // F10's table: a centred box over the screen; a tap anywhere closes it.
 void renderKeysHelp(Grid& g, const Theme& t) {
   const int n = int(std::size(kFunctionKeys));
-  const int w = std::min(g.cols() - 2, 24), h = std::min(g.rows() - 2, n + 3);
+  // The title and the keys, with a blank row above and below when they fit.
+  const int content = n + 1, pad = g.rows() >= content + 2 ? 1 : 0;
+  const int w = std::min(g.cols() - 2, 24), h = std::min(g.rows(), content + 2 * pad);
   const int c0 = std::max(0, (g.cols() - w) / 2), r0 = std::max(0, (g.rows() - h) / 2);
   for (int r = r0; r < r0 + h; ++r)
     for (int c = c0; c < c0 + w; ++c) g.put(c, r, U' ', t.fg, t.bg);
   g.outline(c0, r0, c0 + w - 1, r0 + h - 1, t.dim);
-  g.putText(c0 + 2, r0 + 1, U"function keys", t.fg, t.bg, w - 4);
-  for (int i = 0; i < n && r0 + 2 + i < r0 + h - 1; ++i) {
-    g.putText(c0 + 2, r0 + 2 + i, kFunctionKeys[i].key, t.selectBg, t.bg, 4);
-    g.putText(c0 + 7, r0 + 2 + i, kFunctionKeys[i].label, t.fg, t.bg, w - 9);
+  g.putText(c0 + 2, r0 + pad, U"function keys", t.fg, t.bg, w - 4);
+  for (int i = 0; i < n && r0 + pad + 1 + i < r0 + h; ++i) {
+    g.putText(c0 + 2, r0 + pad + 1 + i, kFunctionKeys[i].key, t.selectBg, t.bg, 4);
+    g.putText(c0 + 7, r0 + pad + 1 + i, kFunctionKeys[i].label, t.fg, t.bg, w - 9);
   }
   if (activeTaps()) {
     Target close;

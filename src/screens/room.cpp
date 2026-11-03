@@ -676,6 +676,7 @@ void RoomScreen::render(Grid& g, const Theme& t, int64_t) {
     online = int(people.size());
     if (shown) drawer_.setPeople(std::move(people), now, s.cadence.idleAfterMs);
     self_ = s.self;
+    drawer_.setSelf(s.self);
     // A flag going stale produces no event, so this is re-checked each frame.
     if (dm_) typers = typingNames(s.typing, s.self, now, s.typingCadence.staleAfterMs);
     std::string roomId;

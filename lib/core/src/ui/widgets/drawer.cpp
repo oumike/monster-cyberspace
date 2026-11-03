@@ -85,7 +85,7 @@ void Drawer::render(Grid& g, int top, int bottom, const Theme& t, bool docked) c
     const Person& p = people_[idx];
     bool sel = idx == sel_;
     uint16_t bg = t.drawerBg;
-    uint16_t fg = nickColor(t, p.username, false);
+    uint16_t fg = nickColor(t, p.username, !self_.empty() && sameUsername(p.username, self_));
     for (int c = x + 1; c < right; ++c) g.put(c, row, U' ', fg, bg);
     std::u32string name = utf8ToU32(p.username);
     int nameMax = inner - (p.idle ? 2 : 0);

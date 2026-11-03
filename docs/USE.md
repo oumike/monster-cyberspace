@@ -298,7 +298,7 @@ plugged in while it runs.
 The Core's **R2** (or BOOT) turns the screen off and on, as on the Mesh Deck.
 The notification light works as on the Mesh Deck.
 
-The speaker beeps for mentions and C-Mail when the buzzer is on in web config;
+The speaker beeps for mentions and C-Mail when **Alert sound** is on (Settings or web config);
 between beeps it is idle. Backups go to the microSD slot. There is no RTC or
 GPS: the clock comes from Wi-Fi. The setup AP is
 **`Monster-Cyberspace-CyberDeckPlus`**. The serial console is the USB-C port
@@ -804,8 +804,8 @@ total; with nothing waiting it says "nothing unread".
 
 While you're signed in, the device checks every minute, even with the screen
 off. Rooms with new messages are marked in the room list. A new mention of
-you shows a banner and sounds the buzzer, if the buzzer is turned on in web
-config. Mentions are marked read when you open that room and scroll to the
+you shows a banner and sounds the buzzer, if **Alert sound** is on in
+Settings or web config. Mentions are marked read when you open that room and scroll to the
 bottom.
 
 A new C-Mail does the same: a banner (`C-Mail from @name: …`) and the buzzer,
@@ -960,6 +960,10 @@ shown without moving or opening anything.
   off until the M9 is power cycled.
 - **Notify light: …** and **Light timeout: …** (Mesh Deck) Open a box with
   the colours (or Off) and the timeouts; see Mesh Deck.
+- **Alert sound: on / off** (boards with a buzzer or speaker: not the Mesh
+  Deck, T-Deck Pro, CrowPanels or X4) Centre switches the beep for mentions,
+  C-Mail and Feed alerts and saves it, with one beep when it goes on. Also
+  **Sound on alerts** under Display in web config. On by default.
 - **Tap vibration: on / off** and **Alert vibration: on / off** (T-Display
   P4) Centre switches the buzz on taps or on alerts and saves it; see
   T-Display P4. Both on by default.

@@ -46,6 +46,7 @@ on 2026-10-27; the sections marked `m9_fake` passed on it before then.
 - [ ] Touch Home: the unread tile spans the top row; Up from either tile of
       the next row goes to it and Down from it goes to the left tile; taps
       open every tile. With nothing unread, Unread says "nothing unread".
+- [ ] Settings → Alert sound (boards with a speaker or buzzer): switching it on beeps once and mentions beep; off, they don't; web config's Sound on alerts follows it both ways; the item and the checkbox are absent on the Mesh Deck, T-Deck Pro, CrowPanels and X4
 - [ ] Touch boards (the T-Display P4 too): every Settings picker and confirm,
       and Restore from SD card (Settings and Setup), opens as full-screen
       buttons (one column when labels are long, the time zones too); a tap

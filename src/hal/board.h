@@ -54,7 +54,9 @@ const char* wakeHint();
 bool pollKey(rc::KeyEvent& key);
 int batteryPercent();  // -1 when unknown
 bool externalPower();
-// Returns at once; the tone plays in the background.
+// Returns at once; the tone plays in the background. hasSound: the board has
+// a buzzer or speaker (default true); without one beep does nothing.
+bool hasSound();
 void beep(int freqHz, int ms);
 // A vibration motor. hasHaptic: the board has one; haptic buzzes it for ms
 // and returns at once. Default: none, and haptic does nothing.

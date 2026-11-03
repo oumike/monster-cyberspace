@@ -81,6 +81,7 @@ int batteryPercent() { return -1; }
 bool externalPower() { return true; }
 
 // GPIO8 drives the I2S amplifier's MCLK, not a buzzer: no beeps.
+bool hasSound() { return false; }
 void beep(int, int) {}
 
 const char* wakeHint() { return "double-tap to wake"; }

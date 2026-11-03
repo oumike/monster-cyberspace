@@ -38,6 +38,7 @@ enum Item {
   kScreenTimeout,
   kAtTimeout,
   kKbLight,
+  kSound,
   kTapVibrate,
   kAlertVibrate,
   kNotifyLight,
@@ -71,6 +72,7 @@ std::vector<Item> menuItems() {
   v.push_back(kScreenTimeout);
   v.push_back(kAtTimeout);
   if (board::hasKbLight()) v.push_back(kKbLight);
+  if (board::hasSound()) v.push_back(kSound);
   if (board::hasHaptic()) {
     v.push_back(kTapVibrate);
     v.push_back(kAlertVibrate);
@@ -482,6 +484,13 @@ void SettingsScreen::activate(int item) {
       settings::saveScreen(a.cfg.screenOnSecs, a.cfg.screenSaver);
       break;
     }
+    case kSound: {
+      AppState& a = app();
+      a.cfg.buzzer = !a.cfg.buzzer;
+      settings::saveUiPrefs(a.cfg);
+      if (a.cfg.buzzer) board::beep(2000, 80);
+      break;
+    }
     case kTapVibrate:
     case kAlertVibrate: {
       AppState& a = app();
@@ -602,6 +611,9 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
         break;
       case kKbLight:
         rows.push_back(ListItem{U"Keyboard light", kbLightLabel(a.cfg.kbLight)});
+        break;
+      case kSound:
+        rows.push_back(ListItem{U"Alert sound", a.cfg.buzzer ? U"on" : U"off"});
         break;
       case kTapVibrate:
         rows.push_back(ListItem{U"Tap vibration", a.cfg.tapVibrate ? U"on" : U"off"});

@@ -423,7 +423,7 @@ esp_err_t getPrefs(httpd_req_t* req) {
   Settings s = current();
   JsonDocument d;
   if (rc::TextSize only; !board::fixedTextSize(only)) d["textSize"] = rc::textSizeKey(s.textSize);
-  d["buzzer"] = s.buzzer;
+  if (board::hasSound()) d["buzzer"] = s.buzzer;
   d["screenOnSecs"] = s.screenOnSecs;
   d["screenSaver"] = s.screenSaver;
   if (RC_FEAT_SPELL) d["spellCheck"] = s.spellCheck;

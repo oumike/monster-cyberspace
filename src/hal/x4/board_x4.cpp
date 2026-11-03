@@ -338,6 +338,7 @@ float batteryVolts() {
   return volts;
 }
 
+bool hasSound() { return false; }
 void beep(int, int) {}
 const char* wakeHint() { return "press Power to wake"; }
 

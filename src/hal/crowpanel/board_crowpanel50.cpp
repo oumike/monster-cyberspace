@@ -133,6 +133,7 @@ bool pollKey(rc::KeyEvent&) { return false; }
 
 int batteryPercent() { return -1; }
 bool externalPower() { return true; }
+bool hasSound() { return false; }
 void beep(int, int) {}
 
 const char* wakeHint() { return "double-tap to wake"; }

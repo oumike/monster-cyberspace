@@ -224,6 +224,7 @@ bool externalPower() {
   return usb || HWCDC::isPlugged();
 }
 
+bool hasSound() { return false; }
 void beep(int, int) {}
 
 const char* wakeHint() { return "press the side button to wake"; }

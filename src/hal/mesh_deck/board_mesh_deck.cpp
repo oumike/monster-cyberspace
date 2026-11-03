@@ -96,6 +96,7 @@ int batteryPercent() { return attaky_core::batteryPercent(); }
 
 bool externalPower() { return attaky_core::externalPower(); }
 
+bool hasSound() { return false; }
 void beep(int, int) {}  // no buzzer
 
 const char* wakeHint() { return "press R2 to wake"; }

@@ -965,9 +965,11 @@ shown without moving or opening anything.
   C-Mail and Feed alerts and saves it, with one beep when it goes on. Also
   **Sound on alerts** under Display in web config. On by default. On boards
   with a speaker (Wio L2, T-Deck Plus, Pager, Cyber Deck Plus, Cardputer ADV,
-  T-Display P4) it reads **Alert sound: 60%** and opens a box instead: Off,
-  20%, 40%, 60%, 80% or 100%, with a beep at the new level; web config shows
-  an **Alert sound** slider (far left is Off). 60% is the default. The M9's
+  T-Display P4) it reads **Alert sound: 60%** and opens a volume slider
+  instead: Left/Right (or Up/Down, or a tap on the bar, "-" or "+") move it
+  in 10% steps from Off to 100%, beeping at each level; Centre or **Set**
+  keeps it, Back or **Cancel** puts the old level back. Web config shows an
+  **Alert sound** slider too (far left is Off). 60% is the default. The M9's
   buzzer is on or off only.
 - **Tap vibration: on / off** and **Alert vibration: on / off** (T-Display
   P4) Centre switches the buzz on taps or on alerts and saves it; see

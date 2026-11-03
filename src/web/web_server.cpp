@@ -483,7 +483,7 @@ esp_err_t postPrefs(httpd_req_t* req) {
   uint8_t volume = s.volume;
   if (!doc["volume"].isNull()) {
     if (!doc["volume"].is<int>() || !rc::validVolume(doc["volume"].as<int>()))
-      return fail(req, "400 Bad Request", "Volume: 20, 40, 60, 80 or 100");
+      return fail(req, "400 Bad Request", "Volume: 10 to 100 in steps of 10");
     volume = uint8_t(doc["volume"].as<int>());
   }
   rc::ThemeId theme = s.theme;

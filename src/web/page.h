@@ -182,7 +182,7 @@ static const char kPage[] = R"HTML(<!doctype html>
 <label id="ledrow" hidden>Notify light<select id="ledcolor"><option value="red">Red</option><option value="green">Green</option><option value="blue">Blue</option><option value="yellow">Yellow</option><option value="cyan">Cyan</option><option value="magenta">Magenta</option><option value="white">White</option><option value="off">Off</option></select></label>
 <label id="ledtrow" hidden>Light timeout<select id="ledtime"><option value="15">15 s</option><option value="30">30 s</option><option value="60">1 min</option><option value="300">5 min</option><option value="0">Until read</option></select></label>
 <label id="buzzrow" hidden><input id="buzzer" type="checkbox" style="width:auto"> Sound on alerts (mentions, C-Mail, Feed)</label>
-<label id="volrow" hidden>Alert sound (mentions, C-Mail, Feed): <span id="volval"></span><input id="vol" type="range" min="0" max="100" step="20" oninput="volShow()"></label>
+<label id="volrow" hidden>Alert sound (mentions, C-Mail, Feed): <span id="volval"></span><input id="vol" type="range" min="0" max="100" step="10" oninput="volShow()"></label>
 <div id="vibrow" hidden><label><input id="tapvib" type="checkbox" style="width:auto"> Vibrate on tap</label><label><input id="alertvib" type="checkbox" style="width:auto"> Vibrate on alerts</label></div>
 <label id="spellrow"><input id="spell" type="checkbox" style="width:auto"> Spell check while typing</label>
 <button onclick="savePrefs()">Save display</button>

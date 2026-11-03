@@ -21,6 +21,7 @@
 #include "ui/widgets/input_line.h"
 #include "ui/widgets/list_view.h"
 #include "ui/widgets/overlay.h"
+#include "ui/widgets/slider.h"
 #include "ui/widgets/text_view.h"
 
 namespace rc {
@@ -48,6 +49,7 @@ class SetupScreen : public Screen {
   void activate(int item);
   ListView menu_;
   BackupPicker picker_;
+  Slider volume_;  // the alert sound, on boards with board::hasVolume
   bool hasRestore_ = false;  // the SD list held backups on enter
   bool buttons_ = false;     // touch-only boards: the options as buttons
   ButtonPad pad_;
@@ -102,13 +104,14 @@ class SettingsScreen : public Screen {
   void onKey(const KeyEvent&) override;
   void render(Grid&, const Theme&, int64_t nowMs) override;
   bool hasOverlay() const override {
-    return confirm_ != Confirm::None || picking_ || picker_.isOpen();
+    return confirm_ != Confirm::None || picking_ || picker_.isOpen() || volume_.isOpen();
   }
   void closeOverlays() override {
     confirm_ = Confirm::None;
     picking_ = false;
     confirmBox_.close();
     picker_.close();
+    closeVolume();
   }
   // Larger sizes cut off the buttons' text.
   bool compactText() const override { return true; }
@@ -116,7 +119,7 @@ class SettingsScreen : public Screen {
  private:
   enum class Confirm {
     None, Logout, Reset, Rotation, TextSize, Timeout, KbLight, NotifyLight, NotifyTimeout, Theme,
-    Update, Idle, Wake, Volume
+    Update, Idle, Wake
   };
   void activate(int item);
   void openZones();
@@ -129,6 +132,8 @@ class SettingsScreen : public Screen {
   void showChoices(std::u32string title, std::vector<ListItem> rows, int sel);
   void closeChoice();
   void choiceKey(const KeyEvent&);
+  void volumeKey(const KeyEvent&);
+  void closeVolume();
 
   ListView menu_, zoneList_;
   Overlay confirmBox_;

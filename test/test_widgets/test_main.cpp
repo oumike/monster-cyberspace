@@ -19,6 +19,7 @@
 #include "ui/widgets/log_view.h"
 #include "ui/widgets/palette.h"
 #include "ui/widgets/side_nav.h"
+#include "ui/widgets/slider.h"
 #include "ui/widgets/status_bar.h"
 #include "ui/widgets/symbol_table.h"
 #include "ui/widgets/text_area.h"
@@ -1694,6 +1695,49 @@ void test_overlay_button_menu() {
   TEST_ASSERT_EQUAL(0, g2.at(1, mid1).edges);
 }
 
+void test_slider_steps_taps_and_closes() {
+  Slider s;
+  s.open(U"alert sound", 60, 100, 10, U"Off");
+  KeyEvent k;
+  k.action = Action::Right;
+  TEST_ASSERT_EQUAL(int(Slider::Result::Changed), int(s.key(k)));
+  TEST_ASSERT_EQUAL(70, s.value());
+  for (int i = 0; i < 5; ++i) s.key(k);
+  TEST_ASSERT_EQUAL(100, s.value());
+  TEST_ASSERT_EQUAL(int(Slider::Result::None), int(s.key(k)));  // already at the top
+  // A tap on the bar, then down to Off.
+  TapMap m;
+  m.setOrigin({1, 1}, 0);
+  setActiveTaps(&m);
+  Grid g(40, 20);
+  g.fill(T().bg);
+  s.render(g, 1, 19, T());
+  setActiveTaps(nullptr);
+  int barRow = -1;
+  for (int r = 0; r < 20 && barRow < 0; ++r)
+    if (rowText(g, r, 0, 40).find("100%") != std::string::npos) barRow = r - 1;
+  TEST_ASSERT_TRUE(barRow > 0);
+  const std::string bar = rowText(g, barRow, 0, 40);
+  const Target t = m.hit(int(bar.find('-')) + 3, barRow);  // the first segment
+  TEST_ASSERT_EQUAL(int(TargetKind::Row), int(t.kind));
+  k.action = Action::Activate;
+  k.target = uint8_t(ListId::Menu);
+  k.index = t.index;
+  s.key(k);
+  TEST_ASSERT_EQUAL(10, s.value());
+  k.action = Action::Left;
+  s.key(k);
+  TEST_ASSERT_EQUAL(0, s.value());
+  g.fill(T().bg);
+  s.render(g, 1, 19, T());
+  bool off = false;
+  for (int r = 0; r < 20; ++r) off = off || rowText(g, r, 0, 40).find("Off") != std::string::npos;
+  TEST_ASSERT_TRUE(off);
+  k.action = Action::Back;
+  TEST_ASSERT_EQUAL(int(Slider::Result::Closed), int(s.key(k)));
+  TEST_ASSERT_FALSE(s.isOpen());
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_overlay_button_menu);
@@ -1782,5 +1826,6 @@ int main() {
   RUN_TEST(test_side_nav_draws_three_buttons_that_send_keys);
   RUN_TEST(test_log_draws_bold_spans_bold);
   RUN_TEST(test_confirm_as_buttons);
+  RUN_TEST(test_slider_steps_taps_and_closes);
   return UNITY_END();
 }

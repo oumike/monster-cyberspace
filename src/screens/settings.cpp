@@ -159,6 +159,7 @@ constexpr int kFirstSize = RC_LOW_MEM ? 1 : 0;
 
 void SettingsScreen::enter(const std::string&) {
   confirm_ = Confirm::None;
+  closeVolume();
   picking_ = false;
   menu_.setSelected(0);
   pad_.reset();
@@ -246,18 +247,6 @@ void SettingsScreen::applyChoice(Confirm c, int i) {
     if (i >= 0 && i < kThemeCount) {
       app().cfg.theme = themeFromIndex(i);
       settings::saveUiPrefs(app().cfg);
-    }
-    return;
-  }
-  if (c == Confirm::Volume) {
-    // Off, then the steps.
-    if (i >= 0 && i <= int(std::size(kVolumeSteps))) {
-      AppState& a = app();
-      a.cfg.buzzer = i > 0;
-      if (i > 0) a.cfg.volume = kVolumeSteps[i - 1];
-      settings::saveUiPrefs(a.cfg);
-      board::setVolume(a.cfg.volume);
-      if (a.cfg.buzzer) board::beep(2000, 80);
     }
     return;
   }
@@ -355,8 +344,39 @@ void SettingsScreen::choiceKey(const KeyEvent& k) {
   else applyChoice(c, i);
 }
 
+// Each step plays at its level; Set keeps it, Cancel puts the old one back.
+void SettingsScreen::volumeKey(const KeyEvent& k) {
+  AppState& a = app();
+  switch (volume_.key(k)) {
+    case Slider::Result::Changed:
+      if (volume_.value() > 0) {
+        board::setVolume(uint8_t(volume_.value()));
+        board::beep(2000, 80);
+      }
+      break;
+    case Slider::Result::Picked:
+      a.cfg.buzzer = volume_.value() > 0;
+      if (a.cfg.buzzer) a.cfg.volume = uint8_t(volume_.value());
+      settings::saveUiPrefs(a.cfg);
+      board::setVolume(a.cfg.volume);
+      break;
+    case Slider::Result::Closed:
+      board::setVolume(a.cfg.volume);
+      break;
+    case Slider::Result::None:
+      break;
+  }
+}
+
+void SettingsScreen::closeVolume() {
+  if (!volume_.isOpen()) return;
+  volume_.close();
+  board::setVolume(app().cfg.volume);
+}
+
 void SettingsScreen::onKey(const KeyEvent& k) {
   if (picker_.isOpen()) return picker_.onKey(k);
+  if (volume_.isOpen()) return volumeKey(k);
   if (buttons_ && (picking_ || confirm_ != Confirm::None)) return choiceKey(k);
   if (picking_) return zoneKey(k);
   if (confirm_ != Confirm::None) return confirmKey(k);
@@ -505,20 +525,7 @@ void SettingsScreen::activate(int item) {
     case kSound: {
       AppState& a = app();
       if (board::hasVolume()) {
-        std::vector<ListItem> rows;
-        ListItem off{U"Off", U""};
-        off.marker = !a.cfg.buzzer;
-        rows.push_back(std::move(off));
-        int sel = 0;
-        for (size_t i = 0; i < std::size(kVolumeSteps); ++i) {
-          ListItem it{volumeLabel(kVolumeSteps[i]), U""};
-          if (a.cfg.buzzer && kVolumeSteps[i] == a.cfg.volume) {
-            it.marker = true;
-            sel = int(i) + 1;
-          }
-          rows.push_back(std::move(it));
-        }
-        openChoice(Confirm::Volume, U"alert sound", std::move(rows), sel);
+        volume_.open(U"alert sound", a.cfg.buzzer ? a.cfg.volume : 0, kVolumeMax, kVolumeStep, U"Off");
         break;
       }
       a.cfg.buzzer = !a.cfg.buzzer;
@@ -791,7 +798,11 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
     menu_.setItems(std::move(rows));
   }
 
-  if (picking_) {
+  if (volume_.isOpen()) {
+    if (!buttons_) menu_.render(g, menuTop, bottom, 1, g.cols() - 2, t);
+    volume_.render(g, 1, bottom, t);
+    drawHint(g, t, U"\u2190\u2192 volume  \u25CF set  back: cancel", U"tap the bar  Set or Cancel");
+  } else if (picking_) {
     // Drawn over the status lines and the menu, below the status bar.
     const int top = 1;
     for (int c = 0; c < g.cols(); ++c) g.put(c, top, U' ', t.barFg, t.barBg);
@@ -807,7 +818,7 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
                       confirm_ == Confirm::Timeout || confirm_ == Confirm::KbLight ||
                       confirm_ == Confirm::NotifyLight || confirm_ == Confirm::NotifyTimeout ||
                       confirm_ == Confirm::Theme || confirm_ == Confirm::Idle ||
-                      confirm_ == Confirm::Wake || confirm_ == Confirm::Volume;
+                      confirm_ == Confirm::Wake;
     confirmBox_.render(g, 1, bottom, 0, pick ? OverlayPlace::Centre : OverlayPlace::Bottom, t);
     if (pick)
       drawHint(g, t, U"\u2191\u2193 pick  \u25CF set  back: cancel",

@@ -417,7 +417,7 @@ std::string backupToYaml(const Settings& s, const BackupMeta& m) {
   o += std::string("buzzer: ") + boolStr(s.buzzer) + "\n";
   o += std::string("tapVibrate: ") + boolStr(s.tapVibrate) + "\n";
   o += std::string("alertVibrate: ") + boolStr(s.alertVibrate) + "\n";
-  o += "volume: " + std::to_string(s.volume) + "  # alert sound: 20, 40, 60, 80 or 100\n";
+  o += "volume: " + std::to_string(s.volume) + "  # alert sound: 10 to 100 in steps of 10\n";
   o += std::string("autoUpdate: ") + boolStr(s.autoUpdate) + "  # install firmware updates on its own\n";
   o += "screenOnSecs: " + std::to_string(s.screenOnSecs) + "  # screen timeout; 0 never\n";
   o += std::string("screenSaver: ") + boolStr(s.screenSaver) + "  # at the timeout; false: screen off\n";
@@ -517,7 +517,7 @@ bool backupFromYaml(std::string_view yaml, Settings& inOut, std::string& err, st
               !validNotifyTimeout(uint32_t(notifyTimeout)))) {
     err = at(st.notifyTimeout.line, "light timeout: 15, 30, 60, 300 or 0 (until read)");
   } else if (st.volume.has && (!plainInt(st.volume, volume) || !validVolume(volume))) {
-    err = at(st.volume.line, "volume: 20, 40, 60, 80 or 100");
+    err = at(st.volume.line, "volume: 10 to 100 in steps of 10");
   } else if (st.timezone.has && !validPosixTz(st.timezone.v)) {
     err = at(st.timezone.line, "time zone: 1-63 printable characters");
   } else if (st.tzName.has && (st.tzName.v.size() > 63 || !printable(st.tzName.v))) {

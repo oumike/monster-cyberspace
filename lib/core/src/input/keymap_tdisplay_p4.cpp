@@ -1,5 +1,7 @@
 #include "input/keymap_tdisplay_p4.h"
 
+#include "input/function_keys.h"
+
 namespace rc {
 namespace {
 
@@ -10,7 +12,7 @@ constexpr uint8_t kCaps = 31, kAlt = 41, kUp = 50, kSym1 = 51, kShift = 53, kTab
 constexpr uint8_t kShiftBit = 1, kSymBit = 2, kAltBit = 4;
 
 // Base, shift, sym, by key number - 1. 0 in shift or sym falls back to base;
-// 0 in base is a key handled by number, or one with no use (F1-F10).
+// 0 in base is a key handled by number (F1-F10: input/function_keys.h).
 constexpr char kMap[kKeyCount][3] = {
     {0, 0, 0},       {0, 0, 0},       {0, 0, 0},       {0, 0, 0},        //  1-4  F1-F4
     {0, 0, 0},       {0, 0, 0},       {0, 0, 0},       {0, 0, 0},        //  5-8  F5-F8
@@ -78,6 +80,7 @@ KeyEvent TdisplayP4Keys::key(uint8_t keyNum, bool pressed, uint32_t ms) {
   const uint8_t mods = mods_;
   mods_ = 0;
   if ((mods & kAltBit) && keyNum == kBackspace) return action(Action::Back);
+  if (keyNum <= 10) return action(functionKeyAction(keyNum));
   const Action a = special(keyNum);
   if (a != Action::None) {
     if (repeats(a)) {

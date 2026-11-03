@@ -15,7 +15,9 @@ enum class Action {
   Emoji,    // the emoji tray while typing; the palette elsewhere
   Spell,    // a tap on spell suggestion `index` (ui/widgets/spell_strip.h)
   PowerOff,    // boards that can cut their own power (board::powerOff)
-  KbLightStep  // a keyboard's light key: the next KbLight (ui/kb_light.h)
+  KbLightStep,  // a keyboard's light key: the next KbLight (ui/kb_light.h)
+  OpenRooms, OpenProfile, OpenSettings,  // function keys (input/function_keys.h)
+  KeysHelp     // the function keys' table
 };
 
 // A list a touch Row target belongs to.

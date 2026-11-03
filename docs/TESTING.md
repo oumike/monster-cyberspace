@@ -444,6 +444,8 @@ is open.
 - [ ] Battery gauge (BQ27220): Settings shows a sensible percentage; the charging state follows the USB cable
 - [ ] SD (FAT32 card, 4-bit, mounted through ESP-IDF): Back up to SD card, then Restore from SD card…, both work
 - [ ] Side button: turns the screen off, and on again; without the keyboard a touch doesn't wake it, with it any key or touch does (and does nothing else)
+- [ ] Keyboard: F1 messages, F2 rooms, F3 C-Mail, F4 Feed, F5 Guilds, F6 your profile, F7 Settings, from any screen (while typing, and with the emoji tray open too); F10 shows the function-key table and any key or tap closes it
+- [ ] Keyboard: Settings pickers (Theme and the rest) show a cursor the arrows move; Enter sets, Esc cancels
 - [ ] Flasher: picking LilyGO T-Display P4 installs the factory image (ESP32-P4 chip family, bootloader at 0x2000) and it boots; a reflash without erase keeps the settings
 
 **GPS time, RTC and time zone (`m9`):**

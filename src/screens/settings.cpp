@@ -722,6 +722,7 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
     for (const ListItem& it : choices_) labelW = std::max(labelW, int(it.label.size()));
     const int cols = ButtonPad::columns();
     const int fit = (g.cols() - 1) / cols - 3;  // inside one button of `cols`
+    choicePad_.setCursor(board::hasKeys());
     choicePad_.render(g, t, choices_, top + 1, bottom, false, labelW <= fit ? cols : 1);
     drawHint(g, t, U"\u2191\u2193 pick  \u25CF set  back: cancel", U"tap to select  back: cancel");
     return;

@@ -334,6 +334,8 @@ There are three ways to hold it:
 | Esc, or Alt + Backspace | Back |
 | Tab | The command palette |
 | Emoji key, while typing | The emoji tray |
+| F1 … F7 | From anywhere: Messages (your last room), Rooms, C-Mail, Feed, Guilds, your Profile, Settings |
+| F10 | A table of the function keys; any key or tap closes it |
 | F11 | Steps the keyboard light: Low, Medium, High, Off (also **Keyboard light** in Settings) |
 
 **Side button:** turns the screen off, and on again. With the keyboard on,

@@ -16,8 +16,8 @@ constexpr uint32_t kP4RepeatDelayMs = 450, kP4RepeatMs = 70;
 // (51, 58) and Alt (41) are one-shot: a press arms them for the next key, a
 // second press disarms, and they lapse after kP4ModifierMs. Caps Lock (31)
 // upper-cases letters only; with Shift a letter stays lower case. Esc is Back,
-// Enter Select, Tab the palette, Alt+Backspace Back, F11 a light step (read by
-// takeLightStep). Layout from wadamesh's P4Keyboard.cpp (kMap).
+// Enter Select, Tab the palette, Alt+Backspace Back, F1-F10 as
+// input/function_keys.h, F11 a light step (read by takeLightStep). Layout from wadamesh's P4Keyboard.cpp (kMap).
 class TdisplayP4Keys {
  public:
   KeyEvent key(uint8_t keyNum, bool pressed, uint32_t ms);

@@ -4,6 +4,7 @@
 #include "feature_flags.h"
 #include "screens/composer.h"
 #include "screens/entry.h"
+#include "screens/people_nav.h"
 #include "screens/room.h"
 #include "screens/screens.h"
 
@@ -149,6 +150,11 @@ bool handleGlobal(const KeyEvent& k) {
   switch (k.action) {
     case Action::OpenCirc:
     case Action::OpenHome:
+    case Action::OpenRooms:
+    case Action::OpenSettings:
+#if RC_FEAT_PEOPLE
+    case Action::OpenProfile:
+#endif
 #if RC_FEAT_CMAIL
     case Action::OpenCmail:
 #endif
@@ -173,6 +179,17 @@ bool handleGlobal(const KeyEvent& k) {
     case Action::OpenHome:
       go(Id::Home);
       break;
+    case Action::OpenRooms:
+      if (cur != Id::RoomList) go(Id::RoomList);
+      break;
+    case Action::OpenSettings:
+      if (cur != Id::Settings) go(Id::Settings);
+      break;
+#if RC_FEAT_PEOPLE
+    case Action::OpenProfile:
+      if (cur != Id::Profile || curPlace.arg != app().user) people::openProfile(app().user);
+      break;
+#endif
 #if RC_FEAT_CMAIL
     case Action::OpenCmail:
       // From a conversation, a second press (overlays closed) goes to the list.

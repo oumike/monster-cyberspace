@@ -4,6 +4,7 @@
 #include <esp_heap_caps.h>
 
 #include <algorithm>
+#include <iterator>
 #include <mutex>
 
 #include "app/app_state.h"
@@ -18,6 +19,7 @@
 #include "hal/board.h"
 #include "input/backspace.h"
 #include "input/double_tap.h"
+#include "input/function_keys.h"
 #include "input/gestures.h"
 #include "input/key_event.h"
 #include "input/touch_resolve.h"
@@ -90,6 +92,7 @@ SymbolTable symbols;
 // Boards that can't type (board::canType): canned replies instead of a text
 // field. cannedEmoji: the emoji tray was opened from it, so a pick sends.
 CannedPicker canned;
+bool keysHelp = false;  // F10's table of the function keys
 bool cannedEmoji = false;
 Power power = Power::On;
 int64_t saverUntil = 0, lastActivitySent = -kActivityMs;
@@ -592,6 +595,27 @@ void sendCanned(const std::u32string& text) {
   router::screen().onKey(KeyEvent{Action::Select});
 }
 
+// F10's table: a centred box over the screen; a tap anywhere closes it.
+void renderKeysHelp(Grid& g, const Theme& t) {
+  const int n = int(std::size(kFunctionKeys));
+  const int w = std::min(g.cols() - 2, 24), h = std::min(g.rows() - 2, n + 3);
+  const int c0 = std::max(0, (g.cols() - w) / 2), r0 = std::max(0, (g.rows() - h) / 2);
+  for (int r = r0; r < r0 + h; ++r)
+    for (int c = c0; c < c0 + w; ++c) g.put(c, r, U' ', t.fg, t.bg);
+  g.outline(c0, r0, c0 + w - 1, r0 + h - 1, t.dim);
+  g.putText(c0 + 2, r0 + 1, U"function keys", t.fg, t.bg, w - 4);
+  for (int i = 0; i < n && r0 + 2 + i < r0 + h - 1; ++i) {
+    g.putText(c0 + 2, r0 + 2 + i, kFunctionKeys[i].key, t.selectBg, t.bg, 4);
+    g.putText(c0 + 7, r0 + 2 + i, kFunctionKeys[i].label, t.fg, t.bg, w - 9);
+  }
+  if (activeTaps()) {
+    Target close;
+    close.kind = TargetKind::Fixed;
+    close.tap.action = Action::KeysHelp;
+    activeTaps()->addCells(0, 0, g.cols() - 1, g.rows() - 1, close);
+  }
+}
+
 void handleKey(const KeyEvent& key) {
   int64_t now = nowMs();
   KeyEvent k = key;
@@ -640,6 +664,20 @@ void handleKey(const KeyEvent& key) {
       applyKbLight();
     }
     return;
+  }
+  // The help closes on any key or tap; F10 again only closes it.
+  if (keysHelp) {
+    keysHelp = false;
+    if (k.action == Action::KeysHelp || !isJump(k.action)) return;
+  } else if (k.action == Action::KeysHelp) {
+    keysHelp = true;
+    return;
+  }
+  // Function-key jumps work from anywhere, past an open picker.
+  if (isJump(k.action) && (canned.isOpen() || symbols.isOpen())) {
+    canned.close();
+    symbols.close();
+    cannedEmoji = false;
   }
   if (canned.isOpen()) {
     CannedPicker::Out o = canned.key(k);
@@ -926,6 +964,7 @@ void taskMain(void*) {
       router::screen().render(grid, t, now);
       symbols.render(grid, grid.rows() - 1, t);
       canned.render(grid, 0, grid.rows() - 1, t);
+      if (keysHelp) renderKeysHelp(grid, t);
       topBanner.render(grid, 0, t, now);  // over the status bar
       taps.mapRows(0, rowSpans(grid, cellSize(gridSize).h, bigCellSize(gridSize).h));
       renderer.draw(grid, gridSize);

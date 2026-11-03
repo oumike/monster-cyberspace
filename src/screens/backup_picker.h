@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "input/key_event.h"
+#include "screens/button_pad.h"
 #include "store/backup_store.h"
 #include "ui/grid.h"
 #include "ui/theme.h"
@@ -29,12 +30,16 @@ class BackupPicker {
 
  private:
   void restore();
+  void ask();
 
   std::vector<backupstore::FileInfo> files_;
   ListView list_;
   Overlay confirmBox_;
   bool open_ = false;
   bool confirming_ = false;
+  // Touch boards: the files, then Cancel / Restore, as buttons.
+  ButtonPad pad_;
+  bool buttons_ = false;
 };
 
 }  // namespace rc

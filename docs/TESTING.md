@@ -46,6 +46,13 @@ on 2026-10-27; the sections marked `m9_fake` passed on it before then.
 - [ ] Touch Home: the unread tile spans the top row; Up from either tile of
       the next row goes to it and Down from it goes to the left tile; taps
       open every tile. With nothing unread, Unread says "nothing unread".
+- [ ] Touch boards (the T-Display P4 too): every Settings picker and confirm,
+      and Restore from SD card (Settings and Setup), opens as full-screen
+      buttons (one column when labels are long, the time zones too); a tap
+      sets it, Back cancels; on boards with keys the cursor starts on the
+      current value
+- [ ] Touch boards: the new-entry Title has a padded row above and below;
+      tapping the padding focuses the title, cursor at the end
 - [ ] Touch boards (the T-Display P4 too): Unread's rows are two-line buttons
       (C-Mail, Mention or Feed over the text, the C-Mail count on the right),
       "✓ Mark all read" first; a tap opens one, a drag scrolls; with keys

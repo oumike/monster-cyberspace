@@ -169,6 +169,7 @@ void SettingsScreen::openZones() {
     }
     items.push_back(std::move(it));
   }
+  showChoices(U"time zone", items, sel);
   zoneList_.setItems(std::move(items));
   zoneList_.setSelected(sel);
   picking_ = true;
@@ -190,18 +191,20 @@ void SettingsScreen::zoneKey(const KeyEvent& k) {
       if (k.target == uint8_t(ListId::Main) && zoneList_.select(k.index)) zoneKey(KeyEvent{k.then});
       break;
     case Action::Select:
-    case Action::Right: {
+    case Action::Right:
       picking_ = false;
-      const int i = zoneList_.selected();
-      if (i < 0 || size_t(i) >= zoneCount()) break;
-      const Zone& z = zoneAt(size_t(i));
-      settings::saveTz(z.posix, z.iana);
-      timesvc::settingsChanged();
+      applyZone(zoneList_.selected());
       break;
-    }
     default:
       break;
   }
+}
+
+void SettingsScreen::applyZone(int i) {
+  if (i < 0 || size_t(i) >= zoneCount()) return;
+  const Zone& z = zoneAt(size_t(i));
+  settings::saveTz(z.posix, z.iana);
+  timesvc::settingsChanged();
 }
 
 void SettingsScreen::confirmKey(const KeyEvent& k) {
@@ -214,89 +217,127 @@ void SettingsScreen::confirmKey(const KeyEvent& k) {
       break;
     case Overlay::Result::Picked:
       confirm_ = Confirm::None;
-      if (c == Confirm::Rotation) {
-        const int i = confirmBox_.selected();
-        if (i >= 0 && i < 4) ui::setRotation(kRotationOrder[i]);
-        break;
-      }
-      if (c == Confirm::Timeout) {
-        const int i = confirmBox_.selected();
-        if (i >= 0 && i < int(std::size(kScreenTimeoutSecs))) {
-          app().cfg.screenOnSecs = kScreenTimeoutSecs[i];
-          settings::saveScreen(app().cfg.screenOnSecs, app().cfg.screenSaver);
-        }
-        break;
-      }
-      if (c == Confirm::Theme) {
-        const int i = confirmBox_.selected();
-        if (i >= 0 && i < kThemeCount) {
-          app().cfg.theme = themeFromIndex(i);
-          settings::saveUiPrefs(app().cfg);
-        }
-        break;
-      }
-      if (c == Confirm::KbLight) {
-        const int i = confirmBox_.selected();
-        if (i >= 0 && i < int(std::size(kKbLightOrder))) {
-          app().cfg.kbLight = kKbLightOrder[i];
-          settings::saveKbLight(app().cfg.kbLight);
-        }
-        break;
-      }
-      if (c == Confirm::NotifyLight) {
-        const int i = confirmBox_.selected();
-        if (i >= 0 && i < int(std::size(kLedColorOrder))) {
-          app().cfg.notifyLight = kLedColorOrder[i];
-          settings::saveNotifyLight(app().cfg.notifyLight);
-          ui::notifyLightPreview(app().cfg.notifyLight);
-        }
-        break;
-      }
-      if (c == Confirm::NotifyTimeout) {
-        const int i = confirmBox_.selected();
-        if (i >= 0 && i < kNotifyTimeoutCount) {
-          app().cfg.notifyTimeoutSecs = kNotifyTimeoutSecs[i];
-          settings::saveNotifyTimeout(app().cfg.notifyTimeoutSecs);
-        }
-        break;
-      }
-      if (c == Confirm::Idle || c == Confirm::Wake) {
-        const int i = confirmBox_.selected();
-        AppState& a = app();
-        if (c == Confirm::Idle && i >= 0 && i < int(std::size(kIdleChoices)))
-          a.cfg.idleSecs = kIdleChoices[i];
-        else if (c == Confirm::Wake && i >= 0 && i < int(std::size(kWakeChoices)))
-          a.cfg.wakeMins = kWakeChoices[i];
-        else
-          break;
-        settings::savePower(a.cfg.idleSecs, a.cfg.wakeMins);
-        break;
-      }
-      if (c == Confirm::TextSize) {
-        const int i = confirmBox_.selected() + kFirstSize;
-        if (i >= kFirstSize && i < 3 && kSizeOrder[i] != app().cfg.textSize) ui::setTextSize(kSizeOrder[i]);
-        break;
-      }
-      if (confirmBox_.selected() != 1) break;
-#if RC_FEAT_OTA
-      if (c == Confirm::Update) {
-        if (!ota::startInstall()) ui::banner("Can't update now: is Wi-Fi up?", true);
-        break;
-      }
-#endif
-      if (c == Confirm::Logout) {
-        chatSource().command(Command{CmdType::Logout});
-      } else {
-        settings::factoryReset();
-        delay(100);
-        ESP.restart();
-      }
+      applyChoice(c, confirmBox_.selected());
       break;
   }
 }
 
+void SettingsScreen::applyChoice(Confirm c, int i) {
+  if (c == Confirm::Rotation) {
+    if (i >= 0 && i < 4) ui::setRotation(kRotationOrder[i]);
+    return;
+  }
+  if (c == Confirm::Timeout) {
+    if (i >= 0 && i < int(std::size(kScreenTimeoutSecs))) {
+      app().cfg.screenOnSecs = kScreenTimeoutSecs[i];
+      settings::saveScreen(app().cfg.screenOnSecs, app().cfg.screenSaver);
+    }
+    return;
+  }
+  if (c == Confirm::Theme) {
+    if (i >= 0 && i < kThemeCount) {
+      app().cfg.theme = themeFromIndex(i);
+      settings::saveUiPrefs(app().cfg);
+    }
+    return;
+  }
+  if (c == Confirm::KbLight) {
+    if (i >= 0 && i < int(std::size(kKbLightOrder))) {
+      app().cfg.kbLight = kKbLightOrder[i];
+      settings::saveKbLight(app().cfg.kbLight);
+    }
+    return;
+  }
+  if (c == Confirm::NotifyLight) {
+    if (i >= 0 && i < int(std::size(kLedColorOrder))) {
+      app().cfg.notifyLight = kLedColorOrder[i];
+      settings::saveNotifyLight(app().cfg.notifyLight);
+      ui::notifyLightPreview(app().cfg.notifyLight);
+    }
+    return;
+  }
+  if (c == Confirm::NotifyTimeout) {
+    if (i >= 0 && i < kNotifyTimeoutCount) {
+      app().cfg.notifyTimeoutSecs = kNotifyTimeoutSecs[i];
+      settings::saveNotifyTimeout(app().cfg.notifyTimeoutSecs);
+    }
+    return;
+  }
+  if (c == Confirm::Idle || c == Confirm::Wake) {
+    AppState& a = app();
+    if (c == Confirm::Idle && i >= 0 && i < int(std::size(kIdleChoices)))
+      a.cfg.idleSecs = kIdleChoices[i];
+    else if (c == Confirm::Wake && i >= 0 && i < int(std::size(kWakeChoices)))
+      a.cfg.wakeMins = kWakeChoices[i];
+    else
+      return;
+    settings::savePower(a.cfg.idleSecs, a.cfg.wakeMins);
+    return;
+  }
+  if (c == Confirm::TextSize) {
+    const int s = i + kFirstSize;
+    if (s >= kFirstSize && s < 3 && kSizeOrder[s] != app().cfg.textSize) ui::setTextSize(kSizeOrder[s]);
+    return;
+  }
+  if (i != 1) return;
+#if RC_FEAT_OTA
+  if (c == Confirm::Update) {
+    if (!ota::startInstall()) ui::banner("Can't update now: is Wi-Fi up?", true);
+    return;
+  }
+#endif
+  if (c == Confirm::Logout) {
+    chatSource().command(Command{CmdType::Logout});
+  } else {
+    settings::factoryReset();
+    delay(100);
+    ESP.restart();
+  }
+}
+
+void SettingsScreen::openChoice(Confirm c, std::u32string title, std::vector<ListItem> rows, int sel) {
+  confirm_ = c;
+  showChoices(title, rows, sel);
+  confirmBox_.open(std::move(title), std::move(rows), sel);
+}
+
+void SettingsScreen::openConfirm(Confirm c, std::u32string title, std::u32string action) {
+  confirm_ = c;
+  std::vector<ListItem> rows{ListItem{U"Cancel", U""}, ListItem{action, U"", ItemTone::Error}};
+  showChoices(title, std::move(rows), 0);
+  confirmBox_.confirm(std::move(title), std::move(action));
+}
+
+void SettingsScreen::showChoices(std::u32string title, std::vector<ListItem> rows, int sel) {
+  choiceTitle_ = std::move(title);
+  choices_ = std::move(rows);
+  choicePad_.reset();
+  if (!ui::fromTouch()) choicePad_.showCursorAt(sel);
+}
+
+void SettingsScreen::closeChoice() {
+  confirm_ = Confirm::None;
+  picking_ = false;
+  confirmBox_.close();
+}
+
+// Touch boards: a choice menu, the time zone list or a confirm as buttons.
+void SettingsScreen::choiceKey(const KeyEvent& k) {
+  const bool leave = k.action == Action::Back ||
+                     (k.action == Action::Left && (!board::hasKeys() || choicePad_.atLeftEdge()));
+  if (leave) return closeChoice();
+  const int i = choicePad_.key(k);
+  if (i < 0 || i >= int(choices_.size())) return;
+  const Confirm c = confirm_;
+  const bool zone = picking_;
+  closeChoice();
+  if (zone) applyZone(i);
+  else applyChoice(c, i);
+}
+
 void SettingsScreen::onKey(const KeyEvent& k) {
   if (picker_.isOpen()) return picker_.onKey(k);
+  if (buttons_ && (picking_ || confirm_ != Confirm::None)) return choiceKey(k);
   if (picking_) return zoneKey(k);
   if (confirm_ != Confirm::None) return confirmKey(k);
   // Left leaves from the first column only when the arrows move a cursor.
@@ -344,8 +385,7 @@ void SettingsScreen::activate(int item) {
         }
         rows.push_back(std::move(it));
       }
-      confirm_ = Confirm::Theme;
-      confirmBox_.open(U"theme", std::move(rows), sel);
+      openChoice(Confirm::Theme, U"theme", std::move(rows), sel);
       break;
     }
     case kTextSize: {
@@ -359,8 +399,7 @@ void SettingsScreen::activate(int item) {
         }
         rows.push_back(std::move(it));
       }
-      confirm_ = Confirm::TextSize;
-      confirmBox_.open(U"text size", std::move(rows), sel);
+      openChoice(Confirm::TextSize, U"text size", std::move(rows), sel);
       break;
     }
     case kZone:
@@ -377,8 +416,7 @@ void SettingsScreen::activate(int item) {
         }
         rows.push_back(std::move(it));
       }
-      confirm_ = Confirm::Rotation;
-      confirmBox_.open(U"orientation", std::move(rows), sel);
+      openChoice(Confirm::Rotation, U"orientation", std::move(rows), sel);
       break;
     }
     case kScreenTimeout: {
@@ -392,8 +430,7 @@ void SettingsScreen::activate(int item) {
         }
         rows.push_back(std::move(it));
       }
-      confirm_ = Confirm::Timeout;
-      confirmBox_.open(U"screen timeout", std::move(rows), sel);
+      openChoice(Confirm::Timeout, U"screen timeout", std::move(rows), sel);
       break;
     }
     case kKbLight: {
@@ -407,8 +444,7 @@ void SettingsScreen::activate(int item) {
         }
         rows.push_back(std::move(it));
       }
-      confirm_ = Confirm::KbLight;
-      confirmBox_.open(U"keyboard light", std::move(rows), sel);
+      openChoice(Confirm::KbLight, U"keyboard light", std::move(rows), sel);
       break;
     }
     case kNotifyLight: {
@@ -422,8 +458,7 @@ void SettingsScreen::activate(int item) {
         }
         rows.push_back(std::move(it));
       }
-      confirm_ = Confirm::NotifyLight;
-      confirmBox_.open(U"notify light", std::move(rows), sel);
+      openChoice(Confirm::NotifyLight, U"notify light", std::move(rows), sel);
       break;
     }
     case kNotifyTimeout: {
@@ -438,8 +473,7 @@ void SettingsScreen::activate(int item) {
         }
         rows.push_back(std::move(it));
       }
-      confirm_ = Confirm::NotifyTimeout;
-      confirmBox_.open(U"light timeout", std::move(rows), sel);
+      openChoice(Confirm::NotifyTimeout, U"light timeout", std::move(rows), sel);
       break;
     }
     case kAtTimeout: {
@@ -475,8 +509,7 @@ void SettingsScreen::activate(int item) {
         }
         rows.push_back(std::move(row));
       }
-      confirm_ = idle ? Confirm::Idle : Confirm::Wake;
-      confirmBox_.open(idle ? U"sleep after" : U"wake every", std::move(rows), sel);
+      openChoice(idle ? Confirm::Idle : Confirm::Wake, idle ? U"sleep after" : U"wake every", std::move(rows), sel);
       break;
     }
     case kWebConfig:
@@ -503,8 +536,7 @@ void SettingsScreen::activate(int item) {
           st.state == ota::State::Done)
         break;
       if (st.state == ota::State::Available) {
-        confirm_ = Confirm::Update;
-        confirmBox_.confirm(widen(("Install " + st.latest + "? The device restarts.").c_str()), U"Install");
+        openConfirm(Confirm::Update, widen(("Install " + st.latest + "? The device restarts.").c_str()), U"Install");
         break;
       }
       if (!ota::startCheck()) ui::banner("Can't check now: is Wi-Fi up?", true);
@@ -526,12 +558,10 @@ void SettingsScreen::activate(int item) {
       picker_.open();
       break;
     case kLogout:
-      confirm_ = Confirm::Logout;
-      confirmBox_.confirm(U"Log out of Cyberspace?", U"Log out");
+      openConfirm(Confirm::Logout, U"Log out of Cyberspace?", U"Log out");
       break;
     case kReset:
-      confirm_ = Confirm::Reset;
-      confirmBox_.confirm(U"Erase Wi-Fi, account and settings?", U"Erase everything");
+      openConfirm(Confirm::Reset, U"Erase Wi-Fi, account and settings?", U"Erase everything");
       break;
   }
 }
@@ -681,6 +711,21 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
     field("zone", ts.zone, t.fg);
     return r - 1;
   };
+  const bool choosing = picking_ || confirm_ != Confirm::None;
+  if (buttons_ && choosing) {
+    // The choices as buttons over the whole screen, under a title bar: one
+    // column when two would cut the labels.
+    const int top = 1;
+    for (int c = 0; c < g.cols(); ++c) g.put(c, top, U' ', t.barFg, t.barBg);
+    g.putText(1, top, choiceTitle_, t.barFg, t.barBg, g.cols() - 2);
+    int labelW = 0;
+    for (const ListItem& it : choices_) labelW = std::max(labelW, int(it.label.size()));
+    const int cols = ButtonPad::columns();
+    const int fit = (g.cols() - 1) / cols - 3;  // inside one button of `cols`
+    choicePad_.render(g, t, choices_, top + 1, bottom, false, labelW <= fit ? cols : 1);
+    drawHint(g, t, U"\u2191\u2193 pick  \u25CF set  back: cancel", U"tap to select  back: cancel");
+    return;
+  }
   if (buttons_) {
     if (!picking_) {
       const int header = status(false, 0, 0) + 1;  // and a blank row

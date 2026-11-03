@@ -9,6 +9,7 @@
 #include "app/ui_task.h"
 #include "feed/compose.h"
 #include "feed/feed_source.h"
+#include "hal/board.h"
 #include "screens/draw.h"
 #include "store/locked_feed.h"
 #include "ui/tap_map.h"
@@ -326,10 +327,25 @@ void ComposerScreen::render(Grid& g, const Theme& t, int64_t) {
   const int cwRow = guild ? rows : rows - 1 - hintRows;
   const int checkRow = guild ? rows : cwRow - 1;
   const int topicsRow = guild ? rows - 1 - hintRows : checkRow - 1;
-  const int titleRow = 1, labelRow = 2, bodyTop = 3;
+  // Touch boards pad the title with a row above and below, so it's easier
+  // to hit; a tap on the padding puts the cursor at the end.
+  const int pad = board::hasTouch() ? 1 : 0;
+  const int titleRow = 1 + pad, labelRow = titleRow + 1 + pad, bodyTop = labelRow + 1;
   const int bodyBottom = std::max(bodyTop + 1, topicsRow);
 
   title_.setDisabled(focus_ != kTitle || gPosting);
+  if (pad) {
+    g.fillRow(titleRow - 1, t.inputBg);
+    g.fillRow(titleRow + 1, t.inputBg);
+    if (activeTaps()) {
+      Target tt;
+      tt.kind = TargetKind::Field;
+      tt.field = kTitle;
+      tt.first = static_cast<int16_t>(title_.text().size());
+      tt.len = 0;
+      activeTaps()->addCells(0, titleRow - 1, g.cols() - 1, titleRow + 1, tt);
+    }
+  }
   title_.render(g, titleRow, t, U"Title ");
 
   const uint16_t labelFg = focus_ == kBody ? t.fg : t.dim;

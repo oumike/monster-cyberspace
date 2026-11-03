@@ -107,6 +107,7 @@ class SettingsScreen : public Screen {
   void closeOverlays() override {
     confirm_ = Confirm::None;
     picking_ = false;
+    confirmBox_.close();
     picker_.close();
   }
   // Larger sizes cut off the buttons' text.
@@ -121,6 +122,13 @@ class SettingsScreen : public Screen {
   void openZones();
   void zoneKey(const KeyEvent&);
   void confirmKey(const KeyEvent&);
+  void applyChoice(Confirm c, int i);
+  void applyZone(int i);
+  void openChoice(Confirm c, std::u32string title, std::vector<ListItem> rows, int sel);
+  void openConfirm(Confirm c, std::u32string title, std::u32string action);
+  void showChoices(std::u32string title, std::vector<ListItem> rows, int sel);
+  void closeChoice();
+  void choiceKey(const KeyEvent&);
 
   ListView menu_, zoneList_;
   Overlay confirmBox_;
@@ -129,6 +137,10 @@ class SettingsScreen : public Screen {
   bool picking_ = false;  // the time zone list is open
   ButtonPad pad_;         // touch boards: the menu as buttons
   bool buttons_ = false;
+  // Touch boards: the open choice menu, zone list or confirm, as buttons.
+  ButtonPad choicePad_;
+  std::u32string choiceTitle_;
+  std::vector<ListItem> choices_;
 };
 
 // Wi-Fi on the device: scan, join (with a password, or a name typed for a

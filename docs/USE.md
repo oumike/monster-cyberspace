@@ -449,7 +449,12 @@ Touch above, but with no buttons:
 - **Settings:** the actions are buttons in the same grid, each showing its
   current value at the right (Setup AP shows on or off; tap to switch), under
   the same status lines as other boards (account, Wi-Fi, battery, time),
-  which scroll away with the buttons.
+  which scroll away with the buttons. Its pickers (theme, text size, time
+  zone, orientation, timeouts, lights, sleep and wake) and its confirms (log
+  out, factory reset, update), and Restore from SD card, open as full-screen
+  buttons on every touch board; Back cancels.
+- **New entry:** on touch boards the Title line has a blank row above and
+  below it, so it's easier to tap.
 - **3.5":** the microSD slot takes settings backups; a GPS module on the UART1
   connector, if fitted, sets the clock.
 - **5.0":** no SD slot (its pins belong to the wireless-module slot) and no GPS.

@@ -7,8 +7,7 @@
 namespace rc {
 
 // Keyboards with a row of function keys (the T-Display P4's) jump straight to
-// a place from anywhere; F10 shows this table (not listed in it), F11 steps
-// the keyboard light.
+// a place from anywhere; F10 shows this table, F11 steps the keyboard light.
 struct FunctionKey {
   const char32_t* key;
   const char32_t* label;
@@ -19,7 +18,8 @@ constexpr FunctionKey kFunctionKeys[] = {
     {U"F1", U"messages", Action::OpenCirc},     {U"F2", U"rooms", Action::OpenRooms},
     {U"F3", U"c-mail", Action::OpenCmail},      {U"F4", U"feed", Action::OpenFeed},
     {U"F5", U"guilds", Action::OpenMap},        {U"F6", U"profile", Action::OpenProfile},
-    {U"F7", U"settings", Action::OpenSettings}, {U"F11", U"keyboard light", Action::KbLightStep},
+    {U"F7", U"settings", Action::OpenSettings}, {U"F10", U"navigational help", Action::KeysHelp},
+    {U"F11", U"keyboard light", Action::KbLightStep},
 };
 
 // The action of function key n (1-based), or None.

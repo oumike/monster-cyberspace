@@ -600,7 +600,7 @@ void renderKeysHelp(Grid& g, const Theme& t) {
   const int n = int(std::size(kFunctionKeys));
   // The title and the keys, with a blank row above and below when they fit.
   const int content = n + 1, pad = g.rows() >= content + 2 ? 1 : 0;
-  const int w = std::min(g.cols() - 2, 24), h = std::min(g.rows(), content + 2 * pad);
+  const int w = std::min(g.cols() - 2, 26), h = std::min(g.rows(), content + 2 * pad);
   const int c0 = std::max(0, (g.cols() - w) / 2), r0 = std::max(0, (g.rows() - h) / 2);
   for (int r = r0; r < r0 + h; ++r)
     for (int c = c0; c < c0 + w; ++c) g.put(c, r, U' ', t.fg, t.bg);

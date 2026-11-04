@@ -605,6 +605,11 @@ void test_entry_list_big_heads() {
   TEST_ASSERT_EQUAL(kEdgeBottom | kEdgeLeft, g.at(0, 4).edges);
   TEST_ASSERT_EQUAL(kEdgeBottom | kEdgeRight, g.at(8, 4).edges);
   TEST_ASSERT_EQUAL(kScrollBarCp, g.at(9, 4).cp);
+  // In pixels the head's cells end elsewhere than the text row's, so the head
+  // asks for its right side on the text row's column.
+  TEST_ASSERT_EQUAL(8, g.rightEdgeCol(3));
+  TEST_ASSERT_EQUAL(-1, g.rightEdgeCol(1));
+  TEST_ASSERT_EQUAL(-1, g.rightEdgeCol(4));
   // Heads are cut to their own width, less the bar's column.
   el.setRows({{U"abcdefghijk", U"x", 1, 2}});
   g.fill(0);

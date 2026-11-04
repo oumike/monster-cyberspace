@@ -203,6 +203,18 @@ void test_row_spans_shift() {
   TEST_ASSERT_EQUAL(0, rowSpans(g, 12, 14)[1].x);
 }
 
+void test_right_edge_col() {
+  Grid g(5, 3);
+  TEST_ASSERT_EQUAL(-1, g.rightEdgeCol(1));
+  g.clearDirty();
+  g.setRightEdgeCol(1, 3);
+  TEST_ASSERT_EQUAL(3, g.rightEdgeCol(1));
+  TEST_ASSERT_TRUE(g.rowDirty(1));
+  TEST_ASSERT_FALSE(g.rowDirty(0));
+  g.fill(0);
+  TEST_ASSERT_EQUAL(-1, g.rightEdgeCol(1));
+}
+
 void test_row_spans_scale() {
   Grid g(5, 6);
   g.setRowScale(1, 3);
@@ -1171,6 +1183,7 @@ int main() {
   RUN_TEST(test_row_spans_cut_before_last_row);
   RUN_TEST(test_row_spans_pad_rows);
   RUN_TEST(test_row_spans_shift);
+  RUN_TEST(test_right_edge_col);
   RUN_TEST(test_row_spans_scale);
   RUN_TEST(test_header_rows);
   RUN_TEST(test_grid_add_edges);

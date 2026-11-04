@@ -95,10 +95,12 @@ void EntryList::render(Grid& g, int top, int bottom, const Theme& t, int rightRe
       g.outline(0, row, width - 1, std::min(row + 1, bottom - 1), t.selectBg);
       continue;
     }
-    // The head row is narrower, so each row gets its own sides.
+    // The head row is narrower, so each row gets its own sides; the head's
+    // right side is drawn on the text row's column, as the cells differ in px.
     for (int c = 0; c < headW; ++c)
       g.addEdges(c, row, kEdgeTop | (c == 0 ? kEdgeLeft : 0) | (c == headW - 1 ? kEdgeRight : 0),
                  t.selectBg);
+    g.setRightEdgeCol(row, width - 1);
     if (row + 1 < bottom)
       for (int c = 0; c < width; ++c)
         g.addEdges(c, row + 1,

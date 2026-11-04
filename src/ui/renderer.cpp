@@ -88,7 +88,7 @@ void Renderer::resize() {
   docked_ = Layer{};
 }
 
-void Renderer::drawRow(const Grid& g, int r, const CellFont& font, RowSpan span, int yoff) {
+void Renderer::drawRow(const Grid& g, int r, const CellFont& font, RowSpan span, int yoff, int edgeX) {
   yoff = std::clamp(yoff, 0, span.h);
   // A scaled row (Grid::setRowScale): each glyph pixel drawn sc x sc.
   const int sc = g.rowScale(r);
@@ -154,14 +154,29 @@ void Renderer::drawRow(const Grid& g, int r, const CellFont& font, RowSpan span,
           for (int x = 0; x < cw; ++x) cp[x] = (bits & (0x8000 >> x)) ? fg : bg;
         else
           for (int x = 0; x < cw; ++x) cp[x] = (bits & (0x8000 >> (x / sc))) ? fg : bg;
+      }
+      // Each cell's outline sides, over the glyphs.
+      int moveEnd = -1;  // with edgeX: the moved right side's cell's end px
+      uint16_t moveColor = 0;
+      bool moveLine = false;
+      for (int c = 0; c < cols; ++c) {
+        const Cell& cell = g.at(c, r);
         if (cell.edges) {
           const uint16_t ec = cellColor(cell.edgeColor);
+          uint16_t* cp = px + ox + c * cw;
           if ((ly == 0 && (cell.edges & kEdgeTop)) || (ly == ch - 1 && (cell.edges & kEdgeBottom)))
             for (int x = 0; x < cw; ++x) cp[x] = ec;
           if (cell.edges & kEdgeLeft) cp[0] = ec;
-          // The last cell's right side goes on the panel edge (below), so rows
-          // of different widths line up.
-          if ((cell.edges & kEdgeRight) && !(c == cols - 1 && used < w_)) cp[cw - 1] = ec;
+          if (!(cell.edges & kEdgeRight)) continue;
+          if (edgeX >= 0) {
+            moveEnd = ox + (c + 1) * cw;
+            moveColor = ec;
+            moveLine = (ly == 0 && (cell.edges & kEdgeTop)) || (ly == ch - 1 && (cell.edges & kEdgeBottom));
+          } else if (!(c == cols - 1 && used < w_)) {
+            // The last cell's right side goes on the panel edge (below), so
+            // rows of different widths line up.
+            cp[cw - 1] = ec;
+          }
         }
       }
       // Pixels right of the last whole cell take the last cell's background.
@@ -171,7 +186,12 @@ void Renderer::drawRow(const Grid& g, int r, const CellFont& font, RowSpan span,
         const bool line =
             (ly == 0 && (last.edges & kEdgeTop)) || (ly == ch - 1 && (last.edges & kEdgeBottom));
         for (int x = used; x < w_; ++x) px[x] = line ? ec : cellColor(last.bg);
-        if (last.edges & kEdgeRight) px[w_ - 1] = ec;
+        if ((last.edges & kEdgeRight) && edgeX < 0) px[w_ - 1] = ec;
+      }
+      if (moveEnd >= 0) {
+        if (moveLine)
+          for (int x = moveEnd; x <= edgeX; ++x) px[x] = moveColor;
+        px[edgeX] = moveColor;
       }
     }
     // Over the cell's blank and any padding, the whole row tall, so a bar down
@@ -185,7 +205,11 @@ void Renderer::drawRow(const Grid& g, int r, const CellFont& font, RowSpan span,
 
 void Renderer::drawGridRow(const Grid& g, int r, const CellFont& font, const CellFont& big, RowSpan span) {
   const bool head = r == 0 && g.header().px > 0;
-  drawRow(g, r, head || g.rowKind(r) == RowKind::Big ? big : font, span, head ? (span.h - big.h) / 2 : 0);
+  const bool isBig = g.rowKind(r) == RowKind::Big;
+  int edgeX = -1;
+  if (isBig && g.rightEdgeCol(r) >= 0)
+    edgeX = std::min(std::clamp(span.x, 0, w_) + (g.rightEdgeCol(r) + 1) * font.w * g.rowScale(r), w_) - 1;
+  drawRow(g, r, head || isBig ? big : font, span, head ? (span.h - big.h) / 2 : 0, edgeX);
 }
 
 void Renderer::redrawAll() {

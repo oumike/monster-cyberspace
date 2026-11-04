@@ -66,7 +66,9 @@ class Renderer {
   Layer main_{0}, docked_;
 
   // yoff: px of span above the glyphs, in the row's background.
-  void drawRow(const Grid& g, int r, const CellFont& font, RowSpan span, int yoff = 0);
+  // edgeX >= 0: the right side of the kEdgeRight cell goes on that panel px
+  // instead (Grid::setRightEdgeCol), its top/bottom line run on to meet it.
+  void drawRow(const Grid& g, int r, const CellFont& font, RowSpan span, int yoff = 0, int edgeX = -1);
   // Row r at span, in the big font when it is RowKind::Big or a header row 0.
   void drawGridRow(const Grid& g, int r, const CellFont& font, const CellFont& big, RowSpan span);
 };

@@ -29,6 +29,12 @@ on 2026-10-27; the sections marked `m9_fake` passed on it before then.
       slowly or quickly. Held Backspace and quick taps on the arrows still
       repeat (`input/m9_key_guard`).
 
+**Feed selection box (any board):**
+
+- [ ] With Text size Comfortable and then Large, the selected Feed, Topics
+      or guild row's box has one straight right side down its big head line
+      and its second line (`Grid::setRightEdgeCol`). Compact unchanged.
+
 **Scroll bars (any board):**
 
 - [ ] A list, room log, Feed list, entry, composer body, member drawer or

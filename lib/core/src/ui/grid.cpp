@@ -18,6 +18,7 @@ void Grid::resize(int cols, int rows) {
   pads_.assign(rows_, -1);
   shifts_.assign(rows_, 0);
   scales_.assign(rows_, 1);
+  edgeCols_.assign(rows_, -1);
 }
 
 void Grid::fill(uint16_t bg) {
@@ -26,6 +27,7 @@ void Grid::fill(uint16_t bg) {
   std::fill(pads_.begin(), pads_.end(), int16_t(-1));
   std::fill(shifts_.begin(), shifts_.end(), int16_t(0));
   std::fill(scales_.begin(), scales_.end(), uint8_t(1));
+  std::fill(edgeCols_.begin(), edgeCols_.end(), int16_t(-1));
 }
 
 void Grid::setRowKind(int row, RowKind k) {
@@ -53,6 +55,12 @@ void Grid::setRowScale(int row, int scale) {
 }
 
 int Grid::rowScale(int row) const { return row >= 0 && row < rows_ ? scales_[row] : 1; }
+
+void Grid::setRightEdgeCol(int row, int col) {
+  if (row >= 0 && row < rows_) edgeCols_[row] = static_cast<int16_t>(col < 0 ? -1 : col);
+}
+
+int Grid::rightEdgeCol(int row) const { return row >= 0 && row < rows_ ? edgeCols_[row] : -1; }
 
 void Grid::addEdges(int col, int row, uint8_t edges, uint16_t color) {
   if (col < 0 || row < 0 || col >= cols_ || row >= rows_) return;
@@ -132,6 +140,7 @@ uint64_t Grid::rowHash(int row) const {
     mix(uint32_t(c->edges) | uint32_t(c->bold) << 4 | uint32_t(c->nudge) << 5 |
         uint32_t(c->edges ? c->edgeColor : 0) << 8);
   }
+  mix(uint32_t(edgeCols_[row]));
   return h;
 }
 

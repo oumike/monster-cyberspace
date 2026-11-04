@@ -119,6 +119,12 @@ class Grid {
   // monster.
   void setRowScale(int row, int scale);
   int rowScale(int row) const;
+  // On a RowKind::Big row, draws the right side of the kEdgeRight cell at the
+  // right of normal-font column col instead, its top and bottom lines run on
+  // to meet it, so a box over a big row and a normal row lines up. -1 (the
+  // default, and after fill()) draws it on the cell.
+  void setRightEdgeCol(int row, int col);
+  int rightEdgeCol(int row) const;
   // Row 0 as a header (HeaderSize). Kept across fill() and resize().
   void setHeader(HeaderSize h) { header_ = h; }
   const HeaderSize& header() const { return header_; }
@@ -149,7 +155,7 @@ class Grid {
   std::vector<uint64_t> drawn_;
   std::vector<bool> forced_;  // rows dirty regardless of content (after resize)
   std::vector<RowKind> kinds_;
-  std::vector<int16_t> pads_, shifts_;
+  std::vector<int16_t> pads_, shifts_, edgeCols_;
   std::vector<uint8_t> scales_;
   HeaderSize header_;
   int bottomPad_ = 0;

@@ -12,10 +12,17 @@ void Slider::open(std::u32string title, int value, int max, int step, std::u32st
   max_ = std::max(1, max);
   step_ = std::clamp(step, 1, max_);
   value_ = std::clamp(value, 0, max_);
+  names_.clear();
   open_ = true;
 }
 
+void Slider::openChoices(std::u32string title, std::vector<std::u32string> names, int sel) {
+  open(std::move(title), sel, std::max<int>(1, int(names.size()) - 1), 1, U"");
+  names_ = std::move(names);
+}
+
 std::u32string Slider::label() const {
+  if (!names_.empty()) return value_ < int(names_.size()) ? names_[value_] : U"";
   if (value_ == 0) return zero_;
   std::u32string s;
   for (char ch : std::to_string(value_)) s += char32_t(ch);
@@ -37,7 +44,7 @@ Slider::Result Slider::key(const KeyEvent& k) {
     case Action::Activate:
       // A tap on bar segment `index`: the value at its right end.
       if (k.target == uint8_t(ListId::Menu) && k.index >= 0 && k.index < steps())
-        value_ = (k.index + 1) * step_;
+        value_ = names_.empty() ? (k.index + 1) * step_ : k.index;
       break;
     case Action::Select:
       open_ = false;
@@ -58,7 +65,9 @@ void Slider::render(Grid& g, int top, int bottom, const Theme& t) const {
   const int avail = g.cols() - 2 - 8;
   const int seg = avail >= 2 * n ? 2 : 1;
   const int barW = std::min(avail, seg * n);
-  const int w = std::min(g.cols() - 2, std::max(barW + 8, int(title_.size()) + 4));
+  int labW = int(title_.size());
+  for (const std::u32string& nm : names_) labW = std::max(labW, int(nm.size()));
+  const int w = std::min(g.cols() - 2, std::max(barW + 8, labW + 4));
   const int h = 8;  // border, title, blank, bar, value, blank, buttons, border
   const int c0 = (g.cols() - w) / 2;
   const int r0 = top + std::max(0, (bottom - top - h) / 2);
@@ -77,7 +86,8 @@ void Slider::render(Grid& g, int top, int bottom, const Theme& t) const {
   const int bx = c0 + (w - barW) / 2;
   g.put(bx - 2, barRow, U'-', t.selectBg, t.bg);
   g.put(bx + barW + 1, barRow, U'+', t.selectBg, t.bg);
-  const int filled = n ? (value_ / step_) * barW / n : 0;
+  const int done = names_.empty() ? value_ / step_ : value_ + 1;
+  const int filled = n ? done * barW / n : 0;
   for (int c = 0; c < barW; ++c) {
     const bool on = c < filled;
     g.put(bx + c, barRow, on ? U'\u2588' : U'\u2592', on ? t.selectBg : t.dim, t.bg);

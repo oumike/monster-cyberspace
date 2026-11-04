@@ -1827,6 +1827,48 @@ void test_slider_steps_taps_and_closes() {
   TEST_ASSERT_FALSE(s.isOpen());
 }
 
+void test_slider_named_stops() {
+  Slider s;
+  s.openChoices(U"text size", {U"Compact", U"Comfortable", U"Large"}, 1);
+  TEST_ASSERT_EQUAL(1, s.value());
+  KeyEvent k;
+  k.action = Action::Right;
+  TEST_ASSERT_EQUAL(int(Slider::Result::Changed), int(s.key(k)));
+  TEST_ASSERT_EQUAL(2, s.value());
+  TEST_ASSERT_EQUAL(int(Slider::Result::None), int(s.key(k)));  // Large is the top
+  TapMap m;
+  m.setOrigin({1, 1}, 0);
+  setActiveTaps(&m);
+  Grid g(40, 20);
+  g.fill(T().bg);
+  s.render(g, 1, 19, T());
+  setActiveTaps(nullptr);
+  int barRow = -1;
+  for (int r = 0; r < 20 && barRow < 0; ++r)
+    if (rowText(g, r, 0, 40).find("Large") != std::string::npos) barRow = r - 1;
+  TEST_ASSERT_TRUE(barRow > 0);
+  // Three stops, all filled at the last; a tap on the first picks Compact.
+  const std::string bar = rowText(g, barRow, 0, 40);
+  const Target t = m.hit(int(bar.find('-')) + 3, barRow);
+  TEST_ASSERT_EQUAL(int(TargetKind::Row), int(t.kind));
+  TEST_ASSERT_EQUAL(0, t.index);
+  k.action = Action::Activate;
+  k.target = uint8_t(ListId::Menu);
+  k.index = t.index;
+  TEST_ASSERT_EQUAL(int(Slider::Result::Changed), int(s.key(k)));
+  TEST_ASSERT_EQUAL(0, s.value());
+  k = KeyEvent{};
+  k.action = Action::Left;
+  TEST_ASSERT_EQUAL(int(Slider::Result::None), int(s.key(k)));  // Compact is the bottom
+  g.fill(T().bg);
+  s.render(g, 1, 19, T());
+  bool compact = false;
+  for (int r = 0; r < 20; ++r) compact = compact || rowText(g, r, 0, 40).find("Compact") != std::string::npos;
+  TEST_ASSERT_TRUE(compact);
+  k.action = Action::Select;
+  TEST_ASSERT_EQUAL(int(Slider::Result::Picked), int(s.key(k)));
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_overlay_button_menu);
@@ -1917,5 +1959,6 @@ int main() {
   RUN_TEST(test_log_draws_bold_spans_bold);
   RUN_TEST(test_confirm_as_buttons);
   RUN_TEST(test_slider_steps_taps_and_closes);
+  RUN_TEST(test_slider_named_stops);
   return UNITY_END();
 }

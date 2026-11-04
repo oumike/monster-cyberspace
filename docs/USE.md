@@ -453,7 +453,7 @@ Touch above, but with no buttons:
 - **Settings:** the actions are buttons in the same grid, each showing its
   current value at the right (Setup AP shows on or off; tap to switch), under
   the same status lines as other boards (account, Wi-Fi, battery, time),
-  which scroll away with the buttons. Its pickers (theme, text size, time
+  which scroll away with the buttons. Its pickers (theme, time
   zone, orientation, timeouts, lights, sleep and wake) and its confirms (log
   out, factory reset, update), and Restore from SD card, open as full-screen
   buttons on every touch board; Back cancels.
@@ -733,9 +733,10 @@ without a key press.
 ## Text sizes
 
 (The Cardputer ADV always uses Compact and has no Text size item.) Pick one
-in **Settings** → **Text size** (a box with all three), or switch
-in the Feed palette, an entry's menu or the web page, where each switch steps
-Compact → Comfortable → Large. The choice is saved. Settings itself always
+in **Settings** → **Text size** (a slider with a stop for each: Left/Right or a
+tap on the bar moves it, Set keeps it, Cancel or Back leaves it), on the web
+page's Text size slider, or switch in the Feed palette or an entry's menu,
+where each switch steps Compact → Comfortable → Large. The choice is saved. Settings itself always
 uses Compact, so its items fit.
 
 - **Comfortable:** larger 8×16 text.

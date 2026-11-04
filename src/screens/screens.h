@@ -103,7 +103,8 @@ class SettingsScreen : public Screen {
   void onKey(const KeyEvent&) override;
   void render(Grid&, const Theme&, int64_t nowMs) override;
   bool hasOverlay() const override {
-    return confirm_ != Confirm::None || picking_ || picker_.isOpen() || volume_.isOpen();
+    return confirm_ != Confirm::None || picking_ || picker_.isOpen() || volume_.isOpen() ||
+           sizeSlider_.isOpen();
   }
   void closeOverlays() override {
     confirm_ = Confirm::None;
@@ -111,13 +112,14 @@ class SettingsScreen : public Screen {
     confirmBox_.close();
     picker_.close();
     closeVolume();
+    sizeSlider_.close();
   }
   // Larger sizes cut off the buttons' text.
   bool compactText() const override { return true; }
 
  private:
   enum class Confirm {
-    None, Logout, Reset, Rotation, TextSize, Timeout, KbLight, NotifyLight, NotifyTimeout, Theme,
+    None, Logout, Reset, Rotation, Timeout, KbLight, NotifyLight, NotifyTimeout, Theme,
     Update, Idle, Wake
   };
   void activate(int item);
@@ -133,11 +135,13 @@ class SettingsScreen : public Screen {
   void choiceKey(const KeyEvent&);
   void volumeKey(const KeyEvent&);
   void closeVolume();
+  void sizeKey(const KeyEvent&);
 
   ListView menu_, zoneList_;
   Overlay confirmBox_;
   BackupPicker picker_;
   Slider volume_;  // the alert sound, on boards with board::hasVolume
+  Slider sizeSlider_;  // text size, a stop per size
   Confirm confirm_ = Confirm::None;
   bool picking_ = false;  // the time zone list is open
   ButtonPad pad_;         // touch boards: the menu as buttons

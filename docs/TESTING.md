@@ -29,6 +29,14 @@ on 2026-10-27; the sections marked `m9_fake` passed on it before then.
       slowly or quickly. Held Backspace and quick taps on the arrows still
       repeat (`input/m9_key_guard`).
 
+**Text size slider (any board but the Cardputer ADV):**
+
+- [ ] Settings → Text size opens a slider with three stops (two, Comfortable
+      and Large, on low-memory boards) named under the bar. Left/Right and
+      taps on the bar move it, Set applies the size, Cancel/Back leaves it.
+      Web config's Text size is a three-stop range that shows the size's
+      name and saves it.
+
 **Feed selection box (any board):**
 
 - [ ] With Text size Comfortable and then Large, the selected Feed, Topics

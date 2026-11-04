@@ -321,7 +321,7 @@ speaker, C6 Wi-Fi, GPS, RTC, gauge and SD await the hardware check
 (docs/TESTING.md). Also on 2026-11-02: the T-Deck Pro draws 6 px in from the
 left (`PANEL_LEFT_INSET` in `pins_tdeck_pro.h`, `packMono` x0) so the bezel
 doesn't cover text; its check is open too.
-The native suite is green: 724/724
+The native suite is green: 725/725
 (`pio test -e native`), and `scripts/build-upload-monitor.sh -B` builds all
 twelve firmware envs.
 

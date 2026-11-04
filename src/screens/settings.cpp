@@ -151,7 +151,7 @@ std::u32string wakeLabel(uint32_t mins) {
 #define RC_LOW_MEM 0
 #endif
 
-// The text size picker's rows, in size order.
+// The text size slider's stops, in size order.
 constexpr TextSize kSizeOrder[] = {TextSize::Compact, TextSize::Comfortable, TextSize::Large};
 // Low-memory boards (no PSRAM) offer no Compact: its grid does not fit.
 constexpr int kFirstSize = RC_LOW_MEM ? 1 : 0;
@@ -160,6 +160,7 @@ constexpr int kFirstSize = RC_LOW_MEM ? 1 : 0;
 void SettingsScreen::enter(const std::string&) {
   confirm_ = Confirm::None;
   closeVolume();
+  sizeSlider_.close();
   picking_ = false;
   menu_.setSelected(0);
   pad_.reset();
@@ -283,11 +284,6 @@ void SettingsScreen::applyChoice(Confirm c, int i) {
     settings::savePower(a.cfg.idleSecs, a.cfg.wakeMins);
     return;
   }
-  if (c == Confirm::TextSize) {
-    const int s = i + kFirstSize;
-    if (s >= kFirstSize && s < 3 && kSizeOrder[s] != app().cfg.textSize) ui::setTextSize(kSizeOrder[s]);
-    return;
-  }
   if (i != 1) return;
 #if RC_FEAT_OTA
   if (c == Confirm::Update) {
@@ -374,9 +370,17 @@ void SettingsScreen::closeVolume() {
   board::setVolume(app().cfg.volume);
 }
 
+// Set applies the size; Cancel leaves it.
+void SettingsScreen::sizeKey(const KeyEvent& k) {
+  if (sizeSlider_.key(k) != Slider::Result::Picked) return;
+  const int s = sizeSlider_.value() + kFirstSize;
+  if (s >= kFirstSize && s < 3 && kSizeOrder[s] != app().cfg.textSize) ui::setTextSize(kSizeOrder[s]);
+}
+
 void SettingsScreen::onKey(const KeyEvent& k) {
   if (picker_.isOpen()) return picker_.onKey(k);
   if (volume_.isOpen()) return volumeKey(k);
+  if (sizeSlider_.isOpen()) return sizeKey(k);
   if (buttons_ && (picking_ || confirm_ != Confirm::None)) return choiceKey(k);
   if (picking_) return zoneKey(k);
   if (confirm_ != Confirm::None) return confirmKey(k);
@@ -429,17 +433,13 @@ void SettingsScreen::activate(int item) {
       break;
     }
     case kTextSize: {
-      std::vector<ListItem> rows;
+      std::vector<std::u32string> names;
       int sel = 0;
       for (int i = kFirstSize; i < 3; ++i) {
-        ListItem it{textSizeLabel(kSizeOrder[i]), U""};
-        if (kSizeOrder[i] == app().cfg.textSize) {
-          it.marker = true;
-          sel = i - kFirstSize;
-        }
-        rows.push_back(std::move(it));
+        if (kSizeOrder[i] == app().cfg.textSize) sel = i - kFirstSize;
+        names.push_back(textSizeLabel(kSizeOrder[i]));
       }
-      openChoice(Confirm::TextSize, U"text size", std::move(rows), sel);
+      sizeSlider_.openChoices(U"text size", std::move(names), sel);
       break;
     }
     case kZone:
@@ -802,6 +802,10 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
     if (!buttons_) menu_.render(g, menuTop, bottom, 1, g.cols() - 2, t);
     volume_.render(g, 1, bottom, t);
     drawHint(g, t, U"\u2190\u2192 volume  \u25CF set  back: cancel", U"tap the bar  Set or Cancel");
+  } else if (sizeSlider_.isOpen()) {
+    if (!buttons_) menu_.render(g, menuTop, bottom, 1, g.cols() - 2, t);
+    sizeSlider_.render(g, 1, bottom, t);
+    drawHint(g, t, U"\u2190\u2192 size  \u25CF set  back: cancel", U"tap the bar  Set or Cancel");
   } else if (picking_) {
     // Drawn over the status lines and the menu, below the status bar.
     const int top = 1;
@@ -812,9 +816,9 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
     zoneList_.render(g, top + 1, bottom, 1, g.cols() - 2, t);
     drawHint(g, t, U"\u2191\u2193 pick  \u25CF set  back: cancel", U"tap to select");
   } else if (confirm_ != Confirm::None) {
-    // The orientation and text size pickers are centred boxes; the bottom
+    // The pickers are centred boxes; the bottom
     // strip only has room for a two-row confirm.
-    const bool pick = confirm_ == Confirm::Rotation || confirm_ == Confirm::TextSize ||
+    const bool pick = confirm_ == Confirm::Rotation ||
                       confirm_ == Confirm::Timeout || confirm_ == Confirm::KbLight ||
                       confirm_ == Confirm::NotifyLight || confirm_ == Confirm::NotifyTimeout ||
                       confirm_ == Confirm::Theme || confirm_ == Confirm::Idle ||

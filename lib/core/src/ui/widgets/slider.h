@@ -13,8 +13,9 @@ namespace rc {
 // Left/Down lower it, Right/Up raise it, Select keeps it, Back cancels. On
 // touch, a tap on the bar sets the value under it, "-" and "+" step, and Set
 // and Cancel close it. 0 is labelled zeroLabel, the rest "N%".
-// openChoices instead makes one bar segment a named stop: value() is the
-// stop's index, filled up to and including it, labelled with its name.
+// openChoices instead draws a wide line with a dot per named stop, spread
+// from left to right, each name under its dot; value() is the chosen stop's
+// index, its dot filled. A tap on a dot or its name picks it.
 class Slider {
  public:
   enum class Result : uint8_t { None, Changed, Picked, Closed };
@@ -31,6 +32,7 @@ class Slider {
  private:
   int steps() const { return !names_.empty() ? int(names_.size()) : step_ > 0 ? max_ / step_ : 0; }
   std::u32string label() const;
+  void renderStops(Grid& g, int top, int bottom, const Theme& t) const;
 
   std::u32string title_, zero_;
   std::vector<std::u32string> names_;

@@ -733,8 +733,9 @@ without a key press.
 ## Text sizes
 
 (The Cardputer ADV always uses Compact and has no Text size item.) Pick one
-in **Settings** → **Text size** (a slider with a stop for each: Left/Right or a
-tap on the bar moves it, Set keeps it, Cancel or Back leaves it), on the web
+in **Settings** → **Text size** (a wide box with a line and a dot for each size,
+left to right, named underneath: Left/Right or a tap on a dot moves the
+filled dot, Set keeps it, Cancel or Back leaves it), on the web
 page's Text size slider, or switch in the Feed palette or an entry's menu,
 where each switch steps Compact → Comfortable → Large. The choice is saved. Settings itself always
 uses Compact, so its items fit.

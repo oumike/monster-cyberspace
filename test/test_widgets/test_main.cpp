@@ -1839,19 +1839,33 @@ void test_slider_named_stops() {
   TapMap m;
   m.setOrigin({1, 1}, 0);
   setActiveTaps(&m);
-  Grid g(40, 20);
+  Grid g(53, 20);
   g.fill(T().bg);
   s.render(g, 1, 19, T());
   setActiveTaps(nullptr);
-  int barRow = -1;
-  for (int r = 0; r < 20 && barRow < 0; ++r)
-    if (rowText(g, r, 0, 40).find("Large") != std::string::npos) barRow = r - 1;
-  TEST_ASSERT_TRUE(barRow > 0);
-  // Three stops, all filled at the last; a tap on the first picks Compact.
-  const std::string bar = rowText(g, barRow, 0, 40);
-  const Target t = m.hit(int(bar.find('-')) + 3, barRow);
+  // A line with a dot per stop, each name under its dot, the chosen dot filled.
+  int lineRow = -1;
+  for (int r = 0; r < 20 && lineRow < 0; ++r)
+    for (int c = 0; c < 53; ++c)
+      if (g.at(c, r).cp == U'\u2500') lineRow = r;
+  TEST_ASSERT_TRUE(lineRow > 0);
+  std::vector<int> dots;
+  for (int c = 0; c < 53; ++c)
+    if (g.at(c, lineRow).cp == U'\u25CB' || g.at(c, lineRow).cp == U'\u25CF') dots.push_back(c);
+  TEST_ASSERT_EQUAL(3, int(dots.size()));
+  TEST_ASSERT_TRUE(g.at(dots[2], lineRow).cp == U'\u25CF');
+  TEST_ASSERT_TRUE(g.at(dots[0], lineRow).cp == U'\u25CB');
+  TEST_ASSERT_TRUE(dots[2] - dots[0] >= 30);  // wide enough to read
+  TEST_ASSERT_EQUAL(dots[1] - dots[0], dots[2] - dots[1]);
+  const std::string names = rowText(g, lineRow + 1, 0, 53);
+  TEST_ASSERT_EQUAL(dots[0], int(names.find("Compact")));
+  TEST_ASSERT_EQUAL(dots[2] - 4, int(names.find("Large")));
+  TEST_ASSERT_TRUE(names.find("Comfortable") != std::string::npos);
+  // A tap on the first dot picks Compact.
+  const Target t = m.hit(dots[0], lineRow);
   TEST_ASSERT_EQUAL(int(TargetKind::Row), int(t.kind));
   TEST_ASSERT_EQUAL(0, t.index);
+  TEST_ASSERT_EQUAL(1, m.hit(dots[1], lineRow + 1).index);
   k.action = Action::Activate;
   k.target = uint8_t(ListId::Menu);
   k.index = t.index;
@@ -1860,11 +1874,6 @@ void test_slider_named_stops() {
   k = KeyEvent{};
   k.action = Action::Left;
   TEST_ASSERT_EQUAL(int(Slider::Result::None), int(s.key(k)));  // Compact is the bottom
-  g.fill(T().bg);
-  s.render(g, 1, 19, T());
-  bool compact = false;
-  for (int r = 0; r < 20; ++r) compact = compact || rowText(g, r, 0, 40).find("Compact") != std::string::npos;
-  TEST_ASSERT_TRUE(compact);
   k.action = Action::Select;
   TEST_ASSERT_EQUAL(int(Slider::Result::Picked), int(s.key(k)));
 }

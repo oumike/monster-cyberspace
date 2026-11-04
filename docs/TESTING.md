@@ -31,9 +31,10 @@ on 2026-10-27; the sections marked `m9_fake` passed on it before then.
 
 **Text size slider (any board but the Cardputer ADV):**
 
-- [ ] Settings → Text size opens a slider with three stops (two, Comfortable
-      and Large, on low-memory boards) named under the bar. Left/Right and
-      taps on the bar move it, Set applies the size, Cancel/Back leaves it.
+- [ ] Settings → Text size opens a wide box with a line and three dots
+      (left, middle, right; two on low-memory boards), each size named under
+      its dot and the current one filled. Left/Right and taps on a dot or
+      its name move it, Set applies the size, Cancel/Back leaves it.
       Web config's Text size is a three-stop range that shows the size's
       name and saves it.
 

@@ -146,7 +146,9 @@ as pushed, whatever branch or changes this clone has; unpushed commits are not
 included. `.github/workflows/build.yml` builds every board from a clean
 checkout on each push and pull request and runs the unit tests; it publishes
 nothing. A new firmware env must be added to `RELEASE_ENVS` in
-`scripts/release.sh` and run `tools/set_app_version.py`; CI checks both. Its
+`scripts/release.sh` and run `tools/set_app_version.py`; CI checks both. An env
+that builds but isn't ready to ship (the X4 for now) goes in `UNRELEASED_ENVS`
+instead, which keeps it out of releases and the flasher. Its
 `board::otaSlug()` must match the release's file name (`env_out_name`: the env
 name with `_` turned into `-`), or its devices find no update.
 

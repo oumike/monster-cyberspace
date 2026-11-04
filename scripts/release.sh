@@ -17,15 +17,19 @@ RELEASE_ENVS=(
     tdeck_pro
     mesh_deck
     cyber_deck_plus
-    x4
     cardputer_adv
     tdisplay_p4
+)
+
+# Firmware envs that build (CI, -B) but are left out of releases and the
+# flasher until they are ready.
+UNRELEASED_ENVS=(
+    x4
 )
 
 # Release envs built with OTA off (RC_FEAT_OTA=0, no second app slot): they
 # ship the factory image only, with no -ota.bin, .sig or checks of either.
 NO_OTA_ENVS=(
-    x4
     cardputer_adv
 )
 
@@ -115,9 +119,9 @@ validate_release_targets() {
     # Every firmware env should be released; a new board that is not is a slip.
     local e
     for e in $(sed -n 's/^\[env:\(.*\)\]$/\1/p' platformio.ini | grep -v '^native$'); do
-        case " ${RELEASE_ENVS[*]} " in
+        case " ${RELEASE_ENVS[*]} ${UNRELEASED_ENVS[*]} " in
             *" $e "*) ;;
-            *) echo "  ERROR: [env:$e] is not in RELEASE_ENVS (scripts/release.sh)" >&2; failed=true ;;
+            *) echo "  ERROR: [env:$e] is not in RELEASE_ENVS or UNRELEASED_ENVS (scripts/release.sh)" >&2; failed=true ;;
         esac
     done
     if [[ ! -s "$PUBKEY_HEADER" ]] || [[ -z "$(header_pubkey)" ]]; then

@@ -1,10 +1,8 @@
 ### Monster for Cyberspace 1.2.3
 
-### Xteink X4: cIRC rooms
+### Xteink X4
 
-- The X4 is now cIRC rooms only (no C-Mail, Feed, Guilds, People, Unread, spell check, emoji, OTA or Fluffy), so its small memory fits secure connections. This fixes the "network error" in rooms.
-- Rooms keep the newest 20 messages. Scroll up to load older ones while memory allows.
-- Scrolling back through a room no longer crashes the device, and the screen refreshes faster.
+- The Xteink X4 is out of releases and the flasher for now. It still needs work and will come back in a later release.
 
 ### Monster for Cyberspace 1.2.2
 

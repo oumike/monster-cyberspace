@@ -172,7 +172,8 @@ true (web config's Send box, `/api/compose`, `web/compose_req`), and
 `sleepsOnBattery()` drives `app/power_service` (`power/power_policy`).
 For TLS heap it is barebones: cIRC rooms only (`CMAIL`, `FEED`, `GUILDS`,
 `PEOPLE`, `UNREAD`, `SPELL`, `EMOJI`, `OTA` and `MASCOT` are 0; it is in
-`NO_OTA_ENVS` and the flasher's no-OTA and no-mascot lists), the open room
+`UNRELEASED_ENVS` in `scripts/release.sh`, so releases and the flasher leave it
+out until it is ready, and in the flasher's no-mascot list), the open room
 polled on the one TLS connection (`kPollRoom`), and a `custom_sdkconfig`
 (16 KB in / 4 KB out mbedTLS records, dynamic buffers) that rebuilds ESP-IDF,
 so a local build needs a project and `core_dir` path without spaces

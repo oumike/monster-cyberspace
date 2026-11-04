@@ -51,7 +51,7 @@ std::string firstUrl(const CircMessage& m) {
 
 void RoomScreen::enter(const std::string& slug) {
   spell_.hide();
-  slug_ = slug.empty() && !dm_ ? std::string("general") : slug;
+  slug_ = slug.empty() && !dm_ ? std::string("cyberspace") : slug;
   log_.follow();
   input_.clear();
   view_ = View::None;

@@ -37,7 +37,7 @@ struct Settings {
   uint16_t notifyTimeoutSecs = 15;
   ThemeId theme = ThemeId::Default;
   uint8_t rotation = 0;  // touch boards: see ui/rotation.h
-  std::string lastRoom = "general";
+  std::string lastRoom = "cyberspace";
   // tz is the POSIX string applied; tzName its IANA name from the zone list,
   // empty for a custom string.
   std::string tzName = "Etc/UTC";

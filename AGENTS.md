@@ -11,7 +11,8 @@ its contributor). The Xteink X4
 (cIRC rooms only) is built and has booted on hardware; for now it is a
 development-only target, left out of releases, CI and the native tests. The M5Stack Cardputer ADV
 (8 MB, no PSRAM, no Guilds) is built, not yet tried on hardware, and so is
-the LilyGO T-Display P4 (ESP32-P4, AMOLED). More
+the LilyGO T-Display P4 (ESP32-P4, AMOLED) and the Tanmatsu (ESP32-P4,
+keyboard; development only for now, out of releases and the flasher). More
 boards and Cyberspace features come later.
 
 - **Design spec:** `docs/superpowers/specs/2026-10-25-cyberspace-m9-circ-design.md`
@@ -41,6 +42,8 @@ boards and Cyberspace features come later.
   plan `docs/superpowers/plans/2026-11-01-cyberspace-cardputer-adv.md`.
 - **LilyGO T-Display P4:** spec `docs/superpowers/specs/2026-11-02-cyberspace-tdisplay-p4-design.md`,
   plan `docs/superpowers/plans/2026-11-02-cyberspace-tdisplay-p4.md`.
+- **Tanmatsu:** spec `docs/superpowers/specs/2026-11-04-cyberspace-tanmatsu-design.md`,
+  plan `docs/superpowers/plans/2026-11-04-cyberspace-tanmatsu.md`.
 - **Fluffy Generator (custom mascot):** spec
   `docs/superpowers/specs/2026-10-31-cyberspace-fluffy-generator-design.md`,
   plan `docs/superpowers/plans/2026-10-31-cyberspace-fluffy-generator.md`.
@@ -94,7 +97,8 @@ pio run -e cyber_deck_plus  # Attaky Cyber Deck Plus
 pio run -e x4               # Xteink X4 (ESP32-C3, no PSRAM)
 pio run -e cardputer_adv    # M5Stack Cardputer ADV (8 MB, no PSRAM, no Guilds)
 pio run -e tdisplay_p4      # LilyGO T-Display P4 (ESP32-P4, AMOLED)
-scripts/build-upload-monitor.sh m9   # flash + serial monitor (115200); -w for the Wio L2, -t for the T-Deck Plus, -3/-5 for the CrowPanels, -P for the Pager, -D for the T-Deck Pro, -M for the Mesh Deck, -K for the Cyber Deck Plus, -X for the X4, -C for the Cardputer ADV, -4 for the T-Display P4; --help for options
+pio run -e tanmatsu         # Tanmatsu (ESP32-P4, keyboard; not released)
+scripts/build-upload-monitor.sh m9   # flash + serial monitor (115200); -w for the Wio L2, -t for the T-Deck Plus, -3/-5 for the CrowPanels, -P for the Pager, -D for the T-Deck Pro, -M for the Mesh Deck, -K for the Cyber Deck Plus, -X for the X4, -C for the Cardputer ADV, -4 for the T-Display P4, -T for the Tanmatsu; --help for options
 scripts/build-upload-monitor.sh -B   # build every firmware env, no device needed
 scripts/screenshot.py PORT [--watch]  # PNG screenshots over the serial console (no device writes)
 # demo build for screenshots, no network (never release): docs/BUILD.md "Screenshots"
@@ -221,6 +225,22 @@ is drawn `CORNER_INSET` (16 px) in from every edge, clear of the rounded corners
 through the on-board ESP32-C6 running ESP-Hosted 2.12.13 (docs/BUILD.md);
 P4 OTA never updates the C6. Its ROM loads the bootloader from 0x2000
 (`env_boot_offset` in `scripts/release.sh`).
+`src/hal/tanmatsu/` is the Nicolai Electronics Tanmatsu (ESP32-P4 `esp32p4_es`,
+32 MB PSRAM; from wadamesh's `tanmatsu/` and its badge-bsp, tanmatsu_coprocessor,
+mipi_dsi_abstraction and es8156 components). Standalone: the image replaces the
+Tanmatsu launcher. A CH32V203 coprocessor at 0x5F on Wire 9/10
+(`coproc_tanmatsu`, one mutex for every I2C user) owns the keyboard (9-byte
+bitfield, `TanmatsuKeys` in `input/keymap_tanmatsu`: held modifiers, AltGr
+layer, F1–F6 and Fn+F1/F4/F5, Meta tapped for Home), display and keyboard
+backlights, six RGB LEDs (LED 2 the notification light, LED 0 lit dim green
+since manual mode stops the power LED), the power button (ScreenOff), the C6's
+power, battery and RTC. The ST7701 480x800 over MIPI-DSI (`panel_st7701`) is
+drawn at 2x as a 400x240 landscape panel (`ui/scale2x`, `PANEL_ROTATION`);
+no touch, no rotation. Wi-Fi is the C6's own esp-hosted-tanmatsu image,
+restarted through the coprocessor before `hostedSetPins`. ES8156 speaker
+(`audio_es8156`, own task, amplifier on only around a beep), SD_MMC 4-bit,
+no GPS. `board::functionKeys()` gives the F10 help its own table. Kept out of
+`RELEASE_ENVS` (`UNRELEASED_ENVS`) and the flasher until the hardware check.
 Touch: `lib/core` turns samples into gestures and resolves them against the
 per-frame `TapMap` widgets fill as they draw (`input/gestures`, `ui/tap_map`,
 `input/touch_resolve`, the `Osk` keyboard); `ui_task` feeds `handleKey` and
@@ -268,7 +288,7 @@ The Attaky Mesh Deck HAL (env `mesh_deck`) and the notification light were
 added on 2026-10-29 (flashed: it boots and finds touch, gauge and keyboard;
 the panel, touch mapping, keys and LEDs await the hardware check).
 **Still open:** the unticked items under "Open hardware checks" in
-`docs/TESTING.md` (themes, device Settings, touch UI, Wio L2, T-Deck Plus, CrowPanels, Pager, T-Deck Pro, Mesh Deck, Cyber Deck Plus, Cardputer ADV, T-Display P4, GPS time, API
+`docs/TESTING.md` (themes, device Settings, touch UI, Wio L2, T-Deck Plus, CrowPanels, Pager, T-Deck Pro, Mesh Deck, Cyber Deck Plus, Cardputer ADV, T-Display P4, Tanmatsu, GPS time, API
 assumptions, settings backup, OTA, Fluffy Generator), then the human live checklist on the `m9` build.
 CI (`.github/workflows/build.yml`) runs on GitHub.
 OTA updates were added on 2026-10-28 (built without flashing): signed images
@@ -323,9 +343,12 @@ speaker, C6 Wi-Fi, GPS, RTC, gauge and SD await the hardware check
 (docs/TESTING.md). Also on 2026-11-02: the T-Deck Pro draws 6 px in from the
 left (`PANEL_LEFT_INSET` in `pins_tdeck_pro.h`, `packMono` x0) so the bezel
 doesn't cover text; its check is open too.
-The native suite is green: 718/718
+The Tanmatsu (env `tanmatsu`) was added on 2026-11-04 (built without
+flashing, not released): landscape at 2x with its keyboard. Everything awaits
+the hardware check (docs/TESTING.md), the C6 Wi-Fi link first.
+The native suite is green: 733/733
 (`pio test -e native`), and `scripts/build-upload-monitor.sh -B` builds all
-twelve firmware envs (the X4 only from a path without spaces).
+thirteen firmware envs (the X4 only from a path without spaces).
 
 Notes for whoever continues:
 - Each task follows test-driven development: write the plan's tests first, run

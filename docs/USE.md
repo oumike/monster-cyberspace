@@ -10,7 +10,8 @@ and microSD; see Cyber Deck Plus below), and the Xteink X4
 (e-paper and six buttons, cIRC rooms only; see Xteink X4 below), and
 the M5Stack Cardputer ADV (keyboard; no Guilds; see Cardputer ADV
 below), and the LilyGO T-Display P4 (touch, in portrait or landscape, or
-landscape with its keyboard expansion; see T-Display P4 below). Key names in this guide are the M9's.
+landscape with its keyboard expansion; see T-Display P4 below), and the
+Tanmatsu (keyboard, landscape; see Tanmatsu below). Key names in this guide are the M9's.
 
 ## First setup
 
@@ -355,6 +356,44 @@ beeps for alerts when the buzzer is on. The GPS and the RTC keep the clock,
 Settings shows the battery, and backups go to the microSD slot. The setup AP
 is **`Monster-Cyberspace-TDisplayP4`** (no `-Setup`: Wi-Fi names stop at 32
 characters). The serial console is the USB-C port (the ESP32-P4's own USB).
+
+## Tanmatsu
+
+The Tanmatsu has a 3.97" screen above a full keyboard. It is used in
+landscape only, drawn at half the screen's resolution so text is the size it
+is on the other boards; there is no touch and no Orientation item. This
+firmware replaces the Tanmatsu launcher (see docs/BUILD.md to go back). It
+has not been tried on hardware yet and is not in the releases or the flasher.
+
+| Key | Action |
+|---|---|
+| Keys | Type. Shift (either) gives the shifted character, held as on a computer. AltGr (right Alt) gives accented letters and signs (é, ñ, €, £ …), Shift+AltGr their capitals. Holding Ctrl, left Alt or the logo key types nothing |
+| Arrows | Up, Down, Left, Right (hold to repeat) |
+| Return | Select (send, in a room) |
+| Backspace | Deletes while there's text to delete; otherwise Back. Hold it to repeat |
+| Esc | Back |
+| Tab | The command palette |
+| Logo key (tapped alone) | Home |
+| F1 … F6 | From anywhere: Home, Messages (your last room; again for the room list), C-Mail, Feed, Guilds, your Profile |
+| Fn + F1 | Settings |
+| Fn + F4 | Navigational help, a table of the function keys; any key closes it |
+| Fn + F5 | Steps the keyboard light: Low, Medium, High, Off (also **Keyboard light** in Settings) |
+| Fn + Space | The emoji tray |
+| Volume up / volume down | Up / Down |
+
+**Power button:** a press turns the screen off, and on again; any key wakes
+it too (that press does nothing else). Holding it 2 s cuts the power.
+
+**Notification light:** the LED marked for messages blinks twice every second
+while a mention or a C-Mail is unread, as on the Mesh Deck (**Notify light**
+and **Light timeout** in Settings and web config). The power LED stays dim
+green.
+
+Wi-Fi goes through the Tanmatsu's ESP32-C6 (its own image, left as it is).
+The speaker beeps for alerts, the coprocessor's RTC keeps the clock, Settings
+shows the battery, and backups go to the microSD slot. There is no GPS. The
+setup AP is **`Monster-Cyberspace-Tanmatsu`**. The serial console is the
+USB-C port (the ESP32-P4's own USB).
 
 ## Xteink X4
 
@@ -963,11 +1002,11 @@ shown without moving or opening anything.
 - **At timeout: screensaver / screen off.** Centre switches what the screen
   timeout does and saves it.
 - **Keyboard light: …** (M9, T-Deck Plus, T-Deck Pro, Pager, T-Display P4 with
-  its keyboard) Opens a box with
+  its keyboard, Tanmatsu) Opens a box with
   Low, Medium, High and Off; picking one saves it (also under Display in web
   config). The keys are lit only while
   the screen is on. Off by default, except on the T-Display P4 (Medium, and F11
-  steps it) and the M9, where it is High and its
+  steps it), the Tanmatsu (Medium, and Fn + F5 steps it) and the M9, where it is High and its
   keyboard lights the keys itself after a press; Off there switches that light
   off until the M9 is power cycled.
 - **Notify light: …** and **Light timeout: …** (Mesh Deck) Open a box with
@@ -977,7 +1016,7 @@ shown without moving or opening anything.
   C-Mail and Feed alerts and saves it, with one beep when it goes on. Also
   **Sound on alerts** under Display in web config. On by default. On boards
   with a speaker (Wio L2, T-Deck Plus, Pager, Cyber Deck Plus, Cardputer ADV,
-  T-Display P4) it reads **Alert sound: 60%** and opens a volume slider
+  T-Display P4, Tanmatsu) it reads **Alert sound: 60%** and opens a volume slider
   instead: Left/Right (or Up/Down, or a tap on the bar, "-" or "+") move it
   in 10% steps from Off to 100%, beeping at each level; Centre or **Set**
   keeps it, Back or **Cancel** puts the old level back. Web config shows an

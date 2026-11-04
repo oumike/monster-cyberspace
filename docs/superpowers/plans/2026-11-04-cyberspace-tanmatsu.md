@@ -45,9 +45,9 @@ with native tests first; hardware only in `src/hal/tanmatsu/` behind
 
 ## Task 5: Docs
 
-- [ ] AGENTS.md (intro, commands, layout, progress, native count),
+- [x] AGENTS.md (intro, commands, layout, progress, native count),
       docs/BUILD.md, docs/USE.md (keys), docs/TESTING.md (hardware checks).
-- [ ] Commit "Tanmatsu: docs".
+- [x] Commit "Tanmatsu: docs".
 
 ## Task 6: Verify
 

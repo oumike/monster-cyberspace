@@ -27,6 +27,7 @@
 | `x4` | The firmware for the Xteink X4 (ESP32-C3, no PSRAM, e-paper, buttons only; cIRC rooms only, text sent with phrases or from web config; no OTA; boots on hardware. Rebuilds ESP-IDF for smaller TLS buffers, so build it from a path without spaces) |
 | `cardputer_adv` | The firmware for the M5Stack Cardputer ADV (ESP32-S3FN8: 8 MB flash, no PSRAM; keyboard, 240x135 panel; no Guilds, no OTA; not yet tried on hardware) |
 | `tdisplay_p4` | The firmware for the LilyGO T-Display P4 (ESP32-P4, 4.1" AMOLED drawn at 2x, touch, optional keyboard expansion, haptics; Wi-Fi through its ESP32-C6; not yet tried on hardware) |
+| `tanmatsu` | The firmware for the Tanmatsu (ESP32-P4, 480x800 panel drawn at 2x in landscape, keyboard; Wi-Fi through its ESP32-C6). Replaces the Tanmatsu launcher. Development only: not released or in the flasher until it has been tried on hardware |
 | `native` | Host unit tests for `lib/core` |
 
 ```sh
@@ -43,6 +44,7 @@ pio run -e cyber_deck_plus            # build for the Cyber Deck Plus
 pio run -e x4                         # build for the Xteink X4
 pio run -e cardputer_adv              # build for the Cardputer ADV
 pio run -e tdisplay_p4                # build for the T-Display P4
+pio run -e tanmatsu                   # build for the Tanmatsu
 scripts/build-upload-monitor.sh m9    # build, flash, then open the serial monitor
 ```
 
@@ -70,6 +72,7 @@ compile, run it again.
 | `--x4`/`-X` | Board flag: Xteink X4 (`x4`) |
 | `--cardputer-adv`/`-C` | Board flag: M5Stack Cardputer ADV (`cardputer_adv`) |
 | `--tdisplay-p4`/`-4` | Board flag: LilyGO T-Display P4 (`tdisplay_p4`) |
+| `--tanmatsu`/`-T` | Board flag: Tanmatsu (`tanmatsu`) |
 | `ENV` | Or name any firmware env directly; with neither, a menu lists every firmware env |
 | `--port`/`-p PORT` | Serial port for upload and monitor (default: auto-detect) |
 | `--erase`/`-E` | Erase the whole flash in the same esptool session as the upload (`upload_erase` target); wipes saved settings |
@@ -227,6 +230,17 @@ stops without writing if there is no valid table or the image doesn't fit.
 Never write it at `0x0` by hand, and don't use LilyGO's ESP-AT image: the
 firmware uses Arduino's transparent `WiFi` over ESP-Hosted. The C6's enable
 line is on the XL9535 expander, so a wedged C6 needs a board restart.
+
+### Tanmatsu: standalone, not released
+
+The `tanmatsu` image is a whole firmware, like every other board's: flashing
+it (`scripts/build-upload-monitor.sh -T`, over the USB-C port's USB-Serial-JTAG)
+replaces the Tanmatsu launcher and its apps. PlatformIO writes the bootloader
+at `0x2000` itself. To go back, reinstall the launcher from Nicolai
+Electronics' web installer (docs.tanmatsu.cloud). The ESP32-C6 is left alone:
+it keeps the esp-hosted-tanmatsu image it ships with, and whether Arduino's
+ESP-Hosted host talks to it is the first hardware check (docs/TESTING.md).
+The Tanmatsu is in `UNRELEASED_ENVS` and has no flasher entry until then.
 
 ### Mascot
 

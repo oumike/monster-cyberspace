@@ -69,7 +69,7 @@ on 2026-10-27; the sections marked `m9_fake` passed on it before then.
       the next row goes to it and Down from it goes to the left tile; taps
       open every tile. With nothing unread, Unread says "nothing unread".
 - [ ] Settings → Alert sound (boards with a speaker or buzzer): switching it on beeps once and mentions beep; off, they don't; web config's Sound on alerts follows it both ways; the item and the checkbox are absent on the Mesh Deck, T-Deck Pro, CrowPanels and X4
-- [ ] Alert sound volume (Wio L2, T-Deck Plus, Pager, Cyber Deck Plus, Cardputer ADV, T-Display P4): Settings → Alert sound opens a slider; Left/Right and taps on the bar, "-" and "+" move it in 10% steps, each beeping at that loudness, 100% without clipping, 10% still audible; Set keeps it, Cancel and Back restore the old level; the level survives a reboot and a backup restore; web config shows a slider instead of the checkbox (far left Off), saving a new level beeps once; the M9 keeps the on/off toggle
+- [ ] Alert sound volume (Wio L2, T-Deck Plus, Pager, Cyber Deck Plus, Cardputer ADV, T-Display P4, Tanmatsu): Settings → Alert sound opens a slider; Left/Right and taps on the bar, "-" and "+" move it in 10% steps, each beeping at that loudness, 100% without clipping, 10% still audible; Set keeps it, Cancel and Back restore the old level; the level survives a reboot and a backup restore; web config shows a slider instead of the checkbox (far left Off), saving a new level beeps once; the M9 keeps the on/off toggle
 - [ ] Touch boards (the T-Display P4 too): every Settings picker and confirm,
       and Restore from SD card (Settings and Setup), opens as full-screen
       buttons (one column when labels are long, the time zones too); a tap
@@ -475,6 +475,26 @@ is open.
 - [ ] Keyboard: F1 Home, F2 messages (again: the room list), F3 C-Mail, F4 Feed, F5 Guilds, F6 your profile, F7 Settings, from any screen (while typing, and with the emoji tray open too); F10 shows the function-key table, lined up on every screen (Home and the Feed too), and any key or tap closes it
 - [ ] Keyboard: Settings pickers (Theme and the rest) show a cursor the arrows move; Enter sets, Esc cancels
 - [ ] Flasher: picking LilyGO T-Display P4 installs the factory image (ESP32-P4 chip family, bootloader at 0x2000) and it boots; a reflash without erase keeps the settings
+
+**Tanmatsu (`tanmatsu`, not released; flashing it replaces the launcher):**
+
+- [ ] Boots: the USB log shows `[boot] … on Tanmatsu` and `[tanmatsu] ST7701 up 480x800`, with no `ST7701 … failed`
+- [ ] Panel: lights at boot (backlight through the coprocessor), landscape above the keys and the right way up (else change `PANEL_ROTATION` in `pins_tanmatsu.h`), colours right (no red/blue swap), nothing cut off, every logical pixel a clean 2x2 block; if the panel stays dark, try the DSI PHY LDO at 1830 mV (`DSI_LDO_MV`) as on the T-Display P4
+- [ ] Tearing: scrolling a room or a long list shows no torn or half-drawn frames
+- [ ] Screen off and on: the power button and the screen timeout turn it dark and back, lit and correct; Settings brightness levels look right
+- [ ] Restart: Settings → Restart, an OTA install and web config's restart bring the panel back lit
+- [ ] Wi-Fi through the C6 (its own esp-hosted-tanmatsu image): the log shows the hosted link up; Settings → Wi-Fi scans and joins; web config loads; the setup AP is named `Monster-Cyberspace-Tanmatsu` and `http://192.168.4.1` loads. If the link never comes up, note the log: the C6 image may not match Arduino's ESP-Hosted host
+- [ ] Keys: every key types the right character, with Shift held (either side); AltGr and Shift+AltGr give the accented letters; holding Ctrl, left Alt or the logo key types nothing; arrows and Backspace repeat; Backspace deletes, then goes back; Esc goes back; Return selects; Tab opens the palette; the logo key tapped alone goes Home
+- [ ] Function keys: F1 Home, F2 messages (again: the room list), F3 C-Mail, F4 Feed, F5 Guilds, F6 your profile, Fn+F1 Settings, from any screen; Fn+F4 shows the Tanmatsu's function-key table, lined up, and any key closes it; Fn+Space opens the emoji tray while typing
+- [ ] Volume keys: volume up and volume down move Up and Down in lists and repeat when held
+- [ ] Keyboard light: Fn+F5 steps Low, Medium, High, Off (Medium on first boot); Settings → Keyboard light matches; the keys go dark with the screen
+- [ ] LEDs: the power LED is dim green; a mention or C-Mail blinks the messages LED in the Notify light colour; Light timeout and Off work
+- [ ] Power button: a press turns the screen off and on; any key also wakes it and does nothing else; holding it 2 s still cuts the power
+- [ ] Speaker: with Alert sound on, a mention and a C-Mail beep through the ES8156, clean, with no hiss between beeps (the amplifier is off between them); the Alert sound slider changes the loudness
+- [ ] Battery: Settings shows a sensible percentage; the charging state follows the USB cable
+- [ ] RTC: the time set by NTP survives a power cycle with Wi-Fi off
+- [ ] SD (FAT32 card, 4-bit): Back up to SD card, then Restore from SD card…, both work
+- [ ] Back to the launcher: reinstalling it from Nicolai Electronics' web installer brings the Tanmatsu launcher back
 
 **GPS time, RTC and time zone (`m9`):**
 

@@ -10,7 +10,7 @@
 namespace rc {
 
 // The People side of the network task: profiles, follow, unfollow, poke and
-// a user's entries. Writes come only from commands; nothing is retried.
+// a user's entries, and the friends' entries. Writes come only from commands; nothing is retried.
 // There is no block endpoint: the blocked list is read from /users/me.
 class PeopleWorker {
  public:
@@ -31,6 +31,8 @@ class PeopleWorker {
   void unfollow(const Command& c);
   void poke(const Command& c);
   void openUserPosts(const std::string& username, bool append);
+  // The first page of each friend's entries, merged newest first.
+  void openFriendsPosts(const std::string& names);
 
   CsApi& api_;
 };

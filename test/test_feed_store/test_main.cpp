@@ -210,6 +210,35 @@ void test_side_list_reply_ids() {
   TEST_ASSERT_EQUAL(0, (int)s.sideReplyIds().size());
 }
 
+static Entry At(const std::string& id, int64_t ms) {
+  Entry e = E(id);
+  e.createdMs = ms;
+  return e;
+}
+
+void test_merge_side_list_newest_first_capped() {
+  FeedStore s;
+  s.setSideList({E("x")}, "c1", false, {"r1"});
+  s.setSideList({}, "", false);
+  s.mergeSideList({At("a1", 10), At("a2", 30)}, 3);
+  s.mergeSideList({At("b1", 20), At("a2", 30), At("b2", 40)}, 3);
+  TEST_ASSERT_TRUE((std::vector<std::string>{"b2", "a2", "b1"}) == ids(s.sideList()));
+  TEST_ASSERT_TRUE((std::vector<std::string>{"", "", ""}) == s.sideReplyIds());
+  TEST_ASSERT_EQUAL_STRING("", s.sideCursor().c_str());
+}
+
+void test_side_tag_cleared_by_new_list() {
+  FeedStore s;
+  s.setSideTag("friends:a");
+  s.setSideList({E("p1")}, "c", true);
+  TEST_ASSERT_EQUAL_STRING("friends:a", s.sideTag().c_str());
+  s.setSideList({E("p2")}, "", false);
+  TEST_ASSERT_EQUAL_STRING("", s.sideTag().c_str());
+  s.setSideTag("friends:a");
+  s.clear();
+  TEST_ASSERT_EQUAL_STRING("", s.sideTag().c_str());
+}
+
 void test_close_entry() {
   FeedStore s;
   s.openEntry(E("p1"));
@@ -234,6 +263,8 @@ int main(int, char**) {
   RUN_TEST(test_clear_drops_everything);
   RUN_TEST(test_side_list_append);
   RUN_TEST(test_side_list_reply_ids);
+  RUN_TEST(test_merge_side_list_newest_first_capped);
+  RUN_TEST(test_side_tag_cleared_by_new_list);
   RUN_TEST(test_close_entry);
   return UNITY_END();
 }

@@ -372,6 +372,7 @@ is open.
 - [ ] In a room, the marker goes ◌ while the stream reconnects and ● once it's live
 - [ ] Entry: Tab (on keyboard boards) opens the entry menu, also with text in the line, and the text stays
 - [ ] Friends: Add friend on someone's message, then the menu says Remove friend, also after a restart; Remove friend takes them off; your own messages offer neither; the same in a C-Mail conversation
+- [ ] Home → Friends: with no friends it says "no friends yet…" and sends nothing; with two friends it lists both's entries newest first, filling in friend by friend; opening an entry and Back shows the list without reloading; Refresh reloads it; Back goes Home; the tile reads "N friends"
 
 **Feed Topics (any board with the Feed; the demo build first):**
 

@@ -108,9 +108,10 @@ Every screen works by touch. Touch never wakes a dark screen.
   outside an open menu or confirm closes it. A tap on a banner dismisses it.
 - **Scroll:** drag a list or log to move line by line; swipe up or down to
   move a page. Dragging past the end of a list stops there.
-- **Home** shows eight large tiles, two to a row: unread, messages, rooms,
-  c-mail, feed, guilds, profile and settings. On a build without one of them
-  (People, say), **unread** takes the top row on its own, so no tile is left
+- **Home** shows nine large tiles: unread on the top row on its own, then
+  two to a row messages, rooms, c-mail, feed, friends, guilds, profile and
+  settings. On a build without some of them, **unread** takes the top row on
+  its own only when that leaves the rest filling their rows, so no tile is left
   alone at the bottom. The profile tile shows `@you` and opens your own
   profile (see [People](#people)). The unread tile shows
   how many things are unread (see [Unread](#unread)), in the accent colour
@@ -495,7 +496,8 @@ The keyboard always types into the input line at the bottom.
 - **Friends:** Add friend keeps that name on this device (the server has no
   friends list; it isn't the same as following someone, see People). The
   list is saved with the device's settings. The same item, Remove friend,
-  takes them off again. C-Mail conversations offer it too.
+  takes them off again. C-Mail conversations offer it too. Home's **Friends**
+  lists their Feed entries (see [Friends' entries](#friends-entries)).
 - **Cursor:** Left/Right move the text cursor.
 - **Who's here drawer:** Right with the cursor at the end of the line opens
   it. Up/Down pick a person, Centre opens their menu (mention, mute or
@@ -768,6 +770,17 @@ colour. The other themes draw nicks
 in the text colour, and yours in the dim one. QR codes stay
 black on white in every theme. The T-Deck Pro's e-paper has one theme of its
 own, black on white with outlined selections, and no Theme item.
+
+## Friends' entries
+
+**Friends** on Home (after Feed; builds with the Feed and People) lists the
+Feed entries of the friends you keep on this device (Add friend in a chat
+message's menu), newest first. It loads each friend's latest page, for up to
+20 friends, and keeps the newest 50 entries. Open one like a Feed entry;
+Back returns to the list without loading it again. Ctrl or ⋯ offers Refresh
+and text size; Back from the list goes Home. With no friends it says
+`no friends yet: Add friend in a message's menu`. A friend whose account is
+gone is skipped.
 
 ## Unread
 

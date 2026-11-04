@@ -237,10 +237,11 @@ class CmailListScreen : public Screen {
 
 #if RC_FEAT_ENTRIES
 // The Feed, Watched threads and Bookmarks lists: one class, three router
-// instances (spec §5); also a guild's threads, a user's and a topic's entries.
+// instances (spec §5); also a guild's threads, a user's and a topic's entries,
+// and the entries of the friends kept on the device (Home's Friends).
 class FeedListScreen : public Screen {
  public:
-  enum class Kind { Feed, Watched, Bookmarks, Guild, User, Topic };
+  enum class Kind { Feed, Watched, Bookmarks, Guild, User, Topic, Friends };
   explicit FeedListScreen(Kind kind) : kind_(kind) {}
   void enter(const std::string&) override;
   void leave() override;

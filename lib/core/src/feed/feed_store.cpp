@@ -1,5 +1,6 @@
 #include "feed/feed_store.h"
 
+#include <algorithm>
 #include <unordered_set>
 #include <utility>
 
@@ -143,12 +144,26 @@ void FeedStore::setSideList(std::vector<Entry> entries, const std::string& curso
   if (!append) {
     side_.clear();
     sideReplyIds_.clear();
+    sideTag_.clear();
   }
   sideReplyIds_.insert(sideReplyIds_.end(), std::make_move_iterator(replyIds.begin()),
                        std::make_move_iterator(replyIds.end()));
   side_.insert(side_.end(), std::make_move_iterator(entries.begin()),
                std::make_move_iterator(entries.end()));
   sideCursor_ = cursor;
+}
+
+void FeedStore::mergeSideList(std::vector<Entry> page, size_t keep) {
+  for (auto& e : page) {
+    if (std::any_of(side_.begin(), side_.end(), [&](const Entry& h) { return h.id == e.id; })) continue;
+    cutPreview(e);
+    side_.push_back(std::move(e));
+  }
+  std::stable_sort(side_.begin(), side_.end(),
+                   [](const Entry& a, const Entry& b) { return a.createdMs > b.createdMs; });
+  if (side_.size() > keep) side_.resize(keep);
+  sideReplyIds_.assign(side_.size(), std::string());
+  sideCursor_.clear();
 }
 
 void FeedStore::clear() {
@@ -161,6 +176,7 @@ void FeedStore::clear() {
   std::vector<Entry>().swap(side_);
   std::vector<std::string>().swap(sideReplyIds_);
   sideCursor_.clear();
+  sideTag_.clear();
 }
 
 }  // namespace rc

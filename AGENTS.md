@@ -282,7 +282,9 @@ The Attaky Cyber Deck Plus (env `cyber_deck_plus`) came in PR #6 on
 first in the Feed, the connection state reaching live with no room open (and
 staying offline while signed out), and Tab opening the entry menu; plus
 Friends (Add/Remove friend in a message's menu, on the device only; its intent
-is an open question on the PR). The maintainer review moved the Core code both
+is an open question on the PR). Home's Friends item lists the friends' Feed
+entries (`FeedListScreen::Kind::Friends`, `CmdType::OpenFriendsPosts`, merged by
+`FeedStore::mergeSideList`; 20 friends, newest 50). The maintainer review moved the Core code both
 Attaky decks share into `src/hal/attaky/`; the Mesh Deck and Cyber Deck Plus
 hardware checks are open (docs/TESTING.md).
 The Fluffy Generator was added on 2026-10-31 (built without flashing; the

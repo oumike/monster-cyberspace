@@ -29,6 +29,13 @@ bool compact() { return app().cfg.textSize == TextSize::Compact; }
 // Columns of an entry's first line, which is drawn one font size up.
 int headCols() { return bigCols(board::panelWidth(), app().cfg.textSize); }
 
+// The friends' names, one per line (CmdType::OpenFriendsPosts).
+std::string friendNames() {
+  std::string out;
+  for (const std::string& f : app().cfg.friends) out += (out.empty() ? "" : "\n") + f;
+  return out;
+}
+
 }  // namespace
 
 void FeedListScreen::enter(const std::string& arg) {
@@ -41,6 +48,15 @@ void FeedListScreen::enter(const std::string& arg) {
   // The feed shows what it holds at once; a side list waits for its own
   // list, since Watched and Bookmarks share the store's side list.
   loaded_ = kind_ == Kind::Feed;
+  // Friends: back from an entry, the list it already holds (one request per
+  // friend is too many to repeat); Refresh reloads it.
+  if (kind_ == Kind::Friends) {
+    const std::string tag = friendsSideTag(friendNames());
+    if (lockedFeed().with([&](FeedState& s) { return s.store.sideTag() == tag; })) {
+      loaded_ = true;
+      return;
+    }
+  }
   open();
 }
 
@@ -60,6 +76,10 @@ void FeedListScreen::open() {
     case Kind::Guild: feedSource().command(Command{CmdType::OpenGuild, slug_}); break;
     case Kind::User: feedSource().command(Command{CmdType::OpenUserPosts, slug_}); break;
     case Kind::Topic: feedSource().command(Command{CmdType::OpenTopic, slug_}); break;
+    case Kind::Friends:
+      if (app().cfg.friends.empty()) loaded_ = true;  // nothing to ask for
+      else feedSource().command(Command{CmdType::OpenFriendsPosts, friendNames()});
+      break;
   }
 }
 
@@ -139,7 +159,7 @@ void FeedListScreen::onKey(const KeyEvent& k) {
         router::go(router::Id::Topics);
         break;
       }
-      router::go(kind_ == Kind::Feed    ? router::Id::Home
+      router::go(kind_ == Kind::Feed || kind_ == Kind::Friends ? router::Id::Home
                  : kind_ == Kind::Guild ? router::Id::GuildList
                                         : router::Id::FeedList);
       break;
@@ -180,7 +200,7 @@ void FeedListScreen::openPalette() {
     add(kRefresh, U"Refresh");
     acts_.push_back(kTextSize);
     items.push_back(ListItem{ui::textSizeItem(), U""});
-  } else if (kind_ == Kind::User || kind_ == Kind::Topic) {
+  } else if (kind_ == Kind::User || kind_ == Kind::Topic || kind_ == Kind::Friends) {
     if (kind_ == Kind::User) add(kProfile, U"Profile");
     add(kRefresh, U"Refresh");
     acts_.push_back(kTextSize);
@@ -337,10 +357,12 @@ void FeedListScreen::rebuild(int cols, const Theme& t) {
   std::vector<bool> marked;
   int sel = -1;
   bool side = kind_ != Kind::Feed;
+  // With no friends the shared side list holds someone else's entries.
+  const bool none = kind_ == Kind::Friends && app().cfg.friends.empty();
   // Copy out under the lock; lay out after it.
   lockedFeed().with([&](FeedState& s) {
     more_ = side ? !s.store.sideCursor().empty() : !s.store.feedEnd();
-    if (!loaded_) return;
+    if (!loaded_ || none) return;
     entries = side ? s.store.sideList() : s.store.feed();
     if (kind_ == Kind::Bookmarks) replyIds = s.store.sideReplyIds();
     marked.reserve(entries.size());
@@ -416,6 +438,7 @@ void FeedListScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
                           : kind_ == Kind::Watched ? U"Watched"
                           : kind_ == Kind::Guild   ? guildName.c_str()
                           : kind_ == Kind::User || kind_ == Kind::Topic ? userTitle.c_str()
+                          : kind_ == Kind::Friends ? U"Friends"
                                                    : U"Bookmarks";
   drawStatus(g, t, title, -1, true);
   int bottom = g.rows() - 1;  // the last row holds the hint
@@ -428,6 +451,7 @@ void FeedListScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
   if (empty_) {
     // An empty feed with pages to come hasn't loaded yet.
     bool waiting = !loaded_ || loading || (kind_ == Kind::Feed && more_);
+    if (kind_ == Kind::Friends && app().cfg.friends.empty()) waiting = false;
     const bool self = kind_ == Kind::User && !app().user.empty() && sameUsername(slug_, app().user);
     const char* empty = waiting && app().conn == 0 ? "offline"
                         : !loaded_ && failed_    ? (board::hasTouch() ? "couldn't load: \u22ef, Refresh"
@@ -438,6 +462,9 @@ void FeedListScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
                         : kind_ == Kind::Guild   ? "no threads yet"
                         : kind_ == Kind::User    ? (self ? "no entries yet" : "no public entries")
                         : kind_ == Kind::Topic   ? "no entries"
+                        : kind_ == Kind::Friends ? (app().cfg.friends.empty()
+                                                        ? "no friends yet: Add friend in a message's menu"
+                                                        : "no entries from friends")
                                                  : "no bookmarks";
     // Below the New entry row, which takes the first two.
     putLine(g, 1, kind_ == Kind::Feed ? 3 : 2, empty, t.dim, t.bg);
@@ -451,7 +478,8 @@ void FeedListScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
     drawHint(g, t, U"loading more\u2026", U"loading more\u2026");
   } else {
     drawHint(g, t,
-             kind_ == Kind::Feed    ? U"\u2191\u2193 pick  \u25CF open  \u2190 home  ctrl cmds"
+             kind_ == Kind::Feed || kind_ == Kind::Friends
+                                    ? U"\u2191\u2193 pick  \u25CF open  \u2190 home  ctrl cmds"
              : kind_ == Kind::Guild ? U"\u2191\u2193 pick  \u25CF open  \u2190 guilds  ctrl cmds"
              : kind_ == Kind::User  ? U"\u2191\u2193 pick  \u25CF open  \u2190 profile  ctrl cmds"
              : kind_ == Kind::Topic ? U"\u2191\u2193 pick  \u25CF open  \u2190 topics  ctrl cmds"

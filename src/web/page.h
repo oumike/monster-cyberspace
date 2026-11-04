@@ -26,7 +26,9 @@ a{color:#6cf}
 #else
 #define RC_SEND_MAIL_OPT ""
 #endif
-#if RC_FEAT_CIRC
+#if RC_FEAT_CIRC && !RC_FEAT_CMAIL && !RC_FEAT_FEED
+#define RC_SEND_NOTHING_OPEN "open a room"
+#elif RC_FEAT_CIRC
 #define RC_SEND_NOTHING_OPEN "open a room, a C-Mail or a post"
 #else
 #define RC_SEND_NOTHING_OPEN "open a C-Mail or a post"

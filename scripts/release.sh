@@ -25,6 +25,7 @@ RELEASE_ENVS=(
 # Release envs built with OTA off (RC_FEAT_OTA=0, no second app slot): they
 # ship the factory image only, with no -ota.bin, .sig or checks of either.
 NO_OTA_ENVS=(
+    x4
     cardputer_adv
 )
 

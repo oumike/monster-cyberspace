@@ -66,5 +66,5 @@ test("a part equal to the default is stored empty", () => {
 test("boards without the mascot partition", () => {
   assert.equal(hasMascot("cardputer-adv"), false);
   assert.equal(hasMascot("m9"), true);
-  assert.equal(hasMascot("x4"), true);
+  assert.equal(hasMascot("x4"), false);
 });

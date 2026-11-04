@@ -24,7 +24,7 @@
 | `tdeck_pro` | The firmware for the LilyGO T-Deck Pro (e-paper, keyboard, touch; not yet tried on hardware) |
 | `mesh_deck` | The firmware for the Attaky Mesh Deck (d-pad, touch, keyboard module, notification light; boots on hardware, the rest not yet checked) |
 | `cyber_deck_plus` | The firmware for the Attaky Cyber Deck Plus (the Mesh Deck's Core plus a gamepad, Media I/O speaker and microSD; no GPS or LoRa; an early version was used on hardware by its contributor) |
-| `x4` | The firmware for the Xteink X4 (ESP32-C3, no PSRAM, e-paper, buttons only; a mostly passive client with text sent from web config; not yet built or tried on hardware) |
+| `x4` | The firmware for the Xteink X4 (ESP32-C3, no PSRAM, e-paper, buttons only; cIRC rooms only, text sent with phrases or from web config; no OTA; boots on hardware. Rebuilds ESP-IDF for smaller TLS buffers, so build it from a path without spaces) |
 | `cardputer_adv` | The firmware for the M5Stack Cardputer ADV (ESP32-S3FN8: 8 MB flash, no PSRAM; keyboard, 240x135 panel; no Guilds, no OTA; not yet tried on hardware) |
 | `tdisplay_p4` | The firmware for the LilyGO T-Display P4 (ESP32-P4, 4.1" AMOLED drawn at 2x, touch, optional keyboard expansion, haptics; Wi-Fi through its ESP32-C6; not yet tried on hardware) |
 | `native` | Host unit tests for `lib/core` |
@@ -45,6 +45,14 @@ pio run -e cardputer_adv              # build for the Cardputer ADV
 pio run -e tdisplay_p4                # build for the T-Display P4
 scripts/build-upload-monitor.sh m9    # build, flash, then open the serial monitor
 ```
+
+The `x4` env sets `custom_sdkconfig`, so pioarduino recompiles ESP-IDF for it
+(several minutes the first time). ESP-IDF refuses a path with spaces, and a
+symlink doesn't help because it resolves the real path. On a drive like
+`/Volumes/T7 Shield`, copy the project somewhere without spaces and point
+`core_dir` in that copy's `platformio.ini` at a folder without spaces too.
+If the first build stops with `IncompatiblePlatform` after the ESP-IDF
+compile, run it again.
 
 `scripts/build-upload-monitor.sh` options (`--help` lists them):
 

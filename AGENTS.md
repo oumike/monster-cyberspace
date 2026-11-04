@@ -8,7 +8,7 @@ the LilyGO T-Deck Plus followed, then the Elecrow CrowPanel Advance 3.5" and
 (all built, not yet tried on hardware; the Mesh Deck boots), and the Attaky
 Cyber Deck Plus (contributed in PR #6; an early version was used on hardware by
 its contributor). The Xteink X4
-(branch `x4`) is written but has never been built. The M5Stack Cardputer ADV
+(cIRC rooms only) is built and has booted on hardware. The M5Stack Cardputer ADV
 (8 MB, no PSRAM, no Guilds) is built, not yet tried on hardware, and so is
 the LilyGO T-Display P4 (ESP32-P4, AMOLED). More
 boards and Cyberspace features come later.
@@ -166,9 +166,14 @@ SD. `board::canType()` is false (text fields open the canned picker,
 `ui/widgets/canned_picker`, with phrases from web config), `webCompose()` is
 true (web config's Send box, `/api/compose`, `web/compose_req`), and
 `sleepsOnBattery()` drives `app/power_service` (`power/power_policy`).
-It builds with `RC_FEAT_CIRC=0`: no cIRC rooms (no Messages or Rooms on Home,
-room keys ignored, no room fetches or chat-mention alerts); C-Mail still uses
-`RoomScreen`. `GUILDS`, `SPELL` and `EMOJI` are 0 too, for TLS heap.
+For TLS heap it is barebones: cIRC rooms only (`CMAIL`, `FEED`, `GUILDS`,
+`PEOPLE`, `UNREAD`, `SPELL`, `EMOJI`, `OTA` and `MASCOT` are 0; it is in
+`NO_OTA_ENVS` and the flasher's no-OTA and no-mascot lists), the open room
+polled on the one TLS connection (`kPollRoom`), and a `custom_sdkconfig`
+(16 KB in / 4 KB out mbedTLS records, dynamic buffers) that rebuilds ESP-IDF,
+so a local build needs a project and `core_dir` path without spaces
+(docs/BUILD.md). `RC_FEAT_CIRC=0` (no rooms) still exists for a board that
+wants the rest without them.
 `src/hal/cardputer_adv/` is the M5Stack Cardputer ADV (ESP32-S3FN8, 8 MB, no
 PSRAM; `partitions_8mb.csv`: one factory app, `nvs` at 0x7D0000): an ST7789
 240x135 through the shared `st7789` driver (MADCTL 0x60, offsets col 40 /

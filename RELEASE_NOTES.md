@@ -1,3 +1,18 @@
+### Monster for Cyberspace 1.2.2
+
+### Following
+
+- **Following** on Home lists Feed entries by the people you follow on cyberspace.online, newest first. Press Down at the end of the list (touch: ⋯, Load older) to look further back.
+- The device-only friends list (Add friend / Remove friend in a message's menu) is gone. Following uses the people you follow on the website instead.
+
+### Alert sound
+
+- On boards with a speaker, alert sound has a volume slider in device Settings (10% steps) and in web config. Turn it all the way down to switch alert sound off. Boards without a speaker hide the setting.
+
+### Other changes
+
+- New installs open **#cyberspace** first. There is no #general.
+
 ### Monster for Cyberspace 1.2.1
 
 ### T-Display P4: function keys

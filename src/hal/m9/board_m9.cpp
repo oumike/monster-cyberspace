@@ -9,6 +9,7 @@
 #include "hal/m9/panel_st7789.h"
 #include "hal/m9/pins_m9.h"
 #include "input/keymap_m9.h"
+#include "input/m9_key_guard.h"
 #include "power/battery.h"
 
 namespace board {
@@ -62,8 +63,10 @@ void displaySleep(bool sleep) {
 }
 
 bool pollKey(rc::KeyEvent& key) {
+  static rc::M9KeyGuard guard;
   uint8_t raw;
   if (!stc8h::poll(raw)) return false;
+  if (!guard.accept(raw, millis())) return false;
   key = rc::mapM9Key(raw, stc8h::early());
   return true;
 }

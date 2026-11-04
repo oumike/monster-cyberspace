@@ -22,6 +22,13 @@ These were built without flashing and still need a run on the device. The
 scripted fake-API builds (`m9_fake`, `wio_l2_fake`, `tdeck_fake`) were removed
 on 2026-10-27; the sections marked `m9_fake` passed on it before then.
 
+**M9 keyboard (doubled letters):**
+
+- [ ] Type a sentence slowly, holding each key a moment: no letter comes out
+      twice. Words with real doubles ("bookkeeper", "hello") keep them, typed
+      slowly or quickly. Held Backspace and quick taps on the arrows still
+      repeat (`input/m9_key_guard`).
+
 **Scroll bars (any board):**
 
 - [ ] A list, room log, Feed list, entry, composer body, member drawer or

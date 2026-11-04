@@ -4,6 +4,11 @@
 // with -DRC_FEAT_X=0. A feature's own .cpp files wrap their body in
 // #if RC_FEAT_X; everything else guards only its wiring points.
 
+// cIRC rooms: Home's Messages and Rooms, the room keys, the room list and
+// chat-mention alerts. C-Mail keeps RoomScreen, so it is built either way.
+#ifndef RC_FEAT_CIRC
+#define RC_FEAT_CIRC 1
+#endif
 #ifndef RC_FEAT_CMAIL
 #define RC_FEAT_CMAIL 1
 #endif
@@ -43,9 +48,10 @@ namespace rc {
 // The features that shape portable choices (Home's tiles, Settings items).
 struct Features {
   bool cmail, feed, guilds, people, unread;
+  bool circ = true;
 };
 
 constexpr Features kBuiltFeatures{RC_FEAT_CMAIL != 0, RC_FEAT_FEED != 0, RC_FEAT_GUILDS != 0,
-                                  RC_FEAT_PEOPLE != 0, RC_FEAT_UNREAD != 0};
+                                  RC_FEAT_PEOPLE != 0, RC_FEAT_UNREAD != 0, RC_FEAT_CIRC != 0};
 
 }  // namespace rc

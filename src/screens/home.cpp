@@ -49,13 +49,13 @@ const std::vector<Item>& tiles() {
   return v;
 }
 
-// The list (keyed boards): the same items, messages first.
+// The list (keyed boards): the same items, messages (with cIRC) first.
 const std::vector<Item>& listItems() {
   static const std::vector<Item> v = [] {
     std::vector<Item> out;
     for (Item i : tiles())
       if (i != kUnread) out.push_back(i);
-    if (kBuiltFeatures.unread) out.insert(out.begin() + 1, kUnread);
+    if (kBuiltFeatures.unread) out.insert(out.begin() + (kBuiltFeatures.circ ? 1 : 0), kUnread);
     return out;
   }();
   return v;
@@ -111,17 +111,19 @@ void HomeScreen::enter(const std::string&) {
 
 void HomeScreen::openItem(int item) {
   switch (item) {
+#if RC_FEAT_CIRC
     case kMessages:
       router::go(router::Id::Room, app().cfg.lastRoom);
       break;
+    case kRooms:
+      router::go(router::Id::RoomList);
+      break;
+#endif
 #if RC_FEAT_UNREAD
     case kUnread:
       router::go(router::Id::Notifications);
       break;
 #endif
-    case kRooms:
-      router::go(router::Id::RoomList);
-      break;
 #if RC_FEAT_CMAIL
     case kCmail:
       router::go(router::Id::CmailList);

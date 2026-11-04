@@ -59,10 +59,20 @@ void test_unread_off_only_drops_unread() {
               homeItems(f));
 }
 
+void test_circ_off_drops_messages_and_rooms() {
+  Features f{true, true, true, true, true, false};
+  const auto items = homeItems(f);
+  expectItems({HomeItem::Unread, HomeItem::Cmail, HomeItem::Feed, HomeItem::Following, HomeItem::Guilds,
+               HomeItem::Profile, HomeItem::Settings},
+              items);
+  TEST_ASSERT_TRUE(homeSpanFirst(items));  // 7: 1 + 3x2
+}
+
 int main(int, char**) {
   UNITY_BEGIN();
   RUN_TEST(test_all_features_keeps_todays_order);
   RUN_TEST(test_rooms_only);
+  RUN_TEST(test_circ_off_drops_messages_and_rooms);
   RUN_TEST(test_unread_off_only_drops_unread);
   RUN_TEST(test_profile_needs_people);
   RUN_TEST(test_following_needs_feed_and_people);

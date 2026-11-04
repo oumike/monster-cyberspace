@@ -6,7 +6,7 @@
 
 namespace rc {
 
-// Home's entries. Messages (the last room) and Rooms are always there;
+// Home's entries. Messages (the last room) and Rooms come with cIRC;
 // Profile is your own profile (with People built).
 // Following lists the Feed entries by people I follow (Feed and People).
 enum class HomeItem { Unread, Messages, Rooms, Cmail, Feed, Following, Guilds, Profile, Settings };

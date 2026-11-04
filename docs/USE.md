@@ -7,7 +7,8 @@ Advance 3.5" and 5.0" (touch only; see CrowPanel below), and the Attaky Mesh
 Deck (d-pad, touch and keyboard; see Mesh Deck below), and the Attaky Cyber
 Deck Plus (the Mesh Deck's d-pad, touch and keyboard plus a gamepad, speaker
 and microSD; see Cyber Deck Plus below), and the Xteink X4
-(e-paper and six buttons, a mostly passive client; see Xteink X4 below), and
+(e-paper and six buttons, a mostly passive client with no cIRC rooms; see
+Xteink X4 below), and
 the M5Stack Cardputer ADV (keyboard; no Guilds; see Cardputer ADV
 below), and the LilyGO T-Display P4 (touch, in portrait or landscape, or
 landscape with its keyboard expansion; see T-Display P4 below). Key names in this guide are the M9's.
@@ -358,18 +359,19 @@ characters). The serial console is the USB-C port (the ESP32-P4's own USB).
 
 ## Xteink X4
 
-The Xteink X4 is an e-paper reader with no keyboard or touch: it shows cIRC,
-the Feed, C-Mail, Guilds and Notifications, and replies with canned phrases.
-Longer text is written in web config and sent to it.
+The Xteink X4 is an e-paper reader with no keyboard or touch: it shows the
+Feed, Following, C-Mail, Guilds, profiles and Unread, and replies with canned
+phrases. Longer text is written in web config and sent to it. It has no cIRC
+rooms: Home has no Messages or Rooms, and chat mentions don't reach Unread.
 
 **Experimental.** The X4 has no PSRAM, and one HTTPS connection takes most of
-its RAM. A room loads its last 10 messages, and once memory fragments a send
-or a mark-read can fail with a network error; try again, or restart it.
+its RAM. Once memory fragments, a send or a mark-read can fail with a network
+error; try again, or restart it.
 
 | Button | Action |
 |---|---|
 | Up, Down (right edge) | Move the selection or scroll (hold to repeat) |
-| Left, Right (below the screen) | Previous or next tab, room or page |
+| Left, Right (below the screen) | Previous or next tab or page |
 | Confirm | Open, select or send; hold it for the item's menu |
 | Back | Back; hold it for Home |
 | Power | Tap: screen off, and any button turns it on again. Hold 2 s: power off |
@@ -382,14 +384,14 @@ or adding a Wi-Fi network says to use web config instead.
 
 **Sending from web config:** the page's Send box (at `http://<device IP>/`,
 no password needed) shows what is open on the X4. Text sent there goes to the
-open room or C-Mail as if typed, or starts a C-Mail to a user, or posts a new
-thread in a guild. Each Send is one message; nothing is retried. With a page
+open C-Mail as if typed, or starts a C-Mail to a user, or posts a new thread
+in a guild. Each Send is one message; nothing is retried. With a page
 password set, `/` shows only the Send box, and Settings (`/config`) asks for
 the password. The Web config item in Settings, or the box in web config's
 Security section, turns the page off altogether (the setup AP still serves it).
 
-**Notifications** on Home lists unread cIRC mentions, then Feed and guild
-notices, newest first; Confirm opens the room or entry.
+**Unread** on Home lists unread C-Mail and Feed and guild notices, newest
+first; Confirm opens the conversation or entry.
 
 **Power:** on USB it stays awake. On battery it sleeps after the idle time
 (Settings → **Sleep after**, 5 min by default), with "Sleeping — updated

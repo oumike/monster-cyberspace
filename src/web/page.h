@@ -26,6 +26,11 @@ a{color:#6cf}
 #else
 #define RC_SEND_MAIL_OPT ""
 #endif
+#if RC_FEAT_CIRC
+#define RC_SEND_NOTHING_OPEN "open a room, a C-Mail or a post"
+#else
+#define RC_SEND_NOTHING_OPEN "open a C-Mail or a post"
+#endif
 #if RC_FEAT_GUILDS
 #define RC_SEND_THREAD_OPT R"HTML(<option value="thread">A new guild thread</option>)HTML"
 #else
@@ -111,7 +116,7 @@ async function otaInstall(){if(!confirm('Install '+$('otainst').textContent.slic
 let sendTimer=0;
 async function loadSend(){const r=await call('GET','/api/compose');if(r.label===undefined)return;
   $('sendblock').hidden=false;
-  $('sopen').textContent=r.label?(r.takesText?'Open: '+r.label:r.label+' (busy)'):'Nothing open takes text: open a room, a C-Mail or a post on the device.';
+  $('sopen').textContent=r.label?(r.takesText?'Open: '+r.label:r.label+' (busy)'):'Nothing open takes text: )JS" RC_SEND_NOTHING_OPEN R"JS( on the device.';
   clearTimeout(sendTimer);sendTimer=setTimeout(loadSend,5000);}
 function sendKind(){const k=$('skind').value;$('sopen').hidden=k!=='open';$('storow').hidden=k!=='mail';
   $('sguildrow').hidden=$('stitlerow').hidden=k!=='thread';}

@@ -178,6 +178,7 @@ bool handleGlobal(const KeyEvent& k) {
   bool hadOverlay = active->hasOverlay();
   active->closeOverlays();
   switch (k.action) {
+#if RC_FEAT_CIRC
     case Action::OpenCirc:
       if (cur == Id::Room && !hadOverlay) go(Id::RoomList);
       else if (cur != Id::Room) go(Id::Room, app().cfg.lastRoom);
@@ -188,6 +189,7 @@ bool handleGlobal(const KeyEvent& k) {
     case Action::OpenRooms:
       if (cur != Id::RoomList) go(Id::RoomList);
       break;
+#endif
     case Action::OpenSettings:
       if (cur != Id::Settings) go(Id::Settings);
       break;

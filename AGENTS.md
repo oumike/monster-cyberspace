@@ -166,6 +166,9 @@ SD. `board::canType()` is false (text fields open the canned picker,
 `ui/widgets/canned_picker`, with phrases from web config), `webCompose()` is
 true (web config's Send box, `/api/compose`, `web/compose_req`), and
 `sleepsOnBattery()` drives `app/power_service` (`power/power_policy`).
+It builds with `RC_FEAT_CIRC=0`: no cIRC rooms (no Messages or Rooms on Home,
+room keys ignored, no room fetches or chat-mention alerts); C-Mail still uses
+`RoomScreen`. Every other feature is on.
 `src/hal/cardputer_adv/` is the M5Stack Cardputer ADV (ESP32-S3FN8, 8 MB, no
 PSRAM; `partitions_8mb.csv`: one factory app, `nvs` at 0x7D0000): an ST7789
 240x135 through the shared `st7789` driver (MADCTL 0x60, offsets col 40 /
@@ -174,7 +177,7 @@ Fn+; . , / arrows, plain ones outside text fields; ` leaves a text field, else B
 clocked from BCLK (`mclkFromBclk`), battery ADC and SD; no touch, RTC or GPS.
 Text is fixed at Compact 6x12 (`board::fixedTextSize`; Text size hidden in
 Settings and web config). Feature flags in `lib/core/src/feature_flags.h`
-(`RC_FEAT_CMAIL`/`FEED`/`GUILDS`/`PEOPLE`/`UNREAD`/`SPELL`/`EMOJI`/`OTA`/`MASCOT`,
+(`RC_FEAT_CIRC`/`CMAIL`/`FEED`/`GUILDS`/`PEOPLE`/`UNREAD`/`SPELL`/`EMOJI`/`OTA`/`MASCOT`,
 all 1 by default; `RC_FEAT_ENTRIES`/`COMPOSER` follow): there `GUILDS`,
 `SPELL`, `EMOJI`, `OTA` and `MASCOT` are 0, so it has cIRC, C-Mail, the Feed,
 People and Unread, and a wide emoji draws `?`. Unread's Home count is

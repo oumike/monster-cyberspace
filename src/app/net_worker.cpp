@@ -219,7 +219,9 @@ class Worker {
                   unsigned(heap_caps_get_free_size(MALLOC_CAP_INTERNAL)),
                   unsigned(heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL)));
 #endif
+#if RC_FEAT_CIRC
     refreshRooms();
+#endif
     loadMutes();
 #if RC_FEAT_CMAIL
     refreshConversations();
@@ -656,7 +658,9 @@ class Worker {
 
   void watch() {
     logMemory();
+#if RC_FEAT_CIRC
     refreshRooms();
+#endif
 #if RC_FEAT_CMAIL
     refreshConversations();
 #endif
@@ -675,6 +679,7 @@ class Worker {
 #endif
         continue;
       }
+#if RC_FEAT_CIRC
       if (!seenMentions_.insert(m.id).second) continue;
       pendingMentions_.emplace(m.roomSlug, m.id);
       Event ev{EvtType::MentionAlert,
@@ -682,6 +687,7 @@ class Worker {
       ev.arg = m.roomSlug;
       ev.at = m.at;
       postEvent(std::move(ev));
+#endif
     }
     if (seenMentions_.size() > 200) seenMentions_.clear();
   }

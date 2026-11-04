@@ -389,12 +389,13 @@ is open.
 
 - [ ] `pio run -e x4` builds (it never has: everything X4 was written without a build)
 - [ ] Boots: the USB-CDC log shows the banner and no `[x4] no RAM for the e-paper frame`; free heap and its low-water mark with Wi-Fi up and two streams open (a C-Mail and the Feed)
-- [ ] No rooms (`RC_FEAT_CIRC=0`): Home shows Unread, C-Mail, Feed, Following, Guilds, Profile and Settings, with no Messages or Rooms; a chat mention on the website never shows in Unread
+- [ ] No rooms, Guilds, spell or emoji (`RC_FEAT_CIRC/GUILDS/SPELL/EMOJI=0`): Home shows Unread, C-Mail, Feed, Following, Profile and Settings; a chat mention on the website never shows in Unread; web config's Send box has no guild thread option
+- [ ] TLS heap headroom: after signing in, note the log's `[mem] signed in: heap free … largest …` line; then open the Feed, an entry and a C-Mail and send a reply, watching for out-of-memory or TLS errors
 - [ ] Panel: portrait, upright, not mirrored; Up/Down on the right edge and Back, Confirm, Left, Right below the screen match the screen's hints; partial refreshes look clean and a full refresh clears ghosting
 - [ ] Buttons: Up/Down move and repeat when held; Left/Right switch; Confirm opens, held opens the menu; Back goes back, held goes Home; if one never registers, log the raw ADC values and re-centre the ladder in `keymap_x4.cpp`
 - [ ] Power: a tap turns the screen off and any button back on; a 2 s hold shows "Powered off" and cuts the battery (on USB it sleeps until Power)
-- [ ] Canned picker: Select on an empty C-Mail line opens the phrases then the emoji; Confirm sends, Back cancels; with no phrases saved, only the emoji
-- [ ] Web compose: `/` shows the Send box without a password; it names the open screen; text goes to an open C-Mail; a C-Mail to a user and a new guild thread work; a second Send while one is going says so; with the page password, `/config` asks for it
+- [ ] Canned picker: Select on an empty C-Mail line opens the phrases; Confirm sends, Back cancels
+- [ ] Web compose: `/` shows the Send box without a password; it names the open screen; text goes to an open C-Mail; a C-Mail to a user works; a second Send while one is going says so; with the page password, `/config` asks for it
 - [ ] Web config off (Settings → Web config): the page and `/api/compose` answer 403 on the network but still load on the setup AP
 - [ ] Sleep on battery: after Sleep after with no button, "Sleeping — updated hh:mm" shows and the board sleeps; it wakes after Wake every, rejoins and redraws, then sleeps again; a button during that keeps it awake; on USB it never sleeps
 - [ ] Timed wake (Home or the Feed showing): the counts and the Feed's first page are drawn before it sleeps again (since PR #6 the connection reads live with no room open, which starts the 15 s settle timer)

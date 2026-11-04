@@ -11,8 +11,9 @@
 namespace rc {
 
 // What boards that can't type (board::canType) open instead of a text field:
-// the user's canned phrases, then "Emoji…", which hands over to the emoji
-// tray. Up/Down move, Select picks, Back cancels.
+// the user's canned phrases, then "Emoji…" (in builds with emoji), which hands
+// over to the emoji tray. Up/Down move, Select picks, Back cancels. With
+// nothing to list it stays closed.
 class CannedPicker {
  public:
   enum class Kind : uint8_t {
@@ -26,16 +27,17 @@ class CannedPicker {
     std::u32string text;
   };
 
-  void open(const std::vector<std::string>& phrases);
+  void open(const std::vector<std::string>& phrases, bool emoji = true);
   void close() { box_.close(); }
   bool isOpen() const { return box_.isOpen(); }
-  int rows() const { return int(phrases_.size()) + 1; }
+  int rows() const { return int(phrases_.size()) + (emoji_ ? 1 : 0); }
   Out key(const KeyEvent& k);
   void render(Grid& g, int top, int bottom, const Theme& t) const;
 
  private:
   Overlay box_;
   std::vector<std::u32string> phrases_;
+  bool emoji_ = true;
 };
 
 }  // namespace rc

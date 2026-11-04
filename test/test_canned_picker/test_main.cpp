@@ -56,6 +56,15 @@ void test_no_phrases_opens_on_emoji() {
   expectKind(CannedPicker::Kind::Emoji, press(p, Action::Select));
 }
 
+void test_without_emoji_only_phrases() {
+  CannedPicker p;
+  p.open({"brb"}, false);
+  TEST_ASSERT_EQUAL(1, p.rows());
+  expectKind(CannedPicker::Kind::Send, press(p, Action::Select));
+  p.open({}, false);
+  TEST_ASSERT_FALSE(p.isOpen());
+}
+
 void test_hold_confirm_is_ignored() {
   CannedPicker p;
   p.open({"brb"});
@@ -79,6 +88,7 @@ int main(int, char**) {
   RUN_TEST(test_emoji_row_hands_over_to_the_tray);
   RUN_TEST(test_back_cancels_and_left_right_do_not);
   RUN_TEST(test_no_phrases_opens_on_emoji);
+  RUN_TEST(test_without_emoji_only_phrases);
   RUN_TEST(test_hold_confirm_is_ignored);
   RUN_TEST(test_closed_draws_nothing);
   return UNITY_END();

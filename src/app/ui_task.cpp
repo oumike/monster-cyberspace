@@ -944,8 +944,10 @@ void taskMain(void*) {
     if (oskShown && !router::screen().acceptsText()) showOsk(false);
     if (oskWanted && !board::canType()) {
       oskWanted = false;
-      if (power == Power::On && router::current() == beforeScreen && router::screen().acceptsText())
-        canned.open(app().cfg.phrases);
+      if (power == Power::On && router::current() == beforeScreen && router::screen().acceptsText()) {
+        canned.open(app().cfg.phrases, RC_FEAT_EMOJI != 0);
+        if (!canned.isOpen()) ui::banner("No phrases: add them in web config", true);
+      }
     }
     if (oskWanted) {
       oskWanted = false;

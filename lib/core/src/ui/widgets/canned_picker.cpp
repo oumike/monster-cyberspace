@@ -4,14 +4,16 @@
 
 namespace rc {
 
-void CannedPicker::open(const std::vector<std::string>& phrases) {
+void CannedPicker::open(const std::vector<std::string>& phrases, bool emoji) {
   phrases_.clear();
+  emoji_ = emoji;
   std::vector<ListItem> items;
   for (const std::string& p : phrases) {
     phrases_.push_back(utf8ToU32(p));
     items.push_back(ListItem{phrases_.back(), U""});
   }
-  items.push_back(ListItem{U"Emoji\u2026", U""});
+  if (emoji) items.push_back(ListItem{U"Emoji\u2026", U""});
+  if (items.empty()) return;
   box_.open(U"send", std::move(items));
 }
 

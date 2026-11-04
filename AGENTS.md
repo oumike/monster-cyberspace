@@ -168,7 +168,7 @@ true (web config's Send box, `/api/compose`, `web/compose_req`), and
 `sleepsOnBattery()` drives `app/power_service` (`power/power_policy`).
 It builds with `RC_FEAT_CIRC=0`: no cIRC rooms (no Messages or Rooms on Home,
 room keys ignored, no room fetches or chat-mention alerts); C-Mail still uses
-`RoomScreen`. Every other feature is on.
+`RoomScreen`. `GUILDS`, `SPELL` and `EMOJI` are 0 too, for TLS heap.
 `src/hal/cardputer_adv/` is the M5Stack Cardputer ADV (ESP32-S3FN8, 8 MB, no
 PSRAM; `partitions_8mb.csv`: one factory app, `nvs` at 0x7D0000): an ST7789
 240x135 through the shared `st7789` driver (MADCTL 0x60, offsets col 40 /

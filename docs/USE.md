@@ -7,8 +7,8 @@ Advance 3.5" and 5.0" (touch only; see CrowPanel below), and the Attaky Mesh
 Deck (d-pad, touch and keyboard; see Mesh Deck below), and the Attaky Cyber
 Deck Plus (the Mesh Deck's d-pad, touch and keyboard plus a gamepad, speaker
 and microSD; see Cyber Deck Plus below), and the Xteink X4
-(e-paper and six buttons, a mostly passive client with no cIRC rooms; see
-Xteink X4 below), and
+(e-paper and six buttons, a mostly passive client with no cIRC rooms or
+Guilds; see Xteink X4 below), and
 the M5Stack Cardputer ADV (keyboard; no Guilds; see Cardputer ADV
 below), and the LilyGO T-Display P4 (touch, in portrait or landscape, or
 landscape with its keyboard expansion; see T-Display P4 below). Key names in this guide are the M9's.
@@ -360,9 +360,10 @@ characters). The serial console is the USB-C port (the ESP32-P4's own USB).
 ## Xteink X4
 
 The Xteink X4 is an e-paper reader with no keyboard or touch: it shows the
-Feed, Following, C-Mail, Guilds, profiles and Unread, and replies with canned
-phrases. Longer text is written in web config and sent to it. It has no cIRC
-rooms: Home has no Messages or Rooms, and chat mentions don't reach Unread.
+Feed, Following, C-Mail, profiles and Unread, and replies with canned
+phrases. Longer text is written in web config and sent to it. To leave memory
+for HTTPS it has no cIRC rooms (Home has no Messages or Rooms, and chat
+mentions don't reach Unread), no Guilds and no emoji (a wide emoji shows `?`).
 
 **Experimental.** The X4 has no PSRAM, and one HTTPS connection takes most of
 its RAM. Once memory fragments, a send or a mark-read can fail with a network
@@ -377,21 +378,19 @@ error; try again, or restart it.
 | Power | Tap: screen off, and any button turns it on again. Hold 2 s: power off |
 
 **Canned replies:** where another board would type, the X4 opens a list of
-your phrases, then the 40 tray emoji. Confirm sends the one picked; Back
+your phrases (with none saved, it says to add them). Confirm sends the one picked; Back
 cancels. Up to 10 phrases of up to 80 characters each are edited in web
 config (Canned replies) and kept in backups. Starting a C-Mail, a new thread
 or adding a Wi-Fi network says to use web config instead.
 
 **Sending from web config:** the page's Send box (at `http://<device IP>/`,
 no password needed) shows what is open on the X4. Text sent there goes to the
-open C-Mail as if typed, or starts a C-Mail to a user, or posts a new thread
-in a guild. Each Send is one message; nothing is retried. With a page
+open C-Mail as if typed, or starts a C-Mail to a user. Each Send is one message; nothing is retried. With a page
 password set, `/` shows only the Send box, and Settings (`/config`) asks for
 the password. The Web config item in Settings, or the box in web config's
 Security section, turns the page off altogether (the setup AP still serves it).
 
-**Unread** on Home lists unread C-Mail and Feed and guild notices, newest
-first; Confirm opens the conversation or entry.
+**Unread** on Home lists unread C-Mail and Feed notices, newest first; Confirm opens the conversation or entry.
 
 **Power:** on USB it stays awake. On battery it sleeps after the idle time
 (Settings → **Sleep after**, 5 min by default), with "Sleeping — updated

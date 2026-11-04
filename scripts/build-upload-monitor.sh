@@ -37,6 +37,7 @@ env_label() {
 		x4) echo "Xteink X4" ;;
 		cardputer_adv) echo "M5Stack Cardputer ADV" ;;
 		tdisplay_p4) echo "LilyGO T-Display P4" ;;
+		tanmatsu) echo "Tanmatsu" ;;
 		*)      echo "$1" ;;
 	esac
 }
@@ -84,7 +85,7 @@ prompt_for_device() {
 
 show_usage() {
 	cat <<USAGE
-Usage: $0 [ENV] [--m9|-9] [--wio-l2|-w] [--tdeck|-t] [--crowpanel35|-3] [--crowpanel50|-5] [--pager|-P] [--tdeck-pro|-D] [--mesh-deck|-M] [--cyber-deck-plus|-K] [--x4|-X] [--cardputer-adv|-C] [--tdisplay-p4|-4] [--port|-p PORT] [--erase|-E] [--fullclean|-F] [--just-build|-B]
+Usage: $0 [ENV] [--m9|-9] [--wio-l2|-w] [--tdeck|-t] [--crowpanel35|-3] [--crowpanel50|-5] [--pager|-P] [--tdeck-pro|-D] [--mesh-deck|-M] [--cyber-deck-plus|-K] [--x4|-X] [--cardputer-adv|-C] [--tdisplay-p4|-4] [--tanmatsu|-T] [--port|-p PORT] [--erase|-E] [--fullclean|-F] [--just-build|-B]
   ENV               Any firmware environment in platformio.ini (e.g. m9, tdeck).
   Board flags (one per supported board):
   --m9, -9          Elecrow ThinkNode M9 (m9)
@@ -99,6 +100,7 @@ Usage: $0 [ENV] [--m9|-9] [--wio-l2|-w] [--tdeck|-t] [--crowpanel35|-3] [--crowp
   --x4, -X          Xteink X4 (x4)
   --cardputer-adv, -C M5Stack Cardputer ADV (cardputer_adv)
   --tdisplay-p4, -4 LilyGO T-Display P4 (tdisplay_p4)
+  --tanmatsu, -T    Nicolai Electronics Tanmatsu (tanmatsu)
                     With no board or environment given, you'll be prompted.
   --port, -p PORT   Serial port for upload and monitor (default: auto-detect)
   --erase, -E       Erase the whole flash while uploading (wipes saved settings)
@@ -134,6 +136,7 @@ while [ "$#" -gt 0 ]; do
 		--x4|-X)         BOARD=x4 ;;
 		--cardputer-adv|-C) BOARD=cardputer_adv ;;
 		--tdisplay-p4|-4) BOARD=tdisplay_p4 ;;
+		--tanmatsu|-T) BOARD=tanmatsu ;;
 		--port|-p)
 			[ "$#" -ge 2 ] || { echo "--port needs a value"; exit 1; }
 			PORT="$2"

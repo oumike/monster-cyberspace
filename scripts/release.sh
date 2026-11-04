@@ -25,6 +25,7 @@ RELEASE_ENVS=(
 # flasher until they are ready.
 UNRELEASED_ENVS=(
     x4
+    tanmatsu
 )
 
 # Release envs built with OTA off (RC_FEAT_OTA=0, no second app slot): they

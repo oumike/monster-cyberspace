@@ -39,9 +39,9 @@ with native tests first; hardware only in `src/hal/tanmatsu/` behind
 
 ## Task 4: Scripts and CI
 
-- [ ] `.github/workflows/build.yml` env list, `scripts/build-upload-monitor.sh`
+- [x] `.github/workflows/build.yml` env list, `scripts/build-upload-monitor.sh`
       `--tanmatsu`/`-T` and its `-B` list.
-- [ ] Commit "Tanmatsu: CI and build script".
+- [x] Commit "Tanmatsu: CI and build script".
 
 ## Task 5: Docs
 

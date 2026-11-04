@@ -51,4 +51,4 @@ with native tests first; hardware only in `src/hal/tanmatsu/` behind
 
 ## Task 6: Verify
 
-- [ ] `pio test -e native`, `scripts/build-upload-monitor.sh -B`.
+- [x] `pio test -e native`, `scripts/build-upload-monitor.sh -B`.

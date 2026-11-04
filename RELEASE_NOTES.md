@@ -1,3 +1,14 @@
+### Monster for Cyberspace 1.2.4
+
+### Text size
+
+- Text size in device Settings is a wide box with a line and a dot for each size (Compact, Comfortable, Large), named underneath. Left/Right or a tap on a dot moves it; Set keeps it, Cancel leaves it. Web config's Text size is a slider too.
+
+### Fixes
+
+- M9: a key whose contact chatters as it comes up no longer types its letter twice. Real double letters still work.
+- Feed, Topics and guild lists: in Comfortable and Large text, the selected entry's box has one straight right side.
+
 ### Monster for Cyberspace 1.2.3
 
 ### Xteink X4

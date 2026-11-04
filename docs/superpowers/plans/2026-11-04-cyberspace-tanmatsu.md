@@ -8,16 +8,16 @@ with native tests first; hardware only in `src/hal/tanmatsu/` behind
 
 ## Task 1: Key map (`lib/core/src/input/keymap_tanmatsu`)
 
-- [ ] Write `test/test_tanmatsu_input/test_main.cpp`: letters, digits, Shift
+- [x] Write `test/test_tanmatsu_input/test_main.cpp`: letters, digits, Shift
       (both sides), AltGr, the three spaces, Esc/Return/Tab, arrows and
       Backspace with repeat, F1–F6, Fn+F1/F4/F5, Fn+Space, Meta tap alone vs
       Meta+key, Ctrl swallowing chars, volume up, several presses in one
       update, releases producing nothing.
-- [ ] Run `pio test -e native -f test_tanmatsu_input`: fails (no header).
-- [ ] Implement `TanmatsuKeys` (`update(state, ms)`, `next(ms)`) and
+- [x] Run `pio test -e native -f test_tanmatsu_input`: fails (no header).
+- [x] Implement `TanmatsuKeys` (`update(state, ms)`, `next(ms)`) and
       `kTanmatsuFunctionKeys`.
-- [ ] Run it green, then the whole native suite.
-- [ ] Commit "Tanmatsu: key map".
+- [x] Run it green, then the whole native suite.
+- [x] Commit "Tanmatsu: key map".
 
 ## Task 2: Function-key table from the board
 

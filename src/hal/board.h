@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 
+#include "input/function_keys.h"
 #include "input/key_event.h"
 
 // Forward-declared so this header stays free of FS.h.
@@ -48,6 +49,9 @@ void kbLight(uint8_t duty, bool screenOn);
 // bit 0 red, bit 1 green, bit 2 blue, 0 off. A no-op without one.
 bool hasNotifyLight();
 void notifyLight(uint8_t rgb);
+// The function-key table the help (Action::KeysHelp) shows: count rows.
+// rc::kFunctionKeys unless a board's keyboard reaches them differently.
+const rc::FunctionKey* functionKeys(size_t& count);
 // The last line of the screensaver, telling the user how to wake the screen.
 const char* wakeHint();
 // The next pending key press, already mapped to a portable key.

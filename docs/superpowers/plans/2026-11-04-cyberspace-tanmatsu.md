@@ -21,11 +21,11 @@ with native tests first; hardware only in `src/hal/tanmatsu/` behind
 
 ## Task 2: Function-key table from the board
 
-- [ ] `board::functionKeys(size_t&)` in `board.h`, weak default
+- [x] `board::functionKeys(size_t&)` in `board.h`, weak default
       `kFunctionKeys` in `board_defaults.cpp`; `renderKeysHelp` uses it, key
       column 5 cells.
-- [ ] Build `m9` and `tdisplay_p4`.
-- [ ] Commit "Function-key help table from the board".
+- [x] Build `m9` and `tdisplay_p4`.
+- [x] Commit "Function-key help table from the board".
 
 ## Task 3: Env and board file
 

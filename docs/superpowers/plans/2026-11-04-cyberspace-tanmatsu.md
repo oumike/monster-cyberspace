@@ -29,13 +29,13 @@ with native tests first; hardware only in `src/hal/tanmatsu/` behind
 
 ## Task 3: Env and board file
 
-- [ ] `boards/tanmatsu.json`, `[env:tanmatsu]` in `platformio.ini`.
-- [ ] `src/hal/tanmatsu/pins_tanmatsu.h`, `coproc_tanmatsu.{h,cpp}`
+- [x] `boards/tanmatsu.json`, `[env:tanmatsu]` in `platformio.ini`.
+- [x] `src/hal/tanmatsu/pins_tanmatsu.h`, `coproc_tanmatsu.{h,cpp}`
       (register reads/writes over Wire with a mutex), `panel_st7701.{h,cpp}`,
       `audio_es8156.{h,cpp}`, `board_tanmatsu.cpp`,
       `peripherals_tanmatsu.cpp` (battery, RTC, SD).
-- [ ] `pio run -e tanmatsu` builds.
-- [ ] Commit "Tanmatsu: HAL and env".
+- [x] `pio run -e tanmatsu` builds.
+- [x] Commit "Tanmatsu: HAL and env".
 
 ## Task 4: Scripts and CI
 

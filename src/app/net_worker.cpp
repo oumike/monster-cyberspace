@@ -52,6 +52,12 @@ constexpr int64_t kRoomPollMs = 60000;
 // a TLS session barely fit together, so ten.
 constexpr int kRoomPollLimit = kPollRoom ? 10 : 20;
 constexpr int kHistoryLimit = kPollRoom ? 10 : 50;
+// Low memory: an older page only while this much heap is free. A request's
+// TLS handshake can take ~55 KB and the UI needs some beside it (measured on
+// the X4).
+#if RC_LOW_MEM
+constexpr size_t kOlderMinFree = 68 * 1024;
+#endif
 constexpr int64_t kMaxBackoffMs = 30000;
 constexpr int64_t kPausedBannerMs = 30000;
 
@@ -362,8 +368,23 @@ class Worker {
 
   void loadOlder() {
     if (room_.empty() || !historyLoaded_) return;
-    int64_t oldest = lockedChat().with([](ChatState& s) { return s.store.oldestTimestamp(); });
-    if (oldest < 0) return;
+    // A full store drops what an older page adds, so the next ask fetches the
+    // same page again: stop there.
+    // Low on memory, likewise: another page would leave a request too little.
+#if RC_LOW_MEM
+    const bool tight = heap_caps_get_free_size(MALLOC_CAP_INTERNAL) < kOlderMinFree;
+#else
+    const bool tight = false;
+#endif
+    int64_t oldest = lockedChat().with([&](ChatState& s) {
+      const bool stop = s.store.full() || tight;
+      if (stop) s.noOlder = true;
+      return stop ? -1 : s.store.oldestTimestamp();
+    });
+    if (oldest < 0) {
+      post(EvtType::OlderLoaded, 0);
+      return;
+    }
     std::vector<CircMessage> msgs;
     int64_t cursor = -1;
     ApiError e = dm_ ? api_.cmailHistory(room_, oldest, msgs, cursor, kHistoryLimit)

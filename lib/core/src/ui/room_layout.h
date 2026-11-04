@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <deque>
+#include <functional>
 #include <set>
 #include <string>
 #include <vector>
@@ -42,5 +43,12 @@ struct LayoutOptions {
 // Lays out messages (oldest first) into display lines no wider than o.cols,
 // following the rendering rules in spec §6.
 std::vector<DisplayLine> layoutRoom(const std::deque<CircMessage>& msgs, const LayoutOptions& o);
+
+// Lays out msgs[from, to) one line at a time, as layoutRoom's lines for those
+// messages: a day divider comes first when the message shown before `from`
+// is on another day. Nothing is kept, so a long room never sits in memory
+// laid out.
+void layoutRoomEach(const std::deque<CircMessage>& msgs, const LayoutOptions& o, size_t from,
+                    size_t to, const std::function<void(DisplayLine&&)>& out);
 
 }  // namespace rc

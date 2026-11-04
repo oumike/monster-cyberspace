@@ -62,24 +62,43 @@ std::u32string cutNick(const std::u32string& nick, int maxCols) {
 }  // namespace
 
 std::vector<DisplayLine> layoutRoom(const std::deque<CircMessage>& msgs, const LayoutOptions& o) {
+  std::vector<DisplayLine> out;
+  layoutRoomEach(msgs, o, 0, msgs.size(), [&](DisplayLine&& l) { out.push_back(std::move(l)); });
+  return out;
+}
+
+void layoutRoomEach(const std::deque<CircMessage>& msgs, const LayoutOptions& o, size_t from,
+                    size_t to, const std::function<void(DisplayLine&&)>& out) {
   const Theme& th = o.theme ? *o.theme : defaultTheme();
   const int cols = std::max(o.cols, 1);
   const bool compact = o.size == TextSize::Compact;
-  std::vector<DisplayLine> out;
+  auto isMuted = [&](const CircMessage& m) {
+    if (!o.muted) return false;
+    std::string name = m.username;
+    for (char& c : name) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    return o.muted->count(name) > 0;
+  };
+  auto bucketOf = [&](const CircMessage& m) {
+    return compact ? localDayNumber(m.timestamp) : localMinuteNumber(m.timestamp);
+  };
+  to = std::min(to, msgs.size());
   bool first = true;
   int64_t prevBucket = 0;
+  // The divider depends on the message shown before the range.
+  for (size_t i = std::min(from, msgs.size()); i-- > 0;) {
+    if (isMuted(msgs[i])) continue;
+    first = false;
+    prevBucket = bucketOf(msgs[i]);
+    break;
+  }
 
-  for (const auto& m : msgs) {
-    if (o.muted) {
-      std::string name = m.username;
-      for (char& c : name) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-      if (o.muted->count(name)) continue;
-    }
+  for (size_t mi = from; mi < to; ++mi) {
+    const CircMessage& m = msgs[mi];
+    if (isMuted(m)) continue;
 
-    int64_t bucket = compact ? localDayNumber(m.timestamp) : localMinuteNumber(m.timestamp);
+    int64_t bucket = bucketOf(m);
     if (first || bucket != prevBucket) {
-      out.push_back(divider(compact ? formatDay(m.timestamp) : formatHHMM(m.timestamp), cols,
-                            th.dim));
+      out(divider(compact ? formatDay(m.timestamp) : formatHHMM(m.timestamp), cols, th.dim));
     }
     first = false;
     prevBucket = bucket;
@@ -220,10 +239,9 @@ std::vector<DisplayLine> layoutRoom(const std::deque<CircMessage>& msgs, const L
 
     for (auto& l : lines) {
       if (lineWidth(l) > cols) clipLine(l, cols);
-      out.push_back(std::move(l));
+      out(std::move(l));
     }
   }
-  return out;
 }
 
 }  // namespace rc

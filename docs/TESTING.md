@@ -391,6 +391,7 @@ is open.
 - [ ] Boots: the USB-CDC log shows the banner and no `[x4] no RAM for the e-paper frame`
 - [ ] Rooms only: Home shows Messages, Rooms and Settings; no C-Mail, Feed, Following, Profile, Unread or Guilds; web config has no OTA or Mascot section and its Send box only offers what the device has open
 - [ ] TLS heap headroom: after signing in, note the log's `[mem] signed in: heap free … largest …` line; then open the room list and a room, send a phrase, and wait through a few once-a-minute polls, watching for `[tls] alloc … failed`, `PK verify failed` or other out-of-memory errors
+- [ ] Scrollback: Up from the top of a room loads one older page (20 messages), then the start-of-history mark; no `[tls]` failures or reboot while scrolling (passed 2026-11-04 with a cap of 25; the lowest free heap during a request was 9.9 KB, hence 20)
 - [ ] Room read and send: the room list loads; a room shows its last 10 messages; a message posted on the website shows within a minute; a phrase sends once; a mention elsewhere shows as a banner
 - [ ] Panel: portrait, upright, not mirrored; Up/Down on the right edge and Back, Confirm, Left, Right below the screen match the screen's hints; partial refreshes look clean and a full refresh clears ghosting
 - [ ] Selection outline: the box around the selected row lines up with itself on every side (it drew misaligned on hardware before; the renderer draws in strips)

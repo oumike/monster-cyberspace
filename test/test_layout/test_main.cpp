@@ -1113,6 +1113,51 @@ void test_guild_notice_text() {
   TEST_ASSERT_EQUAL_STRING("@ann in a guild: hi", guildNoticeText("ann", "", "hi").c_str());
 }
 
+static std::string dump(const std::vector<DisplayLine>& ls) {
+  std::string out;
+  for (const auto& l : ls) {
+    out += l.divider ? "D|" : l.messageId + "|";
+    for (const auto& sp : l.spans) out += u32ToUtf8(sp.text);
+    out += "\n";
+  }
+  return out;
+}
+
+void test_layout_room_range_matches_whole() {
+  std::deque<CircMessage> d;
+  const int64_t day = 86400000LL;
+  d.push_back(msg("a", "ann", "first day, a message long enough to wrap onto a second line"));
+  d.push_back(msg("b", "bob", "still the first day", kTs + 60000));
+  d.push_back(msg("m", "mute", "muted, so it draws nothing", kTs + day));
+  d.push_back(msg("c", "cat", "the next day", kTs + day + 60000));
+  d.push_back(msg("e", "eve", "and once more", kTs + day + 120000));
+  std::set<std::string> muted{"mute"};
+  LayoutOptions o = opts(TextSize::Compact, 30);
+  o.muted = &muted;
+  auto whole = layoutRoom(d, o);
+  auto range = [&](size_t from, size_t to) {
+    std::vector<DisplayLine> out;
+    layoutRoomEach(d, o, from, to, [&](DisplayLine&& l) { out.push_back(std::move(l)); });
+    return out;
+  };
+  auto slice = [&](const std::string& first, const std::string& last) {
+    // The first message's lines, with the dividers right before them.
+    size_t a = 0;
+    while (whole[a].messageId != first) ++a;
+    while (a > 0 && whole[a - 1].divider) --a;
+    size_t b = whole.size();
+    while (whole[b - 1].messageId != last) --b;
+    return std::vector<DisplayLine>(whole.begin() + a, whole.begin() + b);
+  };
+  TEST_ASSERT_EQUAL_STRING(dump(whole).c_str(), dump(range(0, d.size())).c_str());
+  // Same day as the message before: no divider.
+  TEST_ASSERT_EQUAL_STRING(dump(slice("b", "b")).c_str(), dump(range(1, 2)).c_str());
+  // A new day after a muted message: its divider comes along.
+  TEST_ASSERT_EQUAL_STRING(dump(slice("c", "e")).c_str(), dump(range(2, 5)).c_str());
+  TEST_ASSERT_EQUAL_STRING(dump(slice("c", "c")).c_str(), dump(range(3, 4)).c_str());
+  TEST_ASSERT_EQUAL_STRING(dump(slice("e", "e")).c_str(), dump(range(4, 5)).c_str());
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_button_grid_taller_buttons);
@@ -1184,5 +1229,6 @@ int main() {
   RUN_TEST(test_member_item_empty_parts);
   RUN_TEST(test_guild_info_text);
   RUN_TEST(test_guild_notice_text);
+  RUN_TEST(test_layout_room_range_matches_whole);
   return UNITY_END();
 }

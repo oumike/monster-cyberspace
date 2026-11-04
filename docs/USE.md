@@ -366,8 +366,10 @@ emoji (a wide emoji shows `?`), online updates or custom Fluffy. The open room
 is checked for new messages once a minute rather than live.
 
 **Experimental.** The X4 has no PSRAM, and one HTTPS connection takes most of
-its RAM. Once memory fragments, a send or a mark-read can fail with a network
-error; try again, or restart it.
+its RAM. A room keeps its newest 20 messages, so scrolling up loads one older
+page of 10 at most before the start-of-history mark shows. Once memory
+fragments, a send or a mark-read can still fail with a network error; try
+again, or restart it.
 
 | Button | Action |
 |---|---|

@@ -8,115 +8,136 @@
 
 namespace rc {
 
-int LogView::ordinalOf(const std::string& id) const {
-  int n = -1;
-  std::string last;
-  bool any = false;
-  for (const auto& l : lines_) {
-    if (l.divider) continue;
-    if (!any || l.messageId != last) {
-      ++n;
-      last = l.messageId;
-      any = true;
-    }
-    if (l.messageId == id) return n;
+void LogView::index(const DisplayLine& l) {
+  if (l.divider) {
+    refs_.push_back({static_cast<int32_t>(ids_.size()), true});
+    return;
   }
+  if (ids_.empty() || l.messageId != ids_.back()) {
+    ids_.push_back(l.messageId);
+  } else {
+    // Dividers inside one message belong to it.
+    for (size_t i = refs_.size(); i-- > 0 && refs_[i].divider;) refs_[i].msg = static_cast<int32_t>(ids_.size() - 1);
+  }
+  refs_.push_back({static_cast<int32_t>(ids_.size() - 1), false});
+}
+
+int LogView::ordinalOf(const std::string& id) const {
+  for (size_t i = 0; i < ids_.size(); ++i)
+    if (ids_[i] == id) return static_cast<int>(i);
   return -1;
 }
 
-int LogView::messageCount() const {
-  int n = 0;
-  std::string last;
-  bool any = false;
-  for (const auto& l : lines_) {
-    if (l.divider) continue;
-    if (!any || l.messageId != last) {
-      ++n;
-      last = l.messageId;
-      any = true;
-    }
-  }
-  return n;
-}
+int LogView::messageCount() const { return static_cast<int>(ids_.size()); }
 
 bool LogView::selectMessage(int ordinal) {
-  if (ordinal < 0) return false;
-  int n = 0;
-  std::string last;
-  bool any = false;
-  for (const auto& l : lines_) {
-    if (l.divider) continue;
-    if (!any || l.messageId != last) {
-      if (n == ordinal) {
-        selected_ = l.messageId;
-        pin_ = lastStart_;
-        return true;
-      }
-      ++n;
-      last = l.messageId;
-      any = true;
-    }
-  }
-  return false;
+  if (ordinal < 0 || ordinal >= static_cast<int>(ids_.size())) return false;
+  selected_ = ids_[ordinal];
+  pin_ = lastStart_;
+  return true;
 }
 
 int LogView::firstLineOf(const std::string& id) const {
-  for (size_t i = 0; i < lines_.size(); ++i)
-    if (!lines_[i].divider && lines_[i].messageId == id) return static_cast<int>(i);
+  const int ord = ordinalOf(id);
+  if (ord < 0) return -1;
+  for (int i = 0; i < lineCount(); ++i)
+    if (!refs_[i].divider && refs_[i].msg == ord) return i;
   return -1;
 }
 
 int LogView::lastLineOf(const std::string& id) const {
-  for (size_t i = lines_.size(); i-- > 0;)
-    if (!lines_[i].divider && lines_[i].messageId == id) return static_cast<int>(i);
+  const int ord = ordinalOf(id);
+  if (ord < 0) return -1;
+  for (int i = lineCount(); i-- > 0;)
+    if (!refs_[i].divider && refs_[i].msg == ord) return i;
   return -1;
 }
 
-void LogView::setLines(std::vector<DisplayLine> lines) {
-  // Lines added or dropped above move every index: keep a held view on the
-  // same message line.
-  auto anchor = [&](int at, std::string& id, int& off) {
+// Lines added or dropped above move every index: keep a held view on the
+// same message line.
+void LogView::anchor() {
+  auto at = [&](int line, std::string& id, int& off) {
     id.clear();
-    if (at < 0 || at >= static_cast<int>(lines_.size())) return;
-    int i = at;
-    while (i < static_cast<int>(lines_.size()) && lines_[i].divider) ++i;
-    if (i == static_cast<int>(lines_.size())) return;
-    id = lines_[i].messageId;
-    off = at - firstLineOf(id);
+    if (line < 0 || line >= lineCount()) return;
+    int i = line;
+    while (i < lineCount() && refs_[i].divider) ++i;
+    if (i == lineCount()) return;
+    id = idOf(i);
+    off = line - firstLineOf(id);
   };
-  std::string pinId, lastId;
-  int pinOff = 0, lastOff = 0;
-  anchor(pin_, pinId, pinOff);
-  anchor(lastStart_, lastId, lastOff);
-  lines_ = std::move(lines);
-  auto place = [&](const std::string& id, int off) {
+  at(pin_, pinId_, pinOff_);
+  at(lastStart_, lastId_, lastOff_);
+}
+
+void LogView::place() {
+  auto at = [&](const std::string& id, int off) {
     const int f = id.empty() ? -1 : firstLineOf(id);
     return f < 0 ? -1 : std::max(0, f + off);
   };
-  pin_ = place(pinId, pinOff);
-  lastStart_ = place(lastId, lastOff);
+  pin_ = at(pinId_, pinOff_);
+  lastStart_ = at(lastId_, lastOff_);
   if (!selected_.empty() && firstLineOf(selected_) < 0) {
     selected_.clear();
     pin_ = -1;
   }
 }
 
+void LogView::setLines(std::vector<DisplayLine> lines) {
+  anchor();
+  refs_.clear();
+  ids_.clear();
+  for (const auto& l : lines) index(l);
+  for (auto& r : refs_) r.msg = std::min<int32_t>(r.msg, std::max<int32_t>(0, int32_t(ids_.size()) - 1));
+  lines_ = std::move(lines);
+  winFrom_ = 0;
+  winValid_ = true;
+  windowed_ = false;
+  fill_ = nullptr;
+  place();
+}
+
+void LogView::beginLines(Fill fill, bool keepWindow) {
+  anchor();
+  std::vector<LineRef>().swap(refs_);
+  std::vector<std::string>().swap(ids_);
+  std::vector<DisplayLine>().swap(lines_);
+  winFrom_ = 0;
+  winValid_ = false;
+  windowed_ = true;
+  keepWindow_ = keepWindow;
+  fill_ = std::move(fill);
+}
+
+void LogView::addLine(const DisplayLine& l) { index(l); }
+
+void LogView::endLines() {
+  // Trailing dividers have no next message: they go with the last.
+  for (auto& r : refs_) r.msg = std::min<int32_t>(r.msg, std::max<int32_t>(0, int32_t(ids_.size()) - 1));
+  place();
+}
+
+const DisplayLine* LogView::lineAt(int i) const {
+  const int k = i - winFrom_;
+  if (!winValid_ || k < 0 || k >= static_cast<int>(lines_.size())) return nullptr;
+  return &lines_[k];
+}
+
 void LogView::unpin() {
   if (pin_ < 0) return;
-  if (!cursorShown() && !lines_.empty()) {
-    int i = std::min(pin_ + std::max(lastHeight_, 1), static_cast<int>(lines_.size())) - 1;
-    while (i > 0 && lines_[i].divider) --i;
-    if (!lines_[i].divider) selected_ = lines_[i].messageId;
+  if (!cursorShown() && lineCount() > 0) {
+    int i = std::min(pin_ + std::max(lastHeight_, 1), lineCount()) - 1;
+    while (i > 0 && refs_[i].divider) --i;
+    if (!refs_[i].divider) selected_ = idOf(i);
     pin_ = -1;
   }
 }
 
 void LogView::up() {
   unpin();
-  int from = following() ? static_cast<int>(lines_.size()) : firstLineOf(selected_);
+  int from = following() ? lineCount() : firstLineOf(selected_);
   for (int i = from - 1; i >= 0; --i) {
-    if (!lines_[i].divider && lines_[i].messageId != selected_) {
-      selected_ = lines_[i].messageId;
+    if (!refs_[i].divider && idOf(i) != selected_) {
+      selected_ = idOf(i);
       return;
     }
   }
@@ -125,9 +146,9 @@ void LogView::up() {
 void LogView::down() {
   if (following()) return;
   unpin();
-  for (size_t i = lastLineOf(selected_) + 1; i < lines_.size(); ++i) {
-    if (!lines_[i].divider) {
-      selected_ = lines_[i].messageId;
+  for (int i = lastLineOf(selected_) + 1; i < lineCount(); ++i) {
+    if (!refs_[i].divider) {
+      selected_ = idOf(i);
       return;
     }
   }
@@ -135,8 +156,8 @@ void LogView::down() {
 }
 
 bool LogView::atTop() const {
-  for (const auto& l : lines_)
-    if (!l.divider) return !following() && l.messageId == selected_;
+  for (int i = 0; i < lineCount(); ++i)
+    if (!refs_[i].divider) return !following() && idOf(i) == selected_;
   return true;
 }
 
@@ -148,11 +169,11 @@ void LogView::render(Grid& g, int top, int bottom, int rightReserve, const Theme
 
   int start, end;
   if (following()) {
-    end = static_cast<int>(lines_.size());
+    end = lineCount();
     start = std::max(0, end - height);
   } else {
     int first = firstLineOf(selected_), last = lastLineOf(selected_);
-    const int n = static_cast<int>(lines_.size());
+    const int n = lineCount();
     if (pin_ >= 0) {
       pin_ = std::min(pin_, std::max(0, n - height));
       const bool inView = first >= pin_ && last < pin_ + height;
@@ -172,6 +193,21 @@ void LogView::render(Grid& g, int top, int bottom, int rightReserve, const Theme
   }
   lastStart_ = start;
   lastHeight_ = height;
+  // Windowed: lay out just the messages on screen, with the dividers before
+  // them. Kept, into lines_; otherwise each line is drawn as it comes.
+  const bool stream = windowed_ && !keepWindow_ && start < end && fill_ && !ids_.empty();
+  int from = start;
+  if (windowed_ && start < end) {
+    const int fromMsg = refs_[start].msg;
+    while (from > 0 && refs_[from - 1].msg == fromMsg) --from;
+    const bool have = winValid_ && from >= winFrom_ && end <= winFrom_ + static_cast<int>(lines_.size());
+    if (!stream && !have && fill_ && !ids_.empty()) {
+      std::vector<DisplayLine>().swap(lines_);
+      fill_(ids_[fromMsg], ids_[refs_[end - 1].msg], [this](DisplayLine&& l) { lines_.push_back(std::move(l)); });
+      winFrom_ = from;
+      winValid_ = true;
+    }
+  }
 
   int selTop = -1, selBottom = -1;
   if (activeTaps()) activeTaps()->setList(ListId::Log, -1, messageCount(), false, true);
@@ -182,31 +218,45 @@ void LogView::render(Grid& g, int top, int bottom, int rightReserve, const Theme
       for (int c = 0; c < width; ++c) g.put(c, row, U' ', t.fg, t.bg);
       continue;
     }
-    const DisplayLine& l = lines_[idx];
-    if (activeTaps() && !l.divider) {
+    const LineRef ref = refs_[idx];
+    if (activeTaps() && !ref.divider) {
       Target tt;
       tt.kind = TargetKind::Row;
       tt.list = ListId::Log;
-      tt.index = static_cast<int16_t>(ordinalOf(l.messageId));
+      tt.index = static_cast<int16_t>(ref.msg);
       activeTaps()->addCells(0, row, width - 1, row, tt);
     }
-    bool sel = !following() && !l.divider && l.messageId == selected_;
+    bool sel = !following() && !ref.divider && ids_[ref.msg] == selected_;
     if (sel) {
       if (selTop < 0) selTop = row;
       selBottom = row;
     }
-    uint16_t bg = l.mentionTint ? t.mentionBg : t.bg;
-    int col = 0;
-    for (const auto& s : l.spans) {
+    const DisplayLine* lp = stream ? nullptr : lineAt(idx);
+    drawLine(g, row, width, t, lp);
+  }
+  if (stream) {
+    int idx = from;
+    fill_(ids_[refs_[start].msg], ids_[refs_[end - 1].msg], [&](DisplayLine&& l) {
+      if (idx >= start && idx < end) drawLine(g, top + idx - start, width, t, &l);
+      ++idx;
+    });
+  }
+  if (selTop >= 0 && width > 0 && cursorShown()) g.outline(0, selTop, width - 1, selBottom, t.selectBg);
+  for (int r = top; r < bottom; ++r) g.put(barCol, r, U' ', t.fg, t.bg);
+  drawScrollBar(g, barCol, top, bottom, lineCount(), height, start, t, t.bg);
+}
+
+void LogView::drawLine(Grid& g, int row, int width, const Theme& t, const DisplayLine* lp) {
+  const uint16_t bg = lp && lp->mentionTint ? t.mentionBg : t.bg;
+  int col = 0;
+  if (lp) {
+    for (const auto& s : lp->spans) {
       const int n = g.putText(col, row, s.text, s.fg, bg, width - col);
       if (s.bold) g.embolden(col, col + n - 1, row);
       col += n;
     }
-    for (; col < width; ++col) g.put(col, row, U' ', t.fg, bg);
   }
-  if (selTop >= 0 && width > 0 && cursorShown()) g.outline(0, selTop, width - 1, selBottom, t.selectBg);
-  for (int r = top; r < bottom; ++r) g.put(barCol, r, U' ', t.fg, t.bg);
-  drawScrollBar(g, barCol, top, bottom, static_cast<int>(lines_.size()), height, start, t, t.bg);
+  for (; col < width; ++col) g.put(col, row, U' ', t.fg, bg);
 }
 
 }  // namespace rc

@@ -1,6 +1,7 @@
 #include <cstdlib>
 #include <unity.h>
 
+#include <deque>
 #include <string>
 #include <vector>
 
@@ -478,6 +479,89 @@ void test_log_tap_select_holds_the_view() {
   v.up();
   v.render(g, 0, 4, 0, T());
   TEST_ASSERT_EQUAL_STRING("line4", rowText(g, 0, 0, 5).c_str());
+}
+
+static CircMessage roomMsg(int i, int64_t ts) {
+  CircMessage m;
+  m.id = "id" + std::to_string(i);
+  m.username = i % 3 ? "ann" : "bob";
+  m.content = std::string(i % 4 == 0 ? "a longer message that wraps over two or three rows #" : "short #") +
+              std::to_string(i);
+  m.timestamp = ts;
+  return m;
+}
+
+// Streams a room into a windowed LogView, as RoomScreen does.
+static void streamRoom(LogView& v, const std::deque<CircMessage>& d, const LayoutOptions& o, bool keep) {
+  v.beginLines(
+      [&d, o](const std::string& first, const std::string& last, const LogView::Out& out) {
+        size_t a = 0, b = 0;
+        for (size_t i = 0; i < d.size(); ++i) {
+          if (d[i].id == first) a = i;
+          if (d[i].id == last) b = i + 1;
+        }
+        layoutRoomEach(d, o, a, b, out);
+      },
+      keep);
+  layoutRoomEach(d, o, 0, d.size(), [&](DisplayLine&& l) { v.addLine(l); });
+  v.endLines();
+}
+
+static std::string screen(const Grid& g) {
+  std::string out;
+  for (int r = 0; r < g.rows(); ++r) out += rowText(g, r) + "\n";
+  return out;
+}
+
+void test_log_windowed_matches_set_lines() {
+  setenv("TZ", "UTC0", 1);
+  tzset();
+  std::deque<CircMessage> d;
+  for (int i = 10; i < 30; ++i) d.push_back(roomMsg(i, 1761400920000LL + (i >= 20 ? 86400000LL : 0) + i * 60000));
+  LayoutOptions o;
+  o.cols = 29;
+  for (bool keep : {false, true}) {
+    LogView whole, win;
+    whole.setLines(layoutRoom(d, o));
+    streamRoom(win, d, o, keep);
+    Grid a(30, 8), b(30, 8);
+    auto same = [&]() {
+      whole.render(a, 0, 8, 0, T());
+      win.render(b, 0, 8, 0, T());
+      TEST_ASSERT_EQUAL_STRING(screen(a).c_str(), screen(b).c_str());
+      TEST_ASSERT_EQUAL_STRING(whole.selectedId().c_str(), win.selectedId().c_str());
+      TEST_ASSERT_EQUAL(whole.atTop(), win.atTop());
+      TEST_ASSERT_EQUAL(whole.messageCount(), win.messageCount());
+    };
+    same();
+    for (int i = 0; i < 25; ++i) {
+      whole.up();
+      win.up();
+      same();
+    }
+    for (int i = 0; i < 7; ++i) {
+      whole.down();
+      win.down();
+      same();
+    }
+    // Older history loading above keeps the view on the same message.
+    for (int i = 9; i >= 0; --i) d.push_front(roomMsg(i, 1761400920000LL - 86400000LL + i * 60000));
+    whole.setLines(layoutRoom(d, o));
+    streamRoom(win, d, o, keep);
+    same();
+    TEST_ASSERT_TRUE(whole.selectMessage(4));
+    TEST_ASSERT_TRUE(win.selectMessage(4));
+    same();
+    for (int i = 0; i < 3; ++i) {
+      whole.down();
+      win.down();
+      same();
+    }
+    whole.follow();
+    win.follow();
+    same();
+    d.erase(d.begin(), d.begin() + 10);
+  }
 }
 
 void test_entry_list_tap_select_holds_the_view() {
@@ -1768,6 +1852,7 @@ int main() {
   RUN_TEST(test_entry_list_scrolls);
   RUN_TEST(test_entry_list_tap_select_holds_the_view);
   RUN_TEST(test_log_tap_select_holds_the_view);
+  RUN_TEST(test_log_windowed_matches_set_lines);
   RUN_TEST(test_entry_list_big_heads);
   RUN_TEST(test_entry_list_wraps);
   RUN_TEST(test_text_area_newlines_and_cap);

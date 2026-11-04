@@ -624,6 +624,50 @@ void RoomScreen::onEvent(const Event& e) {
 
 // ---- drawing ----
 
+LayoutOptions RoomScreen::logOptions(const std::string& self, const std::set<std::string>& revealed) const {
+  LayoutOptions o;
+  // Every text size lays messages out as Compact does: a time on each
+  // message and a divider per day.
+  o.size = TextSize::Compact;
+  // Wrapped lines start under the nick at every size.
+  o.indentToNick = true;
+  o.cols = cols_;
+  o.selfUsername = self;
+  o.muted = &muted_;
+  o.revealed = &revealed;
+  o.theme = theme_;
+  return o;
+}
+
+// "sending…" and the text, under the log until SendDone.
+std::vector<DisplayLine> RoomScreen::pendingLines() const {
+  std::vector<DisplayLine> lines;
+  if (pending_.empty()) return lines;
+  for (const auto& w : wrapText(U"sending\u2026 " + pending_, cols_, cols_)) {
+    DisplayLine l;
+    l.spans.push_back({w, theme_->dim});
+    lines.push_back(std::move(l));
+  }
+  return lines;
+}
+
+void RoomScreen::fillLog(const std::string& first, const std::string& last, const LogView::Out& out) {
+  if (!first.empty()) {
+    lockedChat().with([&](ChatState& s) {
+      const auto& msgs = s.store.messages();
+      size_t a = msgs.size(), b = msgs.size();
+      for (size_t i = 0; i < msgs.size(); ++i) {
+        if (msgs[i].id == first) a = i;
+        if (!last.empty() && msgs[i].id == last) b = i + 1;
+      }
+      if (a < b) layoutRoomEach(msgs, logOptions(s.self, s.revealed), a, b, out);
+    });
+  }
+  if (last.empty())
+    for (auto& l : pendingLines()) out(std::move(l));
+}
+
+
 void RoomScreen::render(Grid& g, const Theme& t, int64_t) {
   // The input sits above the hint row.
   const int inputRow = g.rows() - 2;
@@ -679,26 +723,17 @@ void RoomScreen::render(Grid& g, const Theme& t, int64_t) {
     theme_ = &t;
     version_ = s.store.version();
     cols_ = logCols;
-    LayoutOptions o;
-    // Every text size lays messages out as Compact does: a time on each
-    // message and a divider per day.
-    o.size = TextSize::Compact;
-    // Wrapped lines start under the nick at every size.
-    o.indentToNick = true;
-    o.cols = logCols;
-    o.selfUsername = s.self;
-    o.muted = &muted_;
-    o.revealed = &s.revealed;
-    o.theme = &t;
-    std::vector<DisplayLine> lines = layoutRoom(s.store.messages(), o);
-    if (!pending_.empty()) {
-      for (const auto& w : wrapText(U"sending\u2026 " + pending_, logCols, logCols)) {
-        DisplayLine l;
-        l.spans.push_back({w, t.dim});
-        lines.push_back(std::move(l));
-      }
-    }
-    log_.setLines(std::move(lines));
+    // Only which message each line belongs to is kept: the log lays out
+    // just what is on screen when it draws.
+    const LayoutOptions o = logOptions(s.self, s.revealed);
+    log_.beginLines(
+        [this](const std::string& first, const std::string& last, const LogView::Out& out) {
+          fillLog(first, last, out);
+        },
+        !RC_LOW_MEM);
+    layoutRoomEach(s.store.messages(), o, 0, s.store.size(), [&](DisplayLine&& l) { log_.addLine(l); });
+    for (auto& l : pendingLines()) log_.addLine(l);
+    log_.endLines();
 
   });
 

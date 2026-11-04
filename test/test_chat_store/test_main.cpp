@@ -55,6 +55,15 @@ void test_cap_drops_oldest() {
   TEST_ASSERT_EQUAL(20, s.oldestTimestamp());
 }
 
+void test_full_at_cap() {
+  ChatStore s(2);
+  TEST_ASSERT_FALSE(s.full());
+  s.upsert(msg("a", 10));
+  TEST_ASSERT_FALSE(s.full());
+  s.upsert(msg("b", 20));
+  TEST_ASSERT_TRUE(s.full());
+}
+
 void test_remove() {
   ChatStore s;
   s.upsert(msg("a", 10));
@@ -117,6 +126,7 @@ int main() {
   RUN_TEST(test_upsert_orders);
   RUN_TEST(test_upsert_dedupes);
   RUN_TEST(test_cap_drops_oldest);
+  RUN_TEST(test_full_at_cap);
   RUN_TEST(test_remove);
   RUN_TEST(test_version_bumps);
   RUN_TEST(test_replace_all_dedupes_and_sorts);

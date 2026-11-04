@@ -175,12 +175,14 @@ void serviceDisplay() {
   if (!redraw || sleeping || !policy.pending()) return;
   const uint32_t now = millis();
   if (now - lastInput > rc::kEinkTypingMaxMs && now - lastRefreshMs < kPassiveGapMs) return;
-  // A big change only turns a partial into a full: check before drawing.
   if (policy.due(now, lastInput, false) == rc::EinkRefresh::None) return;
   if (epd.ready()) memset(shownHash, 0, sizeof shownHash);
   pass(1);
   const int diff = changedBands();
-  const rc::EinkRefresh r = policy.due(now, lastInput, diff * 3 > kBands);
+  // No full refresh for a big change: a scroll changes most bands, and a full
+  // takes 1.9 s against a partial's 0.85 s. The policy's full every
+  // kEinkFullEvery partials clears the ghosting.
+  const rc::EinkRefresh r = policy.due(now, lastInput, false);
   if (r == rc::EinkRefresh::Partial && diff == 0) {
     policy.drop();
     return;

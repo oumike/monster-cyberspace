@@ -158,7 +158,11 @@ SDMMC. No GPS, LoRa or RTC; `wakeHint()` is R2.
 `src/hal/x4/` is the Xteink X4 (from rhino-moshi's `include/boards/x4.h`,
 `panel_x4.cpp`, `buttons.cpp`, `power.cpp`): an ESP32-C3 with no PSRAM, so
 the renderer draws in strips (`ui/renderer`, `sys/mem`) and `RC_CHAT_CAP` /
-`RC_MAX_REPLIES` shrink the caches. A GDEQ0426T82 e-paper driven through the
+`RC_MAX_REPLIES` shrink the caches (20 messages: a TLS handshake can take
+~55 KB). With `RC_LOW_MEM` the room log keeps no laid-out lines: it indexes
+which message each line belongs to and lays out only what is on screen,
+drawing each line as it comes (`LogView::beginLines`, `layoutRoomEach`), and
+`loadOlder` stops below 68 KB free. A GDEQ0426T82 e-paper driven through the
 bare GxEPD2 driver from a 48 KB 1-bit frame (portrait, packed turned to the
 native landscape), refreshed by `ui/eink`; buttons on two ADC ladders
 (`input/keymap_x4`) sampled by a 5 ms task; battery on GPIO0, latch GPIO13,
@@ -316,7 +320,7 @@ speaker, C6 Wi-Fi, GPS, RTC, gauge and SD await the hardware check
 (docs/TESTING.md). Also on 2026-11-02: the T-Deck Pro draws 6 px in from the
 left (`PANEL_LEFT_INSET` in `pins_tdeck_pro.h`, `packMono` x0) so the bezel
 doesn't cover text; its check is open too.
-The native suite is green: 707/707
+The native suite is green: 716/716
 (`pio test -e native`), and `scripts/build-upload-monitor.sh -B` builds all
 twelve firmware envs.
 

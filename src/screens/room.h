@@ -81,6 +81,9 @@ class RoomScreen : public Screen {
   bool typingOn_ = false;       // we told the server we're typing
   int64_t lastTypingPost_ = 0;
   LogView log_;
+  LayoutOptions logOptions(const std::string& self, const std::set<std::string>& revealed) const;
+  std::vector<DisplayLine> pendingLines() const;
+  void fillLog(const std::string& first, const std::string& last, const LogView::Out& out);
   InputLine input_;
   SpellStrip spell_;
   Drawer drawer_;

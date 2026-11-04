@@ -25,6 +25,8 @@ class ChatStore {
 
   const std::deque<CircMessage>& messages() const { return msgs_; }
   size_t size() const { return msgs_.size(); }
+  // At the cap: an older message would be dropped again at once.
+  bool full() const { return msgs_.size() >= cap_; }
   // -1 when empty.
   int64_t newestTimestamp() const;
   int64_t oldestTimestamp() const;

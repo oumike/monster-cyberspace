@@ -362,7 +362,7 @@ is open.
 - [ ] Wi-Fi setup (nothing saved): the AP is named `Monster-Cyberspace-CyberDeckPlus` and `http://192.168.4.1` loads
 - [ ] The flasher (GitHub Pages and monster.sumat.org) lists "Attaky Cyber Deck Plus" and flashes the release image; OTA finds `cyber-deck-plus` images
 
-**Feed New entry row, connection state and Friends (any board, PR #6):**
+**Feed New entry row, connection state and Following (any board, PR #6):**
 
 - [ ] The Feed opens with **+ New entry** selected; Centre (or a tap) opens New entry; Down moves to the newest entry; the empty, loading and offline lines show under the row, not over it, in every text size
 - [ ] On the X4 the row says to write from web config instead of opening the composer
@@ -371,8 +371,8 @@ is open.
 - [ ] Signed out (Log out, Wi-Fi up), the marker is ✕, not ◌
 - [ ] In a room, the marker goes ◌ while the stream reconnects and ● once it's live
 - [ ] Entry: Tab (on keyboard boards) opens the entry menu, also with text in the line, and the text stays
-- [ ] Friends: Add friend on someone's message, then the menu says Remove friend, also after a restart; Remove friend takes them off; your own messages offer neither; the same in a C-Mail conversation
-- [ ] Home → Friends: with no friends it says "no friends yet…" and sends nothing; with two friends it lists both's entries newest first, filling in friend by friend; opening an entry and Back shows the list without reloading; Refresh reloads it; Back goes Home; the tile reads "N friends"
+- [ ] Messages no longer offer Add friend / Remove friend (device friends were removed)
+- [ ] Home → Following: lists recent Feed entries by people you follow (as on the website), newest first; Down at the end (⋯ Load older on touch) reads further back; opening an entry and Back shows the list without reloading; Refresh reloads it; after following or unfollowing someone the next visit reloads; Back goes Home
 
 **Feed Topics (any board with the Feed; the demo build first):**
 

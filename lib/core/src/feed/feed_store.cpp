@@ -1,6 +1,5 @@
 #include "feed/feed_store.h"
 
-#include <algorithm>
 #include <unordered_set>
 #include <utility>
 
@@ -151,19 +150,6 @@ void FeedStore::setSideList(std::vector<Entry> entries, const std::string& curso
   side_.insert(side_.end(), std::make_move_iterator(entries.begin()),
                std::make_move_iterator(entries.end()));
   sideCursor_ = cursor;
-}
-
-void FeedStore::mergeSideList(std::vector<Entry> page, size_t keep) {
-  for (auto& e : page) {
-    if (std::any_of(side_.begin(), side_.end(), [&](const Entry& h) { return h.id == e.id; })) continue;
-    cutPreview(e);
-    side_.push_back(std::move(e));
-  }
-  std::stable_sort(side_.begin(), side_.end(),
-                   [](const Entry& a, const Entry& b) { return a.createdMs > b.createdMs; });
-  if (side_.size() > keep) side_.resize(keep);
-  sideReplyIds_.assign(side_.size(), std::string());
-  sideCursor_.clear();
 }
 
 void FeedStore::clear() {

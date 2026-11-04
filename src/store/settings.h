@@ -33,8 +33,6 @@ void saveSpellCheck(bool on);
 // The device's Settings and web config: buzz on a tap and on an alert
 // (board::hasHaptic).
 void saveVibrate(bool tap, bool alert);
-// Friends added from a message's menu, kept on the device.
-void saveFriends(const std::vector<std::string>& friends);
 // Web config: the canned replies (config/phrases.h).
 void savePhrases(const std::vector<std::string>& phrases);
 // The device's Settings and web config: serve web config on the joined network.

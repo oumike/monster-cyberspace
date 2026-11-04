@@ -61,6 +61,7 @@ void fillEntry(JsonVariantConst d, Entry& e) {
   e = Entry{};
   e.id = str(d["postId"]);
   e.author = str(d["authorUsername"]);
+  e.authorId = str(d["authorId"]);
   e.title = str(d["title"]);
   e.slug = str(d["slug"]);
   e.contentWarning = str(d["contentWarning"]);

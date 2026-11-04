@@ -9,7 +9,7 @@ std::vector<HomeItem> homeItems(const Features& f) {
   out.push_back(HomeItem::Rooms);
   if (f.cmail) out.push_back(HomeItem::Cmail);
   if (f.feed) out.push_back(HomeItem::Feed);
-  if (f.feed && f.people) out.push_back(HomeItem::Friends);
+  if (f.feed && f.people) out.push_back(HomeItem::Following);
   if (f.guilds) out.push_back(HomeItem::Guilds);
   if (f.people) out.push_back(HomeItem::Profile);
   out.push_back(HomeItem::Settings);

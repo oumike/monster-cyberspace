@@ -35,4 +35,11 @@ std::string FollowIndex::followIdFor(const std::string& userId) const {
   return it == ids_.end() ? std::string() : it->second;
 }
 
+std::vector<std::string> FollowIndex::followedIds() const {
+  std::vector<std::string> out;
+  out.reserve(ids_.size());
+  for (const auto& kv : ids_) out.push_back(kv.first);
+  return out;
+}
+
 }  // namespace rc

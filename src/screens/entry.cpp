@@ -102,7 +102,7 @@ void EntryScreen::leaveToList() {
   if (router::backToOrigin()) return;
   const router::Place base = router::lastBase();
   if (base.id == router::Id::Guild || base.id == router::Id::UserPosts ||
-      base.id == router::Id::Topic || base.id == router::Id::Friends)
+      base.id == router::Id::Topic || base.id == router::Id::Following)
     router::go(base.id, base.arg);
   else router::go(router::Id::FeedList);
 }

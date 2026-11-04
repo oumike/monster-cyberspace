@@ -25,6 +25,8 @@ class FollowIndex {
 
   // "" when not followed (or not loaded that far).
   std::string followIdFor(const std::string& userId) const;
+  // The user ids I follow, as far as loaded.
+  std::vector<std::string> followedIds() const;
   bool loaded() const { return loaded_; }
   // Every page is in: a missing id means "not following".
   bool complete() const { return loaded_ && cursor_.empty() && !full_; }

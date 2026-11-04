@@ -109,7 +109,7 @@ Every screen works by touch. Touch never wakes a dark screen.
 - **Scroll:** drag a list or log to move line by line; swipe up or down to
   move a page. Dragging past the end of a list stops there.
 - **Home** shows nine large tiles: unread on the top row on its own, then
-  two to a row messages, rooms, c-mail, feed, friends, guilds, profile and
+  two to a row messages, rooms, c-mail, feed, following, guilds, profile and
   settings. On a build without some of them, **unread** takes the top row on
   its own only when that leaves the rest filling their rows, so no tile is left
   alone at the bottom. The profile tile shows `@you` and opens your own
@@ -489,15 +489,10 @@ The keyboard always types into the input line at the bottom.
 - **Scroll:** Up/Down highlight messages. Up at the top loads older history.
   Down past the newest message returns you to typing.
 - **Message menu:** Centre on a highlighted message. It has Reply (`@name `),
-  Add friend / Remove friend (on someone else's message), Reveal (spoilers),
+  Reveal (spoilers),
   Show full (long or art messages), Show link (as text and a QR code), Delete
   (your own, with confirmation) and Report (with confirmation and an optional
   reason).
-- **Friends:** Add friend keeps that name on this device (the server has no
-  friends list; it isn't the same as following someone, see People). The
-  list is saved with the device's settings. The same item, Remove friend,
-  takes them off again. C-Mail conversations offer it too. Home's **Friends**
-  lists their Feed entries (see [Friends' entries](#friends-entries)).
 - **Cursor:** Left/Right move the text cursor.
 - **Who's here drawer:** Right with the cursor at the end of the line opens
   it. Up/Down pick a person, Centre opens their menu (mention, mute or
@@ -525,7 +520,7 @@ C-Mail is private, one-to-one messaging. Open it with Fn under Home, or
 - **A conversation** works like a room, titled `@name`: type and press Centre
   to send. Scrolling, the reader and links work the same way. There is no
   drawer. Its menu (Centre on an empty line) has Mark read and Close
-  conversation. The message menu has Add friend / Remove friend, Reveal,
+  conversation. The message menu has Reveal,
   Show full and Show link; C-Mail has no reply, delete or report.
 - **Typing:** while you type, the other person sees "…is typing". The device
   tells the server only as you press keys, and clears it when you empty the
@@ -771,16 +766,17 @@ in the text colour, and yours in the dim one. QR codes stay
 black on white in every theme. The T-Deck Pro's e-paper has one theme of its
 own, black on white with outlined selections, and no Theme item.
 
-## Friends' entries
+## Following
 
-**Friends** on Home (after Feed; builds with the Feed and People) lists the
-Feed entries of the friends you keep on this device (Add friend in a chat
-message's menu), newest first. It loads each friend's latest page, for up to
-20 friends, and keeps the newest 50 entries. Open one like a Feed entry;
-Back returns to the list without loading it again. Ctrl or ⋯ offers Refresh
-and text size; Back from the list goes Home. With no friends it says
-`no friends yet: Add friend in a message's menu`. A friend whose account is
-gone is skipped.
+**Following** on Home (after Feed; builds with the Feed and People) lists the
+Feed entries by people you follow on cyberspace.online (follow from a profile,
+here or on the website), newest first. The API has no such list, so it reads
+the Feed a page at a time (up to 8 pages of 20) and keeps your follows'
+entries, stopping once it has 10. Down at the end, or ⋯ Load older on touch,
+reads further back; with none found yet it says `none in recent entries`.
+Open an entry like a Feed entry; Back returns to the list without reading it
+again. Ctrl or ⋯ offers Refresh and text size; Back from the list goes Home.
+A follow or unfollow makes the next visit read it afresh.
 
 ## Unread
 

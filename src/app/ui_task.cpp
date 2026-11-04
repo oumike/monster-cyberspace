@@ -359,7 +359,7 @@ void handleEvent(const Event& e) {
            cur == Id::GuildList || cur == Id::Guild || cur == Id::Members ||
            cur == Id::Profile || cur == Id::UserPosts ||
            cur == Id::Notifications || cur == Id::Topics || cur == Id::Topic ||
-           cur == Id::Friends))
+           cur == Id::Following))
         router::go(Id::Setup);
       if (e.ok && e.code != 0 && (cur == Id::Setup || cur == Id::LoginForm)) router::go(Id::Home);
       break;

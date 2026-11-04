@@ -21,7 +21,7 @@
 namespace rc {
 
 namespace {
-enum Item { kMessages, kUnread, kRooms, kCmail, kFeed, kFriends, kGuilds, kProfile, kSettings };
+enum Item { kMessages, kUnread, kRooms, kCmail, kFeed, kFollowing, kGuilds, kProfile, kSettings };
 
 Item toItem(HomeItem h) {
   switch (h) {
@@ -30,7 +30,7 @@ Item toItem(HomeItem h) {
     case HomeItem::Rooms: return kRooms;
     case HomeItem::Cmail: return kCmail;
     case HomeItem::Feed: return kFeed;
-    case HomeItem::Friends: return kFriends;
+    case HomeItem::Following: return kFollowing;
     case HomeItem::Guilds: return kGuilds;
     case HomeItem::Profile: return kProfile;
     case HomeItem::Settings: return kSettings;
@@ -137,8 +137,8 @@ void HomeScreen::openItem(int item) {
     }
 #endif
 #if RC_FEAT_PEOPLE && RC_FEAT_FEED
-    case kFriends:
-      router::go(router::Id::Friends);
+    case kFollowing:
+      router::go(router::Id::Following);
       break;
 #endif
 #if RC_FEAT_GUILDS
@@ -269,11 +269,8 @@ void HomeScreen::renderTiles(Grid& g, const Theme& t, const std::vector<TileRect
         return {U"c-mail", utf8ToU32(std::to_string(cmail) + " unread"), cmail > 0};
       case kFeed:
         return {U"feed", utf8ToU32(std::to_string(feed) + " unread"), feed > 0};
-      case kFriends: {
-        const size_t n = a.cfg.friends.size();
-        return {U"friends", n ? utf8ToU32(std::to_string(n) + (n == 1 ? " friend" : " friends")) : U"",
-                false};
-      }
+      case kFollowing:
+        return {U"following", U"", false};
       case kGuilds:
         return {U"guilds", U"", false};
       case kProfile:
@@ -455,7 +452,7 @@ void HomeScreen::render(Grid& g, const Theme& t, int64_t) {
       case kRooms: rows.push_back(ListItem{U"Rooms", U""}); break;
       case kCmail: rows.push_back(ListItem{U"C-Mail", U""}); break;
       case kFeed: rows.push_back(ListItem{U"Feed", U""}); break;
-      case kFriends: rows.push_back(ListItem{U"Friends", U""}); break;
+      case kFollowing: rows.push_back(ListItem{U"Following", U""}); break;
       case kGuilds: rows.push_back(ListItem{U"Guilds", U""}); break;
       case kProfile: rows.push_back(ListItem{U"Profile", U""}); break;
       case kSettings: rows.push_back(ListItem{U"Settings", U""}); break;

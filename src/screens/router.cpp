@@ -49,7 +49,7 @@ ProfileScreen profile;
 FeedListScreen userPosts{FeedListScreen::Kind::User};
 #endif
 #if RC_FEAT_PEOPLE && RC_FEAT_FEED
-FeedListScreen friendsPosts{FeedListScreen::Kind::Friends};
+FeedListScreen followingPosts{FeedListScreen::Kind::Following};
 #endif
 #if RC_FEAT_UNREAD
 NotificationsScreen notifications;
@@ -104,7 +104,7 @@ Screen* lookup(Id id) {
     case Id::UserPosts: return &userPosts;
 #endif
 #if RC_FEAT_PEOPLE && RC_FEAT_FEED
-    case Id::Friends: return &friendsPosts;
+    case Id::Following: return &followingPosts;
 #endif
 #if RC_FEAT_UNREAD
     case Id::Notifications: return &notifications;

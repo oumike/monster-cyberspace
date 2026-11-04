@@ -189,7 +189,7 @@ class FakeFeedSource : public FeedSource {
   void follow(const Command& c, bool on);
   void poke(const Command& c);
   void openUserPosts(const std::string& username);
-  void openFriendsPosts(const std::string& names);
+  void openFollowingPosts();
   void openTopics();
   void openTopic(const std::string& name);
 
@@ -464,7 +464,7 @@ void FakeFeedSource::command(const Command& c) {
       if (c.n == 1) post(EvtType::SideListUpdated);  // one page
       else openUserPosts(c.a);
       break;
-    case CmdType::OpenFriendsPosts: openFriendsPosts(c.a); break;
+    case CmdType::OpenFollowingPosts: openFollowingPosts(); break;
     default: break;
   }
 }
@@ -1182,18 +1182,17 @@ void FakeFeedSource::openUserPosts(const std::string& username) {
   post(EvtType::SideListUpdated);
 }
 
-void FakeFeedSource::openFriendsPosts(const std::string& names) {
+// Following: the scripted entries by the users followed here (ids "id-<name>").
+void FakeFeedSource::openFollowingPosts() {
   std::vector<Entry> entries;
   {
     std::lock_guard<std::mutex> g(mu_);
-    const std::string padded = "\n" + names + "\n";
     for (const Entry& e : entries_)
-      if (padded.find("\n" + e.author + "\n") != std::string::npos) entries.push_back(e);
+      if (followed_.count("id-" + e.author)) entries.push_back(e);
   }
   lockedFeed().with([&](FeedState& s) {
-    s.store.setSideList({}, "", false);
-    s.store.mergeSideList(std::move(entries), 50);
-    s.store.setSideTag(friendsSideTag(names));
+    s.store.setSideList(std::move(entries), "", false);
+    s.store.setSideTag(kFollowingSideTag);
     s.loading = false;
   });
   post(EvtType::SideListUpdated);

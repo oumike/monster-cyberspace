@@ -7,7 +7,7 @@
 namespace rc {
 
 struct Entry {
-  std::string id, author, title, slug, contentWarning, body, guildSlug;
+  std::string id, author, authorId, title, slug, contentWarning, body, guildSlug;
   std::vector<std::string> topics, attachments;  // attachments as display text
   int64_t createdMs = -1;
   int replies = 0;

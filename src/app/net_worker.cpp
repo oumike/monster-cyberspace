@@ -717,7 +717,7 @@ class Worker {
     if (c.type == CmdType::OpenProfile) post(EvtType::ProfileUpdated, 0, "", false);
     if (c.type == CmdType::Follow || c.type == CmdType::Unfollow || c.type == CmdType::Poke)
       post(EvtType::PeopleWriteDone, 0, why, false);
-    if (c.type == CmdType::OpenUserPosts || c.type == CmdType::OpenFriendsPosts)
+    if (c.type == CmdType::OpenUserPosts || c.type == CmdType::OpenFollowingPosts)
       post(EvtType::SideListUpdated, 0, "", false);
     return false;
   }

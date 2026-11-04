@@ -62,7 +62,7 @@ enum class Id {
   Notifications,  // the Unread screen
   Topics,         // every topic, from the Feed's commands
   Topic,          // a topic's entries; arg = its name
-  Friends,        // the friends' entries (Home)
+  Following,      // entries by people I follow (Home)
 };
 
 struct Place {

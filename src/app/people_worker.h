@@ -10,7 +10,7 @@
 namespace rc {
 
 // The People side of the network task: profiles, follow, unfollow, poke and
-// a user's entries, and the friends' entries. Writes come only from commands; nothing is retried.
+// a user's entries, and the entries of people I follow. Writes come only from commands; nothing is retried.
 // There is no block endpoint: the blocked list is read from /users/me.
 class PeopleWorker {
  public:
@@ -23,7 +23,7 @@ class PeopleWorker {
  private:
   void openProfile(const std::string& username);
   // My following list, up to kFollowPages pages from where it left off.
-  void loadFollowing();
+  bool loadFollowing();
   // Re-reads the open profile after a write (its counts change); failures
   // are ignored, the write itself succeeded.
   void refreshProfile(const std::string& username);
@@ -31,8 +31,8 @@ class PeopleWorker {
   void unfollow(const Command& c);
   void poke(const Command& c);
   void openUserPosts(const std::string& username, bool append);
-  // The first page of each friend's entries, merged newest first.
-  void openFriendsPosts(const std::string& names);
+  // The Feed's entries by people I follow, newest first.
+  void openFollowingPosts(bool append);
 
   CsApi& api_;
 };

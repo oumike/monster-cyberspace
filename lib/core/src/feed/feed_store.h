@@ -64,9 +64,6 @@ class FeedStore {
   const std::vector<Entry>& sideList() const { return side_; }
   const std::vector<std::string>& sideReplyIds() const { return sideReplyIds_; }
   const std::string& sideCursor() const { return sideCursor_; }
-  // Friends: one friend's page merged into the side list, newest first,
-  // skipping held ids and keeping the newest `keep`. The cursor is cleared.
-  void mergeSideList(std::vector<Entry> page, size_t keep);
   // What the side list holds, for a screen that can skip reloading it: ""
   // after a setSideList that replaces it, until set again.
   void setSideTag(std::string tag) { sideTag_ = std::move(tag); }

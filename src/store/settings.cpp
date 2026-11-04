@@ -78,15 +78,6 @@ void load(rc::Settings& s) {
   s.theme = rc::themeFromIndex(p.getUChar("theme", 0));
   s.rotation = rc::rotationFromIndex(p.getUChar("rot", board::defaultRotation()));
   s.lastRoom = getStr(p, "room", s.lastRoom);
-  // Friends, one name per line: a username can't contain a newline.
-  const std::string frd = getStr(p, "friends", "");
-  for (size_t at = 0; at < frd.size();) {
-    size_t e = frd.find('\n', at);
-    std::string name = frd.substr(at, e == std::string::npos ? std::string::npos : e - at);
-    if (!name.empty()) s.friends.push_back(std::move(name));
-    if (e == std::string::npos) break;
-    at = e + 1;
-  }
   if (p.isKey("phrases")) s.phrases = rc::splitPhrases(getStr(p, "phrases", ""));
   s.webConfig = p.getBool("webcfg", true);
   s.idleSecs = p.getUInt("idlesecs", 300);
@@ -194,19 +185,6 @@ void saveNotifyTimeout(uint16_t secs) {
   p.end();
 }
 
-void saveFriends(const std::vector<std::string>& friends) {
-  Preferences p;
-  if (!p.begin(kNs, false)) return;
-  std::string joined;
-  for (const std::string& f : friends) {
-    if (f.empty()) continue;
-    if (!joined.empty()) joined += '\n';
-    joined += f;
-  }
-  p.putString("friends", joined.c_str());
-  p.end();
-}
-
 void saveSpellCheck(bool on) {
   Preferences p;
   if (!p.begin(kNs, false)) return;
@@ -276,7 +254,6 @@ void saveAll(const rc::Settings& s) {
   saveScreen(s.screenOnSecs, s.screenSaver);
   if (RC_FEAT_SPELL) saveSpellCheck(s.spellCheck);
   saveVibrate(s.tapVibrate, s.alertVibrate);
-  saveFriends(s.friends);
   saveNotifyLight(s.notifyLight);
   saveNotifyTimeout(s.notifyTimeoutSecs);
   savePhrases(s.phrases);

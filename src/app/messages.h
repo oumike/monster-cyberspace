@@ -69,12 +69,12 @@ enum class CmdType {
   Unfollow,              // a = userId, b = username
   Poke,                  // a = username
   OpenUserPosts,         // a = username; n = 1 to append the next page
-  OpenFriendsPosts,      // a = the friends' usernames, one per line (one page each)
+  OpenFollowingPosts,    // entries by people I follow; n = 1 for older ones
   MarkAllRead,           // Unread: every notification and unread C-Mail
 };
 
-// The side list's tag (FeedStore::sideTag) once it holds these friends' entries.
-inline std::string friendsSideTag(const std::string& names) { return "friends:" + names; }
+// The side list's tag (FeedStore::sideTag) while it holds the Following list.
+constexpr const char* kFollowingSideTag = "following";
 
 struct Command {
   CmdType type;

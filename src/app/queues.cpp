@@ -65,7 +65,7 @@ void refuseCommand(const Command& c) {
     case CmdType::OpenGuild:
     case CmdType::GuildThreadsMore:
     case CmdType::OpenUserPosts:
-    case CmdType::OpenFriendsPosts:
+    case CmdType::OpenFollowingPosts:
       postEvent(Event{EvtType::SideListUpdated, "", 0, false});
       break;
     case CmdType::OpenGuilds:

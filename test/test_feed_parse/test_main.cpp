@@ -28,6 +28,7 @@ void test_parse_feed_page() {
   TEST_ASSERT_EQUAL_STRING("p3", cursor.c_str());
   TEST_ASSERT_EQUAL_STRING("p1", v[0].id.c_str());
   TEST_ASSERT_EQUAL_STRING("tardibyte", v[0].author.c_str());
+  TEST_ASSERT_EQUAL_STRING("u1", v[0].authorId.c_str());
   TEST_ASSERT_EQUAL_STRING("first entry", v[0].body.c_str());
   TEST_ASSERT_EQUAL(2, v[0].replies);
   TEST_ASSERT_TRUE(v[0].isPublic);

@@ -54,7 +54,9 @@ boards and Cyberspace features come later.
 - **Never call the live Cyberspace API** (`api.cyberspace.online` or its
   Firebase RTDB) from tests, scripts, or an AI agent session. The API terms ban
   bots, scraping, and LLM-driven agents. Use the host-test fixtures. A human
-  runs the live checklist in `docs/TESTING.md`.
+  runs the live checklist in `docs/TESTING.md`. Reading the API docs
+  (`https://api.cyberspace.online/docs.md`) is allowed: do it whenever API
+  behaviour matters, without asking.
 - Every write the firmware makes must come from a user's key press. No
   automation, and no automatic retries of sends.
   One exception, on the Xteink X4 only (`board::webCompose()`): text sent
@@ -281,10 +283,11 @@ The Attaky Cyber Deck Plus (env `cyber_deck_plus`) came in PR #6 on
 2026-11-01 with three app changes for every board: a pinned "+ New entry" row
 first in the Feed, the connection state reaching live with no room open (and
 staying offline while signed out), and Tab opening the entry menu; plus
-Friends (Add/Remove friend in a message's menu, on the device only; its intent
-is an open question on the PR). Home's Friends item lists the friends' Feed
-entries (`FeedListScreen::Kind::Friends`, `CmdType::OpenFriendsPosts`, merged by
-`FeedStore::mergeSideList`; 20 friends, newest 50). The maintainer review moved the Core code both
+Friends (device-only; removed on 2026-11-03 to stay in line with
+cyberspace.online). Home's Following item lists Feed entries by people you
+follow (`FeedListScreen::Kind::Following`, `CmdType::OpenFollowingPosts`): the
+API can't list them or look users up by id, so `PeopleWorker` scans Feed pages
+for followed `authorId`s. The maintainer review moved the Core code both
 Attaky decks share into `src/hal/attaky/`; the Mesh Deck and Cyber Deck Plus
 hardware checks are open (docs/TESTING.md).
 The Fluffy Generator was added on 2026-10-31 (built without flashing; the

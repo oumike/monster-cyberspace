@@ -5,6 +5,7 @@
 
 #include "app/people_worker.h"
 
+#include <set>
 #include <utility>
 #include <vector>
 
@@ -18,8 +19,11 @@ namespace rc {
 namespace {
 
 constexpr int kFollowLimit = 50, kFollowPages = 10, kPostsLimit = 10;
-// Friends: one request per friend, so at most this many, and the newest kept.
-constexpr size_t kFriendsMax = 20, kFriendsKeep = 50;
+// Following: the API can't list entries by followed users and has no user
+// lookup by id, so Feed pages are scanned for their authorIds: up to
+// kScanPages pages of kScanLimit per load, stopping once kScanWant are found.
+constexpr int kScanLimit = 20, kScanPages = 8;
+constexpr size_t kScanWant = 10;
 
 void post(EvtType t, const std::string& text = "", int code = 0, bool ok = true) {
   postEvent(Event{t, text, code, ok});
@@ -52,7 +56,7 @@ bool PeopleWorker::isPeopleCommand(CmdType t) {
     case CmdType::Unfollow:
     case CmdType::Poke:
     case CmdType::OpenUserPosts:
-    case CmdType::OpenFriendsPosts:
+    case CmdType::OpenFollowingPosts:
       return true;
     default:
       return false;
@@ -66,7 +70,7 @@ void PeopleWorker::handle(const Command& c) {
     case CmdType::Unfollow: unfollow(c); break;
     case CmdType::Poke: poke(c); break;
     case CmdType::OpenUserPosts: openUserPosts(c.a, c.n == 1); break;
-    case CmdType::OpenFriendsPosts: openFriendsPosts(c.a); break;
+    case CmdType::OpenFollowingPosts: openFollowingPosts(c.n == 1); break;
     default: break;
   }
 }
@@ -107,7 +111,7 @@ void PeopleWorker::openProfile(const std::string& username) {
   post(EvtType::ProfileUpdated);
 }
 
-void PeopleWorker::loadFollowing() {
+bool PeopleWorker::loadFollowing() {
   std::string cursor = lockedPeople().with([](PeopleState& s) {
     return s.follows.loaded() ? s.follows.cursor() : std::string();
   });
@@ -116,14 +120,15 @@ void PeopleWorker::loadFollowing() {
     std::string next;
     // A failure leaves the index as it was; the screen then can't tell and
     // offers Follow (a 409 says "already following").
-    if (!api_.following(cursor, kFollowLimit, page, next).ok()) return;
+    if (!api_.following(cursor, kFollowLimit, page, next).ok()) return false;
     bool more = lockedPeople().with([&](PeopleState& s) {
       s.follows.addPage(page, next);
       return !s.follows.cursor().empty();
     });
-    if (!more) return;
+    if (!more) return true;
     cursor = next;
   }
+  return true;
 }
 
 void PeopleWorker::refreshProfile(const std::string& username) {
@@ -155,6 +160,7 @@ void PeopleWorker::follow(const Command& c) {
   } else {
     lockedPeople().with([&](PeopleState& s) { s.follows.set(c.a, followId); });
   }
+  lockedFeed().with([](FeedState& s) { s.store.setSideTag(""); });
   done("Following @" + c.b, true);
   refreshProfile(c.b);
 }
@@ -173,6 +179,7 @@ void PeopleWorker::unfollow(const Command& c) {
   }
   // 404: the follow was already gone.
   lockedPeople().with([&](PeopleState& s) { s.follows.erase(c.a); });
+  lockedFeed().with([](FeedState& s) { s.store.setSideTag(""); });
   done("Unfollowed @" + c.b, true);
   refreshProfile(c.b);
 }
@@ -229,48 +236,62 @@ void PeopleWorker::openUserPosts(const std::string& username, bool append) {
   post(EvtType::SideListUpdated);
 }
 
-void PeopleWorker::openFriendsPosts(const std::string& names) {
-  std::vector<std::string> friends;
-  for (size_t at = 0; at <= names.size() && friends.size() < kFriendsMax;) {
-    size_t nl = names.find('\n', at);
-    if (nl == std::string::npos) nl = names.size();
-    if (nl > at) friends.push_back(names.substr(at, nl - at));
-    at = nl + 1;
+void PeopleWorker::openFollowingPosts(bool append) {
+  std::string cursor;
+  if (append) {
+    cursor = lockedFeed().with([](FeedState& s) { return s.store.sideCursor(); });
+    if (cursor.empty()) {
+      post(EvtType::SideListUpdated);
+      return;
+    }
+  } else {
+    lockedFeed().with([](FeedState& s) { s.store.setSideList({}, "", false); });
   }
-  lockedFeed().with([](FeedState& s) { s.store.setSideList({}, "", false); });
   setFeedLoading(true);
-  int loaded = 0;
-  std::string err;
-  for (const std::string& name : friends) {
-    std::vector<Entry> entries;
-    std::string next;
-    int limit = kPostsLimit;
-    ApiError e;
+  auto fail = [&](const std::string& text) {
+    setFeedLoading(false);
+    banner(text);
+    post(EvtType::SideListUpdated, "", 0, false);
+  };
+  // Who I follow: loaded once per sign-in (a profile loads it too).
+  bool need = lockedPeople().with(
+      [](PeopleState& s) { return !s.follows.loaded() || !s.follows.cursor().empty(); });
+  if (need && !loadFollowing() &&
+      !lockedPeople().with([](PeopleState& s) { return s.follows.loaded(); }))
+    return fail("Couldn't load who you follow");
+  const std::vector<std::string> list =
+      lockedPeople().with([](PeopleState& s) { return s.follows.followedIds(); });
+  const std::set<std::string> ids(list.begin(), list.end());
+  std::vector<Entry> kept;
+  std::string next = ids.empty() ? std::string() : (append ? cursor : std::string());
+  ApiError e;
+  for (int i = 0; i < kScanPages && !ids.empty(); ++i) {
+    std::vector<Entry> page;
+    std::string after;
+    int limit = kScanLimit;
     for (;;) {
-      entries.clear();
-      e = api_.userPosts(name, "", limit, entries, next);
+      page.clear();
+      e = api_.feed(next, limit, page, after);
       if (e.code != "TOO_LARGE") break;
       limit = nextSmallerLimit(limit);
       if (limit <= 0) break;
     }
-    if (e.ok()) {
-      ++loaded;
-      lockedFeed().with([&](FeedState& s) { s.store.mergeSideList(std::move(entries), kFriendsKeep); });
-      post(EvtType::SideListUpdated);  // the list fills in friend by friend
-      continue;
-    }
-    // A renamed or deleted account, or entries too large: skip that friend.
-    if (e.http == 404 || e.code == "TOO_LARGE") continue;
-    err = errorText(e);
-    break;
+    if (!e.ok()) break;
+    for (Entry& en : page)
+      if (ids.count(en.authorId)) kept.push_back(std::move(en));
+    next = after;
+    if (next.empty() || kept.size() >= kScanWant) break;
   }
+  if (!e.ok() && kept.empty())
+    return fail(e.code == "TOO_LARGE" ? std::string("Too large to load") : errorText(e));
+  if (!e.ok()) banner(errorText(e));  // keep what was found; ↓ resumes from there
   lockedFeed().with([&](FeedState& s) {
-    // Kept for Back from an entry; after an error, the next visit tries again.
-    if (err.empty()) s.store.setSideTag(friendsSideTag(names));
+    s.store.setSideList(std::move(kept), next, append);
+    // Kept for Back from an entry; a follow or unfollow drops it.
+    if (!append) s.store.setSideTag(kFollowingSideTag);
     s.loading = false;
   });
-  if (!err.empty()) banner(err);
-  post(EvtType::SideListUpdated, "", 0, err.empty() || loaded > 0);
+  post(EvtType::SideListUpdated);
 }
 
 }  // namespace rc

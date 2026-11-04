@@ -148,7 +148,9 @@ checkout on each push and pull request and runs the unit tests; it publishes
 nothing. A new firmware env must be added to `RELEASE_ENVS` in
 `scripts/release.sh` and run `tools/set_app_version.py`; CI checks both. An env
 that builds but isn't ready to ship (the X4 for now) goes in `UNRELEASED_ENVS`
-instead, which keeps it out of releases and the flasher. Its
+instead, which keeps it out of releases and the flasher. The X4 is also left
+out of CI's build and, through `test_ignore` in `[env:native]`, its native
+test; build it locally with `pio run -e x4`. Its
 `board::otaSlug()` must match the release's file name (`env_out_name`: the env
 name with `_` turned into `-`), or its devices find no update.
 

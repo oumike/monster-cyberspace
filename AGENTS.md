@@ -8,7 +8,8 @@ the LilyGO T-Deck Plus followed, then the Elecrow CrowPanel Advance 3.5" and
 (all built, not yet tried on hardware; the Mesh Deck boots), and the Attaky
 Cyber Deck Plus (contributed in PR #6; an early version was used on hardware by
 its contributor). The Xteink X4
-(cIRC rooms only) is built and has booted on hardware. The M5Stack Cardputer ADV
+(cIRC rooms only) is built and has booted on hardware; for now it is a
+development-only target, left out of releases, CI and the native tests. The M5Stack Cardputer ADV
 (8 MB, no PSRAM, no Guilds) is built, not yet tried on hardware, and so is
 the LilyGO T-Display P4 (ESP32-P4, AMOLED). More
 boards and Cyberspace features come later.
@@ -173,7 +174,8 @@ true (web config's Send box, `/api/compose`, `web/compose_req`), and
 For TLS heap it is barebones: cIRC rooms only (`CMAIL`, `FEED`, `GUILDS`,
 `PEOPLE`, `UNREAD`, `SPELL`, `EMOJI`, `OTA` and `MASCOT` are 0; it is in
 `UNRELEASED_ENVS` in `scripts/release.sh`, so releases and the flasher leave it
-out until it is ready, and in the flasher's no-mascot list), the open room
+out until it is ready; CI's build skips it and the native env's `test_ignore`
+skips `test_x4_input`), the open room
 polled on the one TLS connection (`kPollRoom`), and a `custom_sdkconfig`
 (16 KB in / 4 KB out mbedTLS records, dynamic buffers) that rebuilds ESP-IDF,
 so a local build needs a project and `core_dir` path without spaces
@@ -321,9 +323,9 @@ speaker, C6 Wi-Fi, GPS, RTC, gauge and SD await the hardware check
 (docs/TESTING.md). Also on 2026-11-02: the T-Deck Pro draws 6 px in from the
 left (`PANEL_LEFT_INSET` in `pins_tdeck_pro.h`, `packMono` x0) so the bezel
 doesn't cover text; its check is open too.
-The native suite is green: 725/725
+The native suite is green: 718/718
 (`pio test -e native`), and `scripts/build-upload-monitor.sh -B` builds all
-twelve firmware envs.
+twelve firmware envs (the X4 only from a path without spaces).
 
 Notes for whoever continues:
 - Each task follows test-driven development: write the plan's tests first, run

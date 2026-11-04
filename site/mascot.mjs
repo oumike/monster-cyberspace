@@ -13,7 +13,7 @@ export const MASCOT_OFFSET = 0xcb0000;
 
 // Release slugs built without the mascot partition (RC_FEAT_MASCOT=0): the
 // flasher hides Make your Fluffy and Phrases and flashes no blob for them.
-export const NO_MASCOT_BOARDS = ["x4", "cardputer-adv"];
+export const NO_MASCOT_BOARDS = ["cardputer-adv"];
 
 export function hasMascot(slug) {
   return !NO_MASCOT_BOARDS.includes(slug);

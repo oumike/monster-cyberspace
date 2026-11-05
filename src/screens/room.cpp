@@ -234,13 +234,13 @@ void RoomScreen::typingKey(const KeyEvent& k) {
       else log_.down();
       break;
     case Action::Left:
-      // Docked, Left hides the list; Back only leaves it.
-      if (drawer && drawerDocked()) setUsersHidden(true);
-      else if (drawer) setDrawer(false);
+      if (drawer) setDrawer(false);
       else input_.left();
       break;
     case Action::Right:
-      if (!input_.right() && !drawer && !dm_) showUsers();
+      // Docked, Right again hides the list; Left and Back only leave it.
+      if (drawer && drawerDocked()) setUsersHidden(true);
+      else if (!input_.right() && !drawer && !dm_) showUsers();
       break;
     case Action::Activate:
       if (k.target == uint8_t(ListId::Log)) {
@@ -836,7 +836,7 @@ void RoomScreen::render(Grid& g, const Theme& t, int64_t) {
       hint = U"\u2191\u2193 pick  \u25CF choose  back: close";
       touch = U"tap: choose  outside: close";
     } else if (drawer) {
-      hint = docked ? U"\u2191\u2193 pick  \u25CF menu  \u2190 hide  back: leave"
+      hint = docked ? U"\u2191\u2193 pick  \u25CF menu  \u2192 hide  \u2190 chat"
                     : U"\u2191\u2193 pick  \u25CF menu  \u2190 close";
       touch = U"tap a name for actions";
     } else if (!log_.following()) {

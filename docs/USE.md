@@ -549,8 +549,9 @@ The keyboard always types into the input line at the bottom.
   move between rooms. On wide landscape screens (the CrowPanels, the Pager,
   the T-Display P4 and the Tanmatsu) the list is docked on the right by
   default; on a touch screen, tap a name for their menu. To close it, tap the
-  ✕ at its top right, or press Right to move into it and then Left (Back
-  just leaves it); the room menu's Hide user list does the same. Right at the
+  ✕ at its top right, or press Right to move into it and Right again (Left or
+  Back returns to the chat and leaves it open); the room menu's Hide user
+  list does the same. Right at the
   end of the line, an edge swipe or Show user list brings it back. The choice
   is kept across rooms and restarts.
 - **Commands:** type slash commands such as `/me`, `/dice` and `/mute name`,

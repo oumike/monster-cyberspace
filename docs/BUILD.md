@@ -236,7 +236,12 @@ line is on the XL9535 expander, so a wedged C6 needs a board restart.
 The `tanmatsu` image is a whole firmware, like every other board's: flashing
 it (`scripts/build-upload-monitor.sh -T`, over the USB-C port's USB-Serial-JTAG)
 replaces the Tanmatsu launcher and its apps. PlatformIO writes the bootloader
-at `0x2000` itself. To go back, reinstall the launcher from Nicolai
+at `0x2000` itself. The launcher takes over the USB-C port (its BadgeLink
+interface, and the ESP32-C6 can show up instead: esptool then stops with
+"This chip is ESP32-C6"), so the first time, start the ESP32-P4 in its
+bootloader: hold the power button until it turns off, then hold the **−**
+button (third on the right side) while plugging in the USB cable; the screen
+stays black. After that the firmware keeps the P4's own USB port. To go back, reinstall the launcher from Nicolai
 Electronics' web installer (docs.tanmatsu.cloud). The ESP32-C6 is left alone:
 it keeps the esp-hosted-tanmatsu image it ships with, and whether Arduino's
 ESP-Hosted host talks to it is the first hardware check (docs/TESTING.md).

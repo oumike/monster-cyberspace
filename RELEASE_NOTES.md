@@ -1,3 +1,13 @@
+### Monster for Cyberspace 1.2.7
+
+### Guilds
+
+- A guild's thread list starts with a pinned **+ New thread** row, like the Feed's + New entry: Centre or a tap on it starts a thread.
+
+### Tanmatsu
+
+- Ctrl tapped on its own opens the emoji tray while typing and the palette elsewhere, as on the M9. The Fn+F4 help lists it.
+
 ### Monster for Cyberspace 1.2.6
 
 ### Tanmatsu

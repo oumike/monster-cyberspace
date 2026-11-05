@@ -242,7 +242,29 @@ if [ "$FULLCLEAN" = true ]; then
 	pio run -e "$ENV_NAME" -t fullclean
 fi
 echo "[PIO] $UPLOAD_LABEL ($ENV_NAME)..."
-pio run -e "$ENV_NAME" -t "$UPLOAD_TARGET" ${PORT_ARGS[@]+"${PORT_ARGS[@]}"}
+if [ "$ENV_NAME" = tanmatsu ]; then
+	# The Tanmatsu shows two USB serial ports (the P4's and the C6's), and
+	# which is which changes; try each, the given --port first, before failing.
+	CANDIDATES=()
+	[ -n "$PORT" ] && CANDIDATES+=("$PORT")
+	for p in /dev/cu.usbmodem* /dev/ttyACM*; do
+		[ -e "$p" ] && [ "$p" != "$PORT" ] && CANDIDATES+=("$p")
+	done
+	[ "${#CANDIDATES[@]}" -gt 0 ] || { echo "[PIO] No USB serial port found for the Tanmatsu."; exit 1; }
+	UPLOADED=""
+	for p in "${CANDIDATES[@]}"; do
+		echo "[PIO] Trying $p..."
+		if pio run -e "$ENV_NAME" -t "$UPLOAD_TARGET" --upload-port "$p"; then
+			UPLOADED="$p"
+			break
+		fi
+		echo "[PIO] Upload on $p failed."
+	done
+	[ -n "$UPLOADED" ] || { echo "[PIO] Upload failed on every port: ${CANDIDATES[*]}"; exit 1; }
+	MONITOR_PORT_ARGS=(--port "$UPLOADED")
+else
+	pio run -e "$ENV_NAME" -t "$UPLOAD_TARGET" ${PORT_ARGS[@]+"${PORT_ARGS[@]}"}
+fi
 echo "[PIO] Build and upload took $(format_duration $(( $(date +%s) - BUILD_START_TS )))."
 
 ELF_PATH=".pio/build/${ENV_NAME}/firmware.elf"

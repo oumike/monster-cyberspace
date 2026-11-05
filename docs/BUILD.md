@@ -238,7 +238,8 @@ it (`scripts/build-upload-monitor.sh -T`, over the USB-C port's USB-Serial-JTAG)
 replaces the Tanmatsu launcher and its apps. PlatformIO writes the bootloader
 at `0x2000` itself. The launcher takes over the USB-C port (its BadgeLink
 interface, and the ESP32-C6 can show up instead: esptool then stops with
-"This chip is ESP32-C6"), so the first time, start the ESP32-P4 in its
+"This chip is ESP32-C6"; the script then tries the next USB serial port, the
+given `--port` first, and fails only when every port does), so the first time, start the ESP32-P4 in its
 bootloader: hold the power button until it turns off, then hold the **−**
 button (third on the right side) while plugging in the USB cable; the screen
 stays black. After that the firmware keeps the P4's own USB port. To go back, reinstall the launcher from Nicolai

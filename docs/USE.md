@@ -537,8 +537,9 @@ The keyboard always types into the input line at the bottom.
 - **Who's here drawer:** Right with the cursor at the end of the line opens
   it. Up/Down pick a person, Centre opens their menu (mention, mute or
   unmute), and Left or Back closes it. The drawer stays open or closed as you
-  move between rooms. On the CrowPanels in landscape the list is always docked
-  on the right; tap a name for their menu.
+  move between rooms. On wide landscape screens (the CrowPanels, the Pager,
+  the T-Display P4 and the Tanmatsu) the list is always docked on the right;
+  on a touch screen, tap a name for their menu.
 - **Commands:** type slash commands such as `/me`, `/dice` and `/mute name`,
   or pick them from the palette (on the M9, Sym).
 

@@ -327,6 +327,8 @@ void test_drawer_idle_marker() {
   TEST_ASSERT_TRUE(Drawer::docks(800, 480));
   TEST_ASSERT_FALSE(Drawer::docks(480, 800));
   TEST_ASSERT_FALSE(Drawer::docks(320, 240));  // T-Deck
+  TEST_ASSERT_TRUE(Drawer::docks(400, 240));   // Tanmatsu (2x)
+  TEST_ASSERT_FALSE(Drawer::docks(399, 240));
   TEST_ASSERT_EQUAL(15, Drawer::width(48, true));
   TEST_ASSERT_EQUAL(26, Drawer::width(133, true));
   TEST_ASSERT_EQUAL(16, Drawer::width(80, true));

@@ -27,7 +27,7 @@ class Drawer {
   // narrow (portrait) grid of `cols` columns. Docked: a fifth of the grid,
   // at least 15 cols.
   static int width(int cols, bool docked = false);
-  // A landscape panel at least 480 px wide keeps the drawer docked open in rooms.
+  // A landscape panel at least 400 px wide keeps the drawer docked open in rooms.
   static bool docks(int panelWidthPx, int panelHeightPx);
 
  private:

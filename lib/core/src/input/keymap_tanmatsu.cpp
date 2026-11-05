@@ -124,11 +124,14 @@ void TanmatsuKeys::update(const uint8_t state[kTanmatsuKeyBytes], uint32_t ms) {
                bit(state, kCtrl) || bit(state, kAltL) || bit(state, kMeta)};
   const bool metaNow = bit(state, kMeta), metaBefore = bit(prev_, kMeta);
   if (metaNow && !metaBefore) metaUsed_ = false;
+  const bool ctrlNow = bit(state, kCtrl), ctrlBefore = bit(prev_, kCtrl);
+  if (ctrlNow && !ctrlBefore) ctrlUsed_ = false;
   for (int b = 0; b < kKeyCount; ++b) {
     const bool now = bit(state, b), before = bit(prev_, b);
     if (b == heldBit_ && !now) heldBit_ = -1;
     if (!now || before || isModifier(b)) continue;
     if (metaNow) metaUsed_ = true;
+    if (ctrlNow) ctrlUsed_ = true;
     const KeyEvent e = map(b, m);
     if (repeats(e.action)) {
       heldBit_ = b;
@@ -139,6 +142,9 @@ void TanmatsuKeys::update(const uint8_t state[kTanmatsuKeyBytes], uint32_t ms) {
   }
   // The logo key tapped on its own goes Home.
   if (!metaNow && metaBefore && !metaUsed_) push(action(Action::OpenHome));
+  // Ctrl tapped on its own, as the M9's Ctrl: the emoji tray while typing,
+  // the palette elsewhere.
+  if (!ctrlNow && ctrlBefore && !ctrlUsed_) push(action(Action::Emoji));
   for (int i = 0; i < kTanmatsuKeyBytes; ++i) prev_[i] = state[i];
 }
 

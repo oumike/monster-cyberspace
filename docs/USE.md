@@ -374,9 +374,10 @@ has not been tried on hardware yet and is not in the releases or the flasher.
 | Esc | Back |
 | Tab | The command palette |
 | Logo key (tapped alone) | Home |
+| Ctrl (tapped alone) | While typing: the emoji tray. Elsewhere: the palette |
 | F1 … F6 | From anywhere: Home, Messages (your last room; again for the room list), C-Mail, Feed, Guilds, your Profile |
 | Fn + F1 | Settings |
-| Fn + F4 | Navigational help, a table of the function keys; any key closes it |
+| Fn + F4 | Navigational help, a table of the function keys and Ctrl; any key closes it |
 | Fn + F5 | Steps the keyboard light: Low, Medium, High, Off (also **Keyboard light** in Settings) |
 | Fn + Space | The emoji tray |
 | Volume up / volume down | Up / Down |

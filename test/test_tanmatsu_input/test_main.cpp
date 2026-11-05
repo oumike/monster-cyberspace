@@ -146,6 +146,24 @@ void test_meta_with_key_types_nothing() {
   expectAction(k.next(30), Action::None);
 }
 
+void test_ctrl_tap_is_emoji_or_palette() {
+  TanmatsuKeys k;
+  k.update(Keys{}.down(CTRL).s, 0);
+  expectAction(k.next(0), Action::None);
+  k.update(Keys{}.s, 50);
+  expectAction(k.next(50), Action::Emoji);
+}
+
+void test_ctrl_with_key_is_not_a_tap() {
+  TanmatsuKeys k;
+  k.update(Keys{}.down(CTRL).s, 0);
+  k.update(Keys{}.down(CTRL).down(UP).s, 10);
+  expectAction(k.next(10), Action::Up);
+  k.update(Keys{}.down(CTRL).s, 20);
+  k.update(Keys{}.s, 30);
+  expectAction(k.next(30), Action::None);
+}
+
 void test_ctrl_and_alt_swallow_chars() {
   TanmatsuKeys k;
   expectAction(tap(k, Keys{}.down(CTRL), Q), Action::None);
@@ -195,7 +213,8 @@ void test_arrow_repeat_follows_last_pressed() {
 }
 
 void test_function_key_table() {
-  TEST_ASSERT_EQUAL(9, (int)kTanmatsuFunctionKeyCount);
+  TEST_ASSERT_EQUAL(10, (int)kTanmatsuFunctionKeyCount);
+  expectAction(KeyEvent{kTanmatsuFunctionKeys[9].action}, Action::Emoji);
   expectAction(KeyEvent{kTanmatsuFunctionKeys[6].action}, Action::OpenSettings);
   TEST_ASSERT_TRUE(kTanmatsuFunctionKeys[6].key[0] == U'F' && kTanmatsuFunctionKeys[6].key[1] == U'n');
 }
@@ -211,6 +230,8 @@ int main() {
   RUN_TEST(test_fn_layer);
   RUN_TEST(test_meta_tap_is_home);
   RUN_TEST(test_meta_with_key_types_nothing);
+  RUN_TEST(test_ctrl_tap_is_emoji_or_palette);
+  RUN_TEST(test_ctrl_with_key_is_not_a_tap);
   RUN_TEST(test_ctrl_and_alt_swallow_chars);
   RUN_TEST(test_several_in_one_update);
   RUN_TEST(test_held_letter_does_not_repeat_or_retype);

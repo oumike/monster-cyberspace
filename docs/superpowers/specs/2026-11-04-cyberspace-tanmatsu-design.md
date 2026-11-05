@@ -82,6 +82,7 @@ o p [ ] l ; ' return | . / up shiftR altR left down right |
 | Fn+F5 | Keyboard-light step (the P4's F11) |
 | Fn+Space | Emoji |
 | Meta (the logo key), tapped alone | Home |
+| Ctrl, tapped alone | `Action::Emoji`, as the M9's Ctrl: the emoji tray while typing, the palette elsewhere |
 | Ctrl, left Alt, Meta held | The key they modify types nothing |
 | Volume up (keyboard) / volume down (GPIO35) | Up / Down |
 | Power button | ScreenOff (lock, or wake) |

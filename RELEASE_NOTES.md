@@ -1,3 +1,9 @@
+### Monster for Cyberspace 1.2.6
+
+### Tanmatsu
+
+- Only the power button wakes the screen or leaves the screensaver. The keyboard does nothing while the screen is dark.
+
 ### Monster for Cyberspace 1.2.5
 
 ### Tanmatsu

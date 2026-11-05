@@ -130,11 +130,15 @@ void FeedListScreen::onKey(const KeyEvent& k) {
     case Action::Select:
     case Action::Right: {
       int i = list_.selected();
-      // The Feed's New entry row: its id is empty, and it composes, behind the
-      // same check as the commands menu's New entry (boards that can't type
-      // write from web config instead).
-      if (kind_ == Kind::Feed && i >= 0 && i < int(ids_.size()) && ids_[i].empty()) {
-        if (!ui::typingElsewhere("Write entries")) router::go(router::Id::Composer);
+      // The Feed's New entry row and a guild's New thread row: its id is
+      // empty, and it composes, behind the same check as the commands menu's
+      // New entry / New thread (boards that can't type write from web config).
+      if (composeRow_ && i == 0) {
+        if (kind_ == Kind::Guild) {
+          if (!ui::typingElsewhere("Start threads")) router::go(router::Id::Composer, "guild:" + slug_);
+        } else if (!ui::typingElsewhere("Write entries")) {
+          router::go(router::Id::Composer);
+        }
         break;
       }
       if (i < 0 || i >= int(ids_.size())) break;
@@ -357,8 +361,10 @@ void FeedListScreen::rebuild(int cols, const Theme& t) {
   std::vector<bool> marked;
   int sel = -1;
   bool side = kind_ != Kind::Feed;
+  bool haveGuild = false;
   // Copy out under the lock; lay out after it.
   lockedFeed().with([&](FeedState& s) {
+    haveGuild = s.guilds.guild() != nullptr;
     more_ = side ? !s.store.sideCursor().empty() : !s.store.feedEnd();
     if (!loaded_) return;
     entries = side ? s.store.sideList() : s.store.feed();
@@ -374,14 +380,18 @@ void FeedListScreen::rebuild(int cols, const Theme& t) {
   ids_.clear();
   replyIds_ = std::move(replyIds);
   // The Feed's first row composes: one Select opens the Composer, with no menu
-  // in the way, so a d-pad and Select alone can write a post.
-  const bool composeRow = kind_ == Kind::Feed;
+  // in the way, so a d-pad and Select alone can write a post. A guild's does
+  // too (a new thread), once the guild is known, as its palette's New thread.
+  const bool guild = kind_ == Kind::Guild;
+  const bool composeRow = kind_ == Kind::Feed || (guild && haveGuild);
+  composeRow_ = composeRow;
   if (composeRow) {
     const int headW = std::max(1, headCols() - EntryList::kBarCols);
-    std::u32string head = utf8ToU32("+ New entry");
+    std::u32string head = utf8ToU32(guild ? "+ New thread" : "+ New entry");
     if (int(head.size()) > headW) head.resize(headW);
-    std::u32string detail =
-        utf8ToU32(board::hasTouch() ? "tap to write a post" : "press \u25CF to write a post");
+    std::u32string detail = utf8ToU32(
+        guild ? (board::hasTouch() ? "tap to start a thread" : "press \u25CF to start a thread")
+              : (board::hasTouch() ? "tap to write a post" : "press \u25CF to write a post"));
     if (int(detail.size()) > cols) detail.resize(cols);
     rows.push_back(FeedRow{head, detail, t.fg, t.dim});
     ids_.push_back(std::string());
@@ -463,8 +473,8 @@ void FeedListScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
                                                                                 : "none in recent entries: \u2193 for older")
                                                             : "nothing from people you follow")
                                                  : "no bookmarks";
-    // Below the New entry row, which takes the first two.
-    putLine(g, 1, kind_ == Kind::Feed ? 3 : 2, empty, t.dim, t.bg);
+    // Below the New entry / New thread row, which takes the first two.
+    putLine(g, 1, composeRow_ ? 3 : 2, empty, t.dim, t.bg);
   }
 
   if (nav > 0) renderSideNav(g, 1, bottom, nav, t);

@@ -178,7 +178,7 @@ on 2026-10-27; the sections marked `m9_fake` passed on it before then.
 - [ ] Map in the Composer asks "Discard draft?"
 - [ ] The list shows my guilds first under `── my guilds ──`, then all guilds, with roles
 - [ ] Down pages in more guilds and then wraps
-- [ ] Centre opens a guild and lists its threads
+- [ ] Centre opens a guild and lists its threads below a pinned + New thread row; Centre or a tap on that row opens New thread
 - [ ] A thread opens in Entry; a reply posts
 - [ ] Back from the thread returns to the guild, and Back again to the list
 - [ ] New thread: Title, Body and Topics only; Post asks "Post thread?" and opens it

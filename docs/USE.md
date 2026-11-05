@@ -666,8 +666,10 @@ must be signed in.
 
 **A guild:**
 
-- The threads are listed like the Feed, most recently active first. Centre or
-  Right opens a thread. Back from the thread returns to the guild.
+- The first row is **+ New thread**: Centre (or a tap) on it opens New
+  thread, as the Feed's + New entry row does. The threads follow, listed like
+  the Feed, most recently active first. Centre or Right opens a thread. Back
+  from the thread returns to the guild.
 - **Ctrl** opens the palette: **New thread**, **Info**, **Members**, **Join**
   (if you are not in it), **Make my guild** (apprentices only), **Leave**
   (members and apprentices; founders have none), **Refresh** and **Text size**.

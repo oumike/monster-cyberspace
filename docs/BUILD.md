@@ -27,7 +27,7 @@
 | `x4` | The firmware for the Xteink X4 (ESP32-C3, no PSRAM, e-paper, buttons only; cIRC rooms only, text sent with phrases or from web config; no OTA; boots on hardware. Rebuilds ESP-IDF for smaller TLS buffers, so build it from a path without spaces) |
 | `cardputer_adv` | The firmware for the M5Stack Cardputer ADV (ESP32-S3FN8: 8 MB flash, no PSRAM; keyboard, 240x135 panel; no Guilds, no OTA; not yet tried on hardware) |
 | `tdisplay_p4` | The firmware for the LilyGO T-Display P4 (ESP32-P4, 4.1" AMOLED drawn at 2x, touch, optional keyboard expansion, haptics; Wi-Fi through its ESP32-C6; not yet tried on hardware) |
-| `tanmatsu` | The firmware for the Tanmatsu (ESP32-P4, 480x800 panel drawn at 2x in landscape, keyboard; Wi-Fi through its ESP32-C6). Replaces the Tanmatsu launcher. Development only: not released or in the flasher until it has been tried on hardware |
+| `tanmatsu` | The firmware for the Tanmatsu (ESP32-P4, 480x800 panel drawn at 2x in landscape, keyboard; Wi-Fi through its ESP32-C6). Replaces the Tanmatsu launcher |
 | `native` | Host unit tests for `lib/core` |
 
 ```sh
@@ -186,11 +186,11 @@ The Cardputer ADV (8 MB) uses `partitions_8mb.csv`: one `factory` app at
 `0x7F0000`. No `otadata`, second slot or `mascot`; settings sit past the app,
 so a factory image at `0x0` keeps them, and `nvs_migrate` finds no `nvs_old`.
 
-Every board is an ESP32-S3 but the X4 (ESP32-C3) and the T-Display P4
-(ESP32-P4), whose ROM loads the bootloader from `0x2000` instead of `0x0`
-(`env_chip` and `env_boot_offset` in `scripts/release.sh`). Its factory image
-is still flashed at `0x0` (the merge pads the gap), `scripts/pages-site.sh`
-gives its manifest the `ESP32-P4` chip family, and `flash.sh` lets esptool
+Every board is an ESP32-S3 but the X4 (ESP32-C3) and the T-Display P4 and
+Tanmatsu (ESP32-P4s), whose ROM loads the bootloader from `0x2000` instead of `0x0`
+(`env_chip` and `env_boot_offset` in `scripts/release.sh`). Their factory images
+are still flashed at `0x0` (the merge pads the gap), `scripts/pages-site.sh`
+gives their manifests the `ESP32-P4` chip family, and `flash.sh` lets esptool
 detect the chip.
 
 ### T-Display P4: the ESP32-C6 Wi-Fi image
@@ -231,7 +231,7 @@ Never write it at `0x0` by hand, and don't use LilyGO's ESP-AT image: the
 firmware uses Arduino's transparent `WiFi` over ESP-Hosted. The C6's enable
 line is on the XL9535 expander, so a wedged C6 needs a board restart.
 
-### Tanmatsu: standalone, not released
+### Tanmatsu: standalone
 
 The `tanmatsu` image is a whole firmware, like every other board's: flashing
 it (`scripts/build-upload-monitor.sh -T`, over the USB-C port's USB-Serial-JTAG)
@@ -246,7 +246,8 @@ stays black. After that the firmware keeps the P4's own USB port. To go back, re
 Electronics' web installer (docs.tanmatsu.cloud). The ESP32-C6 is left alone:
 it keeps the esp-hosted-tanmatsu image it ships with, and whether Arduino's
 ESP-Hosted host talks to it is the first hardware check (docs/TESTING.md).
-The Tanmatsu is in `UNRELEASED_ENVS` and has no flasher entry until then.
+From the browser flasher, the first install likewise needs the P4 in its
+bootloader (the steps above); later ones and OTA updates don't.
 
 ### Mascot
 

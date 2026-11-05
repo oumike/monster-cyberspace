@@ -19,13 +19,13 @@ RELEASE_ENVS=(
     cyber_deck_plus
     cardputer_adv
     tdisplay_p4
+    tanmatsu
 )
 
 # Firmware envs that build (CI, -B) but are left out of releases and the
 # flasher until they are ready.
 UNRELEASED_ENVS=(
     x4
-    tanmatsu
 )
 
 # Release envs built with OTA off (RC_FEAT_OTA=0, no second app slot): they
@@ -63,16 +63,18 @@ env_label() {
         x4)          echo "Xteink X4" ;;
         cardputer_adv) echo "M5Stack Cardputer ADV" ;;
         tdisplay_p4) echo "LilyGO T-Display P4" ;;
+        tanmatsu)    echo "Nicolai Electronics Tanmatsu" ;;
         *)           echo "$1" ;;
     esac
 }
 
 # Every board here has 16 MB of flash but the Cardputer ADV (8 MB), and all
-# but the X4 (an ESP32-C3) and the T-Display P4 (an ESP32-P4) are ESP32-S3s.
+# but the X4 (an ESP32-C3) and the T-Display P4 and Tanmatsu (ESP32-P4s) are
+# ESP32-S3s.
 # Kept as functions so a board that differs only has to add a case. Artifact
 # names use dashes.
 env_out_name()   { echo "${1//_/-}"; }
-env_chip()       { case "$1" in x4) echo "esp32c3" ;; tdisplay_p4) echo "esp32p4" ;; *) echo "esp32s3" ;; esac; }
+env_chip()       { case "$1" in x4) echo "esp32c3" ;; tdisplay_p4|tanmatsu) echo "esp32p4" ;; *) echo "esp32s3" ;; esac; }
 # Where the chip's ROM looks for the second-stage bootloader: 0x2000 on the P4.
 env_boot_offset() { case "$(env_chip "$1")" in esp32p4) echo "0x2000" ;; *) echo "0x0" ;; esac; }
 env_flash_size() { case "$1" in cardputer_adv) echo "8MB" ;; *) echo "16MB" ;; esac; }

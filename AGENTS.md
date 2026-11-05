@@ -11,8 +11,8 @@ its contributor). The Xteink X4
 (cIRC rooms only) is built and has booted on hardware; for now it is a
 development-only target, left out of releases, CI and the native tests. The M5Stack Cardputer ADV
 (8 MB, no PSRAM, no Guilds) is built, not yet tried on hardware, and so is
-the LilyGO T-Display P4 (ESP32-P4, AMOLED) and the Tanmatsu (ESP32-P4,
-keyboard; development only for now, out of releases and the flasher). More
+the LilyGO T-Display P4 (ESP32-P4, AMOLED). The Tanmatsu (ESP32-P4,
+keyboard) runs on hardware and is released and in the flasher. More
 boards and Cyberspace features come later.
 
 - **Design spec:** `docs/superpowers/specs/2026-10-25-cyberspace-m9-circ-design.md`
@@ -97,7 +97,7 @@ pio run -e cyber_deck_plus  # Attaky Cyber Deck Plus
 pio run -e x4               # Xteink X4 (ESP32-C3, no PSRAM)
 pio run -e cardputer_adv    # M5Stack Cardputer ADV (8 MB, no PSRAM, no Guilds)
 pio run -e tdisplay_p4      # LilyGO T-Display P4 (ESP32-P4, AMOLED)
-pio run -e tanmatsu         # Tanmatsu (ESP32-P4, keyboard; not released)
+pio run -e tanmatsu         # Tanmatsu (ESP32-P4, keyboard)
 scripts/build-upload-monitor.sh m9   # flash + serial monitor (115200); -w for the Wio L2, -t for the T-Deck Plus, -3/-5 for the CrowPanels, -P for the Pager, -D for the T-Deck Pro, -M for the Mesh Deck, -K for the Cyber Deck Plus, -X for the X4, -C for the Cardputer ADV, -4 for the T-Display P4, -T for the Tanmatsu; --help for options
 scripts/build-upload-monitor.sh -B   # build every firmware env, no device needed
 scripts/screenshot.py PORT [--watch]  # PNG screenshots over the serial console (no device writes)
@@ -239,8 +239,8 @@ drawn at 2x as a 400x240 landscape panel (`ui/scale2x`, `PANEL_ROTATION`);
 no touch, no rotation. Wi-Fi is the C6's own esp-hosted-tanmatsu image,
 restarted through the coprocessor before `hostedSetPins`. ES8156 speaker
 (`audio_es8156`, own task, amplifier on only around a beep), SD_MMC 4-bit,
-no GPS. `board::functionKeys()` gives the F10 help its own table. Kept out of
-`RELEASE_ENVS` (`UNRELEASED_ENVS`) and the flasher until the hardware check.
+no GPS. `board::functionKeys()` gives the F10 help its own table. Released
+and in the flasher since 2026-11-04.
 Touch: `lib/core` turns samples into gestures and resolves them against the
 per-frame `TapMap` widgets fill as they draw (`input/gestures`, `ui/tap_map`,
 `input/touch_resolve`, the `Osk` keyboard); `ui_task` feeds `handleKey` and
@@ -344,8 +344,9 @@ speaker, C6 Wi-Fi, GPS, RTC, gauge and SD await the hardware check
 left (`PANEL_LEFT_INSET` in `pins_tdeck_pro.h`, `packMono` x0) so the bezel
 doesn't cover text; its check is open too.
 The Tanmatsu (env `tanmatsu`) was added on 2026-11-04 (built without
-flashing, not released): landscape at 2x with its keyboard. Everything awaits
-the hardware check (docs/TESTING.md), the C6 Wi-Fi link first.
+flashing): landscape at 2x with its keyboard. It runs on hardware; brightness,
+LED and status-light settings followed, and it joined releases and the
+flasher the same day. The rest of its hardware check is open (docs/TESTING.md).
 The native suite is green: 737/737
 (`pio test -e native`), and `scripts/build-upload-monitor.sh -B` builds all
 thirteen firmware envs (the X4 only from a path without spaces).

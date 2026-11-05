@@ -1,3 +1,18 @@
+### Monster for Cyberspace 1.2.5
+
+### Tanmatsu
+
+- New board: the Nicolai Electronics Tanmatsu (ESP32-P4, keyboard, 800x480 screen). The image replaces the Tanmatsu launcher. The first install needs the P4 in its bootloader: with it off, hold the − button while plugging in USB.
+- Settings has LED brightness, a power light colour, and Wi-Fi light colours for joined, setup AP and looking. The radio LED shows the Wi-Fi state.
+
+### Brightness
+
+- Settings and web config have a screen brightness setting from 10% to 100% (not on e-paper boards).
+
+### Rooms
+
+- On landscape screens 400 px wide or more, the who's-here list stays docked beside the room.
+
 ### Monster for Cyberspace 1.2.4
 
 ### Text size

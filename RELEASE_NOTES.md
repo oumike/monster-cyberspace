@@ -1,3 +1,9 @@
+### Monster for Cyberspace 1.3.0
+
+### Tanmatsu
+
+- Hints say **tab** where other boards say ctrl: Tab opens the screen's commands, including Post / Discard in New entry and New thread. The Fn+F4 help lists Tab.
+
 ### Monster for Cyberspace 1.2.7
 
 ### Guilds

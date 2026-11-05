@@ -814,11 +814,13 @@ with every theme) or in web config under Display. The choice is saved.
   member list its code-block colour.
 - **Bubblegum Dark, Top8 Dark:** our dark takes on those two, pink on plum
   and pale blue on navy.
+- **Sepia Dark:** ours, old-photograph sepia: parchment on dark walnut.
+- **C64 Dark:** ours, C64's blues, much darker: pale blue on deep navy.
 
-Bubblegum and Top8 colour nicks like Default, in darker shades for their
-light backgrounds, and their dark takes in lighter ones; yours is in the dim
-colour. The other themes draw nicks
-in the text colour, and yours in the dim one. QR codes stay
+Every theme but Black & white and White & black colours nicks like Default:
+darker shades on light backgrounds, lighter ones on dark. Yours is in the
+dim colour (gold in Default). Black & white and White & black draw nicks in
+grey, and yours in the text colour. QR codes stay
 black on white in every theme. The T-Deck Pro's e-paper has one theme of its
 own, black on white with outlined selections, and no Theme item.
 

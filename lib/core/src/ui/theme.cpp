@@ -59,6 +59,7 @@ constexpr Theme site(uint32_t bg, uint32_t fg, uint32_t dim, uint32_t bar, uint3
       /*cursorFg*/ rgb(bg),     /*selectBg*/ rgb(fg),  /*selectFg*/ rgb(bg),
       /*drawerBg*/ rgb(panel),  /*drawerEdge*/ rgb(dim), /*error*/ rgb(error),
       // One colour for nicks, as the site's themes have; yours is the dim one.
+      // colourNicks() gives every theme here per-user hues instead.
       /*colorNicks*/ false,     /*nick*/ rgb(fg),      /*selfNick*/ rgb(dim),
       /*outlined*/ false,
   };
@@ -73,35 +74,35 @@ constexpr Theme colourNicks(Theme t, uint8_t lightness) {
 }
 
 // Dark: fg #efe5c0, bg #000000, dim #a89984, border #3a3a3a, code hsla(0,0%,100%,.07).
-const Theme kDark = site(0x000000, 0xEFE5C0, 0xA89984, /*bar*/ 0x3A3A3A, /*panel*/ 0x121212,
-                         /*mention*/ 0x232323, /*error*/ 0xFF5555);
+const Theme kDark = colourNicks(site(0x000000, 0xEFE5C0, 0xA89984, /*bar*/ 0x3A3A3A, /*panel*/ 0x121212,
+                         /*mention*/ 0x232323, /*error*/ 0xFF5555), 74);
 // Light: fg #000000, bg #efe5c0, dim #3a3a3a, border #a89984, code rgba(0,0,0,.08).
-const Theme kLight = site(0xEFE5C0, 0x000000, 0x3A3A3A, /*bar*/ 0xA89984, /*panel*/ 0xDCD3B1,
-                         /*mention*/ 0xC4B79C, /*error*/ 0xC01818);
+const Theme kLight = colourNicks(site(0xEFE5C0, 0x000000, 0x3A3A3A, /*bar*/ 0xA89984, /*panel*/ 0xDCD3B1,
+                         /*mention*/ 0xC4B79C, /*error*/ 0xC01818), 32);
 // LCD: fg #000000, bg #eaeae4, dim #3a3a3a, border #9aa49d, code #b4c2aa.
-const Theme kLCD = site(0xEAEAE4, 0x000000, 0x3A3A3A, /*bar*/ 0x9AA49D, /*panel*/ 0xB4C2AA,
-                         /*mention*/ 0xBAC0B9, /*error*/ 0xC01818);
+const Theme kLCD = colourNicks(site(0xEAEAE4, 0x000000, 0x3A3A3A, /*bar*/ 0x9AA49D, /*panel*/ 0xB4C2AA,
+                         /*mention*/ 0xBAC0B9, /*error*/ 0xC01818), 32);
 // C64: fg hsla(0,0%,100%,.75), bg #2a2ab8, dim hsla(0,0%,100%,.4), border hsla(0,0%,100%,.3), code hsla(0,0%,100%,.08).
-const Theme kC64 = site(0x2A2AB8, 0xCACAED, 0x7F7FD4, /*bar*/ 0x6A6ACD, /*panel*/ 0x3B3BBE,
-                         /*mention*/ 0x5050C5, /*error*/ 0xFF5555);
+const Theme kC64 = colourNicks(site(0x2A2AB8, 0xCACAED, 0x7F7FD4, /*bar*/ 0x6A6ACD, /*panel*/ 0x3B3BBE,
+                         /*mention*/ 0x5050C5, /*error*/ 0xFF5555), 74);
 // VT320: fg #ff9a10, bg #170800, dim #ff9100, border rgba(255,155,0,.27), code rgba(255,155,0,.05).
-const Theme kVT320 = site(0x170800, 0xFF9A10, 0xFF9100, /*bar*/ 0x563000, /*panel*/ 0x230F00,
-                         /*mention*/ 0x3D2000, /*error*/ 0xFF5555);
+const Theme kVT320 = colourNicks(site(0x170800, 0xFF9A10, 0xFF9100, /*bar*/ 0x563000, /*panel*/ 0x230F00,
+                         /*mention*/ 0x3D2000, /*error*/ 0xFF5555), 74);
 // Matrix: fg rgba(160,224,68,.9), bg #000000, dim rgba(160,224,68,.5), border rgba(160,224,68,.4), code rgba(0,255,65,.08).
-const Theme kMatrix = site(0x000000, 0x90CA3D, 0x507022, /*bar*/ 0x405A1B, /*panel*/ 0x001405,
-                         /*mention*/ 0x263610, /*error*/ 0xFF5555);
+const Theme kMatrix = colourNicks(site(0x000000, 0x90CA3D, 0x507022, /*bar*/ 0x405A1B, /*panel*/ 0x001405,
+                         /*mention*/ 0x263610, /*error*/ 0xFF5555), 74);
 // Poetry: fg #222222, bg #fefaf8, dim #666666, border #cccccc, code #f0e0dd.
-const Theme kPoetry = site(0xFEFAF8, 0x222222, 0x666666, /*bar*/ 0xCCCCCC, /*panel*/ 0xF0E0DD,
-                         /*mention*/ 0xE0DEDE, /*error*/ 0xC01818);
+const Theme kPoetry = colourNicks(site(0xFEFAF8, 0x222222, 0x666666, /*bar*/ 0xCCCCCC, /*panel*/ 0xF0E0DD,
+                         /*mention*/ 0xE0DEDE, /*error*/ 0xC01818), 32);
 // Brutalist: fg #c0d0e8, bg #080810, dim #99a9bf, border rgba(160,180,220,.18), code rgba(160,180,220,.06).
-const Theme kBrutalist = site(0x080810, 0xC0D0E8, 0x99A9BF, /*bar*/ 0x232735, /*panel*/ 0x11121C,
-                         /*mention*/ 0x181B26, /*error*/ 0xFF5555);
+const Theme kBrutalist = colourNicks(site(0x080810, 0xC0D0E8, 0x99A9BF, /*bar*/ 0x232735, /*panel*/ 0x11121C,
+                         /*mention*/ 0x181B26, /*error*/ 0xFF5555), 74);
 // GRiD: fg #fea813, bg #180f06, dim #d08c17, border rgba(245,169,28,.22), code rgba(245,169,28,.08).
-const Theme kGrid = site(0x180F06, 0xFEA813, 0xD08C17, /*bar*/ 0x49310B, /*panel*/ 0x2A1B08,
-                         /*mention*/ 0x352309, /*error*/ 0xFF5555);
+const Theme kGrid = colourNicks(site(0x180F06, 0xFEA813, 0xD08C17, /*bar*/ 0x49310B, /*panel*/ 0x2A1B08,
+                         /*mention*/ 0x352309, /*error*/ 0xFF5555), 74);
 // Crypt: fg #ee1100, bg #100202, dim rgba(255,0,0,.8), border rgba(255,0,0,.3), code rgba(255,0,0,.05).
-const Theme kCrypt = site(0x100202, 0xEE1100, 0xCF0000, /*bar*/ 0x580101, /*panel*/ 0x1C0202,
-                         /*mention*/ 0x3B0101, /*error*/ 0xFFFFFF);
+const Theme kCrypt = colourNicks(site(0x100202, 0xEE1100, 0xCF0000, /*bar*/ 0x580101, /*panel*/ 0x1C0202,
+                         /*mention*/ 0x3B0101, /*error*/ 0xFFFFFF), 74);
 // Bubblegum: fg #6b1a4a, bg #ffe4f1, dim #b86b93, border #f5b5d1, code #ffd0e5.
 const Theme kBubblegum = colourNicks(site(0xFFE4F1, 0x6B1A4A, 0xB86B93, /*bar*/ 0xF5B5D1, /*panel*/ 0xFFD0E5,
                          /*mention*/ 0xF9C8DE, /*error*/ 0xC01818), 32);
@@ -115,6 +116,12 @@ const Theme kBubblegumDark = colourNicks(site(0x2A0F1F, 0xFFD0E5, 0xC97FA6, /*ba
 // Ours, not the site's: Top8's blues on a midnight navy.
 const Theme kTop8Dark = colourNicks(site(0x0B1622, 0xE6F2FF, 0x8FA8C2, /*bar*/ 0x336699,
                          /*panel*/ 0x13243A, /*mention*/ 0x1F3A5C, /*error*/ 0xFF5555), 74);
+// Ours: old-photograph sepia, parchment on dark walnut.
+const Theme kSepiaDark = colourNicks(site(0x1E1710, 0xE8D5B0, 0xA8916E, /*bar*/ 0x5A4630,
+                         /*panel*/ 0x2A2018, /*mention*/ 0x3D2F21, /*error*/ 0xE06C4C), 74);
+// Ours: C64's blues, much darker.
+const Theme kC64Dark = colourNicks(site(0x0E0E3A, 0xA5A5F0, 0x6C6CC4, /*bar*/ 0x2A2A88,
+                         /*panel*/ 0x16164E, /*mention*/ 0x232370, /*error*/ 0xFF5555), 74);
 
 
 // E-paper: black and white only.
@@ -149,6 +156,8 @@ const Theme& theme(ThemeId id) {
     case ThemeId::Top8: return kTop8;
     case ThemeId::BubblegumDark: return kBubblegumDark;
     case ThemeId::Top8Dark: return kTop8Dark;
+    case ThemeId::SepiaDark: return kSepiaDark;
+    case ThemeId::C64Dark: return kC64Dark;
     default: return kDefault;
   }
 }
@@ -188,6 +197,8 @@ const char* themeKey(ThemeId id) {
     case ThemeId::Top8: return "top8";
     case ThemeId::BubblegumDark: return "bubblegumdark";
     case ThemeId::Top8Dark: return "top8dark";
+    case ThemeId::SepiaDark: return "sepiadark";
+    case ThemeId::C64Dark: return "c64dark";
     default: return "default";
   }
 }
@@ -220,6 +231,8 @@ const char* themeLabel(ThemeId id) {
     case ThemeId::Top8: return "Top8";
     case ThemeId::BubblegumDark: return "Bubblegum Dark";
     case ThemeId::Top8Dark: return "Top8 Dark";
+    case ThemeId::SepiaDark: return "Sepia Dark";
+    case ThemeId::C64Dark: return "C64 Dark";
     default: return "Default";
   }
 }

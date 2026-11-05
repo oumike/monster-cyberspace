@@ -253,7 +253,7 @@ M2 (C-Mail) plan and all 12 of the M3 (Feed) plan are done and committed, with
 their boxes ticked. The room-screen, C-Mail, web config and Feed (`m9_fake`)
 hardware checks passed on the device (2026-10-26).
 Also done since: themes (Default / Black & white / White & black plus
-cyberspace.online's twelve, Dark … Top8, then our Bubblegum Dark and Top8 Dark, from the site's colours; picked in a
+cyberspace.online's twelve, Dark … Top8, then our Bubblegum Dark, Top8 Dark, Sepia Dark and C64 Dark, from the site's colours; picked in a
 Settings box and web config; saved by index, so append new ones), and the Wio Tracker L2 HAL with env `wio_l2`
 (bring-up only, untested on hardware).
 All 8 tasks of the GPS time plan are done and committed: NTP, GPS and RTC

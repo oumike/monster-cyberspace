@@ -15,7 +15,7 @@ const ThemeId kAll[] = {ThemeId::Default, ThemeId::BlackWhite, ThemeId::WhiteBla
                         ThemeId::Light,   ThemeId::Lcd,        ThemeId::C64,        ThemeId::Vt320,
                         ThemeId::Matrix,  ThemeId::Poetry,     ThemeId::Brutalist,  ThemeId::Grid,
                         ThemeId::Crypt,   ThemeId::Bubblegum,  ThemeId::Top8,
-                        ThemeId::BubblegumDark, ThemeId::Top8Dark};
+                        ThemeId::BubblegumDark, ThemeId::Top8Dark, ThemeId::SepiaDark, ThemeId::C64Dark};
 
 // Pairs that are drawn on top of each other must never match.
 void assertReadable(const Theme& t) {
@@ -108,13 +108,19 @@ void test_theme_ids_round_trip() {
 
 // Saved settings and backups hold these numbers and keys: they must not move.
 void test_site_theme_ids_are_stable() {
-  TEST_ASSERT_EQUAL(17, kThemeCount);
+  TEST_ASSERT_EQUAL(19, kThemeCount);
   TEST_ASSERT_EQUAL(3, static_cast<int>(ThemeId::Dark));
   TEST_ASSERT_EQUAL(14, static_cast<int>(ThemeId::Top8));
   TEST_ASSERT_EQUAL(15, static_cast<int>(ThemeId::BubblegumDark));
   TEST_ASSERT_EQUAL(16, static_cast<int>(ThemeId::Top8Dark));
   TEST_ASSERT_EQUAL_STRING("bubblegumdark", themeKey(ThemeId::BubblegumDark));
+  TEST_ASSERT_EQUAL(17, static_cast<int>(ThemeId::SepiaDark));
+  TEST_ASSERT_EQUAL(18, static_cast<int>(ThemeId::C64Dark));
   TEST_ASSERT_EQUAL_STRING("top8dark", themeKey(ThemeId::Top8Dark));
+  TEST_ASSERT_EQUAL_STRING("sepiadark", themeKey(ThemeId::SepiaDark));
+  TEST_ASSERT_EQUAL_STRING("Sepia Dark", themeLabel(ThemeId::SepiaDark));
+  TEST_ASSERT_EQUAL_STRING("c64dark", themeKey(ThemeId::C64Dark));
+  TEST_ASSERT_EQUAL_STRING("C64 Dark", themeLabel(ThemeId::C64Dark));
   TEST_ASSERT_EQUAL_STRING("Top8 Dark", themeLabel(ThemeId::Top8Dark));
   TEST_ASSERT_EQUAL_STRING("vt320", themeKey(ThemeId::Vt320));
   TEST_ASSERT_EQUAL_STRING("GRiD", themeLabel(ThemeId::Grid));
@@ -149,12 +155,14 @@ void test_next_theme_wraps() {
   TEST_ASSERT_EQUAL(static_cast<int>(ThemeId::WhiteBlack), static_cast<int>(nextTheme(ThemeId::BlackWhite)));
   TEST_ASSERT_EQUAL(static_cast<int>(ThemeId::Dark), static_cast<int>(nextTheme(ThemeId::WhiteBlack)));
   TEST_ASSERT_EQUAL(static_cast<int>(ThemeId::BubblegumDark), static_cast<int>(nextTheme(ThemeId::Top8)));
-  TEST_ASSERT_EQUAL(static_cast<int>(ThemeId::Default), static_cast<int>(nextTheme(ThemeId::Top8Dark)));
+  TEST_ASSERT_EQUAL(static_cast<int>(ThemeId::Default), static_cast<int>(nextTheme(ThemeId::C64Dark)));
+  TEST_ASSERT_EQUAL(static_cast<int>(ThemeId::C64Dark), static_cast<int>(nextTheme(ThemeId::SepiaDark)));
+  TEST_ASSERT_EQUAL(static_cast<int>(ThemeId::SepiaDark), static_cast<int>(nextTheme(ThemeId::Top8Dark)));
 }
 
 void test_light_colour_themes_have_dark_colour_nicks() {
   const char* names[] = {"tardibyte", "oumike", "zed", "alice", "bob", "carol", "dave", "yellowfan"};
-  for (ThemeId id : {ThemeId::Bubblegum, ThemeId::Top8}) {
+  for (ThemeId id : {ThemeId::Light, ThemeId::Lcd, ThemeId::Poetry, ThemeId::Bubblegum, ThemeId::Top8}) {
     const Theme& t = theme(id);
     TEST_ASSERT_TRUE(t.colorNicks);
     TEST_ASSERT_NOT_EQUAL(nickColor(t, "tardibyte", false), nickColor(t, "oumike", false));
@@ -165,7 +173,8 @@ void test_light_colour_themes_have_dark_colour_nicks() {
 
 void test_dark_colour_themes_have_light_colour_nicks() {
   const char* names[] = {"tardibyte", "oumike", "zed", "alice", "bob", "carol", "dave", "bluefan"};
-  for (ThemeId id : {ThemeId::BubblegumDark, ThemeId::Top8Dark}) {
+  for (ThemeId id : {ThemeId::Dark, ThemeId::C64, ThemeId::Vt320, ThemeId::Matrix, ThemeId::Brutalist,
+                     ThemeId::Grid, ThemeId::Crypt, ThemeId::BubblegumDark, ThemeId::Top8Dark, ThemeId::SepiaDark, ThemeId::C64Dark}) {
     const Theme& t = theme(id);
     TEST_ASSERT_TRUE(t.colorNicks);
     TEST_ASSERT_TRUE(luma(t.bg) < 60);

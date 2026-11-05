@@ -24,13 +24,14 @@ struct Theme {
 };
 
 // Saved by number: append, never reorder. Dark … Top8 are cyberspace.online's;
-// BubblegumDark and Top8Dark are our dark takes on its two light ones.
+// BubblegumDark and Top8Dark are our dark takes on its two light ones;
+// SepiaDark and C64Dark are ours too.
 enum class ThemeId : uint8_t {
   Default = 0, BlackWhite = 1, WhiteBlack = 2,
   Dark, Light, Lcd, C64, Vt320, Matrix, Poetry, Brutalist, Grid, Crypt, Bubblegum, Top8,
-  BubblegumDark, Top8Dark
+  BubblegumDark, Top8Dark, SepiaDark, C64Dark
 };
-constexpr int kThemeCount = 17;
+constexpr int kThemeCount = 19;
 
 const Theme& theme(ThemeId id);
 // The "terminal" look of the mockups: green on black.

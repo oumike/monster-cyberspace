@@ -72,6 +72,7 @@ textSize: compact
 theme: default        # default | bw | wb
 rotation: 0  # 0 landscape, 1 portrait, 2 landscape 180, 3 portrait 180
 drawerOpen: false
+usersHidden: false  # the docked user list in rooms
 buzzer: true
 tapVibrate: true
 alertVibrate: true

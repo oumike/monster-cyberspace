@@ -67,7 +67,7 @@ struct Staged {
   Str format, version, timezone, tzName, ntpServer, pagePassword, apPassword, textSize, theme,
       rotation, lastRoom, email, refreshToken, screenOnSecs, kbLight,
       notifyLight, notifyTimeout, idleSecs, wakeMins, volume, brightness, powerLight, wifiJoined, wifiSetup, wifiLooking, ledLevel;
-  Bool drawerOpen, buzzer, tapVibrate, alertVibrate, autoUpdate, screenSaver, spellCheck, webConfig;
+  Bool drawerOpen, usersHidden, buzzer, tapVibrate, alertVibrate, autoUpdate, screenSaver, spellCheck, webConfig;
   bool hasWifi = false, hasPhrases = false;
   std::vector<Item> wifi;
   std::vector<std::string> phrases;
@@ -295,7 +295,7 @@ bool parse(std::string_view yaml, Staged& st, std::string& err) {
              : key == "ledLevel"     ? &st.ledLevel
                                      : nullptr;
     Str ignored;
-    bool isBool = key == "drawerOpen" || key == "buzzer" || key == "tapVibrate" ||
+    bool isBool = key == "drawerOpen" || key == "usersHidden" || key == "buzzer" || key == "tapVibrate" ||
                   key == "alertVibrate" || key == "autoUpdate" ||
                   key == "screenSaver" || key == "spellCheck" || key == "webConfig";
     bool known = s || isBool;
@@ -316,6 +316,7 @@ bool parse(std::string_view yaml, Staged& st, std::string& err) {
                     : key == "screenSaver"  ? st.screenSaver
                     : key == "spellCheck"   ? st.spellCheck
                     : key == "webConfig"    ? st.webConfig
+                    : key == "usersHidden"  ? st.usersHidden
                                             : st.drawerOpen;
         if (!readBool(rest, l.no, dst, err)) return false;
       } else {
@@ -421,6 +422,7 @@ std::string backupToYaml(const Settings& s, const BackupMeta& m) {
   o += "rotation: " + std::to_string(s.rotation) +
        "  # 0 landscape, 1 portrait, 2 landscape 180, 3 portrait 180\n";
   o += std::string("drawerOpen: ") + boolStr(s.drawerOpen) + "\n";
+  o += std::string("usersHidden: ") + boolStr(s.usersHidden) + "  # the docked user list in rooms\n";
   o += std::string("buzzer: ") + boolStr(s.buzzer) + "\n";
   o += std::string("tapVibrate: ") + boolStr(s.tapVibrate) + "\n";
   o += std::string("alertVibrate: ") + boolStr(s.alertVibrate) + "\n";
@@ -588,6 +590,7 @@ bool backupFromYaml(std::string_view yaml, Settings& inOut, std::string& err, st
   if (st.theme.has) inOut.theme = theme;
   if (st.rotation.has) inOut.rotation = rotationFromIndex(rotation);
   if (st.drawerOpen.has) inOut.drawerOpen = st.drawerOpen.v;
+  if (st.usersHidden.has) inOut.usersHidden = st.usersHidden.v;
   if (st.buzzer.has) inOut.buzzer = st.buzzer.v;
   if (st.volume.has) inOut.volume = uint8_t(volume);
   if (st.tapVibrate.has) inOut.tapVibrate = st.tapVibrate.v;

@@ -533,7 +533,8 @@ The keyboard always types into the input line at the bottom.
   *sending…* until the server echoes it back. If the send fails, the text
   returns to the line and a banner explains why.
 - **Room menu:** Centre on an empty line. It has Who's here, Mute…, Unmute…,
-  Mark read and Leave room.
+  Mark read and Leave room, plus Hide user list (or Show user list) where
+  the list docks.
 - **Scroll:** Up/Down highlight messages. Up at the top loads older history.
   Down past the newest message returns you to typing.
 - **Message menu:** Centre on a highlighted message. It has Reply (`@name `),
@@ -546,8 +547,10 @@ The keyboard always types into the input line at the bottom.
   it. Up/Down pick a person, Centre opens their menu (mention, mute or
   unmute), and Left or Back closes it. The drawer stays open or closed as you
   move between rooms. On wide landscape screens (the CrowPanels, the Pager,
-  the T-Display P4 and the Tanmatsu) the list is always docked on the right;
-  on a touch screen, tap a name for their menu.
+  the T-Display P4 and the Tanmatsu) the list is docked on the right by
+  default; on a touch screen, tap a name for their menu. The room menu's Hide
+  user list closes it (it then opens with Right as on smaller screens) and
+  Show user list brings it back; the choice is kept across rooms and restarts.
 - **Commands:** type slash commands such as `/me`, `/dice` and `/mute name`,
   or pick them from the palette (on the M9, Sym).
 

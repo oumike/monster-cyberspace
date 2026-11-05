@@ -61,6 +61,7 @@ void load(rc::Settings& s) {
   // A board with one text size keeps it whatever was saved or restored.
   if (rc::TextSize only; board::fixedTextSize(only)) s.textSize = only;
   s.drawerOpen = p.getBool("drawer", false);
+  s.usersHidden = p.getBool("usershide", false);
   s.buzzer = p.getBool("buzz", true);
   s.volume = rc::snapVolume(p.getUChar("vol", rc::kVolumeDefault));
   s.autoUpdate = p.getBool("otaauto", false);
@@ -104,6 +105,7 @@ void saveUiPrefs(const rc::Settings& s) {
   if (!p.begin(kNs, false)) return;
   p.putUChar("tsize", static_cast<uint8_t>(s.textSize));
   p.putBool("drawer", s.drawerOpen);
+  p.putBool("usershide", s.usersHidden);
   p.putBool("buzz", s.buzzer);
   p.putUChar("vol", s.volume);
   p.putUChar("theme", static_cast<uint8_t>(s.theme));

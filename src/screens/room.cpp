@@ -90,7 +90,12 @@ void RoomScreen::leave() {
 
 bool RoomScreen::drawerOpen() const { return !dm_ && app().cfg.drawerOpen; }
 
-bool RoomScreen::drawerDocked() const { return !dm_ && Drawer::docks(board::panelWidth(), board::panelHeight()); }
+bool RoomScreen::drawerDockable() const {
+  return !dm_ && Drawer::docks(board::panelWidth(), board::panelHeight());
+}
+
+// Hidden from the room menu, a docked list acts as on small screens.
+bool RoomScreen::drawerDocked() const { return drawerDockable() && !app().cfg.usersHidden; }
 
 void RoomScreen::noteTyping() {
   if (!dm_) return;
@@ -135,6 +140,15 @@ void RoomScreen::setDrawer(bool open) {
   settings::saveUiPrefs(app().cfg);
   // Docked, presence is already open and stays so.
   if (!drawerDocked()) chatSource().command(Command{open ? CmdType::OpenPresence : CmdType::ClosePresence});
+}
+
+void RoomScreen::setUsersHidden(bool hide) {
+  auto& c = app().cfg;
+  if (c.usersHidden == hide) return;
+  c.usersHidden = hide;
+  c.drawerOpen = false;
+  settings::saveUiPrefs(c);
+  chatSource().command(Command{hide ? CmdType::ClosePresence : CmdType::OpenPresence});
 }
 
 bool RoomScreen::isMuted(const std::string& name) { return muted_.count(lower(name)) > 0; }
@@ -366,10 +380,15 @@ void RoomScreen::openRoomMenu() {
   }
 #endif
   menuKeys_ = {"who", "mute", "unmute", "read", "leave"};
-  openMenu(Menu::Room, utf8ToU32("#" + slug_),
-           {ListItem{U"Who's here", U""}, ListItem{U"Mute\u2026", U""},
-            ListItem{U"Unmute\u2026", U""}, ListItem{U"Mark read", U""},
-            ListItem{U"Leave room", U""}});
+  std::vector<ListItem> items{ListItem{U"Who's here", U""}, ListItem{U"Mute\u2026", U""},
+                              ListItem{U"Unmute\u2026", U""}, ListItem{U"Mark read", U""},
+                              ListItem{U"Leave room", U""}};
+  if (drawerDockable()) {
+    const bool hidden = app().cfg.usersHidden;
+    menuKeys_.insert(menuKeys_.begin() + 1, hidden ? "showusers" : "hideusers");
+    items.insert(items.begin() + 1, ListItem{hidden ? U"Show user list" : U"Hide user list", U""});
+  }
+  openMenu(Menu::Room, utf8ToU32("#" + slug_), std::move(items));
 }
 
 void RoomScreen::openPersonMenu(const std::string& name) {
@@ -478,6 +497,8 @@ void RoomScreen::pickMenu() {
       } else if (key == "read") {
         chatSource().command(Command{CmdType::MarkRead, slug_});
         lastMarkRead_ = nowEpochMs();
+      } else if (key == "hideusers" || key == "showusers") {
+        setUsersHidden(key == "hideusers");
       } else if (key == "leave") {
         router::go(router::Id::RoomList);
 #if RC_FEAT_CMAIL

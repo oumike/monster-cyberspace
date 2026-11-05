@@ -59,6 +59,7 @@ class RoomScreen : public Screen {
   void openMessageMenu();
   void pickMenu();
   void setDrawer(bool open);
+  void setUsersHidden(bool hide);
   void openReader(const CircMessage& m);
   void openLink(const std::string& url);
   bool isMuted(const std::string& name);
@@ -67,6 +68,7 @@ class RoomScreen : public Screen {
   // A wide panel keeps the who's-here list docked on the right of a room,
   // whether or not the drawer has the keys.
   bool drawerDocked() const;
+  bool drawerDockable() const;
   // Typing on/off writes, only ever from a key press (C-Mail).
   void noteTyping();
   void stopTyping();

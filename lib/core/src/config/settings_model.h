@@ -24,6 +24,7 @@ struct Settings {
   std::string email, refreshToken, tz = "UTC0", pagePassword, apPassword;
   TextSize textSize = TextSize::Compact;
   bool drawerOpen = false, buzzer = true;
+  bool usersHidden = false;  // the docked user list in rooms, hidden
   uint8_t volume = kVolumeDefault;  // alert sound, percent (ui/volume.h)
   bool tapVibrate = true, alertVibrate = true;  // boards with a vibration motor
   bool autoUpdate = false;  // install a newer release without asking

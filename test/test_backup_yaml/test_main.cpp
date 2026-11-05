@@ -82,6 +82,7 @@ Settings full() {
   s.apPassword = "appass123";
   s.textSize = TextSize::Comfortable;
   s.drawerOpen = true;
+  s.usersHidden = true;
   s.buzzer = false;
   s.tapVibrate = false;
   s.alertVibrate = false;
@@ -130,6 +131,7 @@ void expectSame(const Settings& a, const Settings& b) {
   TEST_ASSERT_EQUAL_STRING(a.apPassword.c_str(), b.apPassword.c_str());
   TEST_ASSERT_TRUE(a.textSize == b.textSize);
   TEST_ASSERT_EQUAL(a.drawerOpen, b.drawerOpen);
+  TEST_ASSERT_EQUAL(a.usersHidden, b.usersHidden);
   TEST_ASSERT_EQUAL(a.buzzer, b.buzzer);
   TEST_ASSERT_EQUAL(a.tapVibrate, b.tapVibrate);
   TEST_ASSERT_EQUAL(a.alertVibrate, b.alertVibrate);

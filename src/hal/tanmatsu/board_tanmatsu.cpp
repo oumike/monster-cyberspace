@@ -168,6 +168,15 @@ void flushPending() {
 
 uint8_t backlightValue = 255;
 
+// The panel looks its brightest by about 28% duty and must never go black
+// while lit, so the UI's 1..255 maps linearly onto a 6%..28% duty band
+// (wadamesh's applyBrightness), every step visible. 0 stays off.
+uint8_t backlightDuty(uint8_t level) {
+  constexpr int kFloor = 6 * 255 / 100, kCeil = 28 * 255 / 100;
+  if (level == 0) return 0;
+  return uint8_t(kFloor + (level - 1) * (kCeil - kFloor) / 254);
+}
+
 }  // namespace
 
 void begin() {
@@ -179,7 +188,7 @@ void begin() {
   coproc::write8(coproc::ADC_CONTROL, 0x02);  // continuous: VBAT stays fresh
   wifiCoprocessor();
   if (!panel::begin()) Serial.println("[tanmatsu] no panel");
-  coproc::write8(coproc::DISPLAY_BACKLIGHT, backlightValue);
+  coproc::write8(coproc::DISPLAY_BACKLIGHT, backlightDuty(backlightValue));
   pinMode(VOLUME_DOWN, INPUT_PULLUP);
   audio::begin();
 }
@@ -234,11 +243,7 @@ bool canRotate() { return false; }
 void backlight(bool on) { backlightLevel(on ? 255 : 0); }
 void backlightLevel(uint8_t level) {
   backlightValue = level;
-  const bool ok = coproc::write8(coproc::DISPLAY_BACKLIGHT, level);
-  uint8_t back = 0;
-  const bool read = coproc::read(coproc::DISPLAY_BACKLIGHT, &back, 1);
-  Serial.printf("[tanmatsu] backlight %u: write %s, reads %d\n", level, ok ? "ok" : "FAILED",
-                read ? int(back) : -1);
+  coproc::write8(coproc::DISPLAY_BACKLIGHT, backlightDuty(level));
 }
 void displaySleep(bool sleep) {
   flushPending();

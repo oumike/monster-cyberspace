@@ -19,7 +19,7 @@ enum Reg : uint8_t {
   RTC = 18,                // 4 bytes, seconds, LSB first
   ADC_CONTROL = 108,       // bit 0 trigger, bit 1 continuous
   VBAT = 109,              // 2 bytes, mV, LSB first
-  CHARGING = 120,          // bit 1 USB attached
+  CHARGING = 120,          // bit 0 battery attached, bit 1 USB attached
   LEDS = 127,              // 6 x GRB
   LED_MODE = 145,          // bit 0 automatic
 };

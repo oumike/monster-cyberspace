@@ -495,7 +495,7 @@ is open.
 - [ ] LEDs: the power LED is dim green (Settings → Power light changes its colour at once); the radio LED is yellow while Wi-Fi looks, green once joined, blue with only the setup AP up, and the Wi-Fi joined / setup AP / looking colours change each within a second; Settings → LED brightness dims all three LEDs together at each stop, Dim still visible, Cancel restores it; all of these survive a reboot and a backup restore; a mention or C-Mail blinks the messages LED in the Notify light colour; Light timeout and Off work
 - [ ] Bottom side button (volume down): a press turns the screen off and on; keys (Enter too) do nothing while dark or on the screensaver; the power button does nothing in the UI, and holding it 2 s still cuts the power
 - [ ] Speaker: with Alert sound on, a mention and a C-Mail beep through the ES8156, clean, with no hiss between beeps (the amplifier is off between them); the Alert sound slider changes the loudness
-- [ ] Battery: Settings shows a sensible percentage; the charging state follows the USB cable
+- [ ] Battery: Settings shows a sensible percentage that doesn't jump around (a half-full cell near 50%, not near 0%); the charging state follows the USB cable; with no cell fitted it shows no percentage
 - [ ] RTC: the time set by NTP survives a power cycle with Wi-Fi off
 - [ ] SD (FAT32 card, 4-bit): Back up to SD card, then Restore from SD card…, both work
 - [ ] Back to the launcher: reinstalling it from Nicolai Electronics' web installer brings the Tanmatsu launcher back

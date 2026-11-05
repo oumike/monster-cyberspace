@@ -117,9 +117,13 @@ this firmware.
 - **Notification light:** LED 2, the "messages" LED. `board::begin()` sets the
   LEDs to manual (register 145 = 0) and lights LED 0 (power) dim green itself,
   since manual mode stops the coprocessor's own power LED.
-- **Battery:** VBAT (continuous ADC enabled at boot) mapped to a percentage
-  with the BSP's curve, `123 − 123 / (1 + (v/3.7)^80)^0.165`, clamped 0–100;
-  `externalPower()` from status bit 1 (USB attached). Read every 5 s.
+- **Battery:** VBAT (continuous ADC enabled at boot), read twice per sample
+  and used only when both reads are in 2304–4848 mV and agree within 40 mV
+  (the coprocessor rewrites the two bytes mid-read; `rc::tanmatsuVbatAgree`).
+  Mapped to a percentage with badge-bsp's under-load table, 4.05 V = 100 % …
+  3.30 V = 0 % (`rc::tanmatsuBatteryPercent`, as camillia-mt). Status bit 0
+  clear (no cell) gives no reading; `externalPower()` from status bit 1 (USB
+  attached). Read every 5 s.
 - **RTC:** registers 18–21; set by NTP like the other boards' RTCs.
 - **SD:** Arduino `SD_MMC` 4-bit on the slot-0 pins (wadamesh uses `SD_MMC`
   too).

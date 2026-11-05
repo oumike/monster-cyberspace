@@ -7,13 +7,10 @@
 #include <FS.h>
 #include <HWCDC.h>
 #include <SD_MMC.h>
-#include <math.h>
-
-#include <algorithm>
-
 #include "hal/board.h"
 #include "hal/tanmatsu/coproc_tanmatsu.h"
 #include "hal/tanmatsu/pins_tanmatsu.h"
+#include "power/battery.h"
 
 namespace board {
 namespace {
@@ -28,10 +25,20 @@ int percent = -1;
 float volts = 0.0f;
 bool usb = false;
 
-// badge-bsp's curve from VBAT to a percentage.
-int voltsToPercent(float v) {
-  const float p = 123.0f - 123.0f / powf(1.0f + powf(v / 3.7f, 80.0f), 0.165f);
-  return int(std::min(100.0f, std::max(0.0f, p)));
+bool readVbat(uint16_t& mv) {
+  uint8_t b[2];
+  if (!coproc::read(coproc::VBAT, b, 2)) return false;
+  mv = uint16_t(b[0] | b[1] << 8);
+  return true;
+}
+
+// Two reads that agree (rc::tanmatsuVbatAgree), up to three tries.
+bool readVbatAgreed(uint16_t& mv) {
+  for (int i = 0; i < 3; ++i) {
+    uint16_t a, b;
+    if (readVbat(a) && readVbat(b) && rc::tanmatsuVbatAgree(a, b, mv)) return true;
+  }
+  return false;
 }
 
 void batterySample() {
@@ -39,16 +46,20 @@ void batterySample() {
   if (batteryRead && now - batteryMs < kBatteryMs) return;
   batteryRead = true;
   batteryMs = now;
-  uint8_t mv[2];
-  if (coproc::read(coproc::VBAT, mv, 2)) {
-    const float v = uint16_t(mv[0] | mv[1] << 8) / 1000.0f;
-    if (v >= 2.5f && v <= 4.6f) {
-      volts = v;
-      percent = voltsToPercent(v);
-    }
-  }
   uint8_t status;
-  if (coproc::read(coproc::CHARGING, &status, 1)) usb = status & 0x02;
+  if (!coproc::read(coproc::CHARGING, &status, 1)) return;
+  usb = status & 0x02;
+  // No cell fitted: no reading, rather than whatever VBAT floats at.
+  if (!(status & 0x01)) {
+    volts = 0.0f;
+    percent = -1;
+    return;
+  }
+  uint16_t mv;
+  if (readVbatAgreed(mv)) {
+    volts = mv / 1000.0f;
+    percent = rc::tanmatsuBatteryPercent(volts);
+  }
 }
 
 bool sdMounted = false;

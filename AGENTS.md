@@ -347,7 +347,7 @@ The Tanmatsu (env `tanmatsu`) was added on 2026-11-04 (built without
 flashing): landscape at 2x with its keyboard. It runs on hardware; brightness,
 LED and status-light settings followed, and it joined releases and the
 flasher the same day. The rest of its hardware check is open (docs/TESTING.md).
-The native suite is green: 740/740
+The native suite is green: 742/742
 (`pio test -e native`), and `scripts/build-upload-monitor.sh -B` builds all
 thirteen firmware envs (the X4 only from a path without spaces).
 

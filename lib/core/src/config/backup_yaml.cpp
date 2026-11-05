@@ -66,7 +66,7 @@ struct Item {
 struct Staged {
   Str format, version, timezone, tzName, ntpServer, pagePassword, apPassword, textSize, theme,
       rotation, lastRoom, email, refreshToken, screenOnSecs, kbLight,
-      notifyLight, notifyTimeout, idleSecs, wakeMins, volume, brightness, powerLight;
+      notifyLight, notifyTimeout, idleSecs, wakeMins, volume, brightness, powerLight, wifiJoined, wifiSetup, wifiLooking, ledLevel;
   Bool drawerOpen, buzzer, tapVibrate, alertVibrate, autoUpdate, screenSaver, spellCheck, webConfig;
   bool hasWifi = false, hasPhrases = false;
   std::vector<Item> wifi;
@@ -289,6 +289,10 @@ bool parse(std::string_view yaml, Staged& st, std::string& err) {
              : key == "volume"       ? &st.volume
              : key == "brightness"   ? &st.brightness
              : key == "powerLight"   ? &st.powerLight
+             : key == "wifiJoined"   ? &st.wifiJoined
+             : key == "wifiSetup"    ? &st.wifiSetup
+             : key == "wifiLooking"  ? &st.wifiLooking
+             : key == "ledLevel"     ? &st.ledLevel
                                      : nullptr;
     Str ignored;
     bool isBool = key == "drawerOpen" || key == "buzzer" || key == "tapVibrate" ||
@@ -427,7 +431,11 @@ std::string backupToYaml(const Settings& s, const BackupMeta& m) {
   o += std::string("screenSaver: ") + boolStr(s.screenSaver) + "  # at the timeout; false: screen off\n";
   o += std::string("spellCheck: ") + boolStr(s.spellCheck) + "  # suggestions while typing\n";
   o += std::string("kbLight: ") + kbLightKey(s.kbLight) + "  # off | low | medium | high\n";
-  o += std::string("powerLight: ") + kbLightKey(s.powerLight) + "  # off | low | medium | high\n";
+  o += std::string("ledLevel: ") + ledLevelKey(s.ledLevel) + "  # off | dim | low | medium | high\n";
+  o += std::string("powerLight: ") + ledColorKey(s.powerLight) + "  # a notifyLight colour\n";
+  o += std::string("wifiJoined: ") + ledColorKey(s.wifiJoined) + "  # a notifyLight colour\n";
+  o += std::string("wifiSetup: ") + ledColorKey(s.wifiSetup) + "  # a notifyLight colour\n";
+  o += std::string("wifiLooking: ") + ledColorKey(s.wifiLooking) + "  # a notifyLight colour\n";
   o += std::string("notifyLight: ") + ledColorKey(s.notifyLight) +
        "  # off | red | green | blue | yellow | cyan | magenta | white\n";
   o += "notifyTimeout: " + std::to_string(s.notifyTimeoutSecs) + "  # seconds, 0 until read\n";
@@ -494,8 +502,13 @@ bool backupFromYaml(std::string_view yaml, Settings& inOut, std::string& err, st
   }
 
   ThemeId theme = inOut.theme;
-  KbLight kbLight = inOut.kbLight, powerLight = inOut.powerLight;
-  LedColor notifyLight = inOut.notifyLight;
+  KbLight kbLight = inOut.kbLight;
+  LedLevel ledLevel = inOut.ledLevel;
+  LedColor notifyLight = inOut.notifyLight, powerLight = inOut.powerLight,
+           wifiJoined = inOut.wifiJoined, wifiSetup = inOut.wifiSetup,
+           wifiLooking = inOut.wifiLooking;
+  constexpr const char* kWifiColours =
+      "wi-fi light: off, red, green, blue, yellow, cyan, magenta or white";
   int rotation = 0, screenOnSecs = 0, notifyTimeout = 0, idleSecs = 0, wakeMins = 0, volume = 0,
       brightness = 0;
   if (st.apPassword.has && !validApPassword(st.apPassword.v)) {
@@ -515,8 +528,17 @@ bool backupFromYaml(std::string_view yaml, Settings& inOut, std::string& err, st
              "screen timeout: 15, 30, 60, 120, 300, 600, 1800, 3600 or 0 (never)");
   } else if (st.kbLight.has && !parseKbLight(st.kbLight.v, kbLight)) {
     err = at(st.kbLight.line, "keyboard light: off, low, medium or high");
-  } else if (st.powerLight.has && !parseKbLight(st.powerLight.v, powerLight)) {
-    err = at(st.powerLight.line, "power light: off, low, medium or high");
+  } else if (st.ledLevel.has && !parseLedLevel(st.ledLevel.v, ledLevel)) {
+    err = at(st.ledLevel.line, "LED brightness: off, dim, low, medium or high");
+  } else if (st.powerLight.has && !parseLedColor(st.powerLight.v, powerLight)) {
+    err = at(st.powerLight.line,
+             "power light: off, red, green, blue, yellow, cyan, magenta or white");
+  } else if (st.wifiJoined.has && !parseLedColor(st.wifiJoined.v, wifiJoined)) {
+    err = at(st.wifiJoined.line, kWifiColours);
+  } else if (st.wifiSetup.has && !parseLedColor(st.wifiSetup.v, wifiSetup)) {
+    err = at(st.wifiSetup.line, kWifiColours);
+  } else if (st.wifiLooking.has && !parseLedColor(st.wifiLooking.v, wifiLooking)) {
+    err = at(st.wifiLooking.line, kWifiColours);
   } else if (st.notifyLight.has && !parseLedColor(st.notifyLight.v, notifyLight)) {
     err = at(st.notifyLight.line,
              "notify light: off, red, green, blue, yellow, cyan, magenta or white");
@@ -576,7 +598,11 @@ bool backupFromYaml(std::string_view yaml, Settings& inOut, std::string& err, st
   if (st.screenSaver.has) inOut.screenSaver = st.screenSaver.v;
   if (RC_FEAT_SPELL && st.spellCheck.has) inOut.spellCheck = st.spellCheck.v;
   if (st.kbLight.has) inOut.kbLight = kbLight;
+  if (st.ledLevel.has) inOut.ledLevel = ledLevel;
   if (st.powerLight.has) inOut.powerLight = powerLight;
+  if (st.wifiJoined.has) inOut.wifiJoined = wifiJoined;
+  if (st.wifiSetup.has) inOut.wifiSetup = wifiSetup;
+  if (st.wifiLooking.has) inOut.wifiLooking = wifiLooking;
   if (st.brightness.has) inOut.brightness = uint8_t(brightness);
   if (st.notifyLight.has) inOut.notifyLight = notifyLight;
   if (st.notifyTimeout.has) inOut.notifyTimeoutSecs = uint16_t(notifyTimeout);

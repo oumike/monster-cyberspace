@@ -18,6 +18,7 @@
 #include "power/power_policy.h"
 #include "tz/zones.h"
 #include "ui/brightness.h"
+#include "ui/led_level.h"
 #include "ui/rotation.h"
 #include "ui/kb_light.h"
 #include "ui/notify_light.h"
@@ -46,7 +47,11 @@ enum Item {
   kScreenTimeout,
   kAtTimeout,
   kKbLight,
+  kLedLevel,
   kPowerLight,
+  kWifiJoined,
+  kWifiSetup,
+  kWifiLooking,
   kSound,
   kTapVibrate,
   kAlertVibrate,
@@ -82,7 +87,13 @@ std::vector<Item> menuItems() {
   v.push_back(kScreenTimeout);
   v.push_back(kAtTimeout);
   if (board::hasKbLight()) v.push_back(kKbLight);
+  if (board::hasLedLevel()) v.push_back(kLedLevel);
   if (board::hasPowerLight()) v.push_back(kPowerLight);
+  if (board::hasWifiLight()) {
+    v.push_back(kWifiJoined);
+    v.push_back(kWifiSetup);
+    v.push_back(kWifiLooking);
+  }
   if (board::hasSound()) v.push_back(kSound);
   if (board::hasHaptic()) {
     v.push_back(kTapVibrate);
@@ -166,6 +177,7 @@ void SettingsScreen::enter(const std::string&) {
   confirm_ = Confirm::None;
   closeVolume();
   closeBrightness();
+  closeLedLevel();
   sizeSlider_.close();
   picking_ = false;
   menu_.setSelected(0);
@@ -257,15 +269,22 @@ void SettingsScreen::applyChoice(Confirm c, int i) {
     }
     return;
   }
-  if (c == Confirm::KbLight || c == Confirm::PowerLight) {
+  if (c == Confirm::KbLight) {
     if (i >= 0 && i < int(std::size(kKbLightOrder))) {
-      if (c == Confirm::KbLight) {
-        app().cfg.kbLight = kKbLightOrder[i];
-        settings::saveKbLight(app().cfg.kbLight);
-      } else {
-        app().cfg.powerLight = kKbLightOrder[i];
-        settings::savePowerLight(app().cfg.powerLight);
-      }
+      app().cfg.kbLight = kKbLightOrder[i];
+      settings::saveKbLight(app().cfg.kbLight);
+    }
+    return;
+  }
+  if (c == Confirm::PowerLight || c == Confirm::WifiJoined || c == Confirm::WifiSetup ||
+      c == Confirm::WifiLooking) {
+    if (i >= 0 && i < int(std::size(kLedColorOrder))) {
+      Settings& s = app().cfg;
+      (c == Confirm::PowerLight   ? s.powerLight
+       : c == Confirm::WifiJoined ? s.wifiJoined
+       : c == Confirm::WifiSetup  ? s.wifiSetup
+                                  : s.wifiLooking) = kLedColorOrder[i];
+      settings::saveStatusLights(s);
     }
     return;
   }
@@ -400,6 +419,45 @@ void SettingsScreen::brightnessKey(const KeyEvent& k) {
   }
 }
 
+// The LEDs follow each stop; Set keeps it, Cancel puts the old one back.
+void SettingsScreen::ledLevelKey(const KeyEvent& k) {
+  switch (ledLevel_.key(k)) {
+    case Slider::Result::Changed:
+      ui::previewLedLevel(ledLevel_.value());
+      break;
+    case Slider::Result::Picked:
+      app().cfg.ledLevel = ledLevelFromIndex(ledLevel_.value(), app().cfg.ledLevel);
+      settings::saveStatusLights(app().cfg);
+      ui::previewLedLevel(-1);
+      break;
+    case Slider::Result::Closed:
+      ui::previewLedLevel(-1);
+      break;
+    case Slider::Result::None:
+      break;
+  }
+}
+
+void SettingsScreen::closeLedLevel() {
+  if (!ledLevel_.isOpen()) return;
+  ledLevel_.close();
+  ui::previewLedLevel(-1);
+}
+
+void SettingsScreen::openColour(Confirm c, const char32_t* title, LedColor cur) {
+  std::vector<ListItem> rows;
+  int sel = 0;
+  for (size_t i = 0; i < std::size(kLedColorOrder); ++i) {
+    ListItem it{ledColorLabel(kLedColorOrder[i]), U""};
+    if (kLedColorOrder[i] == cur) {
+      it.marker = true;
+      sel = int(i);
+    }
+    rows.push_back(std::move(it));
+  }
+  openChoice(c, title, std::move(rows), sel);
+}
+
 void SettingsScreen::closeBrightness() {
   if (!brightness_.isOpen()) return;
   brightness_.close();
@@ -417,6 +475,7 @@ void SettingsScreen::onKey(const KeyEvent& k) {
   if (picker_.isOpen()) return picker_.onKey(k);
   if (volume_.isOpen()) return volumeKey(k);
   if (brightness_.isOpen()) return brightnessKey(k);
+  if (ledLevel_.isOpen()) return ledLevelKey(k);
   if (sizeSlider_.isOpen()) return sizeKey(k);
   if (buttons_ && (picking_ || confirm_ != Confirm::None)) return choiceKey(k);
   if (picking_) return zoneKey(k);
@@ -510,25 +569,38 @@ void SettingsScreen::activate(int item) {
       openChoice(Confirm::Timeout, U"screen timeout", std::move(rows), sel);
       break;
     }
-    case kKbLight:
-    case kPowerLight: {
-      const KbLight cur = item == kKbLight ? app().cfg.kbLight : app().cfg.powerLight;
+    case kKbLight: {
       std::vector<ListItem> rows;
       int sel = 0;
       for (size_t i = 0; i < std::size(kKbLightOrder); ++i) {
         ListItem it{kbLightLabel(kKbLightOrder[i]), U""};
-        if (kKbLightOrder[i] == cur) {
+        if (kKbLightOrder[i] == app().cfg.kbLight) {
           it.marker = true;
           sel = int(i);
         }
         rows.push_back(std::move(it));
       }
-      if (item == kKbLight)
-        openChoice(Confirm::KbLight, U"keyboard light", std::move(rows), sel);
-      else
-        openChoice(Confirm::PowerLight, U"power light", std::move(rows), sel);
+      openChoice(Confirm::KbLight, U"keyboard light", std::move(rows), sel);
       break;
     }
+    case kLedLevel: {
+      std::vector<std::u32string> names;
+      for (int i = 0; i < kLedLevelCount; ++i) names.push_back(ledLevelLabel(LedLevel(i)));
+      ledLevel_.openChoices(U"LED brightness", std::move(names), int(app().cfg.ledLevel));
+      break;
+    }
+    case kPowerLight:
+      openColour(Confirm::PowerLight, U"power light", app().cfg.powerLight);
+      break;
+    case kWifiJoined:
+      openColour(Confirm::WifiJoined, U"Wi-Fi joined", app().cfg.wifiJoined);
+      break;
+    case kWifiSetup:
+      openColour(Confirm::WifiSetup, U"Wi-Fi setup AP", app().cfg.wifiSetup);
+      break;
+    case kWifiLooking:
+      openColour(Confirm::WifiLooking, U"Wi-Fi looking", app().cfg.wifiLooking);
+      break;
     case kBrightness:
       brightness_.open(U"brightness", app().cfg.brightness, kBrightnessMax, kBrightnessStep, U"",
                        kBrightnessMin);
@@ -700,8 +772,20 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
       case kKbLight:
         rows.push_back(ListItem{U"Keyboard light", kbLightLabel(a.cfg.kbLight)});
         break;
+      case kLedLevel:
+        rows.push_back(ListItem{U"LED brightness", ledLevelLabel(a.cfg.ledLevel)});
+        break;
       case kPowerLight:
-        rows.push_back(ListItem{U"Power light", kbLightLabel(a.cfg.powerLight)});
+        rows.push_back(ListItem{U"Power light", ledColorLabel(a.cfg.powerLight)});
+        break;
+      case kWifiJoined:
+        rows.push_back(ListItem{U"Wi-Fi joined", ledColorLabel(a.cfg.wifiJoined)});
+        break;
+      case kWifiSetup:
+        rows.push_back(ListItem{U"Wi-Fi setup AP", ledColorLabel(a.cfg.wifiSetup)});
+        break;
+      case kWifiLooking:
+        rows.push_back(ListItem{U"Wi-Fi looking", ledColorLabel(a.cfg.wifiLooking)});
         break;
       case kBrightness:
         rows.push_back(ListItem{U"Brightness", volumeLabel(a.cfg.brightness)});
@@ -854,6 +938,10 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
     if (!buttons_) menu_.render(g, menuTop, bottom, 1, g.cols() - 2, t);
     volume_.render(g, 1, bottom, t);
     drawHint(g, t, U"\u2190\u2192 volume  \u25CF set  back: cancel", U"tap the bar  Set or Cancel");
+  } else if (ledLevel_.isOpen()) {
+    if (!buttons_) menu_.render(g, menuTop, bottom, 1, g.cols() - 2, t);
+    ledLevel_.render(g, 1, bottom, t);
+    drawHint(g, t, U"\u2190\u2192 LED brightness  \u25CF set  back: cancel", U"tap a stop  Set or Cancel");
   } else if (brightness_.isOpen()) {
     if (!buttons_) menu_.render(g, menuTop, bottom, 1, g.cols() - 2, t);
     brightness_.render(g, 1, bottom, t);
@@ -876,7 +964,8 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
     // strip only has room for a two-row confirm.
     const bool pick = confirm_ == Confirm::Rotation ||
                       confirm_ == Confirm::Timeout || confirm_ == Confirm::KbLight ||
-                      confirm_ == Confirm::PowerLight ||
+                      confirm_ == Confirm::PowerLight || confirm_ == Confirm::WifiJoined ||
+                      confirm_ == Confirm::WifiSetup || confirm_ == Confirm::WifiLooking ||
                       confirm_ == Confirm::NotifyLight || confirm_ == Confirm::NotifyTimeout ||
                       confirm_ == Confirm::Theme || confirm_ == Confirm::Idle ||
                       confirm_ == Confirm::Wake;

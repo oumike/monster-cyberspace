@@ -37,6 +37,7 @@
 #include "tz/zones.h"
 #include "ui/brightness.h"
 #include "ui/kb_light.h"
+#include "ui/led_level.h"
 #include "ui/notify_light.h"
 #include "ui/screen_timeout.h"
 #if RC_FEAT_MASCOT
@@ -435,7 +436,13 @@ esp_err_t getPrefs(httpd_req_t* req) {
   d["ntpServer"] = s.ntpServer;
   if (board::canRotate()) d["rotation"] = s.rotation;
   if (board::hasKbLight()) d["kbLight"] = rc::kbLightKey(s.kbLight);
-  if (board::hasPowerLight()) d["powerLight"] = rc::kbLightKey(s.powerLight);
+  if (board::hasLedLevel()) d["ledLevel"] = rc::ledLevelKey(s.ledLevel);
+  if (board::hasPowerLight()) d["powerLight"] = rc::ledColorKey(s.powerLight);
+  if (board::hasWifiLight()) {
+    d["wifiJoined"] = rc::ledColorKey(s.wifiJoined);
+    d["wifiSetup"] = rc::ledColorKey(s.wifiSetup);
+    d["wifiLooking"] = rc::ledColorKey(s.wifiLooking);
+  }
   if (!board::eink()) d["brightness"] = s.brightness;
   if (board::hasHaptic()) {
     d["tapVibrate"] = s.tapVibrate;
@@ -514,11 +521,19 @@ esp_err_t postPrefs(httpd_req_t* req) {
   if (!doc["kbLight"].isNull() &&
       (!doc["kbLight"].is<const char*>() || !rc::parseKbLight(doc["kbLight"].as<const char*>(), kbLight)))
     return fail(req, "400 Bad Request", "Keyboard light: off, low, medium or high");
-  rc::KbLight powerLight = s.powerLight;
-  if (!doc["powerLight"].isNull() &&
-      (!doc["powerLight"].is<const char*>() ||
-       !rc::parseKbLight(doc["powerLight"].as<const char*>(), powerLight)))
-    return fail(req, "400 Bad Request", "Power light: off, low, medium or high");
+  rc::Settings lights = s;
+  auto colour = [&doc](const char* key, rc::LedColor& out) {
+    return doc[key].isNull() ||
+           (doc[key].is<const char*>() && rc::parseLedColor(doc[key].as<const char*>(), out));
+  };
+  if (!colour("powerLight", lights.powerLight) || !colour("wifiJoined", lights.wifiJoined) ||
+      !colour("wifiSetup", lights.wifiSetup) || !colour("wifiLooking", lights.wifiLooking))
+    return fail(req, "400 Bad Request",
+                "Lights: off, red, green, blue, yellow, cyan, magenta or white");
+  if (!doc["ledLevel"].isNull() &&
+      (!doc["ledLevel"].is<const char*>() ||
+       !rc::parseLedLevel(doc["ledLevel"].as<const char*>(), lights.ledLevel)))
+    return fail(req, "400 Bad Request", "LED brightness: off, dim, low, medium or high");
   uint8_t brightness = s.brightness;
   if (!doc["brightness"].isNull()) {
     if (!doc["brightness"].is<int>() || !rc::validBrightness(doc["brightness"].as<int>()))
@@ -608,9 +623,18 @@ esp_err_t postPrefs(httpd_req_t* req) {
     rc::app().cfg.kbLight = kbLight;
     settings::saveKbLight(kbLight);
   }
-  if (board::hasPowerLight() && powerLight != s.powerLight) {
-    rc::app().cfg.powerLight = powerLight;
-    settings::savePowerLight(powerLight);
+  if (lights.ledLevel != s.ledLevel || lights.powerLight != s.powerLight ||
+      lights.wifiJoined != s.wifiJoined || lights.wifiSetup != s.wifiSetup ||
+      lights.wifiLooking != s.wifiLooking) {
+    rc::Settings& c = rc::app().cfg;
+    if (board::hasLedLevel()) c.ledLevel = lights.ledLevel;
+    if (board::hasPowerLight()) c.powerLight = lights.powerLight;
+    if (board::hasWifiLight()) {
+      c.wifiJoined = lights.wifiJoined;
+      c.wifiSetup = lights.wifiSetup;
+      c.wifiLooking = lights.wifiLooking;
+    }
+    settings::saveStatusLights(c);
   }
   if (!board::eink() && brightness != s.brightness) {
     rc::app().cfg.brightness = brightness;

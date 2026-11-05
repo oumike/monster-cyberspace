@@ -4,6 +4,7 @@
 #include <utility>
 #include <vector>
 
+#include "ui/led_level.h"
 #include "ui/notify_light.h"
 #include "ui/wifi_light.h"
 
@@ -176,11 +177,27 @@ void test_millis_wraparound() {
   expectDoubleBlink(ch, 8, t0 + 2000, 6);
 }
 
-void test_wifi_light_colours() {
-  TEST_ASSERT(wifiLightColor(true, false) == LedColor::Green);
-  TEST_ASSERT(wifiLightColor(true, true) == LedColor::Green);  // joined wins over the AP
-  TEST_ASSERT(wifiLightColor(false, true) == LedColor::Blue);
-  TEST_ASSERT(wifiLightColor(false, false) == LedColor::Yellow);
+void test_wifi_light_states() {
+  TEST_ASSERT(wifiLightState(true, false) == WifiLight::Joined);
+  TEST_ASSERT(wifiLightState(true, true) == WifiLight::Joined);  // joined wins over the AP
+  TEST_ASSERT(wifiLightState(false, true) == WifiLight::SetupAp);
+  TEST_ASSERT(wifiLightState(false, false) == WifiLight::Looking);
+}
+
+void test_led_levels() {
+  TEST_ASSERT_EQUAL_UINT8(0, ledLevelValue(LedLevel::Off));
+  // Each step brighter than the last; Medium is the old fixed 0x20.
+  for (int i = 1; i < kLedLevelCount; ++i)
+    TEST_ASSERT_TRUE(ledLevelValue(LedLevel(i)) > ledLevelValue(LedLevel(i - 1)));
+  TEST_ASSERT_EQUAL_UINT8(0x20, ledLevelValue(LedLevel::Medium));
+  LedLevel l = LedLevel::Medium;
+  TEST_ASSERT_TRUE(parseLedLevel("dim", l));
+  TEST_ASSERT_TRUE(l == LedLevel::Dim);
+  TEST_ASSERT_FALSE(parseLedLevel("bright", l));
+  TEST_ASSERT_TRUE(l == LedLevel::Dim);
+  TEST_ASSERT_EQUAL_STRING("high", ledLevelKey(LedLevel::High));
+  TEST_ASSERT_TRUE(std::u32string_view(ledLevelLabel(LedLevel::Low)) == U"Low");
+  TEST_ASSERT_TRUE(ledLevelFromIndex(9) == LedLevel::Medium);
 }
 
 int main() {
@@ -196,6 +213,7 @@ int main() {
   RUN_TEST(test_off_disables);
   RUN_TEST(test_cancel_goes_dark);
   RUN_TEST(test_millis_wraparound);
-  RUN_TEST(test_wifi_light_colours);
+  RUN_TEST(test_wifi_light_states);
+  RUN_TEST(test_led_levels);
   return UNITY_END();
 }

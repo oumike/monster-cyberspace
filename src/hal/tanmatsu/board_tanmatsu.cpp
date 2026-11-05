@@ -68,17 +68,27 @@ void wifiCoprocessor() {
 
 // Six GRB LEDs; manual mode, so LED 0 (power) is ours to light. LED 1 is the
 // radio (Wi-Fi) light, LED 2 the one the badge marks for messages.
+// Each status LED keeps its rgb bits, lit at one shared level.
 constexpr int kPowerLed = 0, kWifiLed = 1, kMessageLed = 2;
-constexpr uint8_t kLedLevel = 0x20;
+uint8_t ledLevelValue = 0x20;
+uint8_t ledRgb[3] = {2, 0, 0};  // power green until the setting arrives
 uint8_t leds[18] = {};
 
-void setLed(int i, uint8_t r, uint8_t g, uint8_t b) {
-  leds[i * 3] = g;
-  leds[i * 3 + 1] = r;
-  leds[i * 3 + 2] = b;
+void writeLeds() {
+  for (int i = 0; i < 3; ++i) {
+    const uint8_t rgb = ledRgb[i], v = ledLevelValue;
+    leds[i * 3] = rgb & 2 ? v : 0;      // G
+    leds[i * 3 + 1] = rgb & 1 ? v : 0;  // R
+    leds[i * 3 + 2] = rgb & 4 ? v : 0;  // B
+  }
+  coproc::write(coproc::LEDS, leds, sizeof leds);
 }
 
-void writeLeds() { coproc::write(coproc::LEDS, leds, sizeof leds); }
+void setLed(int i, uint8_t rgb) {
+  if (ledRgb[i] == rgb) return;
+  ledRgb[i] = rgb;
+  writeLeds();
+}
 
 // ---- Keys -------------------------------------------------------------------
 
@@ -165,7 +175,6 @@ void begin() {
   coproc::begin();
   coproc::write8(coproc::DISPLAY_BACKLIGHT, 0);  // dark until the panel is up
   coproc::write8(coproc::LED_MODE, 0);
-  setLed(kPowerLed, 0, kLedLevel, 0);
   writeLeds();
   coproc::write8(coproc::ADC_CONTROL, 0x02);  // continuous: VBAT stays fresh
   wifiCoprocessor();
@@ -225,7 +234,11 @@ bool canRotate() { return false; }
 void backlight(bool on) { backlightLevel(on ? 255 : 0); }
 void backlightLevel(uint8_t level) {
   backlightValue = level;
-  coproc::write8(coproc::DISPLAY_BACKLIGHT, level);
+  const bool ok = coproc::write8(coproc::DISPLAY_BACKLIGHT, level);
+  uint8_t back = 0;
+  const bool read = coproc::read(coproc::DISPLAY_BACKLIGHT, &back, 1);
+  Serial.printf("[tanmatsu] backlight %u: write %s, reads %d\n", level, ok ? "ok" : "FAILED",
+                read ? int(back) : -1);
 }
 void displaySleep(bool sleep) {
   flushPending();
@@ -259,21 +272,15 @@ void kbLight(uint8_t duty, bool screenOn) {
 }
 
 bool hasNotifyLight() { return true; }
-void notifyLight(uint8_t rgb) {
-  setLed(kMessageLed, rgb & 1 ? kLedLevel : 0, rgb & 2 ? kLedLevel : 0, rgb & 4 ? kLedLevel : 0);
-  writeLeds();
-}
-
-// Green, at half the duty: Low (64) is the 0x20 lit at boot.
+void notifyLight(uint8_t rgb) { setLed(kMessageLed, rgb); }
 bool hasPowerLight() { return true; }
-void powerLight(uint8_t duty) {
-  setLed(kPowerLed, 0, duty / 2, 0);
-  writeLeds();
-}
-
+void powerLight(uint8_t rgb) { setLed(kPowerLed, rgb); }
 bool hasWifiLight() { return true; }
-void wifiLight(uint8_t rgb) {
-  setLed(kWifiLed, rgb & 1 ? kLedLevel : 0, rgb & 2 ? kLedLevel : 0, rgb & 4 ? kLedLevel : 0);
+void wifiLight(uint8_t rgb) { setLed(kWifiLed, rgb); }
+bool hasLedLevel() { return true; }
+void ledLevel(uint8_t value) {
+  if (value == ledLevelValue) return;
+  ledLevelValue = value;
   writeLeds();
 }
 

@@ -4,10 +4,13 @@
 
 namespace rc {
 
-// The Wi-Fi light (board::hasWifiLight): green while joined to a network,
-// blue while the setup AP is up and nothing is joined, yellow while looking.
-constexpr LedColor wifiLightColor(bool joined, bool setupAp) {
-  return joined ? LedColor::Green : setupAp ? LedColor::Blue : LedColor::Yellow;
+// The Wi-Fi light (board::hasWifiLight) shows one of three states, each in
+// its own colour setting: joined to a network; the setup AP up with nothing
+// joined; looking for a network.
+enum class WifiLight : uint8_t { Looking, SetupAp, Joined };
+
+constexpr WifiLight wifiLightState(bool joined, bool setupAp) {
+  return joined ? WifiLight::Joined : setupAp ? WifiLight::SetupAp : WifiLight::Looking;
 }
 
 }  // namespace rc

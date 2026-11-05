@@ -22,8 +22,9 @@ void saveAutoUpdate(bool on);
 void saveScreen(uint32_t onSecs, bool saver);
 // The device's Settings and web config: the keyboard light.
 void saveKbLight(rc::KbLight level);
-// The device's Settings and web config: the power light (board::hasPowerLight).
-void savePowerLight(rc::KbLight level);
+// The device's Settings and web config: the status LEDs' level, the power
+// light's colour and the Wi-Fi light's three colours.
+void saveStatusLights(const rc::Settings& s);
 // The device's Settings and web config: the screen's brightness, a percent
 // from ui/brightness.h.
 void saveBrightness(uint8_t pct);

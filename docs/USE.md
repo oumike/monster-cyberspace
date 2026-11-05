@@ -386,10 +386,12 @@ it too (that press does nothing else). Holding it 2 s cuts the power.
 
 **Notification light:** the LED marked for messages blinks twice every second
 while a mention or a C-Mail is unread, as on the Mesh Deck (**Notify light**
-and **Light timeout** in Settings and web config). The power LED is green,
-Low by default (**Power light** in Settings and web config: Low, Medium, High
-or Off). The radio LED shows Wi-Fi: green when joined, blue while the setup AP
-is up with no network joined, yellow while it looks for one.
+and **Light timeout** in Settings and web config). The power LED is green
+(**Power light** in Settings and web config picks its colour, or Off). The
+radio LED shows Wi-Fi: green when joined, blue while the setup AP is up with
+no network joined, yellow while it looks for one (**Wi-Fi joined**, **Wi-Fi
+setup AP** and **Wi-Fi looking** pick each colour, or Off). **LED brightness**
+(Off, Dim, Low, Medium, High; Medium by default) dims all three LEDs together.
 
 Wi-Fi goes through the Tanmatsu's ESP32-C6 (its own image, left as it is).
 The speaker beeps for alerts, the coprocessor's RTC keeps the clock, Settings
@@ -879,7 +881,7 @@ At `http://monster-cyberspace.local`, or the device IP, on your LAN:
 - Cyberspace account: sign in, sign out, resend verification
 - Display: text size, theme, brightness (not e-paper), buzzer, spell check,
   orientation (touch boards), keyboard light (boards with a lit keyboard),
-  power light (the Tanmatsu), and vibrate on tap and on
+  LED brightness, power light and Wi-Fi light colours (the Tanmatsu), and vibrate on tap and on
   alerts (the T-Display P4)
 - Time: zone and NTP server (see Time and time zone below)
 - Security: page password and setup-AP password
@@ -1016,8 +1018,12 @@ shown without moving or opening anything.
   steps it), the Tanmatsu (Medium, and Fn + F5 steps it) and the M9, where it is High and its
   keyboard lights the keys itself after a press; Off there switches that light
   off until the M9 is power cycled.
-- **Power light: …** (Tanmatsu) Opens a box with Low, Medium, High and Off;
-  picking one saves it. Low by default.
+- **LED brightness: …** (Tanmatsu) Opens a bar with Off, Dim, Low, Medium and
+  High for the power, Wi-Fi and notification LEDs together; the LEDs follow
+  each stop, Set saves it and Back puts the old level back. Medium by default.
+- **Power light: …**, **Wi-Fi joined: …**, **Wi-Fi setup AP: …** and **Wi-Fi
+  looking: …** (Tanmatsu) Open a box with the colours (or Off); picking one
+  saves it. Green, green, blue and yellow by default.
 - **Notify light: …** and **Light timeout: …** (Mesh Deck) Open a box with
   the colours (or Off) and the timeouts; see Mesh Deck.
 - **Alert sound: on / off** (boards with a buzzer or speaker: not the Mesh

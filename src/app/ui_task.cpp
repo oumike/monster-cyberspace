@@ -32,6 +32,7 @@
 #endif
 #include "ui/brightness.h"
 #include "ui/haptics.h"
+#include "ui/led_level.h"
 #include "ui/kb_light.h"
 #include "ui/notify_light.h"
 #include "ui/renderer.h"
@@ -241,21 +242,36 @@ void panelOn() {
   sentBacklight = 255;
 }
 
-// The power light follows its setting; the Wi-Fi light, checked each second,
-// the connection.
+// The status LEDs' level and the power light follow their settings; the
+// Wi-Fi light, checked each second, the connection, in its state's colour.
+int ledLevelPreview = -1;  // Settings' slider while it is open, else -1
+
 void applyStatusLights() {
-  static int shownPower = -1, shownWifi = -1;
+  static int shownLevel = -1, shownPower = -1, shownWifi = -1;
   static uint32_t wifiCheckedAt = 0;
-  if (board::hasPowerLight()) {
-    const int duty = kbLightDuty(app().cfg.powerLight);
-    if (duty != shownPower) {
-      shownPower = duty;
-      board::powerLight(uint8_t(duty));
+  const Settings& c = app().cfg;
+  if (board::hasLedLevel()) {
+    const LedLevel l = ledLevelPreview >= 0 ? ledLevelFromIndex(ledLevelPreview) : c.ledLevel;
+    const int v = ledLevelValue(l);
+    if (v != shownLevel) {
+      shownLevel = v;
+      board::ledLevel(uint8_t(v));
     }
   }
-  if (board::hasWifiLight() && (shownWifi < 0 || millis() - wifiCheckedAt >= 1000)) {
+  if (board::hasPowerLight()) {
+    const int rgb = ledColorRgb(c.powerLight);
+    if (rgb != shownPower) {
+      shownPower = rgb;
+      board::powerLight(uint8_t(rgb));
+    }
+  }
+  if (board::hasWifiLight() && millis() - wifiCheckedAt >= 1000) {
     wifiCheckedAt = millis();
-    const int rgb = ledColorRgb(wifiLightColor(wifiUp(), setupApUp()));
+    const WifiLight w = wifiLightState(wifiUp(), setupApUp());
+    const LedColor col = w == WifiLight::Joined    ? c.wifiJoined
+                         : w == WifiLight::SetupAp ? c.wifiSetup
+                                                   : c.wifiLooking;
+    const int rgb = ledColorRgb(col);
     if (rgb != shownWifi) {
       shownWifi = rgb;
       board::wifiLight(uint8_t(rgb));
@@ -1140,6 +1156,11 @@ void redrawAll() { needResize = true; }
 void previewBrightness(int pct) {
   brightnessPreview = pct;
   applyBacklight();
+}
+
+void previewLedLevel(int level) {
+  ledLevelPreview = level;
+  applyStatusLights();
 }
 
 void notifyLightPreview(LedColor c) {

@@ -90,7 +90,11 @@ Settings full() {
   s.screenSaver = false;
   s.spellCheck = false;
   s.kbLight = KbLight::Medium;
-  s.powerLight = KbLight::High;
+  s.powerLight = LedColor::Cyan;
+  s.wifiJoined = LedColor::White;
+  s.wifiSetup = LedColor::Red;
+  s.wifiLooking = LedColor::Off;
+  s.ledLevel = LedLevel::Dim;
   s.notifyLight = LedColor::Magenta;
   s.notifyTimeoutSecs = 0;
   s.volume = 80;
@@ -135,6 +139,10 @@ void expectSame(const Settings& a, const Settings& b) {
   TEST_ASSERT_EQUAL(a.spellCheck, b.spellCheck);
   TEST_ASSERT_TRUE(a.kbLight == b.kbLight);
   TEST_ASSERT_TRUE(a.powerLight == b.powerLight);
+  TEST_ASSERT_TRUE(a.wifiJoined == b.wifiJoined);
+  TEST_ASSERT_TRUE(a.wifiSetup == b.wifiSetup);
+  TEST_ASSERT_TRUE(a.wifiLooking == b.wifiLooking);
+  TEST_ASSERT_TRUE(a.ledLevel == b.ledLevel);
   TEST_ASSERT_TRUE(a.notifyLight == b.notifyLight);
   TEST_ASSERT_EQUAL_UINT16(a.notifyTimeoutSecs, b.notifyTimeoutSecs);
   TEST_ASSERT_EQUAL_UINT8(a.volume, b.volume);
@@ -171,7 +179,11 @@ void test_round_trip_every_field() {
   TEST_ASSERT_NOT_NULL(strstr(y.c_str(), "created: \"2026-10-26T18:30:00Z\""));
   TEST_ASSERT_NOT_NULL(strstr(y.c_str(), "brightness: 40  # screen: 10 to 100 in steps of 10\n"));
   TEST_ASSERT_NOT_NULL(strstr(y.c_str(), "kbLight: medium  # off | low | medium | high\n"
-                                           "powerLight: high  # off | low | medium | high\n"));
+                                           "ledLevel: dim  # off | dim | low | medium | high\n"
+                                           "powerLight: cyan  # a notifyLight colour\n"
+                                           "wifiJoined: white  # a notifyLight colour\n"
+                                           "wifiSetup: red  # a notifyLight colour\n"
+                                           "wifiLooking: off  # a notifyLight colour\n"));
   TEST_ASSERT_NOT_NULL(strstr(y.c_str(),
                               "notifyLight: magenta  # off | red | green | blue | yellow | cyan |"
                               " magenta | white\n"
@@ -382,7 +394,15 @@ void test_bad_values_rejected() {
       {"textSize: huge\n", "line 3: text size: compact, comfortable or large"},
       {"theme: pink\n", "line 3: theme: default, bw or wb"},
       {"kbLight: dim\n", "line 3: keyboard light: off, low, medium or high"},
-      {"powerLight: dim\n", "line 3: power light: off, low, medium or high"},
+      {"powerLight: dim\n",
+       "line 3: power light: off, red, green, blue, yellow, cyan, magenta or white"},
+      {"wifiJoined: pink\n",
+       "line 3: wi-fi light: off, red, green, blue, yellow, cyan, magenta or white"},
+      {"wifiSetup: pink\n",
+       "line 3: wi-fi light: off, red, green, blue, yellow, cyan, magenta or white"},
+      {"wifiLooking: pink\n",
+       "line 3: wi-fi light: off, red, green, blue, yellow, cyan, magenta or white"},
+      {"ledLevel: max\n", "line 3: LED brightness: off, dim, low, medium or high"},
       {"notifyLight: pink\n",
        "line 3: notify light: off, red, green, blue, yellow, cyan, magenta or white"},
       {"notifyTimeout: 45\n", "line 3: light timeout: 15, 30, 60, 300 or 0 (until read)"},

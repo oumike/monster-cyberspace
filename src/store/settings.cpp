@@ -72,7 +72,17 @@ void load(rc::Settings& s) {
   s.alertVibrate = p.getBool("alertVib", true);
   s.kbLight = rc::kbLightFromIndex(p.getUChar("kblight", board::kbLightDefault()),
                                    rc::kbLightFromIndex(board::kbLightDefault()));
-  s.powerLight = rc::kbLightFromIndex(p.getUChar("pwrlight", uint8_t(rc::KbLight::Low)), rc::KbLight::Low);
+  {
+    const rc::Settings d;
+    auto colour = [&p](const char* key, rc::LedColor def) {
+      return rc::ledColorFromIndex(p.getUChar(key, uint8_t(def)), def);
+    };
+    s.ledLevel = rc::ledLevelFromIndex(p.getUChar("ledlevel", uint8_t(d.ledLevel)), d.ledLevel);
+    s.powerLight = colour("pwrcolor", d.powerLight);
+    s.wifiJoined = colour("wifijoin", d.wifiJoined);
+    s.wifiSetup = colour("wifiap", d.wifiSetup);
+    s.wifiLooking = colour("wifilook", d.wifiLooking);
+  }
   s.brightness = rc::snapBrightness(p.getUChar("bright", rc::kBrightnessDefault));
   s.notifyLight = rc::ledColorFromIndex(p.getUChar("ledcolor", uint8_t(rc::LedColor::Blue)),
                                        rc::LedColor::Blue);
@@ -99,7 +109,11 @@ void saveUiPrefs(const rc::Settings& s) {
   p.putUChar("theme", static_cast<uint8_t>(s.theme));
   p.putUChar("rot", s.rotation);
   p.putUChar("kblight", static_cast<uint8_t>(s.kbLight));
-  p.putUChar("pwrlight", static_cast<uint8_t>(s.powerLight));
+  p.putUChar("ledlevel", static_cast<uint8_t>(s.ledLevel));
+  p.putUChar("pwrcolor", static_cast<uint8_t>(s.powerLight));
+  p.putUChar("wifijoin", static_cast<uint8_t>(s.wifiJoined));
+  p.putUChar("wifiap", static_cast<uint8_t>(s.wifiSetup));
+  p.putUChar("wifilook", static_cast<uint8_t>(s.wifiLooking));
   p.putUChar("bright", s.brightness);
   p.putString("room", s.lastRoom.c_str());
   p.end();
@@ -175,10 +189,14 @@ void saveBrightness(uint8_t pct) {
   p.end();
 }
 
-void savePowerLight(rc::KbLight level) {
+void saveStatusLights(const rc::Settings& s) {
   Preferences p;
   if (!p.begin(kNs, false)) return;
-  p.putUChar("pwrlight", static_cast<uint8_t>(level));
+  p.putUChar("ledlevel", static_cast<uint8_t>(s.ledLevel));
+  p.putUChar("pwrcolor", static_cast<uint8_t>(s.powerLight));
+  p.putUChar("wifijoin", static_cast<uint8_t>(s.wifiJoined));
+  p.putUChar("wifiap", static_cast<uint8_t>(s.wifiSetup));
+  p.putUChar("wifilook", static_cast<uint8_t>(s.wifiLooking));
   p.end();
 }
 

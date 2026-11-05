@@ -44,6 +44,9 @@ std::string webCompose(ComposeReq r);
 // Shows the screen at pct brightness until called with -1, which goes back
 // to the setting. UI task only (Settings' slider).
 void previewBrightness(int pct);
+// Lights the status LEDs at LedLevel index level until called with -1. UI
+// task only (Settings' slider).
+void previewLedLevel(int level);
 // Forces every row to be redrawn on the next frame.
 void redrawAll();
 // One double blink of the new-message light in c (board::hasNotifyLight).

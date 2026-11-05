@@ -6,6 +6,7 @@
 
 #include "config/phrases.h"
 #include "ui/brightness.h"
+#include "ui/led_level.h"
 #include "ui/grid.h"
 #include "ui/kb_light.h"
 #include "ui/notify_light.h"
@@ -32,9 +33,15 @@ struct Settings {
   // Boards with a lit keyboard (board::hasKbLight); the saved value falls back
   // to board::kbLightDefault().
   KbLight kbLight = KbLight::Off;
-  // Boards with a power light (board::hasPowerLight): its level, in the
-  // keyboard light's steps.
-  KbLight powerLight = KbLight::Low;
+  // Boards with dimmable status LEDs (board::hasLedLevel): one level for all.
+  LedLevel ledLevel = LedLevel::Medium;
+  // Boards with a power light (board::hasPowerLight): its colour.
+  LedColor powerLight = LedColor::Green;
+  // Boards with a Wi-Fi light (board::hasWifiLight): its colour while joined,
+  // while the setup AP is up with nothing joined, and while looking.
+  LedColor wifiJoined = LedColor::Green;
+  LedColor wifiSetup = LedColor::Blue;
+  LedColor wifiLooking = LedColor::Yellow;
   // The screen's backlight, percent (ui/brightness.h); not on e-paper.
   uint8_t brightness = kBrightnessDefault;
   // Boards with a new-message light (board::hasNotifyLight): its colour, and

@@ -104,7 +104,7 @@ class SettingsScreen : public Screen {
   void render(Grid&, const Theme&, int64_t nowMs) override;
   bool hasOverlay() const override {
     return confirm_ != Confirm::None || picking_ || picker_.isOpen() || volume_.isOpen() ||
-           sizeSlider_.isOpen() || brightness_.isOpen();
+           sizeSlider_.isOpen() || brightness_.isOpen() || ledLevel_.isOpen();
   }
   void closeOverlays() override {
     confirm_ = Confirm::None;
@@ -114,13 +114,15 @@ class SettingsScreen : public Screen {
     closeVolume();
     sizeSlider_.close();
     closeBrightness();
+    closeLedLevel();
   }
   // Larger sizes cut off the buttons' text.
   bool compactText() const override { return true; }
 
  private:
   enum class Confirm {
-    None, Logout, Reset, Rotation, Timeout, KbLight, PowerLight, NotifyLight, NotifyTimeout, Theme,
+    None, Logout, Reset, Rotation, Timeout, KbLight, PowerLight, WifiJoined, WifiSetup,
+    WifiLooking, NotifyLight, NotifyTimeout, Theme,
     Update, Idle, Wake
   };
   void activate(int item);
@@ -138,6 +140,9 @@ class SettingsScreen : public Screen {
   void closeVolume();
   void brightnessKey(const KeyEvent&);
   void closeBrightness();
+  void ledLevelKey(const KeyEvent&);
+  void closeLedLevel();
+  void openColour(Confirm c, const char32_t* title, LedColor cur);
   void sizeKey(const KeyEvent&);
 
   ListView menu_, zoneList_;
@@ -146,6 +151,7 @@ class SettingsScreen : public Screen {
   Slider volume_;  // the alert sound, on boards with board::hasVolume
   Slider sizeSlider_;  // text size, a stop per size
   Slider brightness_;  // the screen's backlight, not on e-paper
+  Slider ledLevel_;    // the status LEDs' level, a stop per LedLevel
   Confirm confirm_ = Confirm::None;
   bool picking_ = false;  // the time zone list is open
   ButtonPad pad_;         // touch boards: the menu as buttons

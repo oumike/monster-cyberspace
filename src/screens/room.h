@@ -60,6 +60,7 @@ class RoomScreen : public Screen {
   void pickMenu();
   void setDrawer(bool open);
   void setUsersHidden(bool hide);
+  void showUsers();
   void openReader(const CircMessage& m);
   void openLink(const std::string& url);
   bool isMuted(const std::string& name);

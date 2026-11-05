@@ -1669,6 +1669,33 @@ void test_text_area_wraps_by_width() {
   TEST_ASSERT_EQUAL(T().cursorBg, g.at(2, 1).bg);
 }
 
+void test_docked_drawer_has_a_close_button() {
+  PresenceEntry a;
+  a.username = "rain";
+  Drawer d;
+  d.setPeople({a}, 0, 300000);
+  TapMap m;
+  m.setOrigin({1, 1}, 0);
+  setActiveTaps(&m);
+  Grid g(80, 10);
+  g.fill(T().bg);
+  d.render(g, 1, 9, T(), true);
+  TEST_ASSERT_EQUAL_STRING("\u2715", u32ToUtf8(std::u32string(1, g.at(78, 1).cp)).c_str());
+  Target t = m.hit(78, 1);
+  TEST_ASSERT_EQUAL(int(TargetKind::Fixed), int(t.kind));
+  TEST_ASSERT_EQUAL(int(Action::Activate), int(t.tap.action));
+  TEST_ASSERT_EQUAL(int(ListId::Drawer), int(t.tap.target));
+  TEST_ASSERT_EQUAL(Drawer::kCloseIndex, t.tap.index);
+  // Not docked (it slides over and Back closes it): no button.
+  TapMap m2;
+  m2.setOrigin({1, 1}, 0);
+  setActiveTaps(&m2);
+  Grid g2(80, 10);
+  g2.fill(T().bg);
+  d.render(g2, 1, 9, T(), false);
+  TEST_ASSERT_EQUAL(int(TargetKind::None), int(m2.hit(78, 1).kind));
+}
+
 void test_side_nav_cols_about_18px() {
   TEST_ASSERT_EQUAL(3, sideNavCols(6));
   TEST_ASSERT_EQUAL(3, sideNavCols(8));
@@ -1985,6 +2012,7 @@ int main() {
   RUN_TEST(test_put_text_wide_emoji);
   RUN_TEST(test_input_line_renders_wide_emoji);
   RUN_TEST(test_text_area_wraps_by_width);
+  RUN_TEST(test_docked_drawer_has_a_close_button);
   RUN_TEST(test_side_nav_cols_about_18px);
   RUN_TEST(test_emoji_tray_large_closes_up_before_shrinking);
   RUN_TEST(test_side_nav_draws_three_buttons_that_send_keys);

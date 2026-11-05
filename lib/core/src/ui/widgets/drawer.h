@@ -14,6 +14,9 @@ namespace rc {
 // Who's-here panel overlaid on the right of the room log.
 class Drawer {
  public:
+  // Docked, the header's close button sends Activate on ListId::Drawer with
+  // this index.
+  static constexpr int16_t kCloseIndex = -2;
   void setPeople(std::vector<PresenceEntry> people, int64_t nowMs, int64_t idleAfterMs);
   void up();
   void down();

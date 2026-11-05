@@ -142,6 +142,12 @@ void RoomScreen::setDrawer(bool open) {
   if (!drawerDocked()) chatSource().command(Command{open ? CmdType::OpenPresence : CmdType::ClosePresence});
 }
 
+// Opens the list with the keys in it, docking it again if it was hidden.
+void RoomScreen::showUsers() {
+  if (drawerDockable()) setUsersHidden(false);
+  setDrawer(true);
+}
+
 void RoomScreen::setUsersHidden(bool hide) {
   auto& c = app().cfg;
   if (c.usersHidden == hide) return;
@@ -206,7 +212,7 @@ void RoomScreen::typingKey(const KeyEvent& k) {
       // An edge swipe from the right: the user list first, then the menu.
       if (!dm_ && !drawer && !drawerDocked()) {
         log_.follow();
-        setDrawer(true);
+        showUsers();
       } else {
         openRoomMenu();
       }
@@ -228,17 +234,23 @@ void RoomScreen::typingKey(const KeyEvent& k) {
       else log_.down();
       break;
     case Action::Left:
-      if (drawer) setDrawer(false);
+      // Docked, Left hides the list; Back only leaves it.
+      if (drawer && drawerDocked()) setUsersHidden(true);
+      else if (drawer) setDrawer(false);
       else input_.left();
       break;
     case Action::Right:
-      if (!input_.right() && !drawer && !dm_) setDrawer(true);
+      if (!input_.right() && !drawer && !dm_) showUsers();
       break;
     case Action::Activate:
       if (k.target == uint8_t(ListId::Log)) {
         if (drawer) setDrawer(false);
         if (log_.selectMessage(k.index)) onKey(KeyEvent{k.then});
       } else if (k.target == uint8_t(ListId::Drawer)) {
+        if (k.index == Drawer::kCloseIndex) {
+          setUsersHidden(true);
+          break;
+        }
         if (!drawer_.select(k.index)) break;
         // A tap on the docked list acts on the name even without the keys.
         if (!drawer && k.then == Action::Select) openPersonMenu(drawer_.selectedUsername());
@@ -472,7 +484,7 @@ void RoomScreen::pickMenu() {
     case Menu::Room:
       if (key == "who") {
         log_.follow();
-        setDrawer(true);
+        showUsers();
       } else if (key == "mute") {
         std::vector<ListItem> items;
         menuKeys_.clear();
@@ -824,7 +836,8 @@ void RoomScreen::render(Grid& g, const Theme& t, int64_t) {
       hint = U"\u2191\u2193 pick  \u25CF choose  back: close";
       touch = U"tap: choose  outside: close";
     } else if (drawer) {
-      hint = U"\u2191\u2193 pick  \u25CF menu  \u2190 close";
+      hint = docked ? U"\u2191\u2193 pick  \u25CF menu  \u2190 hide  back: leave"
+                    : U"\u2191\u2193 pick  \u25CF menu  \u2190 close";
       touch = U"tap a name for actions";
     } else if (!log_.following()) {
       hint = U"\u25CF actions  \u2193 back to typing";

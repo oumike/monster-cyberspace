@@ -60,6 +60,18 @@ void Drawer::render(Grid& g, int top, int bottom, const Theme& t, bool docked) c
   }
   std::u32string head = U"here \u00b7 " + utf8ToU32(std::to_string(people_.size()));
   g.putText(x + 1, top, head, t.dim, t.drawerBg, inner);
+  if (docked && inner >= 4) {
+    const int c = g.cols() - 2;
+    g.put(c, top, U'\u2715', t.fg, t.drawerBg);
+    if (activeTaps()) {
+      Target close;
+      close.kind = TargetKind::Fixed;
+      close.tap.action = Action::Activate;
+      close.tap.target = uint8_t(ListId::Drawer);
+      close.tap.index = kCloseIndex;
+      activeTaps()->addCells(c - 1, top, g.cols() - 1, top, close);
+    }
+  }
 
   const int listRows = height - 1;
   if (listRows <= 0) return;

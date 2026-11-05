@@ -346,7 +346,7 @@ doesn't cover text; its check is open too.
 The Tanmatsu (env `tanmatsu`) was added on 2026-11-04 (built without
 flashing, not released): landscape at 2x with its keyboard. Everything awaits
 the hardware check (docs/TESTING.md), the C6 Wi-Fi link first.
-The native suite is green: 733/733
+The native suite is green: 736/736
 (`pio test -e native`), and `scripts/build-upload-monitor.sh -B` builds all
 thirteen firmware envs (the X4 only from a path without spaces).
 

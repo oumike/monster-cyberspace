@@ -21,6 +21,10 @@ __attribute__((weak)) bool setRedraw(void (*)()) { return false; }
 __attribute__((weak)) bool hasHaptic() { return false; }
 __attribute__((weak)) void haptic(int) {}
 __attribute__((weak)) uint8_t defaultRotation() { return 0; }
+__attribute__((weak)) bool hasPowerLight() { return false; }
+__attribute__((weak)) void powerLight(uint8_t) {}
+__attribute__((weak)) bool hasWifiLight() { return false; }
+__attribute__((weak)) void wifiLight(uint8_t) {}
 __attribute__((weak)) const rc::FunctionKey* functionKeys(size_t& count) {
   count = std::size(rc::kFunctionKeys);
   return rc::kFunctionKeys;

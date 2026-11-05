@@ -386,8 +386,10 @@ it too (that press does nothing else). Holding it 2 s cuts the power.
 
 **Notification light:** the LED marked for messages blinks twice every second
 while a mention or a C-Mail is unread, as on the Mesh Deck (**Notify light**
-and **Light timeout** in Settings and web config). The power LED stays dim
-green.
+and **Light timeout** in Settings and web config). The power LED is green,
+Low by default (**Power light** in Settings and web config: Low, Medium, High
+or Off). The radio LED shows Wi-Fi: green when joined, blue while the setup AP
+is up with no network joined, yellow while it looks for one.
 
 Wi-Fi goes through the Tanmatsu's ESP32-C6 (its own image, left as it is).
 The speaker beeps for alerts, the coprocessor's RTC keeps the clock, Settings
@@ -875,8 +877,9 @@ At `http://monster-cyberspace.local`, or the device IP, on your LAN:
 - Status
 - Wi-Fi: scan, add, and remove saved networks (up to 5)
 - Cyberspace account: sign in, sign out, resend verification
-- Display: text size, theme, buzzer, spell check, orientation (touch boards),
-  keyboard light (boards with a lit keyboard), and vibrate on tap and on
+- Display: text size, theme, brightness (not e-paper), buzzer, spell check,
+  orientation (touch boards), keyboard light (boards with a lit keyboard),
+  power light (the Tanmatsu), and vibrate on tap and on
   alerts (the T-Display P4)
 - Time: zone and NTP server (see Time and time zone below)
 - Security: page password and setup-AP password
@@ -998,6 +1001,9 @@ shown without moving or opening anything.
   closes the list unchanged.
 - **Orientation: …** (touch boards) Opens a box with the four orientations; picking one
   turns the screen at once and saves it.
+- **Brightness: …** (not e-paper) Opens a bar from 10% to 100% in steps of
+  10; the screen follows each step, Set saves it and Back puts the old level
+  back. 100% by default. Dimming and the screensaver never go brighter.
 - **Screen timeout: …** Opens a box with 15 s, 30 s, 1, 2, 5, 10, 30 and
   60 min, and Never; picking one saves it. 30 s by default. See Screen timeout.
 - **At timeout: screensaver / screen off.** Centre switches what the screen
@@ -1010,6 +1016,8 @@ shown without moving or opening anything.
   steps it), the Tanmatsu (Medium, and Fn + F5 steps it) and the M9, where it is High and its
   keyboard lights the keys itself after a press; Off there switches that light
   off until the M9 is power cycled.
+- **Power light: …** (Tanmatsu) Opens a box with Low, Medium, High and Off;
+  picking one saves it. Low by default.
 - **Notify light: …** and **Light timeout: …** (Mesh Deck) Open a box with
   the colours (or Off) and the timeouts; see Mesh Deck.
 - **Alert sound: on / off** (boards with a buzzer or speaker: not the Mesh

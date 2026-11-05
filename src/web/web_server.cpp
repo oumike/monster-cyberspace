@@ -35,6 +35,7 @@
 #endif
 #include "store/settings.h"
 #include "tz/zones.h"
+#include "ui/brightness.h"
 #include "ui/kb_light.h"
 #include "ui/notify_light.h"
 #include "ui/screen_timeout.h"
@@ -434,6 +435,8 @@ esp_err_t getPrefs(httpd_req_t* req) {
   d["ntpServer"] = s.ntpServer;
   if (board::canRotate()) d["rotation"] = s.rotation;
   if (board::hasKbLight()) d["kbLight"] = rc::kbLightKey(s.kbLight);
+  if (board::hasPowerLight()) d["powerLight"] = rc::kbLightKey(s.powerLight);
+  if (!board::eink()) d["brightness"] = s.brightness;
   if (board::hasHaptic()) {
     d["tapVibrate"] = s.tapVibrate;
     d["alertVibrate"] = s.alertVibrate;
@@ -511,6 +514,17 @@ esp_err_t postPrefs(httpd_req_t* req) {
   if (!doc["kbLight"].isNull() &&
       (!doc["kbLight"].is<const char*>() || !rc::parseKbLight(doc["kbLight"].as<const char*>(), kbLight)))
     return fail(req, "400 Bad Request", "Keyboard light: off, low, medium or high");
+  rc::KbLight powerLight = s.powerLight;
+  if (!doc["powerLight"].isNull() &&
+      (!doc["powerLight"].is<const char*>() ||
+       !rc::parseKbLight(doc["powerLight"].as<const char*>(), powerLight)))
+    return fail(req, "400 Bad Request", "Power light: off, low, medium or high");
+  uint8_t brightness = s.brightness;
+  if (!doc["brightness"].isNull()) {
+    if (!doc["brightness"].is<int>() || !rc::validBrightness(doc["brightness"].as<int>()))
+      return fail(req, "400 Bad Request", "Brightness: 10 to 100 in steps of 10");
+    brightness = uint8_t(doc["brightness"].as<int>());
+  }
   rc::LedColor notifyLight = s.notifyLight;
   if (!doc["notifyLight"].isNull() &&
       (!doc["notifyLight"].is<const char*>() ||
@@ -593,6 +607,14 @@ esp_err_t postPrefs(httpd_req_t* req) {
   if (board::hasKbLight() && kbLight != s.kbLight) {
     rc::app().cfg.kbLight = kbLight;
     settings::saveKbLight(kbLight);
+  }
+  if (board::hasPowerLight() && powerLight != s.powerLight) {
+    rc::app().cfg.powerLight = powerLight;
+    settings::savePowerLight(powerLight);
+  }
+  if (!board::eink() && brightness != s.brightness) {
+    rc::app().cfg.brightness = brightness;
+    settings::saveBrightness(brightness);
   }
   // The UI task reads the light settings each pass; a new colour shows once.
   if (board::hasNotifyLight() && notifyLight != s.notifyLight) {

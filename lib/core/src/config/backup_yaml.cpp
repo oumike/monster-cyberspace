@@ -12,6 +12,7 @@
 #include "tz/zones.h"
 #include "ui/rotation.h"
 #include "ui/screen_timeout.h"
+#include "ui/brightness.h"
 #include "ui/kb_light.h"
 #include "ui/notify_light.h"
 #include "ui/theme.h"
@@ -65,7 +66,7 @@ struct Item {
 struct Staged {
   Str format, version, timezone, tzName, ntpServer, pagePassword, apPassword, textSize, theme,
       rotation, lastRoom, email, refreshToken, screenOnSecs, kbLight,
-      notifyLight, notifyTimeout, idleSecs, wakeMins, volume;
+      notifyLight, notifyTimeout, idleSecs, wakeMins, volume, brightness, powerLight;
   Bool drawerOpen, buzzer, tapVibrate, alertVibrate, autoUpdate, screenSaver, spellCheck, webConfig;
   bool hasWifi = false, hasPhrases = false;
   std::vector<Item> wifi;
@@ -286,6 +287,8 @@ bool parse(std::string_view yaml, Staged& st, std::string& err) {
              : key == "idleSecs"     ? &st.idleSecs
              : key == "wakeMins"     ? &st.wakeMins
              : key == "volume"       ? &st.volume
+             : key == "brightness"   ? &st.brightness
+             : key == "powerLight"   ? &st.powerLight
                                      : nullptr;
     Str ignored;
     bool isBool = key == "drawerOpen" || key == "buzzer" || key == "tapVibrate" ||
@@ -419,10 +422,12 @@ std::string backupToYaml(const Settings& s, const BackupMeta& m) {
   o += std::string("alertVibrate: ") + boolStr(s.alertVibrate) + "\n";
   o += "volume: " + std::to_string(s.volume) + "  # alert sound: 10 to 100 in steps of 10\n";
   o += std::string("autoUpdate: ") + boolStr(s.autoUpdate) + "  # install firmware updates on its own\n";
+  o += "brightness: " + std::to_string(s.brightness) + "  # screen: 10 to 100 in steps of 10\n";
   o += "screenOnSecs: " + std::to_string(s.screenOnSecs) + "  # screen timeout; 0 never\n";
   o += std::string("screenSaver: ") + boolStr(s.screenSaver) + "  # at the timeout; false: screen off\n";
   o += std::string("spellCheck: ") + boolStr(s.spellCheck) + "  # suggestions while typing\n";
   o += std::string("kbLight: ") + kbLightKey(s.kbLight) + "  # off | low | medium | high\n";
+  o += std::string("powerLight: ") + kbLightKey(s.powerLight) + "  # off | low | medium | high\n";
   o += std::string("notifyLight: ") + ledColorKey(s.notifyLight) +
        "  # off | red | green | blue | yellow | cyan | magenta | white\n";
   o += "notifyTimeout: " + std::to_string(s.notifyTimeoutSecs) + "  # seconds, 0 until read\n";
@@ -489,9 +494,10 @@ bool backupFromYaml(std::string_view yaml, Settings& inOut, std::string& err, st
   }
 
   ThemeId theme = inOut.theme;
-  KbLight kbLight = inOut.kbLight;
+  KbLight kbLight = inOut.kbLight, powerLight = inOut.powerLight;
   LedColor notifyLight = inOut.notifyLight;
-  int rotation = 0, screenOnSecs = 0, notifyTimeout = 0, idleSecs = 0, wakeMins = 0, volume = 0;
+  int rotation = 0, screenOnSecs = 0, notifyTimeout = 0, idleSecs = 0, wakeMins = 0, volume = 0,
+      brightness = 0;
   if (st.apPassword.has && !validApPassword(st.apPassword.v)) {
     err = at(st.apPassword.line, "setup-AP password: 8-63 printable characters, or empty");
   } else if (st.pagePassword.has &&
@@ -509,6 +515,8 @@ bool backupFromYaml(std::string_view yaml, Settings& inOut, std::string& err, st
              "screen timeout: 15, 30, 60, 120, 300, 600, 1800, 3600 or 0 (never)");
   } else if (st.kbLight.has && !parseKbLight(st.kbLight.v, kbLight)) {
     err = at(st.kbLight.line, "keyboard light: off, low, medium or high");
+  } else if (st.powerLight.has && !parseKbLight(st.powerLight.v, powerLight)) {
+    err = at(st.powerLight.line, "power light: off, low, medium or high");
   } else if (st.notifyLight.has && !parseLedColor(st.notifyLight.v, notifyLight)) {
     err = at(st.notifyLight.line,
              "notify light: off, red, green, blue, yellow, cyan, magenta or white");
@@ -518,6 +526,8 @@ bool backupFromYaml(std::string_view yaml, Settings& inOut, std::string& err, st
     err = at(st.notifyTimeout.line, "light timeout: 15, 30, 60, 300 or 0 (until read)");
   } else if (st.volume.has && (!plainInt(st.volume, volume) || !validVolume(volume))) {
     err = at(st.volume.line, "volume: 10 to 100 in steps of 10");
+  } else if (st.brightness.has && (!plainInt(st.brightness, brightness) || !validBrightness(brightness))) {
+    err = at(st.brightness.line, "brightness: 10 to 100 in steps of 10");
   } else if (st.timezone.has && !validPosixTz(st.timezone.v)) {
     err = at(st.timezone.line, "time zone: 1-63 printable characters");
   } else if (st.tzName.has && (st.tzName.v.size() > 63 || !printable(st.tzName.v))) {
@@ -566,6 +576,8 @@ bool backupFromYaml(std::string_view yaml, Settings& inOut, std::string& err, st
   if (st.screenSaver.has) inOut.screenSaver = st.screenSaver.v;
   if (RC_FEAT_SPELL && st.spellCheck.has) inOut.spellCheck = st.spellCheck.v;
   if (st.kbLight.has) inOut.kbLight = kbLight;
+  if (st.powerLight.has) inOut.powerLight = powerLight;
+  if (st.brightness.has) inOut.brightness = uint8_t(brightness);
   if (st.notifyLight.has) inOut.notifyLight = notifyLight;
   if (st.notifyTimeout.has) inOut.notifyTimeoutSecs = uint16_t(notifyTimeout);
   if (st.lastRoom.has) inOut.lastRoom = st.lastRoom.v;

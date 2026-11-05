@@ -17,6 +17,7 @@
 #include "store/settings.h"
 #include "power/power_policy.h"
 #include "tz/zones.h"
+#include "ui/brightness.h"
 #include "ui/rotation.h"
 #include "ui/kb_light.h"
 #include "ui/notify_light.h"
@@ -41,9 +42,11 @@ enum Item {
   kTextSize,
   kZone,
   kRotation,
+  kBrightness,
   kScreenTimeout,
   kAtTimeout,
   kKbLight,
+  kPowerLight,
   kSound,
   kTapVibrate,
   kAlertVibrate,
@@ -75,9 +78,11 @@ std::vector<Item> menuItems() {
   if (TextSize only; !board::fixedTextSize(only)) v.push_back(kTextSize);
   v.push_back(kZone);
   if (board::canRotate()) v.push_back(kRotation);
+  if (!board::eink()) v.push_back(kBrightness);
   v.push_back(kScreenTimeout);
   v.push_back(kAtTimeout);
   if (board::hasKbLight()) v.push_back(kKbLight);
+  if (board::hasPowerLight()) v.push_back(kPowerLight);
   if (board::hasSound()) v.push_back(kSound);
   if (board::hasHaptic()) {
     v.push_back(kTapVibrate);
@@ -160,6 +165,7 @@ constexpr int kFirstSize = RC_LOW_MEM ? 1 : 0;
 void SettingsScreen::enter(const std::string&) {
   confirm_ = Confirm::None;
   closeVolume();
+  closeBrightness();
   sizeSlider_.close();
   picking_ = false;
   menu_.setSelected(0);
@@ -251,10 +257,15 @@ void SettingsScreen::applyChoice(Confirm c, int i) {
     }
     return;
   }
-  if (c == Confirm::KbLight) {
+  if (c == Confirm::KbLight || c == Confirm::PowerLight) {
     if (i >= 0 && i < int(std::size(kKbLightOrder))) {
-      app().cfg.kbLight = kKbLightOrder[i];
-      settings::saveKbLight(app().cfg.kbLight);
+      if (c == Confirm::KbLight) {
+        app().cfg.kbLight = kKbLightOrder[i];
+        settings::saveKbLight(app().cfg.kbLight);
+      } else {
+        app().cfg.powerLight = kKbLightOrder[i];
+        settings::savePowerLight(app().cfg.powerLight);
+      }
     }
     return;
   }
@@ -370,6 +381,31 @@ void SettingsScreen::closeVolume() {
   board::setVolume(app().cfg.volume);
 }
 
+// Each step shows at its level; Set keeps it, Cancel puts the old one back.
+void SettingsScreen::brightnessKey(const KeyEvent& k) {
+  switch (brightness_.key(k)) {
+    case Slider::Result::Changed:
+      ui::previewBrightness(brightness_.value());
+      break;
+    case Slider::Result::Picked:
+      app().cfg.brightness = snapBrightness(brightness_.value());
+      settings::saveBrightness(app().cfg.brightness);
+      ui::previewBrightness(-1);
+      break;
+    case Slider::Result::Closed:
+      ui::previewBrightness(-1);
+      break;
+    case Slider::Result::None:
+      break;
+  }
+}
+
+void SettingsScreen::closeBrightness() {
+  if (!brightness_.isOpen()) return;
+  brightness_.close();
+  ui::previewBrightness(-1);
+}
+
 // Set applies the size; Cancel leaves it.
 void SettingsScreen::sizeKey(const KeyEvent& k) {
   if (sizeSlider_.key(k) != Slider::Result::Picked) return;
@@ -380,6 +416,7 @@ void SettingsScreen::sizeKey(const KeyEvent& k) {
 void SettingsScreen::onKey(const KeyEvent& k) {
   if (picker_.isOpen()) return picker_.onKey(k);
   if (volume_.isOpen()) return volumeKey(k);
+  if (brightness_.isOpen()) return brightnessKey(k);
   if (sizeSlider_.isOpen()) return sizeKey(k);
   if (buttons_ && (picking_ || confirm_ != Confirm::None)) return choiceKey(k);
   if (picking_) return zoneKey(k);
@@ -473,20 +510,29 @@ void SettingsScreen::activate(int item) {
       openChoice(Confirm::Timeout, U"screen timeout", std::move(rows), sel);
       break;
     }
-    case kKbLight: {
+    case kKbLight:
+    case kPowerLight: {
+      const KbLight cur = item == kKbLight ? app().cfg.kbLight : app().cfg.powerLight;
       std::vector<ListItem> rows;
       int sel = 0;
       for (size_t i = 0; i < std::size(kKbLightOrder); ++i) {
         ListItem it{kbLightLabel(kKbLightOrder[i]), U""};
-        if (kKbLightOrder[i] == app().cfg.kbLight) {
+        if (kKbLightOrder[i] == cur) {
           it.marker = true;
           sel = int(i);
         }
         rows.push_back(std::move(it));
       }
-      openChoice(Confirm::KbLight, U"keyboard light", std::move(rows), sel);
+      if (item == kKbLight)
+        openChoice(Confirm::KbLight, U"keyboard light", std::move(rows), sel);
+      else
+        openChoice(Confirm::PowerLight, U"power light", std::move(rows), sel);
       break;
     }
+    case kBrightness:
+      brightness_.open(U"brightness", app().cfg.brightness, kBrightnessMax, kBrightnessStep, U"",
+                       kBrightnessMin);
+      break;
     case kNotifyLight: {
       std::vector<ListItem> rows;
       int sel = 0;
@@ -654,6 +700,12 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
       case kKbLight:
         rows.push_back(ListItem{U"Keyboard light", kbLightLabel(a.cfg.kbLight)});
         break;
+      case kPowerLight:
+        rows.push_back(ListItem{U"Power light", kbLightLabel(a.cfg.powerLight)});
+        break;
+      case kBrightness:
+        rows.push_back(ListItem{U"Brightness", volumeLabel(a.cfg.brightness)});
+        break;
       case kSound:
         rows.push_back(ListItem{U"Alert sound", !a.cfg.buzzer        ? std::u32string(U"off")
                                                 : board::hasVolume() ? volumeLabel(a.cfg.volume)
@@ -802,6 +854,10 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
     if (!buttons_) menu_.render(g, menuTop, bottom, 1, g.cols() - 2, t);
     volume_.render(g, 1, bottom, t);
     drawHint(g, t, U"\u2190\u2192 volume  \u25CF set  back: cancel", U"tap the bar  Set or Cancel");
+  } else if (brightness_.isOpen()) {
+    if (!buttons_) menu_.render(g, menuTop, bottom, 1, g.cols() - 2, t);
+    brightness_.render(g, 1, bottom, t);
+    drawHint(g, t, U"\u2190\u2192 brightness  \u25CF set  back: cancel", U"tap the bar  Set or Cancel");
   } else if (sizeSlider_.isOpen()) {
     if (!buttons_) menu_.render(g, menuTop, bottom, 1, g.cols() - 2, t);
     sizeSlider_.render(g, 1, bottom, t);
@@ -820,6 +876,7 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
     // strip only has room for a two-row confirm.
     const bool pick = confirm_ == Confirm::Rotation ||
                       confirm_ == Confirm::Timeout || confirm_ == Confirm::KbLight ||
+                      confirm_ == Confirm::PowerLight ||
                       confirm_ == Confirm::NotifyLight || confirm_ == Confirm::NotifyTimeout ||
                       confirm_ == Confirm::Theme || confirm_ == Confirm::Idle ||
                       confirm_ == Confirm::Wake;

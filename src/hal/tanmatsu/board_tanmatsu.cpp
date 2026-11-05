@@ -66,9 +66,9 @@ void wifiCoprocessor() {
 
 // ---- Lights -----------------------------------------------------------------
 
-// Six GRB LEDs; manual mode, so LED 0 (power) is ours to light. LED 2 is the
-// one the badge marks for messages.
-constexpr int kPowerLed = 0, kMessageLed = 2;
+// Six GRB LEDs; manual mode, so LED 0 (power) is ours to light. LED 1 is the
+// radio (Wi-Fi) light, LED 2 the one the badge marks for messages.
+constexpr int kPowerLed = 0, kWifiLed = 1, kMessageLed = 2;
 constexpr uint8_t kLedLevel = 0x20;
 uint8_t leds[18] = {};
 
@@ -261,6 +261,19 @@ void kbLight(uint8_t duty, bool screenOn) {
 bool hasNotifyLight() { return true; }
 void notifyLight(uint8_t rgb) {
   setLed(kMessageLed, rgb & 1 ? kLedLevel : 0, rgb & 2 ? kLedLevel : 0, rgb & 4 ? kLedLevel : 0);
+  writeLeds();
+}
+
+// Green, at half the duty: Low (64) is the 0x20 lit at boot.
+bool hasPowerLight() { return true; }
+void powerLight(uint8_t duty) {
+  setLed(kPowerLed, 0, duty / 2, 0);
+  writeLeds();
+}
+
+bool hasWifiLight() { return true; }
+void wifiLight(uint8_t rgb) {
+  setLed(kWifiLed, rgb & 1 ? kLedLevel : 0, rgb & 2 ? kLedLevel : 0, rgb & 4 ? kLedLevel : 0);
   writeLeds();
 }
 

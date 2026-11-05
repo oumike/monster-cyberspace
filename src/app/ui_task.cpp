@@ -30,6 +30,7 @@
 #if RC_FEAT_MASCOT
 #include "store/mascot_store.h"
 #endif
+#include "ui/brightness.h"
 #include "ui/haptics.h"
 #include "ui/kb_light.h"
 #include "ui/notify_light.h"
@@ -42,6 +43,7 @@
 #include "ui/splash_layout.h"
 #include "ui/tap_map.h"
 #include "ui/theme.h"
+#include "ui/wifi_light.h"
 #include "ui/widgets/banner.h"
 #include "ui/widgets/osk.h"
 #include "ui/widgets/overlay.h"
@@ -99,6 +101,8 @@ int64_t saverUntil = 0, lastActivitySent = -kActivityMs;
 int64_t lastInputMs = 0, lockedAt = INT64_MIN / 2, nextBounce = 0;
 Power lockedTo = Power::Dark;  // where a peek returns to
 uint8_t lit = 255;             // the backlight level set while the screen is lit
+int sentBacklight = 255;       // what the board has: waking it sets full, sleeping 0
+int brightnessPreview = -1;    // Settings' slider while it is open, else -1
 Bouncer bouncer;
 // The monster's word on the screensaver, a new one every kSayMs.
 MonsterWords words;
@@ -215,10 +219,48 @@ void applyRotation(uint8_t r) {
   needResize = true;
 }
 
+// The lit level at the brightness setting (or the slider's preview), sent
+// when it differs from what the board has. Not while the panel sleeps.
+void applyBacklight() {
+  if (power == Power::Dark) return;
+  const int pct = brightnessPreview > 0 ? brightnessPreview : app().cfg.brightness;
+  const uint8_t v = backlightFor(lit, uint8_t(pct));
+  if (v == sentBacklight) return;
+  sentBacklight = v;
+  board::backlightLevel(v);
+}
+
 void setLit(uint8_t level) {
-  if (level == lit) return;
   lit = level;
-  board::backlightLevel(level);
+  applyBacklight();
+}
+
+// Wakes the panel, which comes back at the board's full level.
+void panelOn() {
+  board::displaySleep(false);
+  sentBacklight = 255;
+}
+
+// The power light follows its setting; the Wi-Fi light, checked each second,
+// the connection.
+void applyStatusLights() {
+  static int shownPower = -1, shownWifi = -1;
+  static uint32_t wifiCheckedAt = 0;
+  if (board::hasPowerLight()) {
+    const int duty = kbLightDuty(app().cfg.powerLight);
+    if (duty != shownPower) {
+      shownPower = duty;
+      board::powerLight(uint8_t(duty));
+    }
+  }
+  if (board::hasWifiLight() && (shownWifi < 0 || millis() - wifiCheckedAt >= 1000)) {
+    wifiCheckedAt = millis();
+    const int rgb = ledColorRgb(wifiLightColor(wifiUp(), setupApUp()));
+    if (rgb != shownWifi) {
+      shownWifi = rgb;
+      board::wifiLight(uint8_t(rgb));
+    }
+  }
 }
 
 void drawBounce(const Theme& t);
@@ -265,6 +307,7 @@ void goDark() {
   showOsk(false);
   power = lockedTo = Power::Dark;
   lit = 255;
+  sentBacklight = 0;
   // An e-paper panel keeps its last image with the power off, so it is left
   // showing the still screensaver rather than a frozen screen.
   if (board::eink()) {
@@ -479,7 +522,7 @@ void wake() {
   lastInputMs = nowMs();
   redrawAll();
   chatSource().command(Command{CmdType::ScreenOn});
-  if (wasDark) board::displaySleep(false);
+  if (wasDark) panelOn();
   setLit(255);
 }
 
@@ -489,7 +532,7 @@ void wake() {
 void finalScreen(const std::string& line, bool whole) {
   showOsk(false);
   const Theme& t = currentTheme();
-  board::displaySleep(false);
+  panelOn();
   const int w = int(utf8ToU32(line).size());
   if (whole) {
     grid.fill(t.bg);
@@ -659,7 +702,7 @@ void handleKey(const KeyEvent& key) {
         grid.fill(currentTheme().bg);
         drawSaver(currentTheme());
         renderer.draw(grid, gridSize);
-        if (wasDark) board::displaySleep(false);
+        if (wasDark) panelOn();
         setLit(255);
       }
     }
@@ -896,6 +939,8 @@ void taskMain(void*) {
     KeyEvent key;
     while (board::pollKey(key)) handleKey(key);
     applyKbLight();
+    applyBacklight();
+    applyStatusLights();
     Event e;
     while (nextEvent(e)) handleEvent(e);
     if (board::webCompose()) runWebCompose();
@@ -1032,6 +1077,8 @@ void start() {
   resizeGrid();
   router::go(router::Id::Splash);
   board::backlight(true);
+  sentBacklight = 255;
+  applyBacklight();
   // Core 1 beside the network's core 0; a single-core chip (the X4's C3) has only 0.
 #if RC_LOW_MEM
   // Measured: about 3.4 KB used. The heap left over is what TLS runs in.
@@ -1089,6 +1136,11 @@ void banner(const std::string& text, bool error) {
 }
 
 void redrawAll() { needResize = true; }
+
+void previewBrightness(int pct) {
+  brightnessPreview = pct;
+  applyBacklight();
+}
 
 void notifyLightPreview(LedColor c) {
   if (board::hasNotifyLight()) blinker.preview(c, millis());

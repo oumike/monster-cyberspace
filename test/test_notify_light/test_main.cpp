@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "ui/notify_light.h"
+#include "ui/wifi_light.h"
 
 using namespace rc;
 
@@ -175,6 +176,13 @@ void test_millis_wraparound() {
   expectDoubleBlink(ch, 8, t0 + 2000, 6);
 }
 
+void test_wifi_light_colours() {
+  TEST_ASSERT(wifiLightColor(true, false) == LedColor::Green);
+  TEST_ASSERT(wifiLightColor(true, true) == LedColor::Green);  // joined wins over the AP
+  TEST_ASSERT(wifiLightColor(false, true) == LedColor::Blue);
+  TEST_ASSERT(wifiLightColor(false, false) == LedColor::Yellow);
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_rgb_mapping);
@@ -188,5 +196,6 @@ int main() {
   RUN_TEST(test_off_disables);
   RUN_TEST(test_cancel_goes_dark);
   RUN_TEST(test_millis_wraparound);
+  RUN_TEST(test_wifi_light_colours);
   return UNITY_END();
 }

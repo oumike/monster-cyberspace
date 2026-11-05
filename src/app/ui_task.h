@@ -41,6 +41,9 @@ struct ComposeView {
 };
 ComposeView composeView();
 std::string webCompose(ComposeReq r);
+// Shows the screen at pct brightness until called with -1, which goes back
+// to the setting. UI task only (Settings' slider).
+void previewBrightness(int pct);
 // Forces every row to be redrawn on the next frame.
 void redrawAll();
 // One double blink of the new-message light in c (board::hasNotifyLight).

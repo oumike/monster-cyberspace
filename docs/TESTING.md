@@ -69,6 +69,7 @@ on 2026-10-27; the sections marked `m9_fake` passed on it before then.
       the next row goes to it and Down from it goes to the left tile; taps
       open every tile. With nothing unread, Unread says "nothing unread".
 - [ ] Settings → Alert sound (boards with a speaker or buzzer): switching it on beeps once and mentions beep; off, they don't; web config's Sound on alerts follows it both ways; the item and the checkbox are absent on the Mesh Deck, T-Deck Pro, CrowPanels and X4
+- [ ] Brightness (every board but the e-paper ones): Settings → Brightness opens a slider from 10% to 100%; each step changes the backlight at once, Set keeps it, Cancel and Back restore it; dimming and the screensaver stay at or below it; waking from screen off comes back at it, not full; it survives a reboot and a backup restore; web config's slider applies it within a second
 - [ ] Alert sound volume (Wio L2, T-Deck Plus, Pager, Cyber Deck Plus, Cardputer ADV, T-Display P4, Tanmatsu): Settings → Alert sound opens a slider; Left/Right and taps on the bar, "-" and "+" move it in 10% steps, each beeping at that loudness, 100% without clipping, 10% still audible; Set keeps it, Cancel and Back restore the old level; the level survives a reboot and a backup restore; web config shows a slider instead of the checkbox (far left Off), saving a new level beeps once; the M9 keeps the on/off toggle
 - [ ] Touch boards (the T-Display P4 too): every Settings picker and confirm,
       and Restore from SD card (Settings and Setup), opens as full-screen
@@ -488,7 +489,7 @@ is open.
 - [ ] Function keys: F1 Home, F2 messages (again: the room list), F3 C-Mail, F4 Feed, F5 Guilds, F6 your profile, Fn+F1 Settings, from any screen; Fn+F4 shows the Tanmatsu's function-key table, lined up, and any key closes it; Fn+Space opens the emoji tray while typing
 - [ ] Volume keys: volume up and volume down move Up and Down in lists and repeat when held
 - [ ] Keyboard light: Fn+F5 steps Low, Medium, High, Off (Medium on first boot); Settings → Keyboard light matches; the keys go dark with the screen
-- [ ] LEDs: the power LED is dim green; a mention or C-Mail blinks the messages LED in the Notify light colour; Light timeout and Off work
+- [ ] LEDs: the power LED is dim green (Settings → Power light: Low, Medium, High and Off change it at once and survive a reboot); the radio LED is yellow while Wi-Fi looks, green once joined, blue with only the setup AP up; a mention or C-Mail blinks the messages LED in the Notify light colour; Light timeout and Off work
 - [ ] Power button: a press turns the screen off and on; any key also wakes it and does nothing else; holding it 2 s still cuts the power
 - [ ] Speaker: with Alert sound on, a mention and a C-Mail beep through the ES8156, clean, with no hiss between beeps (the amplifier is off between them); the Alert sound slider changes the loudness
 - [ ] Battery: Settings shows a sensible percentage; the charging state follows the USB cable

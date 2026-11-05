@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "config/phrases.h"
+#include "ui/brightness.h"
 #include "ui/grid.h"
 #include "ui/kb_light.h"
 #include "ui/notify_light.h"
@@ -31,6 +32,11 @@ struct Settings {
   // Boards with a lit keyboard (board::hasKbLight); the saved value falls back
   // to board::kbLightDefault().
   KbLight kbLight = KbLight::Off;
+  // Boards with a power light (board::hasPowerLight): its level, in the
+  // keyboard light's steps.
+  KbLight powerLight = KbLight::Low;
+  // The screen's backlight, percent (ui/brightness.h); not on e-paper.
+  uint8_t brightness = kBrightnessDefault;
   // Boards with a new-message light (board::hasNotifyLight): its colour, and
   // how long it blinks after the last message (ui/notify_light.h); 0 until read.
   LedColor notifyLight = LedColor::Blue;

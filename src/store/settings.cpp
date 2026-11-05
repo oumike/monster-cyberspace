@@ -72,6 +72,8 @@ void load(rc::Settings& s) {
   s.alertVibrate = p.getBool("alertVib", true);
   s.kbLight = rc::kbLightFromIndex(p.getUChar("kblight", board::kbLightDefault()),
                                    rc::kbLightFromIndex(board::kbLightDefault()));
+  s.powerLight = rc::kbLightFromIndex(p.getUChar("pwrlight", uint8_t(rc::KbLight::Low)), rc::KbLight::Low);
+  s.brightness = rc::snapBrightness(p.getUChar("bright", rc::kBrightnessDefault));
   s.notifyLight = rc::ledColorFromIndex(p.getUChar("ledcolor", uint8_t(rc::LedColor::Blue)),
                                        rc::LedColor::Blue);
   s.notifyTimeoutSecs = rc::snapNotifyTimeout(p.getUShort("ledtime", 15));
@@ -97,6 +99,8 @@ void saveUiPrefs(const rc::Settings& s) {
   p.putUChar("theme", static_cast<uint8_t>(s.theme));
   p.putUChar("rot", s.rotation);
   p.putUChar("kblight", static_cast<uint8_t>(s.kbLight));
+  p.putUChar("pwrlight", static_cast<uint8_t>(s.powerLight));
+  p.putUChar("bright", s.brightness);
   p.putString("room", s.lastRoom.c_str());
   p.end();
 }
@@ -161,6 +165,20 @@ void saveVolume(uint8_t pct) {
   Preferences p;
   if (!p.begin(kNs, false)) return;
   p.putUChar("vol", pct);
+  p.end();
+}
+
+void saveBrightness(uint8_t pct) {
+  Preferences p;
+  if (!p.begin(kNs, false)) return;
+  p.putUChar("bright", pct);
+  p.end();
+}
+
+void savePowerLight(rc::KbLight level) {
+  Preferences p;
+  if (!p.begin(kNs, false)) return;
+  p.putUChar("pwrlight", static_cast<uint8_t>(level));
   p.end();
 }
 

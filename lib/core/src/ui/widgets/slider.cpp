@@ -6,12 +6,14 @@
 
 namespace rc {
 
-void Slider::open(std::u32string title, int value, int max, int step, std::u32string zeroLabel) {
+void Slider::open(std::u32string title, int value, int max, int step, std::u32string zeroLabel,
+                  int min) {
   title_ = std::move(title);
   zero_ = std::move(zeroLabel);
   max_ = std::max(1, max);
   step_ = std::clamp(step, 1, max_);
-  value_ = std::clamp(value, 0, max_);
+  min_ = std::clamp(min, 0, max_);
+  value_ = std::clamp(value, min_, max_);
   names_.clear();
   open_ = true;
 }
@@ -35,7 +37,7 @@ Slider::Result Slider::key(const KeyEvent& k) {
   switch (k.action) {
     case Action::Left:
     case Action::Down:
-      value_ = std::max(0, value_ - step_);
+      value_ = std::max(min_, value_ - step_);
       break;
     case Action::Right:
     case Action::Up:
@@ -44,7 +46,7 @@ Slider::Result Slider::key(const KeyEvent& k) {
     case Action::Activate:
       // A tap on bar segment `index`: the value at its right end.
       if (k.target == uint8_t(ListId::Menu) && k.index >= 0 && k.index < steps())
-        value_ = names_.empty() ? (k.index + 1) * step_ : k.index;
+        value_ = names_.empty() ? std::max(min_, (k.index + 1) * step_) : k.index;
       break;
     case Action::Select:
       open_ = false;

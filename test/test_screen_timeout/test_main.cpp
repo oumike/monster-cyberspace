@@ -2,6 +2,7 @@
 
 #include <cstring>
 
+#include "ui/brightness.h"
 #include "ui/kb_light.h"
 #include "ui/screen_timeout.h"
 
@@ -76,6 +77,26 @@ void test_kb_light_step_follows_settings_order() {
   TEST_ASSERT(rc::nextKbLight(static_cast<KbLight>(9)) == KbLight::Low);
 }
 
+void test_brightness_steps_and_backlight() {
+  TEST_ASSERT_TRUE(validBrightness(10));
+  TEST_ASSERT_TRUE(validBrightness(100));
+  TEST_ASSERT_FALSE(validBrightness(0));
+  TEST_ASSERT_FALSE(validBrightness(55));
+  TEST_ASSERT_EQUAL_UINT8(60, snapBrightness(57));
+  TEST_ASSERT_EQUAL_UINT8(10, snapBrightness(3));
+  TEST_ASSERT_EQUAL_UINT8(100, snapBrightness(0));  // unset: full
+  // Full brightness leaves every level as it was.
+  TEST_ASSERT_EQUAL_UINT8(255, backlightFor(255, 100));
+  TEST_ASSERT_EQUAL_UINT8(kDimLevel, backlightFor(kDimLevel, 100));
+  // Lower, lit scales, and dim and the screensaver never outshine it.
+  TEST_ASSERT_EQUAL_UINT8(128, backlightFor(255, 50));
+  TEST_ASSERT_EQUAL_UINT8(kDimLevel, backlightFor(kDimLevel, 50));
+  TEST_ASSERT_EQUAL_UINT8(26, backlightFor(255, 10));
+  TEST_ASSERT_EQUAL_UINT8(26, backlightFor(kDimLevel, 10));
+  TEST_ASSERT_EQUAL_UINT8(26, backlightFor(kSaverLevel, 10));
+  TEST_ASSERT_EQUAL_UINT8(0, backlightFor(0, 50));  // off stays off
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_timeout_options_cycle_and_labels);
@@ -83,5 +104,6 @@ int main() {
   RUN_TEST(test_bouncer_stays_inside_and_reflects);
   RUN_TEST(test_kb_light_levels);
   RUN_TEST(test_kb_light_step_follows_settings_order);
+  RUN_TEST(test_brightness_steps_and_backlight);
   return UNITY_END();
 }

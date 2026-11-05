@@ -1829,6 +1829,18 @@ void test_slider_steps_taps_and_closes() {
   TEST_ASSERT_FALSE(s.isOpen());
 }
 
+void test_slider_minimum() {
+  Slider s;
+  s.open(U"brightness", 20, 100, 10, U"", 10);
+  KeyEvent k;
+  k.action = Action::Left;
+  TEST_ASSERT_EQUAL(int(Slider::Result::Changed), int(s.key(k)));
+  TEST_ASSERT_EQUAL(10, s.value());
+  TEST_ASSERT_EQUAL(int(Slider::Result::None), int(s.key(k)));  // the minimum holds
+  s.open(U"brightness", 0, 100, 10, U"", 10);
+  TEST_ASSERT_EQUAL(10, s.value());  // opened below it
+}
+
 void test_slider_named_stops() {
   Slider s;
   s.openChoices(U"text size", {U"Compact", U"Comfortable", U"Large"}, 1);
@@ -1970,6 +1982,7 @@ int main() {
   RUN_TEST(test_log_draws_bold_spans_bold);
   RUN_TEST(test_confirm_as_buttons);
   RUN_TEST(test_slider_steps_taps_and_closes);
+  RUN_TEST(test_slider_minimum);
   RUN_TEST(test_slider_named_stops);
   return UNITY_END();
 }

@@ -49,6 +49,13 @@ void kbLight(uint8_t duty, bool screenOn);
 // bit 0 red, bit 1 green, bit 2 blue, 0 off. A no-op without one.
 bool hasNotifyLight();
 void notifyLight(uint8_t rgb);
+// A power light (the Tanmatsu's power LED): hasPowerLight says there is one,
+// powerLight sets it, duty 0..255 (rc::kbLightDuty steps), 0 off. A Wi-Fi
+// light shows rc::wifiLightColor in notifyLight's bits. Default: neither.
+bool hasPowerLight();
+void powerLight(uint8_t duty);
+bool hasWifiLight();
+void wifiLight(uint8_t rgb);
 // The function-key table the help (Action::KeysHelp) shows: count rows.
 // rc::kFunctionKeys unless a board's keyboard reaches them differently.
 const rc::FunctionKey* functionKeys(size_t& count);

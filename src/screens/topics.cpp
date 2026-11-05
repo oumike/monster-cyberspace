@@ -156,7 +156,7 @@ void TopicsScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
                                                        : "couldn't load: Ctrl, Refresh")
                         : waiting_ ? "loading\u2026"
                                    : "no topics";
-    putLine(g, 1, 2, empty, t.dim, t.bg);
+    putLine(g, 1, 2, withMenuKey(empty), t.dim, t.bg);
   }
 
   if (nav > 0) renderSideNav(g, 1, bottom, nav, t);

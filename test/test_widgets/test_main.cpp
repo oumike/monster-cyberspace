@@ -29,6 +29,7 @@
 #include "ui/emoji_set.h"
 #include "ui/text_width.h"
 #include "ui/home_tiles.h"
+#include "ui/menu_key.h"
 #include "util/utf8.h"
 
 using namespace rc;
@@ -1892,6 +1893,14 @@ void test_slider_named_stops() {
   TEST_ASSERT_EQUAL(int(Slider::Result::Picked), int(s.key(k)));
 }
 
+void test_menu_key_names_the_board_key() {
+  TEST_ASSERT_TRUE(withMenuKey(U"\u25CF send  ctrl cmds", U"ctrl") == U"\u25CF send  ctrl cmds");
+  TEST_ASSERT_TRUE(withMenuKey(U"\u25CF send  ctrl cmds", U"vol-") == U"\u25CF send  vol- cmds");
+  TEST_ASSERT_TRUE(withMenuKey(U"couldn't load: Ctrl, Refresh", U"vol-") == U"couldn't load: vol-, Refresh");
+  // Whole words only.
+  TEST_ASSERT_TRUE(withMenuKey(U"ctrlx xctrl", U"vol-") == U"ctrlx xctrl");
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_overlay_button_menu);
@@ -1984,5 +1993,6 @@ int main() {
   RUN_TEST(test_slider_steps_taps_and_closes);
   RUN_TEST(test_slider_minimum);
   RUN_TEST(test_slider_named_stops);
+  RUN_TEST(test_menu_key_names_the_board_key);
   return UNITY_END();
 }

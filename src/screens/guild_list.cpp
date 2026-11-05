@@ -208,7 +208,7 @@ void GuildListScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
                                                                         : "couldn't load: Ctrl, Refresh")
                         : waiting                  ? "loading\u2026"
                                                    : "no guilds";
-    putLine(g, 1, 2, empty, t.dim, t.bg);
+    putLine(g, 1, 2, withMenuKey(empty), t.dim, t.bg);
   }
 
   if (nav > 0) renderSideNav(g, 1, bottom, nav, t);

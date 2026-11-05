@@ -213,7 +213,8 @@ void test_arrow_repeat_follows_last_pressed() {
 }
 
 void test_function_key_table() {
-  TEST_ASSERT_EQUAL(10, (int)kTanmatsuFunctionKeyCount);
+  TEST_ASSERT_EQUAL(11, (int)kTanmatsuFunctionKeyCount);
+  expectAction(KeyEvent{kTanmatsuFunctionKeys[10].action}, Action::Palette);
   expectAction(KeyEvent{kTanmatsuFunctionKeys[9].action}, Action::Emoji);
   expectAction(KeyEvent{kTanmatsuFunctionKeys[6].action}, Action::OpenSettings);
   TEST_ASSERT_TRUE(kTanmatsuFunctionKeys[6].key[0] == U'F' && kTanmatsuFunctionKeys[6].key[1] == U'n');

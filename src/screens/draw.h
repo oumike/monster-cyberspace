@@ -5,12 +5,18 @@
 
 #include "hal/board.h"
 #include "ui/grid.h"
+#include "ui/menu_key.h"
 #include "ui/theme.h"
 #include "ui/widgets/side_nav.h"
 #include "ui/wrap.h"
 #include "util/utf8.h"
 
 namespace rc {
+
+// A UTF-8 message naming the commands key as "Ctrl", with the board's name for it.
+inline std::string withMenuKey(std::string_view utf8) {
+  return u32ToUtf8(withMenuKey(utf8ToU32(utf8), board::menuKeyName()));
+}
 
 inline int putLine(Grid& g, int col, int row, std::string_view utf8, uint16_t fg, uint16_t bg) {
   return g.putText(col, row, utf8ToU32(std::string(utf8)), fg, bg, g.cols() - col);
@@ -42,7 +48,7 @@ inline int sideNavWidth(const Grid& g) {
 inline void drawHint(Grid& g, const Theme& t, std::u32string_view text) {
   int row = g.rows() - 1;
   g.fillRow(row, t.hintBg);
-  g.putText(0, row, text, t.hintFg, t.hintBg, g.cols());
+  g.putText(0, row, withMenuKey(text, board::menuKeyName()), t.hintFg, t.hintBg, g.cols());
 }
 
 // Keyed boards show `keys`; touch boards show `touch`.

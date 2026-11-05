@@ -84,7 +84,8 @@ o p [ ] l ; ' return | . / up shiftR altR left down right |
 | Meta (the logo key), tapped alone | Home |
 | Ctrl, tapped alone | `Action::Emoji`, as the M9's Ctrl: the emoji tray while typing, the palette elsewhere |
 | Ctrl, left Alt, Meta held | The key they modify types nothing |
-| Volume up (keyboard) / volume down (GPIO35) | Up / Down |
+| Volume up (keyboard) | Up |
+| Volume down (GPIO35, bottom of the right side) | `Action::Palette`, once a press: the screen's commands (the composer's Post); hints name it `vol-` (`board::menuKeyName`, `ui/menu_key.h`) |
 | Power button | ScreenOff (lock, or wake) |
 
 `board::functionKeys()` (new, weak default: `kFunctionKeys`) lets the F10 help

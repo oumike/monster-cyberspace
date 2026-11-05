@@ -363,7 +363,7 @@ The Tanmatsu has a 3.97" screen above a full keyboard. It is used in
 landscape only, drawn at half the screen's resolution so text is the size it
 is on the other boards; there is no touch and no Orientation item. This
 firmware replaces the Tanmatsu launcher (see docs/BUILD.md to go back). It
-has not been tried on hardware yet and is not in the releases or the flasher.
+is in the releases and the flasher.
 
 | Key | Action |
 |---|---|
@@ -377,10 +377,11 @@ has not been tried on hardware yet and is not in the releases or the flasher.
 | Ctrl (tapped alone) | While typing: the emoji tray. Elsewhere: the palette |
 | F1 … F6 | From anywhere: Home, Messages (your last room; again for the room list), C-Mail, Feed, Guilds, your Profile |
 | Fn + F1 | Settings |
-| Fn + F4 | Navigational help, a table of the function keys and Ctrl; any key closes it |
+| Fn + F4 | Navigational help, a table of the function keys, Ctrl and vol-; any key closes it |
 | Fn + F5 | Steps the keyboard light: Low, Medium, High, Off (also **Keyboard light** in Settings) |
 | Fn + Space | The emoji tray |
-| Volume up / volume down | Up / Down |
+| Volume up | Up |
+| Volume down (the bottom button on the right side) | The screen's commands: Post / Discard in New entry and New thread, the palette elsewhere. Hints call it **vol-** where other boards say ctrl |
 
 **Power button:** a press turns the screen off, and on again. Only the power
 button wakes it or leaves the screensaver: the keyboard does nothing while

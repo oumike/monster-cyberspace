@@ -474,7 +474,7 @@ void FeedListScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
                                                             : "nothing from people you follow")
                                                  : "no bookmarks";
     // Below the New entry / New thread row, which takes the first two.
-    putLine(g, 1, composeRow_ ? 3 : 2, empty, t.dim, t.bg);
+    putLine(g, 1, composeRow_ ? 3 : 2, withMenuKey(empty), t.dim, t.bg);
   }
 
   if (nav > 0) renderSideNav(g, 1, bottom, nav, t);

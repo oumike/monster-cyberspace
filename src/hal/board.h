@@ -104,6 +104,9 @@ bool anyInputWakes();
 // peek at recent messages. False: keys do nothing there, only the wake key
 // (ScreenOff) acts. Default true.
 bool keysPeek();
+// What hints call the key that opens a screen's commands (Post in the
+// composer): "ctrl" by default (ui/menu_key.h).
+const char32_t* menuKeyName();
 // With anyInputWakes on a touch board: only a double tap wakes the screen,
 // so a brush against the panel doesn't.
 bool doubleTapWakes();

@@ -107,11 +107,10 @@ bool pollKeyboard(rc::KeyEvent& key) {
   return key.action != rc::Action::None;
 }
 
-// Volume down (GPIO35, low pressed), the bottom button on the right side,
-// opens the screen's commands (Palette: the composer's Post), once a press.
+// Volume down (GPIO35, low pressed) is Down, repeating like the arrows.
 constexpr uint32_t kDebounceMs = 30;
 bool volDown = false, volRaw = false;
-uint32_t volChangedMs = 0;
+uint32_t volChangedMs = 0, volRepeatMs = 0;
 
 bool pollVolumeDown(rc::KeyEvent& key) {
   const uint32_t now = millis();
@@ -120,10 +119,16 @@ bool pollVolumeDown(rc::KeyEvent& key) {
     volRaw = raw;
     volChangedMs = now;
   }
-  if (raw == volDown || now - volChangedMs < kDebounceMs) return false;
-  volDown = raw;
-  if (!raw) return false;
-  key = rc::KeyEvent{rc::Action::Palette};
+  if (raw != volDown && now - volChangedMs >= kDebounceMs) {
+    volDown = raw;
+    if (!raw) return false;
+    volRepeatMs = now + rc::kTanmatsuRepeatDelayMs;
+  } else if (!volDown || int32_t(now - volRepeatMs) < 0) {
+    return false;
+  } else {
+    volRepeatMs = now + rc::kTanmatsuRepeatMs;
+  }
+  key = rc::KeyEvent{rc::Action::Down};
   return true;
 }
 
@@ -261,8 +266,8 @@ bool backspaceIsBack() { return true; }
 // Only the power button wakes the screen or acts on the screensaver.
 bool anyInputWakes() { return false; }
 bool keysPeek() { return false; }
-// The volume-down button (the bottom of the right side) opens the commands.
-const char32_t* menuKeyName() { return U"vol-"; }
+// Tab opens the commands (the keymap's Palette).
+const char32_t* menuKeyName() { return U"tab"; }
 bool doubleTapWakes() { return false; }
 bool upDownOnly() { return false; }
 bool sideNav() { return false; }

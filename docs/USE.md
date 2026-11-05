@@ -372,16 +372,15 @@ is in the releases and the flasher.
 | Return | Select (send, in a room) |
 | Backspace | Deletes while there's text to delete; otherwise Back. Hold it to repeat |
 | Esc | Back |
-| Tab | The command palette |
+| Tab | The screen's commands: Post / Discard in New entry and New thread, the palette elsewhere. Hints call it **tab** where other boards say ctrl |
 | Logo key (tapped alone) | Home |
 | Ctrl (tapped alone) | While typing: the emoji tray. Elsewhere: the palette |
 | F1 … F6 | From anywhere: Home, Messages (your last room; again for the room list), C-Mail, Feed, Guilds, your Profile |
 | Fn + F1 | Settings |
-| Fn + F4 | Navigational help, a table of the function keys, Ctrl and vol-; any key closes it |
+| Fn + F4 | Navigational help, a table of the function keys, Ctrl and Tab; any key closes it |
 | Fn + F5 | Steps the keyboard light: Low, Medium, High, Off (also **Keyboard light** in Settings) |
 | Fn + Space | The emoji tray |
-| Volume up | Up |
-| Volume down (the bottom button on the right side) | The screen's commands: Post / Discard in New entry and New thread, the palette elsewhere. Hints call it **vol-** where other boards say ctrl |
+| Volume up / volume down | Up / Down |
 
 **Power button:** a press turns the screen off, and on again. Only the power
 button wakes it or leaves the screensaver: the keyboard does nothing while

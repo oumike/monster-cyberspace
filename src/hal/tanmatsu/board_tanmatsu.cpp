@@ -107,10 +107,12 @@ bool pollKeyboard(rc::KeyEvent& key) {
   return key.action != rc::Action::None;
 }
 
-// Volume down (GPIO35, low pressed) is Down, repeating like the arrows.
+// Volume down (GPIO35, low pressed), the bottom button on the right side,
+// sends ScreenOff: it locks the screen or, when it is dark, wakes it. The
+// power button above it is left to the hardware (held 2 s, it cuts power).
 constexpr uint32_t kDebounceMs = 30;
 bool volDown = false, volRaw = false;
-uint32_t volChangedMs = 0, volRepeatMs = 0;
+uint32_t volChangedMs = 0;
 
 bool pollVolumeDown(rc::KeyEvent& key) {
   const uint32_t now = millis();
@@ -119,36 +121,9 @@ bool pollVolumeDown(rc::KeyEvent& key) {
     volRaw = raw;
     volChangedMs = now;
   }
-  if (raw != volDown && now - volChangedMs >= kDebounceMs) {
-    volDown = raw;
-    if (!raw) return false;
-    volRepeatMs = now + rc::kTanmatsuRepeatDelayMs;
-  } else if (!volDown || int32_t(now - volRepeatMs) < 0) {
-    return false;
-  } else {
-    volRepeatMs = now + rc::kTanmatsuRepeatMs;
-  }
-  key = rc::KeyEvent{rc::Action::Down};
-  return true;
-}
-
-// The power button (coprocessor input bit 2): a press sends ScreenOff, which
-// locks the screen or, when it is dark, wakes it. Held 2 s, the hardware
-// cuts the power itself.
-constexpr uint32_t kButtonPollMs = 50;
-uint32_t buttonPollMs = 0;
-bool powerDown = false;
-
-bool pollPowerButton(rc::KeyEvent& key) {
-  const uint32_t now = millis();
-  if (now - buttonPollMs < kButtonPollMs) return false;
-  buttonPollMs = now;
-  uint8_t in;
-  if (!coproc::read(coproc::INPUTS, &in, 1)) return false;
-  const bool down = in & 0x04;
-  const bool pressed = down && !powerDown;
-  powerDown = down;
-  if (!pressed) return false;
+  if (raw == volDown || now - volChangedMs < kDebounceMs) return false;
+  volDown = raw;
+  if (!raw) return false;
   key = rc::KeyEvent{rc::Action::ScreenOff};
   return true;
 }
@@ -252,10 +227,10 @@ void displaySleep(bool sleep) {
 
 bool pollKey(rc::KeyEvent& key) {
   flushPending();
-  return pollPowerButton(key) || pollVolumeDown(key) || pollKeyboard(key);
+  return pollVolumeDown(key) || pollKeyboard(key);
 }
 
-const char* wakeHint() { return "press the power button to wake"; }
+const char* wakeHint() { return "press the bottom side button to wake"; }
 
 bool hasTouch() { return false; }
 bool readTouch(int16_t&, int16_t&) { return false; }
@@ -263,7 +238,7 @@ bool readTouch(int16_t&, int16_t&) { return false; }
 bool hasKeyboard() { return true; }
 bool hasKeys() { return true; }
 bool backspaceIsBack() { return true; }
-// Only the power button wakes the screen or acts on the screensaver.
+// Only the bottom side button wakes the screen or acts on the screensaver.
 bool anyInputWakes() { return false; }
 bool keysPeek() { return false; }
 // Tab opens the commands (the keymap's Palette).

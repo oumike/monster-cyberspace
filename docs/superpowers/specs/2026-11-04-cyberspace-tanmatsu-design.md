@@ -84,8 +84,9 @@ o p [ ] l ; ' return | . / up shiftR altR left down right |
 | Meta (the logo key), tapped alone | Home |
 | Ctrl, tapped alone | `Action::Emoji`, as the M9's Ctrl: the emoji tray while typing, the palette elsewhere |
 | Ctrl, left Alt, Meta held | The key they modify types nothing |
-| Volume up (keyboard) / volume down (GPIO35) | Up / Down |
-| Power button | ScreenOff (lock, or wake) |
+| Volume up (keyboard) | Up |
+| Volume down (GPIO35), the bottom right-side button | ScreenOff (lock, or wake) |
+| Power button | Not used (held 2 s, the hardware cuts power) |
 
 `board::functionKeys()` (new, weak default: `kFunctionKeys`) lets the F10 help
 show the Tanmatsu's own table (`kTanmatsuFunctionKeys`: F1–F6, Fn+F1, Fn+F4,

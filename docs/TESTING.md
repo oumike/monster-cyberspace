@@ -482,17 +482,17 @@ is open.
 - [ ] Boots: the USB log shows `[boot] … on Tanmatsu` and `[tanmatsu] ST7701 up 480x800`, with no `ST7701 … failed`
 - [ ] Panel: lights at boot (backlight through the coprocessor), landscape above the keys and the right way up (else change `PANEL_ROTATION` in `pins_tanmatsu.h`), colours right (no red/blue swap), nothing cut off, every logical pixel a clean 2x2 block; if the panel stays dark, try the DSI PHY LDO at 1830 mV (`DSI_LDO_MV`) as on the T-Display P4
 - [ ] Tearing: scrolling a room or a long list shows no torn or half-drawn frames
-- [ ] Screen off and on: the power button and the screen timeout turn it dark and back, lit and correct; Settings brightness levels look right
+- [ ] Screen off and on: the bottom side button and the screen timeout turn it dark and back, lit and correct; Settings brightness levels look right
 - [ ] Restart: Settings → Restart, an OTA install and web config's restart bring the panel back lit
 - [ ] Wi-Fi through the C6 (its own esp-hosted-tanmatsu image): the log shows the hosted link up; Settings → Wi-Fi scans and joins; web config loads; the setup AP is named `Monster-Cyberspace-Tanmatsu` and `http://192.168.4.1` loads. If the link never comes up, note the log: the C6 image may not match Arduino's ESP-Hosted host
 - [ ] Keys: every key types the right character, with Shift held (either side); AltGr and Shift+AltGr give the accented letters; holding Ctrl, left Alt or the logo key types nothing; arrows and Backspace repeat; Backspace deletes, then goes back; Esc goes back; Return selects; Tab opens the palette; the logo key tapped alone goes Home
 - [ ] Function keys: F1 Home, F2 messages (again: the room list), F3 C-Mail, F4 Feed, F5 Guilds, F6 your profile, Fn+F1 Settings, from any screen; Fn+F4 shows the Tanmatsu's function-key table with its Ctrl row, lined up, and any key closes it; Fn+Space and Ctrl tapped alone open the emoji tray while typing; Ctrl tapped alone elsewhere opens the palette, and Ctrl held with a key does neither
 - [ ] Tab opens Post / Discard in New entry and New thread and the commands elsewhere; the hints say "tab post" and "tab cmds"; Fn+F4 lists Tab; volume up and down still move Up and Down
-- [ ] Volume keys: volume up and volume down move Up and Down in lists and repeat when held
+- [ ] Volume up moves Up in lists and repeats when held
 - [ ] Keyboard light: Fn+F5 steps Low, Medium, High, Off (Medium on first boot); Settings → Keyboard light matches; the keys go dark with the screen
 - [ ] Brightness: the backlight runs on a 6% to 28% duty band (as wadamesh does), so 100% looks as bright as before, 10% is dim but readable, and each Settings → Brightness step shows a change
 - [ ] LEDs: the power LED is dim green (Settings → Power light changes its colour at once); the radio LED is yellow while Wi-Fi looks, green once joined, blue with only the setup AP up, and the Wi-Fi joined / setup AP / looking colours change each within a second; Settings → LED brightness dims all three LEDs together at each stop, Dim still visible, Cancel restores it; all of these survive a reboot and a backup restore; a mention or C-Mail blinks the messages LED in the Notify light colour; Light timeout and Off work
-- [ ] Power button: a press turns the screen off and on; keys (Enter too) do nothing while dark or on the screensaver; holding it 2 s still cuts the power
+- [ ] Bottom side button (volume down): a press turns the screen off and on; keys (Enter too) do nothing while dark or on the screensaver; the power button does nothing in the UI, and holding it 2 s still cuts the power
 - [ ] Speaker: with Alert sound on, a mention and a C-Mail beep through the ES8156, clean, with no hiss between beeps (the amplifier is off between them); the Alert sound slider changes the loudness
 - [ ] Battery: Settings shows a sensible percentage; the charging state follows the USB cable
 - [ ] RTC: the time set by NTP survives a power cycle with Wi-Fi off

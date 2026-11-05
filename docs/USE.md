@@ -380,11 +380,13 @@ is in the releases and the flasher.
 | Fn + F4 | Navigational help, a table of the function keys, Ctrl and Tab; any key closes it |
 | Fn + F5 | Steps the keyboard light: Low, Medium, High, Off (also **Keyboard light** in Settings) |
 | Fn + Space | The emoji tray |
-| Volume up / volume down | Up / Down |
+| Volume up | Up |
 
-**Power button:** a press turns the screen off, and on again. Only the power
-button wakes it or leaves the screensaver: the keyboard does nothing while
-the screen is dark. Holding it 2 s cuts the power.
+**Bottom side button** (volume down, the bottom button on the right side): a
+press turns the screen off, and on again. Only it wakes the screen or leaves
+the screensaver: the keyboard does nothing while the screen is dark. The
+power button above it does nothing in the firmware; holding it 2 s cuts the
+power.
 
 **Notification light:** the LED marked for messages blinks twice every second
 while a mention or a C-Mail is unread, as on the Mesh Deck (**Notify light**

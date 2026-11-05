@@ -233,7 +233,7 @@ Tanmatsu launcher. A CH32V203 coprocessor at 0x5F on Wire 9/10
 bitfield, `TanmatsuKeys` in `input/keymap_tanmatsu`: held modifiers, AltGr
 layer, F1–F6 and Fn+F1/F4/F5, Meta tapped for Home), display and keyboard
 backlights, six RGB LEDs (LED 2 the notification light, LED 0 lit dim green
-since manual mode stops the power LED), the power button (ScreenOff), the C6's
+since manual mode stops the power LED), the power button (unused; volume down is ScreenOff), the C6's
 power, battery and RTC. The ST7701 480x800 over MIPI-DSI (`panel_st7701`) is
 drawn at 2x as a 400x240 landscape panel (`ui/scale2x`, `PANEL_ROTATION`);
 no touch, no rotation. Wi-Fi is the C6's own esp-hosted-tanmatsu image,

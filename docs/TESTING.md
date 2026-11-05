@@ -491,7 +491,7 @@ is open.
 - [ ] Keyboard light: Fn+F5 steps Low, Medium, High, Off (Medium on first boot); Settings → Keyboard light matches; the keys go dark with the screen
 - [ ] Brightness: the backlight runs on a 6% to 28% duty band (as wadamesh does), so 100% looks as bright as before, 10% is dim but readable, and each Settings → Brightness step shows a change
 - [ ] LEDs: the power LED is dim green (Settings → Power light changes its colour at once); the radio LED is yellow while Wi-Fi looks, green once joined, blue with only the setup AP up, and the Wi-Fi joined / setup AP / looking colours change each within a second; Settings → LED brightness dims all three LEDs together at each stop, Dim still visible, Cancel restores it; all of these survive a reboot and a backup restore; a mention or C-Mail blinks the messages LED in the Notify light colour; Light timeout and Off work
-- [ ] Power button: a press turns the screen off and on; any key also wakes it and does nothing else; holding it 2 s still cuts the power
+- [ ] Power button: a press turns the screen off and on; keys (Enter too) do nothing while dark or on the screensaver; holding it 2 s still cuts the power
 - [ ] Speaker: with Alert sound on, a mention and a C-Mail beep through the ES8156, clean, with no hiss between beeps (the amplifier is off between them); the Alert sound slider changes the loudness
 - [ ] Battery: Settings shows a sensible percentage; the charging state follows the USB cable
 - [ ] RTC: the time set by NTP survives a power cycle with Wi-Fi off

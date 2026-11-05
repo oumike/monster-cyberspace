@@ -707,10 +707,11 @@ void handleKey(const KeyEvent& key) {
     // Just after the timeout locks the screen, input is ignored.
     if (now - lockedAt < kLockQuietMs) return;
     // Only a centre hold wakes (any input, on boards that ask); only a centre
-    // tap peeks. The waking press does nothing else.
+    // tap peeks (unless board::keysPeek is off). The waking press does
+    // nothing else.
     if (wakesScreen(k, board::anyInputWakes())) {
       wake();
-    } else if (peeksScreen(k)) {
+    } else if (board::keysPeek() && peeksScreen(k)) {
       saverUntil = now + kSaverMs;
       if (power != Power::Saver) {
         const bool wasDark = power == Power::Dark;

@@ -100,6 +100,10 @@ bool hasKeys();
 bool backspaceIsBack();
 // Any key, roll or touch wakes a dark screen, not only the board's wake key.
 bool anyInputWakes();
+// A centre tap (Select) on a dark screen or the screensaver shows the 10 s
+// peek at recent messages. False: keys do nothing there, only the wake key
+// (ScreenOff) acts. Default true.
+bool keysPeek();
 // With anyInputWakes on a touch board: only a double tap wakes the screen,
 // so a brush against the panel doesn't.
 bool doubleTapWakes();

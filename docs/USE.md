@@ -381,8 +381,9 @@ has not been tried on hardware yet and is not in the releases or the flasher.
 | Fn + Space | The emoji tray |
 | Volume up / volume down | Up / Down |
 
-**Power button:** a press turns the screen off, and on again; any key wakes
-it too (that press does nothing else). Holding it 2 s cuts the power.
+**Power button:** a press turns the screen off, and on again. Only the power
+button wakes it or leaves the screensaver: the keyboard does nothing while
+the screen is dark. Holding it 2 s cuts the power.
 
 **Notification light:** the LED marked for messages blinks twice every second
 while a mention or a C-Mail is unread, as on the Mesh Deck (**Notify light**

@@ -26,6 +26,7 @@ __attribute__((weak)) void powerLight(uint8_t) {}
 __attribute__((weak)) bool hasWifiLight() { return false; }
 __attribute__((weak)) void wifiLight(uint8_t) {}
 __attribute__((weak)) bool hasLedLevel() { return false; }
+__attribute__((weak)) bool keysPeek() { return true; }
 __attribute__((weak)) void ledLevel(uint8_t) {}
 __attribute__((weak)) const rc::FunctionKey* functionKeys(size_t& count) {
   count = std::size(rc::kFunctionKeys);

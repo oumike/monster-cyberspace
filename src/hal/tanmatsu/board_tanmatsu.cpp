@@ -263,7 +263,9 @@ bool readTouch(int16_t&, int16_t&) { return false; }
 bool hasKeyboard() { return true; }
 bool hasKeys() { return true; }
 bool backspaceIsBack() { return true; }
-bool anyInputWakes() { return true; }
+// Only the power button wakes the screen or acts on the screensaver.
+bool anyInputWakes() { return false; }
+bool keysPeek() { return false; }
 bool doubleTapWakes() { return false; }
 bool upDownOnly() { return false; }
 bool sideNav() { return false; }

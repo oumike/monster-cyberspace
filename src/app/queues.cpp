@@ -45,6 +45,9 @@ void refuseCommand(const Command& c) {
     case CmdType::MarkAllRead:
       postEvent(Event{EvtType::AllRead, busy, 0, false});
       return;
+    case CmdType::MarkRoomsRead:
+      postEvent(Event{EvtType::RoomsRead, busy, 0, false});
+      return;
     case CmdType::OpenEntry:
       postEvent(Event{EvtType::EntryUpdated, "", 0, false});
       break;

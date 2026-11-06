@@ -71,6 +71,7 @@ enum class CmdType {
   OpenUserPosts,         // a = username; n = 1 to append the next page
   OpenFollowingPosts,    // entries by people I follow; n = 1 for older ones
   MarkAllRead,           // Unread: every notification and unread C-Mail
+  MarkRoomsRead,         // the rooms list: every unread cIRC room
 };
 
 // The side list's tag (FeedStore::sideTag) while it holds the Following list.
@@ -123,6 +124,7 @@ enum class EvtType {
   WifiState,
   NotifyPreview,        // from the web page: code = rc::LedColor index, one double blink
   AllRead,              // MarkAllRead: ok when the notifications were marked; text = banner
+  RoomsRead,            // MarkRoomsRead: ok when every room was marked; text = banner
   PhrasesChanged,       // from the web page: text = the canned replies, one per line
   MascotChanged,        // from the web page: the mascot partition was rewritten
 };

@@ -4,6 +4,7 @@
 #include <esp_timer.h>
 #include <sys/time.h>
 
+#include <algorithm>
 #include <cctype>
 #include <map>
 #include <mutex>
@@ -288,6 +289,12 @@ void FakeChatSource::command(const Command& c) {
 #if RC_FEAT_CMAIL
       postEvent(Event{EvtType::ConversationsUpdated});
 #endif
+      break;
+    case CmdType::MarkRoomsRead:
+      lockedChat().with([](ChatState& s) {
+        for (const auto& r : s.rooms) s.readAt[r.slug] = std::max(s.readAt[r.slug], r.lastMessageAt);
+      });
+      postEvent(Event{EvtType::RoomsRead, "Marked all rooms read"});
       break;
 #if RC_FEAT_UNREAD
     case CmdType::MarkAllRead:

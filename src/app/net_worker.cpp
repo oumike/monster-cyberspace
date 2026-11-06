@@ -23,6 +23,7 @@
 #include "app/people_worker.h"
 #endif
 #include "app/queues.h"
+#include "chat/room_read.h"
 #include "cs/cs_api.h"
 #include "cs/rtdb.h"
 #include "net/https_client.h"
@@ -539,18 +540,44 @@ class Worker {
       return;
     }
 #endif
+    markRoomRead(slug, slug == room_);
+  }
+
+  // Marks one cIRC room read, with its pending mentions. open: the room the
+  // channel holds, read to its newest message in the store.
+  ApiError markRoomRead(const std::string& slug, bool open) {
     ApiError e = api_.markRead(roomKey(slug));
-    if (!e.ok()) return;
+    if (!e.ok()) return e;
     lockedChat().with([&](ChatState& s) {
-      int64_t at = s.store.newestTimestamp();
+      int64_t at = open ? s.store.newestTimestamp() : 0;
       for (auto& r : s.rooms)
         if (r.slug == slug) at = std::max(at, r.lastMessageAt);
       s.readAt[slug] = at;
     });
-    // The open room is read to the bottom: its mentions are read too.
+    // A room read to the bottom: its mentions are read too.
     auto range = pendingMentions_.equal_range(slug);
     for (auto it = range.first; it != range.second; ++it) api_.markNotificationRead(it->second);
     pendingMentions_.erase(range.first, range.second);
+    return e;
+  }
+
+  // The rooms list's Mark all read, from one key press: each unread room in
+  // turn (the API has no bulk call). Stops at the first error, not retried.
+  void markRoomsRead() {
+    std::vector<std::string> slugs =
+        lockedChat().with([](ChatState& s) { return unreadRooms(s.rooms, s.readAt); });
+    ApiError e{200, "", ""};
+    size_t done = 0;
+    for (const auto& slug : slugs) {
+      e = markRoomRead(slug, !dm_ && slug == room_);
+      if (!e.ok()) break;
+      ++done;
+    }
+    if (!e.ok()) checkAuthError(e);
+    std::string text = e.ok() ? std::string("Marked all rooms read")
+                       : done ? std::to_string(slugs.size() - done) + " rooms stayed unread: " + e.message
+                              : e.message;
+    post(EvtType::RoomsRead, 0, text, e.ok());
   }
 
 #if RC_FEAT_UNREAD
@@ -737,6 +764,7 @@ class Worker {
     if (c.type == CmdType::OpenGuilds) post(EvtType::GuildsUpdated, 0, "", false);
     if (c.type == CmdType::OpenMembers) post(EvtType::MembersUpdated, 0, "", false);
     if (c.type == CmdType::MarkAllRead) post(EvtType::AllRead, 0, why, false);
+    if (c.type == CmdType::MarkRoomsRead) post(EvtType::RoomsRead, 0, why, false);
     if (c.type == CmdType::PostGuildThread) post(EvtType::EntryPosted, 0, why, false);
     if (c.type == CmdType::JoinGuild || c.type == CmdType::LeaveGuild ||
         c.type == CmdType::PromoteGuild)
@@ -871,6 +899,9 @@ class Worker {
       }
       case CmdType::MarkRead:
         markRead(c.a.empty() ? room_ : c.a);
+        break;
+      case CmdType::MarkRoomsRead:
+        markRoomsRead();
         break;
 #if RC_FEAT_UNREAD
       case CmdType::MarkAllRead:

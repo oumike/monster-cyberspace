@@ -517,6 +517,12 @@ characters).
 
 ## Room list
 
+Rooms with new messages are marked. While any is, the top row is **✓ Mark
+all read**: it asks first, then marks each unread room read on your account,
+as opening it would (its mentions too), one request per room since the API
+has no bulk call. Nothing is retried; if one fails the rest stay unread and
+the banner says how many. The row hides while a filter is typed.
+
 On boards with a keyboard (M9, T-Deck Plus, Pager), typing on the room list
 filters it to rooms whose names contain what you typed, ignoring case. The
 filter shows on the bottom line; Backspace erases a letter, Back clears it,

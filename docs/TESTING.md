@@ -52,6 +52,14 @@ on 2026-10-27; the sections marked `m9_fake` passed on it before then.
 - [ ] The bar never covers text, outlines or the side strip; screens that
       fit show none.
 
+**Room list Mark all read (any board):**
+
+- [ ] With rooms marked unread, the top row is "✓ Mark all read"; it asks
+      "Mark all N rooms read?", then clears every room's mark, says "Marked
+      all rooms read", and the website shows the rooms read. Cancel sends
+      nothing; offline it says "Offline: not sent". Typing a filter hides
+      the row, and it is gone once nothing is unread.
+
 **Unread (any board):**
 
 - [ ] Have a second account send a C-Mail, mention you in a room and reply to

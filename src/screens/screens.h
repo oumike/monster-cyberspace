@@ -208,14 +208,28 @@ class WifiScreen : public Screen {
 class RoomListScreen : public Screen {
  public:
   void enter(const std::string&) override;
+  void leave() override { closeOverlays(); }
   void onKey(const KeyEvent&) override;
+  void onEvent(const Event&) override;
   void render(Grid&, const Theme&, int64_t nowMs) override;
   bool consumesBackspace() const override { return filter_.active(); }
+  bool hasOverlay() const override { return confirm_; }
+  void closeOverlays() override {
+    confirm_ = false;
+    box_.close();
+  }
 
  private:
+  // Row 0 is "Mark all read" while a room is unread and no filter is typed;
+  // the rooms follow it (slugs_ holds "" for that row).
   void open(int index);
+  void askMarkAll();
   ListView list_;
   std::vector<std::string> slugs_;
+  int unread_ = 0;       // unread rooms, as drawn
+  bool marking_ = false;  // MarkRoomsRead sent, no RoomsRead yet
+  bool confirm_ = false;
+  Overlay box_;
   TypeFilter filter_;  // keyboards: typing narrows the rooms
   ButtonPad pad_;  // touch boards: rooms as buttons (a cursor with keys)
   bool buttons_ = false;

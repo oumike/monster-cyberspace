@@ -448,6 +448,9 @@ void handleEvent(const Event& e) {
       if (e.ok) app().mentions.clear();
       banner(e.text, !e.ok);
       break;
+    case EvtType::RoomsRead:
+      banner(e.text, !e.ok);
+      break;
     case EvtType::MentionAlert: {
       // Not for the room on screen, nor again when the network side forgets
       // what it has seen and re-alerts.

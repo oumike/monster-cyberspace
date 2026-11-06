@@ -1,3 +1,19 @@
+### Monster for Cyberspace 1.3.1
+
+### Rooms
+
+- On screens where the who's here list docks beside the chat, the room menu has **Hide user list** / **Show user list**, and the choice is saved (and backed up). A ✕ in the list's header, or Left while in the list, hides it; Right at the end of the line, an edge swipe or the room menu bring it back.
+
+### Themes
+
+- Every colour theme gives each user their own nick colour (Black & white and White & black stay plain).
+- New themes: Sepia Dark and C64 Dark.
+
+### Tanmatsu
+
+- The bottom side button (volume down) turns the screen off and wakes it. The power button is left to the hardware.
+- The battery reading is steadier and closer to the real charge, and shows nothing when no battery is fitted.
+
 ### Monster for Cyberspace 1.3.0
 
 ### Tanmatsu

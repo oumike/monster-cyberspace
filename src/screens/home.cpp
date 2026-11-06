@@ -433,15 +433,13 @@ void HomeScreen::render(Grid& g, const Theme& t, int64_t) {
   int feed = feedUnread();
   field("feed", std::to_string(feed) + " unread", feed ? t.selectBg : t.fg);
 #endif
-  // Unread rooms with a message in the last day (all of them until the clock is set).
-  const int64_t since = nowEpochMs() - 24LL * 60 * 60 * 1000;
+  // Rooms with a message in the last 8 hours, read or not (every room that has
+  // messages until the clock is set).
+  const int64_t since = nowEpochMs() - 8LL * 60 * 60 * 1000;
   std::string active = lockedChat().with([since](ChatState& s) {
     std::string out;
-    for (const auto& room : s.rooms) {
-      if (room.lastMessageAt < since) continue;
-      auto it = s.readAt.find(room.slug);
-      if (it == s.readAt.end() || room.lastMessageAt > it->second) out += "#" + room.slug + " ";
-    }
+    for (const auto& room : s.rooms)
+      if (room.lastMessageAt > 0 && room.lastMessageAt >= since) out += "#" + room.slug + " ";
     return out.empty() ? std::string("none") : out;
   });
   field("active", active, t.fg);

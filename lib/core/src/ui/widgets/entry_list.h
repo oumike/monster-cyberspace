@@ -32,6 +32,10 @@ class EntryList {
   // fits as many entries as rowH and bigH pixel rows allow; rows left over
   // are skipped. bigH 0 (the default) draws two Normal rows an entry.
   void setBigHeads(int rowH, int bigH, int headCols);
+  // The first entry of a window `visible` entries tall, as render picks it
+  // (pinned after a tap, else ending at the selection); remembered for
+  // select() and the next step. For views that draw the list themselves.
+  int window(int visible) const;
   // Draws rows [top, bottom) across the full grid width.
   void render(Grid& g, int top, int bottom, const Theme& t, int rightReserve = 0) const;
 

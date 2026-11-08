@@ -117,7 +117,7 @@ void ScrollBarView::create(lv_obj_t* parent) {
   lv_obj_add_flag(thumb_, LV_OBJ_FLAG_HIDDEN);
 }
 
-void ScrollBarView::sync(int rightPx, Cell cell, int rows, int total, int visible, int first) {
+void ScrollBarView::sync(int rightPx, Cell cell, int rows, int total, int visible, int first, int bigH) {
   const bool on = rows > 0 && rc::needsScrollBar(total, visible);
   setHidden(track_, !on);
   setHidden(thumb_, !on);
@@ -125,8 +125,9 @@ void ScrollBarView::sync(int rightPx, Cell cell, int rows, int total, int visibl
   const rc::Theme& t = currentTheme();
   const int w = std::max(2, cell.w / 4);
   const rc::ScrollThumb th = rc::scrollThumb(rows, total, visible, first);
-  place(track_, rightPx - w, 0, w, rows * cell.h);
-  place(thumb_, rightPx - w, th.pos * cell.h, w, th.len * cell.h);
+  auto rowY = [&](int r) { return bigH > 0 ? r / 2 * (bigH + cell.h) + r % 2 * bigH : r * cell.h; };
+  place(track_, rightPx - w, 0, w, rowY(rows));
+  place(thumb_, rightPx - w, rowY(th.pos), w, rowY(th.pos + th.len) - rowY(th.pos));
   setBgColor(track_, t.barBg);
   setBgColor(thumb_, t.fg);
 }

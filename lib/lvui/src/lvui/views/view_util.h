@@ -57,7 +57,9 @@ class ScrollBarView {
  public:
   void create(lv_obj_t* parent);
   // rightPx: the bar column's right edge; rows of cell.h px from the top.
-  void sync(int rightPx, Cell cell, int rows, int total, int visible, int first);
+  // bigH > 0: the rows alternate bigH and cell.h px, a big one first
+  // (rc::EntryList's big heads).
+  void sync(int rightPx, Cell cell, int rows, int total, int visible, int first, int bigH = 0);
   lv_obj_t* track() const { return track_; }
   lv_obj_t* thumb() const { return thumb_; }
 

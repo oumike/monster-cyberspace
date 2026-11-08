@@ -51,6 +51,19 @@ void EntryList::setBigHeads(int rowH, int bigH, int headCols) {
   headCols_ = headCols;
 }
 
+int EntryList::window(int visible) const {
+  if (pin_ >= 0) {
+    pin_ = std::min(pin_, std::max(0, static_cast<int>(rows_.size()) - visible));
+    const bool inView = sel_ >= pin_ && sel_ < pin_ + visible;
+    if (!inView && cursorShown()) pin_ = sel_ < pin_ ? sel_ : sel_ - visible + 1;
+    else if (!inView) pin_ = -1;
+  }
+  const int first = pin_ >= 0 ? pin_ : std::max(0, sel_ - visible + 1);
+  lastFirst_ = first;
+  lastVisible_ = visible;
+  return first;
+}
+
 void EntryList::render(Grid& g, int top, int bottom, const Theme& t, int rightReserve) const {
   const int barCol = g.cols() - rightReserve - kBarCols;
   const int width = barCol;
@@ -66,15 +79,7 @@ void EntryList::render(Grid& g, int top, int bottom, const Theme& t, int rightRe
     for (int k = 0; k < visible; ++k) g.setRowKind(top + 2 * k, RowKind::Big);
     for (int r = top + 2 * visible; r < bottom; ++r) g.setRowKind(r, RowKind::Skip);
   }
-  if (pin_ >= 0) {
-    pin_ = std::min(pin_, std::max(0, static_cast<int>(rows_.size()) - visible));
-    const bool inView = sel_ >= pin_ && sel_ < pin_ + visible;
-    if (!inView && cursorShown()) pin_ = sel_ < pin_ ? sel_ : sel_ - visible + 1;
-    else if (!inView) pin_ = -1;
-  }
-  const int first = pin_ >= 0 ? pin_ : std::max(0, sel_ - visible + 1);
-  lastFirst_ = first;
-  lastVisible_ = visible;
+  const int first = window(visible);
   if (activeTaps()) activeTaps()->setList(ListId::Main, sel_, static_cast<int>(rows_.size()), true);
   for (int k = 0; k < visible; ++k) {
     int idx = first + k;

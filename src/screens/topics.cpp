@@ -209,8 +209,8 @@ void TopicsScreen::sync() {
   if (!big) list_.setBigHeads(0, 0, 0);
   else list_.setBigHeads(cellSize(ts).h, bigCellSize(ts).h, headCols());
   listView_.setHeadFont(big ? lvui::font(ts, true) : nullptr);
-  // The last column holds the grid's scroll bar, which the outline stops short of.
-  placeCells(listView_.obj(), 0, 1, listCols, bottom);
+  // The box's last column holds the scroll bar, which the outline stops short of.
+  placeCells(listView_.obj(), 0, 1, listCols + EntryList::kBarCols, bottom);
   listView_.sync(list_);
   text_.begin();
   if (list_.size() == 0) text_.line(1, 2, withMenuKey(emptyText()), t.dim);

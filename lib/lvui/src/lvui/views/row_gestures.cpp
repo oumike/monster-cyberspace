@@ -1,5 +1,6 @@
 #include "lvui/views/row_gestures.h"
 
+#include <algorithm>
 #include <cstdlib>
 
 #include "lvui/input.h"
@@ -7,11 +8,12 @@
 
 namespace lvui {
 
-void RowGestures::attach(lv_obj_t* obj, Rows* rows, rc::ListId list, bool holdToAct) {
+void RowGestures::attach(lv_obj_t* obj, Rows* rows, rc::ListId list, bool holdToAct, bool wraps) {
   obj_ = obj;
   rows_ = rows;
   list_ = list;
   holdToAct_ = holdToAct;
+  wraps_ = wraps;
   // As ui_task's own Gestures: the edge zones are an eighth of the panel each.
   gestures_.setWidth(lv_display_get_horizontal_resolution(lv_obj_get_display(obj)));
   lv_obj_add_flag(obj, LV_OBJ_FLAG_CLICKABLE);
@@ -44,6 +46,15 @@ void RowGestures::act(const rc::Gesture& g) {
   const int item = rows_->itemAt(p);
   const bool onRows = item >= 0 || rows_->onRows(p);
   auto steps = [&](int n, bool towardLater) {
+    if (wraps_) {
+      const int sel = rows_->selectedItem();
+      const int idx = std::min(std::max(sel + (towardLater ? n : -n), 0), rows_->itemCount() - 1);
+      if (idx == sel) return;
+      rc::KeyEvent e = rowKey(list_, idx, false);
+      e.then = rc::Action::None;
+      emit(e);
+      return;
+    }
     rc::KeyEvent e;
     e.action = towardLater ? rc::Action::Down : rc::Action::Up;
     for (int i = 0; i < n; ++i) emit(e);

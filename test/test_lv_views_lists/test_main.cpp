@@ -16,6 +16,10 @@
 #include "lvui/views/menu_overlay.h"
 #include "lvui/views/side_nav_strip.h"
 #include "lvui/views/top_bar.h"
+#include "input/gestures.h"
+#include "input/touch_resolve.h"
+#include "ui/grid.h"
+#include "ui/tap_map.h"
 #include "ui/nick_color.h"
 #include "ui/theme.h"
 #include "util/utf8.h"
@@ -38,7 +42,13 @@ bool readPtr(int16_t& x, int16_t& y) {
 }
 
 std::vector<rc::KeyEvent> keys;
-void sink(const rc::KeyEvent& e) { keys.push_back(e); }
+// Set by a test: an Activate on Main selects there, as FeedListScreen::onKey does.
+rc::EntryList* liveModel = nullptr;
+void sink(const rc::KeyEvent& e) {
+  keys.push_back(e);
+  if (liveModel && e.action == Action::Activate && e.target == static_cast<uint8_t>(ListId::Main))
+    liveModel->select(e.index);
+}
 
 void step(uint32_t ms = 40) {
   now += ms;
@@ -95,6 +105,109 @@ rc::PresenceEntry person(const char* name) {
   return p;
 }
 
+// One touch sample: finger down or up at (x, y), at ms.
+struct Sample {
+  bool down;
+  int16_t x, y;
+  uint32_t ms;
+};
+
+// A finger down at `from`, moved dy px in `moves` even steps stepMs apart, then up.
+std::vector<Sample> fingerPath(lv_point_t from, int dy, int moves, uint32_t stepMs) {
+  std::vector<Sample> out;
+  uint32_t t = now;
+  auto at = [&](bool down, int y, uint32_t dt) {
+    t += dt;
+    out.push_back(Sample{down, static_cast<int16_t>(from.x), static_cast<int16_t>(y), t});
+  };
+  at(true, from.y, 40);
+  for (int i = 1; i <= moves; ++i) at(true, from.y + dy * i / moves, stepMs);
+  at(false, from.y + dy, 40);
+  at(false, from.y + dy, 40);
+  return out;
+}
+
+// Plays samples through LVGL, syncing the box to the live model after each.
+void play(const std::vector<Sample>& ss, lvui::EntryListBox& box, const rc::EntryList& m) {
+  for (const Sample& s : ss) {
+    ptrX = s.x;
+    ptrY = s.y;
+    ptrDown = s.down;
+    now = s.ms;
+    lv_timer_handler();
+    box.sync(m);
+  }
+}
+
+// play, through a pointer that reports where the finger lifts (lvui's
+// reports no point then, so through it a flick is a drag or nothing).
+void playLifting(const std::vector<Sample>& ss, lvui::EntryListBox& box, const rc::EntryList& m) {
+  lv_indev_t* lvuiPointer = lv_indev_get_next(nullptr);
+  lv_indev_enable(lvuiPointer, false);
+  lv_indev_t* lift = lv_indev_create();
+  lv_indev_set_type(lift, LV_INDEV_TYPE_POINTER);
+  lv_indev_set_read_cb(lift, [](lv_indev_t*, lv_indev_data_t* d) {
+    d->point.x = ptrX;
+    d->point.y = ptrY;
+    d->state = ptrDown ? LV_INDEV_STATE_PRESSED : LV_INDEV_STATE_RELEASED;
+  });
+  play(ss, box, m);
+  lv_indev_delete(lift);
+  lv_indev_enable(lvuiPointer, true);
+}
+
+// The keys today's grid makes for the same samples: el drawn over cell rows
+// [top, bottom) of a 40x15 grid of 8x16 cells, its tap map resolved by
+// rc::TouchResolver, each Activate applied and the list redrawn.
+std::vector<rc::KeyEvent> gridKeys(rc::EntryList el, int top, int bottom, const std::vector<Sample>& ss) {
+  rc::TapMap map;
+  rc::Gestures gs;
+  gs.setWidth(320);
+  rc::TouchResolver tr;
+  auto render = [&] {
+    rc::Grid g(40, 15);
+    map.clear();
+    map.setOrigin(rc::CellSize{8, 16}, 0);
+    rc::setActiveTaps(&map);
+    el.render(g, top, bottom, rc::defaultTheme());
+    rc::setActiveTaps(nullptr);
+  };
+  render();
+  std::vector<rc::KeyEvent> out;
+  for (const Sample& s : ss) {
+    rc::Gesture g;
+    if (!gs.feed(s.down, s.x, s.y, s.ms, g)) continue;
+    rc::TouchOutput o;
+    tr.resolve(g, map, o);
+    for (const rc::KeyEvent& k : o.keys) {
+      out.push_back(k);
+      if (k.action == Action::Activate && k.target == static_cast<uint8_t>(ListId::Main)) el.select(k.index);
+    }
+    render();
+  }
+  return out;
+}
+
+void assertSameKeys(const std::vector<rc::KeyEvent>& want, const std::vector<rc::KeyEvent>& got) {
+  TEST_ASSERT_EQUAL(want.size(), got.size());
+  for (size_t i = 0; i < want.size(); ++i) {
+    TEST_ASSERT_TRUE(want[i].action == got[i].action);
+    TEST_ASSERT_EQUAL(want[i].index, got[i].index);
+    TEST_ASSERT_EQUAL(want[i].target, got[i].target);
+    TEST_ASSERT_TRUE(want[i].then == got[i].then);
+  }
+}
+
+std::vector<rc::FeedRow> tenEntries() {
+  const rc::Theme& t = rc::defaultTheme();
+  std::vector<rc::FeedRow> rows;
+  for (int i = 0; i < 10; ++i) {
+    std::u32string n = U"e" + rc::utf8ToU32(std::to_string(i));
+    rows.push_back(rc::FeedRow{n + U" \u00B7 1h", n + U" body", t.fg, t.dim});
+  }
+  return rows;
+}
+
 }  // namespace
 
 void setUp() {
@@ -110,6 +223,7 @@ void setUp() {
   lv_obj_clean(lv_layer_top());
   step();
   keys.clear();
+  liveModel = nullptr;
 }
 void tearDown() {}
 
@@ -349,11 +463,13 @@ void test_entry_list_rows_and_tap() {
   el.setSelected(1);
   lvui::EntryListBox box;
   box.create(lv_screen_active());
+  lvui::place(box.obj(), 0, 0, 320, 240);
   box.sync(el);
-  TEST_ASSERT_EQUAL(2, lv_obj_get_child_count(box.obj()));
+  TEST_ASSERT_EQUAL(2, box.shownItems());
   TEST_ASSERT_EQUAL_STRING("World", text(box.line2(1)));
   TEST_ASSERT_EQUAL_HEX16(t.dim, rgb565(lv_obj_get_style_text_color(box.line2(1), LV_PART_MAIN)));
-  TEST_ASSERT_TRUE(lv_obj_has_state(lv_obj_get_child(box.obj(), 1), LV_STATE_CHECKED));
+  TEST_ASSERT_TRUE(lv_obj_has_state(box.row(1), LV_STATE_CHECKED));
+  TEST_ASSERT_FALSE(lv_obj_has_state(box.row(0), LV_STATE_CHECKED));
   tap(centre(box.line2(0)));
   TEST_ASSERT_EQUAL(1, keys.size());
   assertActivate(keys[0], 0, ListId::Main, Action::Select);
@@ -384,6 +500,83 @@ void test_drawer_rows_and_close() {
   TEST_ASSERT_EQUAL(319, a.x2);
 }
 
+// Cell rows [1, 14) of the 40x15 screen: 13 rows, six whole two-row entries.
+void placeEntryBox(lvui::EntryListBox& box) { lvui::place(box.obj(), 0, 16, 320, 13 * 16); }
+
+void test_entry_list_drag_steps_selection() {
+  rc::EntryList el;
+  el.setRows(tenEntries());
+  lvui::EntryListBox box;
+  box.create(lv_screen_active());
+  placeEntryBox(box);
+  box.sync(el);
+  liveModel = &el;
+  // Finger up three cells over the second entry: later entries, one
+  // {Activate, idx, Main, then None} a cell, as the grid's wrapping list.
+  const auto path = fingerPath({40, 16 + 3 * 16 + 8}, -3 * 16, 12, 60);
+  const auto want = gridKeys(el, 1, 14, path);
+  TEST_ASSERT_EQUAL(3, want.size());
+  play(path, box, el);
+  assertSameKeys(want, keys);
+  TEST_ASSERT_EQUAL(3, el.selected());
+  // And back down two.
+  keys.clear();
+  const auto back = fingerPath({40, 16 + 3 * 16 + 8}, 2 * 16, 8, 60);
+  const auto wantBack = gridKeys(el, 1, 14, back);
+  TEST_ASSERT_EQUAL(2, wantBack.size());
+  play(back, box, el);
+  assertSameKeys(wantBack, keys);
+  TEST_ASSERT_EQUAL(1, el.selected());
+}
+
+void test_entry_list_swipe_pages() {
+  rc::EntryList el;
+  el.setRows(tenEntries());
+  lvui::EntryListBox box;
+  box.create(lv_screen_active());
+  placeEntryBox(box);
+  box.sync(el);
+  liveModel = &el;
+  // A quick flick up (the panel sees only the ends): a page (six entries
+  // shown) less one.
+  const auto path = fingerPath({40, 16 + 8 * 16 + 8}, -80, 0, 40);
+  const auto want = gridKeys(el, 1, 14, path);
+  TEST_ASSERT_EQUAL(1, want.size());
+  TEST_ASSERT_EQUAL(5, want[0].index);
+  playLifting(path, box, el);
+  assertSameKeys(want, keys);
+  TEST_ASSERT_EQUAL(5, el.selected());
+  // And back: a flick down from entry 5 returns to the top.
+  keys.clear();
+  const auto down = fingerPath({40, 16 + 2 * 16 + 8}, 80, 0, 40);
+  const auto wantDown = gridKeys(el, 1, 14, down);
+  playLifting(down, box, el);
+  TEST_ASSERT_EQUAL(1, wantDown.size());
+  assertSameKeys(wantDown, keys);
+  TEST_ASSERT_EQUAL(0, el.selected());
+}
+
+void test_entry_list_draws_its_window_without_scrolling() {
+  rc::EntryList el;
+  el.setRows(tenEntries());
+  el.setSelected(8);
+  lvui::EntryListBox box;
+  box.create(lv_screen_active());
+  placeEntryBox(box);
+  box.sync(el);
+  TEST_ASSERT_FALSE(lv_obj_has_flag(box.obj(), LV_OBJ_FLAG_SCROLLABLE));
+  lv_obj_update_layout(lv_screen_active());
+  TEST_ASSERT_EQUAL(0, lv_obj_get_scroll_y(box.obj()));
+  // Whole entries only: e3..e8, the selection at the bottom, as the grid shows them.
+  TEST_ASSERT_EQUAL(6, box.shownItems());
+  TEST_ASSERT_EQUAL_STRING("e3 body", text(box.line2(0)));
+  TEST_ASSERT_EQUAL_STRING("e8 body", text(box.line2(5)));
+  TEST_ASSERT_FALSE(lv_obj_has_flag(box.scrollBar().thumb(), LV_OBJ_FLAG_HIDDEN));
+  // A drag scrolls nothing natively.
+  play(fingerPath({40, 16 + 2 * 16 + 8}, 4 * 16, 16, 60), box, el);
+  TEST_ASSERT_EQUAL(0, lv_obj_get_scroll_y(box.obj()));
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_list_box_mirrors_model);
@@ -395,6 +588,9 @@ int main() {
   RUN_TEST(test_side_nav_emits);
   RUN_TEST(test_banner_shows_and_hides);
   RUN_TEST(test_entry_list_rows_and_tap);
+  RUN_TEST(test_entry_list_drag_steps_selection);
+  RUN_TEST(test_entry_list_swipe_pages);
+  RUN_TEST(test_entry_list_draws_its_window_without_scrolling);
   RUN_TEST(test_drawer_rows_and_close);
   return UNITY_END();
 }

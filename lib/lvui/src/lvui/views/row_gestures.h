@@ -11,7 +11,10 @@ namespace lvui {
 // rc::TouchResolver turn it into keys on a non-wrapping, hold-to-act list: a
 // tap emits {Activate, item, list, then Select} (touch only: nothing), a long
 // press then Palette (touch only: then Select); a drag steps one Up/Down per
-// cell of travel (finger up: Down), a swipe a screen less one line.
+// cell of travel (finger up: Down), a swipe a screen less one line. A
+// wrapping list (rc::EntryList, TapMap::setList wraps) steps as the
+// resolver's stepList does: one {Activate, item, list, then None} to the
+// clamped item, nothing when it doesn't move.
 class RowGestures {
  public:
   // What lies under the finger: the item at a point, -1 for none (a divider,
@@ -25,6 +28,9 @@ class RowGestures {
     virtual bool onRows(lv_point_t p) const { return itemAt(p) >= 0; }
     // A tap or long press on nothing at all (not onRows).
     virtual void missed(bool hold) { (void)hold; }
+    // A wrapping list's selected item and item count (TapMap::ListInfo).
+    virtual int selectedItem() const { return -1; }
+    virtual int itemCount() const { return 0; }
 
    protected:
     ~Rows() = default;
@@ -32,8 +38,9 @@ class RowGestures {
 
   // obj takes every press on it (no LVGL scrolling, no scroll chaining).
   // holdToAct false: a list that isn't a scrolling log (rc::ListInfo), where
-  // touch-only boards tap rows as the rest do.
-  void attach(lv_obj_t* obj, Rows* rows, rc::ListId list, bool holdToAct = true);
+  // touch-only boards tap rows as the rest do. wraps: drags and swipes step
+  // a wrapping list (see above).
+  void attach(lv_obj_t* obj, Rows* rows, rc::ListId list, bool holdToAct = true, bool wraps = false);
 
  private:
   static void eventCb(lv_event_t* e);
@@ -44,6 +51,7 @@ class RowGestures {
   Rows* rows_ = nullptr;
   rc::ListId list_ = rc::ListId::Log;
   bool holdToAct_ = true;
+  bool wraps_ = false;
   rc::Gestures gestures_;
   int carry_ = 0;
 };

@@ -473,13 +473,29 @@ class MembersScreen : public Screen {
   void onKey(const KeyEvent&) override;
   void onEvent(const Event&) override;
   void render(Grid&, const Theme&, int64_t nowMs) override;
+  void build(lv_obj_t* root) override;
+  void update(int64_t nowMs) override;
 
  private:
   void requestMore();
+  // The rows render and sync draw, filling names_ and more_; name: the
+  // guild's, for the status bar.
+  std::vector<ListItem> rows(int64_t nowMs, std::u32string& name);
+  // What an empty list says; loading: the store's flag.
+  const char* emptyText(bool loading) const;
+  void hints(const char32_t*& keys, const char32_t*& touch) const;
+  void sync(int64_t nowMs);
   ListView list_;
   std::string slug_;
   std::vector<std::string> names_;  // usernames by row, for Select
   bool more_ = false, asked_ = false, failed_ = false;
+  int64_t nowMs_ = 0;  // the last update's, for build
+  lvui::TopBar status_;
+  lvui::ListBox listView_;
+  SideNavHost navView_;
+  lvui::CellText text_;
+  lvui::HintBar hint_;
+  SyncGate<1> gate_;
 };
 #endif
 
@@ -493,6 +509,8 @@ class ProfileScreen : public Screen {
   void onKey(const KeyEvent&) override;
   void onEvent(const Event&) override;
   void render(Grid&, const Theme&, int64_t nowMs) override;
+  void build(lv_obj_t* root) override;
+  void update(int64_t nowMs) override;
   bool hasOverlay() const override { return menu_ || linkOpen_; }
   void closeOverlays() override {
     menu_ = confirm_ = linkOpen_ = false;
@@ -507,7 +525,15 @@ class ProfileScreen : public Screen {
   void doAct(int act);  // a picked action or link
   void buildLinks();    // links_ for the profile shown
   void renderLinks(Grid& g, const Theme& t, int top, int bottom);
-  int linksTop(const Grid& g) const;  // the first row of the links under the text
+  // The first row of the links under the text, in a grid of that size.
+  int linksTop(int gridRows, int gridCols) const;
+  // Lays text_ out again when render and sync need it: on an event (dirty_),
+  // for the ages, or a new theme (sameTheme false).
+  void refreshText(const Theme& t, int64_t nowMs, bool sameTheme);
+  // What the screen says before the profile loads; loading: the store's flag.
+  const char* emptyText(bool loading) const;
+  void hints(bool actions, const char32_t*& keys, const char32_t*& touch) const;
+  void sync(int64_t nowMs);
 
   std::string user_;
   TextView text_;
@@ -531,6 +557,17 @@ class ProfileScreen : public Screen {
   bool starting_ = false;   // a StartConversation is in flight
   bool dirty_ = true;
   int64_t builtAt_ = 0;
+  unsigned themeSerial_ = ~0u;  // lvui::themeSerial() text_'s colours came from
+  int64_t nowMs_ = 0;           // the last update's, for build
+  lvui::TopBar status_;
+  lvui::TextBox textView_;
+  lvui::TileGrid padView_;
+  lv_obj_t* linkFocus_ = nullptr;  // the focused link's outline (keys)
+  lvui::CellText cells_;
+  lvui::QrBox qrView_;
+  lvui::HintBar hint_;
+  lvui::MenuOverlay menuView_;
+  SyncGate<1> gate_;
 };
 #endif
 
@@ -543,6 +580,8 @@ class GuildListScreen : public Screen {
   void onKey(const KeyEvent&) override;
   void onEvent(const Event&) override;
   void render(Grid&, const Theme&, int64_t nowMs) override;
+  void build(lv_obj_t* root) override;
+  void update(int64_t nowMs) override;
   bool hasOverlay() const override { return palette_; }
   void closeOverlays() override { palette_ = false; }
 
@@ -552,7 +591,14 @@ class GuildListScreen : public Screen {
   void requestMore();
   void step(bool down);  // moves the selection, skipping the dividers
   void rebuild(int cols, const Theme& t);
+  // rebuild when render and sync need it: on a store event (dirty_), or a
+  // new width or theme (sameTheme false).
+  void refresh(int listCols, const Theme& t, bool sameTheme);
   void remember();
+  // What an empty list says (before withMenuKey); loading: the store's flag.
+  const char* emptyText(bool loading) const;
+  void hints(const char32_t*& keys, const char32_t*& touch) const;
+  void sync();
 
   EntryList list_;
   Overlay box_;
@@ -562,6 +608,14 @@ class GuildListScreen : public Screen {
   bool dirty_ = true, failed_ = false, more_ = false, asked_ = false;
   int cols_ = 0;
   const Theme* theme_ = nullptr;
+  unsigned themeSerial_ = ~0u;  // lvui::themeSerial() the rows bake
+  lvui::TopBar status_;
+  lvui::EntryListBox listView_;
+  SideNavHost navView_;
+  lvui::CellText text_;
+  lvui::HintBar hint_;
+  lvui::MenuOverlay menuView_;
+  SyncGate<1> gate_;
 };
 #endif
 

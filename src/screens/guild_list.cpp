@@ -5,7 +5,9 @@
 #include "app/ui_task.h"
 #include "feed/feed_source.h"
 #include "hal/board.h"
+#include "lvui/cell_font.h"
 #include "screens/draw.h"
+#include "screens/lv_draw.h"
 #include "screens/screens.h"
 #include "store/locked_feed.h"
 #include "ui/guild_layout.h"
@@ -182,16 +184,41 @@ void GuildListScreen::rebuild(int cols, const Theme& t) {
   remember();
 }
 
-void GuildListScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
-  (void)nowMs;
-  const int nav = sideNavWidth(g);
-  const int listCols = g.cols() - nav - EntryList::kBarCols;
-  if (dirty_ || listCols != cols_ || &t != theme_) {
+void GuildListScreen::refresh(int listCols, const Theme& t, bool sameTheme) {
+  if (dirty_ || listCols != cols_ || !sameTheme) {
     rebuild(listCols, t);
     theme_ = &t;
     dirty_ = false;
     cols_ = listCols;
   }
+}
+
+const char* GuildListScreen::emptyText(bool loading) const {
+  bool waiting = loading || more_;
+  return waiting && app().conn == 0 ? "offline"
+         : failed_                  ? (board::hasTouch() ? "couldn't load: \u22ef, Refresh"
+                                                         : "couldn't load: Ctrl, Refresh")
+         : waiting                  ? "loading\u2026"
+                                    : "no guilds";
+}
+
+void GuildListScreen::hints(const char32_t*& keys, const char32_t*& touch) const {
+  if (palette_) {
+    keys = U"\u2191\u2193 pick  \u25CF choose  back: close";
+    touch = U"tap: choose  outside: close";
+  } else if (asked_) {
+    keys = touch = U"loading more\u2026";
+  } else {
+    keys = U"\u2191\u2193 pick  \u25CF open  \u2190 home  ctrl cmds";
+    touch = U"tap to open";
+  }
+}
+
+void GuildListScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
+  (void)nowMs;
+  const int nav = sideNavWidth(g);
+  const int listCols = g.cols() - nav - EntryList::kBarCols;
+  refresh(listCols, t, &t == theme_);
   bool loading = lockedFeed().with([](FeedState& s) { return s.loading; });
 
   g.fill(t.bg);
@@ -201,25 +228,71 @@ void GuildListScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
   if (palette_ || nav > 0) list_.setBigHeads(0, 0, 0);
   else list_.setBigHeads(cellSize(ts).h, bigCellSize(ts).h, headCols());
   list_.render(g, 1, bottom, t, nav);
-  if (list_.size() == 0) {
-    bool waiting = loading || more_;
-    const char* empty = waiting && app().conn == 0 ? "offline"
-                        : failed_                  ? (board::hasTouch() ? "couldn't load: \u22ef, Refresh"
-                                                                        : "couldn't load: Ctrl, Refresh")
-                        : waiting                  ? "loading\u2026"
-                                                   : "no guilds";
-    putLine(g, 1, 2, withMenuKey(empty), t.dim, t.bg);
-  }
+  if (list_.size() == 0) putLine(g, 1, 2, withMenuKey(emptyText(loading)), t.dim, t.bg);
 
   if (nav > 0) renderSideNav(g, 1, bottom, nav, t);
-  if (palette_) {
-    box_.render(g, 1, bottom, nav, OverlayPlace::BottomRight, t);
-    drawHint(g, t, U"\u2191\u2193 pick  \u25CF choose  back: close", U"tap: choose  outside: close");
-  } else if (asked_) {
-    drawHint(g, t, U"loading more\u2026", U"loading more\u2026");
-  } else {
-    drawHint(g, t, U"\u2191\u2193 pick  \u25CF open  \u2190 home  ctrl cmds", U"tap to open");
-  }
+  if (palette_) box_.render(g, 1, bottom, nav, OverlayPlace::BottomRight, t);
+  const char32_t* keys;
+  const char32_t* touch;
+  hints(keys, touch);
+  drawHint(g, t, keys, touch);
+}
+
+// ---- LVGL ----
+
+void GuildListScreen::build(lv_obj_t* root) {
+  listView_.create(root);
+  navView_.create(root);
+  text_.create(root);
+  hint_.create(root);
+  status_.create(root);
+  menuView_.create(root);
+  themeSerial_ = ~0u;
+  sync();
+}
+
+void GuildListScreen::update(int64_t nowMs) {
+  // The list changes with GuildsUpdated and GuildUpdated, which
+  // ui::inputSeq() counts; the store's loading flag (set with no event)
+  // shows with the once-a-second refresh.
+  if (gate_.due(text_.obj(), nowMs, {int64_t(app().conn)})) sync();
+}
+
+void GuildListScreen::sync() {
+  const Theme& t = lvui::currentTheme();
+  const int cols = text_.cols(), bottom = text_.rows() - 1;
+  const int nav = sideNavWidth(text_);
+  const int listCols = cols - nav - EntryList::kBarCols;
+  // The rows bake the theme's colours: lvui's theme is one object, so its
+  // serial tells a change.
+  const bool sameTheme = &t == theme_ && lvui::themeSerial() == themeSerial_;
+  themeSerial_ = lvui::themeSerial();
+  refresh(listCols, t, sameTheme);
+  const bool loading = lockedFeed().with([](FeedState& s) { return s.loading; });
+
+  syncStatus(status_, U"Guilds", -1, true);
+  const TextSize ts = app().cfg.textSize;
+  const bool big = !palette_ && nav == 0;
+  if (!big) list_.setBigHeads(0, 0, 0);
+  else list_.setBigHeads(cellSize(ts).h, bigCellSize(ts).h, headCols());
+  listView_.setHeadFont(big ? lvui::font(ts, true) : nullptr);
+  // The box's last column holds the scroll bar, which the outline stops short of.
+  placeCells(listView_.obj(), 0, 1, listCols + EntryList::kBarCols, bottom);
+  listView_.sync(list_);
+  text_.begin();
+  if (list_.size() == 0) text_.line(1, 2, withMenuKey(emptyText(loading)), t.dim);
+  text_.end();
+  navView_.sync(nav, 1, bottom, cols);
+
+  const lvui::Cell c = text_.cell();
+  menuView_.setPlace(OverlayPlace::BottomRight, bottom * c.h, nav * c.w, c.h);
+  // render draws the box only with palette_ (leave() keeps box_ open).
+  if (palette_) menuView_.sync(box_);
+  else lvui::setHidden(menuView_.backdrop(), true);
+  const char32_t* keys;
+  const char32_t* touch;
+  hints(keys, touch);
+  syncHint(hint_, keys, touch);
 }
 
 }  // namespace rc

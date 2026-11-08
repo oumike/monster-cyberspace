@@ -169,7 +169,7 @@
 ### Task 12: Guilds and People
 
 **Files:** `guild_list.cpp`, `guild_info.{h,cpp}`, `guild_members.cpp`, `profile.cpp`
-- [ ] **Step 1:** Port. **Step 2:** `pio run -e m9`. **Step 3:** Commit `LVGL: Guilds, profiles`.
+- [x] **Step 1:** Port. **Step 2:** `pio run -e m9`. **Step 3:** Commit `LVGL: Guilds, profiles`.
 
 ### Task 13: Settings
 

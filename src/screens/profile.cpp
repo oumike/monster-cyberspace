@@ -9,9 +9,11 @@
 #include "chat/chat_source.h"
 #include "feed/feed_source.h"
 #include "hal/board.h"
+#include "lvui/styles.h"
 #include "people/people_parse.h"
 #include "screens/button_pad.h"
 #include "screens/draw.h"
+#include "screens/lv_draw.h"
 #include "screens/people_nav.h"
 #include "screens/screens.h"
 #include "store/locked_people.h"
@@ -210,14 +212,14 @@ void ProfileScreen::buildLinks() {
   linkSel_ = std::clamp(linkSel_, 0, int(links_.size()) - 1);
 }
 
-int ProfileScreen::linksTop(const Grid& g) const {
-  const int bottom = g.rows() - 1;  // the last row holds the hint
+int ProfileScreen::linksTop(int gridRows, int gridCols) const {
+  const int bottom = gridRows - 1;  // the last row holds the hint
   const int n = int(links_.size());
   if (!board::hasTouch()) return std::max(2, bottom - n);
-  const int cols = linkColumns(g.cols(), links_);
+  const int cols = linkColumns(gridCols, links_);
   const int rows = (n + cols - 1) / cols;
   int top = std::max(2, bottom - (rows * kButtonRows + rows - 1));
-  while (top > 2 && buttonGrid(g.cols(), top, bottom, n, cols, 0).maxScroll > 0) --top;
+  while (top > 2 && buttonGrid(gridCols, top, bottom, n, cols, 0).maxScroll > 0) --top;
   return top;
 }
 
@@ -382,8 +384,8 @@ void ProfileScreen::onEvent(const Event& e) {
   }
 }
 
-void ProfileScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
-  if (dirty_ || nowMs - builtAt_ >= kAgeRefreshMs || styledFor_ != &t) {
+void ProfileScreen::refreshText(const Theme& t, int64_t nowMs, bool sameTheme) {
+  if (dirty_ || nowMs - builtAt_ >= kAgeRefreshMs || !sameTheme) {
     View v = snapshot(user_);
     if (v.loaded) {
       loaded_ = true;
@@ -421,6 +423,36 @@ void ProfileScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
     builtAt_ = nowMs;
     styledFor_ = &t;
   }
+}
+
+const char* ProfileScreen::emptyText(bool loading) const {
+  return missing_                        ? "no such user"
+         : failed_ && app().conn == 0     ? "offline"
+         : failed_                        ? "couldn't load: try Refresh"
+         : loading || app().conn != 0     ? "loading\u2026"
+                                          : "offline";
+}
+
+void ProfileScreen::hints(bool actions, const char32_t*& keys, const char32_t*& touch) const {
+  if (menu_) {
+    keys = U"\u2191\u2193 pick  \u25CF choose  back: close";
+    touch = U"tap: choose  outside: close";
+  } else if (busy_ || starting_) {
+    keys = touch = U"sending\u2026";
+  } else if (linksFocus_) {
+    keys = U"\u2191\u2193 pick  \u25CF open  \u2190 back";
+    touch = U"tap to open  \u2039 back";
+  } else if (actions) {
+    keys = U"\u2191\u2193 scroll  \u25CF actions  \u2190 back";
+    touch = U"swipe to scroll  \u22ef actions  \u2039 back";
+  } else {
+    keys = U"\u2191\u2193 scroll  \u2190 back";
+    touch = U"swipe to scroll  \u2039 back";
+  }
+}
+
+void ProfileScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
+  refreshText(t, nowMs, styledFor_ == &t);
   buildLinks();
   const bool actions = !actionsFor(snapshot(user_)).empty();
   g.fill(t.bg);
@@ -428,32 +460,104 @@ void ProfileScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
   if (linkOpen_) return link_.render(g, t);
   const int bottom = g.rows() - 1;
   // The links sit under the text, a blank row between them.
-  const int linkTop = linksTop(g);
+  const int linkTop = linksTop(g.rows(), g.cols());
   renderLinks(g, t, linkTop, bottom);
   if (loaded_) {
     text_.render(g, 1, std::max(2, linkTop - 1), 0, g.cols(), t);
   } else {
     bool loading = lockedPeople().with([](PeopleState& s) { return s.loading; });
-    const char* msg = missing_                        ? "no such user"
-                      : failed_ && app().conn == 0     ? "offline"
-                      : failed_                        ? "couldn't load: try Refresh"
-                      : loading || app().conn != 0     ? "loading\u2026"
-                                                       : "offline";
-    putLine(g, 1, 2, msg, t.dim, t.bg);
+    putLine(g, 1, 2, emptyText(loading), t.dim, t.bg);
   }
-  if (menu_) {
-    box_.render(g, 1, bottom, 0, OverlayPlace::BottomRight, t);
-    drawHint(g, t, U"\u2191\u2193 pick  \u25CF choose  back: close", U"tap: choose  outside: close");
-  } else if (busy_ || starting_) {
-    drawHint(g, t, U"sending\u2026", U"sending\u2026");
-  } else if (linksFocus_) {
-    drawHint(g, t, U"\u2191\u2193 pick  \u25CF open  \u2190 back", U"tap to open  \u2039 back");
-  } else if (actions) {
-    drawHint(g, t, U"\u2191\u2193 scroll  \u25CF actions  \u2190 back",
-             U"swipe to scroll  \u22ef actions  \u2039 back");
+  if (menu_) box_.render(g, 1, bottom, 0, OverlayPlace::BottomRight, t);
+  const char32_t* keys;
+  const char32_t* touch;
+  hints(actions, keys, touch);
+  drawHint(g, t, keys, touch);
+}
+
+// ---- LVGL ----
+
+void ProfileScreen::build(lv_obj_t* root) {
+  textView_.create(root);
+  padView_.create(root);
+  linkFocus_ = lvui::plainBox(root);
+  lvui::addStyle(linkFocus_, lvui::Role::Focused);
+  cells_.create(root);
+  qrView_.create(root);
+  hint_.create(root);
+  status_.create(root);
+  menuView_.create(root);
+  themeSerial_ = ~0u;
+  sync(nowMs_);
+}
+
+void ProfileScreen::update(int64_t nowMs) {
+  nowMs_ = nowMs;
+  // The profile, follows and blocks change with ProfileUpdated and
+  // PeopleWriteDone, which ui::inputSeq() counts; the store's loading flag
+  // (set with no event) and the ages show with the once-a-second refresh.
+  if (gate_.due(cells_.obj(), nowMs, {int64_t(app().conn)})) sync(nowMs);
+}
+
+void ProfileScreen::sync(int64_t nowMs) {
+  const Theme& t = lvui::currentTheme();
+  // The text bakes the theme's colours: lvui's theme is one object, so its
+  // serial tells a change.
+  const bool sameTheme = styledFor_ == &t && lvui::themeSerial() == themeSerial_;
+  themeSerial_ = lvui::themeSerial();
+  refreshText(t, nowMs, sameTheme);
+  buildLinks();
+  const bool actions = !actionsFor(snapshot(user_)).empty();
+  syncStatus(status_, U"@" + utf8ToU32(user_), -1, actions);
+  const int cols = cells_.cols(), rows = cells_.rows(), bottom = rows - 1;
+  const bool touch = board::hasTouch();
+  bool outline = false;
+  cells_.begin();
+  lvui::setHidden(textView_.obj(), linkOpen_ || !loaded_);
+  lvui::setHidden(padView_.obj(), linkOpen_ || !touch);
+  if (linkOpen_) {
+    link_.sync(cells_, qrView_, hint_);
+    cells_.end();
+    lvui::setHidden(linkFocus_, true);
+    lvui::setHidden(menuView_.backdrop(), true);
+    return;
+  }
+  lvui::setHidden(qrView_.obj(), true);
+  // The links sit under the text, a blank row between them.
+  const int linkTop = linksTop(rows, cols);
+  if (touch) {
+    pad_.setCursor(linksFocus_);
+    pad_.sync(padView_, links_, linkTop, bottom, false, linkColumns(cols, links_));
   } else {
-    drawHint(g, t, U"\u2191\u2193 scroll  \u2190 back", U"swipe to scroll  \u2039 back");
+    for (int i = 0; i < int(links_.size()) && linkTop + i < bottom; ++i) {
+      const int row = linkTop + i;
+      cells_.line(2, row, links_[i].label, t.sys, cols - 3);
+      if (linksFocus_ && i == linkSel_ && cursorShown()) {
+        placeCells(linkFocus_, 0, row, cols, row + 1);
+        outline = true;
+      }
+    }
   }
+  lvui::setHidden(linkFocus_, !outline);
+  if (loaded_) {
+    placeCells(textView_.obj(), 0, 1, cols, std::max(2, linkTop - 1));
+    textView_.sync(text_);
+  } else {
+    const bool loading = lockedPeople().with([](PeopleState& s) { return s.loading; });
+    cells_.line(1, 2, emptyText(loading), t.dim);
+  }
+  cells_.end();
+  if (menu_) {
+    const lvui::Cell c = cells_.cell();
+    menuView_.setPlace(OverlayPlace::BottomRight, bottom * c.h, 0, c.h);
+    menuView_.sync(box_);
+  } else {
+    lvui::setHidden(menuView_.backdrop(), true);
+  }
+  const char32_t* keys;
+  const char32_t* touchHint;
+  hints(actions, keys, touchHint);
+  syncHint(hint_, keys, touchHint);
 }
 
 }  // namespace rc

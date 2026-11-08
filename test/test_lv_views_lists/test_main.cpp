@@ -44,10 +44,12 @@ bool readPtr(int16_t& x, int16_t& y) {
 std::vector<rc::KeyEvent> keys;
 // Set by a test: an Activate on Main selects there, as FeedListScreen::onKey does.
 rc::EntryList* liveModel = nullptr;
+rc::ListView* liveList = nullptr;
 void sink(const rc::KeyEvent& e) {
   keys.push_back(e);
-  if (liveModel && e.action == Action::Activate && e.target == static_cast<uint8_t>(ListId::Main))
-    liveModel->select(e.index);
+  if (e.action != Action::Activate || e.target != static_cast<uint8_t>(ListId::Main)) return;
+  if (liveModel) liveModel->select(e.index);
+  if (liveList) liveList->select(e.index);
 }
 
 void step(uint32_t ms = 40) {
@@ -128,7 +130,8 @@ std::vector<Sample> fingerPath(lv_point_t from, int dy, int moves, uint32_t step
 }
 
 // Plays samples through LVGL, syncing the box to the live model after each.
-void play(const std::vector<Sample>& ss, lvui::EntryListBox& box, const rc::EntryList& m) {
+template <typename Box, typename Model>
+void play(const std::vector<Sample>& ss, Box& box, const Model& m) {
   for (const Sample& s : ss) {
     ptrX = s.x;
     ptrY = s.y;
@@ -141,7 +144,8 @@ void play(const std::vector<Sample>& ss, lvui::EntryListBox& box, const rc::Entr
 
 // play, through a pointer that reports where the finger lifts (lvui's
 // reports no point then, so through it a flick is a drag or nothing).
-void playLifting(const std::vector<Sample>& ss, lvui::EntryListBox& box, const rc::EntryList& m) {
+template <typename Box, typename Model>
+void playLifting(const std::vector<Sample>& ss, Box& box, const Model& m) {
   lv_indev_t* lvuiPointer = lv_indev_get_next(nullptr);
   lv_indev_enable(lvuiPointer, false);
   lv_indev_t* lift = lv_indev_create();
@@ -159,7 +163,15 @@ void playLifting(const std::vector<Sample>& ss, lvui::EntryListBox& box, const r
 // The keys today's grid makes for the same samples: el drawn over cell rows
 // [top, bottom) of a 40x15 grid of 8x16 cells, its tap map resolved by
 // rc::TouchResolver, each Activate applied and the list redrawn.
-std::vector<rc::KeyEvent> gridKeys(rc::EntryList el, int top, int bottom, const std::vector<Sample>& ss) {
+void drawModel(const rc::EntryList& el, rc::Grid& g, int top, int bottom) {
+  el.render(g, top, bottom, rc::defaultTheme());
+}
+void drawModel(const rc::ListView& lv, rc::Grid& g, int top, int bottom) {
+  lv.render(g, top, bottom, 0, g.cols(), rc::defaultTheme());
+}
+
+template <typename Model>
+std::vector<rc::KeyEvent> gridKeys(Model el, int top, int bottom, const std::vector<Sample>& ss) {
   rc::TapMap map;
   rc::Gestures gs;
   gs.setWidth(320);
@@ -169,7 +181,7 @@ std::vector<rc::KeyEvent> gridKeys(rc::EntryList el, int top, int bottom, const 
     map.clear();
     map.setOrigin(rc::CellSize{8, 16}, 0);
     rc::setActiveTaps(&map);
-    el.render(g, top, bottom, rc::defaultTheme());
+    drawModel(el, g, top, bottom);
     rc::setActiveTaps(nullptr);
   };
   render();
@@ -224,6 +236,7 @@ void setUp() {
   step();
   keys.clear();
   liveModel = nullptr;
+  liveList = nullptr;
 }
 void tearDown() {}
 
@@ -577,6 +590,72 @@ void test_entry_list_draws_its_window_without_scrolling() {
   TEST_ASSERT_EQUAL(0, lv_obj_get_scroll_y(box.obj()));
 }
 
+
+std::vector<rc::ListItem> numberedItems(int n) {
+  std::vector<rc::ListItem> items;
+  for (int i = 0; i < n; ++i) items.push_back(rc::ListItem{U"row " + rc::utf8ToU32(std::to_string(i)), U""});
+  return items;
+}
+
+// Cell rows [1, 14) of the 40x15 screen, as a screen places a list.
+void placeListBox(lvui::ListBox& box) { lvui::place(box.obj(), 0, 16, 320, 13 * 16); }
+
+void test_list_box_window_draws_list_view_rows() {
+  rc::ListView lv;
+  lv.setItems(numberedItems(30));
+  lv.setSelected(20);
+  lvui::ListBox box;
+  box.create(lv_screen_active(), /*windowed*/ true);
+  placeListBox(box);
+  box.sync(lv);
+  TEST_ASSERT_FALSE(lv_obj_has_flag(box.obj(), LV_OBJ_FLAG_SCROLLABLE));
+  // As ListView::render: the selection on the last of 13 rows, rows 8..20.
+  TEST_ASSERT_EQUAL(13, box.shownItems());
+  TEST_ASSERT_EQUAL_STRING("row 8", text(box.label(0)));
+  TEST_ASSERT_EQUAL_STRING("row 20", text(box.label(12)));
+  TEST_ASSERT_TRUE(lv_obj_has_state(lv_obj_get_parent(box.label(12)), LV_STATE_CHECKED));
+  TEST_ASSERT_FALSE(lv_obj_has_flag(box.scrollBar().thumb(), LV_OBJ_FLAG_HIDDEN));
+  // The last column holds the bar: the rows stop a cell short.
+  lv_obj_update_layout(lv_screen_active());
+  TEST_ASSERT_EQUAL(39 * 8, lv_obj_get_width(lv_obj_get_parent(box.label(0))));
+  // A short list: no bar, the rows take the full width.
+  lv.setItems(numberedItems(3));
+  box.sync(lv);
+  TEST_ASSERT_EQUAL(3, box.shownItems());
+  TEST_ASSERT_TRUE(lv_obj_has_flag(box.scrollBar().thumb(), LV_OBJ_FLAG_HIDDEN));
+  lv_obj_update_layout(lv_screen_active());
+  TEST_ASSERT_EQUAL(40 * 8, lv_obj_get_width(lv_obj_get_parent(box.label(0))));
+  tap(centre(box.label(2)));
+  TEST_ASSERT_EQUAL(1, keys.size());
+  assertActivate(keys[0], 2, ListId::Main, Action::Select);
+}
+
+void test_list_box_window_drag_steps_selection() {
+  rc::ListView lv;
+  lv.setItems(numberedItems(30));
+  lvui::ListBox box;
+  box.create(lv_screen_active(), /*windowed*/ true);
+  placeListBox(box);
+  box.sync(lv);
+  liveList = &lv;
+  // Finger up three cells: the grid's wrapping list steps one Activate a cell.
+  const auto path = fingerPath({40, 16 + 6 * 16 + 8}, -3 * 16, 12, 60);
+  const auto want = gridKeys(lv, 1, 14, path);
+  TEST_ASSERT_EQUAL(3, want.size());
+  play(path, box, lv);
+  assertSameKeys(want, keys);
+  TEST_ASSERT_EQUAL(3, lv.selected());
+  TEST_ASSERT_EQUAL(0, lv_obj_get_scroll_y(box.obj()));
+  // A flick: a page (13 rows) less one.
+  keys.clear();
+  const auto flick = fingerPath({40, 16 + 10 * 16 + 8}, -80, 0, 40);
+  const auto wantFlick = gridKeys(lv, 1, 14, flick);
+  TEST_ASSERT_EQUAL(1, wantFlick.size());
+  playLifting(flick, box, lv);
+  assertSameKeys(wantFlick, keys);
+  TEST_ASSERT_EQUAL(15, lv.selected());
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_list_box_mirrors_model);
@@ -592,5 +671,7 @@ int main() {
   RUN_TEST(test_entry_list_swipe_pages);
   RUN_TEST(test_entry_list_draws_its_window_without_scrolling);
   RUN_TEST(test_drawer_rows_and_close);
+  RUN_TEST(test_list_box_window_draws_list_view_rows);
+  RUN_TEST(test_list_box_window_drag_steps_selection);
   return UNITY_END();
 }

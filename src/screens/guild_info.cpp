@@ -4,6 +4,7 @@
 #include "screens/guild_info.h"
 
 #include "screens/draw.h"
+#include "screens/lv_draw.h"
 #include "ui/guild_layout.h"
 
 namespace rc {
@@ -51,6 +52,16 @@ void GuildInfoView::render(Grid& g, const Theme& t) {
   const int bottom = g.rows() - 1;
   text_.render(g, 1, bottom, 0, g.cols(), t);
   drawHint(g, t, link_.empty() ? U"\u2191\u2193 scroll  back: close" : U"\u2191\u2193 scroll  \u25CF link  back: close",
+           link_.empty() ? U"swipe to scroll  \u2039 close" : U"swipe to scroll  hold: link  \u2039 close");
+}
+
+void GuildInfoView::sync(lvui::TextBox& text, lvui::CellText& cells, lvui::QrBox& qr, lvui::HintBar& hint) {
+  lvui::setHidden(text.obj(), linkOpen_);
+  if (linkOpen_) return linkView_.sync(cells, qr, hint);
+  lvui::setHidden(qr.obj(), true);
+  placeCells(text.obj(), 0, 1, cells.cols(), cells.rows() - 1);
+  text.sync(text_);
+  syncHint(hint, link_.empty() ? U"\u2191\u2193 scroll  back: close" : U"\u2191\u2193 scroll  \u25CF link  back: close",
            link_.empty() ? U"swipe to scroll  \u2039 close" : U"swipe to scroll  hold: link  \u2039 close");
 }
 

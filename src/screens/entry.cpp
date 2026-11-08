@@ -10,6 +10,7 @@
 #include "app/ui_task.h"
 #include "feed/compose.h"
 #include "feed/feed_source.h"
+#include "lvui/views/view_util.h"
 #include "screens/draw.h"
 #include "screens/people_nav.h"
 #include "store/locked_feed.h"
@@ -515,14 +516,9 @@ void EntryScreen::selectBlock(const std::string& id) {
   if (log_.selectedId() != id) log_.follow();
 }
 
-void EntryScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
-  const bool small = compact();
-  const int inputRow = small ? g.rows() - 2 : g.rows() - 1;
-  const int logRows = inputRow - 1;
-  const int nav = sideNavWidth(g);
-  const int logCols = g.cols() - nav - LogView::kBarCols;
+void EntryScreen::refresh(int logCols, int logRows, const Theme& t, int64_t nowMs, bool sameTheme) {
   if (dirty_ || logCols != cols_ || logRows != logRows_ || app().cfg.textSize != size_ ||
-      &t != theme_ || nowMs - builtAt_ >= kAgeRefreshMs) {
+      !sameTheme || nowMs - builtAt_ >= kAgeRefreshMs) {
     rebuild(logCols, logRows, t);
     dirty_ = false;
     cols_ = logCols;
@@ -531,6 +527,52 @@ void EntryScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
     theme_ = &t;
     builtAt_ = nowMs;
   }
+}
+
+std::string EntryScreen::replyLine(const std::string& reply) const {
+  auto it = authors_.find(reply);
+  return "\u21b3 @" + (it == authors_.end() ? std::string("?") : it->second);
+}
+
+void EntryScreen::hints(const std::string& reply, bool offline, const char32_t*& hint,
+                        const char32_t*& touch) const {
+  if (spell_.visible()) {
+    hint = U"\u2190\u2192 spelling  \u25CF keep";
+    touch = U"tap a spelling, or keep typing";
+  } else if (reasonMode_) {
+    hint = U"type a reason (optional)  \u25CF report  back: cancel";
+    touch = U"type a reason (optional)  enter: report";
+  } else if (view_ == View::Menu) {
+    hint = U"\u2191\u2193 pick  \u25CF choose  back: close";
+    touch = U"tap: choose  outside: close";
+  } else if (sending_) {
+    hint = touch = U"sending\u2026";
+  } else if (moreAsked_) {
+    hint = touch = U"loading replies\u2026";
+  } else if (offline) {
+    hint = touch = U"offline: reading only";
+  } else if (!reply.empty()) {
+    hint = U"type to answer  \u25CF reply menu  back: unselect";
+    touch = U"type to answer  \u2039 unselect";
+  } else if (hidden_ && !revealed_) {
+    hint = U"\u25CF reveal  \u2191\u2193 scroll";
+    touch = U"tap to reveal  tap a reply for actions";
+  } else if (!log_.following()) {
+    hint = U"\u25CF send / menu  \u2191\u2193 scroll  back: unselect";
+    touch = U"tap the line to type  tap a reply for actions";
+  } else {
+    hint = U"\u25CF send / menu  \u2191\u2193 scroll  back: feed";
+    touch = U"tap the line to type  tap a reply for actions";
+  }
+}
+
+void EntryScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
+  const bool small = compact();
+  const int inputRow = small ? g.rows() - 2 : g.rows() - 1;
+  const int logRows = inputRow - 1;
+  const int nav = sideNavWidth(g);
+  const int logCols = g.cols() - nav - LogView::kBarCols;
+  refresh(logCols, logRows, t, nowMs, &t == theme_);
 
   g.fill(t.bg);
   drawStatus(g, t, title_.empty() ? std::u32string(U"entry") : title_, -1, true);
@@ -544,9 +586,7 @@ void EntryScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
   if (!reply.empty()) {
     // The reply the input line answers.
     --logBottom;
-    auto it = authors_.find(reply);
-    putLine(g, 1, logBottom, "\u21b3 @" + (it == authors_.end() ? std::string("?") : it->second),
-            t.dim, t.bg);
+    putLine(g, 1, logBottom, replyLine(reply), t.dim, t.bg);
   }
   if (spell_.visible() && view_ == View::None && !reasonMode_) spell_.render(g, --logBottom, t);
   const bool offline = app().conn == 0;
@@ -564,35 +604,113 @@ void EntryScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
   if (small) {
     const char32_t* hint;
     const char32_t* touch;
-    if (spell_.visible()) {
-      hint = U"\u2190\u2192 spelling  \u25CF keep";
-      touch = U"tap a spelling, or keep typing";
-    } else if (reasonMode_) {
-      hint = U"type a reason (optional)  \u25CF report  back: cancel";
-      touch = U"type a reason (optional)  enter: report";
-    } else if (view_ == View::Menu) {
-      hint = U"\u2191\u2193 pick  \u25CF choose  back: close";
-      touch = U"tap: choose  outside: close";
-    } else if (sending_) {
-      hint = touch = U"sending\u2026";
-    } else if (moreAsked_) {
-      hint = touch = U"loading replies\u2026";
-    } else if (offline) {
-      hint = touch = U"offline: reading only";
-    } else if (!reply.empty()) {
-      hint = U"type to answer  \u25CF reply menu  back: unselect";
-      touch = U"type to answer  \u2039 unselect";
-    } else if (hidden_ && !revealed_) {
-      hint = U"\u25CF reveal  \u2191\u2193 scroll";
-      touch = U"tap to reveal  tap a reply for actions";
-    } else if (!log_.following()) {
-      hint = U"\u25CF send / menu  \u2191\u2193 scroll  back: unselect";
-      touch = U"tap the line to type  tap a reply for actions";
-    } else {
-      hint = U"\u25CF send / menu  \u2191\u2193 scroll  back: feed";
-      touch = U"tap the line to type  tap a reply for actions";
-    }
+    hints(reply, offline, hint, touch);
     drawHint(g, t, hint, touch);
+  }
+}
+
+// ---- LVGL ----
+
+void EntryScreen::build(lv_obj_t* root) {
+  root_ = root;
+  text_.create(root);
+  body_ = lvui::plainBox(root);
+  logView_.create(body_);
+  navView_.create(body_);
+  qrView_.create(root);
+  spellView_.create(root);
+  inputView_.create(root);
+  hint_.create(root);
+  status_.create(root);
+  menuView_.create(root);
+  themeSerial_ = ~0u;
+  sync(nowMs_);
+}
+
+void EntryScreen::update(int64_t nowMs) {
+  nowMs_ = nowMs;
+  // The entry and its replies change with EntryUpdated, RepliesLoaded and
+  // FeedWriteDone, which ui::inputSeq() counts; the ages show with the
+  // once-a-second refresh.
+  if (gate_.due(root_, nowMs,
+                {int64_t(app().conn), int64_t(view_), int64_t(reasonMode_), int64_t(sending_),
+                 int64_t(log_.following())}))
+    sync(nowMs);
+}
+
+void EntryScreen::sync(int64_t nowMs) {
+  const Theme& t = lvui::currentTheme();
+  const bool small = compact();
+  const int cols = text_.cols(), rows = text_.rows();
+  const int inputRow = small ? rows - 2 : rows - 1;
+  const int logRows = inputRow - 1;
+  const int nav = sideNavWidth(text_);
+  const int logCols = cols - nav - LogView::kBarCols;
+  // The lines bake the theme's colours: lvui's theme is one object, so its
+  // serial tells a change.
+  const bool sameTheme = &t == theme_ && lvui::themeSerial() == themeSerial_;
+  themeSerial_ = lvui::themeSerial();
+  refresh(logCols, logRows, t, nowMs, sameTheme);
+
+  syncStatus(status_, title_.empty() ? std::u32string(U"entry") : title_, -1, true);
+  const bool typing = view_ != View::Link;
+  lvui::setHidden(inputView_.obj(), !typing);
+  if (typing) lvui::setHidden(qrView_.obj(), true);
+  text_.begin();
+  if (!typing) {
+    lvui::setHidden(body_, true);
+    lvui::setHidden(spellView_.obj(), true);
+    lvui::setHidden(hint_.obj(), false);
+    link_.sync(text_, qrView_, hint_);
+    text_.end();
+    menuView_.sync(box_);
+    return;
+  }
+
+  int logBottom = inputRow;
+  std::string reply = selectedReply();
+  if (!reply.empty()) {
+    // The reply the input line answers.
+    --logBottom;
+    text_.line(1, logBottom, replyLine(reply), t.dim);
+  }
+#if RC_FEAT_SPELL
+  if (spell_.visible() && view_ == View::None && !reasonMode_) {
+    --logBottom;
+    placeCells(spellView_.obj(), 0, logBottom, cols, logBottom + 1);
+    spellView_.sync(spell_);
+  } else {
+    lvui::setHidden(spellView_.obj(), true);
+  }
+#else
+  lvui::setHidden(spellView_.obj(), true);
+#endif
+  const bool offline = app().conn == 0;
+  if (!loaded_) text_.line(1, 2, offline ? "offline" : "loading\u2026", t.dim);
+  text_.end();
+  lvui::setHidden(body_, !loaded_);
+  if (loaded_) {
+    placeCells(body_, 0, 1, cols, logBottom);
+    placeCells(logView_.obj(), 0, 0, cols - nav, logBottom - 1);
+    logView_.sync(log_);
+    navView_.sync(nav, 0, logBottom - 1, cols);
+  }
+
+  const lvui::Cell c = text_.cell();
+  menuView_.setPlace(OverlayPlace::BottomRight, logBottom * c.h, nav * c.w, c.h);
+  menuView_.sync(box_);
+
+  input_.setDisabled(offline || view_ != View::None || sending_ || !loaded_);
+  input_.setEmojiButton(RC_FEAT_EMOJI != 0);
+  placeCells(inputView_.obj(), 0, inputRow, cols, inputRow + 1);
+  inputView_.sync(input_, reasonMode_ ? U"reason> " : U"> ");
+
+  lvui::setHidden(hint_.obj(), !small);
+  if (small) {
+    const char32_t* hint;
+    const char32_t* touch;
+    hints(reply, offline, hint, touch);
+    syncHint(hint_, hint, touch);
   }
 }
 

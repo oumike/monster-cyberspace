@@ -6,6 +6,8 @@
 #include <string_view>
 #include <vector>
 
+#include "lvui/views/view_util.h"
+
 namespace lvui {
 
 // A QR code as LinkView draws it from rc::qrToCells: the half-block rows in
@@ -19,7 +21,7 @@ class QrBox {
   QrBox& operator=(const QrBox&) = delete;
 
   void create(lv_obj_t* parent);
-  // Encodes text when it changed. False (and hidden) when it doesn't fit.
+  // Encodes text when it or the cell size changed. False (and hidden) when it doesn't fit.
   bool sync(std::string_view text);
 
   lv_obj_t* obj() const { return box_; }
@@ -34,6 +36,7 @@ class QrBox {
   std::string text_;
   bool ok_ = false, synced_ = false;
   int cols_ = 0, rows_ = 0;
+  Cell cell_{0, 0};  // the cell the rows were laid out in
 };
 
 }  // namespace lvui

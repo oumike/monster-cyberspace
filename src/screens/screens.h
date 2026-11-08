@@ -6,9 +6,12 @@
 #include "feature_flags.h"
 #include "input/type_filter.h"
 #include "lvui/views/cell_text.h"
+#include "lvui/views/entry_list_box.h"
 #include "lvui/views/input_field.h"
 #include "lvui/views/list_box.h"
 #include "lvui/views/menu_overlay.h"
+#include "lvui/views/qr_box.h"
+#include "lvui/views/text_box.h"
 #include "lvui/views/tile_grid.h"
 #include "lvui/views/top_bar.h"
 #include "net/wifi_list.h"
@@ -355,6 +358,8 @@ class FeedListScreen : public Screen {
   void onKey(const KeyEvent&) override;
   void onEvent(const Event&) override;
   void render(Grid&, const Theme&, int64_t nowMs) override;
+  void build(lv_obj_t* root) override;
+  void update(int64_t nowMs) override;
   bool hasOverlay() const override { return palette_ || info_.isOpen(); }
   void closeOverlays() override {
     palette_ = confirm_ = false;
@@ -370,7 +375,15 @@ class FeedListScreen : public Screen {
   void open();         // the first page
   void requestMore();  // the next page
   void rebuild(int cols, const Theme& t);
+  // rebuild when render and sync need it: on a store event (dirty_), a new
+  // width or theme (sameTheme false), or for the ages.
+  void refresh(int listCols, const Theme& t, int64_t nowMs, bool sameTheme);
   void remember();     // selId_ from the selection
+  std::u32string title() const;
+  // What an empty list says (before withMenuKey); loading: the store's flag.
+  const char* emptyText(bool loading) const;
+  void hints(const char32_t*& keys, const char32_t*& touch) const;
+  void sync(int64_t nowMs);
 
   const Kind kind_;
   EntryList list_;
@@ -394,6 +407,17 @@ class FeedListScreen : public Screen {
   int cols_ = 0;
   int64_t builtAt_ = 0;    // for the ages ("3h")
   const Theme* theme_ = nullptr;  // the rows bake its colours
+  unsigned themeSerial_ = ~0u;    // lvui::themeSerial() the rows bake
+  int64_t nowMs_ = 0;             // the last update's, for build
+  lvui::TopBar status_;
+  lvui::EntryListBox listView_;
+  SideNavHost navView_;
+  lvui::CellText text_;
+  lvui::TextBox infoText_;
+  lvui::QrBox infoQr_;
+  lvui::HintBar hint_;
+  lvui::MenuOverlay menuView_;
+  SyncGate<1> gate_;
 };
 #endif
 
@@ -407,6 +431,8 @@ class TopicsScreen : public Screen {
   void onKey(const KeyEvent&) override;
   void onEvent(const Event&) override;
   void render(Grid&, const Theme&, int64_t nowMs) override;
+  void build(lv_obj_t* root) override;
+  void update(int64_t nowMs) override;
   bool hasOverlay() const override { return palette_; }
   void closeOverlays() override { palette_ = false; }
 
@@ -414,7 +440,11 @@ class TopicsScreen : public Screen {
   void paletteKey(const KeyEvent&);
   void open();
   void rebuild(int cols, const Theme& t);
+  // rebuild when render and sync need it (sameTheme false: a new theme).
+  void refresh(int listCols, const Theme& t, bool sameTheme);
   void remember();
+  const char* emptyText() const;  // before withMenuKey
+  void sync();
 
   EntryList list_;
   Overlay box_;
@@ -424,6 +454,14 @@ class TopicsScreen : public Screen {
   bool dirty_ = true, failed_ = false, waiting_ = false;
   int cols_ = 0;
   const Theme* theme_ = nullptr;
+  unsigned themeSerial_ = ~0u;  // lvui::themeSerial() the rows bake
+  lvui::TopBar status_;
+  lvui::EntryListBox listView_;
+  SideNavHost navView_;
+  lvui::CellText text_;
+  lvui::HintBar hint_;
+  lvui::MenuOverlay menuView_;
+  SyncGate<1> gate_;
 };
 #endif
 

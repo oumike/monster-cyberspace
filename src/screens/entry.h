@@ -5,7 +5,15 @@
 #include <string>
 #include <vector>
 
+#include "lvui/views/button_rows.h"
+#include "lvui/views/cell_text.h"
+#include "lvui/views/input_field.h"
+#include "lvui/views/log_box.h"
+#include "lvui/views/menu_overlay.h"
+#include "lvui/views/qr_box.h"
+#include "lvui/views/top_bar.h"
 #include "screens/link_view.h"
+#include "screens/lv_draw.h"
 #include "screens/router.h"
 #include "ui/theme.h"
 #include "ui/widgets/input_line.h"
@@ -29,6 +37,8 @@ class EntryScreen : public Screen {
   void onKey(const KeyEvent&) override;
   void onEvent(const Event&) override;
   void render(Grid&, const Theme&, int64_t nowMs) override;
+  void build(lv_obj_t* root) override;
+  void update(int64_t nowMs) override;
   bool hasOverlay() const override;
   void closeOverlays() override;
   bool acceptsText() const override { return view_ == View::None; }
@@ -51,6 +61,14 @@ class EntryScreen : public Screen {
   void openReplyMenu(const std::string& replyId);
   void pickMenu();
   void rebuild(int cols, int logRows, const Theme& t);
+  // rebuild when render and sync need it: on a store event (dirty_), a new
+  // size or theme (sameTheme false), or for the ages.
+  void refresh(int logCols, int logRows, const Theme& t, int64_t nowMs, bool sameTheme);
+  // The reply line's "↳ @author" for a selected reply.
+  std::string replyLine(const std::string& reply) const;
+  void hints(const std::string& reply, bool offline, const char32_t*& hint,
+             const char32_t*& touch) const;
+  void sync(int64_t nowMs);
   void selectBlock(const std::string& id);
 
   // The selected reply's id (any page of it); "" for the body or following.
@@ -90,6 +108,23 @@ class EntryScreen : public Screen {
   TextSize size_ = TextSize::Compact;
   int64_t builtAt_ = 0;
   const Theme* theme_ = nullptr;  // the lines bake its colours
+
+  // LVGL views. body_ holds the log and the side strip between the status
+  // bar and what sits above the input.
+  lv_obj_t* root_ = nullptr;
+  lv_obj_t* body_ = nullptr;
+  lvui::TopBar status_;
+  lvui::CellText text_;
+  lvui::LogBox logView_;
+  SideNavHost navView_;
+  lvui::SpellBar spellView_;
+  lvui::InputField inputView_;
+  lvui::QrBox qrView_;
+  lvui::HintBar hint_;
+  lvui::MenuOverlay menuView_;
+  unsigned themeSerial_ = ~0u;  // lvui::themeSerial() the lines bake
+  int64_t nowMs_ = 0;           // the last update's, for build
+  SyncGate<5> gate_;
 };
 
 }  // namespace rc

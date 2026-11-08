@@ -164,7 +164,7 @@
 ### Task 11: Feed
 
 **Files:** `feed_list.cpp` (Feed, Watched, Bookmarks, Topic, Following, UserPosts), `topics.cpp`, `entry.{h,cpp}`, `composer.{h,cpp}`, `link_view.{h,cpp}`
-- [ ] **Step 1:** Port. **Step 2:** `pio run -e m9`. **Step 3:** Commit `LVGL: Feed, entries, composer`.
+- [x] **Step 1:** Port. **Step 2:** `pio run -e m9`. **Step 3:** Commit `LVGL: Feed, entries, composer`.
 
 ### Task 12: Guilds and People
 

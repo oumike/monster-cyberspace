@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "feature_flags.h"
+#include "lvui/cell_font.h"
 #include "lvui/display.h"
 #include "lvui/input.h"
 #include "lvui/lv_init.h"
@@ -467,6 +468,26 @@ void test_qr_box_rows() {
   TEST_ASSERT_EQUAL(qr.rows() * 16, lv_obj_get_height(qr.obj()));
 }
 
+// A text-size change re-lays the rows in the new cell, with the URL the same.
+void test_qr_box_follows_cell_size() {
+  lv_obj_t* parent = lvui::plainBox(lv_screen_active());
+  lv_obj_set_size(parent, lv_pct(100), lv_pct(100));
+  lvui::QrBox qr;
+  qr.create(parent);
+  TEST_ASSERT_TRUE(qr.sync("https://cyberspace.online"));
+  layout();
+  TEST_ASSERT_EQUAL(4 * 16, lv_obj_get_y(qr.row(3)));
+  lv_obj_set_style_text_font(parent, lvui::font(rc::TextSize::Compact), LV_PART_MAIN);
+  TEST_ASSERT_TRUE(qr.sync("https://cyberspace.online"));
+  layout();
+  const lvui::Cell c = lvui::cellOf(qr.obj());
+  TEST_ASSERT_EQUAL(12, c.h);
+  TEST_ASSERT_EQUAL(qr.cols() * c.w, lv_obj_get_width(qr.obj()));
+  TEST_ASSERT_EQUAL(qr.rows() * c.h, lv_obj_get_height(qr.obj()));
+  TEST_ASSERT_EQUAL(4 * c.h, lv_obj_get_y(qr.row(3)));
+  TEST_ASSERT_EQUAL(2 * c.w, lv_obj_get_x(qr.row(3)));
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_osk_layer_and_emit);
@@ -478,5 +499,6 @@ int main() {
   RUN_TEST(test_overlay_buttons_sync_once);
   RUN_TEST(test_overlay_button_menu);
   RUN_TEST(test_qr_box_rows);
+  RUN_TEST(test_qr_box_follows_cell_size);
   return UNITY_END();
 }

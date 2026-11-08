@@ -4,6 +4,9 @@
 
 #include "guild/guild.h"
 #include "input/key_event.h"
+#include "lvui/views/cell_text.h"
+#include "lvui/views/qr_box.h"
+#include "lvui/views/text_box.h"
 #include "screens/link_view.h"
 #include "ui/grid.h"
 #include "ui/theme.h"
@@ -22,6 +25,10 @@ class GuildInfoView {
   bool key(const KeyEvent& k);
   // Draws rows 1 to the last (the last holds the hint).
   void render(Grid& g, const Theme& t);
+  // render for LVGL: the text into text (over rows 1 to the last), or the
+  // link into cells (between the caller's begin() and end()) and qr; then
+  // the hint.
+  void sync(lvui::TextBox& text, lvui::CellText& cells, lvui::QrBox& qr, lvui::HintBar& hint);
 
  private:
   bool open_ = false, linkOpen_ = false;

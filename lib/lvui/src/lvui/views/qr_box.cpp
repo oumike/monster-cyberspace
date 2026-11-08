@@ -14,8 +14,11 @@ void QrBox::create(lv_obj_t* parent) {
 }
 
 bool QrBox::sync(std::string_view text) {
-  if (synced_ && text == text_) return ok_;
+  const Cell c = cellOf(box_);
+  // A new cell size (the text size changed) lays the rows out again.
+  if (synced_ && text == text_ && c.w == cell_.w && c.h == cell_.h) return ok_;
   synced_ = true;
+  cell_ = c;
   text_.assign(text);
   std::vector<std::u32string> cells;
   ok_ = rc::qrToCells(text, cells) && !cells.empty();
@@ -24,7 +27,6 @@ bool QrBox::sync(std::string_view text) {
     cols_ = rows_ = 0;
     return false;
   }
-  const Cell c = cellOf(box_);
   rows_ = static_cast<int>(cells.size()) + 2;
   cols_ = static_cast<int>(cells[0].size()) + 4;
   lv_obj_set_size(box_, cols_ * c.w, rows_ * c.h);

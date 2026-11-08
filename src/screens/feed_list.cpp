@@ -7,6 +7,7 @@
 #include "app/ui_task.h"
 #include "feed/feed_source.h"
 #include "hal/board.h"
+#include "lvui/cell_font.h"
 #include "screens/draw.h"
 #include "screens/screens.h"
 #include "store/locked_feed.h"
@@ -418,18 +419,68 @@ std::u32string FeedListScreen::guildTitle() const {
   return t.empty() ? std::u32string(U"Guild") : utf8ToU32(t);
 }
 
-void FeedListScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
-  // Big rows draw fewer, wider cells, which would push the side strip off the
-  // panel; with it, every row stays plain.
-  const int nav = sideNavWidth(g);
-  const int listCols = g.cols() - nav - EntryList::kBarCols;
-  if (dirty_ || listCols != cols_ || &t != theme_ || nowMs - builtAt_ >= kAgeRefreshMs) {
+void FeedListScreen::refresh(int listCols, const Theme& t, int64_t nowMs, bool sameTheme) {
+  if (dirty_ || listCols != cols_ || !sameTheme || nowMs - builtAt_ >= kAgeRefreshMs) {
     rebuild(listCols, t);
     theme_ = &t;
     dirty_ = false;
     cols_ = listCols;
     builtAt_ = nowMs;
   }
+}
+
+std::u32string FeedListScreen::title() const {
+  if (kind_ == Kind::Guild) return guildTitle();
+  if (kind_ == Kind::User) return U"entries \u00b7 @" + utf8ToU32(slug_);
+  if (kind_ == Kind::Topic) return U"#" + utf8ToU32(slug_);
+  return kind_ == Kind::Feed        ? U"Feed \u21BB 2m"
+         : kind_ == Kind::Watched   ? U"Watched"
+         : kind_ == Kind::Following ? U"Following"
+                                    : U"Bookmarks";
+}
+
+const char* FeedListScreen::emptyText(bool loading) const {
+  // An empty feed with pages to come hasn't loaded yet.
+  bool waiting = !loaded_ || loading || (kind_ == Kind::Feed && more_);
+  const bool self = kind_ == Kind::User && !app().user.empty() && sameUsername(slug_, app().user);
+  return waiting && app().conn == 0 ? "offline"
+         : !loaded_ && failed_    ? (board::hasTouch() ? "couldn't load: \u22ef, Refresh"
+                                                       : "couldn't load: Ctrl, Refresh")
+         : waiting                ? "loading\u2026"
+         : kind_ == Kind::Feed    ? "no entries yet"
+         : kind_ == Kind::Watched ? "no watched threads"
+         : kind_ == Kind::Guild   ? "no threads yet"
+         : kind_ == Kind::User    ? (self ? "no entries yet" : "no public entries")
+         : kind_ == Kind::Topic   ? "no entries"
+         : kind_ == Kind::Following ? (more_ ? (board::hasTouch() ? "none in recent entries: \u22ef, Load older"
+                                                                 : "none in recent entries: \u2193 for older")
+                                             : "nothing from people you follow")
+                                  : "no bookmarks";
+}
+
+void FeedListScreen::hints(const char32_t*& keys, const char32_t*& touch) const {
+  if (palette_) {
+    keys = U"\u2191\u2193 pick  \u25CF choose  back: close";
+    touch = U"tap: choose  outside: close";
+  } else if (asked_) {
+    keys = touch = U"loading more\u2026";
+  } else {
+    keys = kind_ == Kind::Feed || kind_ == Kind::Following
+                                  ? U"\u2191\u2193 pick  \u25CF open  \u2190 home  ctrl cmds"
+           : kind_ == Kind::Guild ? U"\u2191\u2193 pick  \u25CF open  \u2190 guilds  ctrl cmds"
+           : kind_ == Kind::User  ? U"\u2191\u2193 pick  \u25CF open  \u2190 profile  ctrl cmds"
+           : kind_ == Kind::Topic ? U"\u2191\u2193 pick  \u25CF open  \u2190 topics  ctrl cmds"
+                                  : U"\u2191\u2193 pick  \u25CF open  \u2190 feed  ctrl cmds";
+    touch = U"tap to open  hold: menu";
+  }
+}
+
+void FeedListScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
+  // Big rows draw fewer, wider cells, which would push the side strip off the
+  // panel; with it, every row stays plain.
+  const int nav = sideNavWidth(g);
+  const int listCols = g.cols() - nav - EntryList::kBarCols;
+  refresh(listCols, t, nowMs, &t == theme_);
   bool loading = lockedFeed().with([](FeedState& s) { return s.loading; });
 
   g.fill(t.bg);
@@ -438,17 +489,7 @@ void FeedListScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
     info_.render(g, t);
     return;
   }
-  std::u32string guildName = kind_ == Kind::Guild ? guildTitle() : std::u32string();
-  std::u32string userTitle = kind_ == Kind::User    ? U"entries \u00b7 @" + utf8ToU32(slug_)
-                             : kind_ == Kind::Topic ? U"#" + utf8ToU32(slug_)
-                                                    : std::u32string();
-  const char32_t* title = kind_ == Kind::Feed      ? U"Feed \u21BB 2m"
-                          : kind_ == Kind::Watched ? U"Watched"
-                          : kind_ == Kind::Guild   ? guildName.c_str()
-                          : kind_ == Kind::User || kind_ == Kind::Topic ? userTitle.c_str()
-                          : kind_ == Kind::Following ? U"Following"
-                                                   : U"Bookmarks";
-  drawStatus(g, t, title, -1, true);
+  drawStatus(g, t, title(), -1, true);
   int bottom = g.rows() - 1;  // the last row holds the hint
   // The palette is drawn over the list in plain rows, so the list drops its
   // larger first lines while it's open.
@@ -456,43 +497,85 @@ void FeedListScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
   if (palette_ || nav > 0) list_.setBigHeads(0, 0, 0);
   else list_.setBigHeads(cellSize(ts).h, bigCellSize(ts).h, headCols());
   list_.render(g, 1, bottom, t, nav);
-  if (empty_) {
-    // An empty feed with pages to come hasn't loaded yet.
-    bool waiting = !loaded_ || loading || (kind_ == Kind::Feed && more_);
-    const bool self = kind_ == Kind::User && !app().user.empty() && sameUsername(slug_, app().user);
-    const char* empty = waiting && app().conn == 0 ? "offline"
-                        : !loaded_ && failed_    ? (board::hasTouch() ? "couldn't load: \u22ef, Refresh"
-                                                                      : "couldn't load: Ctrl, Refresh")
-                        : waiting                ? "loading\u2026"
-                        : kind_ == Kind::Feed    ? "no entries yet"
-                        : kind_ == Kind::Watched ? "no watched threads"
-                        : kind_ == Kind::Guild   ? "no threads yet"
-                        : kind_ == Kind::User    ? (self ? "no entries yet" : "no public entries")
-                        : kind_ == Kind::Topic   ? "no entries"
-                        : kind_ == Kind::Following ? (more_ ? (board::hasTouch() ? "none in recent entries: \u22ef, Load older"
-                                                                                : "none in recent entries: \u2193 for older")
-                                                            : "nothing from people you follow")
-                                                 : "no bookmarks";
-    // Below the New entry / New thread row, which takes the first two.
-    putLine(g, 1, composeRow_ ? 3 : 2, withMenuKey(empty), t.dim, t.bg);
-  }
+  // Below the New entry / New thread row, which takes the first two.
+  if (empty_) putLine(g, 1, composeRow_ ? 3 : 2, withMenuKey(emptyText(loading)), t.dim, t.bg);
 
   if (nav > 0) renderSideNav(g, 1, bottom, nav, t);
-  if (palette_) {
-    box_.render(g, 1, bottom, nav, OverlayPlace::BottomRight, t);
-    drawHint(g, t, U"\u2191\u2193 pick  \u25CF choose  back: close", U"tap: choose  outside: close");
-  } else if (asked_) {
-    drawHint(g, t, U"loading more\u2026", U"loading more\u2026");
-  } else {
-    drawHint(g, t,
-             kind_ == Kind::Feed || kind_ == Kind::Following
-                                    ? U"\u2191\u2193 pick  \u25CF open  \u2190 home  ctrl cmds"
-             : kind_ == Kind::Guild ? U"\u2191\u2193 pick  \u25CF open  \u2190 guilds  ctrl cmds"
-             : kind_ == Kind::User  ? U"\u2191\u2193 pick  \u25CF open  \u2190 profile  ctrl cmds"
-             : kind_ == Kind::Topic ? U"\u2191\u2193 pick  \u25CF open  \u2190 topics  ctrl cmds"
-                                    : U"\u2191\u2193 pick  \u25CF open  \u2190 feed  ctrl cmds",
-             U"tap to open  hold: menu");
+  if (palette_) box_.render(g, 1, bottom, nav, OverlayPlace::BottomRight, t);
+  const char32_t* keys;
+  const char32_t* touch;
+  hints(keys, touch);
+  drawHint(g, t, keys, touch);
+}
+
+// ---- LVGL ----
+
+void FeedListScreen::build(lv_obj_t* root) {
+  listView_.create(root);
+  navView_.create(root);
+  text_.create(root);
+  infoText_.create(root);
+  infoQr_.create(root);
+  hint_.create(root);
+  status_.create(root);
+  menuView_.create(root);
+  themeSerial_ = ~0u;
+  sync(nowMs_);
+}
+
+void FeedListScreen::update(int64_t nowMs) {
+  nowMs_ = nowMs;
+  // The lists change with FeedUpdated, SideListUpdated and GuildUpdated,
+  // which ui::inputSeq() counts; the store's loading flag (set with no event)
+  // and the ages show with the once-a-second refresh.
+  if (gate_.due(text_.obj(), nowMs, {int64_t(app().conn)})) sync(nowMs);
+}
+
+void FeedListScreen::sync(int64_t nowMs) {
+  const Theme& t = lvui::currentTheme();
+  const int cols = text_.cols(), bottom = text_.rows() - 1;
+  const int nav = sideNavWidth(text_);
+  const int listCols = cols - nav - EntryList::kBarCols;
+  // The rows bake the theme's colours: lvui's theme is one object, so its
+  // serial tells a change.
+  const bool sameTheme = &t == theme_ && lvui::themeSerial() == themeSerial_;
+  themeSerial_ = lvui::themeSerial();
+  refresh(listCols, t, nowMs, sameTheme);
+  const bool loading = lockedFeed().with([](FeedState& s) { return s.loading; });
+
+  const bool info = info_.isOpen();
+  lvui::setHidden(listView_.obj(), info);
+  text_.begin();
+  if (info) {
+    syncStatus(status_, guildTitle(), -1);
+    navView_.sync(0, 1, bottom, cols);
+    info_.sync(infoText_, text_, infoQr_, hint_);
+    text_.end();
+    menuView_.sync(box_);
+    return;
   }
+  lvui::setHidden(infoText_.obj(), true);
+  lvui::setHidden(infoQr_.obj(), true);
+  syncStatus(status_, title(), -1, true);
+  const TextSize ts = app().cfg.textSize;
+  const bool big = !palette_ && nav == 0;
+  if (!big) list_.setBigHeads(0, 0, 0);
+  else list_.setBigHeads(cellSize(ts).h, bigCellSize(ts).h, headCols());
+  listView_.setHeadFont(big ? lvui::font(ts, true) : nullptr);
+  // The last column holds the grid's scroll bar, which the outline stops short of.
+  placeCells(listView_.obj(), 0, 1, listCols, bottom);
+  listView_.sync(list_);
+  if (empty_) text_.line(1, composeRow_ ? 3 : 2, withMenuKey(emptyText(loading)), t.dim);
+  text_.end();
+  navView_.sync(nav, 1, bottom, cols);
+
+  const lvui::Cell c = text_.cell();
+  menuView_.setPlace(OverlayPlace::BottomRight, bottom * c.h, nav * c.w, c.h);
+  menuView_.sync(box_);
+  const char32_t* keys;
+  const char32_t* touch;
+  hints(keys, touch);
+  syncHint(hint_, keys, touch);
 }
 
 }  // namespace rc

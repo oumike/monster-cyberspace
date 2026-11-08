@@ -4,9 +4,11 @@
 
 ```sh
 pio test -e native
+pio test -e native_lv
 ```
 
-These cover the portable logic in `lib/core`:
+These cover the portable logic in `lib/core` (`native`) and the LVGL UI in
+`lib/lvui` (`native_lv`, the `test_lv_*` tests):
 
 - response parsing, from fixtures written from the API docs
 - the SSE parser and the put/patch merge

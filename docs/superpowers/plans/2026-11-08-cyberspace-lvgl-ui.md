@@ -56,11 +56,11 @@
 - Produces: `namespace lvui { void init(); }` (calls `lv_init`, sets tick from a callback); `void setTickSource(uint32_t (*ms)());`.
 - `lv_conf.h`: under `RC_NATIVE`, `LV_STDLIB_CLIB`; on ESP32, `LV_STDLIB_CUSTOM` with `lv_malloc_core` etc. in `lv_init.cpp` using `heap_caps_malloc(…, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT)` when `BOARD_HAS_PSRAM`, else internal heap capped at `RC_LV_HEAP` (default 49152).
 
-- [ ] **Step 1:** Test `test_lv_smoke`: `lvui::init()`; create a 64x32 display with a dummy flush; `lv_label_create`; `lv_timer_handler()`; assert flush was called at least once.
-- [ ] **Step 2:** `pio test -e native_lv` → FAIL (no lib).
-- [ ] **Step 3:** Implement.
-- [ ] **Step 4:** `pio test -e native_lv` → PASS; `pio test -e native` → 759/759; `pio run -e m9` → SUCCESS.
-- [ ] **Step 5:** Commit `LVGL 9.5.0 and the native_lv test env`.
+- [x] **Step 1:** Test `test_lv_smoke`: `lvui::init()`; create a 64x32 display with a dummy flush; `lv_label_create`; `lv_timer_handler()`; assert flush was called at least once.
+- [x] **Step 2:** `pio test -e native_lv` → FAIL (no lib).
+- [x] **Step 3:** Implement.
+- [x] **Step 4:** `pio test -e native_lv` → PASS; `pio test -e native` → 759/759; `pio run -e m9` → SUCCESS.
+- [x] **Step 5:** Commit `LVGL 9.5.0 and the native_lv test env`.
 
 ### Task 3: Cell-font adapter
 

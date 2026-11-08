@@ -29,9 +29,11 @@
 | `tdisplay_p4` | The firmware for the LilyGO T-Display P4 (ESP32-P4, 4.1" AMOLED drawn at 2x, touch, optional keyboard expansion, haptics; Wi-Fi through its ESP32-C6; not yet tried on hardware) |
 | `tanmatsu` | The firmware for the Tanmatsu (ESP32-P4, 480x800 panel drawn at 2x in landscape, keyboard; Wi-Fi through its ESP32-C6). Replaces the Tanmatsu launcher |
 | `native` | Host unit tests for `lib/core` |
+| `native_lv` | Host unit tests for `lib/lvui`, the LVGL UI (`test/test_lv_*`) |
 
 ```sh
 pio test -e native                    # unit tests on your computer
+pio test -e native_lv                 # LVGL UI tests on your computer
 pio run -e m9                         # build
 pio run -e wio_l2                     # build for the Wio Tracker L2
 pio run -e tdeck                      # build for the T-Deck Plus

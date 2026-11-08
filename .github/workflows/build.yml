@@ -61,7 +61,9 @@ jobs:
         run: pip install platformio
 
       - name: Unit tests
-        run: pio test -e native
+        run: |
+          pio test -e native
+          pio test -e native_lv
 
       - name: Set up Node
         uses: actions/setup-node@v4

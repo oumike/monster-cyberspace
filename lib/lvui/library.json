@@ -1,0 +1,10 @@
+{
+  "name": "lvui",
+  "version": "0.1.0",
+  "description": "The LVGL UI for Monster for Cyberspace: portable, Arduino-free",
+  "dependencies": [
+    { "name": "lvgl", "owner": "lvgl", "version": "9.5.0" },
+    { "name": "core" }
+  ],
+  "build": { "flags": "-std=gnu++17" }
+}

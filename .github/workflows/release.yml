@@ -85,7 +85,9 @@ jobs:
         run: pip install platformio 'esptool==4.11.0'
 
       - name: Unit tests
-        run: pio test -e native
+        run: |
+          pio test -e native
+          pio test -e native_lv
 
       - name: Install OTA signing key
         env:

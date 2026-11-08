@@ -85,6 +85,7 @@ boards and Cyberspace features come later.
 
 ```sh
 pio test -e native          # host unit tests (lib/core)
+pio test -e native_lv       # host tests for the LVGL UI (lib/lvui, test_lv_*)
 node --test site/*.test.mjs # flasher site tests (not `node --test site/`)
 pio run -e m9               # firmware
 pio run -e wio_l2           # Seeed Wio Tracker L2 firmware

@@ -60,6 +60,7 @@ class MenuOverlay : public Tappable {
   TileGrid grid_;
   bool btnLaid_ = false, btnOk_ = false, btnConfirm_ = false;
   int btnW_ = -1, btnH_ = -1;
+  Cell btnCell_{};
   unsigned btnTheme_ = ~0u;
   std::u32string btnTitle_;
   std::vector<std::pair<std::u32string, rc::ItemTone>> btnItems_;

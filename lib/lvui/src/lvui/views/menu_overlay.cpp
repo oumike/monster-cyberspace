@@ -52,6 +52,8 @@ void MenuOverlay::sync(const rc::Overlay& m) {
   setHidden(box_, buttons);
   setHidden(grid_.obj(), !buttons);
   if (!buttons) {
+    // List mode hides what layoutButtons shows, so the next buttons lay out again.
+    btnLaid_ = false;
     setHidden(panel_, true);
     setHidden(buttonTitle_, true);
     place(m);
@@ -64,8 +66,9 @@ bool MenuOverlay::syncButtons(const rc::Overlay& m) {
   lv_obj_t* layer = lv_obj_get_parent(backdrop_);
   lv_obj_update_layout(layer);
   const int w = lv_obj_get_width(layer), h = lv_obj_get_height(layer);
+  const Cell c = cellOf(backdrop_);
   const auto& items = m.list().items();
-  bool same = btnLaid_ && w == btnW_ && h == btnH_ && btnTheme_ == themeSerial() &&
+  bool same = btnLaid_ && w == btnW_ && h == btnH_ && c.w == btnCell_.w && c.h == btnCell_.h && btnTheme_ == themeSerial() &&
               btnConfirm_ == m.isConfirm() && btnTitle_ == m.title() && btnItems_.size() == items.size();
   for (size_t i = 0; same && i < items.size(); ++i)
     same = btnItems_[i].second == items[i].tone && btnItems_[i].first == items[i].label;
@@ -73,14 +76,15 @@ bool MenuOverlay::syncButtons(const rc::Overlay& m) {
     btnLaid_ = true;
     btnW_ = w;
     btnH_ = h;
+    btnCell_ = c;
     btnTheme_ = themeSerial();
     btnConfirm_ = m.isConfirm();
     btnTitle_ = m.title();
     btnItems_.clear();
     for (const auto& it : items) btnItems_.emplace_back(it.label, it.tone);
     btnOk_ = layoutButtons(m);
+    if (btnOk_) grid_.syncTiles(btnTiles_, nullptr, static_cast<int>(items.size()));
   }
-  if (btnOk_) grid_.syncTiles(btnTiles_, nullptr, static_cast<int>(items.size()));
   return btnOk_;
 }
 

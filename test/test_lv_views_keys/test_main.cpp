@@ -368,6 +368,87 @@ void test_overlay_confirm_buttons() {
   TEST_ASSERT_TRUE(lv_obj_has_flag(menu.buttons().obj(), LV_OBJ_FLAG_HIDDEN));
 }
 
+// The same box shown as a list, then as the same confirm again (feed_list.cpp,
+// profile.cpp): the title and the panel come back with the buttons.
+void test_overlay_confirm_after_list() {
+  rc::Overlay::setConfirmButtons(true);
+  rc::Overlay ov;
+  ov.confirm(U"Leave room?", U"Leave");
+  lvui::MenuOverlay menu;
+  menu.create();
+  menu.setPlace(rc::OverlayPlace::BottomRight, -1, 0, 16);
+  menu.sync(ov);
+  ov.open(U"Commands", {rc::ListItem{U"Reply"}, rc::ListItem{U"Leave"}});
+  menu.sync(ov);
+  TEST_ASSERT_TRUE(lv_obj_has_flag(menu.buttonTitle(), LV_OBJ_FLAG_HIDDEN));
+  ov.confirm(U"Leave room?", U"Leave");
+  menu.sync(ov);
+  TEST_ASSERT_FALSE(lv_obj_has_flag(menu.buttons().obj(), LV_OBJ_FLAG_HIDDEN));
+  TEST_ASSERT_FALSE(lv_obj_has_flag(menu.buttonTitle(), LV_OBJ_FLAG_HIDDEN));
+  TEST_ASSERT_EQUAL_STRING("Leave room?", text(menu.buttonTitle()));
+  // The panel is the backdrop's first child, behind the title.
+  TEST_ASSERT_FALSE(lv_obj_has_flag(lv_obj_get_child(menu.backdrop(), 1), LV_OBJ_FLAG_HIDDEN));
+  rc::Overlay::setConfirmButtons(false);
+}
+
+// An unchanged confirm is laid out once: a later sync leaves the tiles alone.
+void test_overlay_buttons_sync_once() {
+  rc::Overlay::setConfirmButtons(true);
+  rc::Overlay ov;
+  ov.confirm(U"Leave room?", U"Leave");
+  lvui::MenuOverlay menu;
+  menu.create();
+  menu.sync(ov);
+  lv_obj_t* l = menu.buttons().label(1, 0);
+  lv_label_set_text(l, "marker");
+  menu.sync(ov);
+  menu.sync(ov);
+  TEST_ASSERT_EQUAL_STRING("marker", text(l));
+  // A change lays it out again.
+  ov.confirm(U"Leave room?", U"Go");
+  menu.sync(ov);
+  TEST_ASSERT_EQUAL_STRING("Go", text(menu.buttons().label(1, 0)));
+  rc::Overlay::setConfirmButtons(false);
+}
+
+// A touch-only button menu (renderButtonMenu): the title in fg on the page
+// above the buttons, no panel, two a row; a tap activates the item.
+void test_overlay_button_menu() {
+  rc::Overlay::setConfirmButtons(true);
+  rc::Overlay ov;
+  ov.openButtons(U"Entry", {rc::ListItem{U"Reply"}, rc::ListItem{U"Like"}, rc::ListItem{U"Delete", U"", rc::ItemTone::Error}});
+  lvui::MenuOverlay menu;
+  menu.create();
+  menu.setPlace(rc::OverlayPlace::BottomRight, -1, 0, 16);
+  menu.sync(ov);
+  TEST_ASSERT_TRUE(lv_obj_has_flag(menu.box(), LV_OBJ_FLAG_HIDDEN));
+  TEST_ASSERT_FALSE(lv_obj_has_flag(menu.buttons().obj(), LV_OBJ_FLAG_HIDDEN));
+  TEST_ASSERT_TRUE(lv_obj_has_flag(lv_obj_get_child(menu.backdrop(), 1), LV_OBJ_FLAG_HIDDEN));
+  TEST_ASSERT_EQUAL(3, menu.buttons().count());
+  const rc::Theme& t = rc::defaultTheme();
+  TEST_ASSERT_EQUAL_STRING("Entry", text(menu.buttonTitle()));
+  TEST_ASSERT_EQUAL_HEX16(t.fg, rgb565(lv_obj_get_style_text_color(menu.buttonTitle(), LV_PART_MAIN)));
+  const lv_area_t a = coords(menu.buttons().tile(0)), b = coords(menu.buttons().tile(1)),
+                  c = coords(menu.buttons().tile(2));
+  TEST_ASSERT_TRUE(a.x2 < b.x1);
+  TEST_ASSERT_EQUAL(a.y1, b.y1);
+  TEST_ASSERT_EQUAL(a.x1, c.x1);
+  TEST_ASSERT_TRUE(c.y1 > a.y2);
+  TEST_ASSERT_TRUE(coords(menu.buttonTitle()).y2 < a.y1);
+  TEST_ASSERT_EQUAL_STRING("Delete", text(menu.buttons().label(2, 0)));
+  TEST_ASSERT_EQUAL_HEX16(t.error, rgb565(lv_obj_get_style_text_color(menu.buttons().label(2, 0), LV_PART_MAIN)));
+  keys.clear();
+  tap(centre(menu.buttons().tile(2)));
+  TEST_ASSERT_EQUAL(1, keys.size());
+  TEST_ASSERT_TRUE(keys[0].action == Action::Activate);
+  TEST_ASSERT_EQUAL(2, keys[0].index);
+  TEST_ASSERT_EQUAL(uint8_t(ListId::Menu), keys[0].target);
+  keys.clear();
+  rc::Overlay::setConfirmButtons(false);
+  ov.close();
+  menu.sync(ov);
+}
+
 // The QR modules as qr_cells makes them: black on white, two cells of margin
 // either side and a row above and below.
 void test_qr_box_rows() {
@@ -393,6 +474,9 @@ int main() {
   RUN_TEST(test_home_tiles_span_first);
   RUN_TEST(test_spell_emit);
   RUN_TEST(test_overlay_confirm_buttons);
+  RUN_TEST(test_overlay_confirm_after_list);
+  RUN_TEST(test_overlay_buttons_sync_once);
+  RUN_TEST(test_overlay_button_menu);
   RUN_TEST(test_qr_box_rows);
   return UNITY_END();
 }

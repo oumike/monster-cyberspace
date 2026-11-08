@@ -1,4 +1,6 @@
 #include <algorithm>
+#include <functional>
+#include <optional>
 #include <Arduino.h>
 
 #include "app/app_state.h"
@@ -11,7 +13,9 @@
 #include "chat/chat_source.h"
 #include "core_version.h"
 #include "hal/board.h"
+#include "lvui/cell_font.h"
 #include "screens/draw.h"
+#include "screens/lv_draw.h"
 #include "screens/screens.h"
 #include "store/backup_store.h"
 #include "store/settings.h"
@@ -745,22 +749,13 @@ void SettingsScreen::activate(int item) {
   }
 }
 
-void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
-  g.fill(t.bg);
-  drawStatus(g, t, U"settings", -1);
-  if (picker_.isOpen()) return picker_.render(g, t);
-  const AppState& a = app();
-  const int bottom = g.rows() - 1;
-  const std::vector<Item> items = menuItems();
-  const int nItems = int(items.size());
-  const bool ap = setupApUp();
-  const timesvc::Snapshot ts = timesvc::snapshot();
-  // Every touch board gets buttons here, as Home gets tiles; with keys, a cursor.
-  buttons_ = board::hasTouch();
-  pad_.setCursor(board::hasKeys());
+namespace {
 
-  // Each item as a label and its current value; lines join them, buttons put
-  // the value at the right.
+// Each item as a label and its current value; lines join them, buttons put
+// the value at the right.
+std::vector<ListItem> itemRows(const std::vector<Item>& items, bool buttons, bool ap,
+                               const timesvc::Snapshot& ts) {
+  const AppState& a = app();
   std::vector<ListItem> rows;
   for (Item it : items) {
     switch (it) {
@@ -846,7 +841,7 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
         rows.push_back(ListItem{U"Wi-Fi", wifiUp() ? utf8ToU32(wifiSsid()) : U"not connected"});
         break;
       case kSetupAp:
-        if (buttons_)
+        if (buttons)
           rows.push_back(ListItem{U"Setup AP", ap ? U"on" : U"off", ItemTone::Normal, ap});
         else
           rows.push_back(ListItem{ap ? U"Turn setup AP off" : U"Turn setup AP on", U""});
@@ -881,46 +876,115 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
     }
   }
 
-  // The menu sits at the bottom and scrolls, so the account, Wi-Fi and
-  // config lines above it always have room.
+  return rows;
+}
+
+struct StatusField {
+  const char* label;
+  std::string value;
+  uint16_t fg;
+};
+
+// The status lines' labels, values and colours.
+std::vector<StatusField> statusFields(const Theme& t, bool ap, const timesvc::Snapshot& ts) {
+  const AppState& a = app();
+  std::vector<StatusField> f;
+  auto field = [&](const char* label, const std::string& value, uint16_t fg) {
+    f.push_back(StatusField{label, value, fg});
+  };
+  field("account", a.user.empty() ? "not signed in" : "@" + a.user, t.fg);
+  field("wi-fi", wifiUp() ? wifiSsid() + "  " + wifiIp() : "not connected", t.fg);
+  field("config", "http://monster-cyberspace.local", t.fg);
+  int bat = batteryShown();
+  field("battery", bat < 0 ? "unknown" : std::to_string(bat) + "%", t.fg);
+  field("setup AP", ap ? "on" : "off", ap ? t.selectBg : t.fg);
+  if (ap) {
+    field("", setupApSsid(), t.selectBg);
+    field("", setupApHasPassword() ? "password required" : "open network", t.dim);
+    field("", "http://192.168.4.1", t.selectBg);
+  }
+  field("gps", ts.gps, t.fg);
+  field("time", ts.time, t.fg);
+  field("zone", ts.zone, t.fg);
+  return f;
+}
+
+// The status lines from row 1, put(row, label, line, fg) for each line only
+// above row `end`, `shift` rows already off the top (label: on a value's
+// first line, else null). Returns the rows they take.
+// On a narrow grid a value too long for its row continues on the next rows.
+template <typename Put>
+int layoutStatus(const std::vector<StatusField>& fields, bool narrow, int valueW, int shift, int end, Put put) {
+  int r = 1;
+  for (const StatusField& f : fields) {
+    const std::vector<std::u32string> lines =
+        narrow ? wrapText(utf8ToU32(f.value), valueW, valueW)
+               : std::vector<std::u32string>{utf8ToU32(f.value)};
+    for (size_t i = 0; i < lines.size(); ++i, ++r) {
+      const int row = r - shift;
+      if (row < 1 || row >= end) continue;
+      put(row, i == 0 ? f.label : nullptr, lines[i], f.fg);
+    }
+  }
+  return r - 1;
+}
+
+// The menu sits at the bottom and scrolls, so the account, Wi-Fi and
+// config lines above it always have room.
+int menuTopRow(int bottom, int nItems) {
   constexpr int kStatusRows = 3;
   const int menuRows = std::clamp(bottom - 1 - kStatusRows, std::min(nItems, 4), nItems);
-  const int menuTop = bottom - menuRows;
-  // The status lines from row 1, drawn when draw is set and only above row
-  // `end`: above the menu on key boards, and on touch-only boards as a header
-  // that scrolls with the buttons, `shift` rows already off the top. Returns
-  // the rows they take.
-  // On a narrow grid a value too long for its row continues on the next rows.
+  return bottom - menuRows;
+}
+
+}  // namespace
+
+bool SettingsScreen::confirmPicks() const {
+  return confirm_ == Confirm::Rotation ||
+         confirm_ == Confirm::Timeout || confirm_ == Confirm::KbLight ||
+         confirm_ == Confirm::PowerLight || confirm_ == Confirm::WifiJoined ||
+         confirm_ == Confirm::WifiSetup || confirm_ == Confirm::WifiLooking ||
+         confirm_ == Confirm::NotifyLight || confirm_ == Confirm::NotifyMention ||
+         confirm_ == Confirm::NotifyFeed || confirm_ == Confirm::NotifyCmail ||
+         confirm_ == Confirm::NotifyTimeout ||
+         confirm_ == Confirm::Theme || confirm_ == Confirm::Idle ||
+         confirm_ == Confirm::Wake;
+}
+
+const Slider* SettingsScreen::openSlider() const {
+  if (volume_.isOpen()) return &volume_;
+  if (ledLevel_.isOpen()) return &ledLevel_;
+  if (brightness_.isOpen()) return &brightness_;
+  if (sizeSlider_.isOpen()) return &sizeSlider_;
+  return nullptr;
+}
+
+void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
+  g.fill(t.bg);
+  drawStatus(g, t, U"settings", -1);
+  if (picker_.isOpen()) return picker_.render(g, t);
+  const int bottom = g.rows() - 1;
+  const std::vector<Item> items = menuItems();
+  const int nItems = int(items.size());
+  const bool ap = setupApUp();
+  const timesvc::Snapshot ts = timesvc::snapshot();
+  // Every touch board gets buttons here, as Home gets tiles; with keys, a cursor.
+  buttons_ = board::hasTouch();
+  pad_.setCursor(board::hasKeys());
+
+  std::vector<ListItem> rows = itemRows(items, buttons_, ap, ts);
+  const int menuTop = menuTopRow(bottom, nItems);
+  // The status lines: above the menu on key boards, and on touch-only boards
+  // as a header that scrolls with the buttons.
   const bool narrow = narrowGrid(g);
   const int valueW = g.cols() - 11 - (buttons_ ? 1 : 0);  // clear of the scroll bar
+  const std::vector<StatusField> fields = statusFields(t, ap, ts);
   auto status = [&](bool draw, int shift, int end) {
-    int r = 1;
-    auto field = [&](const char* label, const std::string& value, uint16_t fg) {
-      const std::vector<std::u32string> lines =
-          narrow ? wrapText(utf8ToU32(value), valueW, valueW)
-                 : std::vector<std::u32string>{utf8ToU32(value)};
-      for (size_t i = 0; i < lines.size(); ++i, ++r) {
-        const int row = r - shift;
-        if (!draw || row < 1 || row >= end) continue;
-        if (i == 0) putLine(g, 1, row, label, t.dim, t.bg);
-        g.putText(11, row, lines[i], fg, t.bg, valueW);
-      }
-    };
-    field("account", a.user.empty() ? "not signed in" : "@" + a.user, t.fg);
-    field("wi-fi", wifiUp() ? wifiSsid() + "  " + wifiIp() : "not connected", t.fg);
-    field("config", "http://monster-cyberspace.local", t.fg);
-    int bat = batteryShown();
-    field("battery", bat < 0 ? "unknown" : std::to_string(bat) + "%", t.fg);
-    field("setup AP", ap ? "on" : "off", ap ? t.selectBg : t.fg);
-    if (ap) {
-      field("", setupApSsid(), t.selectBg);
-      field("", setupApHasPassword() ? "password required" : "open network", t.dim);
-      field("", "http://192.168.4.1", t.selectBg);
-    }
-    field("gps", ts.gps, t.fg);
-    field("time", ts.time, t.fg);
-    field("zone", ts.zone, t.fg);
-    return r - 1;
+    return layoutStatus(fields, narrow, valueW, shift, draw ? end : 0,
+                        [&](int row, const char* label, const std::u32string& line, uint16_t fg) {
+                          if (label) putLine(g, 1, row, label, t.dim, t.bg);
+                          g.putText(11, row, line, fg, t.bg, valueW);
+                        });
   };
   const bool choosing = picking_ || confirm_ != Confirm::None;
   if (buttons_ && choosing) {
@@ -981,15 +1045,7 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
   } else if (confirm_ != Confirm::None) {
     // The pickers are centred boxes; the bottom
     // strip only has room for a two-row confirm.
-    const bool pick = confirm_ == Confirm::Rotation ||
-                      confirm_ == Confirm::Timeout || confirm_ == Confirm::KbLight ||
-                      confirm_ == Confirm::PowerLight || confirm_ == Confirm::WifiJoined ||
-                      confirm_ == Confirm::WifiSetup || confirm_ == Confirm::WifiLooking ||
-                      confirm_ == Confirm::NotifyLight || confirm_ == Confirm::NotifyMention ||
-                      confirm_ == Confirm::NotifyFeed || confirm_ == Confirm::NotifyCmail ||
-                      confirm_ == Confirm::NotifyTimeout ||
-                      confirm_ == Confirm::Theme || confirm_ == Confirm::Idle ||
-                      confirm_ == Confirm::Wake;
+    const bool pick = confirmPicks();
     confirmBox_.render(g, 1, bottom, 0, pick ? OverlayPlace::Centre : OverlayPlace::Bottom, t);
     if (pick)
       drawHint(g, t, U"\u2191\u2193 pick  \u25CF set  back: cancel",
@@ -1002,6 +1058,173 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
   } else {
     menu_.render(g, menuTop, bottom, 1, g.cols() - 2, t);
     drawHint(g, t, U"\u2191\u2193 pick  \u25CF select  back: home", U"tap to select");
+  }
+}
+
+void SettingsScreen::build(lv_obj_t* root) {
+  // The screen's text size, as ui_task picks it for a compactText() screen.
+  TextSize only;
+  const std::optional<TextSize> fixed =
+      board::fixedTextSize(only) ? std::optional<TextSize>(only) : std::nullopt;
+  frame_ = lvui::plainBox(root);
+  lv_obj_set_size(frame_, lv_pct(100), lv_pct(100));
+  lv_obj_set_style_text_font(frame_, lvui::fontFor(RC_LOW_MEM ? TextSize::Comfortable : TextSize::Compact, fixed),
+                             0);
+  padView_.create(frame_);
+  listView_.create(frame_);
+  // Over the buttons, as the grid draws the header lines after them.
+  text_.create(frame_);
+  zonePanel_ = lvui::plainBox(frame_);
+  lvui::addStyle(zonePanel_, lvui::Role::Screen);
+  zoneTitle_ = lvui::plainBox(frame_);
+  lvui::addStyle(zoneTitle_, lvui::Role::Bar);
+  lv_obj_t* zoneLabel = lvui::lineLabel(zoneTitle_);
+  lvui::setText(zoneLabel, U"time zone");
+  zoneView_.create(frame_);
+  choiceRow_ = lvui::plainBox(frame_);
+  lvui::addStyle(choiceRow_, lvui::Role::Bar);
+  choiceLabel_ = lvui::lineLabel(choiceRow_);
+  choiceView_.create(frame_);
+  hint_.create(frame_);
+  picker_.build(frame_);
+  status_.create(frame_);
+  // Over the status bar: the grid's overlay backdrop takes the whole screen.
+  confirmView_.create(frame_);
+  // Last: a slider's backdrop takes every tap, the status bar's too.
+  sliderHost_ = lvui::plainBox(frame_);
+  lv_obj_set_size(sliderHost_, lv_pct(100), lv_pct(100));
+  sliderView_.create(sliderHost_);
+  sync();
+}
+
+void SettingsScreen::update(int64_t nowMs) {
+  const AppState& a = app();
+  // The time lines and the Firmware row follow within the gate's second.
+  if (gate_.due(text_.obj(), nowMs,
+                {wifiUp(), setupApUp(), a.auth, static_cast<int64_t>(std::hash<std::string>{}(a.user)),
+                 batteryShown()}))
+    sync();
+}
+
+void SettingsScreen::sync() {
+  syncTheme();
+  const Theme& t = lvui::currentTheme();
+  syncStatus(status_, U"settings", -1);
+  picker_.sync();
+  const bool pickerOpen = picker_.isOpen();
+  buttons_ = board::hasTouch();
+  pad_.setCursor(board::hasKeys());
+  const bool choosing = picking_ || confirm_ != Confirm::None;
+  const Slider* slider = openSlider();
+  // render's branches: the choices as buttons over the whole screen, else the
+  // status lines and the menu under whichever of a slider, the zone list or a
+  // confirm is open.
+  const bool choiceButtons = !pickerOpen && buttons_ && choosing;
+  const bool page = !pickerOpen && !choiceButtons;
+  const bool zone = page && !slider && picking_;
+  const bool confirm = page && !slider && !picking_ && confirm_ != Confirm::None;
+  const bool menu = page && !buttons_ && !zone && !confirm;
+  lvui::setHidden(choiceRow_, !choiceButtons);
+  lvui::setHidden(choiceView_.obj(), !choiceButtons);
+  lvui::setHidden(text_.obj(), !page);
+  lvui::setHidden(padView_.obj(), !page || !buttons_);
+  lvui::setHidden(listView_.obj(), !menu);
+  lvui::setHidden(zonePanel_, !zone);
+  lvui::setHidden(zoneTitle_, !zone);
+  lvui::setHidden(zoneView_.obj(), !zone);
+  lvui::setHidden(hint_.obj(), pickerOpen);
+  lvui::setHidden(sliderHost_, !page || !slider);
+  if (!confirm) lvui::setHidden(confirmView_.backdrop(), true);
+  if (pickerOpen) return;
+
+  const lvui::Cell c = text_.cell();
+  const int cols = text_.cols(), bottom = text_.rows() - 1;
+  if (choiceButtons) {
+    // The choices as buttons over the whole screen, under a title bar: one
+    // column when two would cut the labels.
+    const int top = 1;
+    placeCells(choiceRow_, 0, top, cols, top + 1);
+    lvui::place(choiceLabel_, c.w, 0, std::max(0, cols - 2) * c.w, c.h);
+    lvui::setText(choiceLabel_, choiceTitle_);
+    int labelW = 0;
+    for (const ListItem& it : choices_) labelW = std::max(labelW, int(it.label.size()));
+    const int columns = ButtonPad::columns();
+    const int fit = (cols - 1) / columns - 3;  // inside one button of `columns`
+    choicePad_.setCursor(board::hasKeys());
+    choicePad_.sync(choiceView_, choices_, top + 1, bottom, false, labelW <= fit ? columns : 1);
+    syncHint(hint_, U"\u2191\u2193 pick  \u25CF set  back: cancel", U"tap to select  back: cancel");
+    return;
+  }
+
+  const std::vector<Item> items = menuItems();
+  const int nItems = int(items.size());
+  const bool ap = setupApUp();
+  const timesvc::Snapshot ts = timesvc::snapshot();
+  std::vector<ListItem> rows = itemRows(items, buttons_, ap, ts);
+  const int menuTop = menuTopRow(bottom, nItems);
+  const bool narrow = narrowGrid(text_);
+  const int valueW = cols - 11 - (buttons_ ? 1 : 0);  // clear of the scroll bar
+  const std::vector<StatusField> fields = statusFields(t, ap, ts);
+  auto put = [&](int row, const char* label, const std::u32string& line, uint16_t fg) {
+    if (label && *label) text_.line(1, row, std::string_view(label), t.dim);
+    text_.line(11, row, line, fg, valueW);
+  };
+  text_.begin();
+  if (buttons_) {
+    const int header = layoutStatus(fields, narrow, valueW, 0, 0, put) + 1;  // and a blank row
+    pad_.sync(padView_, rows, 1, bottom, true, 0, header);
+    layoutStatus(fields, narrow, valueW, pad_.headerShift(), bottom, put);
+  } else {
+    layoutStatus(fields, narrow, valueW, 0, menuTop, put);
+    for (ListItem& it : rows) {
+      if (!it.right.empty()) it.label += U": " + it.right;
+      it.right.clear();
+    }
+    menu_.setItems(std::move(rows));
+  }
+  text_.end();
+  if (menu) {
+    placeCells(listView_.obj(), 1, menuTop, cols - 2, bottom);
+    listView_.sync(menu_);
+  }
+
+  if (slider) {
+    // The box centred over rows [1, bottom), its backdrop over everything.
+    lv_obj_t* back = sliderView_.backdrop();
+    lv_obj_set_style_pad_top(back, c.h, 0);
+    lv_obj_set_style_pad_bottom(back, std::max(0, int(lv_obj_get_height(frame_)) - bottom * c.h), 0);
+    sliderView_.sync(*slider);
+    if (slider == &volume_)
+      syncHint(hint_, U"\u2190\u2192 volume  \u25CF set  back: cancel", U"tap the bar  Set or Cancel");
+    else if (slider == &ledLevel_)
+      syncHint(hint_, U"\u2190\u2192 LED brightness  \u25CF set  back: cancel", U"tap a stop  Set or Cancel");
+    else if (slider == &brightness_)
+      syncHint(hint_, U"\u2190\u2192 brightness  \u25CF set  back: cancel", U"tap the bar  Set or Cancel");
+    else
+      syncHint(hint_, U"\u2190\u2192 size  \u25CF set  back: cancel", U"tap the bar  Set or Cancel");
+  } else if (zone) {
+    // Over the status lines and the menu, below the status bar.
+    const int top = 1;
+    placeCells(zoneTitle_, 0, top, cols, top + 1);
+    lvui::place(lv_obj_get_child(zoneTitle_, 0), c.w, 0, std::max(0, cols - 2) * c.w, c.h);
+    placeCells(zonePanel_, 0, top + 1, cols, bottom);
+    placeCells(zoneView_.obj(), 1, top + 1, cols - 2, bottom);
+    zoneView_.sync(zoneList_);
+    syncHint(hint_, U"\u2191\u2193 pick  \u25CF set  back: cancel", U"tap to select");
+  } else if (confirm) {
+    // The pickers are centred boxes; the bottom
+    // strip only has room for a two-row confirm.
+    const bool pick = confirmPicks();
+    confirmView_.setPlace(pick ? OverlayPlace::Centre : OverlayPlace::Bottom, bottom * c.h, 0, c.h);
+    confirmView_.sync(confirmBox_);
+    if (pick)
+      syncHint(hint_, U"\u2191\u2193 pick  \u25CF set  back: cancel", U"tap: select  outside: cancel");
+    else
+      syncHint(hint_, U"\u2191\u2193 pick  \u25CF confirm  back: cancel", U"tap: confirm  outside: cancel");
+  } else if (buttons_) {
+    syncHint(hint_, U"", U"tap to select  drag to scroll");
+  } else {
+    syncHint(hint_, U"\u2191\u2193 pick  \u25CF select  back: home", U"tap to select");
   }
 }
 

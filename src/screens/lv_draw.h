@@ -31,6 +31,17 @@ inline void syncHint(lvui::HintBar& h, std::u32string_view keys, std::u32string_
   syncHint(h, board::hasTouch() ? touch : keys);
 }
 
+// The app's theme (currentTheme(): the saved one, paper on e-paper) on the
+// LVGL styles, applied when it differs from the last one this applied: a
+// theme picked in Settings shows at once, on every view.
+inline void syncTheme() {
+  static const Theme* shown = nullptr;
+  const Theme& t = currentTheme();
+  if (&t == shown) return;
+  shown = &t;
+  lvui::applyTheme(t);
+}
+
 // narrowGrid for a screen's cell grid.
 inline bool narrowGrid(const lvui::CellText& t) { return t.cols() < 40; }
 

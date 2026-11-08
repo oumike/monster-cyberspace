@@ -174,8 +174,8 @@
 ### Task 13: Settings
 
 **Files:** `settings.cpp`
-- [ ] **Step 1:** Port (theme picker previews via `applyTheme`, text size via `fontFor`, rotation, sliders).
-- [ ] **Step 2:** `pio run -e m9`. **Step 3:** Commit `LVGL: Settings`.
+- [x] **Step 1:** Port (theme picker previews via `applyTheme`, text size via `fontFor`, rotation, sliders).
+- [x] **Step 2:** `pio run -e m9`. **Step 3:** Commit `LVGL: Settings`.
 
 ### Task 14: Switch `ui_task` to LVGL
 

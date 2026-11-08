@@ -11,6 +11,7 @@
 #include "lvui/views/list_box.h"
 #include "lvui/views/menu_overlay.h"
 #include "lvui/views/qr_box.h"
+#include "lvui/views/slider_box.h"
 #include "lvui/views/text_box.h"
 #include "lvui/views/tile_grid.h"
 #include "lvui/views/top_bar.h"
@@ -145,6 +146,8 @@ class SettingsScreen : public Screen {
   void enter(const std::string&) override;
   void onKey(const KeyEvent&) override;
   void render(Grid&, const Theme&, int64_t nowMs) override;
+  void build(lv_obj_t* root) override;
+  void update(int64_t nowMs) override;
   bool hasOverlay() const override {
     return confirm_ != Confirm::None || picking_ || picker_.isOpen() || volume_.isOpen() ||
            sizeSlider_.isOpen() || brightness_.isOpen() || ledLevel_.isOpen();
@@ -187,6 +190,11 @@ class SettingsScreen : public Screen {
   void closeLedLevel();
   void openColour(Confirm c, const char32_t* title, LedColor cur);
   void sizeKey(const KeyEvent&);
+  // The open confirm is a picker (a centred box), not a two-row confirm.
+  bool confirmPicks() const;
+  // The open slider, if any, in the order render draws them.
+  const Slider* openSlider() const;
+  void sync();
 
   ListView menu_, zoneList_;
   Overlay confirmBox_;
@@ -203,6 +211,24 @@ class SettingsScreen : public Screen {
   ButtonPad choicePad_;
   std::u32string choiceTitle_;
   std::vector<ListItem> choices_;
+  // LVGL: everything under frame_, which carries the screen's text size.
+  lv_obj_t* frame_ = nullptr;
+  lvui::TopBar status_;
+  lvui::CellText text_;
+  lvui::ListBox listView_;  // menu_
+  lvui::TileGrid padView_;  // pad_
+  // The time zone list: a title bar over a panel.
+  lv_obj_t *zonePanel_ = nullptr, *zoneTitle_ = nullptr;
+  lvui::ListBox zoneView_;
+  // Touch: the choice title bar and choicePad_.
+  lv_obj_t *choiceRow_ = nullptr, *choiceLabel_ = nullptr;
+  lvui::TileGrid choiceView_;
+  lvui::MenuOverlay confirmView_;  // confirmBox_
+  lvui::HintBar hint_;
+  // The open slider over rows [1, bottom), its backdrop over the whole screen.
+  lv_obj_t* sliderHost_ = nullptr;
+  lvui::SliderBox sliderView_;
+  SyncGate<5> gate_;
 };
 
 // Wi-Fi on the device: scan, join (with a password, or a name typed for a

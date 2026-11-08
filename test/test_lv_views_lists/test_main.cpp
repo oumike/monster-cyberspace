@@ -125,7 +125,10 @@ void test_list_box_mirrors_model() {
   TEST_ASSERT_TRUE(lv_obj_has_state(row1, LV_STATE_CHECKED));
   TEST_ASSERT_FALSE(lv_obj_has_state(lv_obj_get_child(box.obj(), 0), LV_STATE_CHECKED));
   const rc::Theme& t = rc::defaultTheme();
-  TEST_ASSERT_EQUAL_HEX16(t.selectBg, rgb565(lv_obj_get_style_bg_color(row1, LV_PART_MAIN)));
+  // Outlined, not filled: the row keeps its own colours (list_view.cpp).
+  TEST_ASSERT_EQUAL(LV_OPA_TRANSP, lv_obj_get_style_bg_opa(row1, LV_PART_MAIN));
+  TEST_ASSERT_EQUAL(1, lv_obj_get_style_border_width(row1, LV_PART_MAIN));
+  TEST_ASSERT_EQUAL_HEX16(t.selectBg, rgb565(lv_obj_get_style_border_color(row1, LV_PART_MAIN)));
   TEST_ASSERT_EQUAL_STRING("Beta", text(box.label(1)));
   TEST_ASSERT_EQUAL_STRING(" on ", text(box.right(1)));
   // An Error item keeps the error colour.
@@ -137,6 +140,9 @@ void test_list_box_mirrors_model() {
   TEST_ASSERT_EQUAL_PTR(row1, lv_obj_get_child(box.obj(), 1));
   TEST_ASSERT_FALSE(lv_obj_has_state(row1, LV_STATE_CHECKED));
   TEST_ASSERT_TRUE(lv_obj_has_state(lv_obj_get_child(box.obj(), 2), LV_STATE_CHECKED));
+  // A selected Error row keeps the error colour.
+  TEST_ASSERT_EQUAL_HEX16(t.error, rgb565(lv_obj_get_style_text_color(box.label(2), LV_PART_MAIN)));
+  TEST_ASSERT_EQUAL(LV_OPA_TRANSP, lv_obj_get_style_bg_opa(lv_obj_get_child(box.obj(), 2), LV_PART_MAIN));
 
   // No cursor on keyless boards: nothing is marked.
   rc::setCursorShown(false);

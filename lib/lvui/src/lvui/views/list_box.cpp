@@ -29,7 +29,7 @@ void ListBox::sync(const rc::ListView& m) {
     lv_obj_set_size(r.row, lv_pct(100), LV_SIZE_CONTENT);
     lv_obj_set_flex_flow(r.row, LV_FLEX_FLOW_ROW);
     addStyle(r.row, Role::Item);
-    addStyle(r.row, Role::Selected, LV_STATE_CHECKED);
+    addStyle(r.row, Role::Focused, LV_STATE_CHECKED);
     lv_obj_set_user_data(r.row, reinterpret_cast<void*>(static_cast<intptr_t>(rows_.size())));
     addTap(r.row, this);
     r.marker = lineLabel(r.row);

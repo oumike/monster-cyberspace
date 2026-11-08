@@ -10,7 +10,8 @@
 namespace lvui {
 
 // rc::ListView as a scrolling column of one-cell-high rows: "• label  right ".
-// The selected row is checked (Role::Selected) while rc::cursorShown(), and
+// The selected row is checked (Role::Focused: outlined in selectBg, keeping
+// its own colours, as the grid's list_view does) while rc::cursorShown(), and
 // kept in view. A tap on a row emits {Activate, row, list, then Select}; a
 // long press, then Palette (input/touch_resolve).
 class ListBox : public Tappable {

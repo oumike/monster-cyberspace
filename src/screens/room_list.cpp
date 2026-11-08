@@ -111,8 +111,13 @@ void RoomListScreen::render(Grid& g, const Theme& t, int64_t) {
     });
     for (const auto& r : rooms) {
       if (!filter_.matches(utf8ToU32(r.slug))) continue;
-      items.push_back(ListItem{utf8ToU32("#" + r.slug), utf8ToU32(std::to_string(r.onlineCount)),
-                               ItemTone::Normal, roomUnread(r, s.readAt)});
+      const bool unread = roomUnread(r, s.readAt);
+      // ListView draws the marker as a dot; buttons only tint it, so they
+      // get the dot in the label.
+      std::u32string label = utf8ToU32("#" + r.slug);
+      if (unread && board::hasTouch()) label = U"\u2022 " + label;
+      items.push_back(ListItem{std::move(label), utf8ToU32(std::to_string(r.onlineCount)),
+                               ItemTone::Normal, unread});
       slugs_.push_back(r.slug);
       ++shown;
     }

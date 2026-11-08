@@ -299,7 +299,9 @@ void WifiScreen::build(lv_obj_t* root) {
   sync();
 }
 
-void WifiScreen::update(int64_t) { sync(); }
+void WifiScreen::update(int64_t nowMs) {
+  if (gate_.due(text_.obj(), nowMs, {wifiUp(), ButtonPad::active()})) sync();
+}
 
 void WifiScreen::sync() {
   const Theme& t = lvui::currentTheme();

@@ -448,6 +448,35 @@ void test_cell_text_lines_wrap_and_hint() {
   TEST_ASSERT_EQUAL_HEX16(rc::defaultTheme().hintBg, rgb565(lv_obj_get_style_bg_color(h.obj(), LV_PART_MAIN)));
 }
 
+int invalidations = 0;
+void countInvalidation(lv_event_t*) { ++invalidations; }
+
+void test_cell_text_unchanged_frame_invalidates_nothing() {
+  lvui::CellText ct;
+  ct.create(lv_screen_active());
+  auto frame = [&] {
+    ct.begin();
+    ct.line(0, 0, U"ab", 0xFFFF);
+    ct.filled(2, 0, U" ", 0x0000, 0x07E0);
+    ct.line(0, 1, U"cd", 0xFFFF);
+    // Off the grid: puts nothing.
+    TEST_ASSERT_EQUAL(0, ct.line(0, ct.rows(), U"ef", 0xFFFF));
+    ct.end();
+  };
+  frame();
+  frame();
+  step();
+  TEST_ASSERT_EQUAL(2 + 1, ct.count());
+  lv_display_t* disp = lv_display_get_default();
+  invalidations = 0;
+  lv_display_add_event_cb(disp, countInvalidation, LV_EVENT_INVALIDATE_AREA, nullptr);
+  frame();
+  lv_display_remove_event_cb_with_user_data(disp, countInvalidation, nullptr);
+  TEST_ASSERT_EQUAL(0, invalidations);
+  TEST_ASSERT_EQUAL(LV_OPA_COVER, lv_obj_get_style_bg_opa(ct.label(1), LV_PART_MAIN));
+  TEST_ASSERT_EQUAL(LV_OPA_TRANSP, lv_obj_get_style_bg_opa(ct.label(2), LV_PART_MAIN));
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_log_view_virtualised);
@@ -458,5 +487,6 @@ int main() {
   RUN_TEST(test_text_area_cursor_and_tap);
   RUN_TEST(test_slider_taps);
   RUN_TEST(test_cell_text_lines_wrap_and_hint);
+  RUN_TEST(test_cell_text_unchanged_frame_invalidates_nothing);
   return UNITY_END();
 }

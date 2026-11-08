@@ -32,10 +32,14 @@ CellText::Line& CellText::take() {
 }
 
 int CellText::line(int col, int row, std::u32string_view s, uint16_t fg, int maxCols) {
+  return put(col, row, s, fg, maxCols, nullptr);
+}
+
+int CellText::put(int col, int row, std::u32string_view s, uint16_t fg, int maxCols, const uint16_t* bg) {
   lv_obj_update_layout(lv_obj_get_parent(box_));
   const int room = cols() - col;
   const int max = maxCols < 0 ? room : std::min(maxCols, room);
-  if (max <= 0 || row < 0) return 0;
+  if (max <= 0 || row < 0 || row >= rows()) return 0;
   const std::u32string_view cut = s.substr(0, rc::fitChars(s, max));
   const int w = rc::textWidth(cut);
   Line& l = take();
@@ -44,10 +48,12 @@ int CellText::line(int col, int row, std::u32string_view s, uint16_t fg, int max
   place(l.label, col * c.w, row * c.h, w * c.w, c.h);
   setText(l.label, cut);
   setTextColor(l.label, fg);
-  if (l.opaque) {
+  if (bg) {
+    setBgColor(l.label, *bg);
+  } else if (l.opaque) {
     lv_obj_set_style_bg_opa(l.label, LV_OPA_TRANSP, LV_PART_MAIN);
-    l.opaque = false;
   }
+  l.opaque = bg != nullptr;
   return w;
 }
 
@@ -56,13 +62,7 @@ int CellText::line(int col, int row, std::string_view utf8, uint16_t fg, int max
 }
 
 int CellText::filled(int col, int row, std::u32string_view s, uint16_t fg, uint16_t bg) {
-  const int w = line(col, row, s, fg);
-  if (w > 0) {
-    Line& l = labels_[used_ - 1];
-    setBgColor(l.label, bg);
-    l.opaque = true;
-  }
-  return w;
+  return put(col, row, s, fg, -1, &bg);
 }
 
 int CellText::wrapped(int col, int row, std::string_view utf8, uint16_t fg, int stop) {

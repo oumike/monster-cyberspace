@@ -82,6 +82,11 @@ void syncStatus(lvui::TopBar& bar, std::u32string_view title, int count, bool me
   d.touch = StatusTouch{board::hasTouch(), router::current() != router::Id::Home, menu};
   bar.sync(d);
 }
+
+StatusInputs statusInputs() {
+  const int64_t ms = nowEpochMs();
+  return StatusInputs{connMarker(), wifiBars(), batteryShown(), ms < 1700000000000LL ? -1 : ms / 60000};
+}
 #endif
 
 }  // namespace rc

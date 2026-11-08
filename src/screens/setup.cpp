@@ -124,7 +124,10 @@ void SetupScreen::build(lv_obj_t* root) {
   sync();
 }
 
-void SetupScreen::update(int64_t) { sync(); }
+void SetupScreen::update(int64_t nowMs) {
+  const AppState& a = app();
+  if (gate_.due(text_.obj(), nowMs, {wifiUp(), setupApUp(), a.auth, a.cfg.wifi.empty()})) sync();
+}
 
 void SetupScreen::sync() {
   const Theme& t = lvui::currentTheme();

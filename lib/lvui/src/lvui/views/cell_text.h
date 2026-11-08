@@ -53,6 +53,8 @@ class CellText {
     bool opaque;
   };
   Line& take();
+  // line(), on bg when given (else transparent).
+  int put(int col, int row, std::u32string_view s, uint16_t fg, int maxCols, const uint16_t* bg);
 
   lv_obj_t* box_ = nullptr;
   std::vector<Line> labels_;

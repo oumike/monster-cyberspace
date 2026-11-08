@@ -18,6 +18,7 @@
 #include "screens/guild_info.h"
 #endif
 #include "screens/link_view.h"
+#include "screens/lv_draw.h"
 #include "screens/router.h"
 #include "ui/home_tiles.h"
 #if RC_FEAT_UNREAD
@@ -45,6 +46,7 @@ class SplashScreen : public Screen {
   int64_t since_ = -1;
   std::string say_;
   lvui::CellText text_;
+  SyncGate<1> gate_;
 };
 
 class SetupScreen : public Screen {
@@ -70,6 +72,7 @@ class SetupScreen : public Screen {
   lvui::ListBox menuView_;
   lvui::TileGrid padView_;
   lvui::HintBar hint_;
+  SyncGate<4> gate_;
 };
 
 class LoginFormScreen : public Screen {
@@ -97,6 +100,7 @@ class LoginFormScreen : public Screen {
   lvui::CellText text_;
   lvui::InputField emailView_, passwordView_;
   lvui::HintBar hint_;
+  SyncGate<> gate_;
 };
 
 class HomeScreen : public Screen {
@@ -129,6 +133,7 @@ class HomeScreen : public Screen {
   lvui::ListBox menuView_;
   lvui::TileGrid tilesView_;
   lvui::HintBar hint_;
+  SyncGate<8> gate_;
 };
 
 // On-device settings: the setup AP, log out, factory reset.
@@ -250,6 +255,7 @@ class WifiScreen : public Screen {
   lvui::InputField inputView_;
   lvui::MenuOverlay menuView_;
   lvui::HintBar hint_;
+  SyncGate<2> gate_;
 };
 
 class RoomListScreen : public Screen {
@@ -558,6 +564,7 @@ class ComingSoonScreen : public Screen {
   lvui::TopBar status_;
   lvui::CellText text_;
   lvui::HintBar hint_;
+  SyncGate<> gate_;
 };
 
 }  // namespace rc

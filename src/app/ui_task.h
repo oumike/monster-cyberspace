@@ -24,6 +24,9 @@ void banner(const std::string& text, bool error);
 // The key being handled came from the touch screen (a tap, drag or the
 // on-screen keyboard), not a button or keyboard.
 bool fromTouch();
+// Counts the keys and events handled, so an LVGL screen's update() can skip a
+// frame nothing has changed.
+uint32_t inputSeq();
 // The next word for the monster's speech bubble (ui/splash_layout.h).
 std::string monsterWord();
 // Docks the on-screen keyboard after this key, on touch boards without a

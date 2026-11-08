@@ -46,6 +46,17 @@ void drawStatus(Grid& g, const Theme& t, std::u32string_view title, int count, b
 #if !RC_UI_GRID
 // drawStatus for an LVGL status bar.
 void syncStatus(lvui::TopBar& bar, std::u32string_view title, int count, bool menu = false);
+// What syncStatus shows besides the title, as scalars an update() compares
+// before it builds any text.
+struct StatusInputs {
+  char32_t conn;
+  int bars, battery;
+  int64_t minute;  // the clock's minute (negative while it is unset)
+};
+inline bool operator==(const StatusInputs& a, const StatusInputs& b) {
+  return a.conn == b.conn && a.bars == b.bars && a.battery == b.battery && a.minute == b.minute;
+}
+StatusInputs statusInputs();
 #endif
 
 // Wi-Fi and address details that differ in the demo build (RC_FAKE_API).

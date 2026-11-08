@@ -86,6 +86,7 @@ bool baseCursor = false;
 bool oskBehindTray = false;
 bool pressMenu = false;
 bool touchKey = false;  // ui::fromTouch()
+uint32_t inputCount = 0;  // ui::inputSeq()
 bool oskWanted = false;  // ui::showKeyboard()
 // The last Backspace that deleted text (backspaceIsBack boards).
 uint32_t lastDeleteMs = 0;
@@ -450,6 +451,7 @@ bool threadPosting = false;
 void sendCanned(const std::u32string& text);
 
 void handleEvent(const Event& e) {
+  ++inputCount;
   using router::Id;
   Id cur = router::current();
   switch (e.type) {
@@ -667,6 +669,7 @@ void runWebCompose() {
 #endif
     if (!composeWaiting) return;
     composeWaiting = false;
+    ++inputCount;
     r = std::move(composeSlot);
     composeBusy = r.kind != ComposeKind::Open;
   }
@@ -753,6 +756,7 @@ void renderKeysHelp(Grid& g, const Theme& t) {
 }
 
 void handleKey(const KeyEvent& key) {
+  ++inputCount;
   int64_t now = nowMs();
   KeyEvent k = key;
   power_service::input();
@@ -1178,6 +1182,8 @@ void cycleTextSize() { setTextSize(nextTextSize(app().cfg.textSize)); }
 void setRotation(uint8_t r) { applyRotation(r); }
 
 bool fromTouch() { return touchKey; }
+
+uint32_t inputSeq() { return inputCount; }
 
 std::string monsterWord() { return words.next(esp_random(), app().mascot.phrases); }
 

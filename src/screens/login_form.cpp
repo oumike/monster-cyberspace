@@ -105,7 +105,9 @@ void LoginFormScreen::build(lv_obj_t* root) {
   sync();
 }
 
-void LoginFormScreen::update(int64_t) { sync(); }
+void LoginFormScreen::update(int64_t nowMs) {
+  if (gate_.due(text_.obj(), nowMs)) sync();
+}
 
 void LoginFormScreen::sync() {
   const Theme& t = lvui::currentTheme();

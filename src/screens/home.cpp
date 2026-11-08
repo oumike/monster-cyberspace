@@ -15,8 +15,10 @@
 #include "ui/home_items.h"
 #include "ui/home_tiles.h"
 #include "ui/tap_map.h"
+#include "ui/unread_inbox.h"
 
 #include <algorithm>
+#include <functional>
 #include <string>
 
 namespace rc {
@@ -100,6 +102,25 @@ int mailUnread() {
 #else
   return 0;
 #endif
+}
+
+// What Home shows from the chat state, as scalars, under one lock: the C-Mail
+// unread sum and conversations with unread (unreadCmailCount), and with
+// `active` (list mode) a mask of the rooms the "active" field lists.
+struct ChatInputs {
+  int64_t unread = 0, conversations = 0, active = 0;
+};
+ChatInputs chatInputs(bool active) {
+  const int64_t since = nowEpochMs() - 8LL * 60 * 60 * 1000;
+  return lockedChat().with([&](ChatState& s) {
+    ChatInputs in;
+    for (const auto& c : s.conversations) in.unread += c.unread;
+    in.conversations = unreadCmailCount(s.conversations);
+    if (active)
+      for (size_t i = 0; i < s.rooms.size(); ++i)
+        if (s.rooms[i].lastMessageAt > 0 && s.rooms[i].lastMessageAt >= since) in.active |= int64_t(1) << (i % 63);
+    return in;
+  });
 }
 
 // Every tile's text, in tiles() order.
@@ -502,7 +523,17 @@ void HomeScreen::build(lv_obj_t* root) {
   sync();
 }
 
-void HomeScreen::update(int64_t) { sync(); }
+void HomeScreen::update(int64_t nowMs) {
+  const AppState& a = app();
+  const ChatInputs chat = chatInputs(!tileMode_);
+  const std::hash<std::string> hash;
+  const int64_t cursor = (int64_t(tileSel_) << 40) ^ (int64_t(colTop_) << 20) ^ (int64_t(menu_.selected()) << 1) ^
+                         int64_t(tileHidden_);
+  if (gate_.due(root_, nowMs,
+                {int64_t(a.mentions.size()), chat.unread, chat.conversations, chat.active, feedUnread(),
+                 int64_t(hash(a.user)), int64_t(hash(a.cfg.lastRoom)), cursor}))
+    sync();
+}
 
 void HomeScreen::sync() {
   const Theme& t = lvui::currentTheme();

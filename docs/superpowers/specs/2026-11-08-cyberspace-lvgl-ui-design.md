@@ -37,7 +37,7 @@ grid/LVGL router. The X4 keeps a frozen copy of the grid path.
 
 - LVGL **9.5.0** (`lvgl/lvgl@9.5.0`, as camillia-mt), in the common
   `lib_deps` of every env except `x4`.
-- `src/ui/lv/lv_conf.h` (`LV_CONF_PATH` build flag): RGB565 colour depth,
+- `lib/lvui/conf/lv_conf.h` (`LV_CONF_INCLUDE_SIMPLE`): RGB565 colour depth,
   custom allocator in PSRAM (`heap_caps_malloc(MALLOC_CAP_SPIRAM)`), only the
   widgets this spec lists enabled, no built-in fonts beyond what's needed,
   `LV_USE_OS LV_OS_NONE`, logging off in release.
@@ -45,7 +45,7 @@ grid/LVGL router. The X4 keeps a frozen copy of the grid path.
 
 ### 3.2 Display
 
-- `src/ui/lv/display.{h,cpp}` makes one `lv_display_t` per board, sized
+- `lib/lvui/src/lvui/display.{h,cpp}` makes one `lv_display_t` per board, sized
   `board::panelWidth()` x `board::panelHeight()`, partial render mode with two
   draw buffers (PSRAM; 1/10 of the panel each), flushing through
   `board::pushRows`. Rotation and the 2x boards (T-Display P4, Tanmatsu)
@@ -63,18 +63,17 @@ grid/LVGL router. The X4 keeps a frozen copy of the grid path.
 
 ### 3.3 Fonts
 
-- Terminus 4.49.1 at the five cell sizes (6x12, 8x14, 8x16, 10x18, 12x24,
-  plus bold) converted to LVGL bitmap fonts by a new
-  `scripts/bdf2lvgl.py` (or `lv_font_conv`), output to `src/ui/lv/fonts/`.
-  All glyphs Terminus has; aliases from `glyph_set.h` kept.
-- Noto Emoji (the code points in `emoji_wide.h`) as an LVGL fallback font
-  two cells wide; `text_width` rules still hold for layout.
+- No font conversion. A custom `lv_font_t` adapter (`get_glyph_dsc` /
+  `get_glyph_bitmap` callbacks, 1 bpp) reads the existing Terminus cell
+  fonts (`src/ui/fonts/cell*.h`, `CellFont`, `glyphFor` with its aliases)
+  and the wide Noto Emoji halves (`emoji_cells.h`), so there is no second
+  copy of the glyphs in flash. Bold is drawn as today (one-pixel smear).
 - The text-size setting picks the font; `board::fixedTextSize` still wins.
   Everything is monospace, so column-based layouts still line up.
 
 ### 3.4 Themes
 
-- `src/ui/lv/styles.{h,cpp}`: from a `Theme`, build a fixed set of
+- `lib/lvui/src/lvui/styles.{h,cpp}`: from a `Theme`, build a fixed set of
   `lv_style_t`s: screen, top bar, hint bar, list item, focused, selected,
   input, cursor, drawer, drawer edge, error, mention, dim, time, sys, nick,
   self nick. `colorNicks`, `boldNicks`, `outlined` and `nickLightness` keep
@@ -104,7 +103,7 @@ grid/LVGL router. The X4 keeps a frozen copy of the grid path.
 
 ### 3.6 Input
 
-- `src/ui/lv/indev.{h,cpp}`:
+- `lib/lvui/src/lvui/indev.{h,cpp}`:
   - Keypad indev fed from `board::pollKey` (portable keys, keymaps in
     `lib/core/src/input/` unchanged), one `lv_group_t` per screen.
   - Pointer indev fed from `board::readTouch` on touch boards. It replaces
@@ -118,7 +117,7 @@ grid/LVGL router. The X4 keeps a frozen copy of the grid path.
 
 ## 4. Components
 
-New shared widgets live in `src/ui/lv/widgets/`. Mapping from today's:
+New shared views live in `lib/lvui/src/lvui/views/`. Mapping from today's:
 
 | Today (`lib/core/src/ui/widgets/`) | LVGL |
 |---|---|
@@ -142,15 +141,24 @@ as data (what lines and spans to show), `home_items`, `unread_inbox`,
 `nick_color`, `timefmt`, `theme`, `eink`, `rotation`, `scale2x`,
 `screen_timeout`, `notify_light`, `haptics`, `brightness`, input keymaps.
 
-Removed (all but the X4): `ui/grid`, `src/ui/renderer`, the Grid-drawing
-widgets above, `ui/tap_map`, `input/gestures`, `input/touch_resolve`, the
-cell font headers' use outside the X4. Their native tests go with them.
+The `lib/core` widgets above hold both state (selection, scroll, text,
+cursor) and Grid drawing. The LVGL views bind to that state, so key handling
+and its native tests are kept; their Grid drawing stays in `lib/core` for the
+X4 and is unused (dropped by the linker) elsewhere. The LVGL views live in a
+new portable library, `lib/lvui/` (LVGL + `lib/core`, no Arduino), so the
+host can test them; board glue is in `src/ui/lv/`.
+
+Removed from LVGL builds: `src/ui/renderer`, `ui/tap_map` and
+`input/touch_resolve` (LVGL resolves taps; a tap on a view emits the same
+`KeyEvent` today's tap map does). `input/gestures` stays for edge swipes
+(Back, Options).
 
 ### X4
 
-The X4 env defines `RC_UI_GRID=1` and builds today's renderer, grid,
-widgets and screens, moved to `src/ui_grid/` and `lib/core/src/ui_grid/`
-untouched apart from paths. No new features go there.
+The X4 env builds a frozen copy of today's `src/screens/`, `src/ui/` and
+`src/app/ui_task.cpp` under `src/grid_ui/` (its `build_src_filter` swaps
+them in; `-Isrc/grid_ui` comes before `-Isrc`). The `lib/core` widgets are
+shared, not copied. No new features go there.
 
 ## 5. Data flow
 
@@ -185,10 +193,11 @@ retries.
 - `pio test -e native`: portable `lib/core` tests stay green; removed
   widgets take their tests with them.
 - New `native_lv` env: LVGL built for the host with a memory display (no
-  SDL). Tests drive keys through the indev bridge and check, per screen:
-  focus order, Select, Back, overlays opening and closing, and router moves
-  matching `main`. One test builds styles for all 19 themes and checks the
-  key colours.
+  SDL), testing `lib/lvui`: fonts, styles for all 19 themes, the display
+  flush, the screen host, and every view (it mirrors its model, and a tap
+  emits the same `KeyEvent` as today's tap map). Screens' `onKey` logic is
+  unchanged; screens themselves depend on the app and Arduino, so they are
+  checked by the `m9` build and the hardware check, not on the host.
 - `pio run -e m9` must build clean first; then
   `scripts/build-upload-monitor.sh -B` for all thirteen envs (X4 on the grid
   path). Report RAM/flash against `main`.

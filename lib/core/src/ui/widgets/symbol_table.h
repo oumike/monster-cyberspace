@@ -13,13 +13,16 @@ namespace rc {
 // Symbols (Action::Symbols): a grid of punctuation picked with the d-pad that
 // inserts one symbol and closes; an optional last row hands over to the
 // screen's own palette. Emoji (Action::Emoji): the tray emoji, drawn large
-// (kTrayBigCols x kTrayBigRows cells, emoji_set.h) where they fit and two cells
-// wide where not; a pick inserts and stays open, Back closes it, and it has
-// the same palette row. Board-agnostic.
+// (kTrayBigCols x kTrayBigRows cells, emoji_set.h) where they all fit, or where
+// kMinBigRows rows of them fit and the rest scroll, else two cells wide (and
+// scrolling when even those don't fit); the view follows the selection. A pick
+// inserts and stays open, Back closes it, and it has the same palette row.
+// Board-agnostic.
 class SymbolTable {
  public:
   static constexpr int kCols = 8;       // symbols a row
   static constexpr int kEmojiCols = 6;  // emoji a row, at least; more when short
+  static constexpr int kMinBigRows = 3;  // large emoji rows shown, at least, when scrolling
   enum class Kind : uint8_t {
     None,         // the table used the key (or ignored it) and is still open
     Insert,       // type `ch`; the table closed
@@ -71,6 +74,7 @@ class SymbolTable {
   int sel_ = 0;
   mutable int emojiCols_ = kEmojiCols;  // set by render to fit the screen
   mutable bool big_ = false;            // set by render: large emoji fit
+  mutable int scroll_ = 0;              // set by render: the first emoji row shown
   bool open_ = false;
 };
 

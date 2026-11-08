@@ -1457,7 +1457,7 @@ void test_symbols_render_highlights_selection() {
 void test_emoji_tray_inserts_and_stays_open() {
   SymbolTable s;
   s.open(U"", SymbolTable::Set::Emoji);
-  TEST_ASSERT_EQUAL(40, int(SymbolTable::emoji().size()));
+  TEST_ASSERT_EQUAL(kTrayCount, int(SymbolTable::emoji().size()));
   s.key(K(Action::Right));
   auto o = s.key(K(Action::Select));
   TEST_ASSERT_EQUAL(int(SymbolTable::Kind::Insert), int(o.kind));
@@ -1488,7 +1488,7 @@ void test_emoji_tray_grid_and_commands_row() {
 }
 
 void test_emoji_tray_spaced_out() {
-  Grid g(40, 30);
+  Grid g(40, 50);
   g.fill(T().bg);
   SymbolTable s;
   s.open(U"", SymbolTable::Set::Emoji);
@@ -1508,7 +1508,7 @@ void test_emoji_tray_spaced_out() {
   TEST_ASSERT_EQUAL(int(U' '), int(g.at(c0, r0 + 2).cp));
   TEST_ASSERT_EQUAL(int(trayBigPiece(SymbolTable::kEmojiCols, 0, 0)), int(g.at(c0, r0 + 3).cp));
   // The commands row sits below the last emoji row, apart from it.
-  Grid k(40, 30);
+  Grid k(40, 50);
   k.fill(T().bg);
   s.open(U"cmds", SymbolTable::Set::Emoji);
   s.render(k, k.rows() - 1, T());
@@ -1519,28 +1519,62 @@ void test_emoji_tray_spaced_out() {
       if (k.at(c, r).cp == U'c' && k.at(c + 1, r).cp == U'm') cmdRow = r;
     }
   TEST_ASSERT_EQUAL(lastRow + 2, cmdRow);
-  // Too short for large emoji: two cells each, more on a row to keep the
+  // Too narrow for large emoji: two cells each, more on a row to keep the
   // blank rows.
-  Grid m(40, 13);
+  Grid m(29, 25);
   m.fill(T().bg);
   s.open(U"", SymbolTable::Set::Emoji);
   s.render(m, m.rows() - 1, T());
-  TEST_ASSERT_EQUAL(10, s.cols());  // rows 1..11, below the status bar
+  TEST_ASSERT_EQUAL(9, s.cols());  // rows 1..23, below the status bar
   int mc = -1, mr = -1;
   for (int r = 0; r < m.rows() && mc < 0; ++r)
     for (int c = 0; c < m.cols(); ++c)
       if (m.at(c, r).cp == SymbolTable::emoji()[0]) { mc = c; mr = r; break; }
   TEST_ASSERT_EQUAL(int(U' '), int(m.at(mc, mr + 1).cp));
-  TEST_ASSERT_EQUAL(int(SymbolTable::emoji()[10]), int(m.at(mc, mr + 2).cp));
+  TEST_ASSERT_EQUAL(int(SymbolTable::emoji()[9]), int(m.at(mc, mr + 2).cp));
   TEST_ASSERT_TRUE(mr >= 2);  // the title is on row 1 or below
-  // Too short even then: the rows close up instead of clipping.
-  Grid h(40, 10);
-  h.fill(T().bg);
-  s.render(h, h.rows() - 1, T());
-  bool last = false;
-  for (int r = 0; r < h.rows(); ++r)
-    for (int c = 0; c < h.cols(); ++c) last |= h.at(c, r).cp == SymbolTable::emoji().back();
-  TEST_ASSERT_TRUE(last);
+}
+
+namespace {
+bool shows(const Grid& g, char32_t cp) {
+  for (int r = 0; r < g.rows(); ++r)
+    for (int c = 0; c < g.cols(); ++c)
+      if (g.at(c, r).cp == cp) return true;
+  return false;
+}
+}  // namespace
+
+// Too short for every emoji: the tray scrolls to keep the selection shown.
+void test_emoji_tray_scrolls_to_the_selection() {
+  const int n = int(SymbolTable::emoji().size());
+  SymbolTable s;
+  // Two-cell emoji, closed up, still too many rows.
+  Grid g(29, 10);
+  g.fill(T().bg);
+  s.open(U"", SymbolTable::Set::Emoji);
+  s.render(g, g.rows() - 1, T());
+  TEST_ASSERT_TRUE(shows(g, SymbolTable::emoji()[0]));
+  TEST_ASSERT_FALSE(shows(g, SymbolTable::emoji()[n - 1]));
+  s.key(K(Action::Up));  // wraps to the last row
+  g.fill(T().bg);
+  s.render(g, g.rows() - 1, T());
+  TEST_ASSERT_FALSE(shows(g, SymbolTable::emoji()[0]));
+  TEST_ASSERT_TRUE(shows(g, SymbolTable::emoji()[s.selected()]));
+  // Large emoji where kMinBigRows rows of them fit: 40 x 20 shows eight
+  // rows of seven; the ninth row scrolls the first away.
+  Grid b(40, 20);
+  b.fill(T().bg);
+  s.open(U"", SymbolTable::Set::Emoji);
+  s.render(b, b.rows() - 1, T());
+  TEST_ASSERT_EQUAL(7, s.cols());
+  TEST_ASSERT_TRUE(shows(b, trayBigPiece(0, 0, 0)));
+  TEST_ASSERT_FALSE(shows(b, trayBigPiece(56, 0, 0)));
+  for (int i = 0; i < 8; ++i) s.key(K(Action::Down));
+  TEST_ASSERT_EQUAL(56, s.selected());
+  b.fill(T().bg);
+  s.render(b, b.rows() - 1, T());
+  TEST_ASSERT_FALSE(shows(b, trayBigPiece(0, 0, 0)));
+  TEST_ASSERT_TRUE(shows(b, trayBigPiece(56, 0, 0)));
 }
 
 void test_symbols_linear_steps_one_cell_and_wraps() {
@@ -1559,19 +1593,19 @@ void test_symbols_linear_steps_one_cell_and_wraps() {
 }
 
 void test_emoji_tray_large_closes_up_before_shrinking() {
-  // 40 x 20: large emoji fit only without the blank rows.
-  Grid g(40, 20);
+  // 40 x 30: large emoji fit only without the blank rows, seven across.
+  Grid g(40, 30);
   g.fill(T().bg);
   SymbolTable s;
   s.open(U"", SymbolTable::Set::Emoji);
   s.render(g, g.rows() - 1, T());
-  TEST_ASSERT_EQUAL(SymbolTable::kEmojiCols, s.cols());
+  TEST_ASSERT_EQUAL(7, s.cols());
   int c0 = -1, r0 = -1;
   for (int r = 0; r < g.rows() && c0 < 0; ++r)
     for (int c = 0; c < g.cols(); ++c)
       if (g.at(c, r).cp == trayBigPiece(0, 0, 0)) { c0 = c; r0 = r; break; }
   TEST_ASSERT_TRUE(c0 >= 0);
-  TEST_ASSERT_EQUAL(int(trayBigPiece(SymbolTable::kEmojiCols, 0, 0)), int(g.at(c0, r0 + 2).cp));
+  TEST_ASSERT_EQUAL(int(trayBigPiece(7, 0, 0)), int(g.at(c0, r0 + 2).cp));
   // Too narrow for six across: two-cell emoji.
   Grid n(29, 30);
   n.fill(T().bg);
@@ -1583,7 +1617,7 @@ void test_emoji_tray_large_closes_up_before_shrinking() {
 }
 
 void test_emoji_tray_render_draws_both_halves() {
-  Grid g(40, 13);
+  Grid g(29, 13);
   g.fill(T().bg);
   SymbolTable s;
   s.open(U"", SymbolTable::Set::Emoji);
@@ -2002,6 +2036,7 @@ int main() {
   RUN_TEST(test_symbols_linear_steps_one_cell_and_wraps);
   RUN_TEST(test_emoji_tray_grid_and_commands_row);
   RUN_TEST(test_emoji_tray_spaced_out);
+  RUN_TEST(test_emoji_tray_scrolls_to_the_selection);
   RUN_TEST(test_input_emoji_button_on_touch);
   RUN_TEST(test_emoji_tray_taps);
   RUN_TEST(test_type_filter);

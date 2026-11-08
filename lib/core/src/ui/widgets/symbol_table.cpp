@@ -5,6 +5,7 @@
 
 #include "ui/emoji_set.h"
 #include "ui/tap_map.h"
+#include "ui/widgets/scroll_bar.h"
 
 namespace rc {
 
@@ -24,6 +25,7 @@ void SymbolTable::open(std::u32string commands, Set set, bool linear) {
   linear_ = linear;
   commands_ = std::move(commands);
   sel_ = 0;
+  scroll_ = 0;
   open_ = true;
 }
 
@@ -60,6 +62,7 @@ SymbolTable::Out SymbolTable::key(const KeyEvent& k) {
   if (a == Action::Symbols && !emojiSet && emoji_) {
     set_ = Set::Emoji;
     sel_ = 0;
+    scroll_ = 0;
     return o;
   }
   switch (a) {
@@ -115,9 +118,11 @@ void SymbolTable::render(Grid& g, int bottom, const Theme& t) const {
   };
   int ew = 2, eh = 1;
   bool gaps = false;
+  bool scrolls = false;
   if (emojiSet) {
-    // Large where they fit across and down, the blank rows kept if they can
-    // be; else two cells wide, more on a row on a short screen.
+    // Large where they all fit across and down, the blank rows kept if they
+    // can be; else large and scrolling where kMinBigRows rows fit; else two
+    // cells wide, more on a row on a short screen, scrolling if still short.
     big_ = false;
     const int bigMax = std::min(n, (g.cols() - 1) / (kTrayBigCols + 1));
     for (int pass = 0; pass < 2 && !big_; ++pass)
@@ -127,6 +132,10 @@ void SymbolTable::render(Grid& g, int bottom, const Theme& t) const {
           emojiCols_ = c;
           gaps = pass == 0;
         }
+    if (!big_ && bigMax >= kEmojiCols && (avail - 1 - extra) / kTrayBigRows >= kMinBigRows) {
+      big_ = scrolls = true;
+      emojiCols_ = bigMax;
+    }
     if (big_) {
       ew = kTrayBigCols;
       eh = kTrayBigRows;
@@ -136,14 +145,27 @@ void SymbolTable::render(Grid& g, int bottom, const Theme& t) const {
       while (c < maxCols && height(1, c, true) > avail) ++c;
       emojiCols_ = c;
       gaps = height(1, c, true) <= avail;
+      scrolls = !gaps && height(1, c, false) > avail;
     }
   }
   const int kc = cols();
   const int rows = (n + kc - 1) / kc;
+  // The emoji rows shown, scrolled to keep the selection in view.
+  const int shown = scrolls ? std::max(1, std::min(rows, (avail - 1 - extra) / eh)) : rows;
+  if (!scrolls) {
+    scroll_ = 0;
+  } else if (sel_ < n) {
+    const int selRow = sel_ / kc;
+    if (selRow < scroll_) scroll_ = selRow;
+    if (selRow >= scroll_ + shown) scroll_ = selRow - shown + 1;
+  }
+  scroll_ = std::clamp(scroll_, 0, rows - shown);
   const int pitch = emojiSet ? ew + 1 : 3;
   const int width = emojiSet ? kc * pitch + 1 : kc * pitch + 2;
   const int rowStep = eh + (gaps ? 1 : 0);
-  const int h = emojiSet ? height(eh, kc, gaps) : 1 + rows + extra;
+  const int h = !emojiSet ? 1 + rows + extra
+                : scrolls ? 1 + shown * eh + extra
+                          : height(eh, kc, gaps);
   const int left = std::max(0, (g.cols() - width) / 2);
   const int top = h <= avail ? kAreaTop + (avail - h) / 2 : std::max(0, (bottom - h) / 2);
   auto cellTap = [&](int c0, int r0, int c1, int r1, int i) {
@@ -166,8 +188,9 @@ void SymbolTable::render(Grid& g, int bottom, const Theme& t) const {
     for (int c = 0; c < width; ++c) g.put(left + c, top + r, U' ', t.fg, t.bg);
   for (int c = 0; c < width; ++c) g.put(left + c, top, U' ', t.barFg, t.barBg);
   g.putText(left + 1, top, emojiSet ? U"emoji" : U"symbols", t.barFg, t.barBg, width - 2);
-  for (int i = 0; i < n; ++i) {
-    const int col = left + 1 + (i % kc) * pitch, row = top + 1 + (gaps ? 1 : 0) + (i / kc) * rowStep;
+  for (int i = scroll_ * kc; i < std::min(n, (scroll_ + shown) * kc); ++i) {
+    const int col = left + 1 + (i % kc) * pitch,
+              row = top + 1 + (gaps ? 1 : 0) + (i / kc - scroll_) * rowStep;
     const bool sel = i == sel_;
     const bool fill = sel && !t.outlined;
     const uint16_t fg = fill ? t.selectFg : t.fg, bg = fill ? t.selectBg : t.bg;
@@ -200,6 +223,8 @@ void SymbolTable::render(Grid& g, int bottom, const Theme& t) const {
     if (sel && t.outlined) g.outline(left + 1, row, left + width - 2, row, t.selectBg);
   }
   g.outline(left, top, left + width - 1, top + h - 1, t.drawerEdge);
+  if (scrolls)
+    drawScrollBar(g, left + width - 1, top + 1, top + 1 + shown * eh, rows, shown, scroll_, t, t.bg);
 }
 
 }  // namespace rc

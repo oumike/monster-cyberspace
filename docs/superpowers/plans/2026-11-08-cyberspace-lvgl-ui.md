@@ -70,13 +70,13 @@
 
 **Interfaces:**
 - Consumes: `rc::CellFont`, `rc::glyphFor`, `emoji_cells.h` halves, `rc::TextSize`, `ui/text_width.h`.
-- Produces: `const lv_font_t* lvui::font(rc::TextSize s, bool big = false);` (`big` = the next size up, as header rows), `const lv_font_t* lvui::fontFor(rc::TextSize saved, std::optional<rc::TextSize> fixed);` (fixed wins). Fonts: Compact 6x12, Comfortable 8x16, Large 10x18; big: 8x14/10x18/12x24 per today's `bigCellSize`. Glyph advance = cell width; wide emoji = 2 cells; `line_height` = cell height; `base_line` = 0.
+- Produces: `const lv_font_t* lvui::font(rc::TextSize s, bool big = false, bool bold = false);` (`big` = the next size up, as header rows; `bold` = each row ORed with itself 1 px right, ruling R4), `const lv_font_t* lvui::fontFor(rc::TextSize saved, std::optional<rc::TextSize> fixed);` (fixed wins). Fonts: Compact 6x12, Comfortable 8x16, Large 10x18; big: 8x14/10x18/12x24 per today's `bigCellSize`. Glyph advance = cell width; wide emoji = 2 cells; `line_height` = cell height; `base_line` = 0.
 
-- [ ] **Step 1:** Tests: `test_ascii_glyph_matches_cell` (bitmap of 'A' via `lv_font_get_glyph_bitmap` equals `glyphFor(cell8x16,'A')` pixels); `test_missing_uses_alias`; `test_emoji_two_cells` (advance 16 at 8x16); `test_font_for_size_fixed_wins`.
-- [ ] **Step 2:** Run → FAIL.
-- [ ] **Step 3:** Implement the `get_glyph_dsc`/`get_glyph_bitmap` callbacks over `CellFont` (1 bpp, `LV_FONT_GLYPH_FORMAT_A1`).
-- [ ] **Step 4:** Run → PASS; `pio run -e m9` → SUCCESS.
-- [ ] **Step 5:** Commit `LVGL: fonts read from the Terminus cells`.
+- [x] **Step 1:** Tests: `test_ascii_glyph_matches_cell` (bitmap of 'A' via `lv_font_get_glyph_bitmap` equals `glyphFor(cell8x16,'A')` pixels); `test_missing_uses_alias`; `test_emoji_two_cells` (advance 16 at 8x16); `test_font_for_size_fixed_wins`.
+- [x] **Step 2:** Run → FAIL.
+- [x] **Step 3:** Implement the `get_glyph_dsc`/`get_glyph_bitmap` callbacks over `CellFont` (1 bpp, `LV_FONT_GLYPH_FORMAT_A1`).
+- [x] **Step 4:** Run → PASS; `pio run -e m9` → SUCCESS.
+- [x] **Step 5:** Commit `LVGL: fonts read from the Terminus cells`.
 
 ### Task 4: Theme styles
 

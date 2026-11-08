@@ -47,11 +47,54 @@ void test_unread_rooms_in_list_order() {
   TEST_ASSERT_TRUE(unreadRooms({}, readAt).empty());
 }
 
+void test_read_marks_round_trip() {
+  std::map<std::string, int64_t> marks{{"general", 1730000000123LL}, {"linux", 5}};
+  std::string user;
+  std::map<std::string, int64_t> out;
+  TEST_ASSERT_TRUE(decodeReadMarks(encodeReadMarks("mike", marks, 4000), user, out));
+  TEST_ASSERT_EQUAL_STRING("mike", user.c_str());
+  TEST_ASSERT_TRUE(out == marks);
+}
+
+void test_read_marks_reject_garbage() {
+  std::string user;
+  std::map<std::string, int64_t> out;
+  TEST_ASSERT_FALSE(decodeReadMarks("", user, out));
+  TEST_ASSERT_TRUE(decodeReadMarks("mike\nok 7\nbad\nx notanumber\n y 3\n", user, out));
+  TEST_ASSERT_EQUAL(1, out.size());
+  TEST_ASSERT_EQUAL_INT64(7, out["ok"]);
+}
+
+void test_read_marks_fit_the_limit() {
+  std::map<std::string, int64_t> marks;
+  for (int i = 0; i < 100; ++i) marks["room" + std::to_string(i)] = 1730000000000LL + i;
+  std::string text = encodeReadMarks("mike", marks, 200);
+  TEST_ASSERT_TRUE(text.size() <= 200);
+  std::string user;
+  std::map<std::string, int64_t> out;
+  TEST_ASSERT_TRUE(decodeReadMarks(text, user, out));
+  TEST_ASSERT_TRUE(out.size() > 0 && out.size() < marks.size());
+  for (const auto& kv : out) TEST_ASSERT_EQUAL_INT64(marks[kv.first], kv.second);
+}
+
+void test_room_read_marks_keep_only_rooms() {
+  std::map<std::string, int64_t> readAt{{"a", 3}, {"conv-id", 9}, {"c", 0}};
+  std::vector<RoomInfo> rooms{room("a", 3), room("b", 4), room("c", 1)};
+  std::map<std::string, int64_t> out = roomReadMarks(rooms, readAt);
+  TEST_ASSERT_EQUAL(2, out.size());
+  TEST_ASSERT_EQUAL_INT64(3, out["a"]);
+  TEST_ASSERT_EQUAL_INT64(0, out["c"]);
+}
+
 int main(int, char**) {
   UNITY_BEGIN();
   RUN_TEST(test_never_read_room_with_messages_is_unread);
   RUN_TEST(test_empty_room_is_read);
   RUN_TEST(test_read_up_to_the_last_message);
   RUN_TEST(test_unread_rooms_in_list_order);
+  RUN_TEST(test_read_marks_round_trip);
+  RUN_TEST(test_read_marks_reject_garbage);
+  RUN_TEST(test_read_marks_fit_the_limit);
+  RUN_TEST(test_room_read_marks_keep_only_rooms);
   return UNITY_END();
 }

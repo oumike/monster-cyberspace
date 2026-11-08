@@ -31,6 +31,7 @@
 #include "net/tls_alloc.h"
 #include "net/wifi_mgr.h"
 #include "store/locked_chat.h"
+#include "store/settings.h"
 #if RC_FEAT_ENTRIES
 #include "store/locked_feed.h"
 #endif
@@ -218,6 +219,7 @@ class Worker {
     }
     self_ = name;
     lockedChat().with([&](ChatState& s) { s.self = name; });
+    loadReadMarks();
     ready_ = true;
     post(EvtType::AuthState, auth_ = 1, name);
 #if RC_LOW_MEM
@@ -234,6 +236,32 @@ class Worker {
     refreshConversations();
 #endif
     nextWatch_ = mono() + kWatchMs;
+  }
+
+  // ---- read marks kept across reboots ----
+
+  // The saved marks, when they belong to this user, so a room read before a
+  // reboot stays read until it has new messages.
+  void loadReadMarks() {
+    std::string user;
+    std::map<std::string, int64_t> marks;
+    if (!decodeReadMarks(settings::loadReadMarks(), user, marks) || user != self_) marks.clear();
+    savedMarks_ = marks;
+    lockedChat().with([&](ChatState& s) {
+      for (const auto& kv : marks) s.readAt[kv.first] = std::max(s.readAt[kv.first], kv.second);
+    });
+  }
+
+  // Writes the rooms' marks when they changed, at most every kSaveMarksMs
+  // to spare the flash.
+  void saveReadMarks(int64_t now) {
+    if (!ready_ || self_.empty() || now < nextMarksSave_) return;
+    nextMarksSave_ = now + kSaveMarksMs;
+    std::map<std::string, int64_t> marks =
+        lockedChat().with([](ChatState& s) { return roomReadMarks(s.rooms, s.readAt); });
+    if (marks.empty() || marks == savedMarks_) return;
+    settings::saveReadMarks(encodeReadMarks(self_, marks, kMarksMaxBytes));
+    savedMarks_ = std::move(marks);
   }
 
   void loadMutes() {
@@ -965,6 +993,7 @@ class Worker {
     wifimgr::reconnectWithBackoff();
     pollJoin();
     int64_t now = mono();
+    saveReadMarks(now);
 
     if (!online()) {
       if (wasOnline_) {
@@ -1073,6 +1102,10 @@ class Worker {
   bool screenOn_ = true, wasOnline_ = false, pausedBanner_ = false;
   int conn_ = -1, auth_ = -1;
   int64_t lastActivity_ = 0, heartbeatMs_ = 30000, nextHeartbeat_ = 0, nextWatch_ = 0;
+  static constexpr int64_t kSaveMarksMs = 15000;
+  static constexpr size_t kMarksMaxBytes = 3900;  // under NVS's 4000-byte string
+  int64_t nextMarksSave_ = 0;
+  std::map<std::string, int64_t> savedMarks_;  // as last loaded or written
   int64_t nextBootstrap_ = 0, reconnectAt_ = 0, downSince_ = 0, backoffMs_ = 1000;
   int64_t nextPoll_ = 0;
 };

@@ -13,6 +13,7 @@
 namespace {
 
 constexpr const char* kNs = "rcfg";
+constexpr const char* kReadNs = "rcread";
 
 std::string getStr(Preferences& p, const char* key, const std::string& def) {
   if (!p.isKey(key)) return def;
@@ -301,8 +302,27 @@ void saveAll(const rc::Settings& s) {
   if (s.refreshToken.empty()) clearToken();
 }
 
+std::string loadReadMarks() {
+  Preferences p;
+  if (!p.begin(kReadNs, true)) return "";
+  std::string text = getStr(p, "rooms", "");
+  p.end();
+  return text;
+}
+
+void saveReadMarks(const std::string& text) {
+  Preferences p;
+  if (!p.begin(kReadNs, false)) return;
+  p.putString("rooms", text.c_str());
+  p.end();
+}
+
 void factoryReset() {
   Preferences p;
+  if (p.begin(kReadNs, false)) {
+    p.clear();
+    p.end();
+  }
   if (!p.begin(kNs, false)) return;
   p.clear();
   p.end();

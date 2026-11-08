@@ -1,0 +1,1229 @@
+#include "app/ui_task.h"
+
+#include <Arduino.h>
+#include <esp_heap_caps.h>
+
+#include <algorithm>
+#include <iterator>
+#include <mutex>
+
+#include "app/app_state.h"
+#include "app/power_service.h"
+#include "app/queues.h"
+#include "chat/chat_source.h"
+#include "feature_flags.h"
+#include "feed/compose.h"
+#if RC_FEAT_GUILDS
+#include "feed/feed_source.h"
+#endif
+#include "hal/board.h"
+#include "input/backspace.h"
+#include "input/double_tap.h"
+#include "input/function_keys.h"
+#include "input/gestures.h"
+#include "input/key_event.h"
+#include "input/touch_resolve.h"
+#include "screens/composer.h"
+#include "screens/draw.h"
+#include "screens/router.h"
+#include "store/locked_chat.h"
+#include "chat/room_read.h"
+#if RC_FEAT_ENTRIES
+#include "store/locked_feed.h"
+#endif
+#if RC_FEAT_MASCOT
+#include "store/mascot_store.h"
+#endif
+#include "ui/brightness.h"
+#include "ui/haptics.h"
+#include "ui/led_level.h"
+#include "ui/kb_light.h"
+#include "ui/notify_light.h"
+#include "ui/renderer.h"
+#include "ui/screenshot.h"
+#include <vector>
+#include "ui/room_layout.h"
+#include "ui/rotation.h"
+#include "ui/screen_timeout.h"
+#include "ui/splash_layout.h"
+#include "ui/tap_map.h"
+#include "ui/theme.h"
+#include "ui/wifi_light.h"
+#include "ui/widgets/banner.h"
+#include "ui/widgets/osk.h"
+#include "ui/widgets/overlay.h"
+#include "ui/widgets/canned_picker.h"
+#include "ui/widgets/symbol_table.h"
+#include "util/utf8.h"
+
+namespace rc::ui {
+
+namespace {
+
+constexpr uint32_t kFrameMs = 33;
+constexpr int64_t kSaverMs = 10000;
+constexpr int64_t kActivityMs = 5000;
+constexpr int64_t kLockQuietMs = 3000;  // input ignored just after the screen locks
+constexpr int64_t kBounceStepMs = 250;
+constexpr size_t kMaxMentionNotes = 50;  // the oldest go first
+
+// On; Dark (screen off); Saver, the 10 s peek at recent messages; Bounce, the
+// screensaver the screen timeout locks into.
+enum class Power { On, Dark, Saver, Bounce };
+
+Renderer renderer;
+Grid grid(1, 1);
+Banner topBanner;
+Gestures gestures;
+DoubleTap doubleTap;  // wakes boards with doubleTapWakes
+// Set by a touch that woke the screen: that finger is ignored until it lifts.
+bool touchSwallow = false;
+// Touch-only boards show no cursor, except on what a long press opened a
+// menu for, until that menu (and any it leads to) closes.
+bool baseCursor = false;
+// The emoji tray opened from the on-screen keyboard takes the keyboard's
+// place at the bottom; the keyboard comes back when the tray closes.
+bool oskBehindTray = false;
+bool pressMenu = false;
+bool touchKey = false;  // ui::fromTouch()
+bool oskWanted = false;  // ui::showKeyboard()
+// The last Backspace that deleted text (backspaceIsBack boards).
+uint32_t lastDeleteMs = 0;
+bool deletedOnce = false;
+TouchResolver resolver;
+TapMap taps;
+Osk osk;
+Grid oskGrid(1, 1);
+bool oskShown = false;
+SymbolTable symbols;
+// Boards that can't type (board::canType): canned replies instead of a text
+// field. cannedEmoji: the emoji tray was opened from it, so a pick sends.
+CannedPicker canned;
+bool keysHelp = false;  // F10's table of the function keys
+bool cannedEmoji = false;
+Power power = Power::On;
+int64_t saverUntil = 0, lastActivitySent = -kActivityMs;
+int64_t lastInputMs = 0, lockedAt = INT64_MIN / 2, nextBounce = 0;
+Power lockedTo = Power::Dark;  // where a peek returns to
+uint8_t lit = 255;             // the backlight level set while the screen is lit
+int sentBacklight = 255;       // what the board has: waking it sets full, sleeping 0
+int brightnessPreview = -1;    // Settings' slider while it is open, else -1
+Bouncer bouncer;
+// The monster's word on the screensaver, a new one every kSayMs.
+MonsterWords words;
+std::string saying;
+#ifndef RC_SPLASH_SCALE
+#define RC_SPLASH_SCALE 1
+#endif
+int64_t sayUntil = 0;
+constexpr int64_t kSayMs = 20000;
+bool needResize = true;
+// The text size the grid was last sized for: the saved one, or Compact on a
+// screen that asks for it.
+TextSize gridSize = TextSize::Comfortable;
+
+// The splash and the monster screensaver look the same at every text size.
+bool fixedSize() {
+  return router::current() == router::Id::Splash || power == Power::Bounce || power == Power::Dark;
+}
+
+TextSize wantedSize() {
+  // A board with one text size uses it everywhere, splash and screensaver too.
+  if (TextSize only; board::fixedTextSize(only)) return only;
+  if (fixedSize()) return TextSize::Comfortable;
+  const TextSize s = router::screen().compactText() ? TextSize::Compact : app().cfg.textSize;
+#if RC_LOW_MEM
+  // Without PSRAM a Compact grid on a big panel does not fit beside Wi-Fi.
+  if (s == TextSize::Compact) return TextSize::Comfortable;
+#endif
+  return s;
+}
+
+int64_t nowMs() { return int64_t(millis()); }
+
+int oskOffsetPx = 0;  // the header's extra height, which moves the keyboard down
+
+void resizeGrid() {
+  int cols, rows;
+  const TextSize ts = gridSize = wantedSize();
+  const int rowH = cellSize(ts).h;
+  // Touch boards without a keyboard or without keys that move a selection get
+  // a taller status bar, easier to tap.
+  const HeaderSize hd = !fixedSize() && board::hasTouch() &&
+                                (!board::hasKeyboard() || !board::hasKeys())
+                            ? touchHeader(board::panelWidth(), ts)
+                            : HeaderSize{};
+  gridDims(board::panelWidth(), board::panelHeight(), ts, cols, rows, hd.px);
+  gestures.setWidth(board::panelWidth());
+  oskOffsetPx = hd.px > 0 ? std::max(0, hd.px - rowH) : 0;
+  const int slack = std::max(0, board::panelHeight() - rows * rowH - oskOffsetPx);
+  grid.setHeader(hd);
+  if (oskShown) {
+    const int k = Osk::rows(ts);
+    grid.resize(cols, rows - k);
+    grid.setBottomPad(0);
+    oskGrid.resize(cols, Osk::gridRows());
+    oskGrid.setBottomPad(slack);
+    osk.layout(cols, ts);
+  } else {
+    grid.resize(cols, rows);
+    grid.setBottomPad(slack);
+  }
+  needResize = false;
+}
+
+// The on-screen keyboard docks below the screen while a text field has focus.
+void showOsk(bool on) {
+  if (on == oskShown) return;
+  oskShown = on;
+  if (on) osk.reset();
+  needResize = true;
+}
+
+// The screensaver: the newest messages of the current room, read-only.
+void drawSaver(const Theme& t) {
+  grid.fill(t.bg);
+  std::string room;
+  std::vector<DisplayLine> lines;
+  lockedChat().with([&](ChatState& s) {
+    room = s.roomSlug;
+    std::deque<CircMessage> last;
+    const auto& all = s.store.messages();
+    size_t from = all.size() > 12 ? all.size() - 12 : 0;
+    last.assign(all.begin() + from, all.end());
+    LayoutOptions o;
+    o.size = gridSize;
+    o.cols = grid.cols();
+    o.selfUsername = s.self;
+    o.revealed = &s.revealed;
+    o.theme = &t;
+    lines = layoutRoom(last, o);
+  });
+  std::u32string head = utf8ToU32(room.empty() ? std::string("no room open") : "#" + room);
+  grid.putText(0, 0, head, t.dim, t.bg, grid.cols());
+  std::u32string clock = utf8ToU32(clockText());
+  grid.putText(grid.cols() - int(clock.size()), 0, clock, t.dim, t.bg, int(clock.size()));
+  int bottom = grid.rows() - 1;  // the last row holds the hint
+  int row = bottom - 1;
+  for (int i = int(lines.size()) - 1; i >= 0 && row >= 1; --i, --row) {
+    int col = 0;
+    for (const Span& sp : lines[i].spans)
+      col += grid.putText(col, row, sp.text, sp.fg, t.bg, grid.cols() - col);
+  }
+  grid.putText(0, bottom, utf8ToU32(board::wakeHint()), t.dim, t.bg, grid.cols());
+}
+
+void applyRotation(uint8_t r) {
+  if (!board::canRotate()) return;
+  app().cfg.rotation = rotationFromIndex(r);
+  settings::saveUiPrefs(app().cfg);
+  board::setRotation(app().cfg.rotation);
+  renderer.resize();
+  gestures.reset();
+  resolver.reset();
+  needResize = true;
+}
+
+// The lit level at the brightness setting (or the slider's preview), sent
+// when it differs from what the board has. Not while the panel sleeps.
+void applyBacklight() {
+  if (power == Power::Dark) return;
+  const int pct = brightnessPreview > 0 ? brightnessPreview : app().cfg.brightness;
+  const uint8_t v = backlightFor(lit, uint8_t(pct));
+  if (v == sentBacklight) return;
+  sentBacklight = v;
+  board::backlightLevel(v);
+}
+
+void setLit(uint8_t level) {
+  lit = level;
+  applyBacklight();
+}
+
+// Wakes the panel, which comes back at the board's full level.
+void panelOn() {
+  board::displaySleep(false);
+  sentBacklight = 255;
+}
+
+// The status LEDs' level and the power light follow their settings; the
+// Wi-Fi light, checked each second, the connection, in its state's colour.
+int ledLevelPreview = -1;  // Settings' slider while it is open, else -1
+
+void applyStatusLights() {
+  static int shownLevel = -1, shownPower = -1, shownWifi = -1;
+  static uint32_t wifiCheckedAt = 0;
+  const Settings& c = app().cfg;
+  if (board::hasLedLevel()) {
+    const LedLevel l = ledLevelPreview >= 0 ? ledLevelFromIndex(ledLevelPreview) : c.ledLevel;
+    const int v = ledLevelValue(l);
+    if (v != shownLevel) {
+      shownLevel = v;
+      board::ledLevel(uint8_t(v));
+    }
+  }
+  if (board::hasPowerLight()) {
+    const int rgb = ledColorRgb(c.powerLight);
+    if (rgb != shownPower) {
+      shownPower = rgb;
+      board::powerLight(uint8_t(rgb));
+    }
+  }
+  if (board::hasWifiLight() && millis() - wifiCheckedAt >= 1000) {
+    wifiCheckedAt = millis();
+    const WifiLight w = wifiLightState(wifiUp(), setupApUp());
+    const LedColor col = w == WifiLight::Joined    ? c.wifiJoined
+                         : w == WifiLight::SetupAp ? c.wifiSetup
+                                                   : c.wifiLooking;
+    const int rgb = ledColorRgb(col);
+    if (rgb != shownWifi) {
+      shownWifi = rgb;
+      board::wifiLight(uint8_t(rgb));
+    }
+  }
+}
+
+void drawBounce(const Theme& t);
+
+// The keyboard light follows the setting while the screen is on.
+void applyKbLight() {
+  static int shownDuty = -1;
+  static bool shownOn = false;
+  if (!board::hasKbLight()) return;
+  const int duty = kbLightDuty(app().cfg.kbLight);
+  const bool on = power == Power::On;
+  if (duty == shownDuty && on == shownOn) return;
+  shownDuty = duty;
+  shownOn = on;
+  board::kbLight(uint8_t(duty), on);
+}
+
+// The new-message light: a double blink per source (the last room, mentions,
+// Feed, C-Mail) in its colour while it has something unread, for the
+// configured time after its last message.
+NotifyBlinker blinker;
+uint8_t notifyShown = 0;
+
+void notifyMessage(NotifySource s) {
+  if (board::hasNotifyLight()) blinker.message(s, millis());
+}
+
+#if RC_FEAT_CIRC
+// The last room opened: unread and not on screen. A new message there, or
+// its turning unread, starts the light.
+uint32_t channelCheckMs = 0;
+bool channelUnread = false;
+int64_t channelAt = 0;
+
+bool lastRoomUnread(int64_t* at = nullptr) {
+  const std::string& slug = app().cfg.lastRoom;
+  if (power == Power::On && router::current() == router::Id::Room &&
+      lockedChat().with([&](ChatState& s) { return !s.dm && s.roomSlug == slug; }))
+    return false;
+  return lockedChat().with([&](ChatState& s) {
+    for (const RoomInfo& r : s.rooms)
+      if (r.slug == slug) {
+        if (at) *at = r.lastMessageAt;
+        return roomUnread(r, s.readAt);
+      }
+    return false;
+  });
+}
+
+void watchChannel() {
+  const uint32_t now = millis();
+  if (now - channelCheckMs < 250) return;
+  channelCheckMs = now;
+  int64_t at = channelAt;
+  const bool unread = lastRoomUnread(&at);
+  if (unread && (!channelUnread || at > channelAt)) notifyMessage(NotifySource::Channel);
+  channelUnread = unread;
+  channelAt = at;
+}
+#endif
+
+void applyNotifyLight() {
+  if (!board::hasNotifyLight()) return;
+#if RC_FEAT_CIRC
+  watchChannel();
+#endif
+  uint8_t rgb = 0;
+  if (blinker.active()) {
+    const Settings& c = app().cfg;
+    NotifyInputs in;
+    in.color[int(NotifySource::Channel)] = c.notifyLight;
+    in.color[int(NotifySource::Mention)] = c.notifyMention;
+    in.color[int(NotifySource::Feed)] = c.notifyFeed;
+    in.color[int(NotifySource::Cmail)] = c.notifyCmail;
+#if RC_FEAT_CIRC
+    in.unread[int(NotifySource::Channel)] = channelUnread;
+#endif
+    in.unread[int(NotifySource::Mention)] = !app().mentions.empty();
+#if RC_FEAT_ENTRIES
+    in.unread[int(NotifySource::Feed)] =
+        lockedFeed().with([](FeedState& s) { return !s.notices.empty(); });
+#endif
+#if RC_FEAT_CMAIL
+    in.unread[int(NotifySource::Cmail)] = cmailUnread() > 0;
+#endif
+    rgb = blinker.tick(millis(), in, c.notifyTimeoutSecs);
+  }
+  if (rgb == notifyShown) return;
+  notifyShown = rgb;
+  board::notifyLight(rgb);
+}
+
+void goDark() {
+  showOsk(false);
+  power = lockedTo = Power::Dark;
+  lit = 255;
+  sentBacklight = 0;
+  // An e-paper panel keeps its last image with the power off, so it is left
+  // showing the still screensaver rather than a frozen screen.
+  if (board::eink()) {
+    sayUntil = 0;
+    if (wantedSize() != gridSize) resizeGrid();
+    drawBounce(currentTheme());
+    renderer.draw(grid, gridSize);
+  }
+  board::displaySleep(true);
+}
+
+// The splash monster and name, bouncing slowly around a black screen. On
+// e-paper it sits still in the middle.
+void drawBounce(const Theme& t) {
+  if (nowMs() >= sayUntil) {
+    saying = words.next(esp_random(), app().mascot.phrases);
+    sayUntil = nowMs() + kSayMs;
+  }
+  // E-paper keeps it still, so it may be the splash's big monster.
+  std::vector<SplashLine> ls =
+      splashLayout(grid.cols(), grid.rows(), "", saying,
+                   board::eink() ? RC_SPLASH_SCALE : 1, &app().mascot.art);
+  int minC = grid.cols(), minR = grid.rows(), maxC = 0, maxR = 0;
+  ls.erase(std::remove_if(ls.begin(), ls.end(),
+                          [](const SplashLine& l) {
+                            return l.role == SplashRole::Detail || l.role == SplashRole::Prompt;
+                          }),
+           ls.end());
+  for (const SplashLine& l : ls) {
+    minC = std::min(minC, l.col);
+    minR = std::min(minR, l.row);
+    maxC = std::max(maxC, l.col + int(utf8ToU32(l.text).size()));
+    maxR = std::max(maxR, l.row + 1);
+  }
+  grid.fill(t.bg);
+  if (ls.empty()) return;
+  const int w = maxC - minC, h = maxR - minR;
+  const int maxX = std::max(0, grid.cols() - w), maxY = std::max(0, grid.rows() - h);
+  // A scaled monster's cols count scaled cells: draw it where the layout
+  // centred it.
+  const bool scaled = std::any_of(ls.begin(), ls.end(), [](const SplashLine& l) { return l.scale > 1; });
+  if (board::eink()) bouncer = Bouncer{maxX / 2, maxY / 2, 0, 0};
+  else bouncer.step(maxX, maxY);
+  for (const SplashLine& l : ls) {
+    const int c = scaled ? l.col : bouncer.x + l.col - minC, r = scaled ? l.row : bouncer.y + l.row - minR;
+    putLine(grid, c, r, l.text, l.role == SplashRole::Art ? t.selectBg : t.fg, t.bg);
+    grid.setRowScale(r, l.scale);
+  }
+}
+
+// The screen timeout ran out: lock into the screensaver or screen off.
+void lockScreen(int64_t now) {
+  chatSource().command(Command{CmdType::ScreenOff});
+  lockedAt = now;
+  if (!app().cfg.screenSaver) return goDark();
+  showOsk(false);
+  power = lockedTo = Power::Bounce;
+  sayUntil = 0;
+  bouncer = Bouncer{int(random(0, 1000)), int(random(0, 1000)), random(0, 2) ? 1 : -1,
+                    random(0, 2) ? 1 : -1};
+  nextBounce = now;
+  setLit(kSaverLevel);
+}
+
+// Web compose waiting on the network (runWebCompose below).
+#if RC_FEAT_CMAIL
+std::string mailText;  // a new C-Mail's text, sent once its conversation opens
+#endif
+bool threadPosting = false;
+void sendCanned(const std::u32string& text);
+
+void handleEvent(const Event& e) {
+  using router::Id;
+  Id cur = router::current();
+  switch (e.type) {
+    case EvtType::ConnState:
+      app().conn = e.code;
+      break;
+    case EvtType::AuthState:
+      if (e.ok) {
+        app().auth = e.code;
+        app().user = e.code == 0 ? std::string() : e.text;
+        if (e.code == 0) app().mentions.clear();
+        app().authNote.clear();
+      } else {
+        app().authNote = e.text;
+      }
+      if (e.ok && e.code == 0 &&
+          (cur == Id::Home || cur == Id::RoomList || cur == Id::Room || cur == Id::CmailList ||
+           cur == Id::Conversation || cur == Id::FeedList || cur == Id::Entry ||
+           cur == Id::Composer || cur == Id::Watched || cur == Id::Bookmarks || cur == Id::Settings ||
+           cur == Id::GuildList || cur == Id::Guild || cur == Id::Members ||
+           cur == Id::Profile || cur == Id::UserPosts ||
+           cur == Id::Notifications || cur == Id::Topics || cur == Id::Topic ||
+           cur == Id::Following))
+        router::go(Id::Setup);
+      if (e.ok && e.code != 0 && (cur == Id::Setup || cur == Id::LoginForm)) router::go(Id::Home);
+      break;
+    case EvtType::PrefsChanged: {
+      TextSize ts = textSizeFromIndex(e.code);
+      app().cfg.buzzer = e.ok;
+      parseThemeId(e.text, app().cfg.theme);
+      if (ts != app().cfg.textSize) setTextSize(ts);  // saves too
+      else settings::saveUiPrefs(app().cfg);
+      break;
+    }
+    case EvtType::RotationChanged:
+      applyRotation(uint8_t(e.code));
+      break;
+    case EvtType::Banner:
+      banner(e.text, !e.ok);
+      break;
+    case EvtType::WifiState:
+      // The network task saved or forgot a network; the screens list cfg.wifi.
+      if (e.code >= 0) {
+        Settings s;
+        settings::load(s);
+        app().cfg.wifi = std::move(s.wifi);
+      }
+      break;
+    case EvtType::AllRead:
+      if (e.ok) app().mentions.clear();
+      banner(e.text, !e.ok);
+      break;
+    case EvtType::RoomsRead:
+      banner(e.text, !e.ok);
+      break;
+    case EvtType::MentionAlert: {
+      // Not for the room on screen, nor again when the network side forgets
+      // what it has seen and re-alerts.
+      auto& ms = app().mentions;
+      const int64_t at = e.at ? e.at : nowEpochMs();
+      const bool open = cur == Id::Room && lockedChat().with([&](ChatState& s) {
+        return !s.dm && s.roomSlug == e.arg;
+      });
+      const bool dup = std::any_of(ms.begin(), ms.end(), [&](const MentionNote& m) {
+        return m.at == at && m.slug == e.arg && m.text == e.text;
+      });
+      if (!open && !dup) ms.push_back(MentionNote{e.arg, e.text, at});
+      if (ms.size() > kMaxMentionNotes) ms.erase(ms.begin());
+      if (!open) notifyMessage(NotifySource::Mention);
+      if (app().cfg.buzzer) board::beep(2000, 80);
+      if (app().cfg.alertVibrate && board::hasHaptic()) board::haptic(kAlertBuzzMs);
+      banner(e.text, false);
+      break;
+    }
+#if RC_FEAT_CMAIL
+    case EvtType::CmailAlert:
+      // The unread count lives in the conversation list (Home sums it).
+      notifyMessage(NotifySource::Cmail);
+      if (app().cfg.buzzer) board::beep(1600, 80);
+      if (app().cfg.alertVibrate && board::hasHaptic()) board::haptic(kAlertBuzzMs);
+      banner(e.text, false);
+      break;
+#endif
+    case EvtType::NotifyPreview:
+      notifyLightPreview(ledColorFromIndex(e.code));
+      break;
+    case EvtType::PhrasesChanged:
+      app().cfg.phrases = splitPhrases(e.text);
+      break;
+#if RC_FEAT_MASCOT
+    case EvtType::MascotChanged:
+      mascotstore::load(app().mascot);  // a failed read keeps the current one
+      break;
+#endif
+#if RC_FEAT_ENTRIES
+    case EvtType::FeedAlert:
+      // code 1 asks for a beep; post_cooldown (code 0) is a banner only.
+      if (e.code == 1 && app().cfg.buzzer) board::beep(1800, 80);
+      if (e.code == 1 && app().cfg.alertVibrate && board::hasHaptic()) board::haptic(kAlertBuzzMs);
+      if (e.code == 1) notifyMessage(NotifySource::Feed);
+      banner(e.text, false);
+      break;
+#endif
+#if RC_FEAT_CMAIL
+    case EvtType::ConversationStarted:
+      // A web-composed C-Mail: open the conversation and send the text there.
+      if (!mailText.empty()) {
+        std::string text = std::move(mailText);
+        mailText.clear();
+        if (!e.ok) {
+          banner(e.text.empty() ? std::string("Couldn't start a C-Mail") : e.text, true);
+        } else {
+          router::go(Id::Conversation, e.text);
+          if (router::screen().acceptsText()) sendCanned(utf8ToU32(text));
+        }
+        return;  // not the C-Mail list's, which didn't ask
+      }
+      break;
+#endif
+#if RC_FEAT_GUILDS
+    case EvtType::EntryPosted:
+      if (threadPosting) {
+        threadPosting = false;
+        banner(e.ok ? std::string("Thread posted")
+                    : e.text.empty() ? std::string("Thread not posted") : e.text,
+               !e.ok);
+        return;
+      }
+      break;
+#endif
+    default:
+      break;
+  }
+#if RC_FEAT_COMPOSER
+  // A post that settles after the Composer was left still clears its draft.
+  if (cur != Id::Composer) composerBackgroundEvent(e);
+#endif
+  router::screen().onEvent(e);
+}
+
+void wake() {
+  bool wasDark = power == Power::Dark;
+  power = Power::On;
+  lastInputMs = nowMs();
+  redrawAll();
+  chatSource().command(Command{CmdType::ScreenOn});
+  if (wasDark) panelOn();
+  setLit(255);
+}
+
+// The last image before deep sleep or power off; e-paper keeps it. whole:
+// the line alone, centred; otherwise it replaces the bottom row of what is
+// on screen (the open screen or the screensaver).
+void finalScreen(const std::string& line, bool whole) {
+  showOsk(false);
+  const Theme& t = currentTheme();
+  panelOn();
+  const int w = int(utf8ToU32(line).size());
+  if (whole) {
+    grid.fill(t.bg);
+    putLine(grid, std::max(0, (grid.cols() - w) / 2), grid.rows() / 2, line, t.fg, t.bg);
+  } else {
+    const int row = grid.rows() - 1;
+    putLine(grid, 0, row, std::string(grid.cols(), ' '), t.fg, t.bg);
+    putLine(grid, std::max(0, (grid.cols() - w) / 2), row, line, t.fg, t.bg);
+  }
+  renderer.draw(grid, gridSize);
+  board::displaySleep(true);
+}
+
+// A canned reply goes in as typing, then Select sends it through the
+// screen's own send path.
+// Web compose: one request waits in the slot until the UI task takes it.
+std::mutex composeMu;
+ComposeReq composeSlot;
+bool composeWaiting = false;
+ComposeView composeShown;
+bool composeBusy = false;  // a C-Mail or thread from the page still settling
+
+ComposeView currentComposeView() {
+  ComposeView v;
+  const router::Id id = router::current();
+  v.takesText = router::screen().acceptsText();
+  if (id == router::Id::Room || id == router::Id::Conversation) {
+    lockedChat().with([&](ChatState& s) {
+      if (!s.dm) {
+        v.label = "#" + s.roomSlug;
+        return;
+      }
+      for (const auto& c : s.conversations)
+        if (c.id == s.roomSlug) v.label = "C-Mail with @" + c.partner;
+      if (v.label.empty()) v.label = "a C-Mail conversation";
+    });
+  }
+#if RC_FEAT_ENTRIES
+  else if (id == router::Id::Entry) {
+    v.label = "replies to the open post";
+  }
+#endif
+  if (v.label.empty()) v.takesText = false;
+  return v;
+}
+
+void sendCanned(const std::u32string& text);
+
+void runWebCompose() {
+  ComposeReq r;
+  {
+    std::lock_guard<std::mutex> l(composeMu);
+    composeShown = currentComposeView();
+#if RC_FEAT_CMAIL
+    composeBusy = !mailText.empty() || threadPosting;
+#else
+    composeBusy = threadPosting;
+#endif
+    if (!composeWaiting) return;
+    composeWaiting = false;
+    r = std::move(composeSlot);
+    composeBusy = r.kind != ComposeKind::Open;
+  }
+  switch (r.kind) {
+    case ComposeKind::Open:
+      if (!router::screen().acceptsText()) {
+        banner("Web compose: nothing open takes text", true);
+        break;
+      }
+      canned.close();
+      router::screen().onKey(KeyEvent{Action::ClearLine});
+      sendCanned(utf8ToU32(r.text));
+      break;
+#if RC_FEAT_CMAIL
+    case ComposeKind::Mail:
+      mailText = std::move(r.text);
+      chatSource().command(Command{CmdType::StartConversation, r.to});
+      banner("Starting a C-Mail to @" + r.to + "\u2026", false);
+      break;
+#endif
+#if RC_FEAT_GUILDS
+    case ComposeKind::Thread: {
+      EntryDraft d;
+      d.title = r.title;
+      d.body = r.text;
+      threadPosting = true;
+      feedSource().command(Command{CmdType::PostGuildThread, r.guild, guildThreadJson(d)});
+      banner("Posting a thread in " + r.guild + "\u2026", false);
+      break;
+    }
+#endif
+    default:
+      break;  // webCompose turned away a target not built
+  }
+}
+
+void sendCanned(const std::u32string& text) {
+  for (char32_t c : text) {
+    KeyEvent k;
+    k.action = Action::Char;
+    k.ch = c;
+    router::screen().onKey(k);
+  }
+  router::screen().onKey(KeyEvent{Action::Select});
+}
+
+// The function keys' table: a centred box over the screen; a tap anywhere closes it.
+void renderKeysHelp(Grid& g, const Theme& t) {
+  size_t count = 0;
+  const FunctionKey* keys = board::functionKeys(count);
+  const int n = int(count);
+  // Rows drawn big, shifted, scaled, padded or skipped (Home's tiles) don't
+  // line up with plain cells: then the box goes on a blank screen.
+  bool odd = false;
+  for (int r = 1; r < g.rows(); ++r)
+    odd = odd || g.rowKind(r) != RowKind::Normal || g.rowShift(r) != 0 || g.rowScale(r) != 1 ||
+          g.rowPad(r) >= 0;
+  if (odd)
+    for (int r = 1; r < g.rows(); ++r) {
+      g.setRowKind(r, RowKind::Normal);
+      g.setRowShift(r, 0);
+      g.setRowScale(r, 1);
+      g.setRowPad(r, -1);
+      g.fillRow(r, t.bg);
+    }
+  // The title and the keys, with a blank row above and below when they fit.
+  const int content = n + 1, pad = g.rows() >= content + 2 ? 1 : 0;
+  const int w = std::min(g.cols() - 2, 27), h = std::min(g.rows(), content + 2 * pad);
+  const int c0 = std::max(0, (g.cols() - w) / 2), r0 = std::max(0, (g.rows() - h) / 2);
+  for (int r = r0; r < r0 + h; ++r)
+    for (int c = c0; c < c0 + w; ++c) g.put(c, r, U' ', t.fg, t.bg);
+  g.outline(c0, r0, c0 + w - 1, r0 + h - 1, t.dim);
+  g.putText(c0 + 2, r0 + pad, U"function keys", t.fg, t.bg, w - 4);
+  for (int i = 0; i < n && r0 + pad + 1 + i < r0 + h; ++i) {
+    g.putText(c0 + 2, r0 + pad + 1 + i, keys[i].key, t.selectBg, t.bg, 5);
+    g.putText(c0 + 8, r0 + pad + 1 + i, keys[i].label, t.fg, t.bg, w - 10);
+  }
+  if (activeTaps()) {
+    Target close;
+    close.kind = TargetKind::Fixed;
+    close.tap.action = Action::KeysHelp;
+    activeTaps()->addCells(0, 0, g.cols() - 1, g.rows() - 1, close);
+  }
+}
+
+void handleKey(const KeyEvent& key) {
+  int64_t now = nowMs();
+  KeyEvent k = key;
+  power_service::input();
+  if (k.action == Action::PowerOff && board::sleepsOnBattery()) {
+    finalScreen("Powered off \u2014 press Power to turn on", true);
+    power_service::powerOff();
+    return;
+  }
+  if (power != Power::On) {
+    // Just after the timeout locks the screen, input is ignored.
+    if (now - lockedAt < kLockQuietMs) return;
+    // Only a centre hold wakes (any input, on boards that ask); only a centre
+    // tap peeks (unless board::keysPeek is off). The waking press does
+    // nothing else.
+    if (wakesScreen(k, board::anyInputWakes())) {
+      wake();
+    } else if (board::keysPeek() && peeksScreen(k)) {
+      saverUntil = now + kSaverMs;
+      if (power != Power::Saver) {
+        const bool wasDark = power == Power::Dark;
+        power = Power::Saver;
+        grid.fill(currentTheme().bg);
+        drawSaver(currentTheme());
+        renderer.draw(grid, gridSize);
+        if (wasDark) panelOn();
+        setLit(255);
+      }
+    }
+    return;
+  }
+  lastInputMs = now;
+  setLit(255);
+  if (now - lastActivitySent >= kActivityMs) {
+    lastActivitySent = now;
+    chatSource().command(Command{CmdType::Activity, "", "", nowEpochMs()});
+  }
+  if (k.action == Action::ScreenOff || k.action == Action::PowerTap) {
+    chatSource().command(Command{CmdType::ScreenOff});
+    goDark();
+    return;
+  }
+  if (k.action == Action::KbLightStep) {
+    if (board::hasKbLight()) {
+      app().cfg.kbLight = nextKbLight(app().cfg.kbLight);
+      settings::saveKbLight(app().cfg.kbLight);
+      applyKbLight();
+    }
+    return;
+  }
+  // The help closes on any key or tap; F10 again only closes it.
+  if (keysHelp) {
+    keysHelp = false;
+    if (k.action == Action::KeysHelp || !isJump(k.action)) return;
+  } else if (k.action == Action::KeysHelp) {
+    keysHelp = true;
+    return;
+  }
+  // Function-key jumps work from anywhere, past an open picker.
+  if (isJump(k.action) && (canned.isOpen() || symbols.isOpen())) {
+    canned.close();
+    symbols.close();
+    cannedEmoji = false;
+  }
+  if (canned.isOpen()) {
+    CannedPicker::Out o = canned.key(k);
+    if (o.kind == CannedPicker::Kind::Send) {
+      sendCanned(o.text);
+    } else if (o.kind == CannedPicker::Kind::Emoji) {
+#if RC_FEAT_EMOJI
+      cannedEmoji = true;
+      symbols.setBackspaceCloses(false);
+      symbols.open(U"", SymbolTable::Set::Emoji, board::upDownOnly());
+#endif
+    } else if (o.kind == CannedPicker::Kind::Closed) {
+      router::screen().onKey(KeyEvent{Action::ClearLine});  // a reply's "@name "
+    }
+    return;
+  }
+  if (symbols.isOpen() && cannedEmoji) {
+    SymbolTable::Out o = symbols.key(k);
+    if (o.kind == SymbolTable::Kind::Insert) {
+      symbols.close();
+      sendCanned(std::u32string(1, o.ch));
+    }
+    if (!symbols.isOpen()) cannedEmoji = false;
+    return;
+  }
+  if (symbols.isOpen()) {
+    SymbolTable::Out o = symbols.key(k);
+    if (o.kind == SymbolTable::Kind::Insert) {
+      KeyEvent c;
+      c.action = Action::Char;
+      c.ch = o.ch;
+      router::screen().onKey(c);
+    } else if (o.kind == SymbolTable::Kind::Commands) {
+      router::screen().onKey(KeyEvent{Action::Palette});
+    }
+    if (o.kind != SymbolTable::Kind::PassThrough) return;
+  }
+  // The symbol and emoji keys open their pickers while typing, and are the
+  // palette elsewhere.
+  if (k.action == Action::Symbols || k.action == Action::Emoji) {
+    if (router::screen().acceptsText()) {
+      symbols.setBackspaceCloses(board::backspaceIsBack());
+      if (k.action == Action::Symbols)
+        symbols.open(router::screen().paletteLabel(), SymbolTable::Set::Symbols, board::upDownOnly());
+#if RC_FEAT_EMOJI
+      else
+        symbols.open(U"", SymbolTable::Set::Emoji, board::upDownOnly());
+#endif
+      return;
+    }
+    if (k.modifier) return;
+    k.action = Action::Palette;
+  }
+  if (k.action == Action::Backspace && board::backspaceIsBack()) {
+    uint32_t ms = millis();
+    switch (resolveBackspace(router::screen().consumesBackspace(),
+                             deletedOnce ? ms - lastDeleteMs : UINT32_MAX)) {
+      case BackspaceUse::Delete:
+        lastDeleteMs = ms;
+        deletedOnce = true;
+        break;
+      case BackspaceUse::Back:
+        k.action = Action::Back;
+        break;
+      case BackspaceUse::Drop:
+        return;
+    }
+  }
+  if (router::handleGlobal(k)) return;
+  router::screen().onKey(k);
+}
+
+// Answers the console's "screenshot" command (scripts/screenshot.py) with the
+// frame as drawn; read only, it touches nothing else.
+SerialCommand console;
+
+void sendScreenshot() {
+  const uint16_t* f = renderer.frame();
+  const int w = renderer.width(), h = renderer.height();
+  if (!f || w <= 0 || h <= 0) return;
+  static std::vector<uint8_t> buf;
+  buf.resize(static_cast<size_t>(w) * 3);
+  Serial.printf("\n@@SHOT %d %d\n", w, h);
+  uint32_t crc = 0;
+  size_t total = 0;
+  for (int y = 0; y < h; ++y) {
+    const size_t n = rle565Row(f + static_cast<size_t>(y) * w, w, buf.data());
+    Serial.write(buf.data(), n);
+    crc = crc32Update(crc, buf.data(), n);
+    total += n;
+  }
+  Serial.printf("\n@@END %u %08lx\n", static_cast<unsigned>(total), static_cast<unsigned long>(crc));
+}
+
+void pollConsole() {
+  while (Serial.available() > 0) {
+    switch (console.feed(static_cast<char>(Serial.read()))) {
+      case SerialCommand::Screenshot: sendScreenshot(); break;
+#if RC_FAKE_API
+      // The demo build only: key presses for scripted screenshots.
+      case SerialCommand::Key: handleKey(console.key()); break;
+      case SerialCommand::Type: {
+        std::u32string text = utf8ToU32(console.text());
+        for (char32_t c : text) {
+          KeyEvent k;
+          k.action = Action::Char;
+          k.ch = c;
+          handleKey(k);
+        }
+        break;
+      }
+#endif
+      default: break;
+    }
+  }
+}
+
+#if RC_LOW_MEM
+// Heap and stack headroom every 30 s, on a board without PSRAM.
+void logMemory(uint32_t now) {
+  static uint32_t last = 0;
+  if (last && now - last < 30000) return;
+  last = now;
+  Serial.printf("[mem] int %u blk %u min %u | ui stack free %u\n",
+                unsigned(heap_caps_get_free_size(MALLOC_CAP_INTERNAL)),
+                unsigned(heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL)),
+                unsigned(heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL)),
+                unsigned(uxTaskGetStackHighWaterMark(nullptr)));
+}
+#endif
+
+void taskMain(void*) {
+  ThemeId shown = app().cfg.theme;
+  for (;;) {
+    uint32_t start = millis();
+#if RC_LOW_MEM
+    logMemory(start);
+#endif
+    router::Id beforeScreen = router::current();
+    Power beforePower = power;
+    // Touch first, so a gesture resolves against the map of the frame on
+    // screen; then the buttons. Touch acts only while lit, and wakes a dark
+    // screen only on boards where any input wakes (that finger then does
+    // nothing until it lifts).
+    if (power != Power::On && board::hasTouch() && board::anyInputWakes()) {
+      int16_t tx, ty;
+      const bool down = board::readTouch(tx, ty);
+      const bool waking = board::doubleTapWakes() ? doubleTap.feed(down, millis()) : down;
+      if (waking && nowMs() - lockedAt >= kLockQuietMs) {
+        wake();
+        touchSwallow = true;
+        gestures.reset();
+      }
+    } else if (power == Power::On && board::hasTouch()) {
+      int16_t tx, ty;
+      bool down = board::readTouch(tx, ty);
+      if (touchSwallow && !down) touchSwallow = false;
+      if (down) {
+        lastInputMs = nowMs();
+        setLit(255);
+      }
+      // A key of the on-screen keyboard lights while a finger is on it.
+      if (down && oskShown && !touchSwallow) {
+        const Target h = taps.hit(tx, ty);
+        if (h.kind == TargetKind::Osk) osk.touch(h.index, millis());
+      }
+      Gesture g;
+      if (!touchSwallow && gestures.feed(down, tx, ty, millis(), g)) {
+        TouchOutput out;
+        resolver.resolve(g, taps, out);
+        if (app().cfg.tapVibrate && board::hasHaptic() && tapBuzz(g, out)) board::haptic(kTapBuzzMs);
+        if (out.hideBanner) topBanner.hide();
+        const bool menuBefore = Overlay::anyOpen();
+        touchKey = true;
+        for (const KeyEvent& k : out.keys) {
+          handleKey(k);
+          if (g.kind == GestureKind::LongPress && !menuBefore && Overlay::anyOpen())
+            pressMenu = true;
+          if (k.action == Action::Focus && power == Power::On && !board::hasKeyboard() &&
+              router::screen().acceptsText())
+            showOsk(true);
+        }
+        if (out.oskKey >= 0 && oskShown) {
+          osk.touch(out.oskKey, millis());
+          OskOutput o = osk.press(out.oskKey, millis());
+          if (o.key.action != Action::None) handleKey(o.key);
+          if (o.hide) showOsk(false);
+          if (o.key.action == Action::Emoji && symbols.isOpen()) {
+            showOsk(false);
+            oskBehindTray = true;
+          }
+        }
+        touchKey = false;
+      }
+    }
+    board::textEntry(power == Power::On && router::screen().acceptsText());
+    KeyEvent key;
+    while (board::pollKey(key)) handleKey(key);
+    applyKbLight();
+    applyBacklight();
+    applyStatusLights();
+    Event e;
+    while (nextEvent(e)) handleEvent(e);
+    if (board::webCompose()) runWebCompose();
+    applyNotifyLight();
+    switch (power_service::step()) {
+      case PowerStep::Stay: break;
+      case PowerStep::Sleep:
+        finalScreen("Sleeping \u2014 updated " + clockText(), false);
+        power_service::sleep();
+        break;
+      case PowerStep::PowerOff:
+        finalScreen("Battery empty \u2014 charge to turn on", true);
+        power_service::powerOff();
+        break;
+    }
+
+    int64_t now = nowMs();
+    if (power == Power::Saver && now >= saverUntil) {
+      if (lockedTo == Power::Bounce) {
+        power = Power::Bounce;
+        sayUntil = 0;
+        nextBounce = now;
+        setLit(kSaverLevel);
+      } else {
+        goDark();
+      }
+    }
+    // The screen timeout: dim for the last seconds, then lock. Incoming
+    // messages neither wake the screen nor restart the timeout.
+    if (power == Power::On) {
+      switch (idlePhase(now - lastInputMs, app().cfg.screenOnSecs)) {
+        case IdlePhase::Active: setLit(255); break;
+        case IdlePhase::Dim: setLit(kDimLevel); break;
+        case IdlePhase::Lock: lockScreen(now); break;
+      }
+    }
+    // A gesture in progress is dropped whenever the screen or power state
+    // changes under it (screen change, going dark, the saver, waking).
+    if (router::current() != beforeScreen || power != beforePower) {
+      gestures.reset();
+      doubleTap.reset();
+      resolver.reset();
+      if (router::current() != beforeScreen) {
+        showOsk(false);
+        oskBehindTray = false;
+      }
+    }
+    if (oskShown && !router::screen().acceptsText()) showOsk(false);
+    if (oskWanted && !board::canType()) {
+      oskWanted = false;
+      if (power == Power::On && router::current() == beforeScreen && router::screen().acceptsText()) {
+        canned.open(app().cfg.phrases, RC_FEAT_EMOJI != 0);
+        if (!canned.isOpen()) ui::banner("No phrases: add them in web config", true);
+      }
+    }
+    if (oskWanted) {
+      oskWanted = false;
+      if (power == Power::On && board::hasTouch() && !board::hasKeyboard() && !symbols.isOpen() &&
+          router::current() == beforeScreen && router::screen().acceptsText())
+        showOsk(true);
+    }
+    if (oskBehindTray && !symbols.isOpen()) {
+      oskBehindTray = false;
+      if (power == Power::On && router::current() == beforeScreen && router::screen().acceptsText())
+        showOsk(true);
+    }
+    if (symbols.isOpen() && (router::current() != beforeScreen || power != Power::On ||
+                             !router::screen().acceptsText()))
+      symbols.close();
+    if (!symbols.isOpen()) cannedEmoji = false;
+    if (canned.isOpen() && (router::current() != beforeScreen || power != Power::On ||
+                            !router::screen().acceptsText()))
+      canned.close();
+    // Settings and web config change the theme between frames; repaint it all.
+    if (app().cfg.theme != shown) {
+      shown = app().cfg.theme;
+      needResize = true;
+    }
+    if (wantedSize() != gridSize) needResize = true;
+    if (needResize) resizeGrid();
+    if (!Overlay::anyOpen() || router::current() != beforeScreen) pressMenu = false;
+    setCursorShown(baseCursor || pressMenu);
+    const Theme& t = currentTheme();
+    if (power == Power::On) {
+      taps.clear();
+      taps.setOrigin(cellSize(gridSize), 0);
+      router::screen().render(grid, t, now);
+      symbols.render(grid, grid.rows() - 1, t);
+      canned.render(grid, 0, grid.rows() - 1, t);
+      if (keysHelp) renderKeysHelp(grid, t);
+      topBanner.render(grid, 0, t, now);  // over the status bar
+      taps.mapRows(0, rowSpans(grid, cellSize(gridSize).h, bigCellSize(gridSize).h));
+      renderer.draw(grid, gridSize);
+      if (oskShown) {
+        taps.setOrigin(cellSize(gridSize), grid.rows(), oskOffsetPx);
+        osk.render(oskGrid, t, millis());
+        taps.mapRows(grid.rows(), rowSpans(oskGrid, cellSize(gridSize).h, bigCellSize(gridSize).h));
+        renderer.draw(oskGrid, gridSize, grid.rows(), oskOffsetPx);
+      }
+    } else if (power == Power::Saver) {
+      drawSaver(t);
+      renderer.draw(grid, gridSize);
+    } else if (power == Power::Bounce && now >= nextBounce) {
+      // E-paper draws it once.
+      nextBounce = board::eink() ? INT64_MAX : now + kBounceStepMs;
+      drawBounce(t);
+      renderer.draw(grid, gridSize);
+    }
+    pollConsole();
+    uint32_t spent = millis() - start;
+    vTaskDelay(pdMS_TO_TICKS(spent < kFrameMs ? kFrameMs - spent : 1));
+  }
+}
+
+}  // namespace
+
+void start() {
+  symbols.setEmoji(RC_FEAT_EMOJI != 0);
+  if (board::canRotate()) board::setRotation(app().cfg.rotation);
+  if (TextSize only; board::fixedTextSize(only)) {
+    app().cfg.textSize = only;
+  } else {
+#if RC_LOW_MEM
+    if (app().cfg.textSize == TextSize::Compact) app().cfg.textSize = TextSize::Comfortable;
+#endif
+  }
+  power_service::begin();
+  if (!renderer.begin()) Serial.println("[ui] no memory for the frame buffer");
+  setActiveTaps(board::hasTouch() ? &taps : nullptr);
+  baseCursor = board::hasKeys() || board::sideNav();
+  setCursorShown(baseCursor);
+  resolver.setTouchOnly(!board::hasKeys());
+  Overlay::setConfirmButtons(board::hasTouch() && !board::hasKeys());
+  resizeGrid();
+  router::go(router::Id::Splash);
+  board::backlight(true);
+  sentBacklight = 255;
+  applyBacklight();
+  // Core 1 beside the network's core 0; a single-core chip (the X4's C3) has only 0.
+#if RC_LOW_MEM
+  // Measured: about 3.4 KB used. The heap left over is what TLS runs in.
+  constexpr uint32_t kUiStack = 10240;
+#else
+  constexpr uint32_t kUiStack = 16384;
+#endif
+  xTaskCreatePinnedToCore(taskMain, "ui", kUiStack, nullptr, 2, nullptr, portNUM_PROCESSORS > 1 ? 1 : 0);
+}
+
+void setTextSize(TextSize s) {
+  if (TextSize only; board::fixedTextSize(only)) s = only;
+  app().cfg.textSize = s;
+  settings::saveUiPrefs(app().cfg);
+  needResize = true;
+}
+
+std::u32string textSizeItem() { return U"Text size: " + textSizeLabel(nextTextSize(app().cfg.textSize)); }
+
+void cycleTextSize() { setTextSize(nextTextSize(app().cfg.textSize)); }
+
+void setRotation(uint8_t r) { applyRotation(r); }
+
+bool fromTouch() { return touchKey; }
+
+std::string monsterWord() { return words.next(esp_random(), app().mascot.phrases); }
+
+void showKeyboard() { oskWanted = true; }
+
+ComposeView composeView() {
+  std::lock_guard<std::mutex> l(composeMu);
+  return composeShown;
+}
+
+std::string webCompose(ComposeReq r) {
+  std::lock_guard<std::mutex> l(composeMu);
+  if (composeWaiting || composeBusy) return "Still sending the last one";
+  if (r.kind == ComposeKind::Mail && !RC_FEAT_CMAIL) return "C-Mail is not on this device";
+  if (r.kind == ComposeKind::Thread && !RC_FEAT_GUILDS) return "Guilds are not on this device";
+  std::string err = checkCompose(r, composeShown.takesText);
+  if (!err.empty()) return err;
+  composeSlot = std::move(r);
+  composeWaiting = true;
+  return "";
+}
+
+bool typingElsewhere(const char* what) {
+  if (board::canType()) return false;
+  banner(std::string(what) + " from web config", true);
+  return true;
+}
+
+void banner(const std::string& text, bool error) {
+  topBanner.show(utf8ToU32(text), nowMs(), error ? 6000 : 4000, error);
+}
+
+void redrawAll() { needResize = true; }
+
+void previewBrightness(int pct) {
+  brightnessPreview = pct;
+  applyBacklight();
+}
+
+void previewLedLevel(int level) {
+  ledLevelPreview = level;
+  applyStatusLights();
+}
+
+void notifyLightPreview(LedColor c) {
+  if (board::hasNotifyLight()) blinker.preview(c, millis());
+}
+
+}  // namespace rc::ui

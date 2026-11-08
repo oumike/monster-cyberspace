@@ -41,10 +41,10 @@
 **Interfaces:**
 - Produces: `RC_UI_GRID` (1 only on `x4`); every later task may change `src/screens/`, `src/ui/`, `src/app/ui_task.cpp` without touching the X4.
 
-- [ ] **Step 1:** Copy the files; in the copies change nothing but include paths if any break.
-- [ ] **Step 2:** `pio run -e x4` → SUCCESS, RAM/flash identical (±1 KB) to `main`.
-- [ ] **Step 3:** `pio run -e m9` → SUCCESS (unaffected).
-- [ ] **Step 4:** Commit `X4: build a frozen copy of the grid UI`.
+- [x] **Step 1:** Copy the files; in the copies change nothing but include paths if any break.
+- [x] **Step 2:** `pio run -e x4` → SUCCESS, RAM/flash identical (±1 KB) to `main`.
+- [x] **Step 3:** `pio run -e m9` → SUCCESS (unaffected).
+- [x] **Step 4:** Commit `X4: build a frozen copy of the grid UI`.
 
 ### Task 2: LVGL and the `native_lv` env
 

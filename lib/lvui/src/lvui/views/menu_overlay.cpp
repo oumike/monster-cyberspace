@@ -20,6 +20,8 @@ void MenuOverlay::create(lv_obj_t* layer) {
   lv_obj_set_width(title_, lv_pct(100));
   list_.create(box_);
   list_.setListId(rc::ListId::Menu);
+  list_.setMissBack(true);
+  lv_obj_set_width(list_.obj(), lv_pct(100));
   lv_obj_set_flex_grow(list_.obj(), 1);
   panel_ = plainBox(backdrop_);
   buttonTitle_ = lv_label_create(backdrop_);

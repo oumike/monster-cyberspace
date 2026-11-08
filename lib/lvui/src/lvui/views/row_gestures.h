@@ -41,6 +41,8 @@ class RowGestures {
   // touch-only boards tap rows as the rest do. wraps: drags and swipes step
   // a wrapping list (see above).
   void attach(lv_obj_t* obj, Rows* rows, rc::ListId list, bool holdToAct = true, bool wraps = false);
+  // The list later keys name, after attach.
+  void setList(rc::ListId list) { list_ = list; }
 
  private:
   static void eventCb(lv_event_t* e);

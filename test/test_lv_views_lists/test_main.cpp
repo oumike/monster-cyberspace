@@ -42,12 +42,14 @@ bool readPtr(int16_t& x, int16_t& y) {
 }
 
 std::vector<rc::KeyEvent> keys;
-// Set by a test: an Activate on Main selects there, as FeedListScreen::onKey does.
+// Set by a test: an Activate on liveId selects there, as FeedListScreen::onKey
+// does on Main.
 rc::EntryList* liveModel = nullptr;
 rc::ListView* liveList = nullptr;
+ListId liveId = ListId::Main;
 void sink(const rc::KeyEvent& e) {
   keys.push_back(e);
-  if (e.action != Action::Activate || e.target != static_cast<uint8_t>(ListId::Main)) return;
+  if (e.action != Action::Activate || e.target != static_cast<uint8_t>(liveId)) return;
   if (liveModel) liveModel->select(e.index);
   if (liveList) liveList->select(e.index);
 }
@@ -193,7 +195,7 @@ std::vector<rc::KeyEvent> gridKeys(Model el, int top, int bottom, const std::vec
     tr.resolve(g, map, o);
     for (const rc::KeyEvent& k : o.keys) {
       out.push_back(k);
-      if (k.action == Action::Activate && k.target == static_cast<uint8_t>(ListId::Main)) el.select(k.index);
+      if (k.action == Action::Activate && k.target == static_cast<uint8_t>(liveId)) el.select(k.index);
     }
     render();
   }
@@ -237,8 +239,19 @@ void setUp() {
   keys.clear();
   liveModel = nullptr;
   liveList = nullptr;
+  liveId = ListId::Main;
 }
 void tearDown() {}
+
+
+std::vector<rc::ListItem> numberedItems(int n) {
+  std::vector<rc::ListItem> items;
+  for (int i = 0; i < n; ++i) items.push_back(rc::ListItem{U"row " + rc::utf8ToU32(std::to_string(i)), U""});
+  return items;
+}
+
+// Cell rows [1, 14) of the 40x15 screen, as a screen places a list.
+void placeListBox(lvui::ListBox& box) { lvui::place(box.obj(), 0, 16, 320, 13 * 16); }
 
 void test_list_box_mirrors_model() {
   rc::ListView lv;
@@ -246,11 +259,12 @@ void test_list_box_mirrors_model() {
   lv.setSelected(1);
   lvui::ListBox box;
   box.create(lv_screen_active());
+  placeListBox(box);
   box.sync(lv);
-  TEST_ASSERT_EQUAL(3, lv_obj_get_child_count(box.obj()));
-  lv_obj_t* row1 = lv_obj_get_child(box.obj(), 1);
+  TEST_ASSERT_EQUAL(3, box.shownItems());
+  lv_obj_t* row1 = box.row(1);
   TEST_ASSERT_TRUE(lv_obj_has_state(row1, LV_STATE_CHECKED));
-  TEST_ASSERT_FALSE(lv_obj_has_state(lv_obj_get_child(box.obj(), 0), LV_STATE_CHECKED));
+  TEST_ASSERT_FALSE(lv_obj_has_state(box.row(0), LV_STATE_CHECKED));
   const rc::Theme& t = rc::defaultTheme();
   // Outlined, not filled: the row keeps its own colours (list_view.cpp).
   TEST_ASSERT_EQUAL(LV_OPA_TRANSP, lv_obj_get_style_bg_opa(row1, LV_PART_MAIN));
@@ -264,35 +278,44 @@ void test_list_box_mirrors_model() {
   // Unchanged shape: the same objects, the selection moved.
   lv.setSelected(2);
   box.sync(lv);
-  TEST_ASSERT_EQUAL_PTR(row1, lv_obj_get_child(box.obj(), 1));
+  TEST_ASSERT_EQUAL_PTR(row1, box.row(1));
   TEST_ASSERT_FALSE(lv_obj_has_state(row1, LV_STATE_CHECKED));
-  TEST_ASSERT_TRUE(lv_obj_has_state(lv_obj_get_child(box.obj(), 2), LV_STATE_CHECKED));
+  TEST_ASSERT_TRUE(lv_obj_has_state(box.row(2), LV_STATE_CHECKED));
   // A selected Error row keeps the error colour.
   TEST_ASSERT_EQUAL_HEX16(t.error, rgb565(lv_obj_get_style_text_color(box.label(2), LV_PART_MAIN)));
-  TEST_ASSERT_EQUAL(LV_OPA_TRANSP, lv_obj_get_style_bg_opa(lv_obj_get_child(box.obj(), 2), LV_PART_MAIN));
+  TEST_ASSERT_EQUAL(LV_OPA_TRANSP, lv_obj_get_style_bg_opa(box.row(2), LV_PART_MAIN));
 
   // No cursor on keyless boards: nothing is marked.
   rc::setCursorShown(false);
   box.sync(lv);
-  TEST_ASSERT_FALSE(lv_obj_has_state(lv_obj_get_child(box.obj(), 2), LV_STATE_CHECKED));
+  TEST_ASSERT_FALSE(lv_obj_has_state(box.row(2), LV_STATE_CHECKED));
 }
 
 void test_list_box_scrolls_selection_into_view() {
   rc::ListView lv;
-  std::vector<rc::ListItem> items;
-  for (int i = 0; i < 30; ++i) items.push_back(rc::ListItem{U"row", U""});
-  lv.setItems(items);
+  lv.setItems(numberedItems(30));
   lvui::ListBox box;
   box.create(lv_screen_active());
-  lv_obj_set_size(box.obj(), 320, 64);
+  lvui::place(box.obj(), 0, 0, 320, 64);
   box.sync(lv);
   lv.setSelected(20);
   box.sync(lv);
+  // Four rows, the selection on the last, nothing scrolled natively.
+  TEST_ASSERT_EQUAL(17, box.firstShown());
+  TEST_ASSERT_EQUAL_STRING("row 20", text(box.label(3)));
+  TEST_ASSERT_TRUE(lv_obj_has_state(box.row(3), LV_STATE_CHECKED));
+  TEST_ASSERT_EQUAL(0, lv_obj_get_scroll_y(box.obj()));
   lv_obj_update_layout(lv_screen_active());
-  lv_area_t view, row;
-  lv_obj_get_coords(box.obj(), &view);
-  lv_obj_get_coords(lv_obj_get_child(box.obj(), 20), &row);
-  TEST_ASSERT_TRUE(row.y1 >= view.y1 && row.y2 <= view.y2);
+  // Each row on its cell, the checked one's outline included, its text unmoved.
+  for (int k = 0; k < 4; ++k) {
+    lv_area_t row, label;
+    lv_obj_get_coords(box.row(k), &row);
+    lv_obj_get_coords(box.label(k), &label);
+    TEST_ASSERT_EQUAL(k * 16, row.y1);
+    TEST_ASSERT_EQUAL(k * 16 + 15, row.y2);
+    TEST_ASSERT_EQUAL(k * 16, label.y1);
+    TEST_ASSERT_EQUAL(2 * 8, label.x1);
+  }
 }
 
 void test_list_tap_emits_activate() {
@@ -300,22 +323,34 @@ void test_list_tap_emits_activate() {
   lv.setItems(threeItems());
   lvui::ListBox box;
   box.create(lv_screen_active());
+  placeListBox(box);
   box.sync(lv);
-  tap(centre(lv_obj_get_child(box.obj(), 2)));
+  tap(centre(box.row(2)));
   TEST_ASSERT_EQUAL(1, keys.size());
   assertActivate(keys[0], 2, ListId::Main, Action::Select);
 
   // A long press: the palette on that row, and no tap after it.
   keys.clear();
-  press(centre(lv_obj_get_child(box.obj(), 1)), 600);
+  press(centre(box.row(1)), 600);
   TEST_ASSERT_EQUAL(1, keys.size());
   assertActivate(keys[0], 1, ListId::Main, Action::Palette);
 
+  // The list id set after create names later keys.
   keys.clear();
   box.setListId(ListId::Drawer);
-  tap(centre(lv_obj_get_child(box.obj(), 0)));
+  tap(centre(box.row(0)));
   TEST_ASSERT_EQUAL(1, keys.size());
   assertActivate(keys[0], 0, ListId::Drawer, Action::Select);
+
+  // Below the rows: a screen list does nothing (the grid has no target there).
+  keys.clear();
+  tap({40, 16 + 8 * 16 + 8});
+  TEST_ASSERT_EQUAL(0, keys.size());
+  // Unless it misses back, as an overlay's list does over its backdrop.
+  box.setMissBack(true);
+  tap({40, 16 + 8 * 16 + 8});
+  TEST_ASSERT_EQUAL(1, keys.size());
+  TEST_ASSERT_TRUE(keys[0].action == Action::Back);
 }
 
 void test_overlay_captures_taps() {
@@ -325,6 +360,7 @@ void test_overlay_captures_taps() {
   lv.setItems(items);
   lvui::ListBox under;
   under.create(lv_screen_active());
+  placeListBox(under);
   under.sync(lv);
 
   rc::Overlay ov;
@@ -333,14 +369,14 @@ void test_overlay_captures_taps() {
   menu.create();
   menu.setPlace(rc::OverlayPlace::Centre);
   menu.sync(ov);
-  lv_obj_t* top = lv_obj_get_child(menu.list().obj(), 0);
+  lv_obj_t* top = menu.list().row(0);
   lv_point_t p = centre(top);
   // Put list row 2 under the overlay's row 0.
   lv_area_t row2;
-  lv_obj_get_coords(lv_obj_get_child(under.obj(), 2), &row2);
-  lv_obj_set_y(under.obj(), p.y - (row2.y1 + row2.y2) / 2);
+  lv_obj_get_coords(under.row(2), &row2);
+  lv_obj_set_y(under.obj(), lv_obj_get_y(under.obj()) + p.y - (row2.y1 + row2.y2) / 2);
   lv_obj_update_layout(lv_screen_active());
-  TEST_ASSERT_TRUE(contains(lv_obj_get_child(under.obj(), 2), p));
+  TEST_ASSERT_TRUE(contains(under.row(2), p));
   TEST_ASSERT_TRUE(contains(top, p));
 
   tap(p);
@@ -370,9 +406,9 @@ void test_overlay_title_and_rows() {
   menu.setPlace(rc::OverlayPlace::BottomRight);
   menu.sync(ov);
   TEST_ASSERT_EQUAL_STRING(" Leave room?", text(menu.title()));
-  TEST_ASSERT_EQUAL(2, lv_obj_get_child_count(menu.list().obj()));
+  TEST_ASSERT_EQUAL(2, menu.list().shownItems());
   TEST_ASSERT_EQUAL_STRING("Leave", text(menu.list().label(1)));
-  TEST_ASSERT_TRUE(lv_obj_has_state(lv_obj_get_child(menu.list().obj(), 0), LV_STATE_CHECKED));
+  TEST_ASSERT_TRUE(lv_obj_has_state(menu.list().row(0), LV_STATE_CHECKED));
   // Bottom right, a column in from the edge, at the bottom: 30 columns wide.
   lv_obj_update_layout(lv_layer_top());
   lv_area_t a;
@@ -591,21 +627,12 @@ void test_entry_list_draws_its_window_without_scrolling() {
 }
 
 
-std::vector<rc::ListItem> numberedItems(int n) {
-  std::vector<rc::ListItem> items;
-  for (int i = 0; i < n; ++i) items.push_back(rc::ListItem{U"row " + rc::utf8ToU32(std::to_string(i)), U""});
-  return items;
-}
-
-// Cell rows [1, 14) of the 40x15 screen, as a screen places a list.
-void placeListBox(lvui::ListBox& box) { lvui::place(box.obj(), 0, 16, 320, 13 * 16); }
-
 void test_list_box_window_draws_list_view_rows() {
   rc::ListView lv;
   lv.setItems(numberedItems(30));
   lv.setSelected(20);
   lvui::ListBox box;
-  box.create(lv_screen_active(), /*windowed*/ true);
+  box.create(lv_screen_active());
   placeListBox(box);
   box.sync(lv);
   TEST_ASSERT_FALSE(lv_obj_has_flag(box.obj(), LV_OBJ_FLAG_SCROLLABLE));
@@ -634,7 +661,7 @@ void test_list_box_window_drag_steps_selection() {
   rc::ListView lv;
   lv.setItems(numberedItems(30));
   lvui::ListBox box;
-  box.create(lv_screen_active(), /*windowed*/ true);
+  box.create(lv_screen_active());
   placeListBox(box);
   box.sync(lv);
   liveList = &lv;
@@ -656,6 +683,75 @@ void test_list_box_window_drag_steps_selection() {
   TEST_ASSERT_EQUAL(15, lv.selected());
 }
 
+void test_list_box_drag_names_its_list() {
+  // A non-Main list (an overlay's Menu): the same keys as the grid's tap map
+  // with that list id, tap, drag and flick.
+  rc::ListView lv;
+  lv.setItems(numberedItems(30));
+  lv.setListId(ListId::Menu);
+  lvui::ListBox box;
+  box.create(lv_screen_active());
+  box.setListId(ListId::Menu);
+  placeListBox(box);
+  box.sync(lv);
+  liveList = &lv;
+  liveId = ListId::Menu;
+  const auto tapPath = fingerPath({40, 16 + 4 * 16 + 8}, 0, 0, 40);
+  const auto wantTap = gridKeys(lv, 1, 14, tapPath);
+  TEST_ASSERT_EQUAL(1, wantTap.size());
+  play(tapPath, box, lv);
+  assertSameKeys(wantTap, keys);
+  assertActivate(keys[0], 4, ListId::Menu, Action::Select);
+  TEST_ASSERT_EQUAL(4, lv.selected());
+
+  keys.clear();
+  const auto path = fingerPath({40, 16 + 6 * 16 + 8}, -3 * 16, 12, 60);
+  const auto want = gridKeys(lv, 1, 14, path);
+  TEST_ASSERT_EQUAL(3, want.size());
+  play(path, box, lv);
+  assertSameKeys(want, keys);
+  TEST_ASSERT_EQUAL(7, lv.selected());
+
+  // Back down past the top: a wrapping list clamps at 0 (no Up keys).
+  keys.clear();
+  const auto down = fingerPath({40, 16 + 2 * 16 + 8}, 10 * 16, 20, 60);
+  const auto wantDown = gridKeys(lv, 1, 14, down);
+  play(down, box, lv);
+  assertSameKeys(wantDown, keys);
+  for (const rc::KeyEvent& k : keys) TEST_ASSERT_TRUE(k.action == Action::Activate);
+  TEST_ASSERT_EQUAL(0, lv.selected());
+
+  keys.clear();
+  const auto flick = fingerPath({40, 16 + 10 * 16 + 8}, -80, 0, 40);
+  const auto wantFlick = gridKeys(lv, 1, 14, flick);
+  TEST_ASSERT_EQUAL(1, wantFlick.size());
+  playLifting(flick, box, lv);
+  assertSameKeys(wantFlick, keys);
+  TEST_ASSERT_EQUAL(static_cast<int>(ListId::Menu), keys[0].target);
+}
+
+void test_overlay_bar_column_is_backdrop() {
+  // A long menu: its list's bar column is no row in the grid's tap map, so
+  // the backdrop's Back takes it.
+  rc::Overlay ov;
+  ov.open(U"Menu", numberedItems(20));
+  lvui::MenuOverlay menu;
+  menu.create();
+  menu.setPlace(rc::OverlayPlace::Centre);
+  menu.sync(ov);
+  TEST_ASSERT_FALSE(lv_obj_has_flag(menu.list().scrollBar().track(), LV_OBJ_FLAG_HIDDEN));
+  lv_obj_update_layout(lv_layer_top());
+  lv_area_t bar;
+  lv_obj_get_coords(menu.list().obj(), &bar);
+  tap({bar.x2 - 2, centre(menu.list().row(0)).y});
+  TEST_ASSERT_EQUAL(1, keys.size());
+  TEST_ASSERT_TRUE(keys[0].action == Action::Back);
+  keys.clear();
+  tap(centre(menu.list().row(1)));
+  TEST_ASSERT_EQUAL(1, keys.size());
+  assertActivate(keys[0], 1, ListId::Menu, Action::Select);
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_list_box_mirrors_model);
@@ -673,5 +769,7 @@ int main() {
   RUN_TEST(test_drawer_rows_and_close);
   RUN_TEST(test_list_box_window_draws_list_view_rows);
   RUN_TEST(test_list_box_window_drag_steps_selection);
+  RUN_TEST(test_list_box_drag_names_its_list);
+  RUN_TEST(test_overlay_bar_column_is_backdrop);
   return UNITY_END();
 }

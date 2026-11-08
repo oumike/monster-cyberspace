@@ -1,42 +1,41 @@
 #include "lvui/views/list_box.h"
 
 #include <algorithm>
-#include <cstdint>
 
+#include "lvui/input.h"
 #include "lvui/styles.h"
 #include "ui/widgets/scroll_bar.h"
 
 namespace lvui {
 
-void ListBox::create(lv_obj_t* parent, bool windowed) {
+void ListBox::create(lv_obj_t* parent) {
   box_ = plainBox(parent);
-  windowed_ = windowed;
   rows_.clear();
-  sel_ = -1;
   shown_ = first_ = width_ = 0;
   cell_ = {0, 0};
   model_ = nullptr;
-  if (windowed) {
-    lines_ = plainBox(box_);
-    lv_obj_set_flex_flow(lines_, LV_FLEX_FLOW_COLUMN);
-    bar_.create(box_);
-    touch_.attach(box_, this, list_, /*holdToAct*/ false, /*wraps*/ true);
-    return;
-  }
-  lines_ = nullptr;
-  lv_obj_add_flag(box_, LV_OBJ_FLAG_SCROLLABLE);
-  lv_obj_set_scroll_dir(box_, LV_DIR_VER);
-  lv_obj_set_size(box_, lv_pct(100), LV_SIZE_CONTENT);
-  lv_obj_set_flex_flow(box_, LV_FLEX_FLOW_COLUMN);
+  lines_ = plainBox(box_);
+  lv_obj_set_flex_flow(lines_, LV_FLEX_FLOW_COLUMN);
+  bar_.create(box_);
+  touch_.attach(box_, this, list_, /*holdToAct*/ false, /*wraps*/ true);
+}
+
+void ListBox::setListId(rc::ListId id) {
+  list_ = id;
+  touch_.setList(id);
 }
 
 ListBox::Row ListBox::makeRow(lv_obj_t* parent) {
   Row r;
   r.row = plainBox(parent);
-  lv_obj_set_size(r.row, lv_pct(100), LV_SIZE_CONTENT);
+  lv_obj_set_size(r.row, lv_pct(100), cellOf(parent).h);
   lv_obj_set_flex_flow(r.row, LV_FLEX_FLOW_ROW);
   addStyle(r.row, Role::Item);
   addStyle(r.row, Role::Focused, LV_STATE_CHECKED);
+  // The outline over the row's cells, as the grid draws it: its border
+  // neither grows the row nor moves the text.
+  lv_obj_set_style_pad_all(r.row, -1, LV_STATE_CHECKED);
+  lv_obj_add_flag(r.row, LV_OBJ_FLAG_OVERFLOW_VISIBLE);
   r.marker = lineLabel(r.row);
   lv_obj_set_width(r.marker, 2 * cellOf(r.marker).w);
   r.label = lineLabel(r.row);
@@ -65,32 +64,6 @@ void ListBox::fillRow(Row& r, const rc::ListItem& it) {
 }
 
 void ListBox::sync(const rc::ListView& m) {
-  if (windowed_) return syncWindow(m);
-  const auto& items = m.items();
-  const int n = static_cast<int>(items.size());
-  while (static_cast<int>(rows_.size()) > n) {
-    lv_obj_delete(rows_.back().row);
-    rows_.pop_back();
-  }
-  while (static_cast<int>(rows_.size()) < n) {
-    Row r = makeRow(box_);
-    lv_obj_set_user_data(r.row, reinterpret_cast<void*>(static_cast<intptr_t>(rows_.size())));
-    addTap(r.row, this);
-    rows_.push_back(r);
-    sel_ = -1;
-  }
-  for (int i = 0; i < n; ++i) {
-    fillRow(rows_[i], items[i]);
-    setChecked(rows_[i].row, i == m.selected() && rc::cursorShown());
-  }
-  if (n > 0 && m.selected() != sel_) {
-    sel_ = m.selected();
-    lv_obj_update_layout(box_);
-    lv_obj_scroll_to_view(rows_[sel_].row, LV_ANIM_OFF);
-  }
-}
-
-void ListBox::syncWindow(const rc::ListView& m) {
   model_ = &m;
   lv_obj_update_layout(box_);
   const Cell cell = cellOf(box_);
@@ -125,12 +98,8 @@ void ListBox::syncWindow(const rc::ListView& m) {
   bar_.sync(bar ? cols * cell.w : 0, cell, bar ? height : 0, n, height, first_);
 }
 
-void ListBox::tapped(lv_obj_t* obj, bool hold) {
-  emit(rowKey(list_, static_cast<int>(reinterpret_cast<intptr_t>(lv_obj_get_user_data(obj))), hold));
-}
-
 int ListBox::itemAt(lv_point_t p) const {
-  if (!windowed_ || cell_.w <= 0 || cell_.h <= 0) return -1;
+  if (cell_.w <= 0 || cell_.h <= 0) return -1;
   lv_area_t a;
   lv_obj_get_content_coords(box_, &a);
   if (p.x < a.x1 || p.y < a.y1) return -1;
@@ -142,5 +111,12 @@ int ListBox::itemAt(lv_point_t p) const {
 int ListBox::selectedItem() const { return model_ ? model_->selected() : -1; }
 
 int ListBox::itemCount() const { return model_ ? static_cast<int>(model_->size()) : 0; }
+
+void ListBox::missed(bool) {
+  if (!missBack_) return;
+  rc::KeyEvent e;
+  e.action = rc::Action::Back;
+  emit(e);
+}
 
 }  // namespace lvui

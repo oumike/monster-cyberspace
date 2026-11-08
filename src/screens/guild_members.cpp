@@ -128,7 +128,7 @@ void MembersScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
 // ---- LVGL ----
 
 void MembersScreen::build(lv_obj_t* root) {
-  listView_.create(root, /*windowed*/ true);
+  listView_.create(root);
   navView_.create(root);
   text_.create(root);
   hint_.create(root);

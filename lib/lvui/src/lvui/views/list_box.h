@@ -10,44 +10,47 @@
 
 namespace lvui {
 
-// rc::ListView as a column of one-cell-high rows: "• label  right ". The
-// selected row is checked (Role::Focused: outlined in selectBg, keeping its
-// own colours, as the grid's list_view does) while rc::cursorShown(). Two
-// modes, picked at create():
-// - scrolling (a menu): every row, the box scrolled to keep the selection in
-//   view. A tap on a row emits {Activate, row, list, then Select}; a long
-//   press, then Palette (input/touch_resolve).
-// - windowed (a screen's list): ListView::render's window, the rows that fit
-//   with the selection kept on the last, and a scroll bar in the last column
-//   when they overflow. Nothing scrolls natively: touch is RowGestures on a
-//   wrapping list (TapMap::setList wraps), so a tap or long press emits as
-//   above and a drag or swipe steps the selection.
-class ListBox : public Tappable, public RowGestures::Rows {
+// rc::ListView as ListView::render draws it: over the box's cells, the rows
+// that fit, the selection kept on the last once it passes it, each a
+// one-cell-high "• label  right " row, and a scroll bar in the last column
+// when the list is longer than the rows. The selected row is checked
+// (Role::Focused: outlined in selectBg, keeping its own colours, as the
+// grid's list_view does) while rc::cursorShown(). Nothing scrolls natively:
+// touch is RowGestures on a wrapping list (ListView::render's TapMap::setList
+// wraps), so a tap on a row emits {Activate, row, list, then Select}, a long
+// press then Palette (input/touch_resolve), and a drag or swipe steps the
+// selection.
+class ListBox : public RowGestures::Rows {
  public:
   ListBox() = default;
   ListBox(const ListBox&) = delete;
   ListBox& operator=(const ListBox&) = delete;
 
-  // Scrolling: a full-width column as tall as its rows; size it to scroll.
-  // Windowed: place obj() over the list's cells, its bar column included.
-  void create(lv_obj_t* parent, bool windowed = false);
-  // The list its rows' taps name (rc::ListView::setListId). Default Main;
-  // windowed, set it before create().
-  void setListId(rc::ListId id) { list_ = id; }
-  // Windowed: m must outlive the box, as touch reads its selection.
+  // Place obj() over the list's cells, its bar column included (a flex
+  // child that grows works too).
+  void create(lv_obj_t* parent);
+  // The list its rows' keys name (rc::ListView::setListId). Default Main.
+  void setListId(rc::ListId id);
+  // A tap or long press on the box but on no row (the bar column, below
+  // the last row) emits Back, as an overlay's backdrop under its list does.
+  void setMissBack(bool on) { missBack_ = on; }
+  // m must outlive the box, as touch reads its selection.
   void sync(const rc::ListView& m);
 
   lv_obj_t* obj() const { return box_; }
-  // The i-th row shown, from the top (scrolling: item i).
+  // The i-th row shown, from the top.
+  lv_obj_t* row(int i) const { return rows_[i].row; }
   lv_obj_t* label(int i) const { return rows_[i].label; }
   lv_obj_t* right(int i) const { return rows_[i].right; }
+  // The item shown on the top row.
+  int firstShown() const { return first_; }
   const ScrollBarView& scrollBar() const { return bar_; }
 
-  void tapped(lv_obj_t* obj, bool hold) override;
   int itemAt(lv_point_t p) const override;
   int shownItems() const override { return shown_; }
   int selectedItem() const override;
   int itemCount() const override;
+  void missed(bool hold) override;
 
  private:
   struct Row {
@@ -56,14 +59,11 @@ class ListBox : public Tappable, public RowGestures::Rows {
   };
   Row makeRow(lv_obj_t* parent);
   void fillRow(Row& r, const rc::ListItem& it);
-  void syncWindow(const rc::ListView& m);
 
   lv_obj_t *box_ = nullptr, *lines_ = nullptr;
   std::vector<Row> rows_;
   rc::ListId list_ = rc::ListId::Main;
-  int sel_ = -1;
-  // Windowed.
-  bool windowed_ = false;
+  bool missBack_ = false;
   ScrollBarView bar_;
   RowGestures touch_;
   int shown_ = 0, first_ = 0, width_ = 0;

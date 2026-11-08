@@ -149,7 +149,7 @@ insert it (the tray stays open), and tap outside the tray to close it.
 | BOOT | Back | Home (0.6 s) |
 | Wake | Screen off; with the screen off, shows the last few messages for 10 s | Screen off; with the screen off, wakes it (1 s) |
 
-**Orientation.** **Settings** → **Orientation** (or Display in web config)
+**Orientation.** **Settings** → **Orientation** (or Screen in web config)
 turns the screen: Landscape, Landscape 180, Portrait or Portrait 180. It
 applies at once and is kept across restarts and in backups. In portrait, long
 lines on the Settings and Setup screens wrap.
@@ -270,11 +270,15 @@ keyboard; the module can be plugged in while it runs.
 
 The power button is not used by the firmware: holding it cuts the power.
 
-**Notification light:** the front LED and the keyboard's LEDs blink twice every
-second while a mention or a C-Mail is unread, for the light timeout after the
-last one came in. Settings has **Notify light** (the colour, or Off; Blue by
-default) and **Light timeout** (15 s by default, up to Until read); picking a
-colour blinks it once. Web config has both under Display.
+**Notification light:** the front LED and the keyboard's LEDs blink while
+something is unread: the last room you opened (the channel), a mention in
+another room, a Feed notification or a C-Mail. Each pending one gets a double
+blink in its own colour, one after another, then a pause, repeating each
+second at most; each stops when read, or the light timeout after its last
+message. Settings has **Channel light** (Blue by default), **Mention light**
+(Yellow), **Feed light** (Green) and **C-Mail light** (Magenta), each a colour
+or Off, and **Light timeout** (15 s by default, up to Until read); picking a
+colour blinks it once. Web config has them under Lights and sound.
 
 There is no RTC, speaker or SD slot: the clock comes from Wi-Fi or the GPS,
 and backups go through web config. The setup AP is
@@ -319,7 +323,7 @@ There are three ways to hold it:
   starts the first time.
 - **Landscape**, touch only, with the docked on-screen keyboard. Pick
   Portrait or Landscape (or either turned 180°) under **Settings** →
-  **Orientation**, or Display in web config, as on the Wio Tracker L2.
+  **Orientation**, or Screen in web config, as on the Wio Tracker L2.
 - **Landscape with the keyboard expansion.** The keyboard is looked for only
   when the board starts, so fit or remove it with the power off. With it on,
   the screen turns to landscape, upright above the keys, and stays there (there is no
@@ -347,7 +351,7 @@ only the side button does.
 **Vibration:** a short buzz when a tap lands on something (**Tap
 vibration**), and a longer one for each mention, C-Mail or Feed reply alert
 (**Alert vibration**), whether or not the buzzer is on. Both are on by default; switch them in
-Settings, or with **Vibrate on tap** and **Vibrate on alerts** under Display in
+Settings, or with **Vibration** under Lights and sound in
 web config.
 
 Wi-Fi goes through the board's ESP32-C6, which needs the matching ESP-Hosted
@@ -389,8 +393,9 @@ power button above it does nothing in the firmware; holding it 2 s cuts the
 power.
 
 **Notification light:** the LED marked for messages blinks twice every second
-while a mention or a C-Mail is unread, as on the Mesh Deck (**Notify light**
-and **Light timeout** in Settings and web config). The power LED is green
+for the last room, mentions, Feed and C-Mail, each in its colour, as on the
+Mesh Deck (**Channel light**, **Mention light**, **Feed light**, **C-Mail
+light** and **Light timeout** in Settings and web config). The power LED is green
 (**Power light** in Settings and web config picks its colour, or Off). The
 radio LED shows Wi-Fi: green when joined, blue while the setup AP is up with
 no network joined, yellow while it looks for one (**Wi-Fi joined**, **Wi-Fi
@@ -812,7 +817,7 @@ changes, at every size. A long message wraps under the nick at every size.
 ## Themes
 
 Pick a theme on the device (**Home** → **Settings** → **Theme** opens a box
-with every theme) or in web config under Display. The choice is saved.
+with every theme) or in web config under Screen. The choice is saved.
 
 - **Default:** the terminal look, with coloured nicks.
 - **Black & white:** white text on black, in greys only.
@@ -899,14 +904,31 @@ At `http://monster-cyberspace.local`, or the device IP, on your LAN:
 - Status
 - Wi-Fi: scan, add, and remove saved networks (up to 5)
 - Cyberspace account: sign in, sign out, resend verification
-- Display: text size, theme, brightness (not e-paper), buzzer, spell check,
-  orientation (touch boards), keyboard light (boards with a lit keyboard),
-  LED brightness, power light and Wi-Fi light colours (the Tanmatsu), and vibrate on tap and on
-  alerts (the T-Display P4)
+- Screen: theme, text size, orientation (touch boards), brightness (not
+  e-paper), screen timeout and spell check
+- Lights and sound: alert sound, vibrate on tap and on alerts (the T-Display
+  P4), notify light, LED brightness, power light and Wi-Fi light colours (the
+  Tanmatsu), keyboard light (boards with a lit keyboard); only what the board has
+- Canned replies (boards without a keyboard), Mascot (see Mascot below),
+  Power (boards that sleep on battery)
 - Time: zone and NTP server (see Time and time zone below)
-- Security: page password and setup-AP password
-- Mascot: the splash and screensaver art and phrases (see Mascot below)
-- Restart and factory reset
+- Security: page password, setup-AP password, and whether the page is served
+  on the joined Wi-Fi
+- Backup, firmware updates, restart and factory reset
+
+The page wears the device's theme, and picking another theme recolours it
+straight away. The section list on the left (wide screens) jumps to a section.
+
+**Saving.** Changing any setting marks its row and section and lists it on the
+bar at the bottom: **Save changes** (or Ctrl/⌘+S) sends them all in one
+request, and **Discard** puts back what the device has. The device checks
+every change before it writes any, so one bad field (an NTP server with a
+space, say) saves nothing and the bar says which field and why. The password
+boxes are empty: type a new password to change one, or tick **Turn the page
+password off** / **Make the setup AP open**. Leaving the page with unsaved
+changes asks first. The buttons that act at once stay where they are: Wi-Fi
+scan and add, sign in and out, check for and install updates, backup and
+restore, restart and factory reset.
 
 ### Security notes
 
@@ -992,14 +1014,14 @@ characters each. Either can be left as Fluffy's.
   choices, and the line under Install says what will be flashed. Install
   then writes your mascot along with the firmware.
 - **In web config:** the **Mascot** section has a preset picker, the art,
-  the phrases one per line, **Save mascot** and **Reset to Fluffy** (art and
-  phrases both). It shows on the next splash or screensaver, with no
+  the phrases one per line, and **Put Fluffy back** (art and phrases both),
+  saved with **Save changes**. It shows on the next splash or screensaver, with no
   restart.
 
 The mascot lives in its own part of the flash, so firmware updates and a
 factory reset keep it. It is not in backup files. Installing from the
 flasher with Fluffy's defaults does not clear an earlier mascot (unless you
-choose erase): use **Reset to Fluffy** in web config instead.
+choose erase): use **Put Fluffy back** in web config instead.
 
 ## Settings
 
@@ -1032,7 +1054,7 @@ shown without moving or opening anything.
   timeout does and saves it.
 - **Keyboard light: …** (M9, T-Deck Plus, T-Deck Pro, Pager, T-Display P4 with
   its keyboard, Tanmatsu) Opens a box with
-  Low, Medium, High and Off; picking one saves it (also under Display in web
+  Low, Medium, High and Off; picking one saves it (also under Lights and sound in web
   config). The keys are lit only while
   the screen is on. Off by default, except on the T-Display P4 (Medium, and F11
   steps it), the Tanmatsu (Medium, and Fn + F5 steps it) and the M9, where it is High and its
@@ -1044,12 +1066,13 @@ shown without moving or opening anything.
 - **Power light: …**, **Wi-Fi joined: …**, **Wi-Fi setup AP: …** and **Wi-Fi
   looking: …** (Tanmatsu) Open a box with the colours (or Off); picking one
   saves it. Green, green, blue and yellow by default.
-- **Notify light: …** and **Light timeout: …** (Mesh Deck) Open a box with
+- **Channel light**, **Mention light**, **Feed light**, **C-Mail light** and
+  **Light timeout: …** (Mesh Deck, Cyber Deck Plus, Tanmatsu) Open a box with
   the colours (or Off) and the timeouts; see Mesh Deck.
 - **Alert sound: on / off** (boards with a buzzer or speaker: not the Mesh
   Deck, T-Deck Pro, CrowPanels or X4) Centre switches the beep for mentions,
   C-Mail and Feed alerts and saves it, with one beep when it goes on. Also
-  **Sound on alerts** under Display in web config. On by default. On boards
+  **Alert sound** under Lights and sound in web config. On by default. On boards
   with a speaker (Wio L2, T-Deck Plus, Pager, Cyber Deck Plus, Cardputer ADV,
   T-Display P4, Tanmatsu) it reads **Alert sound: 60%** and opens a volume slider
   instead: Left/Right (or Up/Down, or a tap on the bar, "-" or "+") move it

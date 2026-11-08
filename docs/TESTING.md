@@ -52,6 +52,24 @@ on 2026-10-27; the sections marked `m9_fake` passed on it before then.
 - [ ] The bar never covers text, outlines or the side strip; screens that
       fit show none.
 
+**Web config unified save (any board):**
+
+- [ ] The page wears the device's theme; picking another theme recolours the
+      page at once, and Discard puts the old one back on the page and device.
+- [ ] Changing fields in several sections (theme, screen timeout, time zone,
+      mascot) marks each row, adds `*` to those sections in the left list,
+      and the bar says "N unsaved: …"; Save changes (and Ctrl/⌘+S) applies
+      them all on the device and the bar says "Saved".
+- [ ] An NTP server with a space plus a theme change: the bar says "Nothing
+      was saved. NTP server: …" and the device keeps its old theme.
+- [ ] A new page password saves and the browser asks for it; ticking "Turn
+      the page password off" and saving turns it off. Untouched password
+      boxes leave both passwords alone.
+- [ ] Unticking "Serve it on the joined Wi-Fi" asks before saving.
+- [ ] Reloading with unsaved changes asks first. Only the rows this board
+      has show (no Orientation without touch, no Lights and sound when empty).
+- [ ] Phone width: no sideways scroll, the bar's buttons sit under its text.
+
 **Room list Mark all read (any board):**
 
 - [ ] With rooms marked unread, the top row is "✓ Mark all read"; it asks
@@ -564,8 +582,8 @@ is open.
 **Fluffy Generator (`tdeck`):**
 
 - [ ] From the flasher with the cat and three custom phrases: the splash and the screensaver show the cat, and the bubble uses only those phrases; the log shows one `[mascot]` line
-- [ ] Web config Mascot: the section shows the cat and the phrases; another preset and new phrases, then Save mascot, show on the next screensaver without a restart
-- [ ] Web config Reset to Fluffy brings back Fluffy and his six phrases
+- [ ] Web config Mascot: the section shows the cat and the phrases; another preset and new phrases, then Save changes, show on the next screensaver without a restart
+- [ ] Web config Put Fluffy back, then Save changes, brings back Fluffy and his six phrases
 - [ ] A bad mascot (a 14-character line, or 11 phrases) is refused with the reason, and the device keeps the old one
 - [ ] A factory reset keeps the mascot; a backup file has no mascot in it
 - [ ] An OTA update keeps the mascot, including on a board whose partition table predates the `mascot` partition

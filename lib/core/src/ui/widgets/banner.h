@@ -14,6 +14,8 @@ class Banner {
   void show(std::u32string text, int64_t nowMs, int64_t durationMs, bool error);
   void hide() { until_ = 0; }
   bool visible(int64_t nowMs) const { return nowMs < until_; }
+  const std::u32string& text() const { return text_; }
+  bool error() const { return error_; }
   // Draws nothing when not visible.
   void render(Grid& g, int row, const Theme& t, int64_t nowMs) const;
 

@@ -12,11 +12,6 @@ bool ready = false;
 bool applied = false;
 rc::Theme current{};
 
-lv_color_t color(uint16_t c) {
-  const uint8_t r = (c >> 11) & 0x1F, g = (c >> 5) & 0x3F, b = c & 0x1F;
-  return lv_color_make(uint8_t((r << 3) | (r >> 2)), uint8_t((g << 2) | (g >> 4)), uint8_t((b << 3) | (b >> 2)));
-}
-
 // Every role starts from the terminal look: square, no padding, no border.
 void base(lv_style_t* s) {
   lv_style_reset(s);
@@ -40,7 +35,6 @@ void text(lv_style_t* s, uint16_t fg) { lv_style_set_text_color(s, color(fg)); }
 // Today's cursor: a 1 px box in selectBg over the row, which keeps its colours.
 void outline(lv_style_t* s, const rc::Theme& t) {
   lv_style_set_bg_opa(s, LV_OPA_TRANSP);
-  lv_style_set_text_color(s, color(t.fg));
   lv_style_set_border_color(s, color(t.selectBg));
   lv_style_set_border_width(s, 1);
   lv_style_set_border_opa(s, LV_OPA_COVER);
@@ -48,8 +42,6 @@ void outline(lv_style_t* s, const rc::Theme& t) {
 }
 
 lv_style_t* at(Role r) { return &styles[static_cast<int>(r)]; }
-
-void build(const rc::Theme& t);
 
 void ensure() {
   if (applied) return;
@@ -74,9 +66,10 @@ void build(const rc::Theme& t) {
   fill(at(Role::Hint), t.hintBg, t.hintFg);
   text(at(Role::Item), t.fg);
   outline(at(Role::Focused), t);
-  if (t.outlined)
+  if (t.outlined) {
     outline(at(Role::Selected), t);
-  else
+    text(at(Role::Selected), t.fg);
+  } else
     fill(at(Role::Selected), t.selectBg, t.selectFg);
   fill(at(Role::Input), t.inputBg, t.fg);
   fill(at(Role::Cursor), t.cursorBg, t.cursorFg);
@@ -95,6 +88,11 @@ void build(const rc::Theme& t) {
 }
 
 }  // namespace
+
+lv_color_t color(uint16_t c) {
+  const uint8_t r = (c >> 11) & 0x1F, g = (c >> 5) & 0x3F, b = c & 0x1F;
+  return lv_color_make(uint8_t((r << 3) | (r >> 2)), uint8_t((g << 2) | (g >> 4)), uint8_t((b << 3) | (b >> 2)));
+}
 
 void applyTheme(const rc::Theme& t) {
   current = t;

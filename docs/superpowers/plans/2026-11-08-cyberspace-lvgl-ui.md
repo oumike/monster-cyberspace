@@ -114,8 +114,8 @@
 - Every view: `void create(lv_obj_t* parent);` `void sync(const Model&);` (updates objects in place; no rebuild if unchanged) and, when tappable, emits on `LV_EVENT_CLICKED` the `KeyEvent` today's `TapMap` gives for that place: rows → `{Activate, index=row, target=ListId, then=Select}`, as built in `ui/tap_map.cpp`/`input/touch_resolve.cpp` (read them; copy the mapping exactly).
 - Models: `TopBar` ← status bar data (`ui/widgets/status_bar.h` input struct); `Banner` ← `ui/widgets/banner.h`; `ListBox` ← `rc::ListView` (+ `ListId`); `EntryListBox` ← `rc::EntryList`; `MenuOverlay` ← `rc::Overlay` (on `lv_layer_top()`, modal: `LV_OBJ_FLAG_CLICKABLE` backdrop); `DrawerPanel` ← `rc::Drawer`; `SideNavStrip` ← `side_nav` (emits Up / Select / Down).
 - Selected row scrolled into view (`lv_obj_scroll_to_view`, no animation).
-- [ ] **Step 1:** Tests: `test_list_box_mirrors_model` (3 items, sel 1 → 3 children, child 1 has `LV_STATE_CHECKED` styled Selected, right text shown); `test_list_tap_emits_activate`; `test_overlay_captures_taps` (tap point inside overlay row 0 over list row 2 → one emit, target Menu, index 0); `test_top_bar_texts`; `test_side_nav_emits`.
-- [ ] **Step 2:** FAIL. **Step 3:** Implement. **Step 4:** PASS; `pio run -e m9`. **Step 5:** Commit `LVGL views: bars, lists, overlays`.
+- [x] **Step 1:** Tests: `test_list_box_mirrors_model` (3 items, sel 1 → 3 children, child 1 has `LV_STATE_CHECKED` styled Selected, right text shown); `test_list_tap_emits_activate`; `test_overlay_captures_taps` (tap point inside overlay row 0 over list row 2 → one emit, target Menu, index 0); `test_top_bar_texts`; `test_side_nav_emits`.
+- [x] **Step 2:** FAIL. **Step 3:** Implement. **Step 4:** PASS; `pio run -e m9`. **Step 5:** Commit `LVGL views: bars, lists, overlays`.
 
 ### Task 7: Views — text
 

@@ -33,11 +33,15 @@ class Drawer {
   // A landscape panel at least 400 px wide keeps the drawer docked open in rooms.
   static bool docks(int panelWidthPx, int panelHeightPx);
 
- private:
-  struct Person {
+ struct Person {
     std::string username;
     bool idle;
   };
+  const std::vector<Person>& people() const { return people_; }
+  int selected() const { return sel_; }
+  const std::string& self() const { return self_; }
+
+ private:
   std::vector<Person> people_;
   int sel_ = 0;
   std::string self_;

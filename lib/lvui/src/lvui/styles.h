@@ -12,6 +12,9 @@ enum class Role {
   Error, Mention, Dim, Time, Sys, Nick, SelfNick
 };
 
+// A theme's RGB565 colour as an LVGL colour.
+lv_color_t color(uint16_t rgb565);
+
 // Rewrites every style from `t` and restyles the objects that use them.
 void applyTheme(const rc::Theme& t);
 lv_style_t* style(Role r);

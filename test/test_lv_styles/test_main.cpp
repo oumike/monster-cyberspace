@@ -83,7 +83,24 @@ void test_paper_theme_outlines_focus() {
   TEST_ASSERT_EQUAL(LV_OPA_TRANSP, lv_obj_get_style_bg_opa(f, LV_PART_MAIN));
   TEST_ASSERT_EQUAL(1, lv_obj_get_style_border_width(f, LV_PART_MAIN));
   TEST_ASSERT_EQUAL_HEX16(t.selectBg, rgb565(lv_obj_get_style_border_color(f, LV_PART_MAIN)));
-  TEST_ASSERT_EQUAL_HEX16(t.fg, rgb565(lv_obj_get_style_text_color(f, LV_PART_MAIN)));
+}
+
+// Today's cursor outlines a row and leaves its colour: an Error or Dim row
+// stays red or dim when focused, in every theme.
+void test_focused_keeps_row_colour() {
+  for (int i = 0; i < rc::kThemeCount; ++i) {
+    const rc::Theme& t = rc::theme(rc::themeFromIndex(i));
+    lvui::applyTheme(t);
+    lv_obj_t* err = lv_label_create(lv_screen_active());
+    lvui::addStyle(err, Role::Error);
+    lvui::addStyle(err, Role::Focused);
+    lv_obj_t* dim = lv_label_create(lv_screen_active());
+    lvui::addStyle(dim, Role::Dim);
+    lvui::addStyle(dim, Role::Focused);
+    TEST_ASSERT_EQUAL_HEX16(t.error, rgb565(lv_obj_get_style_text_color(err, LV_PART_MAIN)));
+    TEST_ASSERT_EQUAL_HEX16(t.dim, rgb565(lv_obj_get_style_text_color(dim, LV_PART_MAIN)));
+    lv_obj_clean(lv_screen_active());
+  }
 }
 
 void test_role_pairs() {
@@ -148,6 +165,7 @@ int main() {
   UNITY_BEGIN();
   RUN_TEST(test_every_theme_maps_its_colours);
   RUN_TEST(test_paper_theme_outlines_focus);
+  RUN_TEST(test_focused_keeps_row_colour);
   RUN_TEST(test_role_pairs);
   RUN_TEST(test_restyle_on_theme_change);
   return UNITY_END();

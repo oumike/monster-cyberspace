@@ -26,6 +26,7 @@ class EntryList {
   // screen, and with a cursor then scrolls only as far as it needs.
   bool select(int i);
   size_t size() const { return rows_.size(); }
+  const std::vector<FeedRow>& rows() const { return rows_; }
   bool atEnd() const;  // the last row is selected
   // Draws each entry's first line as a RowKind::Big row cut to headCols, and
   // fits as many entries as rowH and bigH pixel rows allow; rows left over

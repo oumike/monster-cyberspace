@@ -66,6 +66,11 @@ class SpellStrip {
   int selected() const { return sel_; }
   const std::u32string& option(int i) const { return opts_[i]; }
 
+  // Drops the options that don't fit `cols` cells from the end, keeping at
+  // least one suggestion, as render does; returns how many are shown.
+  int fit(int cols);
+  int shown() const { return shown_; }
+
   // Draws the strip across `row` and registers a tap per option. Options
   // that don't fit are dropped from the end, keeping at least one suggestion.
   void render(Grid& g, int row, const Theme& t);

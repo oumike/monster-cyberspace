@@ -178,7 +178,7 @@ void Osk::render(Grid& g, const Theme& t, uint32_t nowMs) const {
     g.setRowPad(b * 3 + 2, band - rowH - above);
   }
   g.setRowPad(4 * 3, 0);
-  const int lit = lit_ >= 0 && int32_t(litUntil_ - nowMs) > 0 ? lit_ : -1;
+  const int lit = this->lit(nowMs);
   for (int i = 0; i < int(keys_.size()); ++i) {
     const OskKey& k = keys_[i];
     const bool activeShift = k.kind == OskKind::Shift && (shifted_ || caps_);

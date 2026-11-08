@@ -21,5 +21,8 @@ lv_style_t* style(Role r);
 void addStyle(lv_obj_t* obj, Role r, lv_style_selector_t sel = 0);
 // The last theme applied; defaultTheme() before any.
 const rc::Theme& currentTheme();
+// Counts applyTheme calls: a view that copies theme colours into local styles
+// redoes them when this moves.
+unsigned themeSerial();
 
 }  // namespace lvui

@@ -60,12 +60,31 @@ class SymbolTable {
   // swallows it.
   Out key(const KeyEvent& k);
 
+  // Where render puts the table in a `gridCols` wide grid, centred above row
+  // `bottom`, in cells. Settles the emoji columns, size and scroll as render
+  // does, so the arrows move through what is drawn.
+  struct Layout {
+    int left = 0, top = 0, width = 0, h = 0;  // the box, title row and outline included
+    int cols = 0, rows = 0;                   // items a row, item rows in all
+    int pitch = 0, rowStep = 0;               // cells from one item to the next across, down
+    int ew = 1, eh = 1;                       // an item's cells (a symbol: pitch x 1)
+    int shown = 0, scroll = 0;                // item rows shown, the first one
+    bool big = false, gaps = false, scrolls = false;
+    // Item i's top-left cell (shown when its row is).
+    int col(int i) const { return left + 1 + (i % cols) * pitch; }
+    int row(int i) const { return top + 1 + (gaps ? 1 : 0) + (i / cols - scroll) * rowStep; }
+  };
+  Layout layout(int gridCols, int bottom) const;
+  // The open set's symbols or emoji, one code point each.
+  const std::u32string& items() const { return set_ == Set::Emoji ? emoji() : symbols(); }
+  // The commands row's label (empty: none).
+  const std::u32string& commands() const { return commands_; }
+
   // Centred above row `bottom`.
   void render(Grid& g, int bottom, const Theme& t) const;
 
  private:
   int count() const;  // cells, the commands row included
-  const std::u32string& items() const { return set_ == Set::Emoji ? emoji() : symbols(); }
   std::u32string commands_;
   Set set_ = Set::Symbols;
   bool linear_ = false;

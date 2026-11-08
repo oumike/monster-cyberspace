@@ -50,6 +50,8 @@ class Osk {
   // A finger is on key i: it is drawn lit until kOskFlashMs after the last
   // call. A new page or layout puts the light out.
   void touch(int i, uint32_t nowMs);
+  // The key drawn lit at nowMs, or -1.
+  int lit(uint32_t nowMs) const { return lit_ >= 0 && int32_t(litUntil_ - nowMs) > 0 ? lit_ : -1; }
   // Fills g (a gridRows()-row grid, stacked, with the pads) and registers one
   // Osk target per key.
   void render(Grid& g, const Theme& t, uint32_t nowMs) const;

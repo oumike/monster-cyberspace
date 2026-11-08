@@ -7,10 +7,11 @@
 
 namespace lvui {
 
-void RowGestures::attach(lv_obj_t* obj, Rows* rows, rc::ListId list) {
+void RowGestures::attach(lv_obj_t* obj, Rows* rows, rc::ListId list, bool holdToAct) {
   obj_ = obj;
   rows_ = rows;
   list_ = list;
+  holdToAct_ = holdToAct;
   // As ui_task's own Gestures: the edge zones are an eighth of the panel each.
   gestures_.setWidth(lv_display_get_horizontal_resolution(lv_obj_get_display(obj)));
   lv_obj_add_flag(obj, LV_OBJ_FLAG_CLICKABLE);
@@ -39,7 +40,9 @@ void RowGestures::feed(bool down) {
 }
 
 void RowGestures::act(const rc::Gesture& g) {
-  const int item = rows_->itemAt({g.x, g.y});
+  const lv_point_t p{g.x, g.y};
+  const int item = rows_->itemAt(p);
+  const bool onRows = item >= 0 || rows_->onRows(p);
   auto steps = [&](int n, bool towardLater) {
     rc::KeyEvent e;
     e.action = towardLater ? rc::Action::Down : rc::Action::Up;
@@ -48,9 +51,9 @@ void RowGestures::act(const rc::Gesture& g) {
   switch (g.kind) {
     case rc::GestureKind::Tap:
     case rc::GestureKind::LongPress: {
-      if (item < 0) return;
       const bool hold = g.kind == rc::GestureKind::LongPress;
-      if (touchOnly()) {
+      if (!onRows) return rows_->missed(hold);
+      if (touchOnly() && holdToAct_) {
         // Taps scroll safely past; a long press acts on the row.
         if (hold) emit(rowKey(list_, item, false));
         return;
@@ -59,7 +62,7 @@ void RowGestures::act(const rc::Gesture& g) {
       return;
     }
     case rc::GestureKind::Drag: {
-      if (item < 0) {
+      if (!onRows) {
         carry_ = 0;
         return;
       }
@@ -72,7 +75,7 @@ void RowGestures::act(const rc::Gesture& g) {
       return;
     }
     case rc::GestureKind::Swipe:
-      if (item < 0 || (g.dir != rc::SwipeDir::Up && g.dir != rc::SwipeDir::Down)) return;
+      if (!onRows || (g.dir != rc::SwipeDir::Up && g.dir != rc::SwipeDir::Down)) return;
       steps(rows_->shownItems() > 1 ? rows_->shownItems() - 1 : 1, g.dir == rc::SwipeDir::Up);
       return;
     default:

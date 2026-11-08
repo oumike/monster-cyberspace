@@ -32,6 +32,8 @@ class CannedPicker {
   bool isOpen() const { return box_.isOpen(); }
   int rows() const { return int(phrases_.size()) + (emoji_ ? 1 : 0); }
   Out key(const KeyEvent& k);
+  // The box render draws (OverlayPlace::Centre).
+  const Overlay& box() const { return box_; }
   void render(Grid& g, int top, int bottom, const Theme& t) const;
 
  private:

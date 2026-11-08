@@ -101,8 +101,8 @@ SymbolTable::Out SymbolTable::key(const KeyEvent& k) {
   }
 }
 
-void SymbolTable::render(Grid& g, int bottom, const Theme& t) const {
-  if (!open_) return;
+SymbolTable::Layout SymbolTable::layout(int gridCols, int bottom) const {
+  Layout L;
   // Below the status bar, so its title never lands on the status bar's row.
   constexpr int kAreaTop = 1;
   const int avail = bottom - kAreaTop;
@@ -124,7 +124,7 @@ void SymbolTable::render(Grid& g, int bottom, const Theme& t) const {
     // can be; else large and scrolling where kMinBigRows rows fit; else two
     // cells wide, more on a row on a short screen, scrolling if still short.
     big_ = false;
-    const int bigMax = std::min(n, (g.cols() - 1) / (kTrayBigCols + 1));
+    const int bigMax = std::min(n, (gridCols - 1) / (kTrayBigCols + 1));
     for (int pass = 0; pass < 2 && !big_; ++pass)
       for (int c = kEmojiCols; c <= bigMax && !big_; ++c)
         if (height(kTrayBigRows, c, pass == 0) <= avail) {
@@ -140,7 +140,7 @@ void SymbolTable::render(Grid& g, int bottom, const Theme& t) const {
       ew = kTrayBigCols;
       eh = kTrayBigRows;
     } else {
-      const int maxCols = std::max(kEmojiCols, std::min(n, (g.cols() - 1) / 3));
+      const int maxCols = std::max(kEmojiCols, std::min(n, (gridCols - 1) / 3));
       int c = kEmojiCols;
       while (c < maxCols && height(1, c, true) > avail) ++c;
       emojiCols_ = c;
@@ -162,12 +162,35 @@ void SymbolTable::render(Grid& g, int bottom, const Theme& t) const {
   scroll_ = std::clamp(scroll_, 0, rows - shown);
   const int pitch = emojiSet ? ew + 1 : 3;
   const int width = emojiSet ? kc * pitch + 1 : kc * pitch + 2;
-  const int rowStep = eh + (gaps ? 1 : 0);
   const int h = !emojiSet ? 1 + rows + extra
                 : scrolls ? 1 + shown * eh + extra
                           : height(eh, kc, gaps);
-  const int left = std::max(0, (g.cols() - width) / 2);
-  const int top = h <= avail ? kAreaTop + (avail - h) / 2 : std::max(0, (bottom - h) / 2);
+  L.left = std::max(0, (gridCols - width) / 2);
+  L.top = h <= avail ? kAreaTop + (avail - h) / 2 : std::max(0, (bottom - h) / 2);
+  L.width = width;
+  L.h = h;
+  L.cols = kc;
+  L.rows = rows;
+  L.pitch = pitch;
+  L.rowStep = eh + (gaps ? 1 : 0);
+  L.ew = emojiSet ? ew : pitch;
+  L.eh = eh;
+  L.shown = shown;
+  L.scroll = scroll_;
+  L.big = big_ && emojiSet;
+  L.gaps = gaps;
+  L.scrolls = scrolls;
+  return L;
+}
+
+void SymbolTable::render(Grid& g, int bottom, const Theme& t) const {
+  if (!open_) return;
+  const Layout L = layout(g.cols(), bottom);
+  const bool emojiSet = set_ == Set::Emoji;
+  const int n = static_cast<int>(items().size());
+  const int kc = L.cols, rows = L.rows, shown = L.shown, h = L.h, width = L.width;
+  const int left = L.left, top = L.top, pitch = L.pitch, ew = L.ew, eh = L.eh;
+  const bool scrolls = L.scrolls;
   auto cellTap = [&](int c0, int r0, int c1, int r1, int i) {
     if (!activeTaps()) return;
     Target tt;
@@ -189,12 +212,11 @@ void SymbolTable::render(Grid& g, int bottom, const Theme& t) const {
   for (int c = 0; c < width; ++c) g.put(left + c, top, U' ', t.barFg, t.barBg);
   g.putText(left + 1, top, emojiSet ? U"emoji" : U"symbols", t.barFg, t.barBg, width - 2);
   for (int i = scroll_ * kc; i < std::min(n, (scroll_ + shown) * kc); ++i) {
-    const int col = left + 1 + (i % kc) * pitch,
-              row = top + 1 + (gaps ? 1 : 0) + (i / kc - scroll_) * rowStep;
+    const int col = L.col(i), row = L.row(i);
     const bool sel = i == sel_;
     const bool fill = sel && !t.outlined;
     const uint16_t fg = fill ? t.selectFg : t.fg, bg = fill ? t.selectBg : t.bg;
-    if (big_ && emojiSet) {
+    if (L.big) {
       for (int r = 0; r < eh; ++r)
         for (int c = 0; c < ew; ++c) g.put(col + c, row + r, trayBigPiece(i, r, c), fg, bg);
       cellTap(col, row, col + ew, row + eh - 1, i);

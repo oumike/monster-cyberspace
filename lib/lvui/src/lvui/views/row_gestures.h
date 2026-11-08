@@ -20,13 +20,20 @@ class RowGestures {
    public:
     virtual int itemAt(lv_point_t p) const = 0;
     virtual int shownItems() const = 0;
+    // A row target lies under p even where no item does (a button grid's
+    // background, which takes drags); a tap there emits row index -1.
+    virtual bool onRows(lv_point_t p) const { return itemAt(p) >= 0; }
+    // A tap or long press on nothing at all (not onRows).
+    virtual void missed(bool hold) { (void)hold; }
 
    protected:
     ~Rows() = default;
   };
 
   // obj takes every press on it (no LVGL scrolling, no scroll chaining).
-  void attach(lv_obj_t* obj, Rows* rows, rc::ListId list);
+  // holdToAct false: a list that isn't a scrolling log (rc::ListInfo), where
+  // touch-only boards tap rows as the rest do.
+  void attach(lv_obj_t* obj, Rows* rows, rc::ListId list, bool holdToAct = true);
 
  private:
   static void eventCb(lv_event_t* e);
@@ -36,6 +43,7 @@ class RowGestures {
   lv_obj_t* obj_ = nullptr;
   Rows* rows_ = nullptr;
   rc::ListId list_ = rc::ListId::Log;
+  bool holdToAct_ = true;
   rc::Gestures gestures_;
   int carry_ = 0;
 };

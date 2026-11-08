@@ -140,8 +140,8 @@
 - `Keyboard` ← `rc::Osk`: `lv_buttonmatrix` with Osk's rows and layer; emits Osk's KeyEvents; height = today's `Osk::gridRows()` × cell height.
 - `TileGrid` ← `home_tiles` / `button_grid` / `button_pad` (respects `homeSpanFirst`).
 - `QrBox` ← `ui/qr_cells` (`lv_qrcode` off; draws modules from `qr_cells` so output matches).
-- [ ] **Step 1:** Tests: `test_osk_layer_and_emit`; `test_symbols_emit_char`; `test_home_tiles_span_first`; `test_spell_emit`.
-- [ ] **Step 2:** FAIL. **Step 3:** Implement. **Step 4:** PASS; `pio run -e m9`. **Step 5:** Commit `LVGL views: keyboards, tiles, QR`.
+- [x] **Step 1:** Tests: `test_osk_layer_and_emit`; `test_symbols_emit_char`; `test_home_tiles_span_first`; `test_spell_emit`.
+- [x] **Step 2:** FAIL. **Step 3:** Implement. **Step 4:** PASS; `pio run -e m9`. **Step 5:** Commit `LVGL views: keyboards, tiles, QR`.
 
 ### Task 9: Screen interface and the first screens
 

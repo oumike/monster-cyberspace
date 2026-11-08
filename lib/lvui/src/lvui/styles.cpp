@@ -11,6 +11,7 @@ bool ready = false;
 // Set on first use: the theme tables live in another file, so not at static init.
 bool applied = false;
 rc::Theme current{};
+unsigned serial = 0;
 
 // Every role starts from the terminal look: square, no padding, no border.
 void base(lv_style_t* s) {
@@ -97,6 +98,7 @@ lv_color_t color(uint16_t c) {
 void applyTheme(const rc::Theme& t) {
   current = t;
   applied = true;
+  ++serial;
   build(current);
   lv_obj_report_style_change(nullptr);
 }
@@ -113,5 +115,7 @@ const rc::Theme& currentTheme() {
   ensure();
   return current;
 }
+
+unsigned themeSerial() { return serial; }
 
 }  // namespace lvui

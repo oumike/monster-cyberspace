@@ -55,9 +55,7 @@ bool SpellStrip::stillThere(std::u32string_view text) const {
   return start_ + cur.size() <= text.size() && text.substr(start_, cur.size()) == cur;
 }
 
-void SpellStrip::render(Grid& g, int row, const Theme& t) {
-  if (!visible()) return;
-  g.fillRow(row, t.inputBg);
+int SpellStrip::fit(int cols) {
   // Each option is " word " with a cell between options.
   auto width = [&](int n) {
     int w = 0;
@@ -65,8 +63,15 @@ void SpellStrip::render(Grid& g, int row, const Theme& t) {
     return w;
   };
   shown_ = count_;
-  while (shown_ > 2 && width(shown_) > g.cols()) --shown_;
+  while (shown_ > 2 && width(shown_) > cols) --shown_;
   if (sel_ >= shown_) sel_ = 0;  // never: the strip is drawn before it is used
+  return shown_;
+}
+
+void SpellStrip::render(Grid& g, int row, const Theme& t) {
+  if (!visible()) return;
+  g.fillRow(row, t.inputBg);
+  fit(g.cols());
   int col = 0;
   for (int i = 0; i < shown_ && col < g.cols(); ++i) {
     if (i) ++col;

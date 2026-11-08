@@ -46,6 +46,9 @@ class Overlay {
   int selected() const { return list_.selected(); }
   const std::u32string& title() const { return title_; }
   const ListView& list() const { return list_; }
+  // Opened by confirm(); by confirm() or openButtons().
+  bool isConfirm() const { return confirm_; }
+  bool isButtons() const { return buttons_; }
 
   // Up/Down move and wrap; Select/Right pick (and close); Back/Left close;
   // an Activate with target Menu selects its index (if in range) then applies

@@ -27,6 +27,10 @@
 #include "screens/draw.h"
 #include "screens/router.h"
 #include "store/locked_chat.h"
+#include "chat/room_read.h"
+#if RC_FEAT_ENTRIES
+#include "store/locked_feed.h"
+#endif
 #if RC_FEAT_MASCOT
 #include "store/mascot_store.h"
 #endif
@@ -294,29 +298,79 @@ void applyKbLight() {
   board::kbLight(uint8_t(duty), on);
 }
 
-// The new-message light: a double blink each second while something is
-// unread, for the configured time after the last message.
+// The new-message light: a double blink per source (the last room, mentions,
+// Feed, C-Mail) in its colour while it has something unread, for the
+// configured time after its last message.
 NotifyBlinker blinker;
 uint8_t notifyShown = 0;
 
+void notifyMessage(NotifySource s) {
+  if (board::hasNotifyLight()) blinker.message(s, millis());
+}
+
+#if RC_FEAT_CIRC
+// The last room opened: unread and not on screen. A new message there, or
+// its turning unread, starts the light.
+uint32_t channelCheckMs = 0;
+bool channelUnread = false;
+int64_t channelAt = 0;
+
+bool lastRoomUnread(int64_t* at = nullptr) {
+  const std::string& slug = app().cfg.lastRoom;
+  if (power == Power::On && router::current() == router::Id::Room &&
+      lockedChat().with([&](ChatState& s) { return !s.dm && s.roomSlug == slug; }))
+    return false;
+  return lockedChat().with([&](ChatState& s) {
+    for (const RoomInfo& r : s.rooms)
+      if (r.slug == slug) {
+        if (at) *at = r.lastMessageAt;
+        return roomUnread(r, s.readAt);
+      }
+    return false;
+  });
+}
+
+void watchChannel() {
+  const uint32_t now = millis();
+  if (now - channelCheckMs < 250) return;
+  channelCheckMs = now;
+  int64_t at = channelAt;
+  const bool unread = lastRoomUnread(&at);
+  if (unread && (!channelUnread || at > channelAt)) notifyMessage(NotifySource::Channel);
+  channelUnread = unread;
+  channelAt = at;
+}
+#endif
+
 void applyNotifyLight() {
   if (!board::hasNotifyLight()) return;
+#if RC_FEAT_CIRC
+  watchChannel();
+#endif
   uint8_t rgb = 0;
   if (blinker.active()) {
-#if RC_FEAT_CMAIL
-    const bool unread = !app().mentions.empty() || cmailUnread() > 0;
-#else
-    const bool unread = !app().mentions.empty();
+    const Settings& c = app().cfg;
+    NotifyInputs in;
+    in.color[int(NotifySource::Channel)] = c.notifyLight;
+    in.color[int(NotifySource::Mention)] = c.notifyMention;
+    in.color[int(NotifySource::Feed)] = c.notifyFeed;
+    in.color[int(NotifySource::Cmail)] = c.notifyCmail;
+#if RC_FEAT_CIRC
+    in.unread[int(NotifySource::Channel)] = channelUnread;
 #endif
-    rgb = blinker.tick(millis(), app().cfg.notifyLight, app().cfg.notifyTimeoutSecs, unread);
+    in.unread[int(NotifySource::Mention)] = !app().mentions.empty();
+#if RC_FEAT_ENTRIES
+    in.unread[int(NotifySource::Feed)] =
+        lockedFeed().with([](FeedState& s) { return !s.notices.empty(); });
+#endif
+#if RC_FEAT_CMAIL
+    in.unread[int(NotifySource::Cmail)] = cmailUnread() > 0;
+#endif
+    rgb = blinker.tick(millis(), in, c.notifyTimeoutSecs);
   }
   if (rgb == notifyShown) return;
   notifyShown = rgb;
   board::notifyLight(rgb);
-}
-
-void notifyMessage() {
-  if (board::hasNotifyLight() && app().cfg.notifyLight != LedColor::Off) blinker.message(millis());
 }
 
 void goDark() {
@@ -464,7 +518,7 @@ void handleEvent(const Event& e) {
       });
       if (!open && !dup) ms.push_back(MentionNote{e.arg, e.text, at});
       if (ms.size() > kMaxMentionNotes) ms.erase(ms.begin());
-      notifyMessage();
+      if (!open) notifyMessage(NotifySource::Mention);
       if (app().cfg.buzzer) board::beep(2000, 80);
       if (app().cfg.alertVibrate && board::hasHaptic()) board::haptic(kAlertBuzzMs);
       banner(e.text, false);
@@ -473,7 +527,7 @@ void handleEvent(const Event& e) {
 #if RC_FEAT_CMAIL
     case EvtType::CmailAlert:
       // The unread count lives in the conversation list (Home sums it).
-      notifyMessage();
+      notifyMessage(NotifySource::Cmail);
       if (app().cfg.buzzer) board::beep(1600, 80);
       if (app().cfg.alertVibrate && board::hasHaptic()) board::haptic(kAlertBuzzMs);
       banner(e.text, false);
@@ -495,6 +549,7 @@ void handleEvent(const Event& e) {
       // code 1 asks for a beep; post_cooldown (code 0) is a banner only.
       if (e.code == 1 && app().cfg.buzzer) board::beep(1800, 80);
       if (e.code == 1 && app().cfg.alertVibrate && board::hasHaptic()) board::haptic(kAlertBuzzMs);
+      if (e.code == 1) notifyMessage(NotifySource::Feed);
       banner(e.text, false);
       break;
 #endif

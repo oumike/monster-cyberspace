@@ -122,7 +122,7 @@ class SettingsScreen : public Screen {
  private:
   enum class Confirm {
     None, Logout, Reset, Rotation, Timeout, KbLight, PowerLight, WifiJoined, WifiSetup,
-    WifiLooking, NotifyLight, NotifyTimeout, Theme,
+    WifiLooking, NotifyLight, NotifyMention, NotifyFeed, NotifyCmail, NotifyTimeout, Theme,
     Update, Idle, Wake
   };
   void activate(int item);

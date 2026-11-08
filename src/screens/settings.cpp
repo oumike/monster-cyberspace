@@ -56,6 +56,9 @@ enum Item {
   kTapVibrate,
   kAlertVibrate,
   kNotifyLight,
+  kNotifyMention,
+  kNotifyFeed,
+  kNotifyCmail,
   kNotifyTimeout,
   kSpellCheck,
   kIdle,
@@ -101,6 +104,9 @@ std::vector<Item> menuItems() {
   }
   if (board::hasNotifyLight()) {
     v.push_back(kNotifyLight);
+    if (RC_FEAT_CIRC) v.push_back(kNotifyMention);
+    if (RC_FEAT_ENTRIES) v.push_back(kNotifyFeed);
+    if (RC_FEAT_CMAIL) v.push_back(kNotifyCmail);
     v.push_back(kNotifyTimeout);
   }
   if (RC_FEAT_SPELL && board::canType()) v.push_back(kSpellCheck);
@@ -288,11 +294,17 @@ void SettingsScreen::applyChoice(Confirm c, int i) {
     }
     return;
   }
-  if (c == Confirm::NotifyLight) {
+  if (c == Confirm::NotifyLight || c == Confirm::NotifyMention || c == Confirm::NotifyFeed ||
+      c == Confirm::NotifyCmail) {
     if (i >= 0 && i < int(std::size(kLedColorOrder))) {
-      app().cfg.notifyLight = kLedColorOrder[i];
-      settings::saveNotifyLight(app().cfg.notifyLight);
-      ui::notifyLightPreview(app().cfg.notifyLight);
+      Settings& s = app().cfg;
+      LedColor& colour = c == Confirm::NotifyLight     ? s.notifyLight
+                         : c == Confirm::NotifyMention ? s.notifyMention
+                         : c == Confirm::NotifyFeed    ? s.notifyFeed
+                                                       : s.notifyCmail;
+      colour = kLedColorOrder[i];
+      settings::saveNotifyLights(s);
+      ui::notifyLightPreview(colour);
     }
     return;
   }
@@ -605,20 +617,18 @@ void SettingsScreen::activate(int item) {
       brightness_.open(U"brightness", app().cfg.brightness, kBrightnessMax, kBrightnessStep, U"",
                        kBrightnessMin);
       break;
-    case kNotifyLight: {
-      std::vector<ListItem> rows;
-      int sel = 0;
-      for (size_t i = 0; i < std::size(kLedColorOrder); ++i) {
-        ListItem it{ledColorLabel(kLedColorOrder[i]), U""};
-        if (kLedColorOrder[i] == app().cfg.notifyLight) {
-          it.marker = true;
-          sel = int(i);
-        }
-        rows.push_back(std::move(it));
-      }
-      openChoice(Confirm::NotifyLight, U"notify light", std::move(rows), sel);
+    case kNotifyLight:
+      openColour(Confirm::NotifyLight, U"channel light", app().cfg.notifyLight);
       break;
-    }
+    case kNotifyMention:
+      openColour(Confirm::NotifyMention, U"mention light", app().cfg.notifyMention);
+      break;
+    case kNotifyFeed:
+      openColour(Confirm::NotifyFeed, U"Feed light", app().cfg.notifyFeed);
+      break;
+    case kNotifyCmail:
+      openColour(Confirm::NotifyCmail, U"C-Mail light", app().cfg.notifyCmail);
+      break;
     case kNotifyTimeout: {
       std::vector<ListItem> rows;
       int sel = 0;
@@ -802,7 +812,16 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
         rows.push_back(ListItem{U"Alert vibration", a.cfg.alertVibrate ? U"on" : U"off"});
         break;
       case kNotifyLight:
-        rows.push_back(ListItem{U"Notify light", ledColorLabel(a.cfg.notifyLight)});
+        rows.push_back(ListItem{U"Channel light", ledColorLabel(a.cfg.notifyLight)});
+        break;
+      case kNotifyMention:
+        rows.push_back(ListItem{U"Mention light", ledColorLabel(a.cfg.notifyMention)});
+        break;
+      case kNotifyFeed:
+        rows.push_back(ListItem{U"Feed light", ledColorLabel(a.cfg.notifyFeed)});
+        break;
+      case kNotifyCmail:
+        rows.push_back(ListItem{U"C-Mail light", ledColorLabel(a.cfg.notifyCmail)});
         break;
       case kNotifyTimeout:
         rows.push_back(ListItem{U"Light timeout", notifyTimeoutLabel(a.cfg.notifyTimeoutSecs)});
@@ -966,7 +985,9 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
                       confirm_ == Confirm::Timeout || confirm_ == Confirm::KbLight ||
                       confirm_ == Confirm::PowerLight || confirm_ == Confirm::WifiJoined ||
                       confirm_ == Confirm::WifiSetup || confirm_ == Confirm::WifiLooking ||
-                      confirm_ == Confirm::NotifyLight || confirm_ == Confirm::NotifyTimeout ||
+                      confirm_ == Confirm::NotifyLight || confirm_ == Confirm::NotifyMention ||
+                      confirm_ == Confirm::NotifyFeed || confirm_ == Confirm::NotifyCmail ||
+                      confirm_ == Confirm::NotifyTimeout ||
                       confirm_ == Confirm::Theme || confirm_ == Confirm::Idle ||
                       confirm_ == Confirm::Wake;
     confirmBox_.render(g, 1, bottom, 0, pick ? OverlayPlace::Centre : OverlayPlace::Bottom, t);

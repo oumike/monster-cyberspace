@@ -16,18 +16,33 @@ void tearDown() {}
 namespace {
 using Changes = std::vector<std::pair<uint32_t, uint8_t>>;
 
+NotifyInputs only(NotifySource src, LedColor c, bool unread) {
+  NotifyInputs in;
+  in.color[int(src)] = c;
+  in.unread[int(src)] = unread;
+  return in;
+}
+
 // Ticks every millisecond over [from, to) and records each change of output,
 // starting from `last`.
-Changes run(NotifyBlinker& b, uint32_t from, uint32_t to, LedColor c, uint16_t timeout,
-            bool unread, uint8_t& last) {
+Changes run(NotifyBlinker& b, uint32_t from, uint32_t to, const NotifyInputs& in, uint16_t timeout,
+            uint8_t& last) {
   Changes out;
   for (uint32_t t = from; t != to; ++t) {
-    const uint8_t v = b.tick(t, c, timeout, unread);
+    const uint8_t v = b.tick(t, in, timeout);
     if (v != last) out.push_back({t, v});
     last = v;
   }
   return out;
 }
+
+// One source, the channel.
+Changes run(NotifyBlinker& b, uint32_t from, uint32_t to, LedColor c, uint16_t timeout,
+            bool unread, uint8_t& last) {
+  return run(b, from, to, only(NotifySource::Channel, c, unread), timeout, last);
+}
+
+constexpr NotifySource kCh = NotifySource::Channel;
 
 void expectDoubleBlink(const Changes& ch, size_t at, uint32_t start, uint8_t rgb) {
   TEST_ASSERT_TRUE(ch.size() >= at + 4);
@@ -83,7 +98,7 @@ void test_timeout_options() {
 void test_double_blink_then_repeat_each_second() {
   NotifyBlinker b;
   uint8_t last = 0;
-  b.message(1000);
+  b.message(kCh, 1000);
   Changes ch = run(b, 1000, 3500, LedColor::Blue, 15, true, last);
   TEST_ASSERT_EQUAL(12, int(ch.size()));
   expectDoubleBlink(ch, 0, 1000, 4);
@@ -94,7 +109,7 @@ void test_double_blink_then_repeat_each_second() {
 void test_stops_when_read_and_finishes_dark() {
   NotifyBlinker b;
   uint8_t last = 0;
-  b.message(0);
+  b.message(kCh, 0);
   run(b, 0, 20, LedColor::Red, 15, true, last);
   TEST_ASSERT_EQUAL_UINT8(1, last);  // mid-pattern, lit
   Changes ch = run(b, 20, 5000, LedColor::Red, 15, false, last);
@@ -108,7 +123,7 @@ void test_stops_when_read_and_finishes_dark() {
 void test_stops_after_timeout() {
   NotifyBlinker b;
   uint8_t last = 0;
-  b.message(1000);
+  b.message(kCh, 1000);
   Changes ch = run(b, 1000, 20000, LedColor::Green, 15, true, last);
   // Patterns start at 1000 .. 15000; 16000 is 15 s after the message.
   TEST_ASSERT_EQUAL(15 * 4, int(ch.size()));
@@ -116,7 +131,7 @@ void test_stops_after_timeout() {
   TEST_ASSERT_EQUAL_UINT8(0, last);
   TEST_ASSERT_FALSE(b.active());
   // A new message arms it again.
-  b.message(30000);
+  b.message(kCh, 30000);
   ch = run(b, 30000, 30300, LedColor::Green, 15, true, last);
   expectDoubleBlink(ch, 0, 30000, 2);
 }
@@ -124,7 +139,7 @@ void test_stops_after_timeout() {
 void test_timeout_zero_runs_until_read() {
   NotifyBlinker b;
   uint8_t last = 0;
-  b.message(0);
+  b.message(kCh, 0);
   Changes ch = run(b, 0, 120000, LedColor::White, 0, true, last);
   TEST_ASSERT_EQUAL(120 * 4, int(ch.size()));
   ch = run(b, 120000, 125000, LedColor::White, 0, false, last);
@@ -148,7 +163,7 @@ void test_preview_once_without_unread() {
 void test_off_disables() {
   NotifyBlinker b;
   uint8_t last = 0;
-  b.message(0);
+  b.message(kCh, 0);
   Changes ch = run(b, 0, 3000, LedColor::Off, 15, true, last);
   TEST_ASSERT_EQUAL(0, int(ch.size()));
   TEST_ASSERT_FALSE(b.active());
@@ -158,10 +173,10 @@ void test_off_disables() {
 
 void test_cancel_goes_dark() {
   NotifyBlinker b;
-  b.message(0);
-  TEST_ASSERT_EQUAL_UINT8(4, b.tick(0, LedColor::Blue, 15, true));
+  b.message(kCh, 0);
+  TEST_ASSERT_EQUAL_UINT8(4, b.tick(0, only(kCh, LedColor::Blue, true), 15));
   b.cancel();
-  TEST_ASSERT_EQUAL_UINT8(0, b.tick(1, LedColor::Blue, 15, true));
+  TEST_ASSERT_EQUAL_UINT8(0, b.tick(1, only(kCh, LedColor::Blue, true), 15));
   TEST_ASSERT_FALSE(b.active());
 }
 
@@ -169,12 +184,99 @@ void test_millis_wraparound() {
   NotifyBlinker b;
   uint8_t last = 0;
   const uint32_t t0 = 0xFFFFFF00u;
-  b.message(t0);
+  b.message(kCh, t0);
   Changes ch = run(b, t0, t0 + 2500, LedColor::Cyan, 15, true, last);
   TEST_ASSERT_EQUAL(12, int(ch.size()));
   expectDoubleBlink(ch, 0, t0, 6);
   expectDoubleBlink(ch, 4, t0 + 1000, 6);
   expectDoubleBlink(ch, 8, t0 + 2000, 6);
+}
+
+void test_sources_blink_in_turn() {
+  NotifyBlinker b;
+  uint8_t last = 0;
+  NotifyInputs in;
+  in.color[0] = LedColor::Blue;     // channel
+  in.color[1] = LedColor::Yellow;   // mention
+  in.color[2] = LedColor::Green;    // feed
+  in.color[3] = LedColor::Magenta;  // C-Mail
+  for (bool& u : in.unread) u = true;
+  b.message(NotifySource::Cmail, 0);
+  b.message(NotifySource::Channel, 0);
+  b.message(NotifySource::Feed, 0);
+  Changes ch = run(b, 0, 3800, in, 15, last);
+  // Channel, feed, C-Mail in that order, 300 ms apart after each double
+  // blink; the next round 700 ms after the last.
+  TEST_ASSERT_EQUAL(4 * 6, int(ch.size()));
+  expectDoubleBlink(ch, 0, 0, 4);
+  expectDoubleBlink(ch, 4, 510, 2);
+  expectDoubleBlink(ch, 8, 1020, 5);
+  expectDoubleBlink(ch, 12, 1230 + 700, 4);
+  expectDoubleBlink(ch, 16, 1930 + 510, 2);
+  expectDoubleBlink(ch, 20, 1930 + 1020, 5);
+}
+
+void test_a_read_source_drops_out() {
+  NotifyBlinker b;
+  uint8_t last = 0;
+  NotifyInputs in;
+  in.color[0] = LedColor::Blue;
+  in.color[3] = LedColor::Magenta;
+  in.unread[0] = in.unread[3] = true;
+  b.message(NotifySource::Channel, 0);
+  b.message(NotifySource::Cmail, 0);
+  Changes ch = run(b, 0, 100, in, 15, last);
+  in.unread[0] = false;  // the channel is read mid-round: the round finishes
+  ch = run(b, 100, 3000, in, 15, last);
+  expectDoubleBlink(ch, 2, 510, 5);  // after the channel's second flash
+  // Then C-Mail alone, each second.
+  expectDoubleBlink(ch, 6, 720 + 700, 5);
+  expectDoubleBlink(ch, 10, 1420 + 1000, 5);
+  TEST_ASSERT_EQUAL(14, int(ch.size()));
+}
+
+void test_each_source_times_out_on_its_own() {
+  NotifyBlinker b;
+  uint8_t last = 0;
+  NotifyInputs in;
+  in.color[1] = LedColor::Yellow;
+  in.color[2] = LedColor::Green;
+  in.unread[1] = in.unread[2] = true;
+  b.message(NotifySource::Mention, 0);
+  run(b, 0, 10000, in, 15, last);
+  b.message(NotifySource::Feed, 10000);
+  run(b, 10000, 16000, in, 15, last);
+  // From 15 s only the feed is left, until 25 s.
+  Changes ch = run(b, 16000, 30000, in, 15, last);
+  TEST_ASSERT_TRUE(ch.size() >= 4);
+  for (auto& c : ch) TEST_ASSERT_TRUE(c.second == 0 || c.second == 2);
+  TEST_ASSERT_TRUE(ch.back().first < 25000);
+  TEST_ASSERT_FALSE(b.active());
+}
+
+void test_a_new_message_blinks_once_even_if_read() {
+  NotifyBlinker b;
+  uint8_t last = 0;
+  b.message(NotifySource::Feed, 100);
+  Changes ch = run(b, 100, 3000, only(NotifySource::Feed, LedColor::Green, false), 15, last);
+  TEST_ASSERT_EQUAL(4, int(ch.size()));
+  expectDoubleBlink(ch, 0, 100, 2);
+  TEST_ASSERT_FALSE(b.active());
+}
+
+void test_off_skips_only_that_source() {
+  NotifyBlinker b;
+  uint8_t last = 0;
+  NotifyInputs in;
+  in.color[0] = LedColor::Off;
+  in.color[3] = LedColor::Red;
+  in.unread[0] = in.unread[3] = true;
+  b.message(NotifySource::Channel, 0);
+  b.message(NotifySource::Cmail, 0);
+  Changes ch = run(b, 0, 1500, in, 15, last);
+  expectDoubleBlink(ch, 0, 0, 1);
+  expectDoubleBlink(ch, 4, 1000, 1);
+  TEST_ASSERT_EQUAL(8, int(ch.size()));
 }
 
 void test_wifi_light_states() {
@@ -213,6 +315,11 @@ int main() {
   RUN_TEST(test_off_disables);
   RUN_TEST(test_cancel_goes_dark);
   RUN_TEST(test_millis_wraparound);
+  RUN_TEST(test_sources_blink_in_turn);
+  RUN_TEST(test_a_read_source_drops_out);
+  RUN_TEST(test_each_source_times_out_on_its_own);
+  RUN_TEST(test_a_new_message_blinks_once_even_if_read);
+  RUN_TEST(test_off_skips_only_that_source);
   RUN_TEST(test_wifi_light_states);
   RUN_TEST(test_led_levels);
   return UNITY_END();

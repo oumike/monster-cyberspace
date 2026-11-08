@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <string>
+#include <vector>
 
 #include "app/app_state.h"
 #include "app/messages.h"
@@ -40,6 +41,7 @@
 #include "ui/led_level.h"
 #include "ui/notify_light.h"
 #include "ui/screen_timeout.h"
+#include "ui/theme.h"
 #if RC_FEAT_MASCOT
 #include "web/mascot_presets.h"
 #endif
@@ -55,6 +57,8 @@ namespace {
 using rc::Settings;
 
 constexpr size_t kMaxBody = 1024;
+// /api/settings: prefs, canned replies and the mascot in one body.
+constexpr size_t kMaxSettingsBody = 8192;
 constexpr int kLoginWaitMs = 20000;
 
 httpd_handle_t server = nullptr;
@@ -167,8 +171,8 @@ esp_err_t okReply(httpd_req_t* req, const char* message = nullptr) {
 
 // Reads the body into `body` (zeroed by the caller when it holds secrets) and
 // parses it in place, so parsed strings point into that buffer.
-bool readJson(httpd_req_t* req, std::string& body, JsonDocument& doc) {
-  if (req->content_len > kMaxBody) return false;
+bool readJson(httpd_req_t* req, std::string& body, JsonDocument& doc, size_t max = kMaxBody) {
+  if (req->content_len > max) return false;
   body.assign(req->content_len, '\0');
   size_t got = 0;
   while (got < body.size()) {
@@ -431,6 +435,25 @@ esp_err_t getPrefs(httpd_req_t* req) {
   d["screenSaver"] = s.screenSaver;
   if (RC_FEAT_SPELL) d["spellCheck"] = s.spellCheck;
   if (!board::eink()) d["theme"] = rc::themeKey(s.theme);
+  // The page draws itself in the device's colours: each theme's [bg, fg,
+  // dim, barBg, barFg, hintBg, hintFg, selectBg, selectFg, inputBg, error].
+  auto palette = [](JsonArray a, const rc::Theme& t) {
+    for (uint16_t c : {t.bg, t.fg, t.dim, t.barBg, t.barFg, t.hintBg, t.hintFg, t.selectBg, t.selectFg,
+                       t.inputBg, t.error})
+      a.add(rc::rgb565Hex(c));
+  };
+  if (board::eink()) {
+    palette(d["palette"].to<JsonArray>(), rc::paperTheme());
+  } else {
+    JsonArray themes = d["themes"].to<JsonArray>();
+    for (int i = 0; i < rc::kThemeCount; ++i) {
+      const rc::ThemeId id = rc::themeFromIndex(i);
+      JsonObject o = themes.add<JsonObject>();
+      o["key"] = rc::themeKey(id);
+      o["label"] = rc::themeLabel(id);
+      palette(o["c"].to<JsonArray>(), rc::theme(id));
+    }
+  }
   d["tz"] = s.tz;
   d["tzName"] = s.tzName;
   d["ntpServer"] = s.ntpServer;
@@ -450,6 +473,9 @@ esp_err_t getPrefs(httpd_req_t* req) {
   }
   if (board::hasNotifyLight()) {
     d["notifyLight"] = rc::ledColorKey(s.notifyLight);
+    if (RC_FEAT_CIRC) d["notifyMention"] = rc::ledColorKey(s.notifyMention);
+    if (RC_FEAT_ENTRIES) d["notifyFeed"] = rc::ledColorKey(s.notifyFeed);
+    if (RC_FEAT_CMAIL) d["notifyCmail"] = rc::ledColorKey(s.notifyCmail);
     d["notifyTimeout"] = s.notifyTimeoutSecs;
   }
   d["webConfig"] = s.webConfig;
@@ -478,208 +504,309 @@ esp_err_t getZones(httpd_req_t* req) {
   return sendJson(req, d);
 }
 
+// ---- Saveable sections ----
+// Each parses and checks everything first (an error message, or "" when
+// good), then applies; /api/settings checks every section before it applies
+// any, so a bad field saves nothing.
+
+struct PrefsChange {
+  rc::TextSize size;
+  bool buzzer;
+  uint8_t volume;
+  rc::ThemeId theme;
+  int rotation = -1;
+  uint32_t screenOnSecs;
+  bool screenSaver, spellCheck, tapVibrate, alertVibrate;
+  rc::KbLight kbLight;
+  rc::Settings lights;
+  uint8_t brightness;
+  rc::LedColor notifyLight, notifyMention, notifyFeed, notifyCmail;
+  uint16_t notifyTimeout;
+  bool webConfig;
+  uint32_t idleSecs, wakeMins;
+  std::string ntp, tz, tzName;
+  bool uiPrefs = false;  // textSize, buzzer or theme sent: the UI task applies them
+};
+
+std::string parsePrefs(JsonVariantConst doc, const Settings& s, PrefsChange& c) {
+  c.size = s.textSize;
+  if (rc::TextSize only; board::fixedTextSize(only))
+    c.size = only;  // ignore any posted textSize
+  else if (doc["textSize"].is<const char*>() && !rc::parseTextSize(doc["textSize"].as<const char*>(), c.size))
+    return "Text size: compact, comfortable or large";
+  c.buzzer = doc["buzzer"].is<bool>() ? doc["buzzer"].as<bool>() : s.buzzer;
+  c.volume = s.volume;
+  if (!doc["volume"].isNull()) {
+    if (!doc["volume"].is<int>() || !rc::validVolume(doc["volume"].as<int>()))
+      return "Volume: 10 to 100 in steps of 10";
+    c.volume = uint8_t(doc["volume"].as<int>());
+  }
+  c.theme = s.theme;
+  if (doc["theme"].is<const char*>() && !rc::parseThemeId(doc["theme"].as<const char*>(), c.theme))
+    return "Theme: not one this device has";
+  if (!doc["rotation"].isNull()) {
+    if (!doc["rotation"].is<int>() || doc["rotation"].as<int>() < 0 || doc["rotation"].as<int>() > 3)
+      return "Orientation: 0 to 3";
+    c.rotation = doc["rotation"].as<int>();
+  }
+  c.screenOnSecs = s.screenOnSecs;
+  if (!doc["screenOnSecs"].isNull()) {
+    if (!doc["screenOnSecs"].is<int>() || doc["screenOnSecs"].as<int>() < 0 ||
+        !rc::validScreenTimeout(doc["screenOnSecs"].as<uint32_t>()))
+      return "Screen timeout: 15, 30, 60, 120, 300, 600, 1800, 3600 or 0";
+    c.screenOnSecs = doc["screenOnSecs"].as<uint32_t>();
+  }
+  c.screenSaver = doc["screenSaver"].is<bool>() ? doc["screenSaver"].as<bool>() : s.screenSaver;
+  c.spellCheck = doc["spellCheck"].is<bool>() ? doc["spellCheck"].as<bool>() : s.spellCheck;
+  c.tapVibrate = doc["tapVibrate"].is<bool>() ? doc["tapVibrate"].as<bool>() : s.tapVibrate;
+  c.alertVibrate = doc["alertVibrate"].is<bool>() ? doc["alertVibrate"].as<bool>() : s.alertVibrate;
+  c.kbLight = s.kbLight;
+  if (!doc["kbLight"].isNull() &&
+      (!doc["kbLight"].is<const char*>() || !rc::parseKbLight(doc["kbLight"].as<const char*>(), c.kbLight)))
+    return "Keyboard light: off, low, medium or high";
+  c.lights = s;
+  auto colour = [&doc](const char* key, rc::LedColor& out) {
+    return doc[key].isNull() ||
+           (doc[key].is<const char*>() && rc::parseLedColor(doc[key].as<const char*>(), out));
+  };
+  if (!colour("powerLight", c.lights.powerLight) || !colour("wifiJoined", c.lights.wifiJoined) ||
+      !colour("wifiSetup", c.lights.wifiSetup) || !colour("wifiLooking", c.lights.wifiLooking))
+    return "Lights: off, red, green, blue, yellow, cyan, magenta or white";
+  if (!doc["ledLevel"].isNull() &&
+      (!doc["ledLevel"].is<const char*>() ||
+       !rc::parseLedLevel(doc["ledLevel"].as<const char*>(), c.lights.ledLevel)))
+    return "LED brightness: off, dim, low, medium or high";
+  c.brightness = s.brightness;
+  if (!doc["brightness"].isNull()) {
+    if (!doc["brightness"].is<int>() || !rc::validBrightness(doc["brightness"].as<int>()))
+      return "Brightness: 10 to 100 in steps of 10";
+    c.brightness = uint8_t(doc["brightness"].as<int>());
+  }
+  {
+    const struct {
+      const char* key;
+      rc::LedColor cur;
+      rc::LedColor& out;
+    } lights[] = {{"notifyLight", s.notifyLight, c.notifyLight},
+                  {"notifyMention", s.notifyMention, c.notifyMention},
+                  {"notifyFeed", s.notifyFeed, c.notifyFeed},
+                  {"notifyCmail", s.notifyCmail, c.notifyCmail}};
+    for (const auto& l : lights) {
+      l.out = l.cur;
+      if (!doc[l.key].isNull() && (!doc[l.key].is<const char*>() ||
+                                   !rc::parseLedColor(doc[l.key].as<const char*>(), l.out)))
+        return "Notify light: off, red, green, blue, yellow, cyan, magenta or white";
+    }
+  }
+  c.notifyTimeout = s.notifyTimeoutSecs;
+  if (!doc["notifyTimeout"].isNull()) {
+    if (!doc["notifyTimeout"].is<int>() || doc["notifyTimeout"].as<int>() < 0 ||
+        !rc::validNotifyTimeout(doc["notifyTimeout"].as<uint32_t>()))
+      return "Light timeout: 15, 30, 60, 300 or 0 (until read)";
+    c.notifyTimeout = uint16_t(doc["notifyTimeout"].as<uint32_t>());
+  }
+  c.webConfig = doc["webConfig"].is<bool>() ? doc["webConfig"].as<bool>() : s.webConfig;
+  c.idleSecs = s.idleSecs;
+  c.wakeMins = s.wakeMins;
+  if (board::sleepsOnBattery() && !doc["idleSecs"].isNull()) {
+    if (!doc["idleSecs"].is<int>() || doc["idleSecs"].as<int>() < 0 ||
+        !rc::validIdleSecs(doc["idleSecs"].as<uint32_t>()))
+      return "Sleep after: 60, 120, 300, 600 or 1800 seconds";
+    c.idleSecs = doc["idleSecs"].as<uint32_t>();
+  }
+  if (board::sleepsOnBattery() && !doc["wakeMins"].isNull()) {
+    if (!doc["wakeMins"].is<int>() || doc["wakeMins"].as<int>() < 0 ||
+        !rc::validWakeMins(doc["wakeMins"].as<uint32_t>()))
+      return "Wake every: 5, 15, 30, 60 or 120 minutes, or 0 (never)";
+    c.wakeMins = doc["wakeMins"].as<uint32_t>();
+  }
+  c.ntp = s.ntpServer;
+  if (doc["ntpServer"].is<const char*>()) {
+    c.ntp = doc["ntpServer"].as<const char*>();
+    if (!rc::validNtpServer(c.ntp)) return "NTP server: a host name, 1-63 characters";
+  }
+  // A listed zone name brings its own POSIX string. An empty name (custom)
+  // takes "tz" as sent; "tz" alone is named from the list when it matches.
+  c.tz = s.tz;
+  c.tzName = s.tzName;
+  const bool named = doc["tzName"].is<const char*>();
+  if (named) c.tzName = doc["tzName"].as<const char*>();
+  if (named && !c.tzName.empty()) {
+    const rc::Zone* z = rc::findZoneByIana(c.tzName);
+    if (!z) return "Time zone: not in the list";
+    c.tz = z->posix;
+  } else if (doc["tz"].is<const char*>()) {
+    c.tz = doc["tz"].as<const char*>();
+    if (!rc::validPosixTz(c.tz)) return "Time zone: a POSIX TZ string such as UTC0";
+    if (!named) {
+      const rc::Zone* z = rc::findZoneByPosix(c.tz);
+      c.tzName = z ? z->iana : "";
+    }
+  }
+  c.uiPrefs = !doc["textSize"].isNull() || !doc["buzzer"].isNull() || !doc["theme"].isNull();
+  return "";
+}
+
+void applyPrefs(const PrefsChange& c, const Settings& s) {
+  rc::Settings& cfg = rc::app().cfg;
+  // The time service owns the TZ and SNTP; it reloads the saved values.
+  if (c.ntp != s.ntpServer) settings::saveNtpServer(c.ntp);
+  if (c.tz != s.tz || c.tzName != s.tzName) settings::saveTz(c.tz, c.tzName);
+  if (c.ntp != s.ntpServer || c.tz != s.tz || c.tzName != s.tzName) rc::timesvc::settingsChanged();
+  if (c.screenOnSecs != s.screenOnSecs || c.screenSaver != s.screenSaver) {
+    cfg.screenOnSecs = c.screenOnSecs;
+    cfg.screenSaver = c.screenSaver;
+    settings::saveScreen(c.screenOnSecs, c.screenSaver);
+  }
+  if (c.webConfig != s.webConfig) {
+    cfg.webConfig = c.webConfig;
+    settings::saveWebConfig(c.webConfig);
+  }
+  if (c.idleSecs != s.idleSecs || c.wakeMins != s.wakeMins) {
+    cfg.idleSecs = c.idleSecs;
+    cfg.wakeMins = c.wakeMins;
+    settings::savePower(c.idleSecs, c.wakeMins);
+  }
+  if (RC_FEAT_SPELL && c.spellCheck != s.spellCheck) {
+    cfg.spellCheck = c.spellCheck;
+    settings::saveSpellCheck(c.spellCheck);
+  }
+  if (board::hasHaptic() && (c.tapVibrate != s.tapVibrate || c.alertVibrate != s.alertVibrate)) {
+    cfg.tapVibrate = c.tapVibrate;
+    cfg.alertVibrate = c.alertVibrate;
+    settings::saveVibrate(c.tapVibrate, c.alertVibrate);
+  }
+  // The UI task picks the new level up on its next pass.
+  if (board::hasKbLight() && c.kbLight != s.kbLight) {
+    cfg.kbLight = c.kbLight;
+    settings::saveKbLight(c.kbLight);
+  }
+  const rc::Settings& l = c.lights;
+  if (l.ledLevel != s.ledLevel || l.powerLight != s.powerLight || l.wifiJoined != s.wifiJoined ||
+      l.wifiSetup != s.wifiSetup || l.wifiLooking != s.wifiLooking) {
+    if (board::hasLedLevel()) cfg.ledLevel = l.ledLevel;
+    if (board::hasPowerLight()) cfg.powerLight = l.powerLight;
+    if (board::hasWifiLight()) {
+      cfg.wifiJoined = l.wifiJoined;
+      cfg.wifiSetup = l.wifiSetup;
+      cfg.wifiLooking = l.wifiLooking;
+    }
+    settings::saveStatusLights(cfg);
+  }
+  if (!board::eink() && c.brightness != s.brightness) {
+    cfg.brightness = c.brightness;
+    settings::saveBrightness(c.brightness);
+  }
+  // The UI task reads the light settings each pass; a new colour shows once.
+  if (board::hasNotifyLight()) {
+    const struct {
+      rc::LedColor from, to;
+      rc::LedColor& dst;
+    } lights[] = {{s.notifyLight, c.notifyLight, cfg.notifyLight},
+                  {s.notifyMention, c.notifyMention, cfg.notifyMention},
+                  {s.notifyFeed, c.notifyFeed, cfg.notifyFeed},
+                  {s.notifyCmail, c.notifyCmail, cfg.notifyCmail}};
+    bool changed = false;
+    for (const auto& l : lights) {
+      if (l.to == l.from) continue;
+      l.dst = l.to;
+      changed = true;
+      // Several changed at once: the last one previews.
+      rc::postEvent(rc::Event{rc::EvtType::NotifyPreview, "", static_cast<int>(l.to), true});
+    }
+    if (changed) settings::saveNotifyLights(cfg);
+  }
+  if (board::hasNotifyLight() && c.notifyTimeout != s.notifyTimeoutSecs) {
+    cfg.notifyTimeoutSecs = c.notifyTimeout;
+    settings::saveNotifyTimeout(c.notifyTimeout);
+  }
+  if (board::hasVolume() && c.volume != s.volume) {
+    cfg.volume = c.volume;
+    settings::saveVolume(c.volume);
+    board::setVolume(c.volume);
+    if (c.buzzer) board::beep(2000, 80);  // a sample of the new level
+  }
+  // The UI task owns text size, theme and buzzer; it applies and saves them.
+  if (c.uiPrefs)
+    rc::postEvent(rc::Event{rc::EvtType::PrefsChanged, rc::themeKey(c.theme), static_cast<int>(c.size), c.buzzer});
+  if (c.rotation >= 0 && board::canRotate() && c.rotation != s.rotation)
+    rc::postEvent(rc::Event{rc::EvtType::RotationChanged, "", c.rotation, true});
+}
+
+// The canned replies, ["..."]; cleaned (config/phrases.h).
+std::string parsePhrases(JsonVariantConst v, std::vector<std::string>& out) {
+  if (board::canType()) return "Canned replies: this device has a keyboard";
+  if (!v.is<JsonArrayConst>()) return "Canned replies: send a list";
+  std::vector<std::string> in;
+  for (JsonVariantConst p : v.as<JsonArrayConst>())
+    if (p.is<const char*>()) in.push_back(p.as<const char*>());
+  out = rc::cleanPhrases(in);
+  return "";
+}
+
+void applyPhrases(const std::vector<std::string>& p) {
+  settings::savePhrases(p);
+  // The UI task owns the in-memory list.
+  rc::postEvent(rc::Event{rc::EvtType::PhrasesChanged, rc::joinPhrases(p), 0, true});
+}
+
+#if RC_FEAT_MASCOT
+// {"art":[...],"phrases":[...]}, or {"reset":true} for Fluffy and his words.
+// Art or phrases equal to the defaults are stored empty (the default).
+std::string parseMascot(JsonVariantConst doc, rc::Mascot& m) {
+  m = rc::Mascot{};
+  if (doc["reset"] | false) return "";
+  if (!doc["art"].is<JsonArrayConst>() || !doc["phrases"].is<JsonArrayConst>())
+    return "Send {\"art\":[...],\"phrases\":[...]}";
+  for (JsonVariantConst v : doc["art"].as<JsonArrayConst>()) m.art.push_back(v | "");
+  for (JsonVariantConst v : doc["phrases"].as<JsonArrayConst>()) m.phrases.push_back(v | "");
+  m = rc::cleanMascot(std::move(m));
+  const std::string err = rc::validateMascot(m);
+  if (!err.empty()) return "Mascot: " + err;
+  if (m.art == rc::defaultMascotArt()) m.art.clear();
+  if (m.phrases == rc::defaultMascotPhrases()) m.phrases.clear();
+  return "";
+}
+#endif
+
+// {"pagePassword":"...","apPassword":"..."}: a key left out keeps that
+// password, an empty one turns it off. page and ap come back filled either way.
+std::string parseSecurity(JsonVariantConst doc, const Settings& s, std::string& page, std::string& ap) {
+  page = s.pagePassword;
+  ap = s.apPassword;
+  if (doc["pagePassword"].is<const char*>()) page = doc["pagePassword"].as<const char*>();
+  if (doc["apPassword"].is<const char*>()) ap = doc["apPassword"].as<const char*>();
+  if (page.size() > 63 || !printable(page)) return "Page password: up to 63 printable characters";
+  if (!rc::validApPassword(ap)) return "Setup-AP password: 8-63 printable characters, or empty for an open AP";
+  return "";
+}
+
 esp_err_t postPrefs(httpd_req_t* req) {
   if (!authorized(req)) return ESP_OK;
   std::string body;
   JsonDocument doc;
   if (!readJson(req, body, doc)) return fail(req, "400 Bad Request", "Bad request");
   Settings s = current();
-  rc::TextSize size = s.textSize;
-  if (rc::TextSize only; board::fixedTextSize(only))
-    size = only;  // ignore any posted textSize
-  else if (doc["textSize"].is<const char*>() && !rc::parseTextSize(doc["textSize"].as<const char*>(), size))
-    return fail(req, "400 Bad Request", "Text size: compact, comfortable or large");
-  bool buzzer = doc["buzzer"].is<bool>() ? doc["buzzer"].as<bool>() : s.buzzer;
-  uint8_t volume = s.volume;
-  if (!doc["volume"].isNull()) {
-    if (!doc["volume"].is<int>() || !rc::validVolume(doc["volume"].as<int>()))
-      return fail(req, "400 Bad Request", "Volume: 10 to 100 in steps of 10");
-    volume = uint8_t(doc["volume"].as<int>());
-  }
-  rc::ThemeId theme = s.theme;
-  if (doc["theme"].is<const char*>() && !rc::parseThemeId(doc["theme"].as<const char*>(), theme))
-    return fail(req, "400 Bad Request", "Theme: default, bw or wb");
-  int rotation = -1;
-  if (!doc["rotation"].isNull()) {
-    if (!doc["rotation"].is<int>() || doc["rotation"].as<int>() < 0 || doc["rotation"].as<int>() > 3)
-      return fail(req, "400 Bad Request", "Orientation: 0 to 3");
-    rotation = doc["rotation"].as<int>();
-  }
-  uint32_t screenOnSecs = s.screenOnSecs;
-  if (!doc["screenOnSecs"].isNull()) {
-    if (!doc["screenOnSecs"].is<int>() || doc["screenOnSecs"].as<int>() < 0 ||
-        !rc::validScreenTimeout(doc["screenOnSecs"].as<uint32_t>()))
-      return fail(req, "400 Bad Request", "Screen timeout: 15, 30, 60, 120, 300, 600, 1800, 3600 or 0");
-    screenOnSecs = doc["screenOnSecs"].as<uint32_t>();
-  }
-  const bool screenSaver = doc["screenSaver"].is<bool>() ? doc["screenSaver"].as<bool>() : s.screenSaver;
-  const bool spellCheck = doc["spellCheck"].is<bool>() ? doc["spellCheck"].as<bool>() : s.spellCheck;
-  const bool tapVibrate = doc["tapVibrate"].is<bool>() ? doc["tapVibrate"].as<bool>() : s.tapVibrate;
-  const bool alertVibrate =
-      doc["alertVibrate"].is<bool>() ? doc["alertVibrate"].as<bool>() : s.alertVibrate;
-  rc::KbLight kbLight = s.kbLight;
-  if (!doc["kbLight"].isNull() &&
-      (!doc["kbLight"].is<const char*>() || !rc::parseKbLight(doc["kbLight"].as<const char*>(), kbLight)))
-    return fail(req, "400 Bad Request", "Keyboard light: off, low, medium or high");
-  rc::Settings lights = s;
-  auto colour = [&doc](const char* key, rc::LedColor& out) {
-    return doc[key].isNull() ||
-           (doc[key].is<const char*>() && rc::parseLedColor(doc[key].as<const char*>(), out));
-  };
-  if (!colour("powerLight", lights.powerLight) || !colour("wifiJoined", lights.wifiJoined) ||
-      !colour("wifiSetup", lights.wifiSetup) || !colour("wifiLooking", lights.wifiLooking))
-    return fail(req, "400 Bad Request",
-                "Lights: off, red, green, blue, yellow, cyan, magenta or white");
-  if (!doc["ledLevel"].isNull() &&
-      (!doc["ledLevel"].is<const char*>() ||
-       !rc::parseLedLevel(doc["ledLevel"].as<const char*>(), lights.ledLevel)))
-    return fail(req, "400 Bad Request", "LED brightness: off, dim, low, medium or high");
-  uint8_t brightness = s.brightness;
-  if (!doc["brightness"].isNull()) {
-    if (!doc["brightness"].is<int>() || !rc::validBrightness(doc["brightness"].as<int>()))
-      return fail(req, "400 Bad Request", "Brightness: 10 to 100 in steps of 10");
-    brightness = uint8_t(doc["brightness"].as<int>());
-  }
-  rc::LedColor notifyLight = s.notifyLight;
-  if (!doc["notifyLight"].isNull() &&
-      (!doc["notifyLight"].is<const char*>() ||
-       !rc::parseLedColor(doc["notifyLight"].as<const char*>(), notifyLight)))
-    return fail(req, "400 Bad Request",
-                "Notify light: off, red, green, blue, yellow, cyan, magenta or white");
-  uint16_t notifyTimeout = s.notifyTimeoutSecs;
-  if (!doc["notifyTimeout"].isNull()) {
-    if (!doc["notifyTimeout"].is<int>() || doc["notifyTimeout"].as<int>() < 0 ||
-        !rc::validNotifyTimeout(doc["notifyTimeout"].as<uint32_t>()))
-      return fail(req, "400 Bad Request", "Light timeout: 15, 30, 60, 300 or 0 (until read)");
-    notifyTimeout = uint16_t(doc["notifyTimeout"].as<uint32_t>());
-  }
-  const bool webConfig = doc["webConfig"].is<bool>() ? doc["webConfig"].as<bool>() : s.webConfig;
-  uint32_t idleSecs = s.idleSecs, wakeMins = s.wakeMins;
-  if (board::sleepsOnBattery() && !doc["idleSecs"].isNull()) {
-    if (!doc["idleSecs"].is<int>() || doc["idleSecs"].as<int>() < 0 ||
-        !rc::validIdleSecs(doc["idleSecs"].as<uint32_t>()))
-      return fail(req, "400 Bad Request", "Sleep after: 60, 120, 300, 600 or 1800 seconds");
-    idleSecs = doc["idleSecs"].as<uint32_t>();
-  }
-  if (board::sleepsOnBattery() && !doc["wakeMins"].isNull()) {
-    if (!doc["wakeMins"].is<int>() || doc["wakeMins"].as<int>() < 0 ||
-        !rc::validWakeMins(doc["wakeMins"].as<uint32_t>()))
-      return fail(req, "400 Bad Request", "Wake every: 5, 15, 30, 60 or 120 minutes, or 0 (never)");
-    wakeMins = doc["wakeMins"].as<uint32_t>();
-  }
-  std::string ntp = s.ntpServer;
-  if (doc["ntpServer"].is<const char*>()) {
-    ntp = doc["ntpServer"].as<const char*>();
-    if (!rc::validNtpServer(ntp))
-      return fail(req, "400 Bad Request", "NTP server: a host name, 1-63 characters");
-  }
-  // A listed zone name brings its own POSIX string. An empty name (custom)
-  // takes "tz" as sent; "tz" alone is named from the list when it matches.
-  std::string tz = s.tz, tzName = s.tzName;
-  const bool named = doc["tzName"].is<const char*>();
-  if (named) tzName = doc["tzName"].as<const char*>();
-  if (named && !tzName.empty()) {
-    const rc::Zone* z = rc::findZoneByIana(tzName);
-    if (!z) return fail(req, "400 Bad Request", "Time zone: not in the list");
-    tz = z->posix;
-  } else if (doc["tz"].is<const char*>()) {
-    tz = doc["tz"].as<const char*>();
-    if (!rc::validPosixTz(tz))
-      return fail(req, "400 Bad Request", "Time zone: a POSIX TZ string such as UTC0");
-    if (!named) {
-      const rc::Zone* z = rc::findZoneByPosix(tz);
-      tzName = z ? z->iana : "";
-    }
-  }
-  // The time service owns the TZ and SNTP; it reloads the saved values.
-  if (ntp != s.ntpServer) settings::saveNtpServer(ntp);
-  if (tz != s.tz || tzName != s.tzName) settings::saveTz(tz, tzName);
-  if (ntp != s.ntpServer || tz != s.tz || tzName != s.tzName) rc::timesvc::settingsChanged();
-  if (screenOnSecs != s.screenOnSecs || screenSaver != s.screenSaver) {
-    rc::app().cfg.screenOnSecs = screenOnSecs;
-    rc::app().cfg.screenSaver = screenSaver;
-    settings::saveScreen(screenOnSecs, screenSaver);
-  }
-  if (webConfig != s.webConfig) {
-    rc::app().cfg.webConfig = webConfig;
-    settings::saveWebConfig(webConfig);
-  }
-  if (idleSecs != s.idleSecs || wakeMins != s.wakeMins) {
-    rc::app().cfg.idleSecs = idleSecs;
-    rc::app().cfg.wakeMins = wakeMins;
-    settings::savePower(idleSecs, wakeMins);
-  }
-  if (RC_FEAT_SPELL && spellCheck != s.spellCheck) {
-    rc::app().cfg.spellCheck = spellCheck;
-    settings::saveSpellCheck(spellCheck);
-  }
-  if (board::hasHaptic() && (tapVibrate != s.tapVibrate || alertVibrate != s.alertVibrate)) {
-    rc::app().cfg.tapVibrate = tapVibrate;
-    rc::app().cfg.alertVibrate = alertVibrate;
-    settings::saveVibrate(tapVibrate, alertVibrate);
-  }
-  // The UI task picks the new level up on its next pass.
-  if (board::hasKbLight() && kbLight != s.kbLight) {
-    rc::app().cfg.kbLight = kbLight;
-    settings::saveKbLight(kbLight);
-  }
-  if (lights.ledLevel != s.ledLevel || lights.powerLight != s.powerLight ||
-      lights.wifiJoined != s.wifiJoined || lights.wifiSetup != s.wifiSetup ||
-      lights.wifiLooking != s.wifiLooking) {
-    rc::Settings& c = rc::app().cfg;
-    if (board::hasLedLevel()) c.ledLevel = lights.ledLevel;
-    if (board::hasPowerLight()) c.powerLight = lights.powerLight;
-    if (board::hasWifiLight()) {
-      c.wifiJoined = lights.wifiJoined;
-      c.wifiSetup = lights.wifiSetup;
-      c.wifiLooking = lights.wifiLooking;
-    }
-    settings::saveStatusLights(c);
-  }
-  if (!board::eink() && brightness != s.brightness) {
-    rc::app().cfg.brightness = brightness;
-    settings::saveBrightness(brightness);
-  }
-  // The UI task reads the light settings each pass; a new colour shows once.
-  if (board::hasNotifyLight() && notifyLight != s.notifyLight) {
-    rc::app().cfg.notifyLight = notifyLight;
-    settings::saveNotifyLight(notifyLight);
-    rc::postEvent(rc::Event{rc::EvtType::NotifyPreview, "", static_cast<int>(notifyLight), true});
-  }
-  if (board::hasNotifyLight() && notifyTimeout != s.notifyTimeoutSecs) {
-    rc::app().cfg.notifyTimeoutSecs = notifyTimeout;
-    settings::saveNotifyTimeout(notifyTimeout);
-  }
-  if (board::hasVolume() && volume != s.volume) {
-    rc::app().cfg.volume = volume;
-    settings::saveVolume(volume);
-    board::setVolume(volume);
-    if (buzzer) board::beep(2000, 80);  // a sample of the new level
-  }
-  // The UI task owns text size, theme and buzzer; it applies and saves them.
-  if (!doc["textSize"].isNull() || !doc["buzzer"].isNull() || !doc["theme"].isNull())
-    rc::postEvent(rc::Event{rc::EvtType::PrefsChanged, rc::themeKey(theme), static_cast<int>(size), buzzer});
-  if (rotation >= 0 && board::canRotate() && rotation != s.rotation)
-    rc::postEvent(rc::Event{rc::EvtType::RotationChanged, "", rotation, true});
+  PrefsChange c;
+  const std::string err = parsePrefs(doc.as<JsonVariantConst>(), s, c);
+  wipe(s.pagePassword);
+  wipe(s.apPassword);
+  if (!err.empty()) return fail(req, "400 Bad Request", err);
+  applyPrefs(c, s);
   return okReply(req, "Saved");
 }
 
-// The canned replies, as {"phrases":[...]}; cleaned (config/phrases.h).
 esp_err_t postPhrases(httpd_req_t* req) {
   if (!authorized(req)) return ESP_OK;
   if (board::canType()) return fail(req, "404 Not Found", "This device has a keyboard");
   std::string body;
   if (!readBody(req, body, 2048)) return fail(req, "400 Bad Request", "Bad request");
   JsonDocument doc;
-  if (deserializeJson(doc, body) || !doc["phrases"].is<JsonArrayConst>())
-    return fail(req, "400 Bad Request", "Send {\"phrases\":[\"...\"]}");
-  std::vector<std::string> in;
-  for (JsonVariantConst v : doc["phrases"].as<JsonArrayConst>())
-    if (v.is<const char*>()) in.push_back(v.as<const char*>());
-  const std::vector<std::string> p = rc::cleanPhrases(in);
-  settings::savePhrases(p);
-  // The UI task owns the in-memory list.
-  rc::postEvent(rc::Event{rc::EvtType::PhrasesChanged, rc::joinPhrases(p), 0, true});
+  if (deserializeJson(doc, body)) return fail(req, "400 Bad Request", "Send {\"phrases\":[\"...\"]}");
+  std::vector<std::string> p;
+  const std::string err = parsePhrases(doc["phrases"], p);
+  if (!err.empty()) return fail(req, "400 Bad Request", err);
+  applyPhrases(p);
   return okReply(req, "Saved");
 }
 
@@ -694,14 +821,16 @@ esp_err_t getMascot(httpd_req_t* req) {
   for (const std::string& l : customArt ? m.art : rc::defaultMascotArt()) art.add(l);
   JsonArray phrases = d["phrases"].to<JsonArray>();
   for (const std::string& p : customPhrases ? m.phrases : rc::defaultMascotPhrases()) phrases.add(p);
+  JsonArray defArt = d["defaultArt"].to<JsonArray>();
+  for (const std::string& l : rc::defaultMascotArt()) defArt.add(l);
+  JsonArray defPhrases = d["defaultPhrases"].to<JsonArray>();
+  for (const std::string& p : rc::defaultMascotPhrases()) defPhrases.add(p);
   d["customArt"] = customArt;
   d["customPhrases"] = customPhrases;
   d["presets"] = serialized(kMascotPresetsJson);
   return sendJson(req, d);
 }
 
-// {"art":[...],"phrases":[...]}, or {"reset":true} for Fluffy and his words.
-// Art or phrases equal to the defaults are stored empty (the default).
 esp_err_t postMascot(httpd_req_t* req) {
   if (!authorized(req)) return ESP_OK;
   std::string body;
@@ -709,17 +838,8 @@ esp_err_t postMascot(httpd_req_t* req) {
   JsonDocument doc;
   if (deserializeJson(doc, body)) return fail(req, "400 Bad Request", "Bad request");
   rc::Mascot m;
-  if (!(doc["reset"] | false)) {
-    if (!doc["art"].is<JsonArrayConst>() || !doc["phrases"].is<JsonArrayConst>())
-      return fail(req, "400 Bad Request", "Send {\"art\":[...],\"phrases\":[...]}");
-    for (JsonVariantConst v : doc["art"].as<JsonArrayConst>()) m.art.push_back(v | "");
-    for (JsonVariantConst v : doc["phrases"].as<JsonArrayConst>()) m.phrases.push_back(v | "");
-    m = rc::cleanMascot(std::move(m));
-    const std::string err = rc::validateMascot(m);
-    if (!err.empty()) return fail(req, "400 Bad Request", "Mascot: " + err);
-    if (m.art == rc::defaultMascotArt()) m.art.clear();
-    if (m.phrases == rc::defaultMascotPhrases()) m.phrases.clear();
-  }
+  const std::string err = parseMascot(doc.as<JsonVariantConst>(), m);
+  if (!err.empty()) return fail(req, "400 Bad Request", err);
   if (!mascotstore::save(m)) return fail(req, "500 Internal Server Error", "Couldn't save the mascot");
   return okReply(req, "Saved");
 }
@@ -734,21 +854,88 @@ esp_err_t postSecurity(httpd_req_t* req) {
     return fail(req, "400 Bad Request", "Bad request");
   }
   Settings s = current();
-  std::string page = s.pagePassword, ap = s.apPassword;
-  wipe(s.pagePassword);
-  wipe(s.apPassword);
-  if (doc["pagePassword"].is<const char*>()) page = doc["pagePassword"].as<const char*>();
-  if (doc["apPassword"].is<const char*>()) ap = doc["apPassword"].as<const char*>();
+  std::string page, ap;
+  const std::string err = parseSecurity(doc.as<JsonVariantConst>(), s, page, ap);
   doc.clear();
   wipe(body);
-  const char* err = nullptr;
-  if (page.size() > 63 || !printable(page)) err = "Page password: up to 63 printable characters";
-  else if (!rc::validApPassword(ap)) err = "Setup-AP password: 8-63 printable characters, or empty for an open AP";
-  if (!err) settings::saveSecurity(page, ap);
+  wipe(s.pagePassword);
+  wipe(s.apPassword);
+  if (err.empty()) settings::saveSecurity(page, ap);
   wipe(page);
   wipe(ap);
-  if (err) return fail(req, "400 Bad Request", err);
+  if (!err.empty()) return fail(req, "400 Bad Request", err);
   return okReply(req, "Saved. The setup-AP password applies the next time setup mode runs.");
+}
+
+// The page's one Save: {"prefs":{...},"phrases":[...],"mascot":{...},
+// "security":{...},"autoUpdate":true}, every part optional and in the shape
+// its own endpoint takes. Every part is checked before any is written, so a
+// bad field saves nothing.
+esp_err_t postSettings(httpd_req_t* req) {
+  if (!authorized(req)) return ESP_OK;
+  std::string body;
+  JsonDocument doc;
+  if (!readJson(req, body, doc, kMaxSettingsBody)) {
+    wipe(body);
+    return fail(req, "400 Bad Request", "Bad request");
+  }
+  Settings s = current();
+  const JsonVariantConst root = doc.as<JsonVariantConst>();
+  std::string err;
+  PrefsChange prefs;
+  const bool hasPrefs = root["prefs"].is<JsonObjectConst>();
+  if (hasPrefs) err = parsePrefs(root["prefs"], s, prefs);
+  std::vector<std::string> phrases;
+  const bool hasPhrases = !root["phrases"].isNull();
+  if (err.empty() && hasPhrases) err = parsePhrases(root["phrases"], phrases);
+#if RC_FEAT_MASCOT
+  rc::Mascot mascot;
+  const bool hasMascot = root["mascot"].is<JsonObjectConst>();
+  if (err.empty() && hasMascot) err = parseMascot(root["mascot"], mascot);
+#endif
+  std::string page, ap;
+  const bool hasSecurity = root["security"].is<JsonObjectConst>();
+  bool apChanged = false;
+  if (err.empty() && hasSecurity) {
+    err = parseSecurity(root["security"], s, page, ap);
+    apChanged = ap != s.apPassword;
+  }
+#if RC_FEAT_OTA
+  const bool hasAuto = root["autoUpdate"].is<bool>();
+  const bool autoUpdate = root["autoUpdate"] | false;
+  if (err.empty() && !root["autoUpdate"].isNull() && !hasAuto) err = "Install updates automatically: true or false";
+#endif
+  // Everything is copied out: the body, which held any password, goes now.
+  doc.clear();
+  wipe(body);
+  wipe(s.pagePassword);
+  wipe(s.apPassword);
+  for (auto& w : s.wifi) wipe(w.password);
+  if (!err.empty()) {
+    wipe(page);
+    wipe(ap);
+    return fail(req, "400 Bad Request", err);
+  }
+#if RC_FEAT_MASCOT
+  // The one write that can fail goes first, so a failure leaves the rest alone.
+  if (hasMascot && !mascotstore::save(mascot)) {
+    wipe(page);
+    wipe(ap);
+    return fail(req, "500 Internal Server Error", "Couldn't write the mascot: nothing was saved");
+  }
+#endif
+  if (hasSecurity) settings::saveSecurity(page, ap);
+  wipe(page);
+  wipe(ap);
+  if (hasPhrases) applyPhrases(phrases);
+#if RC_FEAT_OTA
+  if (hasAuto) {
+    settings::saveAutoUpdate(autoUpdate);
+    rc::app().cfg.autoUpdate = autoUpdate;
+  }
+#endif
+  if (hasPrefs) applyPrefs(prefs, s);
+  return okReply(req, apChanged ? "Saved. The setup-AP password applies the next time setup mode runs." : "Saved");
 }
 
 #if RC_FEAT_OTA
@@ -932,6 +1119,7 @@ void begin() {
       {"/api/prefs", HTTP_POST, postPrefs},
       {"/api/zones", HTTP_GET, getZones},
       {"/api/security", HTTP_POST, postSecurity},
+      {"/api/settings", HTTP_POST, postSettings},
       {"/api/phrases", HTTP_POST, postPhrases},
 #if RC_FEAT_MASCOT
       {"/api/mascot", HTTP_GET, getMascot},

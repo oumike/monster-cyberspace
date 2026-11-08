@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <string>
 #include <string_view>
 
@@ -21,5 +22,9 @@ std::string urlDecode(std::string_view s);
 
 // An NTP server host name: 1-63 characters, each [A-Za-z0-9.-].
 bool validNtpServer(std::string_view host);
+
+// An RGB565 colour as CSS "#rrggbb", each channel widened by repeating its
+// top bits (so 0xFFFF is #ffffff).
+std::string rgb565Hex(uint16_t c);
 
 }  // namespace rc

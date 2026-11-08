@@ -87,4 +87,16 @@ bool validNtpServer(std::string_view host) {
   return true;
 }
 
+std::string rgb565Hex(uint16_t c) {
+  const unsigned r5 = c >> 11, g6 = (c >> 5) & 0x3F, b5 = c & 0x1F;
+  const unsigned r = r5 << 3 | r5 >> 2, g = g6 << 2 | g6 >> 4, b = b5 << 3 | b5 >> 2;
+  static const char kHex[] = "0123456789abcdef";
+  std::string out = "#";
+  for (unsigned v : {r, g, b}) {
+    out += kHex[v >> 4];
+    out += kHex[v & 0xF];
+  }
+  return out;
+}
+
 }  // namespace rc

@@ -30,9 +30,10 @@ void saveStatusLights(const rc::Settings& s);
 void saveBrightness(uint8_t pct);
 // The alert sound's volume, a percent from ui/volume.h.
 void saveVolume(uint8_t pct);
-// The device's Settings and web config: the new-message light's colour and
-// how long it blinks (board::hasNotifyLight).
-void saveNotifyLight(rc::LedColor color);
+// The device's Settings and web config: the new-message light's colours (the
+// last room, mentions, Feed, C-Mail) and how long it blinks
+// (board::hasNotifyLight).
+void saveNotifyLights(const rc::Settings& s);
 void saveNotifyTimeout(uint16_t secs);
 // The device's Settings and web config: spell suggestions while typing.
 void saveSpellCheck(bool on);

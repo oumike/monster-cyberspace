@@ -27,28 +27,49 @@ bool validNotifyTimeout(uint32_t secs);
 uint16_t snapNotifyTimeout(uint32_t secs);
 const char32_t* notifyTimeoutLabel(uint32_t secs);  // of the snapped value
 
-// The blink pattern as a pure state machine. tick gives the rgb bits to show
-// now; the caller writes the light only when they change. A pattern under way
-// always finishes, dark.
+// What the light tells about, in the order a round shows them.
+enum class NotifySource : uint8_t { Channel, Mention, Feed, Cmail };
+constexpr int kNotifySourceCount = 4;
+
+// Each source's colour (Off leaves it out) and whether it still has
+// something unread.
+struct NotifyInputs {
+  LedColor color[kNotifySourceCount] = {};
+  bool unread[kNotifySourceCount] = {};
+};
+
+// The blink pattern as a pure state machine. Each pending source gets a
+// double blink in its colour, one after another, then a pause; the round
+// repeats each second at most. tick gives the rgb bits to show now; the
+// caller writes the light only when they change. A round under way always
+// finishes, dark. Each source stops when read, or a timeout after its last
+// message.
 class NotifyBlinker {
  public:
-  void message(uint32_t nowMs);                // a new message arrived
-  void preview(LedColor c, uint32_t nowMs);    // one double blink in c
-  void cancel();                               // dark at once, disarmed
-  uint8_t tick(uint32_t nowMs, LedColor color, uint16_t timeoutSecs, bool unread);
-  // Anything left to show: the caller needs `unread` only while this holds.
-  bool active() const { return armed_ || phasesLeft_ || preview_; }
+  void message(NotifySource s, uint32_t nowMs);  // a new one arrived
+  void preview(LedColor c, uint32_t nowMs);      // one double blink in c
+  void cancel();                                 // dark at once, disarmed
+  uint8_t tick(uint32_t nowMs, const NotifyInputs& in, uint16_t timeoutSecs);
+  // Anything left to show: the caller needs the inputs only while this holds.
+  bool active() const;
 
  private:
-  void start(LedColor c, uint32_t nowMs);
+  void startBlink(LedColor c, uint32_t atMs);
+  bool startRound(uint32_t nowMs, const NotifyInputs& in, uint16_t timeoutSecs);
 
-  LedColor color_ = LedColor::Off;
-  uint8_t phasesLeft_ = 0;  // on and off halves left in the pattern
+  struct Src {
+    bool armed = false;
+    bool kick = false;  // in the next round, unread or not
+    uint32_t armedMs = 0;
+  };
+  Src src_[kNotifySourceCount];
+  LedColor queue_[kNotifySourceCount] = {};
+  uint8_t queueLen_ = 0, queuePos_ = 0;
+  uint8_t phasesLeft_ = 0;  // on and off halves left in this blink
+  bool running_ = false;    // a round or a preview
   bool lit_ = false;
-  bool preview_ = false;
-  bool armed_ = false;
-  bool kick_ = false;       // start a pattern on the next tick, unread or not
-  uint32_t armedMs_ = 0, patternMs_ = 0, nextMs_ = 0;
+  bool ended_ = false;      // endMs_ and dueMs_ hold
+  uint32_t roundMs_ = 0, nextMs_ = 0, endMs_ = 0, dueMs_ = 0;
 };
 
 }  // namespace rc

@@ -45,9 +45,13 @@ struct Settings {
   LedColor wifiLooking = LedColor::Yellow;
   // The screen's backlight, percent (ui/brightness.h); not on e-paper.
   uint8_t brightness = kBrightnessDefault;
-  // Boards with a new-message light (board::hasNotifyLight): its colour, and
-  // how long it blinks after the last message (ui/notify_light.h); 0 until read.
+  // Boards with a new-message light (board::hasNotifyLight): its colour for
+  // each source (notifyLight is the last room's), and how long it blinks after
+  // the last message (ui/notify_light.h); 0 until read.
   LedColor notifyLight = LedColor::Blue;
+  LedColor notifyMention = LedColor::Yellow;
+  LedColor notifyFeed = LedColor::Green;
+  LedColor notifyCmail = LedColor::Magenta;
   uint16_t notifyTimeoutSecs = 15;
   ThemeId theme = ThemeId::Default;
   uint8_t rotation = 0;  // touch boards: see ui/rotation.h

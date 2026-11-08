@@ -84,6 +84,9 @@ void load(rc::Settings& s) {
     s.wifiJoined = colour("wifijoin", d.wifiJoined);
     s.wifiSetup = colour("wifiap", d.wifiSetup);
     s.wifiLooking = colour("wifilook", d.wifiLooking);
+    s.notifyMention = colour("ledmention", d.notifyMention);
+    s.notifyFeed = colour("ledfeed", d.notifyFeed);
+    s.notifyCmail = colour("ledcmail", d.notifyCmail);
   }
   s.brightness = rc::snapBrightness(p.getUChar("bright", rc::kBrightnessDefault));
   s.notifyLight = rc::ledColorFromIndex(p.getUChar("ledcolor", uint8_t(rc::LedColor::Blue)),
@@ -210,10 +213,13 @@ void saveKbLight(rc::KbLight level) {
   p.end();
 }
 
-void saveNotifyLight(rc::LedColor color) {
+void saveNotifyLights(const rc::Settings& s) {
   Preferences p;
   if (!p.begin(kNs, false)) return;
-  p.putUChar("ledcolor", static_cast<uint8_t>(color));
+  p.putUChar("ledcolor", static_cast<uint8_t>(s.notifyLight));
+  p.putUChar("ledmention", static_cast<uint8_t>(s.notifyMention));
+  p.putUChar("ledfeed", static_cast<uint8_t>(s.notifyFeed));
+  p.putUChar("ledcmail", static_cast<uint8_t>(s.notifyCmail));
   p.end();
 }
 
@@ -293,7 +299,7 @@ void saveAll(const rc::Settings& s) {
   saveScreen(s.screenOnSecs, s.screenSaver);
   if (RC_FEAT_SPELL) saveSpellCheck(s.spellCheck);
   saveVibrate(s.tapVibrate, s.alertVibrate);
-  saveNotifyLight(s.notifyLight);
+  saveNotifyLights(s);
   saveNotifyTimeout(s.notifyTimeoutSecs);
   savePhrases(s.phrases);
   saveWebConfig(s.webConfig);

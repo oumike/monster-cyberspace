@@ -97,6 +97,9 @@ Settings full() {
   s.wifiLooking = LedColor::Off;
   s.ledLevel = LedLevel::Dim;
   s.notifyLight = LedColor::Magenta;
+  s.notifyMention = LedColor::Red;
+  s.notifyFeed = LedColor::Off;
+  s.notifyCmail = LedColor::Cyan;
   s.notifyTimeoutSecs = 0;
   s.volume = 80;
   s.brightness = 40;
@@ -146,6 +149,9 @@ void expectSame(const Settings& a, const Settings& b) {
   TEST_ASSERT_TRUE(a.wifiLooking == b.wifiLooking);
   TEST_ASSERT_TRUE(a.ledLevel == b.ledLevel);
   TEST_ASSERT_TRUE(a.notifyLight == b.notifyLight);
+  TEST_ASSERT_TRUE(a.notifyMention == b.notifyMention);
+  TEST_ASSERT_TRUE(a.notifyFeed == b.notifyFeed);
+  TEST_ASSERT_TRUE(a.notifyCmail == b.notifyCmail);
   TEST_ASSERT_EQUAL_UINT16(a.notifyTimeoutSecs, b.notifyTimeoutSecs);
   TEST_ASSERT_EQUAL_UINT8(a.volume, b.volume);
   TEST_ASSERT_EQUAL_UINT8(a.brightness, b.brightness);
@@ -187,8 +193,11 @@ void test_round_trip_every_field() {
                                            "wifiSetup: red  # a notifyLight colour\n"
                                            "wifiLooking: off  # a notifyLight colour\n"));
   TEST_ASSERT_NOT_NULL(strstr(y.c_str(),
-                              "notifyLight: magenta  # off | red | green | blue | yellow | cyan |"
-                              " magenta | white\n"
+                              "notifyLight: magenta  # the last room: off | red | green | blue |"
+                              " yellow | cyan | magenta | white\n"
+                              "notifyMention: red  # a notifyLight colour\n"
+                              "notifyFeed: off  # a notifyLight colour\n"
+                              "notifyCmail: cyan  # a notifyLight colour\n"
                               "notifyTimeout: 0  # seconds, 0 until read\n"));
   TEST_ASSERT_NOT_NULL(strstr(y.c_str(), "theme: wb  # default | bw | wb | dark | light | lcd | c64 | vt320 | matrix | poetry | brutalist | grid | crypt | bubblegum | top8 | bubblegumdark | top8dark | sepiadark | c64dark\n"
                                            "rotation: 3  # 0 landscape, 1 portrait, 2 landscape 180, 3 portrait 180\n"));
@@ -406,6 +415,12 @@ void test_bad_values_rejected() {
        "line 3: wi-fi light: off, red, green, blue, yellow, cyan, magenta or white"},
       {"ledLevel: max\n", "line 3: LED brightness: off, dim, low, medium or high"},
       {"notifyLight: pink\n",
+       "line 3: notify light: off, red, green, blue, yellow, cyan, magenta or white"},
+      {"notifyMention: pink\n",
+       "line 3: notify light: off, red, green, blue, yellow, cyan, magenta or white"},
+      {"notifyFeed: pink\n",
+       "line 3: notify light: off, red, green, blue, yellow, cyan, magenta or white"},
+      {"notifyCmail: pink\n",
        "line 3: notify light: off, red, green, blue, yellow, cyan, magenta or white"},
       {"notifyTimeout: 45\n", "line 3: light timeout: 15, 30, 60, 300 or 0 (until read)"},
       {"notifyTimeout: -1\n", "line 3: light timeout: 15, 30, 60, 300 or 0 (until read)"},

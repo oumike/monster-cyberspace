@@ -66,7 +66,7 @@ struct Item {
 struct Staged {
   Str format, version, timezone, tzName, ntpServer, pagePassword, apPassword, textSize, theme,
       rotation, lastRoom, email, refreshToken, screenOnSecs, kbLight,
-      notifyLight, notifyTimeout, idleSecs, wakeMins, volume, brightness, powerLight, wifiJoined, wifiSetup, wifiLooking, ledLevel;
+      notifyLight, notifyMention, notifyFeed, notifyCmail, notifyTimeout, idleSecs, wakeMins, volume, brightness, powerLight, wifiJoined, wifiSetup, wifiLooking, ledLevel;
   Bool drawerOpen, usersHidden, buzzer, tapVibrate, alertVibrate, autoUpdate, screenSaver, spellCheck, webConfig;
   bool hasWifi = false, hasPhrases = false;
   std::vector<Item> wifi;
@@ -282,6 +282,9 @@ bool parse(std::string_view yaml, Staged& st, std::string& err) {
              : key == "screenOnSecs" ? &st.screenOnSecs
              : key == "kbLight"      ? &st.kbLight
              : key == "notifyLight"  ? &st.notifyLight
+             : key == "notifyMention" ? &st.notifyMention
+             : key == "notifyFeed"   ? &st.notifyFeed
+             : key == "notifyCmail"  ? &st.notifyCmail
              : key == "notifyTimeout" ? &st.notifyTimeout
              : key == "lastRoom"     ? &st.lastRoom
              : key == "idleSecs"     ? &st.idleSecs
@@ -439,7 +442,10 @@ std::string backupToYaml(const Settings& s, const BackupMeta& m) {
   o += std::string("wifiSetup: ") + ledColorKey(s.wifiSetup) + "  # a notifyLight colour\n";
   o += std::string("wifiLooking: ") + ledColorKey(s.wifiLooking) + "  # a notifyLight colour\n";
   o += std::string("notifyLight: ") + ledColorKey(s.notifyLight) +
-       "  # off | red | green | blue | yellow | cyan | magenta | white\n";
+       "  # the last room: off | red | green | blue | yellow | cyan | magenta | white\n";
+  o += std::string("notifyMention: ") + ledColorKey(s.notifyMention) + "  # a notifyLight colour\n";
+  o += std::string("notifyFeed: ") + ledColorKey(s.notifyFeed) + "  # a notifyLight colour\n";
+  o += std::string("notifyCmail: ") + ledColorKey(s.notifyCmail) + "  # a notifyLight colour\n";
   o += "notifyTimeout: " + std::to_string(s.notifyTimeoutSecs) + "  # seconds, 0 until read\n";
   o += "lastRoom: " + yamlQuote(s.lastRoom) + "\n";
   o += std::string("webConfig: ") + boolStr(s.webConfig) +
@@ -506,9 +512,12 @@ bool backupFromYaml(std::string_view yaml, Settings& inOut, std::string& err, st
   ThemeId theme = inOut.theme;
   KbLight kbLight = inOut.kbLight;
   LedLevel ledLevel = inOut.ledLevel;
-  LedColor notifyLight = inOut.notifyLight, powerLight = inOut.powerLight,
+  LedColor notifyLight = inOut.notifyLight, notifyMention = inOut.notifyMention,
+           notifyFeed = inOut.notifyFeed, notifyCmail = inOut.notifyCmail, powerLight = inOut.powerLight,
            wifiJoined = inOut.wifiJoined, wifiSetup = inOut.wifiSetup,
            wifiLooking = inOut.wifiLooking;
+  constexpr const char* kNotifyColours =
+      "notify light: off, red, green, blue, yellow, cyan, magenta or white";
   constexpr const char* kWifiColours =
       "wi-fi light: off, red, green, blue, yellow, cyan, magenta or white";
   int rotation = 0, screenOnSecs = 0, notifyTimeout = 0, idleSecs = 0, wakeMins = 0, volume = 0,
@@ -542,8 +551,13 @@ bool backupFromYaml(std::string_view yaml, Settings& inOut, std::string& err, st
   } else if (st.wifiLooking.has && !parseLedColor(st.wifiLooking.v, wifiLooking)) {
     err = at(st.wifiLooking.line, kWifiColours);
   } else if (st.notifyLight.has && !parseLedColor(st.notifyLight.v, notifyLight)) {
-    err = at(st.notifyLight.line,
-             "notify light: off, red, green, blue, yellow, cyan, magenta or white");
+    err = at(st.notifyLight.line, kNotifyColours);
+  } else if (st.notifyMention.has && !parseLedColor(st.notifyMention.v, notifyMention)) {
+    err = at(st.notifyMention.line, kNotifyColours);
+  } else if (st.notifyFeed.has && !parseLedColor(st.notifyFeed.v, notifyFeed)) {
+    err = at(st.notifyFeed.line, kNotifyColours);
+  } else if (st.notifyCmail.has && !parseLedColor(st.notifyCmail.v, notifyCmail)) {
+    err = at(st.notifyCmail.line, kNotifyColours);
   } else if (st.notifyTimeout.has &&
              (!plainInt(st.notifyTimeout, notifyTimeout) || notifyTimeout < 0 ||
               !validNotifyTimeout(uint32_t(notifyTimeout)))) {
@@ -608,6 +622,9 @@ bool backupFromYaml(std::string_view yaml, Settings& inOut, std::string& err, st
   if (st.wifiLooking.has) inOut.wifiLooking = wifiLooking;
   if (st.brightness.has) inOut.brightness = uint8_t(brightness);
   if (st.notifyLight.has) inOut.notifyLight = notifyLight;
+  if (st.notifyMention.has) inOut.notifyMention = notifyMention;
+  if (st.notifyFeed.has) inOut.notifyFeed = notifyFeed;
+  if (st.notifyCmail.has) inOut.notifyCmail = notifyCmail;
   if (st.notifyTimeout.has) inOut.notifyTimeoutSecs = uint16_t(notifyTimeout);
   if (st.lastRoom.has) inOut.lastRoom = st.lastRoom.v;
   if (st.webConfig.has) inOut.webConfig = st.webConfig.v;

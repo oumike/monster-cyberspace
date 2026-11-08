@@ -9,6 +9,7 @@
 #include "hal/board.h"
 #include "screens/button_pad.h"
 #include "screens/draw.h"
+#include "screens/lv_draw.h"
 #include "screens/screens.h"
 #include "store/locked_chat.h"
 #include "store/locked_feed.h"
@@ -155,7 +156,7 @@ void NotificationsScreen::onEvent(const Event& e) {
   if (e.type == EvtType::AllRead) marking_ = false;
 }
 
-void NotificationsScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
+void NotificationsScreen::refreshRows(int64_t nowMs) {
   constexpr int64_t kRefreshMs = 1000;
   // Every touch board gets buttons, as the room list does; with keys, a cursor.
   const bool buttons = board::hasTouch();
@@ -184,6 +185,10 @@ void NotificationsScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
     }
     list_.setItems(rows_);  // keeps the selection, clamped
   }
+}
+
+void NotificationsScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
+  refreshRows(nowMs);
   g.fill(t.bg);
   drawStatus(g, t, U"unread", unreadTotal(items_));
   const int bottom = g.rows() - 1;
@@ -201,6 +206,51 @@ void NotificationsScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
     return;
   }
   drawHint(g, t, U"\u2191\u2193 pick  \u25CF open  \u2190 home",
+           buttons_ ? U"tap to open  drag to scroll" : U"tap to open  swipe to scroll");
+}
+
+void NotificationsScreen::build(lv_obj_t* root) {
+  listView_.create(root);
+  padView_.create(root);
+  navView_.create(root);
+  text_.create(root);
+  hint_.create(root);
+  status_.create(root);
+  menuView_.create(root);
+  sync(0);
+}
+
+void NotificationsScreen::update(int64_t nowMs) {
+  // C-Mail, mentions and notices change with an event (ConversationsUpdated,
+  // MentionAlert, the Feed's), which ui::inputSeq() counts; edited text shows
+  // with the once-a-second refresh, as render rebuilds it.
+  if (gate_.due(text_.obj(), nowMs, {int64_t(app().mentions.size())})) sync(nowMs);
+}
+
+void NotificationsScreen::sync(int64_t nowMs) {
+  const Theme& t = lvui::currentTheme();
+  refreshRows(nowMs);
+  syncStatus(status_, U"unread", unreadTotal(items_));
+  const int bottom = text_.rows() - 1;
+  const int nav = buttons_ ? 0 : sideNavWidth(text_);
+  lvui::setHidden(listView_.obj(), buttons_);
+  lvui::setHidden(padView_.obj(), !buttons_);
+  if (buttons_) {
+    pad_.sync(padView_, rows_, 2, bottom, true, 1);
+  } else {
+    placeCells(listView_.obj(), 0, 1, text_.cols() - nav, bottom);
+    listView_.sync(list_);
+  }
+  navView_.sync(nav, 1, bottom, text_.cols());
+  text_.begin();
+  if (items_.empty()) text_.line(1, 2, "nothing unread", t.dim);
+  text_.end();
+  const lvui::Cell c = text_.cell();
+  menuView_.setPlace(OverlayPlace::BottomRight, bottom * c.h, nav * c.w, c.h);
+  menuView_.sync(box_);
+  if (confirm_)
+    return syncHint(hint_, U"\u2191\u2193 pick  \u25CF choose  back: cancel", U"tap: choose  outside: cancel");
+  syncHint(hint_, U"\u2191\u2193 pick  \u25CF open  \u2190 home",
            buttons_ ? U"tap to open  drag to scroll" : U"tap to open  swipe to scroll");
 }
 

@@ -265,6 +265,8 @@ class RoomListScreen : public Screen {
   void onKey(const KeyEvent&) override;
   void onEvent(const Event&) override;
   void render(Grid&, const Theme&, int64_t nowMs) override;
+  void build(lv_obj_t* root) override;
+  void update(int64_t nowMs) override;
   bool consumesBackspace() const override { return filter_.active(); }
   bool hasOverlay() const override { return confirm_; }
   void closeOverlays() override {
@@ -277,6 +279,10 @@ class RoomListScreen : public Screen {
   // the rooms follow it (slugs_ holds "" for that row).
   void open(int index);
   void askMarkAll();
+  // The rows render and sync draw, filling slugs_ and unread_; shown: the
+  // room rows, without Mark all read.
+  std::vector<ListItem> rows(int& shown);
+  void sync();
   ListView list_;
   std::vector<std::string> slugs_;
   int unread_ = 0;       // unread rooms, as drawn
@@ -286,6 +292,13 @@ class RoomListScreen : public Screen {
   TypeFilter filter_;  // keyboards: typing narrows the rooms
   ButtonPad pad_;  // touch boards: rooms as buttons (a cursor with keys)
   bool buttons_ = false;
+  lvui::TopBar status_;
+  lvui::CellText text_;
+  lvui::ListBox listView_;
+  lvui::TileGrid padView_;
+  lvui::HintBar hint_;
+  lvui::MenuOverlay menuView_;
+  SyncGate<> gate_;
 };
 
 #if RC_FEAT_CMAIL
@@ -296,6 +309,8 @@ class CmailListScreen : public Screen {
   void onKey(const KeyEvent&) override;
   void onEvent(const Event&) override;
   void render(Grid&, const Theme&, int64_t nowMs) override;
+  void build(lv_obj_t* root) override;
+  void update(int64_t nowMs) override;
   bool hasOverlay() const override { return editing_; }
   void closeOverlays() override { editing_ = busy_ = false; }
   bool acceptsText() const override { return editing_ && !busy_; }
@@ -306,6 +321,9 @@ class CmailListScreen : public Screen {
  private:
   void editKey(const KeyEvent&);
   void open(int index);
+  // The rows render and sync draw, filling ids_.
+  std::vector<ListItem> rows();
+  void sync();
 
   ListView list_;
   ButtonPad pad_;
@@ -313,6 +331,14 @@ class CmailListScreen : public Screen {
   std::vector<std::string> ids_;
   InputLine input_;  // the username for a new conversation
   bool editing_ = false, busy_ = false;
+  lvui::TopBar status_;
+  lvui::CellText text_;
+  lvui::ListBox listView_;
+  lvui::TileGrid padView_;
+  SideNavHost navView_;
+  lvui::InputField inputView_;
+  lvui::HintBar hint_;
+  SyncGate<1> gate_;
 };
 #endif
 
@@ -523,6 +549,8 @@ class NotificationsScreen : public Screen {
   void onKey(const KeyEvent&) override;
   void onEvent(const Event&) override;
   void render(Grid&, const Theme&, int64_t nowMs) override;
+  void build(lv_obj_t* root) override;
+  void update(int64_t nowMs) override;
   bool hasOverlay() const override { return confirm_; }
   void closeOverlays() override {
     confirm_ = false;
@@ -533,6 +561,10 @@ class NotificationsScreen : public Screen {
   // Row 0 is "Mark all read" when anything is unread; items follow it.
   void open(int row);
   void askMarkAll();
+  // Rebuilds items_ and rows_ as render does: when the count or marking_
+  // changed, or a second has passed.
+  void refreshRows(int64_t nowMs);
+  void sync(int64_t nowMs);
   ListView list_;
   ButtonPad pad_;  // touch boards: rows as buttons (a cursor with keys)
   bool buttons_ = false;
@@ -547,6 +579,14 @@ class NotificationsScreen : public Screen {
   int64_t builtAt_ = 0;
   bool confirm_ = false;  // box_ asks to mark all read
   bool marking_ = false;  // a MarkAllRead is in flight
+  lvui::TopBar status_;
+  lvui::CellText text_;
+  lvui::ListBox listView_;
+  lvui::TileGrid padView_;
+  SideNavHost navView_;
+  lvui::HintBar hint_;
+  lvui::MenuOverlay menuView_;
+  SyncGate<1> gate_;
 };
 #endif
 

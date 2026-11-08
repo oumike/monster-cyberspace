@@ -701,32 +701,19 @@ void RoomScreen::fillLog(const std::string& first, const std::string& last, cons
 }
 
 
-void RoomScreen::render(Grid& g, const Theme& t, int64_t) {
-  // The input sits above the hint row.
-  const int inputRow = g.rows() - 2;
-  int logBottom = inputRow;
+RoomScreen::Frame RoomScreen::refresh(const Theme& t, int logCols, bool shown, bool sameTheme) {
   const int64_t now = nowEpochMs();
-  const bool drawer = drawerOpen();
-  const bool docked = drawerDocked();
-  const bool shown = drawer || docked;
-  // Messages wrap to the width left of the member list, so none run under it.
-  // Or left of the side strip, which steps aside for the member list.
-  const int nav = shown ? 0 : sideNavWidth(g);
-  const int reserve = shown ? Drawer::width(g.cols(), docked) : nav;
-  const int logCols = std::max(1, g.cols() - reserve - LogView::kBarCols);
-  int online = 0;
+  Frame f;
   bool markRead = false;
-  std::vector<std::string> typers;
-
   // Never send a command while holding the chat lock: a source may take it.
   lockedChat().with([&](ChatState& s) {
     auto people = visiblePresence(s.presence, now, s.cadence.staleAfterMs);
-    online = int(people.size());
+    f.online = int(people.size());
     if (shown) drawer_.setPeople(std::move(people), now, s.cadence.idleAfterMs);
     self_ = s.self;
     drawer_.setSelf(s.self);
     // A flag going stale produces no event, so this is re-checked each frame.
-    if (dm_) typers = typingNames(s.typing, s.self, now, s.typingCadence.staleAfterMs);
+    if (dm_) f.typers = typingNames(s.typing, s.self, now, s.typingCadence.staleAfterMs);
     std::string roomId;
     for (const auto& r : s.rooms)
       if (r.slug == slug_) roomId = r.id;
@@ -750,8 +737,7 @@ void RoomScreen::render(Grid& g, const Theme& t, int64_t) {
         markRead = true;
       }
     }
-    if (!relayout_ && s.store.version() == version_ && logCols == cols_ && &t == theme_)
-      return;
+    if (!relayout_ && s.store.version() == version_ && logCols == cols_ && sameTheme) return;
     relayout_ = false;
     theme_ = &t;
     version_ = s.store.version();
@@ -771,6 +757,54 @@ void RoomScreen::render(Grid& g, const Theme& t, int64_t) {
   });
 
   if (markRead) chatSource().command(Command{CmdType::MarkRead, slug_});
+  return f;
+}
+
+void RoomScreen::hints(bool drawer, bool docked, bool offline, const char32_t*& hint,
+                       const char32_t*& touch) const {
+  if (spell_.visible()) {
+    hint = U"\u2190\u2192 spelling  \u25CF keep";
+    touch = U"tap a spelling, or keep typing";
+  } else if (reasonMode_) {
+    hint = U"type a reason (optional)  \u25CF report  back: cancel";
+    touch = U"type a reason (optional)  enter: report";
+  } else if (view_ == View::Menu) {
+    hint = U"\u2191\u2193 pick  \u25CF choose  back: close";
+    touch = U"tap: choose  outside: close";
+  } else if (drawer) {
+    hint = docked ? U"\u2191\u2193 pick  \u25CF menu  \u2192 hide  \u2190 chat"
+                  : U"\u2191\u2193 pick  \u25CF menu  \u2190 close";
+    touch = U"tap a name for actions";
+  } else if (!log_.following()) {
+    hint = U"\u25CF actions  \u2193 back to typing";
+    touch = U"tap the line to type  tap a message for actions";
+  } else if (offline) {
+    hint = U"offline: reading only";
+    touch = U"offline: reading only";
+  } else if (dm_) {
+    hint = U"\u25CF send  \u2191\u2193 scroll  ctrl cmds";
+    touch = U"tap the line to type  tap a message for actions";
+  } else {
+    hint = U"\u25CF send  \u2191\u2193 scroll  \u2192 who's here  ctrl cmds";
+    touch = U"tap the line to type  tap a message for actions";
+  }
+}
+
+void RoomScreen::render(Grid& g, const Theme& t, int64_t) {
+  // The input sits above the hint row.
+  const int inputRow = g.rows() - 2;
+  int logBottom = inputRow;
+  const bool drawer = drawerOpen();
+  const bool docked = drawerDocked();
+  const bool shown = drawer || docked;
+  // Messages wrap to the width left of the member list, so none run under it.
+  // Or left of the side strip, which steps aside for the member list.
+  const int nav = shown ? 0 : sideNavWidth(g);
+  const int reserve = shown ? Drawer::width(g.cols(), docked) : nav;
+  const int logCols = std::max(1, g.cols() - reserve - LogView::kBarCols);
+  const Frame f = refresh(t, logCols, shown, &t == theme_);
+  const int online = f.online;
+  const std::vector<std::string>& typers = f.typers;
 
   g.fill(t.bg);
   drawStatus(g, t, utf8ToU32(dm_ ? "@" + partner_ : "#" + slug_), dm_ ? -1 : online, true);
@@ -823,37 +857,147 @@ void RoomScreen::render(Grid& g, const Theme& t, int64_t) {
   input_.setEmojiButton(RC_FEAT_EMOJI != 0);
   input_.render(g, inputRow, t, reasonMode_ ? U"reason> " : U"> ");
 
-  {
-    const char32_t* hint;
-    const char32_t* touch;
-    if (spell_.visible()) {
-      hint = U"\u2190\u2192 spelling  \u25CF keep";
-      touch = U"tap a spelling, or keep typing";
-    } else if (reasonMode_) {
-      hint = U"type a reason (optional)  \u25CF report  back: cancel";
-      touch = U"type a reason (optional)  enter: report";
-    } else if (view_ == View::Menu) {
-      hint = U"\u2191\u2193 pick  \u25CF choose  back: close";
-      touch = U"tap: choose  outside: close";
-    } else if (drawer) {
-      hint = docked ? U"\u2191\u2193 pick  \u25CF menu  \u2192 hide  \u2190 chat"
-                    : U"\u2191\u2193 pick  \u25CF menu  \u2190 close";
-      touch = U"tap a name for actions";
-    } else if (!log_.following()) {
-      hint = U"\u25CF actions  \u2193 back to typing";
-      touch = U"tap the line to type  tap a message for actions";
-    } else if (offline) {
-      hint = U"offline: reading only";
-      touch = U"offline: reading only";
-    } else if (dm_) {
-      hint = U"\u25CF send  \u2191\u2193 scroll  ctrl cmds";
-      touch = U"tap the line to type  tap a message for actions";
-    } else {
-      hint = U"\u25CF send  \u2191\u2193 scroll  \u2192 who's here  ctrl cmds";
-      touch = U"tap the line to type  tap a message for actions";
-    }
-    drawHint(g, t, hint, touch);
+  const char32_t* hint;
+  const char32_t* touch;
+  hints(drawer, docked, offline, hint, touch);
+  drawHint(g, t, hint, touch);
+}
+
+// ---- LVGL ----
+
+void RoomScreen::build(lv_obj_t* root) {
+  root_ = root;
+  text_.create(root);
+  body_ = lvui::plainBox(root);
+  logView_.create(body_);
+  drawerView_.create(body_);
+  navView_.create(body_);
+  readerBox_ = lvui::plainBox(root);
+  readerBar_.create(readerBox_);
+  qrView_.create(root);
+  spellView_.create(root);
+  inputView_.create(root);
+  hint_.create(root);
+  status_.create(root);
+  menuView_.create(root);
+  themeSerial_ = ~0u;
+  sync();
+}
+
+void RoomScreen::update(int64_t nowMs) {
+  // Keys and events (a new message, presence, typing: each posts one) reach
+  // the gate through ui::inputSeq(); what ages (typing and presence going
+  // stale, the mark read) is caught by its once-a-second refresh.
+  const auto& c = app().cfg;
+  if (gate_.due(root_, nowMs,
+                {int64_t(app().conn), int64_t(view_), int64_t(reasonMode_), int64_t(c.drawerOpen),
+                 int64_t(c.usersHidden), int64_t(log_.following())}))
+    sync();
+}
+
+void RoomScreen::syncReader(const Theme& t) {
+  const int cols = text_.cols(), bottom = text_.rows() - 1;
+  std::vector<std::u32string> rows = wrapView_ ? wrapText(viewLines_[0], cols - 2, cols - 2) : viewLines_;
+  const int avail = bottom - 1;
+  const int maxTop = std::max(0, int(rows.size()) - avail);
+  viewTop_ = std::min(viewTop_, maxTop);
+  int widest = 0;
+  for (const auto& l : rows) widest = std::max(widest, int(l.size()));
+  const int textCols = cols - 1;  // the last column holds the scroll bar
+  viewLeft_ = std::min(viewLeft_, std::max(0, widest - textCols));
+  for (int i = 0; i < avail && viewTop_ + i < int(rows.size()); ++i) {
+    const auto& line = rows[viewTop_ + i];
+    if (int(line.size()) > viewLeft_)
+      text_.line(0, 1 + i, std::u32string_view(line).substr(viewLeft_), t.fg, textCols);
   }
+  placeCells(readerBox_, 0, 1, cols, bottom);
+  readerBar_.sync(cols * text_.cell().w, text_.cell(), avail, int(rows.size()), avail, viewTop_);
+  syncHint(hint_, U"\u2191\u2193\u2190\u2192 scroll  back: close", U"swipe to scroll  \u2039 close");
+}
+
+void RoomScreen::sync() {
+  const Theme& t = lvui::currentTheme();
+  const int cols = text_.cols();
+  const int inputRow = text_.rows() - 2;
+  int logBottom = inputRow;
+  const bool drawer = drawerOpen();
+  const bool docked = drawerDocked();
+  const bool shown = drawer || docked;
+  const int nav = shown ? 0 : sideNavWidth(text_);
+  const int reserve = shown ? Drawer::width(cols, docked) : nav;
+  const int logCols = std::max(1, cols - reserve - LogView::kBarCols);
+  // The lines bake the theme's colours: lvui's theme is one object, so its
+  // serial tells a change.
+  const bool sameTheme = &t == theme_ && lvui::themeSerial() == themeSerial_;
+  themeSerial_ = lvui::themeSerial();
+  const Frame f = refresh(t, logCols, shown, sameTheme);
+
+  syncStatus(status_, utf8ToU32(dm_ ? "@" + partner_ : "#" + slug_), dm_ ? -1 : f.online, true);
+  const bool typing = view_ != View::Link && view_ != View::Reader;
+  lvui::setHidden(body_, !typing);
+  lvui::setHidden(inputView_.obj(), !typing);
+  lvui::setHidden(readerBox_, view_ != View::Reader);
+  if (view_ != View::Link) lvui::setHidden(qrView_.obj(), true);
+  text_.begin();
+
+  if (view_ == View::Link) {
+    lvui::setHidden(spellView_.obj(), true);
+    link_.sync(text_, qrView_, hint_);
+    text_.end();
+    menuView_.sync(box_);
+    return;
+  }
+  if (view_ == View::Reader) {
+    lvui::setHidden(spellView_.obj(), true);
+    syncReader(t);
+    text_.end();
+    menuView_.sync(box_);
+    return;
+  }
+
+  if (!f.typers.empty()) {
+    // One row above the input for "name is typing…".
+    --logBottom;
+    std::string who = f.typers[0];
+    for (size_t i = 1; i < f.typers.size(); ++i) who += ", " + f.typers[i];
+    text_.line(1, logBottom, who + " is typing\u2026", t.dim);
+  }
+  text_.end();
+#if RC_FEAT_SPELL
+  if (spell_.visible() && view_ == View::None && !reasonMode_) {
+    --logBottom;
+    placeCells(spellView_.obj(), 0, logBottom, cols, logBottom + 1);
+    spellView_.sync(spell_);
+  } else {
+    lvui::setHidden(spellView_.obj(), true);
+  }
+#else
+  lvui::setHidden(spellView_.obj(), true);
+#endif
+  placeCells(body_, 0, 1, cols, logBottom);
+  placeCells(logView_.obj(), 0, 0, cols - reserve, logBottom - 1);
+  logView_.sync(log_);
+  lvui::setHidden(drawerView_.obj(), !shown);
+  if (shown) {
+    drawerView_.setDocked(docked);
+    drawerView_.sync(drawer_);
+  }
+  navView_.sync(nav, 0, logBottom - 1, cols);
+
+  const lvui::Cell c = text_.cell();
+  menuView_.setPlace(OverlayPlace::BottomRight, logBottom * c.h, reserve * c.w, 1 * c.h);
+  menuView_.sync(box_);
+
+  const bool offline = app().conn == 0;
+  input_.setDisabled(offline || view_ != View::None);
+  input_.setEmojiButton(RC_FEAT_EMOJI != 0);
+  placeCells(inputView_.obj(), 0, inputRow, cols, inputRow + 1);
+  inputView_.sync(input_, reasonMode_ ? U"reason> " : U"> ");
+
+  const char32_t* hint;
+  const char32_t* touch;
+  hints(drawer, docked, offline, hint, touch);
+  syncHint(hint_, hint, touch);
 }
 
 }  // namespace rc

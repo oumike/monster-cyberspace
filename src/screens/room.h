@@ -6,7 +6,16 @@
 
 #include "chat/message.h"
 #include "feature_flags.h"
+#include "lvui/views/button_rows.h"
+#include "lvui/views/cell_text.h"
+#include "lvui/views/drawer_panel.h"
+#include "lvui/views/input_field.h"
+#include "lvui/views/log_box.h"
+#include "lvui/views/menu_overlay.h"
+#include "lvui/views/qr_box.h"
+#include "lvui/views/top_bar.h"
 #include "screens/link_view.h"
+#include "screens/lv_draw.h"
 #include "screens/router.h"
 #include "ui/widgets/drawer.h"
 #include "ui/widgets/input_line.h"
@@ -34,6 +43,8 @@ class RoomScreen : public Screen {
   void onKey(const KeyEvent&) override;
   void onEvent(const Event&) override;
   void render(Grid&, const Theme&, int64_t nowMs) override;
+  void build(lv_obj_t* root) override;
+  void update(int64_t nowMs) override;
   bool hasOverlay() const override;
   void closeOverlays() override;
   bool acceptsText() const override { return view_ == View::None; }
@@ -87,6 +98,21 @@ class RoomScreen : public Screen {
   LayoutOptions logOptions(const std::string& self, const std::set<std::string>& revealed) const;
   std::vector<DisplayLine> pendingLines() const;
   void fillLog(const std::string& first, const std::string& last, const LogView::Out& out);
+  // What a frame takes from the chat state, under the lock: the presence
+  // (into the drawer when shown), the typers, this room's mutes, a mark read
+  // (sent once the lock is let go) and the log laid out again when its
+  // inputs changed. render and sync both run it. sameTheme: the theme the
+  // lines bake is still t's.
+  struct Frame {
+    int online = 0;
+    std::vector<std::string> typers;
+  };
+  Frame refresh(const Theme& t, int logCols, bool shown, bool sameTheme);
+  // The hint row for the typing view, keys and touch.
+  void hints(bool drawer, bool docked, bool offline, const char32_t*& keys, const char32_t*& touch) const;
+  // LVGL: sync draws what render draws.
+  void sync();
+  void syncReader(const Theme& t);
   InputLine input_;
   SpellStrip spell_;
   Drawer drawer_;
@@ -115,6 +141,25 @@ class RoomScreen : public Screen {
   int64_t lastMarkRead_ = 0;
   std::set<std::string> muted_;  // this room's mutes, lower-cased
   std::string self_;
+
+  // LVGL views. body_ holds the rows between the status bar and what sits
+  // under the log, for the views that fill their parent.
+  lv_obj_t* root_ = nullptr;
+  lv_obj_t* body_ = nullptr;
+  lv_obj_t* readerBox_ = nullptr;  // the reader's rows, for its scroll bar
+  lvui::TopBar status_;
+  lvui::CellText text_;
+  lvui::LogBox logView_;
+  lvui::DrawerPanel drawerView_;
+  SideNavHost navView_;
+  lvui::SpellBar spellView_;
+  lvui::InputField inputView_;
+  lvui::QrBox qrView_;
+  lvui::ScrollBarView readerBar_;
+  lvui::HintBar hint_;
+  lvui::MenuOverlay menuView_;
+  unsigned themeSerial_ = ~0u;  // lvui::themeSerial() the lines bake
+  SyncGate<6> gate_;
 };
 
 }  // namespace rc

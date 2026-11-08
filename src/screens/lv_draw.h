@@ -15,6 +15,7 @@
 #include "hal/board.h"
 #include "lvui/styles.h"
 #include "lvui/views/cell_text.h"
+#include "lvui/views/side_nav_strip.h"
 #include "lvui/views/view_util.h"
 #include "ui/menu_key.h"
 
@@ -38,6 +39,33 @@ inline void placeCells(lv_obj_t* obj, int left, int top, int width, int bottom) 
   const lvui::Cell c = lvui::cellOf(obj);
   lvui::place(obj, left * c.w, top * c.h, std::max(0, width) * c.w, std::max(0, bottom - top) * c.h);
 }
+
+// sideNavWidth for a screen's cell grid: columns of the Up / Select / Down
+// strip, 0 on boards without it.
+inline int sideNavWidth(const lvui::CellText& t) {
+  return board::sideNav() && t.cols() > 0 ? sideNavCols(t.cell().w) : 0;
+}
+
+// renderSideNav for LVGL: the strip over cell rows [top, bottom) at the
+// right of a grid `cols` wide, `nav` columns (sideNavWidth) wide; hidden at 0.
+class SideNavHost {
+ public:
+  void create(lv_obj_t* parent) {
+    host_ = lvui::plainBox(parent);
+    strip_.create(host_);
+  }
+  void sync(int nav, int top, int bottom, int cols) {
+    lvui::setHidden(host_, nav <= 0);
+    if (nav <= 0) return;
+    placeCells(host_, cols - nav, top, nav, bottom);
+    strip_.sync();
+  }
+  lv_obj_t* obj() const { return host_; }
+
+ private:
+  lv_obj_t* host_ = nullptr;
+  lvui::SideNavStrip strip_;
+};
 
 // What every LVGL screen's frame depends on, as scalars: the keys and events
 // handled (a screen's own state changes only in onKey/onEvent), the status

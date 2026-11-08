@@ -7,6 +7,7 @@
 #include "hal/board.h"
 #include "screens/button_pad.h"
 #include "screens/draw.h"
+#include "screens/lv_draw.h"
 #include "screens/screens.h"
 #include "store/locked_chat.h"
 
@@ -93,10 +94,10 @@ void RoomListScreen::onEvent(const Event& e) {
   if (e.type == EvtType::RoomsRead) marking_ = false;
 }
 
-void RoomListScreen::render(Grid& g, const Theme& t, int64_t) {
+std::vector<ListItem> RoomListScreen::rows(int& shown) {
   std::vector<ListItem> items;
   slugs_.clear();
-  int shown = 0;  // room rows, without Mark all read
+  shown = 0;
   lockedChat().with([&](ChatState& s) {
     unread_ = int(unreadRooms(s.rooms, s.readAt).size());
     // Pinned first while anything is unread, as on the Unread screen.
@@ -122,6 +123,12 @@ void RoomListScreen::render(Grid& g, const Theme& t, int64_t) {
       ++shown;
     }
   });
+  return items;
+}
+
+void RoomListScreen::render(Grid& g, const Theme& t, int64_t) {
+  int shown = 0;  // room rows, without Mark all read
+  std::vector<ListItem> items = rows(shown);
   auto drawConfirm = [&](Grid& g, const Theme& t) {
     box_.render(g, 1, g.rows() - 1, 0, OverlayPlace::BottomRight, t);
     drawHint(g, t, U"\u2191\u2193 pick  \u25CF choose  back: cancel", U"tap: choose  outside: cancel");
@@ -146,6 +153,52 @@ void RoomListScreen::render(Grid& g, const Theme& t, int64_t) {
   if (filter_.active())
     return drawHint(g, t, U"filter: " + filter_.text() + U"\u2581  \u232B erase  back clears");
   drawHint(g, t, U"\u2191\u2193 pick  \u25CF open  \u2190 home", U"tap to open  swipe to scroll");
+}
+
+void RoomListScreen::build(lv_obj_t* root) {
+  text_.create(root);
+  listView_.create(root);
+  padView_.create(root);
+  hint_.create(root);
+  status_.create(root);
+  menuView_.create(root);
+  sync();
+}
+
+void RoomListScreen::update(int64_t nowMs) {
+  // The rooms and their read marks change with an event (RoomsUpdated,
+  // RoomsRead), which ui::inputSeq() counts.
+  if (gate_.due(text_.obj(), nowMs)) sync();
+}
+
+void RoomListScreen::sync() {
+  const Theme& t = lvui::currentTheme();
+  int shown = 0;
+  std::vector<ListItem> items = rows(shown);
+  const int bottom = text_.rows() - 1;
+  syncStatus(status_, U"rooms", shown);
+  text_.begin();
+  if (shown == 0) text_.line(1, 2, filter_.active() ? "no rooms match" : "loading rooms\u2026", t.dim);
+  text_.end();
+  buttons_ = board::hasTouch();
+  pad_.setCursor(board::hasKeys());
+  lvui::setHidden(listView_.obj(), buttons_);
+  lvui::setHidden(padView_.obj(), !buttons_);
+  if (buttons_) {
+    pad_.sync(padView_, items, 2, bottom, false);
+  } else {
+    list_.setItems(std::move(items));
+    placeCells(listView_.obj(), 0, 1, text_.cols(), bottom);
+    listView_.sync(list_);
+  }
+  const lvui::Cell c = text_.cell();
+  menuView_.setPlace(OverlayPlace::BottomRight, bottom * c.h, 0, c.h);
+  menuView_.sync(box_);
+  if (confirm_)
+    return syncHint(hint_, U"\u2191\u2193 pick  \u25CF choose  back: cancel", U"tap: choose  outside: cancel");
+  if (filter_.active()) return syncHint(hint_, U"filter: " + filter_.text() + U"\u2581  \u232B erase  back clears");
+  syncHint(hint_, U"\u2191\u2193 pick  \u25CF open  \u2190 home",
+           buttons_ ? U"tap to open  drag to scroll" : U"tap to open  swipe to scroll");
 }
 
 }  // namespace rc

@@ -158,8 +158,8 @@
 ### Task 10: Rooms, C-Mail and Unread
 
 **Files:** `room.{h,cpp}` (Room and Conversation), `room_list.cpp`, `cmail_list.cpp`, `notifications.cpp`, `people_nav.{h,cpp}`
-- [ ] **Step 1:** Port as Task 9 (LogBox, InputField, spell strip, typing line).
-- [ ] **Step 2:** `pio run -e m9` → SUCCESS. **Step 3:** Commit `LVGL: rooms, C-Mail, Unread`.
+- [x] **Step 1:** Port as Task 9 (LogBox, InputField, spell strip, typing line).
+- [x] **Step 2:** `pio run -e m9` → SUCCESS. **Step 3:** Commit `LVGL: rooms, C-Mail, Unread`.
 
 ### Task 11: Feed
 

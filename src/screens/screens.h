@@ -5,6 +5,12 @@
 
 #include "feature_flags.h"
 #include "input/type_filter.h"
+#include "lvui/views/cell_text.h"
+#include "lvui/views/input_field.h"
+#include "lvui/views/list_box.h"
+#include "lvui/views/menu_overlay.h"
+#include "lvui/views/tile_grid.h"
+#include "lvui/views/top_bar.h"
 #include "net/wifi_list.h"
 #include "screens/backup_picker.h"
 #include "screens/button_pad.h"
@@ -31,10 +37,14 @@ class SplashScreen : public Screen {
   void enter(const std::string&) override;
   void onKey(const KeyEvent&) override;
   void render(Grid&, const Theme&, int64_t nowMs) override;
+  void build(lv_obj_t* root) override;
+  void update(int64_t nowMs) override;
 
  private:
+  void sync(int64_t nowMs);
   int64_t since_ = -1;
   std::string say_;
+  lvui::CellText text_;
 };
 
 class SetupScreen : public Screen {
@@ -42,16 +52,24 @@ class SetupScreen : public Screen {
   void enter(const std::string&) override;
   void onKey(const KeyEvent&) override;
   void render(Grid&, const Theme&, int64_t nowMs) override;
+  void build(lv_obj_t* root) override;
+  void update(int64_t nowMs) override;
   bool hasOverlay() const override { return picker_.isOpen(); }
   void closeOverlays() override { picker_.close(); }
 
  private:
   void activate(int item);
+  void sync();
   ListView menu_;
   BackupPicker picker_;
   bool hasRestore_ = false;  // the SD list held backups on enter
   bool buttons_ = false;     // touch-only boards: the options as buttons
   ButtonPad pad_;
+  lvui::TopBar status_;
+  lvui::CellText text_;
+  lvui::ListBox menuView_;
+  lvui::TileGrid padView_;
+  lvui::HintBar hint_;
 };
 
 class LoginFormScreen : public Screen {
@@ -61,16 +79,24 @@ class LoginFormScreen : public Screen {
   void onKey(const KeyEvent&) override;
   void onEvent(const Event&) override;
   void render(Grid&, const Theme&, int64_t nowMs) override;
+  void build(lv_obj_t* root) override;
+  void update(int64_t nowMs) override;
   bool acceptsText() const override { return !busy_; }
   bool consumesBackspace() const override {
     return !busy_ && !(focus_ == 0 ? email_ : password_).text().empty();
   }
 
  private:
+  void sync();
   InputLine email_, password_;
+  InputLine mask_;  // the password as dots, for the LVGL field
   int focus_ = 0;  // 0 email, 1 password
   bool busy_ = false;
   std::string note_;
+  lvui::TopBar status_;
+  lvui::CellText text_;
+  lvui::InputField emailView_, passwordView_;
+  lvui::HintBar hint_;
 };
 
 class HomeScreen : public Screen {
@@ -78,9 +104,12 @@ class HomeScreen : public Screen {
   void enter(const std::string&) override;
   void onKey(const KeyEvent&) override;
   void render(Grid&, const Theme&, int64_t nowMs) override;
+  void build(lv_obj_t* root) override;
+  void update(int64_t nowMs) override;
 
  private:
   void openItem(int item);
+  void sync();
   // cellW: the tiles' cell width in px when drawn on RowKind::Big rows, else 0.
   // tiles are slots for tiles first.. on; a column (homeColumn) scrolls.
   void renderTiles(Grid&, const Theme&, const std::vector<TileRect>&, int cellW, int first,
@@ -94,6 +123,12 @@ class HomeScreen : public Screen {
   // a whole tile.
   bool column_ = false;
   int colTop_ = 0, colVisible_ = 1, colStride_ = 3, colCarry_ = 0;
+  lv_obj_t* root_ = nullptr;
+  lvui::TopBar status_;
+  lvui::CellText text_;
+  lvui::ListBox menuView_;
+  lvui::TileGrid tilesView_;
+  lvui::HintBar hint_;
 };
 
 // On-device settings: the setup AP, log out, factory reset.
@@ -172,6 +207,8 @@ class WifiScreen : public Screen {
   void onKey(const KeyEvent&) override;
   void onEvent(const Event&) override;
   void render(Grid&, const Theme&, int64_t nowMs) override;
+  void build(lv_obj_t* root) override;
+  void update(int64_t nowMs) override;
   bool hasOverlay() const override { return menu_.isOpen() || typing(); }
   void closeOverlays() override;
   bool acceptsText() const override { return typing(); }
@@ -189,6 +226,9 @@ class WifiScreen : public Screen {
   // password null: join with the saved one.
   void join(const std::string& ssid, const std::string* password);
   void setNote(const std::string& text, bool error);
+  // The rows and their items, as render lists them.
+  std::vector<ListItem> listItems();
+  void sync();
 
   Mode mode_ = Mode::List;
   ListView list_;
@@ -203,6 +243,13 @@ class WifiScreen : public Screen {
   bool added_ = false;  // the join saved a network that wasn't saved before
   std::string note_;
   bool noteError_ = false;
+  lvui::TopBar status_;
+  lvui::CellText text_;
+  lvui::ListBox listView_;
+  lvui::TileGrid padView_;
+  lvui::InputField inputView_;
+  lvui::MenuOverlay menuView_;
+  lvui::HintBar hint_;
 };
 
 class RoomListScreen : public Screen {
@@ -502,9 +549,15 @@ class ComingSoonScreen : public Screen {
   void enter(const std::string& name) override { name_ = name; }
   void onKey(const KeyEvent&) override;
   void render(Grid&, const Theme&, int64_t nowMs) override;
+  void build(lv_obj_t* root) override;
+  void update(int64_t nowMs) override;
 
  private:
+  void sync();
   std::string name_;
+  lvui::TopBar status_;
+  lvui::CellText text_;
+  lvui::HintBar hint_;
 };
 
 }  // namespace rc

@@ -3,6 +3,7 @@
 #include "feature_flags.h"
 #include "hal/board.h"
 #include "screens/draw.h"
+#include "screens/lv_draw.h"
 #if RC_FEAT_PEOPLE
 #include "screens/people_nav.h"
 #endif
@@ -99,6 +100,104 @@ int mailUnread() {
 #else
   return 0;
 #endif
+}
+
+// Every tile's text, in tiles() order.
+std::vector<lvui::HomeTileInfo> tileInfos() {
+  const AppState& a = app();
+  const int mentions = int(a.mentions.size()), cmail = mailUnread(), feed = feedUnread();
+  const int unread = unreadCount();
+  auto infoFor = [&](Item item) -> lvui::HomeTileInfo {
+    switch (item) {
+      case kUnread:
+        return {U"unread", utf8ToU32(std::to_string(unread) + " unread"), unread > 0};
+      case kMessages:
+        return {U"messages",
+                mentions > 0
+                    ? utf8ToU32(std::to_string(mentions) + (mentions == 1 ? " mention" : " mentions"))
+                    : utf8ToU32("#" + a.cfg.lastRoom),
+                mentions > 0};
+      case kRooms:
+        return {U"rooms", U"", false};
+      case kCmail:
+        return {U"c-mail", utf8ToU32(std::to_string(cmail) + " unread"), cmail > 0};
+      case kFeed:
+        return {U"feed", utf8ToU32(std::to_string(feed) + " unread"), feed > 0};
+      case kFollowing:
+        return {U"following", U"", false};
+      case kGuilds:
+        return {U"guilds", U"", false};
+      case kProfile:
+        return {U"profile", a.user.empty() ? std::u32string() : utf8ToU32("@" + a.user), false};
+      case kSettings:
+      default:
+        return {U"settings", U"", false};
+    }
+  };
+  std::vector<lvui::HomeTileInfo> out;
+  for (Item item : tiles()) out.push_back(infoFor(item));
+  return out;
+}
+
+// List mode's lines above the menu: a dim label and its value.
+struct Field {
+  const char* label;
+  std::string value;
+  uint16_t fg;
+};
+std::vector<Field> listFields(const Theme& t) {
+  const AppState& a = app();
+  std::vector<Field> out;
+  out.push_back({"user", a.user.empty() ? "not signed in" : "@" + a.user + (a.auth == 2 ? " (unverified)" : ""),
+                 t.fg});
+  const int mentions = int(a.mentions.size());
+  out.push_back({"mentions", std::to_string(mentions) + " unread", mentions ? t.selectBg : t.fg});
+#if RC_FEAT_CMAIL
+  int cmail = lockedChat().with([](ChatState& s) {
+    int n = 0;
+    for (const auto& c : s.conversations) n += c.unread;
+    return n;
+  });
+  out.push_back({"c-mail", std::to_string(cmail) + " unread", cmail ? t.selectBg : t.fg});
+#endif
+#if RC_FEAT_FEED
+  int feed = feedUnread();
+  out.push_back({"feed", std::to_string(feed) + " unread", feed ? t.selectBg : t.fg});
+#endif
+  // Rooms with a message in the last 8 hours, read or not (every room that has
+  // messages until the clock is set).
+  const int64_t since = nowEpochMs() - 8LL * 60 * 60 * 1000;
+  std::string active = lockedChat().with([since](ChatState& s) {
+    std::string out;
+    for (const auto& room : s.rooms)
+      if (room.lastMessageAt > 0 && room.lastMessageAt >= since) out += "#" + room.slug + " ";
+    return out.empty() ? std::string("none") : out;
+  });
+  out.push_back({"active", active, t.fg});
+  return out;
+}
+
+// List mode's menu rows, in listItems() order.
+std::vector<ListItem> menuRows() {
+  const AppState& a = app();
+  const int unread = unreadCount();
+  std::vector<ListItem> rows;
+  for (Item item : listItems()) {
+    switch (item) {
+      case kMessages: rows.push_back(ListItem{utf8ToU32("Messages  #" + a.cfg.lastRoom), U""}); break;
+      case kUnread:
+        rows.push_back(ListItem{utf8ToU32("Unread  " + std::to_string(unread)), U"", ItemTone::Normal, unread > 0});
+        break;
+      case kRooms: rows.push_back(ListItem{U"Rooms", U""}); break;
+      case kCmail: rows.push_back(ListItem{U"C-Mail", U""}); break;
+      case kFeed: rows.push_back(ListItem{U"Feed", U""}); break;
+      case kFollowing: rows.push_back(ListItem{U"Following", U""}); break;
+      case kGuilds: rows.push_back(ListItem{U"Guilds", U""}); break;
+      case kProfile: rows.push_back(ListItem{U"Profile", U""}); break;
+      case kSettings: rows.push_back(ListItem{U"Settings", U""}); break;
+    }
+  }
+  return rows;
 }
 }  // namespace
 
@@ -244,50 +343,16 @@ void HomeScreen::onKey(const KeyEvent& k) {
 
 void HomeScreen::renderTiles(Grid& g, const Theme& t, const std::vector<TileRect>& tiles,
                              int cellW, int first, bool column) {
-  const AppState& a = app();
-  const std::vector<Item>& items = rc::tiles();
-  const int count = int(items.size());
+  const int count = tileCount();
   if (tileSel_ < 0 || tileSel_ >= count) tileSel_ = 0;
 
-  struct TileInfo {
-    std::u32string label, sub;
-    bool unread;
-  };
-  const int mentions = int(a.mentions.size()), cmail = mailUnread(), feed = feedUnread();
-  const int unread = unreadCount();
-  auto infoFor = [&](Item item) -> TileInfo {
-    switch (item) {
-      case kUnread:
-        return {U"unread", utf8ToU32(std::to_string(unread) + " unread"), unread > 0};
-      case kMessages:
-        return {U"messages",
-                mentions > 0
-                    ? utf8ToU32(std::to_string(mentions) + (mentions == 1 ? " mention" : " mentions"))
-                    : utf8ToU32("#" + a.cfg.lastRoom),
-                mentions > 0};
-      case kRooms:
-        return {U"rooms", U"", false};
-      case kCmail:
-        return {U"c-mail", utf8ToU32(std::to_string(cmail) + " unread"), cmail > 0};
-      case kFeed:
-        return {U"feed", utf8ToU32(std::to_string(feed) + " unread"), feed > 0};
-      case kFollowing:
-        return {U"following", U"", false};
-      case kGuilds:
-        return {U"guilds", U"", false};
-      case kProfile:
-        return {U"profile", a.user.empty() ? std::u32string() : utf8ToU32("@" + a.user), false};
-      case kSettings:
-      default:
-        return {U"settings", U"", false};
-    }
-  };
+  const std::vector<lvui::HomeTileInfo> infos = tileInfos();
 
   if (activeTaps()) activeTaps()->setList(ListId::Main, tileHidden_ ? -1 : tileSel_, tileCount(), false);
   for (int slot = 0; slot < int(tiles.size()) && first + slot < tileCount(); ++slot) {
     const int i = first + slot;
     const TileRect& r = tiles[slot];
-    const TileInfo it = infoFor(items[i]);
+    const lvui::HomeTileInfo& it = infos[i];
     const bool sel = i == tileSel_ && !tileHidden_;
     // The cursor is the outline alone: the selected tile's in the accent.
     const uint16_t bg = t.bg;
@@ -413,60 +478,80 @@ void HomeScreen::render(Grid& g, const Theme& t, int64_t) {
 
   drawStatus(g, t, U"home", -1);
   int r = 1;
-  auto field = [&](const char* label, const std::string& value, uint16_t fg) {
-    putLine(g, 1, r, label, t.dim, t.bg);
-    putLine(g, 11, r++, value, fg, t.bg);
-  };
-  field("user", a.user.empty() ? "not signed in" : "@" + a.user + (a.auth == 2 ? " (unverified)" : ""),
-        t.fg);
-  const int mentions = int(a.mentions.size());
-  field("mentions", std::to_string(mentions) + " unread", mentions ? t.selectBg : t.fg);
-#if RC_FEAT_CMAIL
-  int cmail = lockedChat().with([](ChatState& s) {
-    int n = 0;
-    for (const auto& c : s.conversations) n += c.unread;
-    return n;
-  });
-  field("c-mail", std::to_string(cmail) + " unread", cmail ? t.selectBg : t.fg);
-#endif
-#if RC_FEAT_FEED
-  int feed = feedUnread();
-  field("feed", std::to_string(feed) + " unread", feed ? t.selectBg : t.fg);
-#endif
-  // Rooms with a message in the last 8 hours, read or not (every room that has
-  // messages until the clock is set).
-  const int64_t since = nowEpochMs() - 8LL * 60 * 60 * 1000;
-  std::string active = lockedChat().with([since](ChatState& s) {
-    std::string out;
-    for (const auto& room : s.rooms)
-      if (room.lastMessageAt > 0 && room.lastMessageAt >= since) out += "#" + room.slug + " ";
-    return out.empty() ? std::string("none") : out;
-  });
-  field("active", active, t.fg);
-
-  const int unread = unreadCount();
-  std::vector<ListItem> rows;
-  for (Item item : listItems()) {
-    switch (item) {
-      case kMessages: rows.push_back(ListItem{utf8ToU32("Messages  #" + a.cfg.lastRoom), U""}); break;
-      case kUnread:
-        rows.push_back(ListItem{utf8ToU32("Unread  " + std::to_string(unread)), U"", ItemTone::Normal, unread > 0});
-        break;
-      case kRooms: rows.push_back(ListItem{U"Rooms", U""}); break;
-      case kCmail: rows.push_back(ListItem{U"C-Mail", U""}); break;
-      case kFeed: rows.push_back(ListItem{U"Feed", U""}); break;
-      case kFollowing: rows.push_back(ListItem{U"Following", U""}); break;
-      case kGuilds: rows.push_back(ListItem{U"Guilds", U""}); break;
-      case kProfile: rows.push_back(ListItem{U"Profile", U""}); break;
-      case kSettings: rows.push_back(ListItem{U"Settings", U""}); break;
-    }
+  for (const Field& f : listFields(t)) {
+    putLine(g, 1, r, f.label, t.dim, t.bg);
+    putLine(g, 11, r++, f.value, f.fg, t.bg);
   }
+
+  std::vector<ListItem> rows = menuRows();
   const int nItems = int(rows.size());
   menu_.setItems(std::move(rows));
   int bottom = g.rows() - 1;
   // A short grid scrolls the menu rather than draw it over the fields.
   menu_.render(g, std::max(r, bottom - nItems), bottom, 1, g.cols() - 2, t);
   drawHint(g, t, U"\u2191\u2193 pick  \u25CF open", U"tap to open");
+}
+
+void HomeScreen::build(lv_obj_t* root) {
+  root_ = root;
+  text_.create(root);
+  menuView_.create(root);
+  tilesView_.create(root);
+  hint_.create(root);
+  status_.create(root);
+  sync();
+}
+
+void HomeScreen::update(int64_t) { sync(); }
+
+void HomeScreen::sync() {
+  const Theme& t = lvui::currentTheme();
+  const AppState& a = app();
+  const lvui::Cell c = lvui::cellOf(root_);
+  const int rows = text_.rows(), bottom = rows - 1;
+
+  // Touch boards: the tiles, laid out as render lays them out (lvui::homeFit).
+  lvui::HomeFit fit;
+  if (board::hasTouch()) {
+    const TextSize ts = a.cfg.textSize;
+    fit = lvui::homeFit(board::panelWidth(), (rows - 2) * cellSize(ts).h, rows, ts, tileCount(), kTilePercent,
+                        spanFirst());
+    column_ = fit.column;
+  }
+  tileMode_ = !fit.lay.tiles.empty();
+  lvui::setHidden(tilesView_.obj(), !tileMode_);
+  lvui::setHidden(menuView_.obj(), tileMode_);
+  text_.begin();
+  if (tileMode_) {
+    text_.end();
+    syncStatus(status_, a.user.empty() ? std::u32string(U"home") : utf8ToU32("@" + a.user), -1);
+    int first = 0;
+    if (column_) {
+      colVisible_ = int(fit.lay.tiles.size());
+      colStride_ = colVisible_ > 1 ? fit.lay.tiles[1].r0 - fit.lay.tiles[0].r0 : 3;
+      colTop_ = std::max(0, std::min(colTop_, tileCount() - colVisible_));
+      first = colTop_;
+    }
+    if (tileSel_ < 0 || tileSel_ >= tileCount()) tileSel_ = 0;
+    tilesView_.syncHome(fit, 1 * c.h, tileInfos(), first, tileHidden_ ? -1 : tileSel_, board::eink());
+    syncHint(hint_, U"\u2191\u2193 pick  \u25CF open", U"tap to open");
+    return;
+  }
+
+  syncStatus(status_, U"home", -1);
+  int r = 1;
+  for (const Field& f : listFields(t)) {
+    text_.line(1, r, f.label, t.dim);
+    text_.line(11, r++, f.value, f.fg);
+  }
+  text_.end();
+  std::vector<ListItem> items = menuRows();
+  const int nItems = int(items.size());
+  menu_.setItems(std::move(items));
+  // A short grid scrolls the menu rather than draw it over the fields.
+  placeCells(menuView_.obj(), 1, std::max(r, bottom - nItems), text_.cols() - 2, bottom);
+  menuView_.sync(menu_);
+  syncHint(hint_, U"\u2191\u2193 pick  \u25CF open", U"tap to open");
 }
 
 }  // namespace rc

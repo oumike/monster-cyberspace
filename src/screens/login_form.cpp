@@ -3,6 +3,7 @@
 #include "app/app_state.h"
 #include "chat/chat_source.h"
 #include "screens/draw.h"
+#include "screens/lv_draw.h"
 #include "screens/screens.h"
 
 namespace rc {
@@ -92,6 +93,40 @@ void LoginFormScreen::render(Grid& g, const Theme& t, int64_t) {
   if (!note_.empty()) r = putWrapped(g, 1, r, note_, busy_ ? t.fg : t.error, t.bg) + 1;
   putWrapped(g, 1, std::max(r, 10), "The password is sent once and never stored.", t.dim, t.bg);
   drawHint(g, t, U"\u2191\u2193 field  \u25CF next/sign in  back: cancel",
+           U"tap field  enter: next/sign in");
+}
+
+void LoginFormScreen::build(lv_obj_t* root) {
+  text_.create(root);
+  emailView_.create(root);
+  passwordView_.create(root);
+  hint_.create(root);
+  status_.create(root);
+  sync();
+}
+
+void LoginFormScreen::update(int64_t) { sync(); }
+
+void LoginFormScreen::sync() {
+  const Theme& t = lvui::currentTheme();
+  syncStatus(status_, U"log in", -1);
+  text_.begin();
+  text_.line(1, 2, "Cyberspace email", t.dim);
+  email_.setDisabled(focus_ != 0 || busy_);
+  placeCells(emailView_.obj(), 0, 3, text_.cols(), 4);
+  emailView_.sync(email_);
+  text_.line(1, 5, "Password", t.dim);
+  mask_.setText(std::u32string(password_.text().size(), U'\u2022'));
+  mask_.setFieldId(1);
+  mask_.setCursor(password_.cursor());
+  mask_.setDisabled(focus_ != 1 || busy_);
+  placeCells(passwordView_.obj(), 0, 6, text_.cols(), 7);
+  passwordView_.sync(mask_);
+  int r = 8;
+  if (!note_.empty()) r = text_.wrapped(1, r, note_, busy_ ? t.fg : t.error) + 1;
+  text_.wrapped(1, std::max(r, 10), "The password is sent once and never stored.", t.dim);
+  text_.end();
+  syncHint(hint_, U"\u2191\u2193 field  \u25CF next/sign in  back: cancel",
            U"tap field  enter: next/sign in");
 }
 

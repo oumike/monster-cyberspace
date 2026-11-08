@@ -4,6 +4,7 @@
 #include "app/ui_task.h"
 #include "chat/chat_source.h"
 #include "screens/draw.h"
+#include "screens/lv_draw.h"
 #include "screens/screens.h"
 
 namespace rc {
@@ -228,6 +229,18 @@ void WifiScreen::onEvent(const Event& e) {
   }
 }
 
+std::vector<ListItem> WifiScreen::listItems() {
+  rows_ = wifiRows(scan_, app().cfg.wifi, wifiUp() ? wifiSsid() : std::string());
+  std::vector<ListItem> items;
+  for (const WifiRow& r : rows_) {
+    std::u32string right = r.connected ? U"connected " : r.saved ? U"saved " : r.secure ? U"" : U"open ";
+    items.push_back(ListItem{utf8ToU32(r.ssid), right + barsText(r.bars), ItemTone::Normal, r.connected});
+  }
+  items.push_back(ListItem{U"Other network\u2026", U""});
+  items.push_back(ListItem{scanning_ ? U"Scanning\u2026" : U"Scan again", U""});
+  return items;
+}
+
 void WifiScreen::render(Grid& g, const Theme& t, int64_t) {
   g.fill(t.bg);
   drawStatus(g, t, U"wi-fi", -1);
@@ -256,14 +269,7 @@ void WifiScreen::render(Grid& g, const Theme& t, int64_t) {
     return;
   }
 
-  rows_ = wifiRows(scan_, app().cfg.wifi, wifiUp() ? wifiSsid() : std::string());
-  std::vector<ListItem> items;
-  for (const WifiRow& r : rows_) {
-    std::u32string right = r.connected ? U"connected " : r.saved ? U"saved " : r.secure ? U"" : U"open ";
-    items.push_back(ListItem{utf8ToU32(r.ssid), right + barsText(r.bars), ItemTone::Normal, r.connected});
-  }
-  items.push_back(ListItem{U"Other network\u2026", U""});
-  items.push_back(ListItem{scanning_ ? U"Scanning\u2026" : U"Scan again", U""});
+  std::vector<ListItem> items = listItems();
 
   int top = 1;
   if (!note_.empty()) top = putWrapped(g, 1, 1, note_, noteError_ ? t.error : t.fg, t.bg);
@@ -280,6 +286,78 @@ void WifiScreen::render(Grid& g, const Theme& t, int64_t) {
   }
   if (buttons_) return drawHint(g, t, U"", U"tap to select  drag to scroll");
   drawHint(g, t, U"\u2191\u2193 pick  \u25CF select  back: leave", U"tap to select  swipe to scroll");
+}
+
+void WifiScreen::build(lv_obj_t* root) {
+  text_.create(root);
+  listView_.create(root);
+  padView_.create(root);
+  inputView_.create(root);
+  hint_.create(root);
+  status_.create(root);
+  menuView_.create(root);
+  sync();
+}
+
+void WifiScreen::update(int64_t) { sync(); }
+
+void WifiScreen::sync() {
+  const Theme& t = lvui::currentTheme();
+  syncStatus(status_, U"wi-fi", -1);
+  const int bottom = text_.rows() - 1;
+  buttons_ = ButtonPad::active();
+  const bool entry = typing(), list = mode_ == Mode::List;
+  lvui::setHidden(inputView_.obj(), !entry);
+  lvui::setHidden(listView_.obj(), !list || buttons_);
+  lvui::setHidden(padView_.obj(), !list || !buttons_);
+  text_.begin();
+
+  if (entry) {
+    const bool name = mode_ == Mode::Name;
+    int r = 2;
+    if (!name) r = text_.wrapped(1, r, "Password for " + ssid_, t.dim);
+    else text_.line(1, r++, "Network name", t.dim);
+    input_.setDisabled(false);
+    ++r;
+    placeCells(inputView_.obj(), 0, r, text_.cols(), r + 1);
+    inputView_.sync(input_);
+    r += 2;
+    if (!note_.empty()) r = text_.wrapped(1, r, note_, noteError_ ? t.error : t.fg) + 1;
+    if (!name) text_.wrapped(1, r, "Leave it empty for an open network.", t.dim);
+    text_.end();
+    menuView_.sync(menu_);
+    syncHint(hint_, name ? U"\u25CF next  back: cancel" : U"\u25CF join  back: cancel",
+             name ? U"enter: next" : U"enter: join");
+    return;
+  }
+
+  if (mode_ == Mode::Joining) {
+    const int r = text_.wrapped(1, 2, "Joining " + ssid_ + "\u2026", t.fg);
+    text_.wrapped(1, r + 1, "This takes up to 12 seconds.", t.dim);
+    text_.end();
+    menuView_.sync(menu_);
+    syncHint(hint_, U"back: leave (it keeps trying)");
+    return;
+  }
+
+  std::vector<ListItem> items = listItems();
+  int top = 1;
+  if (!note_.empty()) top = text_.wrapped(1, 1, note_, noteError_ ? t.error : t.fg);
+  text_.end();
+  if (buttons_) {
+    pad_.sync(padView_, items, top + 1, bottom, true);
+  } else {
+    list_.setItems(std::move(items));
+    placeCells(listView_.obj(), 0, top, text_.cols(), bottom);
+    listView_.sync(list_);
+  }
+  const lvui::Cell c = lvui::cellOf(text_.obj());
+  menuView_.setPlace(OverlayPlace::Centre, bottom * c.h, 0, c.h);
+  menuView_.sync(menu_);
+  if (menu_.isOpen())
+    return syncHint(hint_, U"\u2191\u2193 pick  \u25CF select  back: cancel", U"tap: select  outside: cancel");
+  if (buttons_) return syncHint(hint_, U"", U"tap to select  drag to scroll");
+  syncHint(hint_, U"\u2191\u2193 pick  \u25CF select  back: leave", U"tap to select  swipe to scroll");
 }
 
 }  // namespace rc

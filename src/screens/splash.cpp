@@ -3,6 +3,7 @@
 #include "app/ui_task.h"
 #include "hal/board.h"
 #include "screens/draw.h"
+#include "screens/lv_draw.h"
 #include "screens/screens.h"
 #include "ui/splash_layout.h"
 #include "util/utf8.h"
@@ -49,6 +50,41 @@ void SplashScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
     }
   }
   if (nowMs - since_ > kShowMs) router::go(router::bootTarget());
+}
+
+void SplashScreen::build(lv_obj_t* root) {
+  text_.create(root);
+  sync(since_ < 0 ? 0 : since_);
+}
+
+void SplashScreen::update(int64_t nowMs) {
+  if (since_ < 0) since_ = nowMs;
+  sync(nowMs);
+  if (nowMs - since_ > kShowMs) router::go(router::bootTarget());
+}
+
+void SplashScreen::sync(int64_t nowMs) {
+  const Theme& t = lvui::currentTheme();
+  const int64_t since = since_ < 0 ? nowMs : since_;
+  std::string detail = std::string("v") + RC_VERSION + " \u00b7 " + board::name();
+  text_.begin();
+  for (const auto& l :
+       splashLayout(text_.cols(), text_.rows(), detail, say_, RC_SPLASH_SCALE, &app().mascot.art)) {
+    switch (l.role) {
+      case SplashRole::Art: text_.line(l.col, l.row, l.text, t.selectBg); break;
+      case SplashRole::Bubble: text_.line(l.col, l.row, l.text, t.fg); break;
+      case SplashRole::Title: text_.line(l.col, l.row, l.text, t.fg); break;
+      case SplashRole::Detail: text_.line(l.col, l.row, l.text, t.dim); break;
+      case SplashRole::Prompt: {
+        const int end = l.col + text_.line(l.col, l.row, l.text, t.selectBg);
+        // E-paper: a still cursor, not a blink.
+        if (board::eink() || (nowMs - since) / kBlinkMs % 2 == 0)
+          text_.filled(end, l.row, U" ", t.cursorFg, t.cursorBg);
+        break;
+      }
+    }
+  }
+  text_.end();
 }
 
 }  // namespace rc

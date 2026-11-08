@@ -102,8 +102,8 @@ int ButtonPad::key(const KeyEvent& k) {
   return -1;
 }
 
-void ButtonPad::render(Grid& g, const Theme& t, const std::vector<ListItem>& items, int top,
-                       int bottom, bool keepRight, int cols, int header) {
+ButtonGrid ButtonPad::layout(int gridCols, const std::vector<ListItem>& items, int top, int bottom,
+                             int cols, int header) {
   const int n = int(items.size());
   const bool details =
       std::any_of(items.begin(), items.end(), [](const ListItem& it) { return !it.detail.empty(); });
@@ -117,18 +117,18 @@ void ButtonPad::render(Grid& g, const Theme& t, const std::vector<ListItem>& ite
   header_ = std::max(0, header);
   int maxShift = 0;
   while (maxShift < header_ &&
-         buttonGrid(g.cols(), top + header_ - maxShift, bottom, n, cols, 0, height_).maxScroll > 0)
+         buttonGrid(gridCols, top + header_ - maxShift, bottom, n, cols, 0, height_).maxScroll > 0)
     ++maxShift;
   header_ = maxShift;
   shift_ = std::min(std::max(0, shift_), maxShift);
   if (shift_ < maxShift) scroll_ = 0;
-  auto layout = [&] {
-    return buttonGrid(g.cols(), top + std::max(0, header) - shift_, bottom, n, cols, scroll_, height_);
+  auto grid = [&] {
+    return buttonGrid(gridCols, top + std::max(0, header) - shift_, bottom, n, cols, scroll_, height_);
   };
   const bool showCursor = cursor_ && !hidden_;
   // On the first row the header comes back too, as far as it fits.
   if (showCursor && selected_ < cols) scroll_ = shift_ = 0;
-  ButtonGrid b = layout();
+  ButtonGrid b = grid();
   // Keep the cursor shown: the header scrolls away first and comes back last.
   for (int guard = 0; showCursor && n > 0 && guard < n + header_ + 2; ++guard) {
     if (selected_ < b.first) {
@@ -142,10 +142,18 @@ void ButtonPad::render(Grid& g, const Theme& t, const std::vector<ListItem>& ite
     } else {
       break;
     }
-    b = layout();
+    b = grid();
   }
   firstShown_ = b.first;
   scroll_ = b.scrollRow;
+  return b;
+}
+
+void ButtonPad::render(Grid& g, const Theme& t, const std::vector<ListItem>& items, int top,
+                       int bottom, bool keepRight, int cols, int header) {
+  const int n = int(items.size());
+  const ButtonGrid b = layout(g.cols(), items, top, bottom, cols, header);
+  const bool showCursor = cursor_ && !hidden_;
   if (activeTaps()) {
     activeTaps()->setList(ListId::Main, showCursor ? selected_ : -1, n, false);
     // Under the buttons, the whole area (gaps and header too) takes drags;
@@ -193,6 +201,23 @@ void ButtonPad::render(Grid& g, const Theme& t, const std::vector<ListItem>& ite
   } else {
     drawScrollBar(g, g.cols() - 1, top, bottom, b.totalRows, b.visibleRows, b.scrollRow, t, t.bg);
   }
+}
+
+void ButtonPad::sync(lvui::TileGrid& v, const std::vector<ListItem>& items, int top, int bottom,
+                     bool keepRight, int cols, int header) {
+  lv_obj_t* parent = lv_obj_get_parent(v.obj());
+  lv_obj_update_layout(parent);
+  const lvui::Cell c = lvui::cellOf(v.obj());
+  if (c.w <= 0 || c.h <= 0) return;
+  const ButtonGrid b = layout(lv_obj_get_width(parent) / c.w, items, top, bottom, cols, header);
+  lvui::TileGrid::Scroll scroll;
+  if (header > 0) {
+    const int pitch = height_ + 1;
+    scroll = {header + b.totalRows * pitch, bottom - top, shift_ + b.scrollRow * pitch};
+  } else {
+    scroll = {b.totalRows, b.visibleRows, b.scrollRow};
+  }
+  v.syncButtons(b, items, cursor_ && !hidden_ ? selected_ : -1, keepRight, top, bottom, top * c.h, scroll);
 }
 
 }  // namespace rc

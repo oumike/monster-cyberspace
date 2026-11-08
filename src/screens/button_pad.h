@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "input/key_event.h"
+#include "lvui/views/tile_grid.h"
 #include "ui/button_grid.h"
 #include "ui/grid.h"
 #include "ui/theme.h"
@@ -46,11 +47,20 @@ class ButtonPad {
   // row per drag step before the buttons scroll.
   void render(Grid& g, const Theme& t, const std::vector<ListItem>& items, int top, int bottom,
               bool keepRight, int columns = 0, int header = 0);
+  // render for LVGL: the buttons in v, over its parent's cell rows
+  // [top, bottom). The caller draws any header rows.
+  void sync(lvui::TileGrid& v, const std::vector<ListItem>& items, int top, int bottom,
+            bool keepRight, int columns = 0, int header = 0);
   // Header rows scrolled off the top: the caller draws header row i at
   // top + i - headerShift(), when that is at or below top.
   int headerShift() const { return shift_; }
 
  private:
+  // Lays the buttons out over a grid gridCols wide and scrolls them to keep
+  // the cursor shown, as render and sync draw them.
+  ButtonGrid layout(int gridCols, const std::vector<ListItem>& items, int top, int bottom, int cols,
+                    int header);
+
   int height_ = kButtonRows;
   int scroll_ = 0;
   int dragSteps_ = 0;

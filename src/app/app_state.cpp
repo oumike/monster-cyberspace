@@ -5,6 +5,9 @@
 
 
 #include "hal/board.h"
+#if !RC_UI_GRID
+#include "lvui/views/top_bar.h"
+#endif
 #include "net/wifi_mgr.h"
 #include "power/battery_meter.h"
 #include "screens/router.h"
@@ -56,11 +59,29 @@ std::string setupApSsid() { return wifimgr::apSsid(); }
 bool setupApHasPassword() { return wifimgr::apHasPassword(); }
 #endif
 
+namespace {
+char32_t connMarker() { return app().conn == 2 ? U'\u25CF' : app().conn == 1 ? U'\u25CC' : U'\u2715'; }
+}  // namespace
+
 void drawStatus(Grid& g, const Theme& t, std::u32string_view title, int count, bool menu) {
-  char32_t marker = app().conn == 2 ? U'\u25CF' : app().conn == 1 ? U'\u25CC' : U'\u2715';
+  const char32_t marker = connMarker();
   StatusTouch touch{board::hasTouch(), router::current() != router::Id::Home, menu};
   renderStatusBar(g, t, title, count, marker, wifiBars(), batteryShown(), clockText(),
                   touch);
 }
+
+#if !RC_UI_GRID
+void syncStatus(lvui::TopBar& bar, std::u32string_view title, int count, bool menu) {
+  lvui::TopBarData d;
+  d.title = std::u32string(title);
+  d.count = count;
+  d.conn = connMarker();
+  d.wifiBars = wifiBars();
+  d.batteryPct = batteryShown();
+  d.clock = clockText();
+  d.touch = StatusTouch{board::hasTouch(), router::current() != router::Id::Home, menu};
+  bar.sync(d);
+}
+#endif
 
 }  // namespace rc

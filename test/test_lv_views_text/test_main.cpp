@@ -12,6 +12,7 @@
 #include "lvui/input.h"
 #include "lvui/lv_init.h"
 #include "lvui/styles.h"
+#include "lvui/views/cell_text.h"
 #include "lvui/views/input_field.h"
 #include "lvui/views/log_box.h"
 #include "lvui/views/slider_box.h"
@@ -393,6 +394,60 @@ void test_slider_taps() {
   TEST_ASSERT_EQUAL(0, keys.size());
 }
 
+void test_cell_text_lines_wrap_and_hint() {
+  lvui::CellText ct;
+  ct.create(lv_screen_active());
+  const int cols = kW / kCellW, rows = kH / kCellH;
+  TEST_ASSERT_EQUAL(cols, ct.cols());
+  TEST_ASSERT_EQUAL(rows, ct.rows());
+  ct.begin();
+  // Cut to whole cells at the right edge, as Grid::putText.
+  TEST_ASSERT_EQUAL(5, ct.line(cols - 5, 2, std::string_view("abcdefgh"), 0x1234));
+  TEST_ASSERT_EQUAL(2, ct.filled(3, 4, U"xy", 0xFFFF, 0x07E0));
+  const std::string para = "The quick brown fox jumps over the lazy dog, and then it runs far away.";
+  const int next = ct.wrapped(1, 6, para, 0x00FF);
+  ct.end();
+  lv_obj_update_layout(lv_screen_active());
+  const auto want = rc::wrapText(rc::utf8ToU32(para), cols - 1, cols - 1);
+  TEST_ASSERT_EQUAL(6 + static_cast<int>(want.size()), next);
+  TEST_ASSERT_EQUAL(2 + static_cast<int>(want.size()), ct.count());
+  TEST_ASSERT_EQUAL_STRING("abcde", text(ct.label(0)));
+  TEST_ASSERT_EQUAL((cols - 5) * kCellW, lv_obj_get_x(ct.label(0)));
+  TEST_ASSERT_EQUAL(2 * kCellH, lv_obj_get_y(ct.label(0)));
+  TEST_ASSERT_EQUAL_HEX16(0x1234, textColour(ct.label(0)));
+  TEST_ASSERT_EQUAL_HEX16(0x07E0, rgb565(lv_obj_get_style_bg_color(ct.label(1), LV_PART_MAIN)));
+  TEST_ASSERT_EQUAL(LV_OPA_COVER, lv_obj_get_style_bg_opa(ct.label(1), LV_PART_MAIN));
+  TEST_ASSERT_EQUAL_STRING(rc::u32ToUtf8(want[0]).c_str(), text(ct.label(2)));
+  TEST_ASSERT_EQUAL(1 * kCellW, lv_obj_get_x(ct.label(2)));
+
+  // A shorter frame hides the leftovers and clears a reused label's fill.
+  ct.begin();
+  ct.line(0, 0, U"a", 0xFFFF);
+  ct.line(0, 1, U"b", 0xFFFF);
+  ct.end();
+  TEST_ASSERT_EQUAL(LV_OPA_TRANSP, lv_obj_get_style_bg_opa(ct.label(1), LV_PART_MAIN));
+  TEST_ASSERT_FALSE(hidden(ct.label(1)));
+  TEST_ASSERT_TRUE(hidden(ct.label(2)));
+
+  // Wrapping stops above the hint row.
+  ct.begin();
+  std::string many;
+  for (int i = 0; i < 40; ++i) many += "word" + std::to_string(i) + " ";
+  TEST_ASSERT_EQUAL(rows - 1, ct.wrapped(0, rows - 3, many, 0xFFFF));
+  // Or above a given row.
+  TEST_ASSERT_EQUAL(4, ct.wrapped(0, 3, many, 0xFFFF, 4));
+  ct.end();
+
+  lvui::HintBar h;
+  h.create(lv_screen_active());
+  h.sync(U"tap to select");
+  lv_obj_update_layout(lv_screen_active());
+  TEST_ASSERT_EQUAL((rows - 1) * kCellH, lv_obj_get_y(h.obj()));
+  TEST_ASSERT_EQUAL(kW, lv_obj_get_width(h.obj()));
+  TEST_ASSERT_EQUAL_STRING("tap to select", text(h.label()));
+  TEST_ASSERT_EQUAL_HEX16(rc::defaultTheme().hintBg, rgb565(lv_obj_get_style_bg_color(h.obj(), LV_PART_MAIN)));
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_log_view_virtualised);
@@ -402,5 +457,6 @@ int main() {
   RUN_TEST(test_text_box_wraps_like_wrap);
   RUN_TEST(test_text_area_cursor_and_tap);
   RUN_TEST(test_slider_taps);
+  RUN_TEST(test_cell_text_lines_wrap_and_hint);
   return UNITY_END();
 }

@@ -151,9 +151,9 @@
 
 **Interfaces:**
 - Consumes: Tasks 3–8. Pattern every screen follows: views as members; `build` creates them and calls `sync`; `onEvent`/`onKey` keep their bodies and end with `sync` of changed views; `update` does clock/timer work that `render` did with `nowMs`.
-- [ ] **Step 1:** Port each screen: `build`/`update` reproduce what `render` draws (same rows, labels, hints, positions in cells × font size).
-- [ ] **Step 2:** `pio run -e m9` → SUCCESS (still drawn by the grid).
-- [ ] **Step 3:** Commit `LVGL: splash, setup, login, Wi-Fi, home`.
+- [x] **Step 1:** Port each screen: `build`/`update` reproduce what `render` draws (same rows, labels, hints, positions in cells × font size).
+- [x] **Step 2:** `pio run -e m9` → SUCCESS (still drawn by the grid).
+- [x] **Step 3:** Commit `LVGL: splash, setup, login, Wi-Fi, home`.
 
 ### Task 10: Rooms, C-Mail and Unread
 

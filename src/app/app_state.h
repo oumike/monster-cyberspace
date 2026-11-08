@@ -10,6 +10,10 @@
 #include "ui/grid.h"
 #include "ui/theme.h"
 
+namespace lvui {
+class TopBar;
+}
+
 namespace rc {
 
 // An unread cIRC mention, for the Unread screen.
@@ -39,6 +43,10 @@ const Theme& currentTheme();
 // Row 0 with the connection marker, Wi-Fi bars, battery and clock. `menu` means
 // the screen has a Ctrl menu, so a touch board draws a `⋯` at the right.
 void drawStatus(Grid& g, const Theme& t, std::u32string_view title, int count, bool menu = false);
+#if !RC_UI_GRID
+// drawStatus for an LVGL status bar.
+void syncStatus(lvui::TopBar& bar, std::u32string_view title, int count, bool menu = false);
+#endif
 
 // Wi-Fi and address details that differ in the demo build (RC_FAKE_API).
 bool wifiUp();

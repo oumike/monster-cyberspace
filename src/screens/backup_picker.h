@@ -3,7 +3,13 @@
 #include <string>
 #include <vector>
 
+#include <lvgl.h>
+
 #include "input/key_event.h"
+#include "lvui/views/cell_text.h"
+#include "lvui/views/list_box.h"
+#include "lvui/views/menu_overlay.h"
+#include "lvui/views/tile_grid.h"
 #include "screens/button_pad.h"
 #include "store/backup_store.h"
 #include "ui/grid.h"
@@ -27,6 +33,10 @@ class BackupPicker {
   // confirm, then the list.
   void onKey(const KeyEvent&);
   void render(Grid&, const Theme&);  // fills the rows above the hint, draws its own hint
+  // LVGL: its objects over root's rows below the status bar, hidden while
+  // closed. Build it after the screen's own views, so it covers them.
+  void build(lv_obj_t* root);
+  void sync();
 
  private:
   void restore();
@@ -40,6 +50,13 @@ class BackupPicker {
   // Touch boards: the files, then Cancel / Restore, as buttons.
   ButtonPad pad_;
   bool buttons_ = false;
+  // LVGL: a transparent layer as big as the screen holding the panel, its
+  // title row, the list or buttons, the confirm and the hint.
+  lv_obj_t *layer_ = nullptr, *panel_ = nullptr, *titleRow_ = nullptr, *title_ = nullptr;
+  lvui::ListBox listView_;
+  lvui::TileGrid padView_;
+  lvui::MenuOverlay confirmView_;
+  lvui::HintBar hint_;
 };
 
 }  // namespace rc

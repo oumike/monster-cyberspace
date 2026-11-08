@@ -101,9 +101,9 @@
   - `struct lvui::DisplayConfig { int w, h; void (*pushRows)(const uint16_t* frame, int y0, int y1); bool mono; };` `lv_display_t* lvui::displayBegin(const DisplayConfig&);` `void lvui::displayResize(int w, int h);` `const uint16_t* lvui::frame();`. Keeps one full RGB565 frame (PSRAM; strip of `w*20` on non-PSRAM), LVGL renders partial into it, flush calls `pushRows(frame, y1, y2+1)` for the dirty band. `mono`: pixels thresholded per `rgb565Dark` before the HAL packs (same as today).
   - `void lvui::pointerBegin(bool (*read)(int16_t&, int16_t&));` `void lvui::setKeySink(void (*sink)(const rc::KeyEvent&));` `void lvui::emit(const rc::KeyEvent&);` (views call this on tap).
   - `class lvui::ScreenHost { public: bool show(const std::function<void(lv_obj_t*)>& build); lv_obj_t* root(); void rebuild(); };` `show` builds into a new `lv_obj` and on success deletes the old one; if allocation fails (`lv_obj_create` null or `lv_mem_monitor` free below `kMinFree = 8192` after build) deletes the new tree, keeps the old, shows a top-layer label "Out of memory" for 3 s and returns false.
-- [ ] **Step 1:** Tests: `test_flush_pushes_dirty_band` (a label at y 20..36 changes → `pushRows` called with a band covering 20..36 and not 0); `test_resize_rebuilds` (`displayResize(32,64)` → `lv_display_get_horizontal_resolution` 32, host `rebuild` re-runs the build fn); `test_host_build_failure_keeps_previous` (build fn that sets a failure flag → returns false, old root still child of screen, "Out of memory" label exists); `test_emit_reaches_sink`.
-- [ ] **Step 2:** Run → FAIL. **Step 3:** Implement. **Step 4:** Run → PASS; `pio run -e m9`.
-- [ ] **Step 5:** Commit `LVGL: display flush, input bridge, screen host`.
+- [x] **Step 1:** Tests: `test_flush_pushes_dirty_band` (a label at y 20..36 changes → `pushRows` called with a band covering 20..36 and not 0); `test_resize_rebuilds` (`displayResize(32,64)` → `lv_display_get_horizontal_resolution` 32, host `rebuild` re-runs the build fn); `test_host_build_failure_keeps_previous` (build fn that sets a failure flag → returns false, old root still child of screen, "Out of memory" label exists); `test_emit_reaches_sink`.
+- [x] **Step 2:** Run → FAIL. **Step 3:** Implement. **Step 4:** Run → PASS; `pio run -e m9`.
+- [x] **Step 5:** Commit `LVGL: display flush, input bridge, screen host`.
 
 ### Task 6: Views — bars, lists, overlays
 

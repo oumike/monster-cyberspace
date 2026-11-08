@@ -78,6 +78,22 @@ void drag(lv_point_t from, int dy) {
   step();
 }
 
+// A finger down at `from`, moved (dx, dy) px in twelve even steps, then up.
+void diagonal(lv_point_t from, int dx, int dy) {
+  ptrX = static_cast<int16_t>(from.x);
+  ptrY = static_cast<int16_t>(from.y);
+  ptrDown = true;
+  step();
+  for (int i = 1; i <= 12; ++i) {
+    ptrX = static_cast<int16_t>(from.x + dx * i / 12);
+    ptrY = static_cast<int16_t>(from.y + dy * i / 12);
+    step(50);
+  }
+  ptrDown = false;
+  step();
+  step();
+}
+
 // The centre of cell (col, row) of an object's content.
 lv_point_t cellAt(lv_obj_t* o, int col, int row) {
   lv_obj_update_layout(lv_screen_active());
@@ -214,6 +230,11 @@ void test_log_rows_tap_and_hold() {
   drag(cellAt(box.obj(), 3, 2), 3 * kCellH);
   TEST_ASSERT_GREATER_OR_EQUAL(2, keys.size());
   for (const rc::KeyEvent& k : keys) TEST_ASSERT_EQUAL(Action::Up, k.action);
+  // A mostly sideways move from the right eighth is an edge swipe, not a
+  // drag, even with more than a tap's slop downwards: the log emits nothing.
+  keys.clear();
+  diagonal(cellAt(box.obj(), kW / kCellW - 4, 2), -96, 3 * kCellH);
+  TEST_ASSERT_EQUAL(0, keys.size());
 }
 
 void test_log_nick_colour() {

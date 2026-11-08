@@ -11,6 +11,8 @@ void RowGestures::attach(lv_obj_t* obj, Rows* rows, rc::ListId list) {
   obj_ = obj;
   rows_ = rows;
   list_ = list;
+  // As ui_task's own Gestures: the edge zones are an eighth of the panel each.
+  gestures_.setWidth(lv_display_get_horizontal_resolution(lv_obj_get_display(obj)));
   lv_obj_add_flag(obj, LV_OBJ_FLAG_CLICKABLE);
   lv_obj_add_flag(obj, LV_OBJ_FLAG_PRESS_LOCK);
   lv_obj_remove_flag(obj, LV_OBJ_FLAG_SCROLLABLE);

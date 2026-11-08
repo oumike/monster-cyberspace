@@ -86,9 +86,9 @@
 **Interfaces:**
 - Produces: `enum class lvui::Role { Screen, Bar, Hint, Item, Focused, Selected, Input, Cursor, Drawer, DrawerEdge, Error, Mention, Dim, Time, Sys, Nick, SelfNick };` `void lvui::applyTheme(const rc::Theme&);` `lv_style_t* lvui::style(Role);` `void lvui::addStyle(lv_obj_t*, Role, lv_style_selector_t sel = 0);` `const rc::Theme& lvui::currentTheme();`. `outlined` → Focused/Selected use 1 px border in `selectBg`, no fill. `applyTheme` rewrites the static styles and calls `lv_obj_report_style_change(nullptr)`.
 
-- [ ] **Step 1:** Tests: for each of the 19 `themeFromIndex(i)`, `applyTheme` then Screen bg == `t.bg`, Item text == `t.fg`, Selected bg == `t.selectBg` (or border when `outlined`); `test_restyle_on_theme_change` (a label styled `Item` under Default, after `applyTheme(theme(C64))` and `lv_timer_handler`, has `lv_obj_get_style_text_color` == C64 `fg`).
-- [ ] **Step 2:** Run → FAIL. **Step 3:** Implement. **Step 4:** Run → PASS; `pio run -e m9`.
-- [ ] **Step 5:** Commit `LVGL: styles from the 19 themes`.
+- [x] **Step 1:** Tests: for each of the 19 `themeFromIndex(i)`, `applyTheme` then Screen bg == `t.bg`, Item text == `t.fg`, Selected bg == `t.selectBg` (or border when `outlined`); `test_restyle_on_theme_change` (a label styled `Item` under Default, after `applyTheme(theme(C64))` and `lv_timer_handler`, has `lv_obj_get_style_text_color` == C64 `fg`).
+- [x] **Step 2:** Run → FAIL. **Step 3:** Implement. **Step 4:** Run → PASS; `pio run -e m9`.
+- [x] **Step 5:** Commit `LVGL: styles from the 19 themes`.
 
 ### Task 5: Display, input bridge and screen host
 

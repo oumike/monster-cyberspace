@@ -30,9 +30,16 @@ class Slider {
   Result key(const KeyEvent& k);
   void render(Grid& g, int top, int bottom, const Theme& t) const;
 
- private:
+  const std::u32string& title() const { return title_; }
+  // The named stops of openChoices; empty for a bar.
+  const std::vector<std::u32string>& names() const { return names_; }
+  int step() const { return step_; }
+  // The bar's segments, or the number of stops.
   int steps() const { return !names_.empty() ? int(names_.size()) : step_ > 0 ? max_ / step_ : 0; }
+  // The value as shown under the bar: zeroLabel, "N%" or the stop's name.
   std::u32string label() const;
+
+ private:
   void renderStops(Grid& g, int top, int bottom, const Theme& t) const;
 
   std::u32string title_, zero_;

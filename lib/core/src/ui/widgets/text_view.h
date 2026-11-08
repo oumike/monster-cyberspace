@@ -1,6 +1,8 @@
 #pragma once
 
+#include <functional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "ui/grid.h"
@@ -35,7 +37,21 @@ class TextView {
   // Draws rows [top, bottom) in columns [left, left + width).
   void render(Grid& g, int top, int bottom, int left, int width, const Theme& t);
 
+  // A laid-out line as render() draws it.
+  struct ShownLine {
+    std::u32string_view text;
+    uint16_t fg;
+    bool bold;
+  };
+  // For a view drawn without a Grid: lays out and scrolls as render() does
+  // for a view `rows` tall and `width` wide, then calls line(r, shown) for
+  // each laid-out line on row r. True when a scroll bar takes the last column.
+  bool show(int rows, int width, const Theme& t, const std::function<void(int, const ShownLine&)>& line);
+  // Laid-out lines in all, as of the last render or show.
+  int lineTotal() const { return static_cast<int>(lines_.size()); }
+
  private:
+  bool prepare(int rows, int width);
   struct Line {
     std::u32string text;
     bool bold = false;

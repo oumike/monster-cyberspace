@@ -60,16 +60,33 @@ void TextView::layout(int width) {
   }
 }
 
-void TextView::render(Grid& g, int top, int bottom, int left, int width, const Theme& t) {
-  rows_ = std::max(0, bottom - top);
+bool TextView::prepare(int rows, int width) {
+  rows_ = std::max(0, rows);
   if (laidOutFor_ != width || laidOutRows_ != rows_) {
     laidOutFor_ = width;
     laidOutRows_ = rows_;
     layout(width);
     if (static_cast<int>(lines_.size()) > rows_ && width > 1) layout(width - 1);
   }
-  const bool bar = laidOutWidth_ < width;
   top_ = std::min(top_, maxTop());
+  return laidOutWidth_ < width;
+}
+
+bool TextView::show(int rows, int width, const Theme& t,
+                    const std::function<void(int, const ShownLine&)>& line) {
+  const bool bar = prepare(rows, width);
+  for (int r = 0; r < rows_; ++r) {
+    const int idx = top_ + r;
+    if (idx >= static_cast<int>(lines_.size())) break;
+    const Line& l = lines_[idx];
+    const bool styled = l.para < static_cast<int>(styles_.size());
+    line(r, ShownLine{l.text, styled ? styles_[l.para].fg : t.fg, l.bold || (styled && styles_[l.para].bold)});
+  }
+  return bar;
+}
+
+void TextView::render(Grid& g, int top, int bottom, int left, int width, const Theme& t) {
+  const bool bar = prepare(bottom - top, width);
 
   if (activeTaps()) activeTaps()->setList(ListId::Log, -1, static_cast<int>(lines_.size()), false, true);
   for (int r = 0; r < rows_; ++r) {

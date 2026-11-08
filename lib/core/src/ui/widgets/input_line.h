@@ -25,7 +25,7 @@ class InputLine {
   void clear();
   // Replaces the text (truncated to kMaxBytes) and moves the cursor to the end.
   void setText(std::u32string_view s);
-  std::u32string text() const { return text_; }
+  const std::u32string& text() const { return text_; }
   std::string utf8() const;
   size_t cursor() const { return cursor_; }
   // Moves the cursor to `pos`, clamped to the text length.
@@ -35,12 +35,14 @@ class InputLine {
   bool replace(size_t start, size_t len, std::u32string_view with);
   // The screen's field id, carried in the tap Field target.
   void setFieldId(uint8_t id) { fieldId_ = id; }
+  uint8_t fieldId() const { return fieldId_; }
   // While disabled the text is kept but drawn dim, with no cursor.
   void setDisabled(bool d) { disabled_ = d; }
   bool disabled() const { return disabled_; }
   // On touch boards, an emoji button left of the prompt that sends
   // Action::Emoji (the emoji tray).
   void setEmojiButton(bool on) { emojiButton_ = on; }
+  bool emojiButton() const { return emojiButton_; }
   void render(Grid& g, int row, const Theme& t, std::u32string_view prompt = U"> ") const;
 
  private:

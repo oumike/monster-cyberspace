@@ -22,6 +22,9 @@ class Tappable {
 
 // Makes obj clickable and routes its taps to v.
 void addTap(lv_obj_t* obj, Tappable* v);
+// Where the finger went down for the press being handled (as the grid's tap
+// map hits the down point).
+lv_point_t tapPoint();
 
 // A bare object or label: no theme styles, no scrolling, no padding.
 lv_obj_t* plainBox(lv_obj_t* parent);
@@ -41,6 +44,26 @@ void setHidden(lv_obj_t* obj, bool hidden);
 void setChecked(lv_obj_t* obj, bool on);
 // A local text colour from a theme RGB565 value, set only when it differs.
 void setTextColor(lv_obj_t* obj, uint16_t rgb565);
+// A local, opaque background from a theme RGB565 value, set only when it differs.
+void setBgColor(lv_obj_t* obj, uint16_t rgb565);
+// Moves and sizes obj only when it differs.
+void place(lv_obj_t* obj, int x, int y, int w, int h);
+
+// A scroll bar as the grid's rc::drawScrollBar draws one: a line
+// max(2, cell width / 4) px wide down the right of its last column, the track
+// in barBg and the thumb in fg (rc::scrollThumb, in whole rows). Hidden when
+// everything fits.
+class ScrollBarView {
+ public:
+  void create(lv_obj_t* parent);
+  // rightPx: the bar column's right edge; rows of cell.h px from the top.
+  void sync(int rightPx, Cell cell, int rows, int total, int visible, int first);
+  lv_obj_t* track() const { return track_; }
+  lv_obj_t* thumb() const { return thumb_; }
+
+ private:
+  lv_obj_t *track_ = nullptr, *thumb_ = nullptr;
+};
 
 // s cut to max code points with a trailing "…", as the status bar and
 // drawer cut theirs.

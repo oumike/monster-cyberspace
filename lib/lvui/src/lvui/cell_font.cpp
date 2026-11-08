@@ -129,6 +129,13 @@ const lv_font_t* font(rc::TextSize s, bool big, bool bold) {
   return &kFonts[sizeIndex(s, big) * 2 + (bold ? 1 : 0)];
 }
 
+const lv_font_t* boldOf(const lv_font_t* f) {
+  if (f == &lv_font_cell8x16) return &kFonts[2 * 2 + 1];
+  for (size_t i = 0; i < sizeof(kFonts) / sizeof(kFonts[0]); ++i)
+    if (f == &kFonts[i]) return &kFonts[i | 1];
+  return f;
+}
+
 const lv_font_t* fontFor(rc::TextSize saved, std::optional<rc::TextSize> fixed) {
   return font(fixed.value_or(saved));
 }

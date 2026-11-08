@@ -127,8 +127,8 @@
 - `TextBox` ← `rc::TextView` / `rc::TextArea` (wrapped by `ui/wrap`, read-only).
 - `InputField` ← `rc::InputLine`: one-line `lv_textarea`-look built from a label + Cursor-styled cell (cursor shown per `cursorShown()`), so text editing stays in `InputLine`; tap → `{Focus, index=text pos, target=field id}`.
 - `SliderBox` ← `rc::Slider`.
-- [ ] **Step 1:** Tests: `test_log_view_virtualised` (300 messages of 3 lines; children count ≤ 3 × visible rows; after scrolling to top, first row text is message 0); `test_log_nick_colour`; `test_input_field_cursor_and_focus_tap`; `test_text_box_wraps_like_wrap`.
-- [ ] **Step 2:** FAIL. **Step 3:** Implement. **Step 4:** PASS; `pio run -e m9`. **Step 5:** Commit `LVGL views: log, text, input, slider`.
+- [x] **Step 1:** Tests: `test_log_view_virtualised` (300 messages of 3 lines; children count ≤ 3 × visible rows; after scrolling to top, first row text is message 0); `test_log_nick_colour`; `test_input_field_cursor_and_focus_tap`; `test_text_box_wraps_like_wrap`.
+- [x] **Step 2:** FAIL. **Step 3:** Implement. **Step 4:** PASS; `pio run -e m9`. **Step 5:** Commit `LVGL views: log, text, input, slider`.
 
 ### Task 8: Views — keypads and tiles
 

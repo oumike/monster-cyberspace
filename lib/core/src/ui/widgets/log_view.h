@@ -55,7 +55,28 @@ class LogView {
   // laid out that much narrower.
   void render(Grid& g, int top, int bottom, int rightReserve, const Theme& t) const;
 
+  // One row of a view, as render() would draw it.
+  struct Shown {
+    const DisplayLine* line;  // null past the end, or where a windowed fill came up short
+    int msg;                  // the message ordinal; -1 for a divider or past the end
+    bool selected;            // a line of the selected message
+  };
+  // For a view drawn without a Grid: picks the lines a view `height` rows
+  // tall shows exactly as render() does (following, the selection, a held
+  // view) and calls row(r, shown) once for each r in [0, height), not always
+  // in order. Returns the first line shown.
+  int show(int height, const std::function<void(int, const Shown&)>& row) const;
+  // Laid-out lines in all, dividers included (the scroll bar's total).
+  int lineTotal() const { return lineCount(); }
+
  private:
+  // The lines [start, end) on screen; from: the first line of start's
+  // message. stream: a windowed fill that keeps no lines.
+  struct Window {
+    int start = 0, end = 0, from = 0;
+    bool stream = false;
+  };
+  Window window(int height) const;
   // Which message a line belongs to (its ordinal; a divider takes the next
   // message's), and whether it is a divider.
   struct LineRef {

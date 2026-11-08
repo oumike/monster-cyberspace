@@ -8,6 +8,7 @@ namespace {
 
 bool (*readPointer)(int16_t&, int16_t&) = nullptr;
 void (*keySink)(const rc::KeyEvent&) = nullptr;
+bool onlyTouch = false;
 
 void readCb(lv_indev_t*, lv_indev_data_t* data) {
   int16_t x = 0, y = 0;
@@ -30,6 +31,11 @@ void pointerBegin(bool (*read)(int16_t& x, int16_t& y)) {
   lv_indev_set_type(indev, LV_INDEV_TYPE_POINTER);
   lv_indev_set_read_cb(indev, readCb);
 }
+
+bool hasPointer() { return readPointer != nullptr; }
+
+void setTouchOnly(bool on) { onlyTouch = on; }
+bool touchOnly() { return onlyTouch; }
 
 void setKeySink(void (*sink)(const rc::KeyEvent&)) { keySink = sink; }
 

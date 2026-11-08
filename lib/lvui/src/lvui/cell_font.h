@@ -16,6 +16,9 @@ namespace lvui {
 // renderer draws a bold cell.
 const lv_font_t* font(rc::TextSize s, bool big = false, bool bold = false);
 
+// The bold face of a font from font(); any other font as it is.
+const lv_font_t* boldOf(const lv_font_t* f);
+
 // The font for the saved text size, or for the board's fixed one if it has one.
 const lv_font_t* fontFor(rc::TextSize saved, std::optional<rc::TextSize> fixed);
 

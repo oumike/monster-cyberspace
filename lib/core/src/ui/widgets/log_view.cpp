@@ -161,16 +161,11 @@ bool LogView::atTop() const {
   return true;
 }
 
-void LogView::render(Grid& g, int top, int bottom, int rightReserve, const Theme& t) const {
-  const int height = bottom - top;
-  const int barCol = g.cols() - rightReserve - kBarCols;
-  const int width = barCol;
-  if (height <= 0 || width <= 0) return;
-
-  int start, end;
+LogView::Window LogView::window(int height) const {
+  Window w;
   if (following()) {
-    end = lineCount();
-    start = std::max(0, end - height);
+    w.end = lineCount();
+    w.start = std::max(0, w.end - height);
   } else {
     int first = firstLineOf(selected_), last = lastLineOf(selected_);
     const int n = lineCount();
@@ -183,31 +178,78 @@ void LogView::render(Grid& g, int top, int bottom, int rightReserve, const Theme
         pin_ = -1;
     }
     if (pin_ >= 0) {
-      start = pin_;
+      w.start = pin_;
     } else {
-      end = last + 1;
-      start = std::max(0, end - height);
-      if (start > first) start = first;
+      w.end = last + 1;
+      w.start = std::max(0, w.end - height);
+      if (w.start > first) w.start = first;
     }
-    end = std::min(n, start + height);
+    w.end = std::min(n, w.start + height);
   }
-  lastStart_ = start;
+  lastStart_ = w.start;
   lastHeight_ = height;
   // Windowed: lay out just the messages on screen, with the dividers before
   // them. Kept, into lines_; otherwise each line is drawn as it comes.
-  const bool stream = windowed_ && !keepWindow_ && start < end && fill_ && !ids_.empty();
-  int from = start;
-  if (windowed_ && start < end) {
-    const int fromMsg = refs_[start].msg;
-    while (from > 0 && refs_[from - 1].msg == fromMsg) --from;
-    const bool have = winValid_ && from >= winFrom_ && end <= winFrom_ + static_cast<int>(lines_.size());
-    if (!stream && !have && fill_ && !ids_.empty()) {
+  w.stream = windowed_ && !keepWindow_ && w.start < w.end && fill_ && !ids_.empty();
+  w.from = w.start;
+  if (windowed_ && w.start < w.end) {
+    const int fromMsg = refs_[w.start].msg;
+    while (w.from > 0 && refs_[w.from - 1].msg == fromMsg) --w.from;
+    const bool have = winValid_ && w.from >= winFrom_ && w.end <= winFrom_ + static_cast<int>(lines_.size());
+    if (!w.stream && !have && fill_ && !ids_.empty()) {
       std::vector<DisplayLine>().swap(lines_);
-      fill_(ids_[fromMsg], ids_[refs_[end - 1].msg], [this](DisplayLine&& l) { lines_.push_back(std::move(l)); });
-      winFrom_ = from;
+      fill_(ids_[fromMsg], ids_[refs_[w.end - 1].msg], [this](DisplayLine&& l) { lines_.push_back(std::move(l)); });
+      winFrom_ = w.from;
       winValid_ = true;
     }
   }
+  return w;
+}
+
+int LogView::show(int height, const std::function<void(int, const Shown&)>& row) const {
+  if (height <= 0) return 0;
+  const Window w = window(height);
+  for (int r = 0; r < height; ++r) {
+    const int idx = w.start + r;
+    Shown s{nullptr, -1, false};
+    if (idx < w.end) {
+      const LineRef ref = refs_[idx];
+      if (!ref.divider) {
+        s.msg = ref.msg;
+        s.selected = !following() && ids_[ref.msg] == selected_;
+      }
+      if (!w.stream) s.line = lineAt(idx);
+    }
+    // A streamed row comes from the fill below, unless the fill comes up short.
+    if (!w.stream || idx >= w.end) row(r, s);
+  }
+  if (w.stream) {
+    int idx = w.from;
+    fill_(ids_[refs_[w.start].msg], ids_[refs_[w.end - 1].msg], [&](DisplayLine&& l) {
+      if (idx >= w.start && idx < w.end) {
+        const LineRef ref = refs_[idx];
+        Shown s{&l, ref.divider ? -1 : ref.msg, !ref.divider && !following() && ids_[ref.msg] == selected_};
+        row(idx - w.start, s);
+      }
+      ++idx;
+    });
+    for (int i = std::max(idx, w.start); i < w.end; ++i) {
+      const LineRef ref = refs_[i];
+      row(i - w.start, Shown{nullptr, ref.divider ? -1 : ref.msg, !ref.divider && !following() && ids_[ref.msg] == selected_});
+    }
+  }
+  return w.start;
+}
+
+void LogView::render(Grid& g, int top, int bottom, int rightReserve, const Theme& t) const {
+  const int height = bottom - top;
+  const int barCol = g.cols() - rightReserve - kBarCols;
+  const int width = barCol;
+  if (height <= 0 || width <= 0) return;
+
+  const Window w = window(height);
+  const int start = w.start, end = w.end, from = w.from;
+  const bool stream = w.stream;
 
   int selTop = -1, selBottom = -1;
   if (activeTaps()) activeTaps()->setList(ListId::Log, -1, messageCount(), false, true);

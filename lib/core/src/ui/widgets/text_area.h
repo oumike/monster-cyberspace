@@ -40,10 +40,15 @@ class TextArea {
   static constexpr int kBarCols = 1;
   void render(Grid& g, int top, int bottom, const Theme& t, bool focused) const;
 
- private:
+  // A visual line: text_[start, start + len).
   struct Segment {
     size_t start, len;
   };
+  // The visual lines at `width`, as render() and up()/down() wrap them.
+  std::vector<Segment> lines(int width) const { return segments(width); }
+  uint8_t fieldId() const { return fieldId_; }
+
+ private:
   std::vector<Segment> segments(int width) const;
   static size_t lineOf(const std::vector<Segment>& segs, size_t pos);
   void moveTo(const std::vector<Segment>& segs, size_t from, size_t to);

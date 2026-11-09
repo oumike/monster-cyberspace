@@ -104,7 +104,9 @@ Every firmware answers `screenshot` on its serial console with the frame on
 screen. `scripts/screenshot.py PORT` saves it as a PNG in `screenshots/`;
 `--watch` saves each new screen once it settles, while you move around the
 device (Ctrl-C stops). It needs pyserial (PlatformIO's Python has it) and opens
-the port without resetting the board. Only the frame buffer is read.
+the port without resetting the board. Only the frame buffer is read. The
+Cardputer ADV (no PSRAM) draws in strips and keeps no frame, so it answers
+that it has none and the script exits.
 
 The README's screenshots come from the demo build: `RC_FAKE_API` swaps the
 network for scripted rooms, C-Mail and Feed with made-up users, a fixed clock,

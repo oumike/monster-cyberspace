@@ -6,6 +6,7 @@
 #include <lvgl.h>
 
 #include "input/key_event.h"
+#include "lvui/tree_views.h"
 #include "lvui/views/cell_text.h"
 #include "lvui/views/list_box.h"
 #include "lvui/views/menu_overlay.h"
@@ -52,10 +53,14 @@ class BackupPicker {
   // LVGL: a transparent layer as big as the screen holding the panel, its
   // title row, the list or buttons, the confirm and the hint.
   lv_obj_t *layer_ = nullptr, *panel_ = nullptr, *titleRow_ = nullptr, *title_ = nullptr;
-  lvui::ListBox listView_;
-  lvui::TileGrid padView_;
-  lvui::MenuOverlay confirmView_;
-  lvui::HintBar hint_;
+  // The views, on the heap only while their tree is up (lvui/tree_views.h).
+  struct Views {
+    lvui::ListBox listView_;
+    lvui::TileGrid padView_;
+    lvui::MenuOverlay confirmView_;
+    lvui::HintBar hint_;
+  };
+  lvui::TreeViews<Views> v_;
 };
 
 }  // namespace rc

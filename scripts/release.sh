@@ -121,7 +121,7 @@ validate_release_targets() {
     done
     # Every firmware env should be released; a new board that is not is a slip.
     local e
-    for e in $(sed -n 's/^\[env:\(.*\)\]$/\1/p' platformio.ini | grep -v '^native$'); do
+    for e in $(sed -n 's/^\[env:\(.*\)\]$/\1/p' platformio.ini | grep -vxE 'native|native_lv'); do
         case " ${RELEASE_ENVS[*]} ${UNRELEASED_ENVS[*]} " in
             *" $e "*) ;;
             *) echo "  ERROR: [env:$e] is not in RELEASE_ENVS or UNRELEASED_ENVS (scripts/release.sh)" >&2; failed=true ;;

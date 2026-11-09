@@ -438,15 +438,16 @@ void ProfileScreen::hints(bool actions, const char32_t*& keys, const char32_t*& 
 // ---- LVGL ----
 
 void ProfileScreen::build(lv_obj_t* root) {
-  textView_.create(root);
-  padView_.create(root);
+  v_.make(root);
+  v_->textView_.create(root);
+  v_->padView_.create(root);
   linkFocus_ = lvui::plainBox(root);
   lvui::addStyle(linkFocus_, lvui::Role::Focused);
-  cells_.create(root);
-  qrView_.create(root);
-  hint_.create(root);
-  status_.create(root);
-  menuView_.create(root);
+  v_->cells_.create(root);
+  v_->qrView_.create(root);
+  v_->hint_.create(root);
+  v_->status_.create(root);
+  v_->menuView_.create(root);
   themeSerial_ = ~0u;
   sync(nowMs_);
 }
@@ -456,7 +457,7 @@ void ProfileScreen::update(int64_t nowMs) {
   // The profile, follows and blocks change with ProfileUpdated and
   // PeopleWriteDone, which ui::inputSeq() counts; the store's loading flag
   // (set with no event) and the ages show with the once-a-second refresh.
-  if (gate_.due(cells_.obj(), nowMs, {int64_t(app().conn)})) sync(nowMs);
+  if (gate_.due(v_->cells_.obj(), nowMs, {int64_t(app().conn)})) sync(nowMs);
 }
 
 void ProfileScreen::sync(int64_t nowMs) {
@@ -468,30 +469,30 @@ void ProfileScreen::sync(int64_t nowMs) {
   refreshText(t, nowMs, sameTheme);
   buildLinks();
   const bool actions = !actionsFor(snapshot(user_)).empty();
-  syncStatus(status_, U"@" + utf8ToU32(user_), -1, actions);
-  const int cols = cells_.cols(), rows = cells_.rows(), bottom = rows - 1;
+  syncStatus(v_->status_, U"@" + utf8ToU32(user_), -1, actions);
+  const int cols = v_->cells_.cols(), rows = v_->cells_.rows(), bottom = rows - 1;
   const bool touch = board::hasTouch();
   bool outline = false;
-  cells_.begin();
-  lvui::setHidden(textView_.obj(), linkOpen_ || !loaded_);
-  lvui::setHidden(padView_.obj(), linkOpen_ || !touch);
+  v_->cells_.begin();
+  lvui::setHidden(v_->textView_.obj(), linkOpen_ || !loaded_);
+  lvui::setHidden(v_->padView_.obj(), linkOpen_ || !touch);
   if (linkOpen_) {
-    link_.sync(cells_, qrView_, hint_);
-    cells_.end();
+    link_.sync(v_->cells_, v_->qrView_, v_->hint_);
+    v_->cells_.end();
     lvui::setHidden(linkFocus_, true);
-    lvui::setHidden(menuView_.backdrop(), true);
+    lvui::setHidden(v_->menuView_.backdrop(), true);
     return;
   }
-  lvui::setHidden(qrView_.obj(), true);
+  lvui::setHidden(v_->qrView_.obj(), true);
   // The links sit under the text, a blank row between them.
   const int linkTop = linksTop(rows, cols);
   if (touch) {
     pad_.setCursor(linksFocus_);
-    pad_.sync(padView_, links_, linkTop, bottom, false, linkColumns(cols, links_));
+    pad_.sync(v_->padView_, links_, linkTop, bottom, false, linkColumns(cols, links_));
   } else {
     for (int i = 0; i < int(links_.size()) && linkTop + i < bottom; ++i) {
       const int row = linkTop + i;
-      cells_.line(2, row, links_[i].label, t.sys, cols - 3);
+      v_->cells_.line(2, row, links_[i].label, t.sys, cols - 3);
       if (linksFocus_ && i == linkSel_ && cursorShown()) {
         placeCells(linkFocus_, 0, row, cols, row + 1);
         outline = true;
@@ -500,24 +501,24 @@ void ProfileScreen::sync(int64_t nowMs) {
   }
   lvui::setHidden(linkFocus_, !outline);
   if (loaded_) {
-    placeCells(textView_.obj(), 0, 1, cols, std::max(2, linkTop - 1));
-    textView_.sync(text_);
+    placeCells(v_->textView_.obj(), 0, 1, cols, std::max(2, linkTop - 1));
+    v_->textView_.sync(text_);
   } else {
     const bool loading = lockedPeople().with([](PeopleState& s) { return s.loading; });
-    cells_.line(1, 2, emptyText(loading), t.dim);
+    v_->cells_.line(1, 2, emptyText(loading), t.dim);
   }
-  cells_.end();
+  v_->cells_.end();
   if (menu_) {
-    const lvui::Cell c = cells_.cell();
-    menuView_.setPlace(OverlayPlace::BottomRight, bottom * c.h, 0, c.h);
-    menuView_.sync(box_);
+    const lvui::Cell c = v_->cells_.cell();
+    v_->menuView_.setPlace(OverlayPlace::BottomRight, bottom * c.h, 0, c.h);
+    v_->menuView_.sync(box_);
   } else {
-    lvui::setHidden(menuView_.backdrop(), true);
+    lvui::setHidden(v_->menuView_.backdrop(), true);
   }
   const char32_t* keys;
   const char32_t* touchHint;
   hints(actions, keys, touchHint);
-  syncHint(hint_, keys, touchHint);
+  syncHint(v_->hint_, keys, touchHint);
 }
 
 }  // namespace rc

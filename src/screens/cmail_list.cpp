@@ -126,57 +126,58 @@ std::vector<ListItem> CmailListScreen::rows() {
 }
 
 void CmailListScreen::build(lv_obj_t* root) {
-  listView_.create(root);
-  padView_.create(root);
-  navView_.create(root);
+  v_.make(root);
+  v_->listView_.create(root);
+  v_->padView_.create(root);
+  v_->navView_.create(root);
   // Over the buttons.
-  text_.create(root);
-  inputView_.create(root);
-  hint_.create(root);
-  status_.create(root);
+  v_->text_.create(root);
+  v_->inputView_.create(root);
+  v_->hint_.create(root);
+  v_->status_.create(root);
   sync();
 }
 
 void CmailListScreen::update(int64_t nowMs) {
   // The conversations change with ConversationsUpdated, which
   // ui::inputSeq() counts.
-  if (gate_.due(text_.obj(), nowMs, {ButtonPad::active()})) sync();
+  if (gate_.due(v_->text_.obj(), nowMs, {ButtonPad::active()})) sync();
 }
 
 void CmailListScreen::sync() {
   const Theme& t = lvui::currentTheme();
   buttons_ = ButtonPad::active();
   std::vector<ListItem> items = rows();
-  syncStatus(status_, U"c-mail", int(ids_.size()));
-  int bottom = text_.rows() - 1;
+  syncStatus(v_->status_, U"c-mail", int(ids_.size()));
+  int bottom = v_->text_.rows() - 1;
   if (editing_) --bottom;
-  lvui::setHidden(listView_.obj(), buttons_);
-  lvui::setHidden(padView_.obj(), !buttons_);
-  text_.begin();
+  lvui::setHidden(v_->listView_.obj(), buttons_);
+  lvui::setHidden(v_->padView_.obj(), !buttons_);
+  v_->text_.begin();
   if (buttons_) {
-    pad_.sync(padView_, items, 2, bottom, true, 1);
-    navView_.sync(0, 1, bottom, text_.cols());
-    if (ids_.empty()) text_.line(1, 7, "no conversations yet", t.dim);
+    pad_.sync(v_->padView_, items, 2, bottom, true, 1);
+    v_->navView_.sync(0, 1, bottom, v_->text_.cols());
+    if (ids_.empty()) v_->text_.line(1, 7, "no conversations yet", t.dim);
   } else {
     list_.setItems(std::move(items));
-    const int nav = sideNavWidth(text_);
-    placeCells(listView_.obj(), 0, 1, text_.cols() - nav, bottom);
-    listView_.sync(list_);
-    navView_.sync(nav, 1, bottom, text_.cols());
-    if (ids_.empty()) text_.line(1, 3, "no conversations yet", t.dim);
+    const int nav = sideNavWidth(v_->text_);
+    placeCells(v_->listView_.obj(), 0, 1, v_->text_.cols() - nav, bottom);
+    v_->listView_.sync(list_);
+    v_->navView_.sync(nav, 1, bottom, v_->text_.cols());
+    if (ids_.empty()) v_->text_.line(1, 3, "no conversations yet", t.dim);
   }
-  text_.end();
-  lvui::setHidden(inputView_.obj(), !editing_);
+  v_->text_.end();
+  lvui::setHidden(v_->inputView_.obj(), !editing_);
   if (editing_) {
     input_.setDisabled(busy_);
-    placeCells(inputView_.obj(), 0, bottom, text_.cols(), bottom + 1);
-    inputView_.sync(input_, U"to> @");
-    syncHint(hint_, busy_ ? U"starting\u2026  back: cancel" : U"type a username  \u25CF start  back: cancel",
+    placeCells(v_->inputView_.obj(), 0, bottom, v_->text_.cols(), bottom + 1);
+    v_->inputView_.sync(input_, U"to> @");
+    syncHint(v_->hint_, busy_ ? U"starting\u2026  back: cancel" : U"type a username  \u25CF start  back: cancel",
              busy_ ? U"starting\u2026" : U"type a username  enter: start");
   } else if (buttons_) {
-    syncHint(hint_, U"", U"tap to open  drag to scroll");
+    syncHint(v_->hint_, U"", U"tap to open  drag to scroll");
   } else {
-    syncHint(hint_, U"\u2191\u2193 pick  \u25CF open  \u2190 home", U"tap to open  swipe to scroll");
+    syncHint(v_->hint_, U"\u2191\u2193 pick  \u25CF open  \u2190 home", U"tap to open  swipe to scroll");
   }
 }
 

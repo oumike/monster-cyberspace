@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "lvui/tree_views.h"
 #include "lvui/views/button_rows.h"
 #include "lvui/views/cell_text.h"
 #include "lvui/views/input_field.h"
@@ -112,18 +113,22 @@ class EntryScreen : public Screen {
   // bar and what sits above the input.
   lv_obj_t* root_ = nullptr;
   lv_obj_t* body_ = nullptr;
-  lvui::TopBar status_;
-  lvui::CellText text_;
-  lvui::LogBox logView_;
-  SideNavHost navView_;
-  lvui::SpellBar spellView_;
-  lvui::InputField inputView_;
-  lvui::QrBox qrView_;
-  lvui::HintBar hint_;
-  lvui::MenuOverlay menuView_;
   unsigned themeSerial_ = ~0u;  // lvui::themeSerial() the lines bake
   int64_t nowMs_ = 0;           // the last update's, for build
   SyncGate<5> gate_;
+  // The views, on the heap only while their tree is up (lvui/tree_views.h).
+  struct Views {
+    lvui::TopBar status_;
+    lvui::CellText text_;
+    lvui::LogBox logView_;
+    SideNavHost navView_;
+    lvui::SpellBar spellView_;
+    lvui::InputField inputView_;
+    lvui::QrBox qrView_;
+    lvui::HintBar hint_;
+    lvui::MenuOverlay menuView_;
+  };
+  lvui::TreeViews<Views> v_;
 };
 
 }  // namespace rc

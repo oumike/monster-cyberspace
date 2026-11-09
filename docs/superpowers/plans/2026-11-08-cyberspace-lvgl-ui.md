@@ -194,9 +194,13 @@
 ### Task 15: Every other board
 
 **Files:** `platformio.ini`, per-board flags only where needed (`RC_LV_HEAP` on `cardputer_adv`), `src/ui/lv/board_glue.cpp` (e-paper: `board::eink()` → `mono`, invalidation feeds `ui/eink` as today's dirty rows did)
-- [ ] **Step 1:** `scripts/build-upload-monitor.sh -B` → all thirteen envs SUCCESS (X4 on `src/grid_ui`).
+- [x] **Step 1:** `scripts/build-upload-monitor.sh -B` → all thirteen envs SUCCESS (X4 on `src/grid_ui`).
 - [ ] **Step 2:** Cardputer: if RAM leaves less than today's TLS headroom (61,368 B static today), lower `RC_LV_HEAP`/draw strip until it does; record the numbers.
-- [ ] **Step 3:** Commit `LVGL: every board but the X4`.
+  *(Open: strip mode, one tree at a time and heap-allocated views took static
+  RAM to 71,096 B and the frame to a 4,800 B strip, but the LVGL tree is
+  estimated to leave ~20–30 KB less internal heap than main; the `[mem]`
+  console line settles it on hardware. See task-15-report.md.)*
+- [x] **Step 3:** Commit `LVGL: every board but the X4`.
 
 ### Task 16: Docs
 

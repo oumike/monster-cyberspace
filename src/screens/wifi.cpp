@@ -241,77 +241,78 @@ std::vector<ListItem> WifiScreen::listItems() {
 }
 
 void WifiScreen::build(lv_obj_t* root) {
-  text_.create(root);
-  listView_.create(root);
-  padView_.create(root);
-  inputView_.create(root);
-  hint_.create(root);
-  status_.create(root);
-  menuView_.create(root);
+  v_.make(root);
+  v_->text_.create(root);
+  v_->listView_.create(root);
+  v_->padView_.create(root);
+  v_->inputView_.create(root);
+  v_->hint_.create(root);
+  v_->status_.create(root);
+  v_->menuView_.create(root);
   sync();
 }
 
 void WifiScreen::update(int64_t nowMs) {
-  if (gate_.due(text_.obj(), nowMs, {wifiUp(), ButtonPad::active()})) sync();
+  if (gate_.due(v_->text_.obj(), nowMs, {wifiUp(), ButtonPad::active()})) sync();
 }
 
 void WifiScreen::sync() {
   const Theme& t = lvui::currentTheme();
-  syncStatus(status_, U"wi-fi", -1);
-  const int bottom = text_.rows() - 1;
+  syncStatus(v_->status_, U"wi-fi", -1);
+  const int bottom = v_->text_.rows() - 1;
   buttons_ = ButtonPad::active();
   const bool entry = typing(), list = mode_ == Mode::List;
-  lvui::setHidden(inputView_.obj(), !entry);
-  lvui::setHidden(listView_.obj(), !list || buttons_);
-  lvui::setHidden(padView_.obj(), !list || !buttons_);
-  text_.begin();
+  lvui::setHidden(v_->inputView_.obj(), !entry);
+  lvui::setHidden(v_->listView_.obj(), !list || buttons_);
+  lvui::setHidden(v_->padView_.obj(), !list || !buttons_);
+  v_->text_.begin();
 
   if (entry) {
     const bool name = mode_ == Mode::Name;
     int r = 2;
-    if (!name) r = text_.wrapped(1, r, "Password for " + ssid_, t.dim);
-    else text_.line(1, r++, "Network name", t.dim);
+    if (!name) r = v_->text_.wrapped(1, r, "Password for " + ssid_, t.dim);
+    else v_->text_.line(1, r++, "Network name", t.dim);
     input_.setDisabled(false);
     ++r;
-    placeCells(inputView_.obj(), 0, r, text_.cols(), r + 1);
-    inputView_.sync(input_);
+    placeCells(v_->inputView_.obj(), 0, r, v_->text_.cols(), r + 1);
+    v_->inputView_.sync(input_);
     r += 2;
-    if (!note_.empty()) r = text_.wrapped(1, r, note_, noteError_ ? t.error : t.fg) + 1;
-    if (!name) text_.wrapped(1, r, "Leave it empty for an open network.", t.dim);
-    text_.end();
-    menuView_.sync(menu_);
-    syncHint(hint_, name ? U"\u25CF next  back: cancel" : U"\u25CF join  back: cancel",
+    if (!note_.empty()) r = v_->text_.wrapped(1, r, note_, noteError_ ? t.error : t.fg) + 1;
+    if (!name) v_->text_.wrapped(1, r, "Leave it empty for an open network.", t.dim);
+    v_->text_.end();
+    v_->menuView_.sync(menu_);
+    syncHint(v_->hint_, name ? U"\u25CF next  back: cancel" : U"\u25CF join  back: cancel",
              name ? U"enter: next" : U"enter: join");
     return;
   }
 
   if (mode_ == Mode::Joining) {
-    const int r = text_.wrapped(1, 2, "Joining " + ssid_ + "\u2026", t.fg);
-    text_.wrapped(1, r + 1, "This takes up to 12 seconds.", t.dim);
-    text_.end();
-    menuView_.sync(menu_);
-    syncHint(hint_, U"back: leave (it keeps trying)");
+    const int r = v_->text_.wrapped(1, 2, "Joining " + ssid_ + "\u2026", t.fg);
+    v_->text_.wrapped(1, r + 1, "This takes up to 12 seconds.", t.dim);
+    v_->text_.end();
+    v_->menuView_.sync(menu_);
+    syncHint(v_->hint_, U"back: leave (it keeps trying)");
     return;
   }
 
   std::vector<ListItem> items = listItems();
   int top = 1;
-  if (!note_.empty()) top = text_.wrapped(1, 1, note_, noteError_ ? t.error : t.fg);
-  text_.end();
+  if (!note_.empty()) top = v_->text_.wrapped(1, 1, note_, noteError_ ? t.error : t.fg);
+  v_->text_.end();
   if (buttons_) {
-    pad_.sync(padView_, items, top + 1, bottom, true);
+    pad_.sync(v_->padView_, items, top + 1, bottom, true);
   } else {
     list_.setItems(std::move(items));
-    placeCells(listView_.obj(), 0, top, text_.cols(), bottom);
-    listView_.sync(list_);
+    placeCells(v_->listView_.obj(), 0, top, v_->text_.cols(), bottom);
+    v_->listView_.sync(list_);
   }
-  const lvui::Cell c = lvui::cellOf(text_.obj());
-  menuView_.setPlace(OverlayPlace::Centre, bottom * c.h, 0, c.h);
-  menuView_.sync(menu_);
+  const lvui::Cell c = lvui::cellOf(v_->text_.obj());
+  v_->menuView_.setPlace(OverlayPlace::Centre, bottom * c.h, 0, c.h);
+  v_->menuView_.sync(menu_);
   if (menu_.isOpen())
-    return syncHint(hint_, U"\u2191\u2193 pick  \u25CF select  back: cancel", U"tap: select  outside: cancel");
-  if (buttons_) return syncHint(hint_, U"", U"tap to select  drag to scroll");
-  syncHint(hint_, U"\u2191\u2193 pick  \u25CF select  back: leave", U"tap to select  swipe to scroll");
+    return syncHint(v_->hint_, U"\u2191\u2193 pick  \u25CF select  back: cancel", U"tap: select  outside: cancel");
+  if (buttons_) return syncHint(v_->hint_, U"", U"tap to select  drag to scroll");
+  syncHint(v_->hint_, U"\u2191\u2193 pick  \u25CF select  back: leave", U"tap to select  swipe to scroll");
 }
 
 }  // namespace rc

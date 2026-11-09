@@ -92,7 +92,8 @@ void setBase(const Place& p);
 Screen& screen();
 // Builds the current screen into a new root (go does it; this is for the
 // first screen, and after a theme, text size, rotation or keyboard change).
-// Out of memory, go keeps the screen it was on.
+// Out of memory, go keeps the screen it was on, and so does this (it builds
+// beside the old tree even where go replaces it first, without PSRAM).
 void rebuild();
 // Called before every build, with screen() already the screen to build: the
 // UI task sets the root font for it there.

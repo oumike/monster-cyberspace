@@ -1,5 +1,6 @@
 #include "lvui/display.h"
 
+#include <cstdint>
 #include <cstdlib>
 
 namespace lvui {
@@ -8,8 +9,9 @@ namespace {
 
 lv_display_t* disp = nullptr;
 void (*push)(const uint16_t*, int, int) = nullptr;
-uint16_t* frameBuf = nullptr;
+uint16_t* frameBuf = nullptr;  // the whole frame, or the strip
 size_t frameBytes = 0;
+int stripRows = 0;  // 0: a whole frame
 int bandY0 = -1;
 int bandY1 = -1;
 
@@ -25,7 +27,17 @@ void frameFree(void* p) { lv_free(p); }
 
 // Panels push whole rows, so one band over every dirty area of a refresh
 // costs one transfer instead of one per area (and no row goes twice).
-void flush(lv_display_t* d, const lv_area_t* a, uint8_t*) {
+void flush(lv_display_t* d, const lv_area_t* a, uint8_t* px) {
+  if (stripRows > 0) {
+    // Areas are full width (widen), so the strip is rows y1..y2 of a frame
+    // that starts y1 rows before it.
+    const int w = lv_display_get_horizontal_resolution(d);
+    const uintptr_t shifted = reinterpret_cast<uintptr_t>(px) -
+                              static_cast<uintptr_t>(a->y1) * w * sizeof(uint16_t);
+    if (push) push(reinterpret_cast<const uint16_t*>(shifted), a->y1, a->y2 + 1);
+    lv_display_flush_ready(d);
+    return;
+  }
   if (bandY0 < 0 || a->y1 < bandY0) bandY0 = a->y1;
   if (a->y2 + 1 > bandY1) bandY1 = a->y2 + 1;
   if (lv_display_flush_is_last(d)) {
@@ -35,8 +47,16 @@ void flush(lv_display_t* d, const lv_area_t* a, uint8_t*) {
   lv_display_flush_ready(d);
 }
 
+// Strip mode: every invalidated area spans the whole width, so each flush
+// is whole rows.
+void widen(lv_event_t* e) {
+  auto* a = static_cast<lv_area_t*>(lv_event_get_param(e));
+  a->x1 = 0;
+  a->x2 = lv_display_get_horizontal_resolution(disp) - 1;
+}
+
 bool fit(int w, int h) {
-  const size_t need = static_cast<size_t>(w) * h * sizeof(uint16_t);
+  const size_t need = static_cast<size_t>(w) * (stripRows > 0 ? stripRows : h) * sizeof(uint16_t);
   if (need > frameBytes) {
     void* p = frameAlloc(need);
     if (!p) return false;
@@ -48,6 +68,11 @@ bool fit(int w, int h) {
 }
 
 void setBuffers(int w) {
+  if (stripRows > 0) {
+    const uint32_t bytes = static_cast<uint32_t>(w) * stripRows * sizeof(uint16_t);
+    lv_display_set_buffers(disp, frameBuf, nullptr, bytes, LV_DISPLAY_RENDER_MODE_PARTIAL);
+    return;
+  }
   lv_display_set_buffers_with_stride(disp, frameBuf, nullptr, frameBytes, w * sizeof(uint16_t),
                                      LV_DISPLAY_RENDER_MODE_DIRECT);
 }
@@ -56,6 +81,7 @@ void setBuffers(int w) {
 
 lv_display_t* displayBegin(const DisplayConfig& cfg) {
   if (disp) return disp;
+  stripRows = cfg.stripRows > 0 ? cfg.stripRows : 0;
   if (!fit(cfg.w, cfg.h)) return nullptr;
   disp = lv_display_create(cfg.w, cfg.h);
   if (!disp) return nullptr;
@@ -63,6 +89,7 @@ lv_display_t* displayBegin(const DisplayConfig& cfg) {
   lv_display_set_color_format(disp, LV_COLOR_FORMAT_RGB565);
   setBuffers(cfg.w);
   lv_display_set_flush_cb(disp, flush);
+  if (stripRows > 0) lv_display_add_event_cb(disp, widen, LV_EVENT_INVALIDATE_AREA, nullptr);
   return disp;
 }
 
@@ -77,6 +104,6 @@ void displayResize(int w, int h) {
   lv_obj_invalidate(lv_display_get_screen_active(disp));
 }
 
-const uint16_t* frame() { return frameBuf; }
+const uint16_t* frame() { return stripRows > 0 ? nullptr : frameBuf; }
 
 }  // namespace lvui

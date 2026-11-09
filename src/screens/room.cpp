@@ -793,20 +793,21 @@ void RoomScreen::hints(bool drawer, bool docked, bool offline, const char32_t*& 
 // ---- LVGL ----
 
 void RoomScreen::build(lv_obj_t* root) {
+  v_.make(root);
   root_ = root;
-  text_.create(root);
+  v_->text_.create(root);
   body_ = lvui::plainBox(root);
-  logView_.create(body_);
-  drawerView_.create(body_);
-  navView_.create(body_);
+  v_->logView_.create(body_);
+  v_->drawerView_.create(body_);
+  v_->navView_.create(body_);
   readerBox_ = lvui::plainBox(root);
-  readerBar_.create(readerBox_);
-  qrView_.create(root);
-  spellView_.create(root);
-  inputView_.create(root);
-  hint_.create(root);
-  status_.create(root);
-  menuView_.create(root);
+  v_->readerBar_.create(readerBox_);
+  v_->qrView_.create(root);
+  v_->spellView_.create(root);
+  v_->inputView_.create(root);
+  v_->hint_.create(root);
+  v_->status_.create(root);
+  v_->menuView_.create(root);
   themeSerial_ = ~0u;
   sync();
 }
@@ -823,7 +824,7 @@ void RoomScreen::update(int64_t nowMs) {
 }
 
 void RoomScreen::syncReader(const Theme& t) {
-  const int cols = text_.cols(), bottom = text_.rows() - 1;
+  const int cols = v_->text_.cols(), bottom = v_->text_.rows() - 1;
   std::vector<std::u32string> rows = wrapView_ ? wrapText(viewLines_[0], cols - 2, cols - 2) : viewLines_;
   const int avail = bottom - 1;
   const int maxTop = std::max(0, int(rows.size()) - avail);
@@ -835,22 +836,22 @@ void RoomScreen::syncReader(const Theme& t) {
   for (int i = 0; i < avail && viewTop_ + i < int(rows.size()); ++i) {
     const auto& line = rows[viewTop_ + i];
     if (int(line.size()) > viewLeft_)
-      text_.line(0, 1 + i, std::u32string_view(line).substr(viewLeft_), t.fg, textCols);
+      v_->text_.line(0, 1 + i, std::u32string_view(line).substr(viewLeft_), t.fg, textCols);
   }
   placeCells(readerBox_, 0, 1, cols, bottom);
-  readerBar_.sync(cols * text_.cell().w, text_.cell(), avail, int(rows.size()), avail, viewTop_);
-  syncHint(hint_, U"\u2191\u2193\u2190\u2192 scroll  back: close", U"swipe to scroll  \u2039 close");
+  v_->readerBar_.sync(cols * v_->text_.cell().w, v_->text_.cell(), avail, int(rows.size()), avail, viewTop_);
+  syncHint(v_->hint_, U"\u2191\u2193\u2190\u2192 scroll  back: close", U"swipe to scroll  \u2039 close");
 }
 
 void RoomScreen::sync() {
   const Theme& t = lvui::currentTheme();
-  const int cols = text_.cols();
-  const int inputRow = text_.rows() - 2;
+  const int cols = v_->text_.cols();
+  const int inputRow = v_->text_.rows() - 2;
   int logBottom = inputRow;
   const bool drawer = drawerOpen();
   const bool docked = drawerDocked();
   const bool shown = drawer || docked;
-  const int nav = shown ? 0 : sideNavWidth(text_);
+  const int nav = shown ? 0 : sideNavWidth(v_->text_);
   const int reserve = shown ? Drawer::width(cols, docked) : nav;
   const int logCols = std::max(1, cols - reserve - LogView::kBarCols);
   // The lines bake the theme's colours: lvui's theme is one object, so its
@@ -859,26 +860,26 @@ void RoomScreen::sync() {
   themeSerial_ = lvui::themeSerial();
   const Frame f = refresh(t, logCols, shown, sameTheme);
 
-  syncStatus(status_, utf8ToU32(dm_ ? "@" + partner_ : "#" + slug_), dm_ ? -1 : f.online, true);
+  syncStatus(v_->status_, utf8ToU32(dm_ ? "@" + partner_ : "#" + slug_), dm_ ? -1 : f.online, true);
   const bool typing = view_ != View::Link && view_ != View::Reader;
   lvui::setHidden(body_, !typing);
-  lvui::setHidden(inputView_.obj(), !typing);
+  lvui::setHidden(v_->inputView_.obj(), !typing);
   lvui::setHidden(readerBox_, view_ != View::Reader);
-  if (view_ != View::Link) lvui::setHidden(qrView_.obj(), true);
-  text_.begin();
+  if (view_ != View::Link) lvui::setHidden(v_->qrView_.obj(), true);
+  v_->text_.begin();
 
   if (view_ == View::Link) {
-    lvui::setHidden(spellView_.obj(), true);
-    link_.sync(text_, qrView_, hint_);
-    text_.end();
-    menuView_.sync(box_);
+    lvui::setHidden(v_->spellView_.obj(), true);
+    link_.sync(v_->text_, v_->qrView_, v_->hint_);
+    v_->text_.end();
+    v_->menuView_.sync(box_);
     return;
   }
   if (view_ == View::Reader) {
-    lvui::setHidden(spellView_.obj(), true);
+    lvui::setHidden(v_->spellView_.obj(), true);
     syncReader(t);
-    text_.end();
-    menuView_.sync(box_);
+    v_->text_.end();
+    v_->menuView_.sync(box_);
     return;
   }
 
@@ -887,44 +888,44 @@ void RoomScreen::sync() {
     --logBottom;
     std::string who = f.typers[0];
     for (size_t i = 1; i < f.typers.size(); ++i) who += ", " + f.typers[i];
-    text_.line(1, logBottom, who + " is typing\u2026", t.dim);
+    v_->text_.line(1, logBottom, who + " is typing\u2026", t.dim);
   }
-  text_.end();
+  v_->text_.end();
 #if RC_FEAT_SPELL
   if (spell_.visible() && view_ == View::None && !reasonMode_) {
     --logBottom;
-    placeCells(spellView_.obj(), 0, logBottom, cols, logBottom + 1);
-    spellView_.sync(spell_);
+    placeCells(v_->spellView_.obj(), 0, logBottom, cols, logBottom + 1);
+    v_->spellView_.sync(spell_);
   } else {
-    lvui::setHidden(spellView_.obj(), true);
+    lvui::setHidden(v_->spellView_.obj(), true);
   }
 #else
-  lvui::setHidden(spellView_.obj(), true);
+  lvui::setHidden(v_->spellView_.obj(), true);
 #endif
   placeCells(body_, 0, 1, cols, logBottom);
-  placeCells(logView_.obj(), 0, 0, cols - reserve, logBottom - 1);
-  logView_.sync(log_);
-  lvui::setHidden(drawerView_.obj(), !shown);
+  placeCells(v_->logView_.obj(), 0, 0, cols - reserve, logBottom - 1);
+  v_->logView_.sync(log_);
+  lvui::setHidden(v_->drawerView_.obj(), !shown);
   if (shown) {
-    drawerView_.setDocked(docked);
-    drawerView_.sync(drawer_);
+    v_->drawerView_.setDocked(docked);
+    v_->drawerView_.sync(drawer_);
   }
-  navView_.sync(nav, 0, logBottom - 1, cols);
+  v_->navView_.sync(nav, 0, logBottom - 1, cols);
 
-  const lvui::Cell c = text_.cell();
-  menuView_.setPlace(OverlayPlace::BottomRight, logBottom * c.h, reserve * c.w, 1 * c.h);
-  menuView_.sync(box_);
+  const lvui::Cell c = v_->text_.cell();
+  v_->menuView_.setPlace(OverlayPlace::BottomRight, logBottom * c.h, reserve * c.w, 1 * c.h);
+  v_->menuView_.sync(box_);
 
   const bool offline = app().conn == 0;
   input_.setDisabled(offline || view_ != View::None);
   input_.setEmojiButton(RC_FEAT_EMOJI != 0);
-  placeCells(inputView_.obj(), 0, inputRow, cols, inputRow + 1);
-  inputView_.sync(input_, reasonMode_ ? U"reason> " : U"> ");
+  placeCells(v_->inputView_.obj(), 0, inputRow, cols, inputRow + 1);
+  v_->inputView_.sync(input_, reasonMode_ ? U"reason> " : U"> ");
 
   const char32_t* hint;
   const char32_t* touch;
   hints(drawer, docked, offline, hint, touch);
-  syncHint(hint_, hint, touch);
+  syncHint(v_->hint_, hint, touch);
 }
 
 }  // namespace rc

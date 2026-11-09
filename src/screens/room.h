@@ -6,6 +6,7 @@
 
 #include "chat/message.h"
 #include "feature_flags.h"
+#include "lvui/tree_views.h"
 #include "lvui/views/button_rows.h"
 #include "lvui/views/cell_text.h"
 #include "lvui/views/drawer_panel.h"
@@ -145,19 +146,23 @@ class RoomScreen : public Screen {
   lv_obj_t* root_ = nullptr;
   lv_obj_t* body_ = nullptr;
   lv_obj_t* readerBox_ = nullptr;  // the reader's rows, for its scroll bar
-  lvui::TopBar status_;
-  lvui::CellText text_;
-  lvui::LogBox logView_;
-  lvui::DrawerPanel drawerView_;
-  SideNavHost navView_;
-  lvui::SpellBar spellView_;
-  lvui::InputField inputView_;
-  lvui::QrBox qrView_;
-  lvui::ScrollBarView readerBar_;
-  lvui::HintBar hint_;
-  lvui::MenuOverlay menuView_;
   unsigned themeSerial_ = ~0u;  // lvui::themeSerial() the lines bake
   SyncGate<6> gate_;
+  // The views, on the heap only while their tree is up (lvui/tree_views.h).
+  struct Views {
+    lvui::TopBar status_;
+    lvui::CellText text_;
+    lvui::LogBox logView_;
+    lvui::DrawerPanel drawerView_;
+    SideNavHost navView_;
+    lvui::SpellBar spellView_;
+    lvui::InputField inputView_;
+    lvui::QrBox qrView_;
+    lvui::ScrollBarView readerBar_;
+    lvui::HintBar hint_;
+    lvui::MenuOverlay menuView_;
+  };
+  lvui::TreeViews<Views> v_;
 };
 
 }  // namespace rc

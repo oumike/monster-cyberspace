@@ -361,12 +361,13 @@ void HomeScreen::onKey(const KeyEvent& k) {
 }
 
 void HomeScreen::build(lv_obj_t* root) {
+  v_.make(root);
   root_ = root;
-  text_.create(root);
-  menuView_.create(root);
-  tilesView_.create(root);
-  hint_.create(root);
-  status_.create(root);
+  v_->text_.create(root);
+  v_->menuView_.create(root);
+  v_->tilesView_.create(root);
+  v_->hint_.create(root);
+  v_->status_.create(root);
   sync();
 }
 
@@ -386,7 +387,7 @@ void HomeScreen::sync() {
   const Theme& t = lvui::currentTheme();
   const AppState& a = app();
   const lvui::Cell c = lvui::cellOf(root_);
-  const int rows = text_.rows(), bottom = rows - 1;
+  const int rows = v_->text_.rows(), bottom = rows - 1;
 
   // Touch boards: the tiles (lvui::homeFit).
   lvui::HomeFit fit;
@@ -402,12 +403,12 @@ void HomeScreen::sync() {
     column_ = fit.column;
   }
   tileMode_ = !fit.lay.tiles.empty();
-  lvui::setHidden(tilesView_.obj(), !tileMode_);
-  lvui::setHidden(menuView_.obj(), tileMode_);
-  text_.begin();
+  lvui::setHidden(v_->tilesView_.obj(), !tileMode_);
+  lvui::setHidden(v_->menuView_.obj(), tileMode_);
+  v_->text_.begin();
   if (tileMode_) {
-    text_.end();
-    syncStatus(status_, a.user.empty() ? std::u32string(U"home") : utf8ToU32("@" + a.user), -1);
+    v_->text_.end();
+    syncStatus(v_->status_, a.user.empty() ? std::u32string(U"home") : utf8ToU32("@" + a.user), -1);
     int first = 0;
     if (column_) {
       colVisible_ = int(fit.lay.tiles.size());
@@ -416,25 +417,25 @@ void HomeScreen::sync() {
       first = colTop_;
     }
     if (tileSel_ < 0 || tileSel_ >= tileCount()) tileSel_ = 0;
-    tilesView_.syncHome(fit, 1 * c.h, tileInfos(), first, tileHidden_ ? -1 : tileSel_, board::eink());
-    syncHint(hint_, U"\u2191\u2193 pick  \u25CF open", U"tap to open");
+    v_->tilesView_.syncHome(fit, 1 * c.h, tileInfos(), first, tileHidden_ ? -1 : tileSel_, board::eink());
+    syncHint(v_->hint_, U"\u2191\u2193 pick  \u25CF open", U"tap to open");
     return;
   }
 
-  syncStatus(status_, U"home", -1);
+  syncStatus(v_->status_, U"home", -1);
   int r = 1;
   for (const Field& f : listFields(t)) {
-    text_.line(1, r, f.label, t.dim);
-    text_.line(11, r++, f.value, f.fg);
+    v_->text_.line(1, r, f.label, t.dim);
+    v_->text_.line(11, r++, f.value, f.fg);
   }
-  text_.end();
+  v_->text_.end();
   std::vector<ListItem> items = menuRows();
   const int nItems = int(items.size());
   menu_.setItems(std::move(items));
   // A short grid scrolls the menu rather than draw it over the fields.
-  placeCells(menuView_.obj(), 1, std::max(r, bottom - nItems), text_.cols() - 2, bottom);
-  menuView_.sync(menu_);
-  syncHint(hint_, U"\u2191\u2193 pick  \u25CF open", U"tap to open");
+  placeCells(v_->menuView_.obj(), 1, std::max(r, bottom - nItems), v_->text_.cols() - 2, bottom);
+  v_->menuView_.sync(menu_);
+  syncHint(v_->hint_, U"\u2191\u2193 pick  \u25CF open", U"tap to open");
 }
 
 }  // namespace rc

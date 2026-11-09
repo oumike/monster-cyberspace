@@ -146,7 +146,8 @@ bool goTo(Id id, const std::string& arg) {
   active = lookup(id);
   active->enter(arg);
   if (show()) return true;
-  // Out of memory: the old tree is still up, so the old screen stays.
+  // Out of memory: the old tree is still up, so the old screen stays (with
+  // replace first, boards without PSRAM, it went: build it again below).
   const bool same = active == oldActive;
   active->leave();
   cur = oldCur;
@@ -157,7 +158,7 @@ bool goTo(Id id, const std::string& arg) {
   active->enter(curPlace.arg);
   // The same screen object built into the tree that was thrown away, so its
   // views no longer point at the old one: build it again.
-  if (same) show();
+  if (same || !host.root()) show();
   return false;
 }
 
@@ -165,7 +166,15 @@ bool goTo(Id id, const std::string& arg) {
 
 void go(Id id, const std::string& arg) { goTo(id, arg); }
 
-void rebuild() { show(); }
+// The same screen, built beside its old tree, which stays if this doesn't fit.
+void rebuild() {
+  if (!host.root()) {
+    show();
+    return;
+  }
+  if (beforeBuild) beforeBuild();
+  host.rebuild();
+}
 
 void setBeforeBuild(void (*hook)()) { beforeBuild = hook; }
 

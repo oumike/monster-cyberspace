@@ -126,48 +126,49 @@ std::vector<ListItem> RoomListScreen::rows(int& shown) {
 }
 
 void RoomListScreen::build(lv_obj_t* root) {
-  text_.create(root);
-  listView_.create(root);
-  padView_.create(root);
-  hint_.create(root);
-  status_.create(root);
-  menuView_.create(root);
+  v_.make(root);
+  v_->text_.create(root);
+  v_->listView_.create(root);
+  v_->padView_.create(root);
+  v_->hint_.create(root);
+  v_->status_.create(root);
+  v_->menuView_.create(root);
   sync();
 }
 
 void RoomListScreen::update(int64_t nowMs) {
   // The rooms and their read marks change with an event (RoomsUpdated,
   // RoomsRead), which ui::inputSeq() counts.
-  if (gate_.due(text_.obj(), nowMs)) sync();
+  if (gate_.due(v_->text_.obj(), nowMs)) sync();
 }
 
 void RoomListScreen::sync() {
   const Theme& t = lvui::currentTheme();
   int shown = 0;
   std::vector<ListItem> items = rows(shown);
-  const int bottom = text_.rows() - 1;
-  syncStatus(status_, U"rooms", shown);
-  text_.begin();
-  if (shown == 0) text_.line(1, 2, filter_.active() ? "no rooms match" : "loading rooms\u2026", t.dim);
-  text_.end();
+  const int bottom = v_->text_.rows() - 1;
+  syncStatus(v_->status_, U"rooms", shown);
+  v_->text_.begin();
+  if (shown == 0) v_->text_.line(1, 2, filter_.active() ? "no rooms match" : "loading rooms\u2026", t.dim);
+  v_->text_.end();
   buttons_ = board::hasTouch();
   pad_.setCursor(board::hasKeys());
-  lvui::setHidden(listView_.obj(), buttons_);
-  lvui::setHidden(padView_.obj(), !buttons_);
+  lvui::setHidden(v_->listView_.obj(), buttons_);
+  lvui::setHidden(v_->padView_.obj(), !buttons_);
   if (buttons_) {
-    pad_.sync(padView_, items, 2, bottom, false);
+    pad_.sync(v_->padView_, items, 2, bottom, false);
   } else {
     list_.setItems(std::move(items));
-    placeCells(listView_.obj(), 0, 1, text_.cols(), bottom);
-    listView_.sync(list_);
+    placeCells(v_->listView_.obj(), 0, 1, v_->text_.cols(), bottom);
+    v_->listView_.sync(list_);
   }
-  const lvui::Cell c = text_.cell();
-  menuView_.setPlace(OverlayPlace::BottomRight, bottom * c.h, 0, c.h);
-  menuView_.sync(box_);
+  const lvui::Cell c = v_->text_.cell();
+  v_->menuView_.setPlace(OverlayPlace::BottomRight, bottom * c.h, 0, c.h);
+  v_->menuView_.sync(box_);
   if (confirm_)
-    return syncHint(hint_, U"\u2191\u2193 pick  \u25CF choose  back: cancel", U"tap: choose  outside: cancel");
-  if (filter_.active()) return syncHint(hint_, U"filter: " + filter_.text() + U"\u2581  \u232B erase  back clears");
-  syncHint(hint_, U"\u2191\u2193 pick  \u25CF open  \u2190 home",
+    return syncHint(v_->hint_, U"\u2191\u2193 pick  \u25CF choose  back: cancel", U"tap: choose  outside: cancel");
+  if (filter_.active()) return syncHint(v_->hint_, U"filter: " + filter_.text() + U"\u2581  \u232B erase  back clears");
+  syncHint(v_->hint_, U"\u2191\u2193 pick  \u25CF open  \u2190 home",
            buttons_ ? U"tap to open  drag to scroll" : U"tap to open  swipe to scroll");
 }
 

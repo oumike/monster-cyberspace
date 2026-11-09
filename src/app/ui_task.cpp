@@ -1031,13 +1031,18 @@ void handleKey(const KeyEvent& key) {
 }
 
 // Answers the console's "screenshot" command (scripts/screenshot.py) with the
-// frame as drawn; read only, it touches nothing else.
+// frame as drawn; read only, it touches nothing else. A board without PSRAM
+// draws in strips and keeps no frame, so it answers that it has none.
 SerialCommand console;
 
 void sendScreenshot() {
   const uint16_t* f = lvui::frame();
   const int w = displayW(), h = displayH();
-  if (!f || w <= 0 || h <= 0) return;
+  if (!f) {
+    Serial.printf("\n@@NOSHOT no frame on this board (it draws in strips)\n");
+    return;
+  }
+  if (w <= 0 || h <= 0) return;
   static std::vector<uint8_t> buf;
   buf.resize(static_cast<size_t>(w) * 3);
   Serial.printf("\n@@SHOT %d %d\n", w, h);
@@ -1081,11 +1086,14 @@ void logMemory(uint32_t now) {
   static uint32_t last = 0;
   if (last && now - last < 30000) return;
   last = now;
-  Serial.printf("[mem] int %u blk %u min %u | ui stack free %u\n",
+  lv_mem_monitor_t lv;
+  lv_mem_monitor(&lv);
+  Serial.printf("[mem] int %u blk %u min %u | ui stack free %u | lvgl %u max %u of %u\n",
                 unsigned(heap_caps_get_free_size(MALLOC_CAP_INTERNAL)),
                 unsigned(heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL)),
                 unsigned(heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL)),
-                unsigned(uxTaskGetStackHighWaterMark(nullptr)));
+                unsigned(uxTaskGetStackHighWaterMark(nullptr)),
+                unsigned(lv.total_size - lv.free_size), unsigned(lv.max_used), unsigned(lv.total_size));
 }
 #endif
 

@@ -569,17 +569,18 @@ void EntryScreen::hints(const std::string& reply, bool offline, const char32_t*&
 // ---- LVGL ----
 
 void EntryScreen::build(lv_obj_t* root) {
+  v_.make(root);
   root_ = root;
-  text_.create(root);
+  v_->text_.create(root);
   body_ = lvui::plainBox(root);
-  logView_.create(body_);
-  navView_.create(body_);
-  qrView_.create(root);
-  spellView_.create(root);
-  inputView_.create(root);
-  hint_.create(root);
-  status_.create(root);
-  menuView_.create(root);
+  v_->logView_.create(body_);
+  v_->navView_.create(body_);
+  v_->qrView_.create(root);
+  v_->spellView_.create(root);
+  v_->inputView_.create(root);
+  v_->hint_.create(root);
+  v_->status_.create(root);
+  v_->menuView_.create(root);
   themeSerial_ = ~0u;
   sync(nowMs_);
 }
@@ -598,10 +599,10 @@ void EntryScreen::update(int64_t nowMs) {
 void EntryScreen::sync(int64_t nowMs) {
   const Theme& t = lvui::currentTheme();
   const bool small = compact();
-  const int cols = text_.cols(), rows = text_.rows();
+  const int cols = v_->text_.cols(), rows = v_->text_.rows();
   const int inputRow = small ? rows - 2 : rows - 1;
   const int logRows = inputRow - 1;
-  const int nav = sideNavWidth(text_);
+  const int nav = sideNavWidth(v_->text_);
   const int logCols = cols - nav - LogView::kBarCols;
   // The lines bake the theme's colours: lvui's theme is one object, so its
   // serial tells a change.
@@ -609,18 +610,18 @@ void EntryScreen::sync(int64_t nowMs) {
   themeSerial_ = lvui::themeSerial();
   refresh(logCols, logRows, t, nowMs, sameTheme);
 
-  syncStatus(status_, title_.empty() ? std::u32string(U"entry") : title_, -1, true);
+  syncStatus(v_->status_, title_.empty() ? std::u32string(U"entry") : title_, -1, true);
   const bool typing = view_ != View::Link;
-  lvui::setHidden(inputView_.obj(), !typing);
-  if (typing) lvui::setHidden(qrView_.obj(), true);
-  text_.begin();
+  lvui::setHidden(v_->inputView_.obj(), !typing);
+  if (typing) lvui::setHidden(v_->qrView_.obj(), true);
+  v_->text_.begin();
   if (!typing) {
     lvui::setHidden(body_, true);
-    lvui::setHidden(spellView_.obj(), true);
-    lvui::setHidden(hint_.obj(), false);
-    link_.sync(text_, qrView_, hint_);
-    text_.end();
-    menuView_.sync(box_);
+    lvui::setHidden(v_->spellView_.obj(), true);
+    lvui::setHidden(v_->hint_.obj(), false);
+    link_.sync(v_->text_, v_->qrView_, v_->hint_);
+    v_->text_.end();
+    v_->menuView_.sync(box_);
     return;
   }
 
@@ -629,45 +630,45 @@ void EntryScreen::sync(int64_t nowMs) {
   if (!reply.empty()) {
     // The reply the input line answers.
     --logBottom;
-    text_.line(1, logBottom, replyLine(reply), t.dim);
+    v_->text_.line(1, logBottom, replyLine(reply), t.dim);
   }
 #if RC_FEAT_SPELL
   if (spell_.visible() && view_ == View::None && !reasonMode_) {
     --logBottom;
-    placeCells(spellView_.obj(), 0, logBottom, cols, logBottom + 1);
-    spellView_.sync(spell_);
+    placeCells(v_->spellView_.obj(), 0, logBottom, cols, logBottom + 1);
+    v_->spellView_.sync(spell_);
   } else {
-    lvui::setHidden(spellView_.obj(), true);
+    lvui::setHidden(v_->spellView_.obj(), true);
   }
 #else
-  lvui::setHidden(spellView_.obj(), true);
+  lvui::setHidden(v_->spellView_.obj(), true);
 #endif
   const bool offline = app().conn == 0;
-  if (!loaded_) text_.line(1, 2, offline ? "offline" : "loading\u2026", t.dim);
-  text_.end();
+  if (!loaded_) v_->text_.line(1, 2, offline ? "offline" : "loading\u2026", t.dim);
+  v_->text_.end();
   lvui::setHidden(body_, !loaded_);
   if (loaded_) {
     placeCells(body_, 0, 1, cols, logBottom);
-    placeCells(logView_.obj(), 0, 0, cols - nav, logBottom - 1);
-    logView_.sync(log_);
-    navView_.sync(nav, 0, logBottom - 1, cols);
+    placeCells(v_->logView_.obj(), 0, 0, cols - nav, logBottom - 1);
+    v_->logView_.sync(log_);
+    v_->navView_.sync(nav, 0, logBottom - 1, cols);
   }
 
-  const lvui::Cell c = text_.cell();
-  menuView_.setPlace(OverlayPlace::BottomRight, logBottom * c.h, nav * c.w, c.h);
-  menuView_.sync(box_);
+  const lvui::Cell c = v_->text_.cell();
+  v_->menuView_.setPlace(OverlayPlace::BottomRight, logBottom * c.h, nav * c.w, c.h);
+  v_->menuView_.sync(box_);
 
   input_.setDisabled(offline || view_ != View::None || sending_ || !loaded_);
   input_.setEmojiButton(RC_FEAT_EMOJI != 0);
-  placeCells(inputView_.obj(), 0, inputRow, cols, inputRow + 1);
-  inputView_.sync(input_, reasonMode_ ? U"reason> " : U"> ");
+  placeCells(v_->inputView_.obj(), 0, inputRow, cols, inputRow + 1);
+  v_->inputView_.sync(input_, reasonMode_ ? U"reason> " : U"> ");
 
-  lvui::setHidden(hint_.obj(), !small);
+  lvui::setHidden(v_->hint_.obj(), !small);
   if (small) {
     const char32_t* hint;
     const char32_t* touch;
     hints(reply, offline, hint, touch);
-    syncHint(hint_, hint, touch);
+    syncHint(v_->hint_, hint, touch);
   }
 }
 

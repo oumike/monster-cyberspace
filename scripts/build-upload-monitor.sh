@@ -16,7 +16,7 @@ JUST_BUILD=false
 # so a new board's environment shows up here the day it lands. `native` holds
 # the host unit tests and is not firmware.
 firmware_envs() {
-	sed -n 's/^\[env:\(.*\)\]$/\1/p' platformio.ini | grep -vx native
+	sed -n 's/^\[env:\(.*\)\]$/\1/p' platformio.ini | grep -vxE 'native|native_lv'
 }
 
 has_env() {

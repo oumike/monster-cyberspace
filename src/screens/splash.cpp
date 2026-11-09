@@ -27,13 +27,14 @@ void SplashScreen::enter(const std::string&) {
 void SplashScreen::onKey(const KeyEvent&) { router::go(router::bootTarget()); }
 
 void SplashScreen::build(lv_obj_t* root) {
-  text_.create(root);
+  v_.make(root);
+  v_->text_.create(root);
   sync(since_ < 0 ? 0 : since_);
 }
 
 void SplashScreen::update(int64_t nowMs) {
   if (since_ < 0) since_ = nowMs;
-  if (gate_.due(text_.obj(), nowMs, {board::eink() || (nowMs - since_) / kBlinkMs % 2 == 0})) sync(nowMs);
+  if (gate_.due(v_->text_.obj(), nowMs, {board::eink() || (nowMs - since_) / kBlinkMs % 2 == 0})) sync(nowMs);
   if (nowMs - since_ > kShowMs) router::go(router::bootTarget());
 }
 
@@ -41,24 +42,24 @@ void SplashScreen::sync(int64_t nowMs) {
   const Theme& t = lvui::currentTheme();
   const int64_t since = since_ < 0 ? nowMs : since_;
   std::string detail = std::string("v") + RC_VERSION + " \u00b7 " + board::name();
-  text_.begin();
+  v_->text_.begin();
   for (const auto& l :
-       splashLayout(text_.cols(), text_.rows(), detail, say_, RC_SPLASH_SCALE, &app().mascot.art)) {
+       splashLayout(v_->text_.cols(), v_->text_.rows(), detail, say_, RC_SPLASH_SCALE, &app().mascot.art)) {
     switch (l.role) {
-      case SplashRole::Art: text_.line(l.col, l.row, l.text, t.selectBg); break;
-      case SplashRole::Bubble: text_.line(l.col, l.row, l.text, t.fg); break;
-      case SplashRole::Title: text_.line(l.col, l.row, l.text, t.fg); break;
-      case SplashRole::Detail: text_.line(l.col, l.row, l.text, t.dim); break;
+      case SplashRole::Art: v_->text_.line(l.col, l.row, l.text, t.selectBg); break;
+      case SplashRole::Bubble: v_->text_.line(l.col, l.row, l.text, t.fg); break;
+      case SplashRole::Title: v_->text_.line(l.col, l.row, l.text, t.fg); break;
+      case SplashRole::Detail: v_->text_.line(l.col, l.row, l.text, t.dim); break;
       case SplashRole::Prompt: {
-        const int end = l.col + text_.line(l.col, l.row, l.text, t.selectBg);
+        const int end = l.col + v_->text_.line(l.col, l.row, l.text, t.selectBg);
         // E-paper: a still cursor, not a blink.
         if (board::eink() || (nowMs - since) / kBlinkMs % 2 == 0)
-          text_.filled(end, l.row, U" ", t.cursorFg, t.cursorBg);
+          v_->text_.filled(end, l.row, U" ", t.cursorFg, t.cursorBg);
         break;
       }
     }
   }
-  text_.end();
+  v_->text_.end();
 }
 
 }  // namespace rc

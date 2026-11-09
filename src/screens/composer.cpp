@@ -380,28 +380,29 @@ lv_obj_t* tapBox(lv_obj_t* parent, lvui::Tappable* v) {
 }  // namespace
 
 void ComposerScreen::build(lv_obj_t* root) {
+  v_.make(root);
   root_ = root;
   titleTap_.field = kTitle;
   publicField_.field = kPublic;
   nsfwField_.field = kNsfw;
-  text_.create(root);
+  v_->text_.create(root);
   padAbove_ = tapBox(root, &titleTap_);
   lvui::addStyle(padAbove_, lvui::Role::Input);
   padBelow_ = tapBox(root, &titleTap_);
   lvui::addStyle(padBelow_, lvui::Role::Input);
-  bodyView_.create(root);
-  titleView_.create(root);
-  topicsView_.create(root);
-  cwView_.create(root);
+  v_->bodyView_.create(root);
+  v_->titleView_.create(root);
+  v_->topicsView_.create(root);
+  v_->cwView_.create(root);
   promptTap_ = tapBox(root, &titleTap_);
   checkFocus_ = lvui::plainBox(root);
   lvui::addStyle(checkFocus_, lvui::Role::Focused);
   publicTap_ = tapBox(root, &publicField_);
   nsfwTap_ = tapBox(root, &nsfwField_);
-  spellView_.create(root);
-  hint_.create(root);
-  status_.create(root);
-  menuView_.create(root);
+  v_->spellView_.create(root);
+  v_->hint_.create(root);
+  v_->status_.create(root);
+  v_->menuView_.create(root);
   sync();
 }
 
@@ -414,10 +415,10 @@ void ComposerScreen::update(int64_t nowMs) {
 void ComposerScreen::sync() {
   const Theme& t = lvui::currentTheme();
   const bool small = app().cfg.textSize == TextSize::Compact;
-  const int rows = text_.rows(), cols = text_.cols();
+  const int rows = v_->text_.rows(), cols = v_->text_.cols();
   cols_ = cols - TextArea::kBarCols;
   const bool guild = !gGuildSlug.empty();
-  syncStatus(status_, statusTitle(guild), -1, true);
+  syncStatus(v_->status_, statusTitle(guild), -1, true);
   const Rows r = layout(rows, small, guild);
 
   // The title, padded on touch boards; the padding's target puts the cursor
@@ -432,19 +433,19 @@ void ComposerScreen::sync() {
     placeCells(padBelow_, 0, r.title + 1, cols, r.title + 2);
     placeCells(promptTap_, 0, r.title, int(std::u32string_view(U"Title ").size()), r.title + 1);
   }
-  placeCells(titleView_.obj(), 0, r.title, cols, r.title + 1);
-  titleView_.sync(title_, U"Title ");
+  placeCells(v_->titleView_.obj(), 0, r.title, cols, r.title + 1);
+  v_->titleView_.sync(title_, U"Title ");
 
-  text_.begin();
-  text_.line(0, r.label, "Body", focus_ == kBody ? t.fg : t.dim);
+  v_->text_.begin();
+  v_->text_.line(0, r.label, "Body", focus_ == kBody ? t.fg : t.dim);
   std::string count = std::to_string(body_.length()) + "/4096";
-  text_.line(std::max(0, cols - int(count.size())), r.label, count, t.dim);
-  placeCells(bodyView_.obj(), 0, r.bodyTop, cols, r.bodyBottom);
-  bodyView_.sync(body_, focus_ == kBody && !gPosting);
+  v_->text_.line(std::max(0, cols - int(count.size())), r.label, count, t.dim);
+  placeCells(v_->bodyView_.obj(), 0, r.bodyTop, cols, r.bodyBottom);
+  v_->bodyView_.sync(body_, focus_ == kBody && !gPosting);
 
   topics_.setDisabled(focus_ != kTopics || gPosting);
-  placeCells(topicsView_.obj(), 0, r.topics, cols, r.topics + 1);
-  topicsView_.sync(topics_, U"Topics ");
+  placeCells(v_->topicsView_.obj(), 0, r.topics, cols, r.topics + 1);
+  v_->topicsView_.sync(topics_, U"Topics ");
 
   // The checkboxes: a focused one in selection colours, or outlined.
   bool outline = false;
@@ -453,8 +454,8 @@ void ComposerScreen::sync() {
   if (!guild) {
     auto box = [&](int col, bool on, const char32_t* label, bool focused) {
       std::u32string s = std::u32string(on ? U"[x] " : U"[ ] ") + label;
-      const int w = focused && !t.outlined ? text_.filled(col, r.check, s, t.selectFg, t.selectBg)
-                                           : text_.line(col, r.check, s, t.fg, cols - col);
+      const int w = focused && !t.outlined ? v_->text_.filled(col, r.check, s, t.selectFg, t.selectBg)
+                                           : v_->text_.line(col, r.check, s, t.fg, cols - col);
       if (focused && t.outlined && w > 0) {
         placeCells(checkFocus_, col, r.check, w, r.check + 1);
         outline = true;
@@ -467,37 +468,37 @@ void ComposerScreen::sync() {
     placeCells(publicTap_, 0, r.check, std::max(1, col), r.check + 1);
     placeCells(nsfwTap_, nsfwStart, r.check, std::max(1, nsfwEnd - nsfwStart), r.check + 1);
   }
-  text_.end();
+  v_->text_.end();
   lvui::setHidden(checkFocus_, !outline);
 
-  lvui::setHidden(cwView_.obj(), guild);
+  lvui::setHidden(v_->cwView_.obj(), guild);
   if (!guild) {
     cw_.setDisabled(focus_ != kCw || gPosting);
-    placeCells(cwView_.obj(), 0, r.cw, cols, r.cw + 1);
-    cwView_.sync(cw_, U"CW ");
+    placeCells(v_->cwView_.obj(), 0, r.cw, cols, r.cw + 1);
+    v_->cwView_.sync(cw_, U"CW ");
   }
 
 #if RC_FEAT_SPELL
   // Suggestions sit between the title and the body, over the label.
   if (spell_.visible() && (focus_ == kTitle || focus_ == kBody) && menu_ == Menu::None) {
-    placeCells(spellView_.obj(), 0, r.label, cols, r.label + 1);
-    spellView_.sync(spell_);
+    placeCells(v_->spellView_.obj(), 0, r.label, cols, r.label + 1);
+    v_->spellView_.sync(spell_);
   } else {
-    lvui::setHidden(spellView_.obj(), true);
+    lvui::setHidden(v_->spellView_.obj(), true);
   }
 #else
-  lvui::setHidden(spellView_.obj(), true);
+  lvui::setHidden(v_->spellView_.obj(), true);
 #endif
 
-  menuView_.setPlace(OverlayPlace::Centre, rows * text_.cell().h, 0, 0);
-  menuView_.sync(box_);
+  v_->menuView_.setPlace(OverlayPlace::Centre, rows * v_->text_.cell().h, 0, 0);
+  v_->menuView_.sync(box_);
 
-  lvui::setHidden(hint_.obj(), !small);
+  lvui::setHidden(v_->hint_.obj(), !small);
   if (small) {
     const char32_t* hint;
     const char32_t* touch;
     hints(guild, hint, touch);
-    syncHint(hint_, hint, touch);
+    syncHint(v_->hint_, hint, touch);
   }
 }
 

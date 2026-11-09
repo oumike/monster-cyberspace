@@ -5,6 +5,7 @@
 
 #include "feature_flags.h"
 #include "input/type_filter.h"
+#include "lvui/tree_views.h"
 #include "lvui/views/cell_text.h"
 #include "lvui/views/entry_list_box.h"
 #include "lvui/views/input_field.h"
@@ -48,8 +49,12 @@ class SplashScreen : public Screen {
   void sync(int64_t nowMs);
   int64_t since_ = -1;
   std::string say_;
-  lvui::CellText text_;
   SyncGate<1> gate_;
+  // The views, on the heap only while their tree is up (lvui/tree_views.h).
+  struct Views {
+    lvui::CellText text_;
+  };
+  lvui::TreeViews<Views> v_;
 };
 
 class SetupScreen : public Screen {
@@ -69,12 +74,16 @@ class SetupScreen : public Screen {
   bool hasRestore_ = false;  // the SD list held backups on enter
   bool buttons_ = false;     // touch-only boards: the options as buttons
   ButtonPad pad_;
-  lvui::TopBar status_;
-  lvui::CellText text_;
-  lvui::ListBox menuView_;
-  lvui::TileGrid padView_;
-  lvui::HintBar hint_;
   SyncGate<4> gate_;
+  // The views, on the heap only while their tree is up (lvui/tree_views.h).
+  struct Views {
+    lvui::TopBar status_;
+    lvui::CellText text_;
+    lvui::ListBox menuView_;
+    lvui::TileGrid padView_;
+    lvui::HintBar hint_;
+  };
+  lvui::TreeViews<Views> v_;
 };
 
 class LoginFormScreen : public Screen {
@@ -97,11 +106,15 @@ class LoginFormScreen : public Screen {
   int focus_ = 0;  // 0 email, 1 password
   bool busy_ = false;
   std::string note_;
-  lvui::TopBar status_;
-  lvui::CellText text_;
-  lvui::InputField emailView_, passwordView_;
-  lvui::HintBar hint_;
   SyncGate<> gate_;
+  // The views, on the heap only while their tree is up (lvui/tree_views.h).
+  struct Views {
+    lvui::TopBar status_;
+    lvui::CellText text_;
+    lvui::InputField emailView_, passwordView_;
+    lvui::HintBar hint_;
+  };
+  lvui::TreeViews<Views> v_;
 };
 
 class HomeScreen : public Screen {
@@ -124,12 +137,16 @@ class HomeScreen : public Screen {
   bool column_ = false;
   int colTop_ = 0, colVisible_ = 1, colStride_ = 3, colCarry_ = 0;
   lv_obj_t* root_ = nullptr;
-  lvui::TopBar status_;
-  lvui::CellText text_;
-  lvui::ListBox menuView_;
-  lvui::TileGrid tilesView_;
-  lvui::HintBar hint_;
   SyncGate<8> gate_;
+  // The views, on the heap only while their tree is up (lvui/tree_views.h).
+  struct Views {
+    lvui::TopBar status_;
+    lvui::CellText text_;
+    lvui::ListBox menuView_;
+    lvui::TileGrid tilesView_;
+    lvui::HintBar hint_;
+  };
+  lvui::TreeViews<Views> v_;
 };
 
 // On-device settings: the setup AP, log out, factory reset.
@@ -204,22 +221,26 @@ class SettingsScreen : public Screen {
   std::vector<ListItem> choices_;
   // LVGL: everything under frame_, which carries the screen's text size.
   lv_obj_t* frame_ = nullptr;
-  lvui::TopBar status_;
-  lvui::CellText text_;
-  lvui::ListBox listView_;  // menu_
-  lvui::TileGrid padView_;  // pad_
   // The time zone list: a title bar over a panel.
   lv_obj_t *zonePanel_ = nullptr, *zoneTitle_ = nullptr;
-  lvui::ListBox zoneView_;
   // Touch: the choice title bar and choicePad_.
   lv_obj_t *choiceRow_ = nullptr, *choiceLabel_ = nullptr;
-  lvui::TileGrid choiceView_;
-  lvui::MenuOverlay confirmView_;  // confirmBox_
-  lvui::HintBar hint_;
   // The open slider over rows [1, bottom), its backdrop over the whole screen.
   lv_obj_t* sliderHost_ = nullptr;
-  lvui::SliderBox sliderView_;
   SyncGate<5> gate_;
+  // The views, on the heap only while their tree is up (lvui/tree_views.h).
+  struct Views {
+    lvui::TopBar status_;
+    lvui::CellText text_;
+    lvui::ListBox listView_;  // menu_
+    lvui::TileGrid padView_;  // pad_
+    lvui::ListBox zoneView_;
+    lvui::TileGrid choiceView_;
+    lvui::MenuOverlay confirmView_;  // confirmBox_
+    lvui::HintBar hint_;
+    lvui::SliderBox sliderView_;
+  };
+  lvui::TreeViews<Views> v_;
 };
 
 // Wi-Fi on the device: scan, join (with a password, or a name typed for a
@@ -267,14 +288,18 @@ class WifiScreen : public Screen {
   bool added_ = false;  // the join saved a network that wasn't saved before
   std::string note_;
   bool noteError_ = false;
-  lvui::TopBar status_;
-  lvui::CellText text_;
-  lvui::ListBox listView_;
-  lvui::TileGrid padView_;
-  lvui::InputField inputView_;
-  lvui::MenuOverlay menuView_;
-  lvui::HintBar hint_;
   SyncGate<2> gate_;
+  // The views, on the heap only while their tree is up (lvui/tree_views.h).
+  struct Views {
+    lvui::TopBar status_;
+    lvui::CellText text_;
+    lvui::ListBox listView_;
+    lvui::TileGrid padView_;
+    lvui::InputField inputView_;
+    lvui::MenuOverlay menuView_;
+    lvui::HintBar hint_;
+  };
+  lvui::TreeViews<Views> v_;
 };
 
 class RoomListScreen : public Screen {
@@ -310,13 +335,17 @@ class RoomListScreen : public Screen {
   TypeFilter filter_;  // keyboards: typing narrows the rooms
   ButtonPad pad_;  // touch boards: rooms as buttons (a cursor with keys)
   bool buttons_ = false;
-  lvui::TopBar status_;
-  lvui::CellText text_;
-  lvui::ListBox listView_;
-  lvui::TileGrid padView_;
-  lvui::HintBar hint_;
-  lvui::MenuOverlay menuView_;
   SyncGate<> gate_;
+  // The views, on the heap only while their tree is up (lvui/tree_views.h).
+  struct Views {
+    lvui::TopBar status_;
+    lvui::CellText text_;
+    lvui::ListBox listView_;
+    lvui::TileGrid padView_;
+    lvui::HintBar hint_;
+    lvui::MenuOverlay menuView_;
+  };
+  lvui::TreeViews<Views> v_;
 };
 
 #if RC_FEAT_CMAIL
@@ -348,14 +377,18 @@ class CmailListScreen : public Screen {
   std::vector<std::string> ids_;
   InputLine input_;  // the username for a new conversation
   bool editing_ = false, busy_ = false;
-  lvui::TopBar status_;
-  lvui::CellText text_;
-  lvui::ListBox listView_;
-  lvui::TileGrid padView_;
-  SideNavHost navView_;
-  lvui::InputField inputView_;
-  lvui::HintBar hint_;
   SyncGate<1> gate_;
+  // The views, on the heap only while their tree is up (lvui/tree_views.h).
+  struct Views {
+    lvui::TopBar status_;
+    lvui::CellText text_;
+    lvui::ListBox listView_;
+    lvui::TileGrid padView_;
+    SideNavHost navView_;
+    lvui::InputField inputView_;
+    lvui::HintBar hint_;
+  };
+  lvui::TreeViews<Views> v_;
 };
 #endif
 
@@ -422,15 +455,19 @@ class FeedListScreen : public Screen {
   const Theme* theme_ = nullptr;  // the rows bake its colours
   unsigned themeSerial_ = ~0u;    // lvui::themeSerial() the rows bake
   int64_t nowMs_ = 0;             // the last update's, for build
-  lvui::TopBar status_;
-  lvui::EntryListBox listView_;
-  SideNavHost navView_;
-  lvui::CellText text_;
-  lvui::TextBox infoText_;
-  lvui::QrBox infoQr_;
-  lvui::HintBar hint_;
-  lvui::MenuOverlay menuView_;
   SyncGate<1> gate_;
+  // The views, on the heap only while their tree is up (lvui/tree_views.h).
+  struct Views {
+    lvui::TopBar status_;
+    lvui::EntryListBox listView_;
+    SideNavHost navView_;
+    lvui::CellText text_;
+    lvui::TextBox infoText_;
+    lvui::QrBox infoQr_;
+    lvui::HintBar hint_;
+    lvui::MenuOverlay menuView_;
+  };
+  lvui::TreeViews<Views> v_;
 };
 #endif
 
@@ -467,13 +504,17 @@ class TopicsScreen : public Screen {
   int cols_ = 0;
   const Theme* theme_ = nullptr;
   unsigned themeSerial_ = ~0u;  // lvui::themeSerial() the rows bake
-  lvui::TopBar status_;
-  lvui::EntryListBox listView_;
-  SideNavHost navView_;
-  lvui::CellText text_;
-  lvui::HintBar hint_;
-  lvui::MenuOverlay menuView_;
   SyncGate<1> gate_;
+  // The views, on the heap only while their tree is up (lvui/tree_views.h).
+  struct Views {
+    lvui::TopBar status_;
+    lvui::EntryListBox listView_;
+    SideNavHost navView_;
+    lvui::CellText text_;
+    lvui::HintBar hint_;
+    lvui::MenuOverlay menuView_;
+  };
+  lvui::TreeViews<Views> v_;
 };
 #endif
 
@@ -501,12 +542,16 @@ class MembersScreen : public Screen {
   std::vector<std::string> names_;  // usernames by row, for Select
   bool more_ = false, asked_ = false, failed_ = false;
   int64_t nowMs_ = 0;  // the last update's, for build
-  lvui::TopBar status_;
-  lvui::ListBox listView_;
-  SideNavHost navView_;
-  lvui::CellText text_;
-  lvui::HintBar hint_;
   SyncGate<1> gate_;
+  // The views, on the heap only while their tree is up (lvui/tree_views.h).
+  struct Views {
+    lvui::TopBar status_;
+    lvui::ListBox listView_;
+    SideNavHost navView_;
+    lvui::CellText text_;
+    lvui::HintBar hint_;
+  };
+  lvui::TreeViews<Views> v_;
 };
 #endif
 
@@ -568,15 +613,19 @@ class ProfileScreen : public Screen {
   int64_t builtAt_ = 0;
   unsigned themeSerial_ = ~0u;  // lvui::themeSerial() text_'s colours came from
   int64_t nowMs_ = 0;           // the last update's, for build
-  lvui::TopBar status_;
-  lvui::TextBox textView_;
-  lvui::TileGrid padView_;
   lv_obj_t* linkFocus_ = nullptr;  // the focused link's outline (keys)
-  lvui::CellText cells_;
-  lvui::QrBox qrView_;
-  lvui::HintBar hint_;
-  lvui::MenuOverlay menuView_;
   SyncGate<1> gate_;
+  // The views, on the heap only while their tree is up (lvui/tree_views.h).
+  struct Views {
+    lvui::TopBar status_;
+    lvui::TextBox textView_;
+    lvui::TileGrid padView_;
+    lvui::CellText cells_;
+    lvui::QrBox qrView_;
+    lvui::HintBar hint_;
+    lvui::MenuOverlay menuView_;
+  };
+  lvui::TreeViews<Views> v_;
 };
 #endif
 
@@ -617,13 +666,17 @@ class GuildListScreen : public Screen {
   int cols_ = 0;
   const Theme* theme_ = nullptr;
   unsigned themeSerial_ = ~0u;  // lvui::themeSerial() the rows bake
-  lvui::TopBar status_;
-  lvui::EntryListBox listView_;
-  SideNavHost navView_;
-  lvui::CellText text_;
-  lvui::HintBar hint_;
-  lvui::MenuOverlay menuView_;
   SyncGate<1> gate_;
+  // The views, on the heap only while their tree is up (lvui/tree_views.h).
+  struct Views {
+    lvui::TopBar status_;
+    lvui::EntryListBox listView_;
+    SideNavHost navView_;
+    lvui::CellText text_;
+    lvui::HintBar hint_;
+    lvui::MenuOverlay menuView_;
+  };
+  lvui::TreeViews<Views> v_;
 };
 #endif
 
@@ -678,14 +731,18 @@ class NotificationsScreen : public Screen {
   int64_t builtAt_ = 0;
   bool confirm_ = false;  // box_ asks to mark all read
   bool marking_ = false;  // a MarkAllRead is in flight
-  lvui::TopBar status_;
-  lvui::CellText text_;
-  lvui::ListBox listView_;
-  lvui::TileGrid padView_;
-  SideNavHost navView_;
-  lvui::HintBar hint_;
-  lvui::MenuOverlay menuView_;
   SyncGate<1> gate_;
+  // The views, on the heap only while their tree is up (lvui/tree_views.h).
+  struct Views {
+    lvui::TopBar status_;
+    lvui::CellText text_;
+    lvui::ListBox listView_;
+    lvui::TileGrid padView_;
+    SideNavHost navView_;
+    lvui::HintBar hint_;
+    lvui::MenuOverlay menuView_;
+  };
+  lvui::TreeViews<Views> v_;
 };
 #endif
 
@@ -699,10 +756,14 @@ class ComingSoonScreen : public Screen {
  private:
   void sync();
   std::string name_;
-  lvui::TopBar status_;
-  lvui::CellText text_;
-  lvui::HintBar hint_;
   SyncGate<> gate_;
+  // The views, on the heap only while their tree is up (lvui/tree_views.h).
+  struct Views {
+    lvui::TopBar status_;
+    lvui::CellText text_;
+    lvui::HintBar hint_;
+  };
+  lvui::TreeViews<Views> v_;
 };
 
 }  // namespace rc

@@ -108,11 +108,12 @@ void MembersScreen::hints(const char32_t*& keys, const char32_t*& touch) const {
 // ---- LVGL ----
 
 void MembersScreen::build(lv_obj_t* root) {
-  listView_.create(root);
-  navView_.create(root);
-  text_.create(root);
-  hint_.create(root);
-  status_.create(root);
+  v_.make(root);
+  v_->listView_.create(root);
+  v_->navView_.create(root);
+  v_->text_.create(root);
+  v_->hint_.create(root);
+  v_->status_.create(root);
   sync(nowMs_);
 }
 
@@ -121,7 +122,7 @@ void MembersScreen::update(int64_t nowMs) {
   // The members and the guild's name change with MembersUpdated and
   // GuildUpdated, which ui::inputSeq() counts; the store's loading flag (set
   // with no event) and the ages show with the once-a-second refresh.
-  if (gate_.due(text_.obj(), nowMs, {int64_t(app().conn)})) sync(nowMs);
+  if (gate_.due(v_->text_.obj(), nowMs, {int64_t(app().conn)})) sync(nowMs);
 }
 
 void MembersScreen::sync(int64_t nowMs) {
@@ -129,21 +130,21 @@ void MembersScreen::sync(int64_t nowMs) {
   std::u32string name;
   std::vector<ListItem> items = rows(nowMs, name);
   const bool loading = lockedFeed().with([](FeedState& s) { return s.loading; });
-  const int cols = text_.cols(), bottom = text_.rows() - 1;
-  const int nav = sideNavWidth(text_);
-  syncStatus(status_, U"members \u00b7 " + name, -1);
+  const int cols = v_->text_.cols(), bottom = v_->text_.rows() - 1;
+  const int nav = sideNavWidth(v_->text_);
+  syncStatus(v_->status_, U"members \u00b7 " + name, -1);
   const bool empty = items.empty();
   list_.setItems(std::move(items));
-  placeCells(listView_.obj(), 0, 1, cols - nav, bottom);
-  listView_.sync(list_);
-  text_.begin();
-  if (empty) text_.line(1, 2, emptyText(loading), t.dim);
-  text_.end();
-  navView_.sync(nav, 1, bottom, cols);
+  placeCells(v_->listView_.obj(), 0, 1, cols - nav, bottom);
+  v_->listView_.sync(list_);
+  v_->text_.begin();
+  if (empty) v_->text_.line(1, 2, emptyText(loading), t.dim);
+  v_->text_.end();
+  v_->navView_.sync(nav, 1, bottom, cols);
   const char32_t* keys;
   const char32_t* touch;
   hints(keys, touch);
-  syncHint(hint_, keys, touch);
+  syncHint(v_->hint_, keys, touch);
 }
 
 }  // namespace rc

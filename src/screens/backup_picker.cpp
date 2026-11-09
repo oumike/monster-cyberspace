@@ -123,6 +123,7 @@ void BackupPicker::onKey(const KeyEvent& k) {
 }
 
 void BackupPicker::build(lv_obj_t* root) {
+  v_.make(root);
   layer_ = lvui::plainBox(root);
   lv_obj_set_size(layer_, lv_pct(100), lv_pct(100));
   panel_ = lvui::plainBox(layer_);
@@ -130,10 +131,10 @@ void BackupPicker::build(lv_obj_t* root) {
   titleRow_ = lvui::plainBox(layer_);
   lvui::addStyle(titleRow_, lvui::Role::Bar);
   title_ = lvui::lineLabel(titleRow_);
-  listView_.create(layer_);
-  padView_.create(layer_);
-  hint_.create(layer_);
-  confirmView_.create(layer_);
+  v_->listView_.create(layer_);
+  v_->padView_.create(layer_);
+  v_->hint_.create(layer_);
+  v_->confirmView_.create(layer_);
   sync();
 }
 
@@ -151,33 +152,33 @@ void BackupPicker::sync() {
   lvui::place(title_, c.w, 0, (cols - 2) * c.w, c.h);
   buttons_ = board::hasTouch();
   pad_.setCursor(board::hasKeys());
-  lvui::setHidden(padView_.obj(), !buttons_);
-  lvui::setHidden(listView_.obj(), buttons_ || confirming_);
+  lvui::setHidden(v_->padView_.obj(), !buttons_);
+  lvui::setHidden(v_->listView_.obj(), buttons_ || confirming_);
   if (buttons_) {
-    lvui::setHidden(confirmView_.backdrop(), true);
+    lvui::setHidden(v_->confirmView_.backdrop(), true);
     if (confirming_) {
       lvui::setText(title_, lvui::fitCells(confirmBox_.title(), cols - 2));
       const std::vector<ListItem> rows{ListItem{U"Cancel", U""},
                                        ListItem{U"Restore", U"", ItemTone::Error}};
-      pad_.sync(padView_, rows, top + 1, bottom, false);
-      syncHint(hint_, U"\u25CF confirm  back: cancel", U"tap: confirm  back: cancel");
+      pad_.sync(v_->padView_, rows, top + 1, bottom, false);
+      syncHint(v_->hint_, U"\u25CF confirm  back: cancel", U"tap: confirm  back: cancel");
     } else {
       lvui::setText(title_, U"restore from SD");
-      pad_.sync(padView_, list_.items(), top + 1, bottom, true, 1);
-      syncHint(hint_, U"\u2191\u2193 pick  \u25CF restore  back: cancel", U"tap to restore  back: cancel");
+      pad_.sync(v_->padView_, list_.items(), top + 1, bottom, true, 1);
+      syncHint(v_->hint_, U"\u2191\u2193 pick  \u25CF restore  back: cancel", U"tap to restore  back: cancel");
     }
     return;
   }
   lvui::setText(title_, U"restore from SD");
   if (confirming_) {
-    confirmView_.setPlace(OverlayPlace::Bottom, bottom * c.h, 0, top * c.h);
-    confirmView_.sync(confirmBox_);
-    syncHint(hint_, U"\u2191\u2193 pick  \u25CF confirm  back: cancel", U"tap: confirm  outside: cancel");
+    v_->confirmView_.setPlace(OverlayPlace::Bottom, bottom * c.h, 0, top * c.h);
+    v_->confirmView_.sync(confirmBox_);
+    syncHint(v_->hint_, U"\u2191\u2193 pick  \u25CF confirm  back: cancel", U"tap: confirm  outside: cancel");
   } else {
-    confirmView_.sync(confirmBox_);
-    placeCells(listView_.obj(), 1, top + 1, cols - 2, bottom);
-    listView_.sync(list_);
-    syncHint(hint_, U"\u2191\u2193 pick  \u25CF restore  back: cancel", U"tap to restore  \u2039 cancel");
+    v_->confirmView_.sync(confirmBox_);
+    placeCells(v_->listView_.obj(), 1, top + 1, cols - 2, bottom);
+    v_->listView_.sync(list_);
+    syncHint(v_->hint_, U"\u2191\u2193 pick  \u25CF restore  back: cancel", U"tap to restore  \u2039 cancel");
   }
 }
 

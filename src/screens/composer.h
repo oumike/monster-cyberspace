@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 
+#include "lvui/tree_views.h"
 #include "lvui/views/button_rows.h"
 #include "lvui/views/cell_text.h"
 #include "lvui/views/input_field.h"
@@ -81,8 +82,6 @@ class ComposerScreen : public Screen {
 
   // LVGL views.
   lv_obj_t* root_ = nullptr;
-  lvui::TopBar status_;
-  lvui::CellText text_;          // the Body label, its count and the checkboxes
   lv_obj_t* padAbove_ = nullptr;  // the title's padding rows, on inputBg
   lv_obj_t* padBelow_ = nullptr;
   lv_obj_t* promptTap_ = nullptr;  // over "Title ", which the padding's target covers
@@ -90,12 +89,18 @@ class ComposerScreen : public Screen {
   lv_obj_t* publicTap_ = nullptr;
   lv_obj_t* nsfwTap_ = nullptr;
   FieldTap titleTap_, publicField_, nsfwField_;
-  lvui::TextBox bodyView_;
-  lvui::InputField titleView_, topicsView_, cwView_;
-  lvui::SpellBar spellView_;
-  lvui::HintBar hint_;
-  lvui::MenuOverlay menuView_;
   SyncGate<3> gate_;
+  // The views, on the heap only while their tree is up (lvui/tree_views.h).
+  struct Views {
+    lvui::TopBar status_;
+    lvui::CellText text_;          // the Body label, its count and the checkboxes
+    lvui::TextBox bodyView_;
+    lvui::InputField titleView_, topicsView_, cwView_;
+    lvui::SpellBar spellView_;
+    lvui::HintBar hint_;
+    lvui::MenuOverlay menuView_;
+  };
+  lvui::TreeViews<Views> v_;
 };
 
 // Settles a post that finished while another screen was showing: a success

@@ -187,13 +187,14 @@ void NotificationsScreen::refreshRows(int64_t nowMs) {
 }
 
 void NotificationsScreen::build(lv_obj_t* root) {
-  listView_.create(root);
-  padView_.create(root);
-  navView_.create(root);
-  text_.create(root);
-  hint_.create(root);
-  status_.create(root);
-  menuView_.create(root);
+  v_.make(root);
+  v_->listView_.create(root);
+  v_->padView_.create(root);
+  v_->navView_.create(root);
+  v_->text_.create(root);
+  v_->hint_.create(root);
+  v_->status_.create(root);
+  v_->menuView_.create(root);
   sync(0);
 }
 
@@ -201,33 +202,33 @@ void NotificationsScreen::update(int64_t nowMs) {
   // C-Mail, mentions and notices change with an event (ConversationsUpdated,
   // MentionAlert, the Feed's), which ui::inputSeq() counts; edited text shows
   // with the gate's once-a-second refresh.
-  if (gate_.due(text_.obj(), nowMs, {int64_t(app().mentions.size())})) sync(nowMs);
+  if (gate_.due(v_->text_.obj(), nowMs, {int64_t(app().mentions.size())})) sync(nowMs);
 }
 
 void NotificationsScreen::sync(int64_t nowMs) {
   const Theme& t = lvui::currentTheme();
   refreshRows(nowMs);
-  syncStatus(status_, U"unread", unreadTotal(items_));
-  const int bottom = text_.rows() - 1;
-  const int nav = buttons_ ? 0 : sideNavWidth(text_);
-  lvui::setHidden(listView_.obj(), buttons_);
-  lvui::setHidden(padView_.obj(), !buttons_);
+  syncStatus(v_->status_, U"unread", unreadTotal(items_));
+  const int bottom = v_->text_.rows() - 1;
+  const int nav = buttons_ ? 0 : sideNavWidth(v_->text_);
+  lvui::setHidden(v_->listView_.obj(), buttons_);
+  lvui::setHidden(v_->padView_.obj(), !buttons_);
   if (buttons_) {
-    pad_.sync(padView_, rows_, 2, bottom, true, 1);
+    pad_.sync(v_->padView_, rows_, 2, bottom, true, 1);
   } else {
-    placeCells(listView_.obj(), 0, 1, text_.cols() - nav, bottom);
-    listView_.sync(list_);
+    placeCells(v_->listView_.obj(), 0, 1, v_->text_.cols() - nav, bottom);
+    v_->listView_.sync(list_);
   }
-  navView_.sync(nav, 1, bottom, text_.cols());
-  text_.begin();
-  if (items_.empty()) text_.line(1, 2, "nothing unread", t.dim);
-  text_.end();
-  const lvui::Cell c = text_.cell();
-  menuView_.setPlace(OverlayPlace::BottomRight, bottom * c.h, nav * c.w, c.h);
-  menuView_.sync(box_);
+  v_->navView_.sync(nav, 1, bottom, v_->text_.cols());
+  v_->text_.begin();
+  if (items_.empty()) v_->text_.line(1, 2, "nothing unread", t.dim);
+  v_->text_.end();
+  const lvui::Cell c = v_->text_.cell();
+  v_->menuView_.setPlace(OverlayPlace::BottomRight, bottom * c.h, nav * c.w, c.h);
+  v_->menuView_.sync(box_);
   if (confirm_)
-    return syncHint(hint_, U"\u2191\u2193 pick  \u25CF choose  back: cancel", U"tap: choose  outside: cancel");
-  syncHint(hint_, U"\u2191\u2193 pick  \u25CF open  \u2190 home",
+    return syncHint(v_->hint_, U"\u2191\u2193 pick  \u25CF choose  back: cancel", U"tap: choose  outside: cancel");
+  syncHint(v_->hint_, U"\u2191\u2193 pick  \u25CF open  \u2190 home",
            buttons_ ? U"tap to open  drag to scroll" : U"tap to open  swipe to scroll");
 }
 

@@ -478,14 +478,15 @@ void FeedListScreen::hints(const char32_t*& keys, const char32_t*& touch) const 
 // ---- LVGL ----
 
 void FeedListScreen::build(lv_obj_t* root) {
-  listView_.create(root);
-  navView_.create(root);
-  text_.create(root);
-  infoText_.create(root);
-  infoQr_.create(root);
-  hint_.create(root);
-  status_.create(root);
-  menuView_.create(root);
+  v_.make(root);
+  v_->listView_.create(root);
+  v_->navView_.create(root);
+  v_->text_.create(root);
+  v_->infoText_.create(root);
+  v_->infoQr_.create(root);
+  v_->hint_.create(root);
+  v_->status_.create(root);
+  v_->menuView_.create(root);
   themeSerial_ = ~0u;
   sync(nowMs_);
 }
@@ -495,13 +496,13 @@ void FeedListScreen::update(int64_t nowMs) {
   // The lists change with FeedUpdated, SideListUpdated and GuildUpdated,
   // which ui::inputSeq() counts; the store's loading flag (set with no event)
   // and the ages show with the once-a-second refresh.
-  if (gate_.due(text_.obj(), nowMs, {int64_t(app().conn)})) sync(nowMs);
+  if (gate_.due(v_->text_.obj(), nowMs, {int64_t(app().conn)})) sync(nowMs);
 }
 
 void FeedListScreen::sync(int64_t nowMs) {
   const Theme& t = lvui::currentTheme();
-  const int cols = text_.cols(), bottom = text_.rows() - 1;
-  const int nav = sideNavWidth(text_);
+  const int cols = v_->text_.cols(), bottom = v_->text_.rows() - 1;
+  const int nav = sideNavWidth(v_->text_);
   const int listCols = cols - nav - EntryList::kBarCols;
   // The rows bake the theme's colours: lvui's theme is one object, so its
   // serial tells a change.
@@ -511,38 +512,38 @@ void FeedListScreen::sync(int64_t nowMs) {
   const bool loading = lockedFeed().with([](FeedState& s) { return s.loading; });
 
   const bool info = info_.isOpen();
-  lvui::setHidden(listView_.obj(), info);
-  text_.begin();
+  lvui::setHidden(v_->listView_.obj(), info);
+  v_->text_.begin();
   if (info) {
-    syncStatus(status_, guildTitle(), -1);
-    navView_.sync(0, 1, bottom, cols);
-    info_.sync(infoText_, text_, infoQr_, hint_);
-    text_.end();
-    menuView_.sync(box_);
+    syncStatus(v_->status_, guildTitle(), -1);
+    v_->navView_.sync(0, 1, bottom, cols);
+    info_.sync(v_->infoText_, v_->text_, v_->infoQr_, v_->hint_);
+    v_->text_.end();
+    v_->menuView_.sync(box_);
     return;
   }
-  lvui::setHidden(infoText_.obj(), true);
-  lvui::setHidden(infoQr_.obj(), true);
-  syncStatus(status_, title(), -1, true);
+  lvui::setHidden(v_->infoText_.obj(), true);
+  lvui::setHidden(v_->infoQr_.obj(), true);
+  syncStatus(v_->status_, title(), -1, true);
   const TextSize ts = app().cfg.textSize;
   const bool big = !palette_ && nav == 0;
   if (!big) list_.setBigHeads(0, 0, 0);
   else list_.setBigHeads(cellSize(ts).h, bigCellSize(ts).h, headCols());
-  listView_.setHeadFont(big ? lvui::font(ts, true) : nullptr);
+  v_->listView_.setHeadFont(big ? lvui::font(ts, true) : nullptr);
   // The box's last column holds the scroll bar, which the outline stops short of.
-  placeCells(listView_.obj(), 0, 1, listCols + EntryList::kBarCols, bottom);
-  listView_.sync(list_);
-  if (empty_) text_.line(1, composeRow_ ? 3 : 2, withMenuKey(emptyText(loading)), t.dim);
-  text_.end();
-  navView_.sync(nav, 1, bottom, cols);
+  placeCells(v_->listView_.obj(), 0, 1, listCols + EntryList::kBarCols, bottom);
+  v_->listView_.sync(list_);
+  if (empty_) v_->text_.line(1, composeRow_ ? 3 : 2, withMenuKey(emptyText(loading)), t.dim);
+  v_->text_.end();
+  v_->navView_.sync(nav, 1, bottom, cols);
 
-  const lvui::Cell c = text_.cell();
-  menuView_.setPlace(OverlayPlace::BottomRight, bottom * c.h, nav * c.w, c.h);
-  menuView_.sync(box_);
+  const lvui::Cell c = v_->text_.cell();
+  v_->menuView_.setPlace(OverlayPlace::BottomRight, bottom * c.h, nav * c.w, c.h);
+  v_->menuView_.sync(box_);
   const char32_t* keys;
   const char32_t* touch;
   hints(keys, touch);
-  syncHint(hint_, keys, touch);
+  syncHint(v_->hint_, keys, touch);
 }
 
 }  // namespace rc

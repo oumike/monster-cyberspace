@@ -153,25 +153,26 @@ const char* TopicsScreen::emptyText() const {
 // ---- LVGL ----
 
 void TopicsScreen::build(lv_obj_t* root) {
-  listView_.create(root);
-  navView_.create(root);
-  text_.create(root);
-  hint_.create(root);
-  status_.create(root);
-  menuView_.create(root);
+  v_.make(root);
+  v_->listView_.create(root);
+  v_->navView_.create(root);
+  v_->text_.create(root);
+  v_->hint_.create(root);
+  v_->status_.create(root);
+  v_->menuView_.create(root);
   themeSerial_ = ~0u;
   sync();
 }
 
 void TopicsScreen::update(int64_t nowMs) {
   // The topics change with TopicsUpdated, which ui::inputSeq() counts.
-  if (gate_.due(text_.obj(), nowMs, {int64_t(app().conn)})) sync();
+  if (gate_.due(v_->text_.obj(), nowMs, {int64_t(app().conn)})) sync();
 }
 
 void TopicsScreen::sync() {
   const Theme& t = lvui::currentTheme();
-  const int cols = text_.cols(), bottom = text_.rows() - 1;
-  const int nav = sideNavWidth(text_);
+  const int cols = v_->text_.cols(), bottom = v_->text_.rows() - 1;
+  const int nav = sideNavWidth(v_->text_);
   const int listCols = cols - nav - EntryList::kBarCols;
   // The rows bake the theme's colours; lvui's theme is one object, so its
   // serial tells a change.
@@ -179,27 +180,27 @@ void TopicsScreen::sync() {
   themeSerial_ = lvui::themeSerial();
   refresh(listCols, t, sameTheme);
 
-  syncStatus(status_, U"Topics", -1, true);
+  syncStatus(v_->status_, U"Topics", -1, true);
   const TextSize ts = app().cfg.textSize;
   const bool big = !palette_ && nav == 0;
   if (!big) list_.setBigHeads(0, 0, 0);
   else list_.setBigHeads(cellSize(ts).h, bigCellSize(ts).h, headCols());
-  listView_.setHeadFont(big ? lvui::font(ts, true) : nullptr);
+  v_->listView_.setHeadFont(big ? lvui::font(ts, true) : nullptr);
   // The box's last column holds the scroll bar, which the outline stops short of.
-  placeCells(listView_.obj(), 0, 1, listCols + EntryList::kBarCols, bottom);
-  listView_.sync(list_);
-  text_.begin();
-  if (list_.size() == 0) text_.line(1, 2, withMenuKey(emptyText()), t.dim);
-  text_.end();
-  navView_.sync(nav, 1, bottom, cols);
+  placeCells(v_->listView_.obj(), 0, 1, listCols + EntryList::kBarCols, bottom);
+  v_->listView_.sync(list_);
+  v_->text_.begin();
+  if (list_.size() == 0) v_->text_.line(1, 2, withMenuKey(emptyText()), t.dim);
+  v_->text_.end();
+  v_->navView_.sync(nav, 1, bottom, cols);
 
-  const lvui::Cell c = text_.cell();
-  menuView_.setPlace(OverlayPlace::BottomRight, bottom * c.h, nav * c.w, c.h);
-  menuView_.sync(box_);
+  const lvui::Cell c = v_->text_.cell();
+  v_->menuView_.setPlace(OverlayPlace::BottomRight, bottom * c.h, nav * c.w, c.h);
+  v_->menuView_.sync(box_);
   if (palette_)
-    syncHint(hint_, U"\u2191\u2193 pick  \u25CF choose  back: close", U"tap: choose  outside: close");
+    syncHint(v_->hint_, U"\u2191\u2193 pick  \u25CF choose  back: close", U"tap: choose  outside: close");
   else
-    syncHint(hint_, U"\u2191\u2193 pick  \u25CF open  \u2190 feed  ctrl cmds", U"tap to open");
+    syncHint(v_->hint_, U"\u2191\u2193 pick  \u25CF open  \u2190 feed  ctrl cmds", U"tap to open");
 }
 
 }  // namespace rc

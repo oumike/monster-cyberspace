@@ -8,6 +8,7 @@
 #include "lvui/host.h"
 #include "lvui/input.h"
 #include "lvui/lv_init.h"
+#include "lvui/tree_views.h"
 
 namespace {
 
@@ -74,6 +75,60 @@ void test_host_build_failure_keeps_previous() {
   host.rebuild();
   TEST_ASSERT_EQUAL(2, builds);
   TEST_ASSERT_EQUAL(children, lv_obj_get_child_count(lv_screen_active()));
+}
+
+// Boards without PSRAM: the old tree goes before the new one is built, so
+// two never stand at once. A build that doesn't fit leaves no tree; the
+// caller builds the old screen again.
+void test_host_replace_first() {
+  lvui::ScreenHost::setReplaceFirst(true);
+  lvui::ScreenHost host;
+  const uint32_t before = lv_obj_get_child_count(lv_screen_active());
+  TEST_ASSERT_TRUE(host.show([](lv_obj_t* root) { lv_label_create(root); }));
+  lv_obj_t* old = host.root();
+  bool oldGone = false;
+  lv_obj_add_event_cb(
+      old, [](lv_event_t* e) { *static_cast<bool*>(lv_event_get_user_data(e)) = true; }, LV_EVENT_DELETE,
+      &oldGone);
+  TEST_ASSERT_TRUE(host.show([&](lv_obj_t*) { TEST_ASSERT_TRUE(oldGone); }));
+  TEST_ASSERT_EQUAL(before + 1, lv_obj_get_child_count(lv_screen_active()));
+
+  // A rebuild of the same screen still builds beside: out of memory keeps it.
+  lv_obj_t* kept = host.root();
+  starved = true;
+  host.rebuild();
+  TEST_ASSERT_EQUAL_PTR(kept, host.root());
+  starved = false;
+
+  TEST_ASSERT_FALSE(host.show([](lv_obj_t*) { starved = true; }));
+  TEST_ASSERT_NULL(host.root());
+  TEST_ASSERT_EQUAL(before, lv_obj_get_child_count(lv_screen_active()));
+  TEST_ASSERT_NOT_NULL(findOom());
+  starved = false;
+  lvui::ScreenHost::setReplaceFirst(false);
+}
+
+// A screen's views live while their tree does: the newest tree's are current,
+// and when a new tree is thrown away the previous one's come back.
+void test_tree_views_follow_their_tree() {
+  struct Views {
+    int n = 0;
+  };
+  lvui::TreeViews<Views> v;
+  TEST_ASSERT_NULL(v.get());
+  lv_obj_t* a = lv_obj_create(lv_screen_active());
+  v.make(a).n = 1;
+  lv_obj_t* b = lv_obj_create(lv_screen_active());
+  v.make(b).n = 2;
+  TEST_ASSERT_EQUAL(2, v->n);
+  lv_obj_delete(b);  // the new tree didn't fit
+  TEST_ASSERT_EQUAL(1, v->n);
+  lv_obj_t* c = lv_obj_create(lv_screen_active());
+  v.make(c).n = 3;
+  lv_obj_delete(a);  // the old tree goes once the new one fits
+  TEST_ASSERT_EQUAL(3, v->n);
+  lv_obj_delete(c);
+  TEST_ASSERT_NULL(v.get());
 }
 
 void test_emit_reaches_sink() {
@@ -147,6 +202,8 @@ void test_assert_reaches_handler() {
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_host_build_failure_keeps_previous);
+  RUN_TEST(test_host_replace_first);
+  RUN_TEST(test_tree_views_follow_their_tree);
   RUN_TEST(test_emit_reaches_sink);
   RUN_TEST(test_oom_label_survives_layer_clean);
   RUN_TEST(test_pointer_made_once);

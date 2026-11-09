@@ -960,6 +960,7 @@ const Slider* SettingsScreen::openSlider() const {
 }
 
 void SettingsScreen::build(lv_obj_t* root) {
+  v_.make(root);
   // The screen's text size, as ui_task picks it for a compactText() screen.
   TextSize only;
   const std::optional<TextSize> fixed =
@@ -968,37 +969,37 @@ void SettingsScreen::build(lv_obj_t* root) {
   lv_obj_set_size(frame_, lv_pct(100), lv_pct(100));
   lv_obj_set_style_text_font(frame_, lvui::fontFor(RC_LOW_MEM ? TextSize::Comfortable : TextSize::Compact, fixed),
                              0);
-  padView_.create(frame_);
-  listView_.create(frame_);
+  v_->padView_.create(frame_);
+  v_->listView_.create(frame_);
   // Over the buttons, as the grid draws the header lines after them.
-  text_.create(frame_);
+  v_->text_.create(frame_);
   zonePanel_ = lvui::plainBox(frame_);
   lvui::addStyle(zonePanel_, lvui::Role::Screen);
   zoneTitle_ = lvui::plainBox(frame_);
   lvui::addStyle(zoneTitle_, lvui::Role::Bar);
   lv_obj_t* zoneLabel = lvui::lineLabel(zoneTitle_);
   lvui::setText(zoneLabel, U"time zone");
-  zoneView_.create(frame_);
+  v_->zoneView_.create(frame_);
   choiceRow_ = lvui::plainBox(frame_);
   lvui::addStyle(choiceRow_, lvui::Role::Bar);
   choiceLabel_ = lvui::lineLabel(choiceRow_);
-  choiceView_.create(frame_);
-  hint_.create(frame_);
+  v_->choiceView_.create(frame_);
+  v_->hint_.create(frame_);
   picker_.build(frame_);
-  status_.create(frame_);
+  v_->status_.create(frame_);
   // Over the status bar: the grid's overlay backdrop takes the whole screen.
-  confirmView_.create(frame_);
+  v_->confirmView_.create(frame_);
   // Last: a slider's backdrop takes every tap, the status bar's too.
   sliderHost_ = lvui::plainBox(frame_);
   lv_obj_set_size(sliderHost_, lv_pct(100), lv_pct(100));
-  sliderView_.create(sliderHost_);
+  v_->sliderView_.create(sliderHost_);
   sync();
 }
 
 void SettingsScreen::update(int64_t nowMs) {
   const AppState& a = app();
   // The time lines and the Firmware row follow within the gate's second.
-  if (gate_.due(text_.obj(), nowMs,
+  if (gate_.due(v_->text_.obj(), nowMs,
                 {wifiUp(), setupApUp(), a.auth, static_cast<int64_t>(std::hash<std::string>{}(a.user)),
                  batteryShown()}))
     sync();
@@ -1006,7 +1007,7 @@ void SettingsScreen::update(int64_t nowMs) {
 
 void SettingsScreen::sync() {
   const Theme& t = lvui::currentTheme();
-  syncStatus(status_, U"settings", -1);
+  syncStatus(v_->status_, U"settings", -1);
   picker_.sync();
   const bool pickerOpen = picker_.isOpen();
   buttons_ = board::hasTouch();
@@ -1022,20 +1023,20 @@ void SettingsScreen::sync() {
   const bool confirm = page && !slider && !picking_ && confirm_ != Confirm::None;
   const bool menu = page && !buttons_ && !zone && !confirm;
   lvui::setHidden(choiceRow_, !choiceButtons);
-  lvui::setHidden(choiceView_.obj(), !choiceButtons);
-  lvui::setHidden(text_.obj(), !page);
-  lvui::setHidden(padView_.obj(), !page || !buttons_);
-  lvui::setHidden(listView_.obj(), !menu);
+  lvui::setHidden(v_->choiceView_.obj(), !choiceButtons);
+  lvui::setHidden(v_->text_.obj(), !page);
+  lvui::setHidden(v_->padView_.obj(), !page || !buttons_);
+  lvui::setHidden(v_->listView_.obj(), !menu);
   lvui::setHidden(zonePanel_, !zone);
   lvui::setHidden(zoneTitle_, !zone);
-  lvui::setHidden(zoneView_.obj(), !zone);
-  lvui::setHidden(hint_.obj(), pickerOpen);
+  lvui::setHidden(v_->zoneView_.obj(), !zone);
+  lvui::setHidden(v_->hint_.obj(), pickerOpen);
   lvui::setHidden(sliderHost_, !page || !slider);
-  if (!confirm) lvui::setHidden(confirmView_.backdrop(), true);
+  if (!confirm) lvui::setHidden(v_->confirmView_.backdrop(), true);
   if (pickerOpen) return;
 
-  const lvui::Cell c = text_.cell();
-  const int cols = text_.cols(), bottom = text_.rows() - 1;
+  const lvui::Cell c = v_->text_.cell();
+  const int cols = v_->text_.cols(), bottom = v_->text_.rows() - 1;
   if (choiceButtons) {
     // The choices as buttons over the whole screen, under a title bar: one
     // column when two would cut the labels.
@@ -1048,8 +1049,8 @@ void SettingsScreen::sync() {
     const int columns = ButtonPad::columns();
     const int fit = (cols - 1) / columns - 3;  // inside one button of `columns`
     choicePad_.setCursor(board::hasKeys());
-    choicePad_.sync(choiceView_, choices_, top + 1, bottom, false, labelW <= fit ? columns : 1);
-    syncHint(hint_, U"\u2191\u2193 pick  \u25CF set  back: cancel", U"tap to select  back: cancel");
+    choicePad_.sync(v_->choiceView_, choices_, top + 1, bottom, false, labelW <= fit ? columns : 1);
+    syncHint(v_->hint_, U"\u2191\u2193 pick  \u25CF set  back: cancel", U"tap to select  back: cancel");
     return;
   }
 
@@ -1059,17 +1060,17 @@ void SettingsScreen::sync() {
   const timesvc::Snapshot ts = timesvc::snapshot();
   std::vector<ListItem> rows = itemRows(items, buttons_, ap, ts);
   const int menuTop = menuTopRow(bottom, nItems);
-  const bool narrow = narrowGrid(text_);
+  const bool narrow = narrowGrid(v_->text_);
   const int valueW = cols - 11 - (buttons_ ? 1 : 0);  // clear of the scroll bar
   const std::vector<StatusField> fields = statusFields(t, ap, ts);
   auto put = [&](int row, const char* label, const std::u32string& line, uint16_t fg) {
-    if (label && *label) text_.line(1, row, std::string_view(label), t.dim);
-    text_.line(11, row, line, fg, valueW);
+    if (label && *label) v_->text_.line(1, row, std::string_view(label), t.dim);
+    v_->text_.line(11, row, line, fg, valueW);
   };
-  text_.begin();
+  v_->text_.begin();
   if (buttons_) {
     const int header = layoutStatus(fields, narrow, valueW, 0, 0, put) + 1;  // and a blank row
-    pad_.sync(padView_, rows, 1, bottom, true, 0, header);
+    pad_.sync(v_->padView_, rows, 1, bottom, true, 0, header);
     layoutStatus(fields, narrow, valueW, pad_.headerShift(), bottom, put);
   } else {
     layoutStatus(fields, narrow, valueW, 0, menuTop, put);
@@ -1079,49 +1080,49 @@ void SettingsScreen::sync() {
     }
     menu_.setItems(std::move(rows));
   }
-  text_.end();
+  v_->text_.end();
   if (menu) {
-    placeCells(listView_.obj(), 1, menuTop, cols - 2, bottom);
-    listView_.sync(menu_);
+    placeCells(v_->listView_.obj(), 1, menuTop, cols - 2, bottom);
+    v_->listView_.sync(menu_);
   }
 
   if (slider) {
     // The box centred over rows [1, bottom), its backdrop over everything.
-    lv_obj_t* back = sliderView_.backdrop();
+    lv_obj_t* back = v_->sliderView_.backdrop();
     lv_obj_set_style_pad_top(back, c.h, 0);
     lv_obj_set_style_pad_bottom(back, std::max(0, int(lv_obj_get_height(frame_)) - bottom * c.h), 0);
-    sliderView_.sync(*slider);
+    v_->sliderView_.sync(*slider);
     if (slider == &volume_)
-      syncHint(hint_, U"\u2190\u2192 volume  \u25CF set  back: cancel", U"tap the bar  Set or Cancel");
+      syncHint(v_->hint_, U"\u2190\u2192 volume  \u25CF set  back: cancel", U"tap the bar  Set or Cancel");
     else if (slider == &ledLevel_)
-      syncHint(hint_, U"\u2190\u2192 LED brightness  \u25CF set  back: cancel", U"tap a stop  Set or Cancel");
+      syncHint(v_->hint_, U"\u2190\u2192 LED brightness  \u25CF set  back: cancel", U"tap a stop  Set or Cancel");
     else if (slider == &brightness_)
-      syncHint(hint_, U"\u2190\u2192 brightness  \u25CF set  back: cancel", U"tap the bar  Set or Cancel");
+      syncHint(v_->hint_, U"\u2190\u2192 brightness  \u25CF set  back: cancel", U"tap the bar  Set or Cancel");
     else
-      syncHint(hint_, U"\u2190\u2192 size  \u25CF set  back: cancel", U"tap the bar  Set or Cancel");
+      syncHint(v_->hint_, U"\u2190\u2192 size  \u25CF set  back: cancel", U"tap the bar  Set or Cancel");
   } else if (zone) {
     // Over the status lines and the menu, below the status bar.
     const int top = 1;
     placeCells(zoneTitle_, 0, top, cols, top + 1);
     lvui::place(lv_obj_get_child(zoneTitle_, 0), c.w, 0, std::max(0, cols - 2) * c.w, c.h);
     placeCells(zonePanel_, 0, top + 1, cols, bottom);
-    placeCells(zoneView_.obj(), 1, top + 1, cols - 2, bottom);
-    zoneView_.sync(zoneList_);
-    syncHint(hint_, U"\u2191\u2193 pick  \u25CF set  back: cancel", U"tap to select");
+    placeCells(v_->zoneView_.obj(), 1, top + 1, cols - 2, bottom);
+    v_->zoneView_.sync(zoneList_);
+    syncHint(v_->hint_, U"\u2191\u2193 pick  \u25CF set  back: cancel", U"tap to select");
   } else if (confirm) {
     // The pickers are centred boxes; the bottom
     // strip only has room for a two-row confirm.
     const bool pick = confirmPicks();
-    confirmView_.setPlace(pick ? OverlayPlace::Centre : OverlayPlace::Bottom, bottom * c.h, 0, c.h);
-    confirmView_.sync(confirmBox_);
+    v_->confirmView_.setPlace(pick ? OverlayPlace::Centre : OverlayPlace::Bottom, bottom * c.h, 0, c.h);
+    v_->confirmView_.sync(confirmBox_);
     if (pick)
-      syncHint(hint_, U"\u2191\u2193 pick  \u25CF set  back: cancel", U"tap: select  outside: cancel");
+      syncHint(v_->hint_, U"\u2191\u2193 pick  \u25CF set  back: cancel", U"tap: select  outside: cancel");
     else
-      syncHint(hint_, U"\u2191\u2193 pick  \u25CF confirm  back: cancel", U"tap: confirm  outside: cancel");
+      syncHint(v_->hint_, U"\u2191\u2193 pick  \u25CF confirm  back: cancel", U"tap: confirm  outside: cancel");
   } else if (buttons_) {
-    syncHint(hint_, U"", U"tap to select  drag to scroll");
+    syncHint(v_->hint_, U"", U"tap to select  drag to scroll");
   } else {
-    syncHint(hint_, U"\u2191\u2193 pick  \u25CF select  back: home", U"tap to select");
+    syncHint(v_->hint_, U"\u2191\u2193 pick  \u25CF select  back: home", U"tap to select");
   }
 }
 

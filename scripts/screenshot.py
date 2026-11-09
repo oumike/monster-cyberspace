@@ -11,6 +11,8 @@ buffer only: nothing on the device or the network is touched.
 
 Needs pyserial; PlatformIO's Python has it (the python beside the pio executable).
 The port opens with DTR and RTS low, so boards on a USB-serial chip don't reset.
+Boards without PSRAM (the Cardputer ADV) draw in strips and keep no frame: the
+device says so and the script exits.
 """
 import argparse
 import hashlib
@@ -65,6 +67,8 @@ def grab(s, timeout=30.0):
             return None
         if line.startswith(b"@@SHOT "):
             break
+        if line.startswith(b"@@NOSHOT"):
+            sys.exit("no screenshot: " + line[len(b"@@NOSHOT"):].decode(errors="replace").strip())
     w, h = (int(v) for v in line.split()[1:3])
     want, raw, pixels = w * h, bytearray(), bytearray()
     got = 0

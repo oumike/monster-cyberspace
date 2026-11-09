@@ -7,6 +7,7 @@
 
 #include "hal/board.h"
 #include "lvui/display.h"
+#include "lvui/host.h"
 #include "lvui/input.h"
 #include "lvui/lv_init.h"
 
@@ -22,6 +23,17 @@ uint32_t ms() { return millis(); }
   abort();
 }
 
+#ifndef BOARD_HAS_PSRAM
+// No PSRAM: LVGL draws into a strip this many rows tall, not a whole frame,
+// and builds one screen tree at a time.
+#ifndef RC_LV_STRIP_ROWS
+#define RC_LV_STRIP_ROWS 10
+#endif
+constexpr int kStripRows = RC_LV_STRIP_ROWS;
+#else
+constexpr int kStripRows = 0;
+#endif
+
 }  // namespace
 
 // e-paper boards (board::eink) pack the RGB565 frame to 1 bit in pushRows,
@@ -30,7 +42,9 @@ void lvglBegin(bool (*readTouch)(int16_t& x, int16_t& y)) {
   lvui::setAssertHandler(assertFailed);
   lvui::setTickSource(ms);
   lvui::init();
-  lv_display_t* d = lvui::displayBegin({board::panelWidth(), board::panelHeight(), board::pushRows});
+  // No PSRAM: one tree at a time, so a screen change needs room for one.
+  lvui::ScreenHost::setReplaceFirst(kStripRows > 0);
+  lv_display_t* d = lvui::displayBegin({board::panelWidth(), board::panelHeight(), board::pushRows, kStripRows});
   if (board::hasTouch()) lvui::pointerBegin(readTouch);
   // The UI task calls lv_timer_handler once a frame: refresh and read on
   // every call, not only when LVGL's own period has run out.

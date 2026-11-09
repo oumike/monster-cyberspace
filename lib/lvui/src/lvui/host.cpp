@@ -74,6 +74,12 @@ void ScreenHost::setFreeProbe(size_t (*probe)()) { freeProbe = probe ? probe : l
 
 void ScreenHost::setReplaceFirst(bool on) { replaceFirst = on; }
 
+bool ScreenHost::roomFor(size_t bytes) {
+  if (freeProbe() >= bytes + kMinFree) return true;
+  showOom();
+  return false;
+}
+
 bool ScreenHost::show(const std::function<void(lv_obj_t*)>& build) { return show(build, replaceFirst); }
 
 bool ScreenHost::show(const std::function<void(lv_obj_t*)>& build, bool replace) {

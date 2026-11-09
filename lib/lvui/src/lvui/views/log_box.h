@@ -46,13 +46,13 @@ class LogBox : public RowGestures::Rows {
  private:
   struct SpanCell {
     lv_obj_t* label;
-    std::u32string text;
     uint16_t fg;
     bool bold;
   };
   struct Row {
     lv_obj_t* obj;
-    std::vector<SpanCell> spans;  // labels made so far; those past `used` hidden
+    // Labels made so far; those past `used` hidden (deleted with RC_LOW_MEM).
+    std::vector<SpanCell> spans;
     int used;
     bool mention;
     int msg;

@@ -1,5 +1,7 @@
 #include "lvui/views/log_box.h"
 
+#include <cstring>
+
 #include "lvui/cell_font.h"
 #include "lvui/styles.h"
 #include "util/utf8.h"
@@ -49,16 +51,15 @@ void LogBox::fill(Row& row, const rc::DisplayLine* l) {
     const rc::Span& s = l->spans[i];
     if (i == static_cast<int>(row.spans.size())) {
       lv_obj_t* lab = lineLabel(row.obj);
-      row.spans.push_back(SpanCell{lab, {}, 0, false});
+      row.spans.push_back(SpanCell{lab, 0, false});
       lv_obj_set_style_text_color(lab, color(s.fg), LV_PART_MAIN);
       row.spans.back().fg = s.fg;
     }
     SpanCell& c = row.spans[i];
     setHidden(c.label, false);
-    if (c.text != s.text) {
-      c.text = s.text;
-      lv_label_set_text(c.label, rc::u32ToUtf8(c.text).c_str());
-    }
+    // The label's own text is the only copy kept.
+    const std::string text = rc::u32ToUtf8(s.text);
+    if (std::strcmp(lv_label_get_text(c.label), text.c_str()) != 0) lv_label_set_text(c.label, text.c_str());
     if (c.fg != s.fg) {
       c.fg = s.fg;
       lv_obj_set_style_text_color(c.label, color(s.fg), LV_PART_MAIN);
@@ -71,7 +72,13 @@ void LogBox::fill(Row& row, const rc::DisplayLine* l) {
         lv_obj_remove_local_style_prop(c.label, LV_STYLE_TEXT_FONT, LV_PART_MAIN);
     }
   }
+#if RC_LOW_MEM
+  // No spare labels kept hidden for a longer line later.
+  for (int i = static_cast<int>(row.spans.size()) - 1; i >= n; --i) lv_obj_delete(row.spans[i].label);
+  if (static_cast<int>(row.spans.size()) > n) row.spans.resize(n);
+#else
   for (int i = n; i < row.used; ++i) setHidden(row.spans[i].label, true);
+#endif
   row.used = n;
   const bool mention = l && l->mentionTint;
   if (mention != row.mention) {

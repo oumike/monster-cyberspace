@@ -41,6 +41,9 @@ class ScreenHost {
   // (without PSRAM, no more than the internal heap has free), or "plenty"
   // with the C library allocator, which can't report it.
   static void setFreeProbe(size_t (*probe)());
+  // Something else (a layer over the screen) about to make `bytes` of
+  // objects: true when that leaves kMinFree; false shows "Out of memory".
+  static bool roomFor(size_t bytes);
   static void setReplaceFirst(bool on);
 
  private:

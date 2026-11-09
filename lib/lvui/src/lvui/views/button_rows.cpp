@@ -44,11 +44,7 @@ void SpellBar::create(lv_obj_t* parent) {
   bar_ = plainBox(parent);
   lv_obj_set_width(bar_, lv_pct(100));
   lv_obj_set_height(bar_, cellOf(bar_).h);
-  for (lv_obj_t*& o : opts_) {
-    o = lineLabel(bar_);
-    addTap(o, this);
-    lv_obj_add_flag(o, LV_OBJ_FLAG_HIDDEN);
-  }
+  for (lv_obj_t*& o : opts_) o = nullptr;
   setHidden(bar_, true);
   count_ = -1;
 }
@@ -58,6 +54,15 @@ void SpellBar::sync(rc::SpellStrip& strip) {
   if (!strip.visible()) {
     count_ = -1;
     return;
+  }
+  // The options are made the first time there are any: boards without
+  // spell check (and most trees) never show the bar.
+  if (!opts_[0]) {
+    for (lv_obj_t*& o : opts_) {
+      o = lineLabel(bar_);
+      addTap(o, this);
+      lv_obj_add_flag(o, LV_OBJ_FLAG_HIDDEN);
+    }
   }
   const Cell c = cellOf(bar_);
   if (c.w <= 0) return;

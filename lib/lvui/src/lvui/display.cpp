@@ -90,6 +90,15 @@ lv_display_t* displayBegin(const DisplayConfig& cfg) {
   setBuffers(cfg.w);
   lv_display_set_flush_cb(disp, flush);
   if (stripRows > 0) lv_display_add_event_cb(disp, widen, LV_EVENT_INVALIDATE_AREA, nullptr);
+#if !LV_USE_THEME_DEFAULT
+  // Without the default theme (boards without PSRAM, to save its memory),
+  // the screen looks as the theme's light mode made it. Everything else
+  // lvui makes sets its own styles.
+  lv_obj_t* scr = lv_display_get_screen_active(disp);
+  lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, LV_PART_MAIN);
+  lv_obj_set_style_bg_color(scr, lv_palette_lighten(LV_PALETTE_GREY, 4), LV_PART_MAIN);
+  lv_obj_set_style_text_color(scr, lv_palette_darken(LV_PALETTE_GREY, 4), LV_PART_MAIN);
+#endif
   return disp;
 }
 

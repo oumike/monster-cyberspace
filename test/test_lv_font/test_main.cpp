@@ -165,6 +165,7 @@ void test_label_draws_cell_pixels() {
   lv_display_set_flush_cb(disp, copyFlush);
   lv_obj_t* scr = lv_display_get_screen_active(disp);
   lv_obj_set_style_bg_color(scr, lv_color_black(), 0);
+  lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, 0);  // the default theme's, which boards without PSRAM leave out
   lv_obj_t* label = lv_label_create(scr);
   lv_obj_set_style_text_font(label, lvui::font(TextSize::Comfortable), 0);
   lv_obj_set_style_text_color(label, lv_color_white(), 0);

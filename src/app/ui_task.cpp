@@ -22,6 +22,7 @@
 #include "lvui/cell_font.h"
 #include "lvui/display.h"
 #include "lvui/input.h"
+#include "lvui/host.h"
 #include "lvui/styles.h"
 #include "lvui/views/banner.h"
 #include "lvui/views/button_rows.h"
@@ -191,57 +192,76 @@ struct HelpTap : lvui::Tappable {
   void tapped(lv_obj_t*, bool) override { lvui::emit(KeyEvent{Action::KeysHelp}); }
 } helpTap;
 
+// F10's keys: a box over the area, and its text.
+struct Help {
+  lv_obj_t* box = nullptr;
+  lvui::CellText text;
+};
+
 // What the UI task draws over every screen, on lv_layer_top(): in `area`
 // (the screen above the keyboard) the emoji tray, the canned picker, F10's
-// keys and the banner; the docked keyboard below it; the screensaver over
-// all; and the last image before sleep or power off.
+// keys and the banner, in that order from the bottom (the canned picker
+// comes to the front each time it opens); the docked keyboard below it; the
+// screensaver over all; and the last image before sleep or power off.
+// The tray, the picker, the keys and the keyboard exist only while they are
+// open (syncLayers, relayout), for the memory they would hold.
 struct Layers {
   lv_obj_t* root = nullptr;
   lv_obj_t* area = nullptr;
-  lvui::SymbolBox symbols;
-  lvui::MenuOverlay canned;
-  lv_obj_t* help = nullptr;
-  lvui::CellText helpText;
+  std::unique_ptr<lvui::SymbolBox> symbols;
+  std::unique_ptr<lvui::MenuOverlay> canned;
+  std::unique_ptr<Help> help;
   lvui::Banner banner;
   lv_obj_t* oskBox = nullptr;
-  lvui::Keyboard keyboard;
+  std::unique_ptr<lvui::Keyboard> keyboard;
   lv_obj_t* saver = nullptr;
   lvui::CellText saverText;
   lv_obj_t* last = nullptr;
   lvui::CellText lastText;
+  // The grid the area holds, for the parts made later.
+  int cols = 1, rows = 1;
+  lvui::Cell cell{};
 };
 std::unique_ptr<Layers> layers;
+// What opening the tray, the picker or the keys needs free; less and it
+// says "Out of memory" instead (lvui::ScreenHost::roomFor).
+constexpr size_t kLayerBytes = 8192;
 
 int displayW() { return int(lv_display_get_horizontal_resolution(lv_display_get_default())); }
 int displayH() { return int(lv_display_get_vertical_resolution(lv_display_get_default())); }
 
 // The function keys' table: a centred box over the area.
-void buildHelp(Layers& L, int cols, int rows, lvui::Cell c) {
+void buildHelp(Layers& L) {
+  const int cols = L.cols, rows = L.rows;
+  const lvui::Cell c = L.cell;
   const Theme& t = currentTheme();
-  L.help = lvui::plainBox(L.area);
-  lv_obj_set_size(L.help, lv_pct(100), lv_pct(100));
-  lvui::addTap(L.help, &helpTap);
+  L.help = std::make_unique<Help>();
+  Help& H = *L.help;
+  H.box = lvui::plainBox(L.area);
+  // Under the banner, as when everything was made at once.
+  lv_obj_move_to_index(H.box, lv_obj_get_index(L.banner.obj()));
+  lv_obj_set_size(H.box, lv_pct(100), lv_pct(100));
+  lvui::addTap(H.box, &helpTap);
   size_t count = 0;
   const FunctionKey* keys = board::functionKeys(count);
   const int n = int(count);
   // The title and the keys, with a blank row above and below when they fit.
   const int content = n + 1, pad = rows >= content + 2 ? 1 : 0;
   const int w = std::max(1, std::min(cols - 2, 27)), h = std::max(1, std::min(rows, content + 2 * pad));
-  lv_obj_t* frame = lvui::plainBox(L.help);
+  lv_obj_t* frame = lvui::plainBox(H.box);
   lvui::addStyle(frame, lvui::Role::Screen);
   lv_obj_set_style_border_color(frame, lvui::color(t.dim), LV_PART_MAIN);
   lv_obj_set_style_border_width(frame, 1, LV_PART_MAIN);
   lv_obj_set_style_border_post(frame, true, LV_PART_MAIN);
   lvui::place(frame, std::max(0, (cols - w) / 2) * c.w, std::max(0, (rows - h) / 2) * c.h, w * c.w, h * c.h);
-  L.helpText.create(frame);
-  L.helpText.begin();
-  L.helpText.line(2, pad, std::u32string_view(U"function keys"), t.fg, w - 4);
+  H.text.create(frame);
+  H.text.begin();
+  H.text.line(2, pad, std::u32string_view(U"function keys"), t.fg, w - 4);
   for (int i = 0; i < n && pad + 1 + i < h; ++i) {
-    L.helpText.line(2, pad + 1 + i, std::u32string_view(keys[i].key), t.selectBg, 5);
-    L.helpText.line(8, pad + 1 + i, std::u32string_view(keys[i].label), t.fg, w - 10);
+    H.text.line(2, pad + 1 + i, std::u32string_view(keys[i].key), t.selectBg, 5);
+    H.text.line(8, pad + 1 + i, std::u32string_view(keys[i].label), t.fg, w - 10);
   }
-  L.helpText.end();
-  lvui::setHidden(L.help, true);
+  H.text.end();
 }
 
 // Sets the root font for size ts and builds the layers over the screen again
@@ -270,24 +290,26 @@ void relayout(TextSize ts) {
   if (layers && layers->root) lv_obj_delete(layers->root);
   layers = std::make_unique<Layers>();
   Layers& L = *layers;
+  L.cols = cols;
+  L.rows = rows;
+  L.cell = c;
   L.root = lvui::plainBox(lv_layer_top());
   lv_obj_set_size(L.root, w, h);
   L.area = lvui::plainBox(L.root);
   lv_obj_set_size(L.area, w, h - oskH);
-  L.symbols.create(L.area);
-  L.canned.create(L.area);
-  L.canned.setPlace(OverlayPlace::Centre, (rows - 1) * c.h);
-  buildHelp(L, cols, rows, c);
   L.banner.create(L.area);
   L.banner.setOnHide([] { topBanner.hide(); });
 
-  L.oskBox = lvui::plainBox(L.root);
-  lv_obj_set_size(L.oskBox, w, std::max(1, std::min(oskH, kbRows * c.h)));
-  lv_obj_set_pos(L.oskBox, 0, std::min(kbTop, h - 1));
-  L.keyboard.create(L.oskBox);
-  L.keyboard.setOnHide([] { showOsk(false); });
-  if (oskShown) osk.layout(cols, ts);
-  lvui::setHidden(L.oskBox, !oskShown);
+  // Only while it shows: never on boards with keys.
+  if (oskShown) {
+    L.oskBox = lvui::plainBox(L.root);
+    lv_obj_set_size(L.oskBox, w, std::max(1, std::min(oskH, kbRows * c.h)));
+    lv_obj_set_pos(L.oskBox, 0, std::min(kbTop, h - 1));
+    L.keyboard = std::make_unique<lvui::Keyboard>();
+    L.keyboard->create(L.oskBox);
+    L.keyboard->setOnHide([] { showOsk(false); });
+    osk.layout(cols, ts);
+  }
 
   L.saver = lvui::plainBox(L.root);
   lv_obj_set_size(L.saver, w, h);
@@ -520,7 +542,7 @@ void goDark() {
   // showing the still screensaver rather than a frozen screen.
   if (board::eink() && layers) {
     sayUntil = 0;
-    lvui::setHidden(layers->oskBox, true);
+    if (layers->oskBox) lvui::setHidden(layers->oskBox, true);
     syncSaver(nowMs());
     drawBounce(currentTheme());
     lv_refr_now(nullptr);
@@ -583,16 +605,57 @@ void syncSaver(int64_t now) {
   }
 }
 
-// Everything over the screen, from its models.
+// Deletes a part made while open, with its objects.
+template <typename T>
+void drop(std::unique_ptr<T>& part, lv_obj_t* obj) {
+  if (!part) return;
+  if (obj) lv_obj_delete(obj);
+  part.reset();
+}
+
+// Everything over the screen, from its models. The tray, the picker and the
+// keys are made as they open and deleted as they close; with too little
+// memory to make one, it closes again and "Out of memory" shows.
 void syncLayers(int64_t now) {
   Layers& L = *layers;
   const bool on = power == Power::On;
-  L.symbols.sync(symbols);
-  L.canned.sync(canned.box());
-  lvui::setHidden(L.help, !(on && keysHelp));
+  if (symbols.isOpen() && !L.symbols) {
+    if (lvui::ScreenHost::roomFor(kLayerBytes)) {
+      L.symbols = std::make_unique<lvui::SymbolBox>();
+      L.symbols->create(L.area);
+      lv_obj_move_to_index(L.symbols->obj(), 0);  // the bottom of the area
+    } else {
+      symbols.close();
+      cannedEmoji = false;
+    }
+  }
+  if (L.symbols) {
+    L.symbols->sync(symbols);
+    if (!symbols.isOpen()) drop(L.symbols, L.symbols->obj());
+  }
+  if (canned.isOpen() && !L.canned) {
+    if (lvui::ScreenHost::roomFor(kLayerBytes)) {
+      L.canned = std::make_unique<lvui::MenuOverlay>();
+      L.canned->create(L.area);
+      L.canned->setPlace(OverlayPlace::Centre, (L.rows - 1) * L.cell.h);
+    } else {
+      canned.close();
+    }
+  }
+  if (L.canned) {
+    L.canned->sync(canned.box());
+    if (!canned.isOpen()) drop(L.canned, L.canned->backdrop());
+  }
+  const bool helpShown = on && keysHelp;
+  if (helpShown && !L.help) {
+    if (lvui::ScreenHost::roomFor(kLayerBytes)) buildHelp(L);
+    else keysHelp = false;
+  } else if (!helpShown && L.help) {
+    drop(L.help, L.help->box);
+  }
   L.banner.sync(topBanner, now);
-  lvui::setHidden(L.oskBox, !(on && oskShown));
-  if (on && oskShown) L.keyboard.sync(osk, shownSize);
+  if (L.oskBox) lvui::setHidden(L.oskBox, !(on && oskShown));
+  if (on && oskShown && L.keyboard) L.keyboard->sync(osk, shownSize);
   syncSaver(now);
 }
 
@@ -781,7 +844,7 @@ void finalScreen(const std::string& line, bool whole) {
   const Theme& t = currentTheme();
   panelOn();
   Layers& L = *layers;
-  lvui::setHidden(L.oskBox, true);
+  if (L.oskBox) lvui::setHidden(L.oskBox, true);
   lvui::setHidden(L.last, false);
   if (whole) lvui::setBgColor(L.last, t.bg);
   else lv_obj_set_style_bg_opa(L.last, LV_OPA_TRANSP, LV_PART_MAIN);

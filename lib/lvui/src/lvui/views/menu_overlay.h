@@ -33,6 +33,7 @@ class MenuOverlay : public Tappable {
   void sync(const rc::Overlay& m);
 
   lv_obj_t* backdrop() const { return backdrop_; }
+  // The rest is made when the menu first opens (null before).
   lv_obj_t* box() const { return box_; }
   lv_obj_t* title() const { return title_; }
   ListBox& list() { return list_; }
@@ -42,6 +43,7 @@ class MenuOverlay : public Tappable {
   void tapped(lv_obj_t* obj, bool hold) override;
 
  private:
+  void makeBody();
   void coverStrip();
   void place(const rc::Overlay& m);
   bool syncButtons(const rc::Overlay& m);

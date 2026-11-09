@@ -427,7 +427,11 @@ void test_cell_text_lines_wrap_and_hint() {
   ct.end();
   TEST_ASSERT_EQUAL(LV_OPA_TRANSP, lv_obj_get_style_bg_opa(ct.label(1), LV_PART_MAIN));
   TEST_ASSERT_FALSE(hidden(ct.label(1)));
+#if RC_LOW_MEM
+  TEST_ASSERT_EQUAL(2u, lv_obj_get_child_count(lv_obj_get_parent(ct.label(0))));
+#else
   TEST_ASSERT_TRUE(hidden(ct.label(2)));
+#endif
 
   // Wrapping stops above the hint row.
   ct.begin();

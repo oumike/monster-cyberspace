@@ -95,7 +95,18 @@
 #define LV_USE_TILEVIEW 0
 #define LV_USE_WIN 0
 
-#define LV_USE_THEME_DEFAULT 1
+// The default theme only styles objects lvui strips again (plainBox,
+// lineLabel, the keyboard's matrix) and the screen behind the trees, which
+// display.cpp gives the same look without it (lvui::displayBegin). Boards
+// without PSRAM leave it out for the internal RAM its styles take.
+#ifndef RC_LV_THEME
+#if defined(BOARD_HAS_PSRAM) || defined(RC_NATIVE)
+#define RC_LV_THEME 1
+#else
+#define RC_LV_THEME 0
+#endif
+#endif
+#define LV_USE_THEME_DEFAULT RC_LV_THEME
 #define LV_USE_THEME_SIMPLE 0
 #define LV_USE_THEME_MONO 0
 #define LV_USE_FLEX 1

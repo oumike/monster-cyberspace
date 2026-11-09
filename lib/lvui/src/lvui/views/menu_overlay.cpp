@@ -13,6 +13,14 @@ void MenuOverlay::create(lv_obj_t* layer) {
   backdrop_ = plainBox(layer);
   lv_obj_set_size(backdrop_, lv_pct(100), lv_pct(100));
   addTap(backdrop_, this);
+  box_ = title_ = panel_ = buttonTitle_ = nullptr;
+  setHidden(backdrop_, true);
+  placed_ = false;
+}
+
+// What the backdrop holds, made the first time the menu opens: most trees'
+// menus never do, and the objects would sit in memory for nothing.
+void MenuOverlay::makeBody() {
   box_ = plainBox(backdrop_);
   addStyle(box_, Role::Screen);
   lv_obj_set_flex_flow(box_, LV_FLEX_FLOW_COLUMN);
@@ -32,7 +40,6 @@ void MenuOverlay::create(lv_obj_t* layer) {
   setHidden(panel_, true);
   setHidden(buttonTitle_, true);
   setHidden(grid_.obj(), true);
-  setHidden(backdrop_, true);
   placed_ = false;
 }
 
@@ -49,6 +56,7 @@ void MenuOverlay::setPlace(rc::OverlayPlace p, int bottomPx, int rightReservePx,
 void MenuOverlay::sync(const rc::Overlay& m) {
   setHidden(backdrop_, !m.isOpen());
   if (!m.isOpen()) return;
+  if (!box_) makeBody();
   lv_obj_move_foreground(backdrop_);
   coverStrip();
   const bool buttons = syncButtons(m);

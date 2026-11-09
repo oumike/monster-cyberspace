@@ -76,7 +76,13 @@ int CellText::wrapped(int col, int row, std::string_view utf8, uint16_t fg, int 
 }
 
 void CellText::end() {
+#if RC_LOW_MEM
+  // No spare labels kept hidden for a fuller draw later.
+  for (size_t i = labels_.size(); i > static_cast<size_t>(used_); --i) lv_obj_delete(labels_[i - 1].label);
+  labels_.resize(static_cast<size_t>(used_));
+#else
   for (size_t i = static_cast<size_t>(used_); i < labels_.size(); ++i) setHidden(labels_[i].label, true);
+#endif
 }
 
 void HintBar::create(lv_obj_t* parent) {

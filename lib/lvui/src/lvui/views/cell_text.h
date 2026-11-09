@@ -15,7 +15,8 @@ namespace lvui {
 // line a one-cell-high label at (col, row) of its parent's cell grid, cut to
 // whole cells (as rc::Grid::putText cuts). Between begin() and end() a screen
 // puts what it shows this frame; labels are reused in order, so an unchanged
-// frame redraws nothing, and end() hides the ones left over.
+// frame redraws nothing, and end() hides the ones left over (deletes them
+// with RC_LOW_MEM).
 class CellText {
  public:
   CellText() = default;

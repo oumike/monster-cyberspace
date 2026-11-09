@@ -25,9 +25,10 @@ uint32_t ms() { return millis(); }
 
 #ifndef BOARD_HAS_PSRAM
 // No PSRAM: LVGL draws into a strip this many rows tall, not a whole frame,
-// and builds one screen tree at a time.
+// and builds one screen tree at a time. Four rows keep the strip small
+// (1.9 KB at 240 wide); a 12-px text row then takes three pushes, not two.
 #ifndef RC_LV_STRIP_ROWS
-#define RC_LV_STRIP_ROWS 10
+#define RC_LV_STRIP_ROWS 4
 #endif
 constexpr int kStripRows = RC_LV_STRIP_ROWS;
 #else

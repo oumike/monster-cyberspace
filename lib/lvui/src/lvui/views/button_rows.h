@@ -33,6 +33,7 @@ class SpellBar : public Tappable {
 
   lv_obj_t* obj() const { return bar_; }
   int shown() const { return shown_; }
+  // Null until the bar first shows.
   lv_obj_t* option(int i) const { return opts_[i]; }
 
   void tapped(lv_obj_t* obj, bool hold) override;

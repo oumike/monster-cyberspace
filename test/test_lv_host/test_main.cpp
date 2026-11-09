@@ -138,6 +138,17 @@ void test_host_needs_build_margin() {
   lv_obj_delete(host.root());
 }
 
+void test_host_room_for() {
+  TEST_ASSERT_TRUE(lvui::ScreenHost::roomFor(4096));
+  TEST_ASSERT_NULL(findOom());
+  starved = true;
+  TEST_ASSERT_FALSE(lvui::ScreenHost::roomFor(4096));
+  TEST_ASSERT_NOT_NULL(findOom());
+  starved = false;
+  now += lvui::ScreenHost::kOomMs + 10;
+  lv_timer_handler();
+}
+
 // Replace first, both the new screen and the old one again can fail: no
 // tree is left. The caller retries at most once every kRetryMs, and the
 // screen comes back once memory does.
@@ -281,6 +292,7 @@ int main() {
   RUN_TEST(test_host_replace_first_rebuild);
   RUN_TEST(test_host_needs_build_margin);
   RUN_TEST(test_host_double_failure_recovers);
+  RUN_TEST(test_host_room_for);
   RUN_TEST(test_tree_views_follow_their_tree);
   RUN_TEST(test_emit_reaches_sink);
   RUN_TEST(test_oom_label_survives_layer_clean);

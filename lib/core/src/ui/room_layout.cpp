@@ -61,7 +61,7 @@ std::u32string cutNick(const std::u32string& nick, int maxCols) {
 
 // ChatStyle::Bubbles: the meta line (nick and time; yours only the time, on
 // the right), then the blocks wrapped to about three quarters of the width in a
-// bubble with a column of padding each side.
+// bubble with a column of padding each side, set a column in from its edge.
 void bubbleLines(const CircMessage& m, const LayoutOptions& o, const Theme& th, int cols, bool self,
                  bool action, uint16_t nickFg, bool tint, const std::vector<Block>& blocks,
                  const std::vector<std::u32string>& artLines,
@@ -109,7 +109,10 @@ void bubbleLines(const CircMessage& m, const LayoutOptions& o, const Theme& th, 
   clipLine(meta, cols);
   out(std::move(meta));
 
-  const int inner = std::max(1, std::min(std::max(8, cols * 3 / 4) - 2, cols - 2));
+  // The bubble sits a column in from its edge, under the meta line's start
+  // (or end, for yours); none on a log too narrow to spare it.
+  const int indent = cols >= 8 ? 1 : 0;
+  const int inner = std::max(1, std::min(std::max(8, cols * 3 / 4) - 2, cols - 2 - indent));
   std::vector<Span> rows;
   for (const auto& a : artLines) rows.push_back({a.substr(0, fitChars(a, inner)), th.fg});
   for (const auto& b : blocks)
@@ -117,8 +120,8 @@ void bubbleLines(const CircMessage& m, const LayoutOptions& o, const Theme& th, 
   if (rows.empty()) return;
   int longest = 0;
   for (const auto& r : rows) longest = std::max(longest, textWidth(r.text));
-  const int w = std::min(longest + 2, cols);
-  const int col = self ? cols - w : 0;
+  const int w = std::min(longest + 2, cols - indent);
+  const int col = self ? cols - w - indent : indent;
   for (size_t i = 0; i < rows.size(); ++i) {
     DisplayLine l = newLine();
     l.bubble = self ? DisplayLine::Bubble::Self : DisplayLine::Bubble::Other;

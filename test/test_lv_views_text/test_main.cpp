@@ -637,7 +637,7 @@ void test_log_bubble_rows() {
         if (!box.rowText(r).empty() && box.rowText(r).find("\xe2\x94\x80") == std::string::npos) ++metas;
         continue;
       }
-      const bool self = b.col > 0;
+      const bool self = b.col > 1;
       (self ? mine : others) += 1;
       TEST_ASSERT_EQUAL_HEX16(rc::bubbleFill(th, self), b.fill);
       TEST_ASSERT_FALSE(b.outlined);
@@ -693,7 +693,7 @@ void test_log_bubble_selection() {
   int top = -1, bottom = -1, col = 0, cols = 0;
   for (int r = 0; r < box.rows(); ++r) {
     lvui::LogBox::BubbleShown b;
-    if (box.bubbleAt(r, b) && b.col > 0) {
+    if (box.bubbleAt(r, b) && b.col > 1) {
       if (top < 0) top = r;
       bottom = r;
       col = b.col;

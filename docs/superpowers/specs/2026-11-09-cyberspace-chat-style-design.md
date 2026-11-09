@@ -75,7 +75,7 @@ With `Bubbles`, each normal message becomes:
    - The text wraps to `inner = max(8, cols * 3 / 4) - 2` columns.
    - The bubble is `w = longest wrapped line + 2` columns wide (one column of
      padding on each side).
-   - Others' bubbles start at column 0; yours start at `cols - w`.
+   - Bubbles sit one column in from their edge (none below 8 columns): others' start at column 1; yours at `cols - w - 1`.
    - Each row's spans start with a padding space, so the text sits one cell
      inside the bubble.
    - The first row has `bubbleTop` set and the last has `bubbleBottom`; a

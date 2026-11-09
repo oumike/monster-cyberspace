@@ -1211,10 +1211,10 @@ void test_bubbles_other() {
   TEST_ASSERT_EQUAL_HEX16(nickColor(t, "bob", false), ls[1].spans[0].fg);
   TEST_ASSERT_EQUAL_HEX16(t.time, ls[1].spans[1].fg);
   TEST_ASSERT_TRUE(ls[2].bubble == DisplayLine::Bubble::Other);
-  TEST_ASSERT_EQUAL(0, ls[2].bubbleCol);
+  TEST_ASSERT_EQUAL(1, ls[2].bubbleCol);  // indented a column under the nick
   TEST_ASSERT_EQUAL(7, ls[2].bubbleCols);
   TEST_ASSERT_TRUE(ls[2].bubbleTop && ls[2].bubbleBottom);
-  TEST_ASSERT_EQUAL_STRING(" hello", flat(ls[2]).c_str());
+  TEST_ASSERT_EQUAL_STRING("  hello", flat(ls[2]).c_str());
   TEST_ASSERT_EQUAL_STRING("m1", ls[1].messageId.c_str());
   TEST_ASSERT_EQUAL_STRING("m1", ls[2].messageId.c_str());
 }
@@ -1227,8 +1227,8 @@ void test_bubbles_self() {
   TEST_ASSERT_EQUAL_STRING((std::string(35, ' ') + "14:02").c_str(), flat(ls[0]).c_str());
   TEST_ASSERT_TRUE(ls[1].bubble == DisplayLine::Bubble::Self);
   TEST_ASSERT_EQUAL(4, ls[1].bubbleCols);
-  TEST_ASSERT_EQUAL(36, ls[1].bubbleCol);
-  TEST_ASSERT_EQUAL_STRING((std::string(36, ' ') + " hi").c_str(), flat(ls[1]).c_str());
+  TEST_ASSERT_EQUAL(35, ls[1].bubbleCol);  // a column in from the right
+  TEST_ASSERT_EQUAL_STRING((std::string(35, ' ') + " hi").c_str(), flat(ls[1]).c_str());
 }
 
 void test_bubbles_wrap() {
@@ -1240,7 +1240,7 @@ void test_bubbles_wrap() {
   int longest = 0;
   for (size_t i = 1; i < ls.size(); ++i) {
     TEST_ASSERT_TRUE(ls[i].bubble == DisplayLine::Bubble::Other);
-    const int w = lineCols(ls[i]) - 1;  // less the padding space
+    const int w = lineCols(ls[i]) - 2;  // less the indent and the padding space
     TEST_ASSERT_TRUE(w <= 28);
     longest = std::max(longest, w);
     TEST_ASSERT_EQUAL(i == 1, ls[i].bubbleTop);
@@ -1257,7 +1257,7 @@ void test_bubbles_narrow() {
   for (const auto& l : ls) {
     TEST_ASSERT_TRUE(lineCols(l) <= 10);
     if (l.bubble == DisplayLine::Bubble::None) continue;
-    TEST_ASSERT_TRUE(l.bubbleCol + l.bubbleCols <= 10);
+    TEST_ASSERT_TRUE(l.bubbleCol + l.bubbleCols <= 9);  // the indent stays clear
     if (flat(l).find("\xf0\x9f\x98\x80") != std::string::npos) ++emoji;
   }
   TEST_ASSERT_EQUAL(1, emoji);
@@ -1271,7 +1271,7 @@ void test_bubbles_deleted_and_muted() {
   o.muted = &muted;
   auto ls = body(layoutRoom(d, o));
   TEST_ASSERT_EQUAL(2, ls.size());
-  TEST_ASSERT_EQUAL_STRING(" [deleted]", flat(ls[1]).c_str());
+  TEST_ASSERT_EQUAL_STRING("  [deleted]", flat(ls[1]).c_str());
   TEST_ASSERT_EQUAL_HEX16(defaultTheme().dim, ls[1].spans.back().fg);
 }
 
@@ -1281,7 +1281,7 @@ void test_bubbles_action() {
   auto ls = body(layoutRoom(d, bubbles(40)));
   TEST_ASSERT_EQUAL(2, ls.size());
   TEST_ASSERT_EQUAL_STRING("14:02", flat(ls[0]).c_str());
-  TEST_ASSERT_EQUAL_STRING(" * bob waves", flat(ls[1]).c_str());
+  TEST_ASSERT_EQUAL_STRING("  * bob waves", flat(ls[1]).c_str());
   TEST_ASSERT_EQUAL_HEX16(defaultTheme().sys, ls[1].spans.back().fg);
 }
 
@@ -1335,7 +1335,7 @@ void test_entry_bubbles_replies_only() {
   TEST_ASSERT_EQUAL(div + 3, b.size());
   TEST_ASSERT_EQUAL_STRING("ann \xe2\x86\xb3 @bob 14:02", flat(b[div + 1]).c_str());
   TEST_ASSERT_TRUE(b[div + 2].bubble == DisplayLine::Bubble::Other);
-  TEST_ASSERT_EQUAL_STRING(" agreed", flat(b[div + 2]).c_str());
+  TEST_ASSERT_EQUAL_STRING("  agreed", flat(b[div + 2]).c_str());
   TEST_ASSERT_EQUAL_STRING("r1", b[div + 1].messageId.c_str());
 }
 

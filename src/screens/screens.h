@@ -172,8 +172,6 @@ class SettingsScreen : public Screen {
     closeBrightness();
     closeLedLevel();
   }
-  // Larger sizes cut off the buttons' text.
-  bool compactText() const override { return true; }
 
  private:
   enum class Confirm {

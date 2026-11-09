@@ -810,8 +810,8 @@ in **Settings** → **Text size** (a wide box with a line and a dot for each siz
 left to right, named underneath: Left/Right or a tap on a dot moves the
 filled dot, Set keeps it, Cancel or Back leaves it), on the web
 page's Text size slider, or switch in the Feed palette or an entry's menu,
-where each switch steps Compact → Comfortable → Large. The choice is saved. Settings itself always
-uses Compact, so its items fit.
+where each switch steps Compact → Comfortable → Large. The choice is saved. Settings follows it
+too; on a touch screen its buttons drop to fewer columns when two would cut their text.
 
 - **Comfortable:** larger 8×16 text.
 - **Compact:** 6×12 text.

@@ -963,14 +963,8 @@ const Slider* SettingsScreen::openSlider() const {
 
 void SettingsScreen::build(lv_obj_t* root) {
   v_.make(root);
-  // The screen's text size, as ui_task picks it for a compactText() screen.
-  TextSize only;
-  const std::optional<TextSize> fixed =
-      board::fixedTextSize(only) ? std::optional<TextSize>(only) : std::nullopt;
   v_->frame_ = lvui::plainBox(root);
   lv_obj_set_size(v_->frame_, lv_pct(100), lv_pct(100));
-  lv_obj_set_style_text_font(v_->frame_, lvui::fontFor(RC_LOW_MEM ? TextSize::Comfortable : TextSize::Compact, fixed),
-                             0);
   v_->padView_.create(v_->frame_);
   v_->listView_.create(v_->frame_);
   // Over the buttons, as the grid draws the header lines after them.
@@ -1072,7 +1066,10 @@ void SettingsScreen::sync() {
   v_->text_.begin();
   if (buttons_) {
     const int header = layoutStatus(fields, narrow, valueW, 0, 0, put) + 1;  // and a blank row
-    pad_.sync(v_->padView_, rows, 1, bottom, true, 0, header);
+    // As many columns as keep 16 cells inside a button (as Setup's).
+    int columns = ButtonPad::columns();
+    while (columns > 1 && (cols - 1) / columns - 3 < 16) --columns;
+    pad_.sync(v_->padView_, rows, 1, bottom, true, columns, header);
     layoutStatus(fields, narrow, valueW, pad_.headerShift(), bottom, put);
   } else {
     layoutStatus(fields, narrow, valueW, 0, menuTop, put);

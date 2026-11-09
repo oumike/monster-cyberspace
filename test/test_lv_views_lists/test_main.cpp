@@ -5,11 +5,14 @@
 #include <string>
 #include <vector>
 
+#include "lvui/cell_font.h"
 #include "lvui/display.h"
+#include "lvui/host.h"
 #include "lvui/input.h"
 #include "lvui/lv_init.h"
 #include "lvui/styles.h"
 #include "lvui/views/banner.h"
+#include "lvui/views/cell_text.h"
 #include "lvui/views/drawer_panel.h"
 #include "lvui/views/entry_list_box.h"
 #include "lvui/views/list_box.h"
@@ -752,6 +755,82 @@ void test_overlay_bar_column_is_backdrop() {
   assertActivate(keys[0], 1, ListId::Menu, Action::Select);
 }
 
+// The touch header as the grid's (rc::touchHeader): the status bar is px tall
+// in the big font and its taps are the same; the rows below it are as many,
+// and where, as gridDims and rowSpans put them; a menu's backdrop takes the
+// strip the bar reaches up over.
+void test_touch_header_rows_match_grid() {
+  const rc::TextSize ts = rc::TextSize::Comfortable;
+  const lvui::Header hd = lvui::touchHeader(ts);
+  TEST_ASSERT_EQUAL(rc::touchHeader(320, ts).px, hd.px);
+  TEST_ASSERT_EQUAL_PTR(lvui::font(ts, true), hd.font);
+  lvui::setHeader(hd);
+  lvui::ScreenHost::setFreeProbe([]() -> size_t { return 1 << 20; });
+  static lvui::CellText cells;
+  static lvui::HintBar hint;
+  static lvui::TopBar bar;
+  static lvui::MenuOverlay menu;
+  lvui::ScreenHost host;
+  TEST_ASSERT_TRUE(host.show([](lv_obj_t* root) {
+    cells.create(root);
+    hint.create(root);
+    bar.create(root);
+    menu.create(root);
+  }));
+
+  int cols = 0, rows = 0;
+  rc::gridDims(320, 240, ts, cols, rows, hd.px);
+  rc::Grid g(cols, rows);
+  g.setHeader(rc::touchHeader(320, ts));
+  const rc::CellSize cs = rc::cellSize(ts);
+  const std::vector<rc::RowSpan> spans = rc::rowSpans(g, cs.h, rc::bigCellSize(ts).h);
+  lv_obj_update_layout(lv_screen_active());
+  TEST_ASSERT_EQUAL(cols, cells.cols());
+  TEST_ASSERT_EQUAL(rows, cells.rows());
+  cells.begin();
+  cells.line(0, 1, U"row one", 0xFFFF);
+  cells.end();
+  hint.sync(U"hint");
+  lvui::TopBarData d;
+  d.title = U"Rooms";
+  d.touch.on = true;
+  d.touch.menu = true;
+  bar.sync(d);
+  lv_obj_update_layout(lv_screen_active());
+  lv_area_t a;
+  lv_obj_get_coords(cells.label(0), &a);
+  TEST_ASSERT_EQUAL(spans[1].y, a.y1);
+  lv_obj_get_coords(hint.obj(), &a);
+  TEST_ASSERT_EQUAL(spans.back().y, a.y1);
+  lv_obj_get_coords(bar.obj(), &a);
+  TEST_ASSERT_EQUAL(0, a.y1);
+  TEST_ASSERT_EQUAL(hd.px, a.y2 - a.y1 + 1);
+  TEST_ASSERT_EQUAL_PTR(hd.font, lv_obj_get_style_text_font(bar.title(), LV_PART_MAIN));
+
+  // The header's tap targets: 4 big cells at each end, the whole bar tall.
+  const int bigW = rc::bigCellSize(ts).w;
+  tap({2, 1});
+  tap({bigW * 4 - 2, hd.px - 2});
+  tap({(320 / bigW - 1) * bigW, 1});
+  TEST_ASSERT_EQUAL(3, keys.size());
+  TEST_ASSERT_TRUE(keys[0].action == Action::Back);
+  TEST_ASSERT_TRUE(keys[1].action == Action::Back);
+  TEST_ASSERT_TRUE(keys[2].action == Action::Palette);
+  keys.clear();
+
+  rc::Overlay ov;
+  ov.open(U"Menu", threeItems());
+  menu.setPlace(rc::OverlayPlace::Centre);
+  menu.sync(ov);
+  // Over ⋯, in the strip: the backdrop's Back, not the bar's Palette.
+  tap({(320 / bigW - 1) * bigW, 1});
+  TEST_ASSERT_EQUAL(1, keys.size());
+  TEST_ASSERT_TRUE(keys[0].action == Action::Back);
+
+  lvui::setHeader(lvui::Header{});
+  lv_obj_delete(host.root());
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_list_box_mirrors_model);
@@ -771,5 +850,6 @@ int main() {
   RUN_TEST(test_list_box_window_drag_steps_selection);
   RUN_TEST(test_list_box_drag_names_its_list);
   RUN_TEST(test_overlay_bar_column_is_backdrop);
+  RUN_TEST(test_touch_header_rows_match_grid);
   return UNITY_END();
 }

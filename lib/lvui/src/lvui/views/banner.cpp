@@ -7,10 +7,14 @@ namespace lvui {
 void Banner::create(lv_obj_t* parent) {
   row_ = plainBox(parent);
   addStyle(row_, Role::Hint);
+  // Over the status bar, as tall and in the same font as a touch header.
+  const Header& hd = header();
+  if (hd.px > 0) lv_obj_set_style_text_font(row_, hd.font, LV_PART_MAIN);
   lv_obj_set_width(row_, lv_pct(100));
-  lv_obj_set_height(row_, cellOf(row_).h);
+  lv_obj_set_height(row_, hd.px > 0 ? hd.px : cellOf(row_).h);
   label_ = lineLabel(row_);
   lv_obj_set_width(label_, lv_pct(100));
+  lv_obj_align(label_, LV_ALIGN_LEFT_MID, 0, 0);
   addTap(row_, this);
   setHidden(row_, true);
   box_ = -1;

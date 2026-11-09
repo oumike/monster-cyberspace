@@ -42,6 +42,7 @@ class MenuOverlay : public Tappable {
   void tapped(lv_obj_t* obj, bool hold) override;
 
  private:
+  void coverStrip();
   void place(const rc::Overlay& m);
   bool syncButtons(const rc::Overlay& m);
   bool layoutButtons(const rc::Overlay& m);

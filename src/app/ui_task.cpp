@@ -139,6 +139,15 @@ TextSize wantedSize() {
   return s;
 }
 
+// The taller touch status bar (lvui::Header), as the grid's touchHeader: on
+// touch boards without both a keyboard and keys, except on the splash.
+bool wantHeader() {
+  return board::hasTouch() && (!board::hasKeyboard() || !board::hasKeys()) &&
+         router::current() != router::Id::Splash;
+}
+// Whether the root and its layers were last laid out with the header.
+bool shownHeader = false;
+
 // The monster screensaver's size: the same at every text size.
 TextSize bounceSize() {
   if (TextSize only; board::fixedTextSize(only)) return only;
@@ -241,13 +250,19 @@ void buildHelp(Layers& L, int cols, int rows, lvui::Cell c) {
 void relayout(TextSize ts) {
   shownSize = ts;
   needResize = false;
+  shownHeader = wantHeader();
+  const lvui::Header hd = shownHeader ? lvui::touchHeader(ts) : lvui::Header{};
+  lvui::setHeader(hd);
   const lv_font_t* f = lvui::font(ts);
   lv_obj_set_style_text_font(lv_screen_active(), f, LV_PART_MAIN);
   lv_obj_set_style_text_font(lv_layer_top(), f, LV_PART_MAIN);
   const lvui::Cell c = lvui::cellOf(lv_screen_active());
   const int w = displayW(), h = displayH();
-  // The docked keyboard takes the bottom rows; screens fill what is left.
-  const int oskH = oskShown ? std::min(h, Osk::rows(ts) * c.h) : 0;
+  // The docked keyboard takes the bottom rows, right under the last screen
+  // row (the rows' slack goes below it); screens fill what is left.
+  const int kbRows = oskShown ? Osk::rows(ts) : 0;
+  const int kbTop = oskShown ? hd.extra + std::max(0, (h - hd.extra) / std::max(1, c.h) - kbRows) * c.h : h;
+  const int oskH = h - kbTop;
   lv_obj_set_style_pad_bottom(lv_screen_active(), oskH, LV_PART_MAIN);
   gestures.setWidth(board::panelWidth());
   const int cols = std::max(1, w / std::max(1, c.w)), rows = std::max(1, (h - oskH) / std::max(1, c.h));
@@ -267,8 +282,8 @@ void relayout(TextSize ts) {
   L.banner.setOnHide([] { topBanner.hide(); });
 
   L.oskBox = lvui::plainBox(L.root);
-  lv_obj_set_size(L.oskBox, w, std::max(1, oskH));
-  lv_obj_align(L.oskBox, LV_ALIGN_BOTTOM_LEFT, 0, 0);
+  lv_obj_set_size(L.oskBox, w, std::max(1, std::min(oskH, kbRows * c.h)));
+  lv_obj_set_pos(L.oskBox, 0, std::min(kbTop, h - 1));
   L.keyboard.create(L.oskBox);
   L.keyboard.setOnHide([] { showOsk(false); });
   if (oskShown) osk.layout(cols, ts);
@@ -290,7 +305,7 @@ void relayout(TextSize ts) {
 // wants is set first.
 void beforeBuild() {
   const TextSize ts = wantedSize();
-  if (needResize || ts != shownSize || !layers) relayout(ts);
+  if (needResize || ts != shownSize || wantHeader() != shownHeader || !layers) relayout(ts);
 }
 
 // The on-screen keyboard docks below the screen while a text field has focus.
@@ -1098,7 +1113,7 @@ void runTapKeys() {
   touchKey = false;
 }
 
-// One frame (spec §5): input, events, state, then LVGL draws what changed.
+// One frame (spec §5): events, input, state, then LVGL draws what changed.
 void taskMain(void*) {
   ThemeId shown = app().cfg.theme;
   // The screen and power state the last frame's changes were checked against.
@@ -1110,7 +1125,10 @@ void taskMain(void*) {
     logMemory(start);
 #endif
     dropTaps = false;
-    // Touch first: one sample a frame, for LVGL's pointer and the gestures.
+    // Worker and network events first (spec §5), then keys and touch.
+    Event e;
+    while (nextEvent(e)) handleEvent(e);
+    // One touch sample a frame, for LVGL's pointer and the gestures.
     // Touch acts only while lit, and wakes a dark screen only on boards
     // where any input wakes (that finger then does nothing until it lifts).
     const bool readTouch = board::hasTouch() && (power == Power::On || board::anyInputWakes());
@@ -1153,8 +1171,6 @@ void taskMain(void*) {
     applyKbLight();
     applyBacklight();
     applyStatusLights();
-    Event e;
-    while (nextEvent(e)) handleEvent(e);
     if (board::webCompose()) runWebCompose();
     applyNotifyLight();
     switch (power_service::step()) {
@@ -1236,7 +1252,7 @@ void taskMain(void*) {
     }
     // A text size, rotation or keyboard dock change: new fonts and sizes,
     // so the layers and the screen are built again (beforeBuild relays out).
-    if (needResize || wantedSize() != shownSize) router::rebuild();
+    if (needResize || wantedSize() != shownSize || wantHeader() != shownHeader) router::rebuild();
     if (!Overlay::anyOpen() || router::current() != beforeScreen) pressMenu = false;
     setCursorShown(baseCursor || pressMenu);
     beforeScreen = router::current();

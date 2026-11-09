@@ -29,7 +29,9 @@ struct TopBarData {
 // The status bar: one Role::Bar row, " title count" at the left and
 // "marker bars battery% clock " at the right, as rc::renderStatusBar lays it
 // out. With touch, ‹ at the left (tap Back, hold OpenHome, 4 cells) and ⋯
-// after the clock (Palette, the last 4 cells).
+// after the clock (Palette, the last 4 cells). With a touch header
+// (lvui::header) it is that tall, in its font, and reaches up over the
+// root's strip.
 class TopBar : public Tappable {
  public:
   TopBar() = default;

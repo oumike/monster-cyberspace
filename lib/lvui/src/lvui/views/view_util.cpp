@@ -4,6 +4,7 @@
 
 #include <algorithm>
 
+#include "lvui/cell_font.h"
 #include "lvui/styles.h"
 #include "ui/widgets/scroll_bar.h"
 #include "util/utf8.h"
@@ -11,6 +12,8 @@
 namespace lvui {
 
 namespace {
+
+Header shownHeader;
 
 // One pointer, so one press at a time: set when its long press acted.
 bool longSent = false;
@@ -47,6 +50,31 @@ void addTap(lv_obj_t* obj, Tappable* v) {
 }
 
 lv_point_t tapPoint() { return downAt; }
+
+Header touchHeader(rc::TextSize s) {
+  Header h;
+  h.px = rc::touchHeader(0, s).px;
+  h.extra = std::max(0, h.px - rc::cellSize(s).h);
+  h.font = font(s, true);
+  return h;
+}
+
+void setHeader(const Header& h) { shownHeader = h; }
+const Header& header() { return shownHeader; }
+
+int headerStrip(lv_obj_t* parent) {
+  const int extra = shownHeader.extra;
+  if (extra <= 0 || !parent) return 0;
+  lv_obj_update_layout(parent);
+  lv_area_t a;
+  lv_obj_get_coords(parent, &a);
+  const int top = a.y1 + lv_obj_get_style_pad_top(parent, LV_PART_MAIN) +
+                  lv_obj_get_style_border_width(parent, LV_PART_MAIN);
+  if (top != extra) return 0;
+  // The padded root draws its own padding; a box inside it must not clip.
+  if (lv_obj_get_style_pad_top(parent, LV_PART_MAIN) == 0) lv_obj_add_flag(parent, LV_OBJ_FLAG_OVERFLOW_VISIBLE);
+  return extra;
+}
 
 lv_obj_t* plainBox(lv_obj_t* parent) {
   lv_obj_t* o = lv_obj_create(parent);

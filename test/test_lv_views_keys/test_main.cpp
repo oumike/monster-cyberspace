@@ -225,6 +225,7 @@ void test_osk_slide_types_nothing() {
   osk.layout(40, ts);
   // On the top layer, as the app docks it: nothing there scrolls, so LVGL
   // itself doesn't cancel a sliding press.
+  const bool scrollable = lv_obj_has_flag(lv_layer_top(), LV_OBJ_FLAG_SCROLLABLE);
   lv_obj_remove_flag(lv_layer_top(), LV_OBJ_FLAG_SCROLLABLE);
   lvui::Keyboard kb;
   kb.create(lv_layer_top());
@@ -259,6 +260,7 @@ void test_osk_slide_types_nothing() {
   TEST_ASSERT_EQUAL(1, keys.size());
   TEST_ASSERT_EQUAL(U' ', keys[0].ch);
   lv_obj_delete(kb.obj());
+  if (scrollable) lv_obj_add_flag(lv_layer_top(), LV_OBJ_FLAG_SCROLLABLE);
 }
 
 // A tap on a symbol emits the tap map's {Activate, i, Menu}, which the table

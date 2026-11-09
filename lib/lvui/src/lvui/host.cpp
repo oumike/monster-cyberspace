@@ -1,6 +1,7 @@
 #include "lvui/host.h"
 
 #include "lvui/styles.h"
+#include "lvui/views/view_util.h"
 
 namespace lvui {
 
@@ -67,6 +68,10 @@ bool ScreenHost::show(const std::function<void(lv_obj_t*)>& build) {
     addStyle(fresh, Role::Screen);
     lv_obj_set_size(fresh, lv_pct(100), lv_pct(100));
     lv_obj_set_scrollbar_mode(fresh, LV_SCROLLBAR_MODE_OFF);
+    // The rows start below a touch header; its status bar reaches up over
+    // the padding, which must not make the root scroll.
+    lv_obj_remove_flag(fresh, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_style_pad_top(fresh, header().extra, LV_PART_MAIN);
     build(fresh);
     if (freeProbe() >= kMinFree) {
       if (root_) lv_obj_delete(root_);

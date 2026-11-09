@@ -21,9 +21,14 @@ lv_obj_t* hitBox(lv_obj_t* bar, Tappable* v) {
 void TopBar::create(lv_obj_t* parent) {
   bar_ = plainBox(parent);
   addStyle(bar_, Role::Bar);
+  // The touch header: taller, in the big font (set before the labels, which
+  // take their font's height), its text centred down it.
+  const Header& hd = header();
+  if (hd.px > 0) lv_obj_set_style_text_font(bar_, hd.font, LV_PART_MAIN);
   lv_obj_set_width(bar_, lv_pct(100));
-  lv_obj_set_height(bar_, cellOf(bar_).h);
+  lv_obj_set_height(bar_, hd.px > 0 ? hd.px : cellOf(bar_).h);
   lv_obj_set_flex_flow(bar_, LV_FLEX_FLOW_ROW);
+  lv_obj_set_flex_align(bar_, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
   glyph_ = lineLabel(bar_);
   lv_obj_set_width(glyph_, 2 * cellOf(glyph_).w);
   lv_label_set_text_static(glyph_, "\u2039");
@@ -39,9 +44,12 @@ void TopBar::create(lv_obj_t* parent) {
 }
 
 void TopBar::sync(const TopBarData& d) {
+  // Over the strip the screen root keeps for the touch header.
+  const int strip = headerStrip(lv_obj_get_parent(bar_));
+  if (lv_obj_get_y_aligned(bar_) != -strip) lv_obj_set_y(bar_, -strip);
   lv_obj_update_layout(bar_);
   const Cell c = cellOf(bar_);
-  const int w = lv_obj_get_width(bar_);
+  const int w = lv_obj_get_width(bar_), h = lv_obj_get_height(bar_);
   if (d == last_ && w == lastW_) return;
   last_ = d;
   lastW_ = w;
@@ -69,10 +77,10 @@ void TopBar::sync(const TopBarData& d) {
   setHidden(glyph_, !back);
 
   setHidden(backHit_, !back);
-  lv_obj_set_size(backHit_, 4 * c.w, c.h);
+  lv_obj_set_size(backHit_, 4 * c.w, h);
   lv_obj_align(backHit_, LV_ALIGN_LEFT_MID, 0, 0);
   setHidden(menuHit_, !menu);
-  lv_obj_set_size(menuHit_, 4 * c.w, c.h);
+  lv_obj_set_size(menuHit_, 4 * c.w, h);
   lv_obj_align(menuHit_, LV_ALIGN_LEFT_MID, (cols - 4) * c.w, 0);
 }
 

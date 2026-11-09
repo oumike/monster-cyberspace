@@ -50,6 +50,7 @@ void MenuOverlay::sync(const rc::Overlay& m) {
   setHidden(backdrop_, !m.isOpen());
   if (!m.isOpen()) return;
   lv_obj_move_foreground(backdrop_);
+  coverStrip();
   const bool buttons = syncButtons(m);
   setHidden(box_, buttons);
   setHidden(grid_.obj(), !buttons);
@@ -63,11 +64,22 @@ void MenuOverlay::sync(const rc::Overlay& m) {
   }
 }
 
+// The backdrop takes every tap, a touch header's too: it reaches up over the
+// strip, padded by it so the box keeps the layer's content coordinates.
+void MenuOverlay::coverStrip() {
+  lv_obj_t* layer = lv_obj_get_parent(backdrop_);
+  const int strip = headerStrip(layer);
+  if (strip == 0) return;
+  if (lv_obj_get_style_pad_top(backdrop_, LV_PART_MAIN) != strip)
+    lv_obj_set_style_pad_top(backdrop_, strip, LV_PART_MAIN);
+  lvui::place(backdrop_, 0, -strip, lv_obj_get_content_width(layer), lv_obj_get_content_height(layer) + strip);
+}
+
 bool MenuOverlay::syncButtons(const rc::Overlay& m) {
   if (!rc::Overlay::confirmButtons() || !(m.isConfirm() || m.isButtons())) return false;
   lv_obj_t* layer = lv_obj_get_parent(backdrop_);
   lv_obj_update_layout(layer);
-  const int w = lv_obj_get_width(layer), h = lv_obj_get_height(layer);
+  const int w = lv_obj_get_content_width(layer), h = lv_obj_get_content_height(layer);
   const Cell c = cellOf(backdrop_);
   const auto& items = m.list().items();
   bool same = btnLaid_ && w == btnW_ && h == btnH_ && c.w == btnCell_.w && c.h == btnCell_.h && btnTheme_ == themeSerial() &&
@@ -167,7 +179,7 @@ bool MenuOverlay::layoutButtons(const rc::Overlay& m) {
 void MenuOverlay::place(const rc::Overlay& m) {
   lv_obj_t* layer = lv_obj_get_parent(backdrop_);
   lv_obj_update_layout(layer);
-  const int w = lv_obj_get_width(layer), h = lv_obj_get_height(layer);
+  const int w = lv_obj_get_content_width(layer), h = lv_obj_get_content_height(layer);
   const int n = static_cast<int>(m.list().size());
   if (placed_ && n == lastN_ && w == lastW_ && h == lastH_ && m.title() == lastTitle_) return;
   placed_ = true;

@@ -18,12 +18,12 @@ void CellText::create(lv_obj_t* parent) {
 
 int CellText::cols() const {
   const Cell c = cellOf(box_);
-  return c.w > 0 ? lv_obj_get_width(lv_obj_get_parent(box_)) / c.w : 0;
+  return c.w > 0 ? lv_obj_get_content_width(lv_obj_get_parent(box_)) / c.w : 0;
 }
 
 int CellText::rows() const {
   const Cell c = cellOf(box_);
-  return c.h > 0 ? lv_obj_get_height(lv_obj_get_parent(box_)) / c.h : 0;
+  return c.h > 0 ? lv_obj_get_content_height(lv_obj_get_parent(box_)) / c.h : 0;
 }
 
 CellText::Line& CellText::take() {
@@ -91,8 +91,9 @@ void HintBar::sync(std::u32string_view text) {
   lv_obj_update_layout(parent);
   const Cell c = cellOf(row_);
   if (c.w <= 0 || c.h <= 0) return;
-  const int cols = lv_obj_get_width(parent) / c.w, rows = lv_obj_get_height(parent) / c.h;
-  place(row_, 0, (rows - 1) * c.h, lv_obj_get_width(parent), c.h);
+  const int w = lv_obj_get_content_width(parent);
+  const int cols = w / c.w, rows = lv_obj_get_content_height(parent) / c.h;
+  place(row_, 0, (rows - 1) * c.h, w, c.h);
   setText(label_, text.substr(0, rc::fitChars(text, cols)));
 }
 

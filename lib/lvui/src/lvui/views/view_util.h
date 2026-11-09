@@ -7,6 +7,7 @@
 
 #include "input/key_event.h"
 #include "lvui/input.h"
+#include "ui/grid.h"
 
 namespace lvui {
 
@@ -48,6 +49,24 @@ void setTextColor(lv_obj_t* obj, uint16_t rgb565);
 void setBgColor(lv_obj_t* obj, uint16_t rgb565);
 // Moves and sizes obj only when it differs.
 void place(lv_obj_t* obj, int x, int y, int w, int h);
+
+// The touch status bar (the grid's rc::touchHeader): row 0 px tall in the next
+// text size up, so every row below it sits extra px lower. The screen root
+// pads its top by extra; a TopBar reaches up over that strip. px 0: off.
+struct Header {
+  int px = 0, extra = 0;
+  const lv_font_t* font = nullptr;
+};
+// The header for text size s: rc::touchHeader's height, font(s, true).
+Header touchHeader(rc::TextSize s);
+// Set before a screen is built (ScreenHost pads the new root by it).
+void setHeader(const Header& h);
+const Header& header();
+// header().extra when parent's content starts that far down the display (the
+// screen root's, or a full-size box on it), else 0: how far a status bar or
+// a full-screen backdrop in parent reaches above it. Such a parent stops
+// clipping, so what reaches up still draws.
+int headerStrip(lv_obj_t* parent);
 
 // A scroll bar as the grid's rc::drawScrollBar draws one: a line
 // max(2, cell width / 4) px wide down the right of its last column, the track

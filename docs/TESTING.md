@@ -24,6 +24,13 @@ These were built without flashing and still need a run on the device. The
 scripted fake-API builds (`m9_fake`, `wio_l2_fake`, `tdeck_fake`) were removed
 on 2026-10-27; the sections marked `m9_fake` passed on it before then.
 
+**Chat style (2.1.0; the M9 and the Wio L2):**
+
+- [ ] Chat style: Bubbles on the M9 and Wio L2 — room, C-Mail, entry with
+  replies; three themes; each text size; switch style with a room open
+  (Settings and web config). Yours on the right, others on the left, the meta
+  line above each; the selection outline hugs the bubble; IRC looks as before.
+
 **LVGL UI (branch `lvgl-ui`; every board but the X4, the M9 first):**
 
 The UI was redrawn with LVGL (built without flashing). Compare each board

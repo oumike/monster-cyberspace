@@ -46,6 +46,9 @@ boards and Cyberspace features come later.
   plan `docs/superpowers/plans/2026-11-04-cyberspace-tanmatsu.md`.
 - **LVGL UI:** spec `docs/superpowers/specs/2026-11-08-cyberspace-lvgl-ui-design.md`,
   plan `docs/superpowers/plans/2026-11-08-cyberspace-lvgl-ui.md`.
+- **Chat style (IRC or Bubbles):** spec
+  `docs/superpowers/specs/2026-11-09-cyberspace-chat-style-design.md`,
+  plan `docs/superpowers/plans/2026-11-09-cyberspace-chat-style.md`.
 - **Fluffy Generator (custom mascot):** spec
   `docs/superpowers/specs/2026-10-31-cyberspace-fluffy-generator-design.md`,
   plan `docs/superpowers/plans/2026-10-31-cyberspace-fluffy-generator.md`.
@@ -410,8 +413,14 @@ Cardputer ADV is at 68,904 B (main 67,760 B), and a device model of its
 static RAM plus UI heap with Home or a room open puts it 3–5 KB under main's.
 The "LVGL UI" hardware check in docs/TESTING.md is open, the Cardputer's
 `[mem]` reading with it.
-The native suite is green: 759/759
-(`pio test -e native`), and so is the LVGL one: 77/77 (`pio test -e
+Chat style (IRC or Bubbles) was added on 2026-11-09 for 2.1.0 (built without
+flashing): Settings and web config pick it (NVS `cstyle`, backup
+`chatStyle`); in Bubbles, rooms, C-Mail and entry replies lay out as messenger
+bubbles (`DisplayLine::bubble*` from `layoutRoomEach`, fill
+`rc::bubbleFill`), which `lvui::LogBox` draws in both its object and painted
+modes. Its hardware check in docs/TESTING.md is open.
+The native suite is green: 775/775
+(`pio test -e native`), and so is the LVGL one: 86/86 (`pio test -e
 native_lv`, and built lean). `scripts/build-upload-monitor.sh -B` builds all
 thirteen firmware envs (the X4 only from a path without spaces).
 

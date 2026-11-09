@@ -821,6 +821,20 @@ too; on a touch screen its buttons drop to fewer columns when two would cut thei
 Room messages read `14:02 nick: message`, with a divider when the day
 changes, at every size. A long message wraps under the nick at every size.
 
+## Chat style
+
+Pick one in **Settings** → **Chat style** (each press switches) or in web
+config under Screen. The choice is saved, and applies to rooms, C-Mail
+conversations and the replies under a Feed entry or guild thread.
+
+- **IRC:** the default. Each message is a line: `14:02 nick: message`.
+- **Bubbles:** each message sits in a filled, rounded bubble, as in a
+  messenger: yours on the right, everyone else's on the left. A dim line above
+  each bubble gives the nick and time (yours, just the time); a reply's says
+  `nick ↳ @parent 14:02`. The entry itself keeps its usual look. On e-paper
+  the bubbles are outlined instead of filled. A selected message's outline
+  hugs its bubble.
+
 ## Themes
 
 Pick a theme on the device (**Home** → **Settings** → **Theme** opens a box

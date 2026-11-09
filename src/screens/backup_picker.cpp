@@ -124,32 +124,32 @@ void BackupPicker::onKey(const KeyEvent& k) {
 
 void BackupPicker::build(lv_obj_t* root) {
   v_.make(root);
-  layer_ = lvui::plainBox(root);
-  lv_obj_set_size(layer_, lv_pct(100), lv_pct(100));
-  panel_ = lvui::plainBox(layer_);
-  lvui::addStyle(panel_, lvui::Role::Screen);
-  titleRow_ = lvui::plainBox(layer_);
-  lvui::addStyle(titleRow_, lvui::Role::Bar);
-  title_ = lvui::lineLabel(titleRow_);
-  v_->listView_.create(layer_);
-  v_->padView_.create(layer_);
-  v_->hint_.create(layer_);
-  v_->confirmView_.create(layer_);
+  v_->layer_ = lvui::plainBox(root);
+  lv_obj_set_size(v_->layer_, lv_pct(100), lv_pct(100));
+  v_->panel_ = lvui::plainBox(v_->layer_);
+  lvui::addStyle(v_->panel_, lvui::Role::Screen);
+  v_->titleRow_ = lvui::plainBox(v_->layer_);
+  lvui::addStyle(v_->titleRow_, lvui::Role::Bar);
+  v_->title_ = lvui::lineLabel(v_->titleRow_);
+  v_->listView_.create(v_->layer_);
+  v_->padView_.create(v_->layer_);
+  v_->hint_.create(v_->layer_);
+  v_->confirmView_.create(v_->layer_);
   sync();
 }
 
 void BackupPicker::sync() {
-  lvui::setHidden(layer_, !open_);
+  lvui::setHidden(v_->layer_, !open_);
   if (!open_) return;
-  lv_obj_update_layout(layer_);
-  const lvui::Cell c = lvui::cellOf(layer_);
+  lv_obj_update_layout(v_->layer_);
+  const lvui::Cell c = lvui::cellOf(v_->layer_);
   if (c.w <= 0 || c.h <= 0) return;
-  const int cols = lv_obj_get_width(layer_) / c.w, rows = lv_obj_get_height(layer_) / c.h;
+  const int cols = lv_obj_get_width(v_->layer_) / c.w, rows = lv_obj_get_height(v_->layer_) / c.h;
   const int bottom = rows - 1;
   const int top = 1;
-  placeCells(panel_, 0, top, cols, bottom);
-  placeCells(titleRow_, 0, top, cols, top + 1);
-  lvui::place(title_, c.w, 0, (cols - 2) * c.w, c.h);
+  placeCells(v_->panel_, 0, top, cols, bottom);
+  placeCells(v_->titleRow_, 0, top, cols, top + 1);
+  lvui::place(v_->title_, c.w, 0, (cols - 2) * c.w, c.h);
   buttons_ = board::hasTouch();
   pad_.setCursor(board::hasKeys());
   lvui::setHidden(v_->padView_.obj(), !buttons_);
@@ -157,19 +157,19 @@ void BackupPicker::sync() {
   if (buttons_) {
     lvui::setHidden(v_->confirmView_.backdrop(), true);
     if (confirming_) {
-      lvui::setText(title_, lvui::fitCells(confirmBox_.title(), cols - 2));
+      lvui::setText(v_->title_, lvui::fitCells(confirmBox_.title(), cols - 2));
       const std::vector<ListItem> rows{ListItem{U"Cancel", U""},
                                        ListItem{U"Restore", U"", ItemTone::Error}};
       pad_.sync(v_->padView_, rows, top + 1, bottom, false);
       syncHint(v_->hint_, U"\u25CF confirm  back: cancel", U"tap: confirm  back: cancel");
     } else {
-      lvui::setText(title_, U"restore from SD");
+      lvui::setText(v_->title_, U"restore from SD");
       pad_.sync(v_->padView_, list_.items(), top + 1, bottom, true, 1);
       syncHint(v_->hint_, U"\u2191\u2193 pick  \u25CF restore  back: cancel", U"tap to restore  back: cancel");
     }
     return;
   }
-  lvui::setText(title_, U"restore from SD");
+  lvui::setText(v_->title_, U"restore from SD");
   if (confirming_) {
     v_->confirmView_.setPlace(OverlayPlace::Bottom, bottom * c.h, 0, top * c.h);
     v_->confirmView_.sync(confirmBox_);

@@ -56,7 +56,8 @@ inline int sideNavWidth(const lvui::CellText& t) {
 // renderSideNav for LVGL: the strip over cell rows [top, bottom) at the
 // right of a grid `cols` wide, `nav` columns (sideNavWidth) wide; hidden at 0.
 // The strip's buttons come with the first sync that shows it, so boards
-// without the strip never make them.
+// without the strip never make them. Keep it in a screen's Views, so its
+// object goes back with them when a new tree is thrown away.
 class SideNavHost {
  public:
   void create(lv_obj_t* parent) {

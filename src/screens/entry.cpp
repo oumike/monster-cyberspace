@@ -570,11 +570,11 @@ void EntryScreen::hints(const std::string& reply, bool offline, const char32_t*&
 
 void EntryScreen::build(lv_obj_t* root) {
   v_.make(root);
-  root_ = root;
+  v_->root_ = root;
   v_->text_.create(root);
-  body_ = lvui::plainBox(root);
-  v_->logView_.create(body_);
-  v_->navView_.create(body_);
+  v_->body_ = lvui::plainBox(root);
+  v_->logView_.create(v_->body_);
+  v_->navView_.create(v_->body_);
   v_->qrView_.create(root);
   v_->spellView_.create(root);
   v_->inputView_.create(root);
@@ -590,7 +590,7 @@ void EntryScreen::update(int64_t nowMs) {
   // The entry and its replies change with EntryUpdated, RepliesLoaded and
   // FeedWriteDone, which ui::inputSeq() counts; the ages show with the
   // once-a-second refresh.
-  if (v_->gate_.due(root_, nowMs,
+  if (v_->gate_.due(v_->root_, nowMs,
                 {int64_t(app().conn), int64_t(view_), int64_t(reasonMode_), int64_t(sending_),
                  int64_t(log_.following())}))
     sync(nowMs);
@@ -616,7 +616,7 @@ void EntryScreen::sync(int64_t nowMs) {
   if (typing) lvui::setHidden(v_->qrView_.obj(), true);
   v_->text_.begin();
   if (!typing) {
-    lvui::setHidden(body_, true);
+    lvui::setHidden(v_->body_, true);
     lvui::setHidden(v_->spellView_.obj(), true);
     lvui::setHidden(v_->hint_.obj(), false);
     link_.sync(v_->text_, v_->qrView_, v_->hint_);
@@ -646,9 +646,9 @@ void EntryScreen::sync(int64_t nowMs) {
   const bool offline = app().conn == 0;
   if (!loaded_) v_->text_.line(1, 2, offline ? "offline" : "loading\u2026", t.dim);
   v_->text_.end();
-  lvui::setHidden(body_, !loaded_);
+  lvui::setHidden(v_->body_, !loaded_);
   if (loaded_) {
-    placeCells(body_, 0, 1, cols, logBottom);
+    placeCells(v_->body_, 0, 1, cols, logBottom);
     placeCells(v_->logView_.obj(), 0, 0, cols - nav, logBottom - 1);
     v_->logView_.sync(log_);
     v_->navView_.sync(nav, 0, logBottom - 1, cols);

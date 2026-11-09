@@ -80,17 +80,18 @@ class ComposerScreen : public Screen {
     int16_t index = 0;
   };
 
-  // LVGL views.
-  lv_obj_t* root_ = nullptr;
-  lv_obj_t* padAbove_ = nullptr;  // the title's padding rows, on inputBg
-  lv_obj_t* padBelow_ = nullptr;
-  lv_obj_t* promptTap_ = nullptr;  // over "Title ", which the padding's target covers
-  lv_obj_t* checkFocus_ = nullptr;  // an outlined theme's focused checkbox
-  lv_obj_t* publicTap_ = nullptr;
-  lv_obj_t* nsfwTap_ = nullptr;
   FieldTap titleTap_, publicField_, nsfwField_;
   // The views, on the heap only while their tree is up (lvui/tree_views.h).
+  // The objects held here go with them: a tree thrown away gives back the
+  // old tree's.
   struct Views {
+    lv_obj_t* root_ = nullptr;
+    lv_obj_t* padAbove_ = nullptr;  // the title's padding rows, on inputBg
+    lv_obj_t* padBelow_ = nullptr;
+    lv_obj_t* promptTap_ = nullptr;  // over "Title ", which the padding's target covers
+    lv_obj_t* checkFocus_ = nullptr;  // an outlined theme's focused checkbox
+    lv_obj_t* publicTap_ = nullptr;
+    lv_obj_t* nsfwTap_ = nullptr;
     SyncGate<3> gate_;  // the update check, fresh with each tree
     lvui::TopBar status_;
     lvui::CellText text_;          // the Body label, its count and the checkboxes

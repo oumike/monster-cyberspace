@@ -362,7 +362,7 @@ void HomeScreen::onKey(const KeyEvent& k) {
 
 void HomeScreen::build(lv_obj_t* root) {
   v_.make(root);
-  root_ = root;
+  v_->root_ = root;
   v_->text_.create(root);
   v_->menuView_.create(root);
   v_->tilesView_.create(root);
@@ -377,7 +377,7 @@ void HomeScreen::update(int64_t nowMs) {
   const std::hash<std::string> hash;
   const int64_t cursor = (int64_t(tileSel_) << 40) ^ (int64_t(colTop_) << 20) ^ (int64_t(menu_.selected()) << 1) ^
                          int64_t(tileHidden_);
-  if (v_->gate_.due(root_, nowMs,
+  if (v_->gate_.due(v_->root_, nowMs,
                 {int64_t(a.mentions.size()), chat.unread, chat.conversations, chat.active, feedUnread(),
                  int64_t(hash(a.user)), int64_t(hash(a.cfg.lastRoom)), cursor}))
     sync();
@@ -386,7 +386,7 @@ void HomeScreen::update(int64_t nowMs) {
 void HomeScreen::sync() {
   const Theme& t = lvui::currentTheme();
   const AppState& a = app();
-  const lvui::Cell c = lvui::cellOf(root_);
+  const lvui::Cell c = lvui::cellOf(v_->root_);
   const int rows = v_->text_.rows(), bottom = rows - 1;
 
   // Touch boards: the tiles (lvui::homeFit).
@@ -398,7 +398,7 @@ void HomeScreen::sync() {
 #if RC_LOW_MEM
     if (ts == TextSize::Compact) ts = TextSize::Comfortable;
 #endif
-    fit = lvui::homeFit(int(lv_obj_get_width(root_)), (rows - 2) * c.h, rows, ts, tileCount(), kTilePercent,
+    fit = lvui::homeFit(int(lv_obj_get_width(v_->root_)), (rows - 2) * c.h, rows, ts, tileCount(), kTilePercent,
                         spanFirst());
     column_ = fit.column;
   }

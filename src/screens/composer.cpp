@@ -381,24 +381,24 @@ lv_obj_t* tapBox(lv_obj_t* parent, lvui::Tappable* v) {
 
 void ComposerScreen::build(lv_obj_t* root) {
   v_.make(root);
-  root_ = root;
+  v_->root_ = root;
   titleTap_.field = kTitle;
   publicField_.field = kPublic;
   nsfwField_.field = kNsfw;
   v_->text_.create(root);
-  padAbove_ = tapBox(root, &titleTap_);
-  lvui::addStyle(padAbove_, lvui::Role::Input);
-  padBelow_ = tapBox(root, &titleTap_);
-  lvui::addStyle(padBelow_, lvui::Role::Input);
+  v_->padAbove_ = tapBox(root, &titleTap_);
+  lvui::addStyle(v_->padAbove_, lvui::Role::Input);
+  v_->padBelow_ = tapBox(root, &titleTap_);
+  lvui::addStyle(v_->padBelow_, lvui::Role::Input);
   v_->bodyView_.create(root);
   v_->titleView_.create(root);
   v_->topicsView_.create(root);
   v_->cwView_.create(root);
-  promptTap_ = tapBox(root, &titleTap_);
-  checkFocus_ = lvui::plainBox(root);
-  lvui::addStyle(checkFocus_, lvui::Role::Focused);
-  publicTap_ = tapBox(root, &publicField_);
-  nsfwTap_ = tapBox(root, &nsfwField_);
+  v_->promptTap_ = tapBox(root, &titleTap_);
+  v_->checkFocus_ = lvui::plainBox(root);
+  lvui::addStyle(v_->checkFocus_, lvui::Role::Focused);
+  v_->publicTap_ = tapBox(root, &publicField_);
+  v_->nsfwTap_ = tapBox(root, &nsfwField_);
   v_->spellView_.create(root);
   v_->hint_.create(root);
   v_->status_.create(root);
@@ -409,7 +409,7 @@ void ComposerScreen::build(lv_obj_t* root) {
 void ComposerScreen::update(int64_t nowMs) {
   // The draft changes only with keys, and the post's result with EntryPosted,
   // both counted by ui::inputSeq().
-  if (v_->gate_.due(root_, nowMs, {int64_t(focus_), int64_t(menu_), int64_t(gPosting)})) sync();
+  if (v_->gate_.due(v_->root_, nowMs, {int64_t(focus_), int64_t(menu_), int64_t(gPosting)})) sync();
 }
 
 void ComposerScreen::sync() {
@@ -425,13 +425,13 @@ void ComposerScreen::sync() {
   // at the end, as does a tap on the prompt.
   title_.setDisabled(focus_ != kTitle || gPosting);
   titleTap_.index = static_cast<int16_t>(title_.text().size());
-  lvui::setHidden(padAbove_, !r.pad);
-  lvui::setHidden(padBelow_, !r.pad);
-  lvui::setHidden(promptTap_, !r.pad);
+  lvui::setHidden(v_->padAbove_, !r.pad);
+  lvui::setHidden(v_->padBelow_, !r.pad);
+  lvui::setHidden(v_->promptTap_, !r.pad);
   if (r.pad) {
-    placeCells(padAbove_, 0, r.title - 1, cols, r.title);
-    placeCells(padBelow_, 0, r.title + 1, cols, r.title + 2);
-    placeCells(promptTap_, 0, r.title, int(std::u32string_view(U"Title ").size()), r.title + 1);
+    placeCells(v_->padAbove_, 0, r.title - 1, cols, r.title);
+    placeCells(v_->padBelow_, 0, r.title + 1, cols, r.title + 2);
+    placeCells(v_->promptTap_, 0, r.title, int(std::u32string_view(U"Title ").size()), r.title + 1);
   }
   placeCells(v_->titleView_.obj(), 0, r.title, cols, r.title + 1);
   v_->titleView_.sync(title_, U"Title ");
@@ -449,15 +449,15 @@ void ComposerScreen::sync() {
 
   // The checkboxes: a focused one in selection colours, or outlined.
   bool outline = false;
-  lvui::setHidden(publicTap_, guild);
-  lvui::setHidden(nsfwTap_, guild);
+  lvui::setHidden(v_->publicTap_, guild);
+  lvui::setHidden(v_->nsfwTap_, guild);
   if (!guild) {
     auto box = [&](int col, bool on, const char32_t* label, bool focused) {
       std::u32string s = std::u32string(on ? U"[x] " : U"[ ] ") + label;
       const int w = focused && !t.outlined ? v_->text_.filled(col, r.check, s, t.selectFg, t.selectBg)
                                            : v_->text_.line(col, r.check, s, t.fg, cols - col);
       if (focused && t.outlined && w > 0) {
-        placeCells(checkFocus_, col, r.check, w, r.check + 1);
+        placeCells(v_->checkFocus_, col, r.check, w, r.check + 1);
         outline = true;
       }
       return col + w;
@@ -465,11 +465,11 @@ void ComposerScreen::sync() {
     const int col = box(0, gDraft.isPublic, U"Public", focus_ == kPublic);
     const int nsfwStart = col + 2;
     const int nsfwEnd = box(nsfwStart, gDraft.nsfw, U"NSFW", focus_ == kNsfw);
-    placeCells(publicTap_, 0, r.check, std::max(1, col), r.check + 1);
-    placeCells(nsfwTap_, nsfwStart, r.check, std::max(1, nsfwEnd - nsfwStart), r.check + 1);
+    placeCells(v_->publicTap_, 0, r.check, std::max(1, col), r.check + 1);
+    placeCells(v_->nsfwTap_, nsfwStart, r.check, std::max(1, nsfwEnd - nsfwStart), r.check + 1);
   }
   v_->text_.end();
-  lvui::setHidden(checkFocus_, !outline);
+  lvui::setHidden(v_->checkFocus_, !outline);
 
   lvui::setHidden(v_->cwView_.obj(), guild);
   if (!guild) {

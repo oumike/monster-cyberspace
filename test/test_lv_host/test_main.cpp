@@ -217,6 +217,31 @@ void test_tree_views_follow_their_tree() {
   TEST_ASSERT_NULL(v.get());
 }
 
+// A screen keeps its objects in its views: when a new tree doesn't fit, the
+// objects it holds are the old tree's again, never ones freed with the new.
+void test_tree_objects_revert_with_failed_build() {
+  struct Views {
+    lv_obj_t* body = nullptr;
+  };
+  lvui::ScreenHost host;
+  lvui::TreeViews<Views> v;
+  TEST_ASSERT_TRUE(host.show([&](lv_obj_t* root) { v.make(root).body = lv_obj_create(root); }));
+  lv_obj_t* old = host.root();
+  lv_obj_t* oldBody = v->body;
+  TEST_ASSERT_FALSE(host.show([&](lv_obj_t* root) {
+    v.make(root).body = lv_obj_create(root);
+    starved = true;
+  }));
+  TEST_ASSERT_EQUAL_PTR(old, host.root());
+  TEST_ASSERT_EQUAL_PTR(oldBody, v->body);
+  TEST_ASSERT_EQUAL_PTR(old, lv_obj_get_parent(v->body));
+  starved = false;
+  now += lvui::ScreenHost::kOomMs + 10;
+  lv_timer_handler();
+  lv_obj_delete(host.root());
+  TEST_ASSERT_NULL(v.get());
+}
+
 void test_emit_reaches_sink() {
   lvui::emit(rc::KeyEvent{});
   lvui::setKeySink(sink);
@@ -294,6 +319,7 @@ int main() {
   RUN_TEST(test_host_double_failure_recovers);
   RUN_TEST(test_host_room_for);
   RUN_TEST(test_tree_views_follow_their_tree);
+  RUN_TEST(test_tree_objects_revert_with_failed_build);
   RUN_TEST(test_emit_reaches_sink);
   RUN_TEST(test_oom_label_survives_layer_clean);
   RUN_TEST(test_pointer_made_once);

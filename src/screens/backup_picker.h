@@ -50,11 +50,13 @@ class BackupPicker {
   // Touch boards: the files, then Cancel / Restore, as buttons.
   ButtonPad pad_;
   bool buttons_ = false;
-  // LVGL: a transparent layer as big as the screen holding the panel, its
-  // title row, the list or buttons, the confirm and the hint.
-  lv_obj_t *layer_ = nullptr, *panel_ = nullptr, *titleRow_ = nullptr, *title_ = nullptr;
   // The views, on the heap only while their tree is up (lvui/tree_views.h).
+  // The objects held here go with them: a tree thrown away gives back the
+  // old tree's.
   struct Views {
+    // A transparent layer as big as the screen holding the panel, its title
+    // row, the list or buttons, the confirm and the hint.
+    lv_obj_t *layer_ = nullptr, *panel_ = nullptr, *titleRow_ = nullptr, *title_ = nullptr;
     lvui::ListBox listView_;
     lvui::TileGrid padView_;
     lvui::MenuOverlay confirmView_;

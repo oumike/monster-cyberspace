@@ -965,34 +965,34 @@ void SettingsScreen::build(lv_obj_t* root) {
   TextSize only;
   const std::optional<TextSize> fixed =
       board::fixedTextSize(only) ? std::optional<TextSize>(only) : std::nullopt;
-  frame_ = lvui::plainBox(root);
-  lv_obj_set_size(frame_, lv_pct(100), lv_pct(100));
-  lv_obj_set_style_text_font(frame_, lvui::fontFor(RC_LOW_MEM ? TextSize::Comfortable : TextSize::Compact, fixed),
+  v_->frame_ = lvui::plainBox(root);
+  lv_obj_set_size(v_->frame_, lv_pct(100), lv_pct(100));
+  lv_obj_set_style_text_font(v_->frame_, lvui::fontFor(RC_LOW_MEM ? TextSize::Comfortable : TextSize::Compact, fixed),
                              0);
-  v_->padView_.create(frame_);
-  v_->listView_.create(frame_);
+  v_->padView_.create(v_->frame_);
+  v_->listView_.create(v_->frame_);
   // Over the buttons, as the grid draws the header lines after them.
-  v_->text_.create(frame_);
-  zonePanel_ = lvui::plainBox(frame_);
-  lvui::addStyle(zonePanel_, lvui::Role::Screen);
-  zoneTitle_ = lvui::plainBox(frame_);
-  lvui::addStyle(zoneTitle_, lvui::Role::Bar);
-  lv_obj_t* zoneLabel = lvui::lineLabel(zoneTitle_);
+  v_->text_.create(v_->frame_);
+  v_->zonePanel_ = lvui::plainBox(v_->frame_);
+  lvui::addStyle(v_->zonePanel_, lvui::Role::Screen);
+  v_->zoneTitle_ = lvui::plainBox(v_->frame_);
+  lvui::addStyle(v_->zoneTitle_, lvui::Role::Bar);
+  lv_obj_t* zoneLabel = lvui::lineLabel(v_->zoneTitle_);
   lvui::setText(zoneLabel, U"time zone");
-  v_->zoneView_.create(frame_);
-  choiceRow_ = lvui::plainBox(frame_);
-  lvui::addStyle(choiceRow_, lvui::Role::Bar);
-  choiceLabel_ = lvui::lineLabel(choiceRow_);
-  v_->choiceView_.create(frame_);
-  v_->hint_.create(frame_);
-  picker_.build(frame_);
-  v_->status_.create(frame_);
+  v_->zoneView_.create(v_->frame_);
+  v_->choiceRow_ = lvui::plainBox(v_->frame_);
+  lvui::addStyle(v_->choiceRow_, lvui::Role::Bar);
+  v_->choiceLabel_ = lvui::lineLabel(v_->choiceRow_);
+  v_->choiceView_.create(v_->frame_);
+  v_->hint_.create(v_->frame_);
+  picker_.build(v_->frame_);
+  v_->status_.create(v_->frame_);
   // Over the status bar: the grid's overlay backdrop takes the whole screen.
-  v_->confirmView_.create(frame_);
+  v_->confirmView_.create(v_->frame_);
   // Last: a slider's backdrop takes every tap, the status bar's too.
-  sliderHost_ = lvui::plainBox(frame_);
-  lv_obj_set_size(sliderHost_, lv_pct(100), lv_pct(100));
-  v_->sliderView_.create(sliderHost_);
+  v_->sliderHost_ = lvui::plainBox(v_->frame_);
+  lv_obj_set_size(v_->sliderHost_, lv_pct(100), lv_pct(100));
+  v_->sliderView_.create(v_->sliderHost_);
   sync();
 }
 
@@ -1022,16 +1022,16 @@ void SettingsScreen::sync() {
   const bool zone = page && !slider && picking_;
   const bool confirm = page && !slider && !picking_ && confirm_ != Confirm::None;
   const bool menu = page && !buttons_ && !zone && !confirm;
-  lvui::setHidden(choiceRow_, !choiceButtons);
+  lvui::setHidden(v_->choiceRow_, !choiceButtons);
   lvui::setHidden(v_->choiceView_.obj(), !choiceButtons);
   lvui::setHidden(v_->text_.obj(), !page);
   lvui::setHidden(v_->padView_.obj(), !page || !buttons_);
   lvui::setHidden(v_->listView_.obj(), !menu);
-  lvui::setHidden(zonePanel_, !zone);
-  lvui::setHidden(zoneTitle_, !zone);
+  lvui::setHidden(v_->zonePanel_, !zone);
+  lvui::setHidden(v_->zoneTitle_, !zone);
   lvui::setHidden(v_->zoneView_.obj(), !zone);
   lvui::setHidden(v_->hint_.obj(), pickerOpen);
-  lvui::setHidden(sliderHost_, !page || !slider);
+  lvui::setHidden(v_->sliderHost_, !page || !slider);
   if (!confirm) lvui::setHidden(v_->confirmView_.backdrop(), true);
   if (pickerOpen) return;
 
@@ -1041,9 +1041,9 @@ void SettingsScreen::sync() {
     // The choices as buttons over the whole screen, under a title bar: one
     // column when two would cut the labels.
     const int top = 1;
-    placeCells(choiceRow_, 0, top, cols, top + 1);
-    lvui::place(choiceLabel_, c.w, 0, std::max(0, cols - 2) * c.w, c.h);
-    lvui::setText(choiceLabel_, choiceTitle_);
+    placeCells(v_->choiceRow_, 0, top, cols, top + 1);
+    lvui::place(v_->choiceLabel_, c.w, 0, std::max(0, cols - 2) * c.w, c.h);
+    lvui::setText(v_->choiceLabel_, choiceTitle_);
     int labelW = 0;
     for (const ListItem& it : choices_) labelW = std::max(labelW, int(it.label.size()));
     const int columns = ButtonPad::columns();
@@ -1090,7 +1090,7 @@ void SettingsScreen::sync() {
     // The box centred over rows [1, bottom), its backdrop over everything.
     lv_obj_t* back = v_->sliderView_.backdrop();
     lv_obj_set_style_pad_top(back, c.h, 0);
-    lv_obj_set_style_pad_bottom(back, std::max(0, int(lv_obj_get_height(frame_)) - bottom * c.h), 0);
+    lv_obj_set_style_pad_bottom(back, std::max(0, int(lv_obj_get_height(v_->frame_)) - bottom * c.h), 0);
     v_->sliderView_.sync(*slider);
     if (slider == &volume_)
       syncHint(v_->hint_, U"\u2190\u2192 volume  \u25CF set  back: cancel", U"tap the bar  Set or Cancel");
@@ -1103,9 +1103,9 @@ void SettingsScreen::sync() {
   } else if (zone) {
     // Over the status lines and the menu, below the status bar.
     const int top = 1;
-    placeCells(zoneTitle_, 0, top, cols, top + 1);
-    lvui::place(lv_obj_get_child(zoneTitle_, 0), c.w, 0, std::max(0, cols - 2) * c.w, c.h);
-    placeCells(zonePanel_, 0, top + 1, cols, bottom);
+    placeCells(v_->zoneTitle_, 0, top, cols, top + 1);
+    lvui::place(lv_obj_get_child(v_->zoneTitle_, 0), c.w, 0, std::max(0, cols - 2) * c.w, c.h);
+    placeCells(v_->zonePanel_, 0, top + 1, cols, bottom);
     placeCells(v_->zoneView_.obj(), 1, top + 1, cols - 2, bottom);
     v_->zoneView_.sync(zoneList_);
     syncHint(v_->hint_, U"\u2191\u2193 pick  \u25CF set  back: cancel", U"tap to select");

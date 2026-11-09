@@ -109,14 +109,15 @@ class EntryScreen : public Screen {
   int64_t builtAt_ = 0;
   const Theme* theme_ = nullptr;  // the lines bake its colours
 
-  // LVGL views. body_ holds the log and the side strip between the status
-  // bar and what sits above the input.
-  lv_obj_t* root_ = nullptr;
-  lv_obj_t* body_ = nullptr;
   unsigned themeSerial_ = ~0u;  // lvui::themeSerial() the lines bake
   int64_t nowMs_ = 0;           // the last update's, for build
   // The views, on the heap only while their tree is up (lvui/tree_views.h).
+  // The objects held here go with them: a tree thrown away gives back the
+  // old tree's. body_ holds the log and the side strip between the status
+  // bar and what sits above the input.
   struct Views {
+    lv_obj_t* root_ = nullptr;
+    lv_obj_t* body_ = nullptr;
     SyncGate<5> gate_;  // the update check, fresh with each tree
     lvui::TopBar status_;
     lvui::CellText text_;

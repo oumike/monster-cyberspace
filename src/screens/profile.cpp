@@ -441,8 +441,8 @@ void ProfileScreen::build(lv_obj_t* root) {
   v_.make(root);
   v_->textView_.create(root);
   v_->padView_.create(root);
-  linkFocus_ = lvui::plainBox(root);
-  lvui::addStyle(linkFocus_, lvui::Role::Focused);
+  v_->linkFocus_ = lvui::plainBox(root);
+  lvui::addStyle(v_->linkFocus_, lvui::Role::Focused);
   v_->cells_.create(root);
   v_->qrView_.create(root);
   v_->hint_.create(root);
@@ -479,7 +479,7 @@ void ProfileScreen::sync(int64_t nowMs) {
   if (linkOpen_) {
     link_.sync(v_->cells_, v_->qrView_, v_->hint_);
     v_->cells_.end();
-    lvui::setHidden(linkFocus_, true);
+    lvui::setHidden(v_->linkFocus_, true);
     lvui::setHidden(v_->menuView_.backdrop(), true);
     return;
   }
@@ -494,12 +494,12 @@ void ProfileScreen::sync(int64_t nowMs) {
       const int row = linkTop + i;
       v_->cells_.line(2, row, links_[i].label, t.sys, cols - 3);
       if (linksFocus_ && i == linkSel_ && cursorShown()) {
-        placeCells(linkFocus_, 0, row, cols, row + 1);
+        placeCells(v_->linkFocus_, 0, row, cols, row + 1);
         outline = true;
       }
     }
   }
-  lvui::setHidden(linkFocus_, !outline);
+  lvui::setHidden(v_->linkFocus_, !outline);
   if (loaded_) {
     placeCells(v_->textView_.obj(), 0, 1, cols, std::max(2, linkTop - 1));
     v_->textView_.sync(text_);

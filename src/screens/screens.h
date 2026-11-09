@@ -136,9 +136,11 @@ class HomeScreen : public Screen {
   // a whole tile.
   bool column_ = false;
   int colTop_ = 0, colVisible_ = 1, colStride_ = 3, colCarry_ = 0;
-  lv_obj_t* root_ = nullptr;
   // The views, on the heap only while their tree is up (lvui/tree_views.h).
+  // The objects held here go with them: a tree thrown away gives back the
+  // old tree's.
   struct Views {
+    lv_obj_t* root_ = nullptr;
     SyncGate<8> gate_;  // the update check, fresh with each tree
     lvui::TopBar status_;
     lvui::CellText text_;
@@ -219,16 +221,18 @@ class SettingsScreen : public Screen {
   ButtonPad choicePad_;
   std::u32string choiceTitle_;
   std::vector<ListItem> choices_;
-  // LVGL: everything under frame_, which carries the screen's text size.
-  lv_obj_t* frame_ = nullptr;
-  // The time zone list: a title bar over a panel.
-  lv_obj_t *zonePanel_ = nullptr, *zoneTitle_ = nullptr;
-  // Touch: the choice title bar and choicePad_.
-  lv_obj_t *choiceRow_ = nullptr, *choiceLabel_ = nullptr;
-  // The open slider over rows [1, bottom), its backdrop over the whole screen.
-  lv_obj_t* sliderHost_ = nullptr;
   // The views, on the heap only while their tree is up (lvui/tree_views.h).
+  // The objects held here go with them: a tree thrown away gives back the
+  // old tree's.
   struct Views {
+    // Everything under frame_, which carries the screen's text size.
+    lv_obj_t* frame_ = nullptr;
+    // The time zone list: a title bar over a panel.
+    lv_obj_t *zonePanel_ = nullptr, *zoneTitle_ = nullptr;
+    // Touch: the choice title bar and choicePad_.
+    lv_obj_t *choiceRow_ = nullptr, *choiceLabel_ = nullptr;
+    // The open slider over rows [1, bottom), its backdrop over the whole screen.
+    lv_obj_t* sliderHost_ = nullptr;
     SyncGate<5> gate_;  // the update check, fresh with each tree
     lvui::TopBar status_;
     lvui::CellText text_;
@@ -613,9 +617,11 @@ class ProfileScreen : public Screen {
   int64_t builtAt_ = 0;
   unsigned themeSerial_ = ~0u;  // lvui::themeSerial() text_'s colours came from
   int64_t nowMs_ = 0;           // the last update's, for build
-  lv_obj_t* linkFocus_ = nullptr;  // the focused link's outline (keys)
   // The views, on the heap only while their tree is up (lvui/tree_views.h).
+  // The objects held here go with them: a tree thrown away gives back the
+  // old tree's.
   struct Views {
+    lv_obj_t* linkFocus_ = nullptr;  // the focused link's outline (keys)
     SyncGate<1> gate_;  // the update check, fresh with each tree
     lvui::TopBar status_;
     lvui::TextBox textView_;

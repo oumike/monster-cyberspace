@@ -141,15 +141,16 @@ class RoomScreen : public Screen {
   std::set<std::string> muted_;  // this room's mutes, lower-cased
   std::string self_;
 
-  // LVGL views. body_ holds the rows between the status bar and what sits
-  // under the log, for the views that fill their parent.
-  lv_obj_t* root_ = nullptr;
-  lv_obj_t* body_ = nullptr;
-  lv_obj_t* readerBox_ = nullptr;  // the reader's rows, for its scroll bar; null until it opens
-  int32_t readerIndex_ = 0;        // readerBox_'s place among root_'s children
   unsigned themeSerial_ = ~0u;  // lvui::themeSerial() the lines bake
   // The views, on the heap only while their tree is up (lvui/tree_views.h).
+  // The objects held here go with them: a tree thrown away gives back the
+  // old tree's. body_ holds the rows between the status bar and what sits
+  // under the log, for the views that fill their parent.
   struct Views {
+    lv_obj_t* root_ = nullptr;
+    lv_obj_t* body_ = nullptr;
+    lv_obj_t* readerBox_ = nullptr;  // the reader's rows, for its scroll bar; null until it opens
+    int32_t readerIndex_ = 0;        // readerBox_'s place among root_'s children
     SyncGate<6> gate_;  // the update check, fresh with each tree
     lvui::TopBar status_;
     lvui::CellText text_;

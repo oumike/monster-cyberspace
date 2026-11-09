@@ -8,7 +8,7 @@
 #include "chat/chat_source.h"
 #include "feature_flags.h"
 #include "hal/board.h"
-#include "screens/draw.h"
+#include "screens/lv_draw.h"
 #if RC_FEAT_PEOPLE
 #include "screens/people_nav.h"
 #endif
@@ -345,14 +345,14 @@ void RoomScreen::viewerKey(const KeyEvent& k) {
       viewTop_ = std::max(0, viewTop_ - 1);
       break;
     case Action::Down:
-      ++viewTop_;  // clamped in render
+      ++viewTop_;  // clamped in sync
       break;
     case Action::Left:
       if (view_ == View::Reader && viewLeft_ > 0) viewLeft_ = std::max(0, viewLeft_ - 8);
       else view_ = View::None;
       break;
     case Action::Right:
-      viewLeft_ += 8;  // clamped in render
+      viewLeft_ += 8;  // clamped in sync
       break;
     case Action::Back:
     case Action::Select:
@@ -788,79 +788,6 @@ void RoomScreen::hints(bool drawer, bool docked, bool offline, const char32_t*& 
     hint = U"\u25CF send  \u2191\u2193 scroll  \u2192 who's here  ctrl cmds";
     touch = U"tap the line to type  tap a message for actions";
   }
-}
-
-void RoomScreen::render(Grid& g, const Theme& t, int64_t) {
-  // The input sits above the hint row.
-  const int inputRow = g.rows() - 2;
-  int logBottom = inputRow;
-  const bool drawer = drawerOpen();
-  const bool docked = drawerDocked();
-  const bool shown = drawer || docked;
-  // Messages wrap to the width left of the member list, so none run under it.
-  // Or left of the side strip, which steps aside for the member list.
-  const int nav = shown ? 0 : sideNavWidth(g);
-  const int reserve = shown ? Drawer::width(g.cols(), docked) : nav;
-  const int logCols = std::max(1, g.cols() - reserve - LogView::kBarCols);
-  const Frame f = refresh(t, logCols, shown, &t == theme_);
-  const int online = f.online;
-  const std::vector<std::string>& typers = f.typers;
-
-  g.fill(t.bg);
-  drawStatus(g, t, utf8ToU32(dm_ ? "@" + partner_ : "#" + slug_), dm_ ? -1 : online, true);
-
-  if (view_ == View::Link) {
-    link_.render(g, t);
-    return;
-  }
-  if (view_ == View::Reader) {
-    // A full-screen viewer below the status bar.
-    std::vector<std::u32string> rows =
-        wrapView_ ? wrapText(viewLines_[0], g.cols() - 2, g.cols() - 2) : viewLines_;
-    const int bottom = g.rows() - 1;
-    int avail = bottom - 1;
-    int maxTop = std::max(0, int(rows.size()) - avail);
-    viewTop_ = std::min(viewTop_, maxTop);
-    int widest = 0;
-    for (const auto& l : rows) widest = std::max(widest, int(l.size()));
-    const int textCols = g.cols() - 1;  // the last column holds the scroll bar
-    viewLeft_ = std::min(viewLeft_, std::max(0, widest - textCols));
-    for (int i = 0; i < avail && viewTop_ + i < int(rows.size()); ++i) {
-      const auto& line = rows[viewTop_ + i];
-      if (int(line.size()) > viewLeft_)
-        g.putText(0, 1 + i, std::u32string_view(line).substr(viewLeft_), t.fg, t.bg, textCols);
-    }
-    drawScrollBar(g, textCols, 1, bottom, int(rows.size()), avail, viewTop_, t, t.bg);
-    drawHint(g, t, U"\u2191\u2193\u2190\u2192 scroll  back: close", U"swipe to scroll  \u2039 close");
-    return;
-  }
-
-  if (!typers.empty()) {
-    // One row above the input for "name is typing…".
-    --logBottom;
-    std::string who = typers[0];
-    for (size_t i = 1; i < typers.size(); ++i) who += ", " + typers[i];
-    putLine(g, 1, logBottom, who + " is typing\u2026", t.dim, t.bg);
-  }
-#if RC_FEAT_SPELL
-  if (spell_.visible() && view_ == View::None && !reasonMode_) spell_.render(g, --logBottom, t);
-#endif
-  log_.render(g, 1, logBottom, reserve, t);
-  if (shown) drawer_.render(g, 1, logBottom, t, docked);
-  if (nav > 0) renderSideNav(g, 1, logBottom, nav, t);
-
-  if (view_ == View::Menu)
-    box_.render(g, 1, logBottom, reserve, OverlayPlace::BottomRight, t);
-
-  bool offline = app().conn == 0;
-  input_.setDisabled(offline || view_ != View::None);
-  input_.setEmojiButton(RC_FEAT_EMOJI != 0);
-  input_.render(g, inputRow, t, reasonMode_ ? U"reason> " : U"> ");
-
-  const char32_t* hint;
-  const char32_t* touch;
-  hints(drawer, docked, offline, hint, touch);
-  drawHint(g, t, hint, touch);
 }
 
 // ---- LVGL ----

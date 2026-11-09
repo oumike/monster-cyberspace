@@ -11,7 +11,7 @@
 #include "feed/compose.h"
 #include "feed/feed_source.h"
 #include "lvui/views/view_util.h"
-#include "screens/draw.h"
+#include "screens/lv_draw.h"
 #include "screens/people_nav.h"
 #include "store/locked_feed.h"
 #include "ui/feed_layout.h"
@@ -563,49 +563,6 @@ void EntryScreen::hints(const std::string& reply, bool offline, const char32_t*&
   } else {
     hint = U"\u25CF send / menu  \u2191\u2193 scroll  back: feed";
     touch = U"tap the line to type  tap a reply for actions";
-  }
-}
-
-void EntryScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
-  const bool small = compact();
-  const int inputRow = small ? g.rows() - 2 : g.rows() - 1;
-  const int logRows = inputRow - 1;
-  const int nav = sideNavWidth(g);
-  const int logCols = g.cols() - nav - LogView::kBarCols;
-  refresh(logCols, logRows, t, nowMs, &t == theme_);
-
-  g.fill(t.bg);
-  drawStatus(g, t, title_.empty() ? std::u32string(U"entry") : title_, -1, true);
-  if (view_ == View::Link) {
-    link_.render(g, t);
-    return;
-  }
-
-  int logBottom = inputRow;
-  std::string reply = selectedReply();
-  if (!reply.empty()) {
-    // The reply the input line answers.
-    --logBottom;
-    putLine(g, 1, logBottom, replyLine(reply), t.dim, t.bg);
-  }
-  if (spell_.visible() && view_ == View::None && !reasonMode_) spell_.render(g, --logBottom, t);
-  const bool offline = app().conn == 0;
-  if (loaded_) log_.render(g, 1, logBottom, nav, t);
-  else putLine(g, 1, 2, offline ? "offline" : "loading\u2026", t.dim, t.bg);
-
-  if (view_ == View::Menu)
-    box_.render(g, 1, logBottom, nav, OverlayPlace::BottomRight, t);
-  if (loaded_ && nav > 0) renderSideNav(g, 1, logBottom, nav, t);
-
-  input_.setDisabled(offline || view_ != View::None || sending_ || !loaded_);
-  input_.setEmojiButton(RC_FEAT_EMOJI != 0);
-  input_.render(g, inputRow, t, reasonMode_ ? U"reason> " : U"> ");
-
-  if (small) {
-    const char32_t* hint;
-    const char32_t* touch;
-    hints(reply, offline, hint, touch);
-    drawHint(g, t, hint, touch);
   }
 }
 

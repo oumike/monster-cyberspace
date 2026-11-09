@@ -23,9 +23,7 @@ class GuildInfoView {
   bool isOpen() const { return open_; }
   // False once the view has closed.
   bool key(const KeyEvent& k);
-  // Draws rows 1 to the last (the last holds the hint).
-  void render(Grid& g, const Theme& t);
-  // render for LVGL: the text into text (over rows 1 to the last), or the
+  // The text into text (over rows 1 to the last), or the
   // link into cells (between the caller's begin() and end()) and qr; then
   // the hint.
   void sync(lvui::TextBox& text, lvui::CellText& cells, lvui::QrBox& qr, lvui::HintBar& hint);

@@ -2,7 +2,6 @@
 #include "app/ui_task.h"
 #include "feature_flags.h"
 #include "hal/board.h"
-#include "screens/draw.h"
 #include "screens/lv_draw.h"
 #if RC_FEAT_PEOPLE
 #include "screens/people_nav.h"
@@ -14,7 +13,6 @@
 #endif
 #include "ui/home_items.h"
 #include "ui/home_tiles.h"
-#include "ui/tap_map.h"
 #include "ui/unread_inbox.h"
 
 #include <algorithm>
@@ -362,157 +360,6 @@ void HomeScreen::onKey(const KeyEvent& k) {
   }
 }
 
-void HomeScreen::renderTiles(Grid& g, const Theme& t, const std::vector<TileRect>& tiles,
-                             int cellW, int first, bool column) {
-  const int count = tileCount();
-  if (tileSel_ < 0 || tileSel_ >= count) tileSel_ = 0;
-
-  const std::vector<lvui::HomeTileInfo> infos = tileInfos();
-
-  if (activeTaps()) activeTaps()->setList(ListId::Main, tileHidden_ ? -1 : tileSel_, tileCount(), false);
-  for (int slot = 0; slot < int(tiles.size()) && first + slot < tileCount(); ++slot) {
-    const int i = first + slot;
-    const TileRect& r = tiles[slot];
-    const lvui::HomeTileInfo& it = infos[i];
-    const bool sel = i == tileSel_ && !tileHidden_;
-    // The cursor is the outline alone: the selected tile's in the accent.
-    const uint16_t bg = t.bg;
-    for (int row = r.r0; row <= r.r1; ++row)
-      for (int c = r.c0; c <= r.c1; ++c) g.put(c, row, U' ', bg, bg);
-
-    const int mid = (r.r0 + r.r1) / 2;
-    const int inW = r.c1 - r.c0 - 1;  // inside the outline
-    const uint16_t labelFg = it.unread ? t.selectBg : t.fg;
-    // A wide column tile has room for the sub line beside the label.
-    const bool beside = column && !it.sub.empty() && mid + 1 > r.r1 - 1 &&
-                        int(it.label.size() + 2 + it.sub.size()) <= inW;
-    const int lineW = beside ? int(it.label.size() + 2 + it.sub.size()) : int(it.label.size());
-    int lw = std::min<int>(int(it.label.size()), inW);
-    const int lc = r.c0 + 1 + std::max(0, (inW - std::min(lineW, inW)) / 2);
-    g.putText(lc, mid, it.label, labelFg, bg, lw);
-    if (beside) g.putText(lc + lw + 2, mid, it.sub, t.dim, bg, int(it.sub.size()));
-    if (!beside && !it.sub.empty() && mid + 1 <= r.r1 - 1) {
-      const uint16_t subFg = t.dim;
-      int sw = std::min<int>(int(it.sub.size()), inW);
-      g.putText(r.c0 + 1 + std::max(0, (inW - sw) / 2), mid + 1, it.sub, subFg, bg, sw);
-    }
-    g.outline(r.c0, r.r0, r.c1, r.r1, sel && cursorShown() ? t.selectBg : t.dim);
-    // Outlined themes have one ink for both outlines: the cursor is a second box.
-    if (sel && cursorShown() && t.outlined && r.r1 - r.r0 >= 2 && r.c1 - r.c0 >= 2)
-      g.outline(r.c0 + 1, r.r0 + 1, r.c1 - 1, r.r1 - 1, t.selectBg);
-
-    if (activeTaps()) {
-      Target tt;
-      tt.kind = TargetKind::Row;
-      tt.list = ListId::Main;
-      tt.index = static_cast<int16_t>(i);
-      // The column registers a row at a time, so a swipe's page of steps
-      // (TapMap::visibleRows) is counted in rows, as drags are.
-      if (column) {
-        for (int row = r.r0; row <= r.r1; ++row) activeTaps()->addCells(r.c0, row, r.c1, row, tt, cellW);
-      } else {
-        activeTaps()->addCells(r.c0, r.r0, r.c1, r.r1, tt, cellW);
-      }
-    }
-  }
-  // More tiles above or below the column: arrows on the outline (e-paper only).
-  if (column && board::eink() && !tiles.empty()) {
-    const TileRect& top = tiles.front();
-    const TileRect& bot = tiles.back();
-    if (first > 0) g.put(top.c1 - 2, top.r0, U'\u25B2', t.fg, t.bg);
-    if (first + int(tiles.size()) < tileCount()) g.put(bot.c1 - 2, bot.r1, U'\u25BC', t.fg, t.bg);
-  }
-  drawHint(g, t, U"\u2191\u2193 pick  \u25CF open", U"tap to open");
-}
-
-void HomeScreen::render(Grid& g, const Theme& t, int64_t) {
-  g.fill(t.bg);
-  const AppState& a = app();
-
-  // Touch boards: the tiles (ui/home_tiles.h), on RowKind::Big rows (the next
-  // font up, +2 px) or, if those can't fit them, the grid's own rows.
-  HomeLayout lay;
-  bool big = false;
-  if (board::hasTouch()) {
-    const TextSize ts = a.cfg.textSize;
-    const int areaPx = (g.rows() - 2) * cellSize(ts).h;
-    // Gapped tiles first, big then normal rows; touching tiles only when no
-    // gapped layout fits (the Wio Tracker L2 at Large).
-    for (bool gaps : {true, false}) {
-      for (bool tryBig : {true, false}) {
-        lay = homeLayout(board::panelWidth(), areaPx, g.rows(), tryBig ? bigCellSize(ts) : cellSize(ts),
-                         int(tiles().size()), kTilePercent, gaps, spanFirst());
-        if (!lay.tiles.empty()) {
-          big = tryBig;
-          break;
-        }
-      }
-      if (!lay.tiles.empty()) break;
-    }
-    // No grid fits (short panels at the larger sizes): one scrolling column,
-    // gapped while that still shows three tiles, else touching.
-    column_ = lay.tiles.empty();
-    if (column_) {
-      const int want = std::min(3, tileCount());
-      HomeLayout best;
-      bool bestBig = false;
-      for (bool gaps : {true, false}) {
-        for (bool tryBig : {true, false}) {
-          HomeLayout c = homeColumn(board::panelWidth(), areaPx, g.rows(),
-                                    tryBig ? bigCellSize(ts) : cellSize(ts), tileCount(), kTilePercent, gaps);
-          if (c.tiles.size() > best.tiles.size()) {
-            best = c;
-            bestBig = tryBig;
-          }
-          if (int(c.tiles.size()) >= want) break;
-        }
-        if (int(best.tiles.size()) >= want) break;
-      }
-      lay = best;
-      big = bestBig;
-    }
-  }
-  const int cellW = big ? bigCellSize(a.cfg.textSize).w : 0;
-  tileMode_ = !lay.tiles.empty();
-  if (tileMode_) {
-    for (int r = 2; r <= g.rows() - 2; ++r) {
-      if (r > lay.lastRow) {
-        g.setRowKind(r, RowKind::Skip);
-        continue;
-      }
-      if (big) g.setRowKind(r, RowKind::Big);
-      g.setRowShift(r, lay.shiftPx);
-    }
-    for (const auto& p : lay.pads) g.setRowPad(p.first, p.second);
-    // @user stays in the status bar; the list-mode fields are dropped.
-    drawStatus(g, t, a.user.empty() ? std::u32string(U"home") : utf8ToU32("@" + a.user), -1);
-    int first = 0;
-    if (column_) {
-      colVisible_ = int(lay.tiles.size());
-      colStride_ = colVisible_ > 1 ? lay.tiles[1].r0 - lay.tiles[0].r0 : 3;
-      colTop_ = std::max(0, std::min(colTop_, tileCount() - colVisible_));
-      first = colTop_;
-    }
-    renderTiles(g, t, lay.tiles, cellW, first, column_);
-    return;
-  }
-
-  drawStatus(g, t, U"home", -1);
-  int r = 1;
-  for (const Field& f : listFields(t)) {
-    putLine(g, 1, r, f.label, t.dim, t.bg);
-    putLine(g, 11, r++, f.value, f.fg, t.bg);
-  }
-
-  std::vector<ListItem> rows = menuRows();
-  const int nItems = int(rows.size());
-  menu_.setItems(std::move(rows));
-  int bottom = g.rows() - 1;
-  // A short grid scrolls the menu rather than draw it over the fields.
-  menu_.render(g, std::max(r, bottom - nItems), bottom, 1, g.cols() - 2, t);
-  drawHint(g, t, U"\u2191\u2193 pick  \u25CF open", U"tap to open");
-}
-
 void HomeScreen::build(lv_obj_t* root) {
   root_ = root;
   text_.create(root);
@@ -541,11 +388,16 @@ void HomeScreen::sync() {
   const lvui::Cell c = lvui::cellOf(root_);
   const int rows = text_.rows(), bottom = rows - 1;
 
-  // Touch boards: the tiles, laid out as render lays them out (lvui::homeFit).
+  // Touch boards: the tiles (lvui::homeFit).
   lvui::HomeFit fit;
   if (board::hasTouch()) {
-    const TextSize ts = a.cfg.textSize;
-    fit = lvui::homeFit(board::panelWidth(), (rows - 2) * cellSize(ts).h, rows, ts, tileCount(), kTilePercent,
+    // The size the root's font is (ui_task's wantedSize; Home never asks for Compact).
+    TextSize ts = a.cfg.textSize;
+    if (TextSize only; board::fixedTextSize(only)) ts = only;
+#if RC_LOW_MEM
+    if (ts == TextSize::Compact) ts = TextSize::Comfortable;
+#endif
+    fit = lvui::homeFit(int(lv_obj_get_width(root_)), (rows - 2) * c.h, rows, ts, tileCount(), kTilePercent,
                         spanFirst());
     column_ = fit.column;
   }

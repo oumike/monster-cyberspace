@@ -32,7 +32,6 @@ class BackupPicker {
   // Up/Down pick; Select/Right on a file -> confirm. Back/Left leaves the
   // confirm, then the list.
   void onKey(const KeyEvent&);
-  void render(Grid&, const Theme&);  // fills the rows above the hint, draws its own hint
   // LVGL: its objects over root's rows below the status bar, hidden while
   // closed. Build it after the screen's own views, so it covers them.
   void build(lv_obj_t* root);

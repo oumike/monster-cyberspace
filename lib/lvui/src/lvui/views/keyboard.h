@@ -16,7 +16,8 @@ namespace lvui {
 // outline, and in selectBg/selectFg while on (an active Shift, or the key
 // touched until kOskFlashMs after). A finger on a key lights it
 // (Osk::touch); a tap presses it (Osk::press) and emits the KeyEvent it
-// makes, if any, then calls the hide callback when the key asks for that.
+// makes, if any, then calls the hide callback when the key asks for that. A
+// finger that slides past kTapSlopPx, or off its key, presses nothing.
 // Lay the Osk out (Osk::layout) for the parent's width in cells first.
 class Keyboard {
  public:
@@ -43,6 +44,9 @@ class Keyboard {
 
   lv_obj_t *box_ = nullptr, *matrix_ = nullptr;
   rc::Osk* osk_ = nullptr;
+  // The key a finger went down on and where; -1 once it slid off (no key).
+  int pressKey_ = -1;
+  lv_point_t pressAt_{0, 0};
   void (*onHide_)() = nullptr;
   // The map: the labels, a spacer " " and "\n" between rows, "" at the end.
   std::vector<std::string> labels_;

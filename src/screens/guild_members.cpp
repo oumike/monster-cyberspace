@@ -5,7 +5,6 @@
 #include "app/ui_task.h"
 #include "feed/feed_source.h"
 #include "hal/board.h"
-#include "screens/draw.h"
 #include "screens/lv_draw.h"
 #include "screens/people_nav.h"
 #include "screens/screens.h"
@@ -104,25 +103,6 @@ void MembersScreen::hints(const char32_t*& keys, const char32_t*& touch) const {
     keys = U"\u2191\u2193 pick  \u25CF profile  \u2190 guild";
     touch = U"tap a member  \u2039 guild";
   }
-}
-
-void MembersScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
-  std::u32string name;
-  std::vector<ListItem> items = rows(nowMs, name);
-  bool loading = lockedFeed().with([](FeedState& s) { return s.loading; });
-  const int nav = sideNavWidth(g);
-  const int bottom = g.rows() - 1;
-  g.fill(t.bg);
-  drawStatus(g, t, U"members \u00b7 " + name, -1);
-  const bool empty = items.empty();
-  list_.setItems(std::move(items));
-  list_.render(g, 1, bottom, 0, g.cols() - nav, t);
-  if (empty) putLine(g, 1, 2, emptyText(loading), t.dim, t.bg);
-  if (nav > 0) renderSideNav(g, 1, bottom, nav, t);
-  const char32_t* keys;
-  const char32_t* touch;
-  hints(keys, touch);
-  drawHint(g, t, keys, touch);
 }
 
 // ---- LVGL ----

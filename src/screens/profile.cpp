@@ -12,7 +12,6 @@
 #include "lvui/styles.h"
 #include "people/people_parse.h"
 #include "screens/button_pad.h"
-#include "screens/draw.h"
 #include "screens/lv_draw.h"
 #include "screens/people_nav.h"
 #include "screens/screens.h"
@@ -20,7 +19,6 @@
 #include "ui/nick_color.h"
 #include "ui/button_grid.h"
 #include "ui/profile_layout.h"
-#include "ui/tap_map.h"
 
 namespace rc {
 
@@ -221,20 +219,6 @@ int ProfileScreen::linksTop(int gridRows, int gridCols) const {
   int top = std::max(2, bottom - (rows * kButtonRows + rows - 1));
   while (top > 2 && buttonGrid(gridCols, top, bottom, n, cols, 0).maxScroll > 0) --top;
   return top;
-}
-
-void ProfileScreen::renderLinks(Grid& g, const Theme& t, int top, int bottom) {
-  if (board::hasTouch()) {
-    pad_.setCursor(linksFocus_);
-    pad_.render(g, t, links_, top, bottom, false, linkColumns(g.cols(), links_));
-    return;
-  }
-  for (int i = 0; i < int(links_.size()) && top + i < bottom; ++i) {
-    const int row = top + i;
-    g.fillRow(row, t.bg);
-    g.putText(2, row, links_[i].label, t.sys, t.bg, g.cols() - 3);
-    if (linksFocus_ && i == linkSel_ && cursorShown()) g.outline(0, row, g.cols() - 1, row, t.selectBg);
-  }
 }
 
 void ProfileScreen::openMenu() {
@@ -449,30 +433,6 @@ void ProfileScreen::hints(bool actions, const char32_t*& keys, const char32_t*& 
     keys = U"\u2191\u2193 scroll  \u2190 back";
     touch = U"swipe to scroll  \u2039 back";
   }
-}
-
-void ProfileScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
-  refreshText(t, nowMs, styledFor_ == &t);
-  buildLinks();
-  const bool actions = !actionsFor(snapshot(user_)).empty();
-  g.fill(t.bg);
-  drawStatus(g, t, U"@" + utf8ToU32(user_), -1, actions);
-  if (linkOpen_) return link_.render(g, t);
-  const int bottom = g.rows() - 1;
-  // The links sit under the text, a blank row between them.
-  const int linkTop = linksTop(g.rows(), g.cols());
-  renderLinks(g, t, linkTop, bottom);
-  if (loaded_) {
-    text_.render(g, 1, std::max(2, linkTop - 1), 0, g.cols(), t);
-  } else {
-    bool loading = lockedPeople().with([](PeopleState& s) { return s.loading; });
-    putLine(g, 1, 2, emptyText(loading), t.dim, t.bg);
-  }
-  if (menu_) box_.render(g, 1, bottom, 0, OverlayPlace::BottomRight, t);
-  const char32_t* keys;
-  const char32_t* touch;
-  hints(actions, keys, touch);
-  drawHint(g, t, keys, touch);
 }
 
 // ---- LVGL ----

@@ -1,6 +1,7 @@
 #include "screens/router.h"
 
 #include "app/app_state.h"
+#include "lvui/host.h"
 #include "feature_flags.h"
 #include "screens/composer.h"
 #include "screens/entry.h"
@@ -55,6 +56,8 @@ FeedListScreen followingPosts{FeedListScreen::Kind::Following};
 NotificationsScreen notifications;
 #endif
 
+lvui::ScreenHost host;
+void (*beforeBuild)() = nullptr;
 Id cur = Id::Splash;
 Screen* active = &splash;
 Place curPlace{Id::Splash, ""};
@@ -122,9 +125,19 @@ bool signedIn() {
 #endif
 }
 
-}  // namespace
+// The build is kept for host.rebuild, so it holds the screen, not a local.
+bool show() {
+  if (beforeBuild) beforeBuild();
+  Screen* s = active;
+  return host.show([s](lv_obj_t* root) { s->build(root); });
+}
 
-void go(Id id, const std::string& arg) {
+// go, false when the new screen didn't fit in memory (and nothing moved).
+bool goTo(Id id, const std::string& arg) {
+  const Id oldCur = cur;
+  Screen* const oldActive = active;
+  const Place oldPlace = curPlace, oldBase = base;
+  const Origin oldOrigin = origin;
   if (id != origin.to && id != Id::Entry && id != Id::Composer) origin.set = false;
   active->leave();
   curPlace = Place{id, arg};
@@ -132,12 +145,33 @@ void go(Id id, const std::string& arg) {
   cur = id;
   active = lookup(id);
   active->enter(arg);
+  if (show()) return true;
+  // Out of memory: the old tree is still up, so the old screen stays.
+  const bool same = active == oldActive;
+  active->leave();
+  cur = oldCur;
+  active = oldActive;
+  curPlace = oldPlace;
+  base = oldBase;
+  origin = oldOrigin;
+  active->enter(curPlace.arg);
+  // The same screen object built into the tree that was thrown away, so its
+  // views no longer point at the old one: build it again.
+  if (same) show();
+  return false;
 }
+
+}  // namespace
+
+void go(Id id, const std::string& arg) { goTo(id, arg); }
+
+void rebuild() { show(); }
+
+void setBeforeBuild(void (*hook)()) { beforeBuild = hook; }
 
 void goFrom(Id from, Id id, const std::string& arg) {
   std::string fromArg = curPlace.id == from ? curPlace.arg : std::string();
-  go(id, arg);
-  origin = Origin{true, from, id, fromArg};
+  if (goTo(id, arg)) origin = Origin{true, from, id, fromArg};
 }
 
 bool backToOrigin() {

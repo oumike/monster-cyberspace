@@ -215,6 +215,52 @@ void test_osk_layer_and_emit() {
   TEST_ASSERT_EQUAL(0, keys.size());
 }
 
+// A finger that slides past the tap slop types nothing, even on one wide key
+// (as the grid's drag; LVGL alone types it), and the light stays on the key
+// it went down on.
+void test_osk_slide_types_nothing() {
+  const rc::TextSize ts = rc::TextSize::Comfortable;
+  rc::Osk osk;
+  osk.reset();
+  osk.layout(40, ts);
+  // On the top layer, as the app docks it: nothing there scrolls, so LVGL
+  // itself doesn't cancel a sliding press.
+  lv_obj_remove_flag(lv_layer_top(), LV_OBJ_FLAG_SCROLLABLE);
+  lvui::Keyboard kb;
+  kb.create(lv_layer_top());
+  kb.sync(osk, ts);
+  layout();
+  const int band = rc::Osk::keyRows(ts) * 16;
+  int space = -1;
+  for (int i = 0; i < int(osk.keys().size()); ++i)
+    if (osk.keys()[i].kind == rc::OskKind::Space) space = i;
+  TEST_ASSERT_TRUE(space >= 0);
+  const rc::OskKey& key = osk.keys()[space];
+  TEST_ASSERT_TRUE(key.w * 8 > rc::kTapSlopPx + 8);
+  const lv_area_t a = coords(kb.obj());
+  const int32_t y = a.y1 + key.row / 3 * band + band / 2;
+  const int32_t x0 = a.x1 + key.col * 8 + 2, x1 = x0 + rc::kTapSlopPx + 4;
+  keys.clear();
+  ptrX = int16_t(x0);
+  ptrY = int16_t(y);
+  ptrDown = true;
+  step();
+  kb.sync(osk, ts);
+  TEST_ASSERT_TRUE(kb.on(space));
+  ptrX = int16_t(x1);
+  step();
+  step();
+  ptrDown = false;
+  step();
+  step();
+  TEST_ASSERT_EQUAL(0, keys.size());
+  // A plain tap after it still types.
+  tap(lv_point_t{x1, y});
+  TEST_ASSERT_EQUAL(1, keys.size());
+  TEST_ASSERT_EQUAL(U' ', keys[0].ch);
+  lv_obj_delete(kb.obj());
+}
+
 // A tap on a symbol emits the tap map's {Activate, i, Menu}, which the table
 // turns into typing that symbol; a tap outside the table is Back.
 void test_symbols_emit_char() {
@@ -491,6 +537,7 @@ void test_qr_box_follows_cell_size() {
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_osk_layer_and_emit);
+  RUN_TEST(test_osk_slide_types_nothing);
   RUN_TEST(test_symbols_emit_char);
   RUN_TEST(test_home_tiles_span_first);
   RUN_TEST(test_spell_emit);

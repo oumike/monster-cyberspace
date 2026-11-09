@@ -5,7 +5,6 @@
 #include "app/ui_task.h"
 #include "chat/chat_source.h"
 #include "screens/button_pad.h"
-#include "screens/draw.h"
 #include "screens/lv_draw.h"
 #include "screens/screens.h"
 #include "store/locked_chat.h"
@@ -126,40 +125,11 @@ std::vector<ListItem> CmailListScreen::rows() {
   return items;
 }
 
-void CmailListScreen::render(Grid& g, const Theme& t, int64_t) {
-  buttons_ = ButtonPad::active();
-  std::vector<ListItem> items = rows();
-  g.fill(t.bg);
-  drawStatus(g, t, U"c-mail", int(ids_.size()));
-  int bottom = g.rows() - 1;
-  if (editing_) --bottom;
-  if (buttons_) {
-    pad_.render(g, t, items, 2, bottom, true, 1);
-    if (ids_.empty()) putLine(g, 1, 7, "no conversations yet", t.dim, t.bg);
-  } else {
-    list_.setItems(std::move(items));
-    const int nav = sideNavWidth(g);
-    list_.render(g, 1, bottom, 0, g.cols() - nav, t);
-    if (nav > 0) renderSideNav(g, 1, bottom, nav, t);
-    if (ids_.empty()) putLine(g, 1, 3, "no conversations yet", t.dim, t.bg);
-  }
-  if (editing_) {
-    input_.setDisabled(busy_);
-    input_.render(g, bottom, t, U"to> @");
-    drawHint(g, t, busy_ ? U"starting\u2026  back: cancel" : U"type a username  \u25CF start  back: cancel",
-             busy_ ? U"starting\u2026" : U"type a username  enter: start");
-  } else if (buttons_) {
-    drawHint(g, t, U"", U"tap to open  drag to scroll");
-  } else {
-    drawHint(g, t, U"\u2191\u2193 pick  \u25CF open  \u2190 home", U"tap to open  swipe to scroll");
-  }
-}
-
 void CmailListScreen::build(lv_obj_t* root) {
   listView_.create(root);
   padView_.create(root);
   navView_.create(root);
-  // Over the buttons, as render puts it after them.
+  // Over the buttons.
   text_.create(root);
   inputView_.create(root);
   hint_.create(root);

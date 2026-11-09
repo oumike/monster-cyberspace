@@ -7,7 +7,6 @@
 
 #include "app/messages.h"
 #include "input/key_event.h"
-#include "ui/grid.h"
 #include "ui/theme.h"
 
 namespace rc {
@@ -19,11 +18,9 @@ class Screen {
   virtual void leave() {}
   virtual void onKey(const KeyEvent&) = 0;
   virtual void onEvent(const Event&) {}
-  virtual void render(Grid&, const Theme&, int64_t nowMs) = 0;
-  // LVGL: creates the screen's objects under root (after enter), as render
-  // draws it. Not called until ui_task draws with LVGL.
+  // Creates the screen's objects under root (after enter), synced.
   virtual void build(lv_obj_t* root) { (void)root; }
-  // LVGL, each frame: what render did with nowMs (the clock, timers).
+  // Each frame, before LVGL draws: the clock, timers and changes to show.
   virtual void update(int64_t nowMs) { (void)nowMs; }
   // True while a focused text field is taking typing, so a touch board can
   // dock its on-screen keyboard. False on keyed boards (nothing reads it).
@@ -93,6 +90,13 @@ Place lastBase();
 // Puts back a lastBase() saved earlier, before returning to an Entry.
 void setBase(const Place& p);
 Screen& screen();
+// Builds the current screen into a new root (go does it; this is for the
+// first screen, and after a theme, text size, rotation or keyboard change).
+// Out of memory, go keeps the screen it was on.
+void rebuild();
+// Called before every build, with screen() already the screen to build: the
+// UI task sets the root font for it there.
+void setBeforeBuild(void (*hook)());
 // The dedicated buttons (Messages, Home, C-Mail, Feed, Map). True when the
 // key was one of them.
 bool handleGlobal(const KeyEvent&);

@@ -5,7 +5,6 @@
 #include "app/ui_task.h"
 #include "hal/board.h"
 #include "ui/button_grid.h"
-#include "ui/tap_map.h"
 #include "ui/widgets/scroll_bar.h"
 
 namespace rc {
@@ -79,12 +78,12 @@ int ButtonPad::key(const KeyEvent& k) {
       }
       if (--(dragSteps_ = std::min(dragSteps_, 0)) <= -kPitch) {
         dragSteps_ = 0;
-        --scroll_;  // clamped in render
+        --scroll_;  // clamped in sync
       }
       break;
     case Action::Down:
       if (shift_ < header_) {
-        ++shift_;  // clamped in render
+        ++shift_;  // clamped in sync
         dragSteps_ = 0;
         break;
       }
@@ -147,60 +146,6 @@ ButtonGrid ButtonPad::layout(int gridCols, const std::vector<ListItem>& items, i
   firstShown_ = b.first;
   scroll_ = b.scrollRow;
   return b;
-}
-
-void ButtonPad::render(Grid& g, const Theme& t, const std::vector<ListItem>& items, int top,
-                       int bottom, bool keepRight, int cols, int header) {
-  const int n = int(items.size());
-  const ButtonGrid b = layout(g.cols(), items, top, bottom, cols, header);
-  const bool showCursor = cursor_ && !hidden_;
-  if (activeTaps()) {
-    activeTaps()->setList(ListId::Main, showCursor ? selected_ : -1, n, false);
-    // Under the buttons, the whole area (gaps and header too) takes drags;
-    // a tap there picks nothing.
-    Target bg;
-    bg.kind = TargetKind::Row;
-    bg.list = ListId::Main;
-    bg.index = -1;
-    activeTaps()->addCells(0, top, g.cols() - 1, bottom - 1, bg);
-  }
-  for (size_t k = 0; k < b.rects.size(); ++k) {
-    const int i = b.first + int(k);
-    const TileRect& r = b.rects[k];
-    const ListItem& it = items[i];
-    const int mid = r.r0 + 1;  // the label row; a detail goes under it
-    const int inW = r.c1 - r.c0 - 1;  // inside the outline
-    const int lw = int(it.label.size());
-    int rw = int(it.right.size());
-    if (rw > 0 && lw + 1 + rw > inW) {
-      // Too long for both: keepRight splits the room, else `right` goes.
-      rw = keepRight ? std::max(0, inW - 1 - std::min(lw, std::max(inW - 1 - rw, (inW - 1) / 2))) : 0;
-    }
-    if (rw > 0) g.putText(r.c1 - rw, mid, it.right, t.dim, t.bg, rw);
-    const uint16_t fg = it.tone == ItemTone::Error ? t.error : it.marker ? t.selectBg : t.fg;
-    g.putText(r.c0 + 1, mid, it.label, fg, t.bg, rw > 0 ? inW - rw - 1 : inW);
-    if (!it.detail.empty()) g.putText(r.c0 + 1, mid + 1, oneLine(it.detail, inW), t.dim, t.bg, inW);
-    const bool sel = showCursor && i == selected_ && cursorShown();
-    g.outline(r.c0, r.r0, r.c1, r.r1, sel ? t.selectBg : t.dim);
-    // Outlined themes have one ink for both outlines: the cursor is a second
-    // box, where it clears the label row.
-    if (sel && t.outlined && r.r1 - r.r0 >= 3 && r.c1 - r.c0 >= 2)
-      g.outline(r.c0 + 1, r.r0 + 1, r.c1 - 1, r.r1 - 1, t.selectBg);
-    if (activeTaps()) {
-      Target tt;
-      tt.kind = TargetKind::Row;
-      tt.list = ListId::Main;
-      tt.index = static_cast<int16_t>(i);
-      activeTaps()->addCells(r.c0, r.r0, r.c1, r.r1, tt);
-    }
-  }
-  if (header > 0) {
-    const int pitch = height_ + 1;
-    drawScrollBar(g, g.cols() - 1, top, bottom, header + b.totalRows * pitch, bottom - top,
-                  shift_ + b.scrollRow * pitch, t, t.bg);
-  } else {
-    drawScrollBar(g, g.cols() - 1, top, bottom, b.totalRows, b.visibleRows, b.scrollRow, t, t.bg);
-  }
 }
 
 void ButtonPad::sync(lvui::TileGrid& v, const std::vector<ListItem>& items, int top, int bottom,

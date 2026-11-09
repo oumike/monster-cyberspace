@@ -6,7 +6,7 @@
 #include "feed/feed_source.h"
 #include "hal/board.h"
 #include "lvui/cell_font.h"
-#include "screens/draw.h"
+#include "screens/lv_draw.h"
 #include "screens/screens.h"
 #include "store/locked_feed.h"
 #include "ui/feed_layout.h"
@@ -148,30 +148,6 @@ const char* TopicsScreen::emptyText() const {
                                         : "couldn't load: Ctrl, Refresh")
          : waiting_ ? "loading\u2026"
                     : "no topics";
-}
-
-void TopicsScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
-  (void)nowMs;
-  const int nav = sideNavWidth(g);
-  const int listCols = g.cols() - nav - EntryList::kBarCols;
-  refresh(listCols, t, &t == theme_);
-
-  g.fill(t.bg);
-  drawStatus(g, t, U"Topics", -1, true);
-  int bottom = g.rows() - 1;
-  TextSize ts = app().cfg.textSize;
-  if (palette_ || nav > 0) list_.setBigHeads(0, 0, 0);
-  else list_.setBigHeads(cellSize(ts).h, bigCellSize(ts).h, headCols());
-  list_.render(g, 1, bottom, t, nav);
-  if (list_.size() == 0) putLine(g, 1, 2, withMenuKey(emptyText()), t.dim, t.bg);
-
-  if (nav > 0) renderSideNav(g, 1, bottom, nav, t);
-  if (palette_) {
-    box_.render(g, 1, bottom, nav, OverlayPlace::BottomRight, t);
-    drawHint(g, t, U"\u2191\u2193 pick  \u25CF choose  back: close", U"tap: choose  outside: close");
-  } else {
-    drawHint(g, t, U"\u2191\u2193 pick  \u25CF open  \u2190 feed  ctrl cmds", U"tap to open");
-  }
 }
 
 // ---- LVGL ----

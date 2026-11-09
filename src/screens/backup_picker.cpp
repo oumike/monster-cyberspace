@@ -4,7 +4,6 @@
 
 #include "app/ui_task.h"
 #include "hal/board.h"
-#include "screens/draw.h"
 #include "screens/lv_draw.h"
 #include "util/utf8.h"
 
@@ -120,40 +119,6 @@ void BackupPicker::onKey(const KeyEvent& k) {
       break;
     default:
       break;
-  }
-}
-
-void BackupPicker::render(Grid& g, const Theme& t) {
-  const int bottom = g.rows() - 1;
-  const int top = 1;
-  for (int c = 0; c < g.cols(); ++c) g.put(c, top, U' ', t.barFg, t.barBg);
-  g.putText(1, top, U"restore from SD", t.barFg, t.barBg, g.cols() - 2);
-  for (int row = top + 1; row < bottom; ++row)
-    for (int c = 0; c < g.cols(); ++c) g.put(c, row, U' ', t.fg, t.bg);
-  buttons_ = board::hasTouch();
-  pad_.setCursor(board::hasKeys());
-  if (buttons_) {
-    if (confirming_) {
-      g.putText(1, top, confirmBox_.title(), t.barFg, t.barBg, g.cols() - 2);
-      const std::vector<ListItem> rows{ListItem{U"Cancel", U""},
-                                       ListItem{U"Restore", U"", ItemTone::Error}};
-      pad_.render(g, t, rows, top + 1, bottom, false);
-      drawHint(g, t, U"\u25CF confirm  back: cancel", U"tap: confirm  back: cancel");
-    } else {
-      pad_.render(g, t, list_.items(), top + 1, bottom, true, 1);
-      drawHint(g, t, U"\u2191\u2193 pick  \u25CF restore  back: cancel",
-               U"tap to restore  back: cancel");
-    }
-    return;
-  }
-  if (confirming_) {
-    confirmBox_.render(g, top, bottom, 0, OverlayPlace::Bottom, t);
-    drawHint(g, t, U"\u2191\u2193 pick  \u25CF confirm  back: cancel",
-             U"tap: confirm  outside: cancel");
-  } else {
-    list_.render(g, top + 1, bottom, 1, g.cols() - 2, t);
-    drawHint(g, t, U"\u2191\u2193 pick  \u25CF restore  back: cancel",
-             U"tap to restore  \u2039 cancel");
   }
 }
 

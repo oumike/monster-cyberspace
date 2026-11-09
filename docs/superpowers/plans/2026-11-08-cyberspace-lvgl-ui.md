@@ -186,10 +186,10 @@
 **Interfaces:**
 - Loop per spec §5: events → `onEvent`; global keys; `pollKey` → `screen().onKey`; `lvui` pointer indev; `screen().update(now)`; `lv_timer_handler()`; screen off → skip `lv_timer_handler`.
 - Global layers on `lv_layer_top()`: symbol table, canned picker, top banner, OSK docked when `acceptsText()` (screen root shrinks by the keyboard height), F10 keys help, screensaver. Theme change → `applyTheme`; text size or rotation → `displayResize` + `host.rebuild()`. Screenshot command reads `lvui::frame()`.
-- [ ] **Step 1:** Implement.
-- [ ] **Step 2:** `pio run -e m9` → SUCCESS; record RAM/flash vs `main` in the commit message.
-- [ ] **Step 3:** `pio test -e native` and `pio test -e native_lv` → PASS.
-- [ ] **Step 4:** Commit `LVGL: ui_task draws with LVGL`.
+- [x] **Step 1:** Implement.
+- [x] **Step 2:** `pio run -e m9` → SUCCESS; record RAM/flash vs `main` in the commit message.
+- [x] **Step 3:** `pio test -e native` and `pio test -e native_lv` → PASS.
+- [x] **Step 4:** Commit `LVGL: ui_task draws with LVGL`.
 
 ### Task 15: Every other board
 

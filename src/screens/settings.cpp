@@ -14,8 +14,8 @@
 #include "core_version.h"
 #include "hal/board.h"
 #include "lvui/cell_font.h"
-#include "screens/draw.h"
 #include "screens/lv_draw.h"
+#include "ui/wrap.h"
 #include "screens/screens.h"
 #include "store/backup_store.h"
 #include "store/settings.h"
@@ -959,108 +959,6 @@ const Slider* SettingsScreen::openSlider() const {
   return nullptr;
 }
 
-void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
-  g.fill(t.bg);
-  drawStatus(g, t, U"settings", -1);
-  if (picker_.isOpen()) return picker_.render(g, t);
-  const int bottom = g.rows() - 1;
-  const std::vector<Item> items = menuItems();
-  const int nItems = int(items.size());
-  const bool ap = setupApUp();
-  const timesvc::Snapshot ts = timesvc::snapshot();
-  // Every touch board gets buttons here, as Home gets tiles; with keys, a cursor.
-  buttons_ = board::hasTouch();
-  pad_.setCursor(board::hasKeys());
-
-  std::vector<ListItem> rows = itemRows(items, buttons_, ap, ts);
-  const int menuTop = menuTopRow(bottom, nItems);
-  // The status lines: above the menu on key boards, and on touch-only boards
-  // as a header that scrolls with the buttons.
-  const bool narrow = narrowGrid(g);
-  const int valueW = g.cols() - 11 - (buttons_ ? 1 : 0);  // clear of the scroll bar
-  const std::vector<StatusField> fields = statusFields(t, ap, ts);
-  auto status = [&](bool draw, int shift, int end) {
-    return layoutStatus(fields, narrow, valueW, shift, draw ? end : 0,
-                        [&](int row, const char* label, const std::u32string& line, uint16_t fg) {
-                          if (label) putLine(g, 1, row, label, t.dim, t.bg);
-                          g.putText(11, row, line, fg, t.bg, valueW);
-                        });
-  };
-  const bool choosing = picking_ || confirm_ != Confirm::None;
-  if (buttons_ && choosing) {
-    // The choices as buttons over the whole screen, under a title bar: one
-    // column when two would cut the labels.
-    const int top = 1;
-    for (int c = 0; c < g.cols(); ++c) g.put(c, top, U' ', t.barFg, t.barBg);
-    g.putText(1, top, choiceTitle_, t.barFg, t.barBg, g.cols() - 2);
-    int labelW = 0;
-    for (const ListItem& it : choices_) labelW = std::max(labelW, int(it.label.size()));
-    const int cols = ButtonPad::columns();
-    const int fit = (g.cols() - 1) / cols - 3;  // inside one button of `cols`
-    choicePad_.setCursor(board::hasKeys());
-    choicePad_.render(g, t, choices_, top + 1, bottom, false, labelW <= fit ? cols : 1);
-    drawHint(g, t, U"\u2191\u2193 pick  \u25CF set  back: cancel", U"tap to select  back: cancel");
-    return;
-  }
-  if (buttons_) {
-    if (!picking_) {
-      const int header = status(false, 0, 0) + 1;  // and a blank row
-      pad_.render(g, t, rows, 1, bottom, true, 0, header);
-      status(true, pad_.headerShift(), bottom);
-    }
-  } else {
-    status(true, 0, menuTop);
-    for (ListItem& it : rows) {
-      if (!it.right.empty()) it.label += U": " + it.right;
-      it.right.clear();
-    }
-    menu_.setItems(std::move(rows));
-  }
-
-  if (volume_.isOpen()) {
-    if (!buttons_) menu_.render(g, menuTop, bottom, 1, g.cols() - 2, t);
-    volume_.render(g, 1, bottom, t);
-    drawHint(g, t, U"\u2190\u2192 volume  \u25CF set  back: cancel", U"tap the bar  Set or Cancel");
-  } else if (ledLevel_.isOpen()) {
-    if (!buttons_) menu_.render(g, menuTop, bottom, 1, g.cols() - 2, t);
-    ledLevel_.render(g, 1, bottom, t);
-    drawHint(g, t, U"\u2190\u2192 LED brightness  \u25CF set  back: cancel", U"tap a stop  Set or Cancel");
-  } else if (brightness_.isOpen()) {
-    if (!buttons_) menu_.render(g, menuTop, bottom, 1, g.cols() - 2, t);
-    brightness_.render(g, 1, bottom, t);
-    drawHint(g, t, U"\u2190\u2192 brightness  \u25CF set  back: cancel", U"tap the bar  Set or Cancel");
-  } else if (sizeSlider_.isOpen()) {
-    if (!buttons_) menu_.render(g, menuTop, bottom, 1, g.cols() - 2, t);
-    sizeSlider_.render(g, 1, bottom, t);
-    drawHint(g, t, U"\u2190\u2192 size  \u25CF set  back: cancel", U"tap the bar  Set or Cancel");
-  } else if (picking_) {
-    // Drawn over the status lines and the menu, below the status bar.
-    const int top = 1;
-    for (int c = 0; c < g.cols(); ++c) g.put(c, top, U' ', t.barFg, t.barBg);
-    g.putText(1, top, U"time zone", t.barFg, t.barBg, g.cols() - 2);
-    for (int row = top + 1; row < bottom; ++row)
-      for (int c = 0; c < g.cols(); ++c) g.put(c, row, U' ', t.fg, t.bg);
-    zoneList_.render(g, top + 1, bottom, 1, g.cols() - 2, t);
-    drawHint(g, t, U"\u2191\u2193 pick  \u25CF set  back: cancel", U"tap to select");
-  } else if (confirm_ != Confirm::None) {
-    // The pickers are centred boxes; the bottom
-    // strip only has room for a two-row confirm.
-    const bool pick = confirmPicks();
-    confirmBox_.render(g, 1, bottom, 0, pick ? OverlayPlace::Centre : OverlayPlace::Bottom, t);
-    if (pick)
-      drawHint(g, t, U"\u2191\u2193 pick  \u25CF set  back: cancel",
-               U"tap: select  outside: cancel");
-    else
-      drawHint(g, t, U"\u2191\u2193 pick  \u25CF confirm  back: cancel",
-               U"tap: confirm  outside: cancel");
-  } else if (buttons_) {
-    drawHint(g, t, U"", U"tap to select  drag to scroll");
-  } else {
-    menu_.render(g, menuTop, bottom, 1, g.cols() - 2, t);
-    drawHint(g, t, U"\u2191\u2193 pick  \u25CF select  back: home", U"tap to select");
-  }
-}
-
 void SettingsScreen::build(lv_obj_t* root) {
   // The screen's text size, as ui_task picks it for a compactText() screen.
   TextSize only;
@@ -1107,7 +1005,6 @@ void SettingsScreen::update(int64_t nowMs) {
 }
 
 void SettingsScreen::sync() {
-  syncTheme();
   const Theme& t = lvui::currentTheme();
   syncStatus(status_, U"settings", -1);
   picker_.sync();
@@ -1116,7 +1013,7 @@ void SettingsScreen::sync() {
   pad_.setCursor(board::hasKeys());
   const bool choosing = picking_ || confirm_ != Confirm::None;
   const Slider* slider = openSlider();
-  // render's branches: the choices as buttons over the whole screen, else the
+  // Two layouts: the choices as buttons over the whole screen, else the
   // status lines and the menu under whichever of a slider, the zone list or a
   // confirm is open.
   const bool choiceButtons = !pickerOpen && buttons_ && choosing;

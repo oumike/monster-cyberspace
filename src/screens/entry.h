@@ -36,7 +36,6 @@ class EntryScreen : public Screen {
   void leave() override;
   void onKey(const KeyEvent&) override;
   void onEvent(const Event&) override;
-  void render(Grid&, const Theme&, int64_t nowMs) override;
   void build(lv_obj_t* root) override;
   void update(int64_t nowMs) override;
   bool hasOverlay() const override;
@@ -61,7 +60,7 @@ class EntryScreen : public Screen {
   void openReplyMenu(const std::string& replyId);
   void pickMenu();
   void rebuild(int cols, int logRows, const Theme& t);
-  // rebuild when render and sync need it: on a store event (dirty_), a new
+  // rebuild when sync needs it: on a store event (dirty_), a new
   // size or theme (sameTheme false), or for the ages.
   void refresh(int logCols, int logRows, const Theme& t, int64_t nowMs, bool sameTheme);
   // The reply line's "↳ @author" for a selected reply.

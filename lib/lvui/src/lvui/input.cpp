@@ -7,6 +7,7 @@ namespace lvui {
 namespace {
 
 bool (*readPointer)(int16_t&, int16_t&) = nullptr;
+lv_indev_t* pointer = nullptr;
 void (*keySink)(const rc::KeyEvent&) = nullptr;
 bool onlyTouch = false;
 
@@ -24,15 +25,16 @@ void readCb(lv_indev_t*, lv_indev_data_t* data) {
 }  // namespace
 
 void pointerBegin(bool (*read)(int16_t& x, int16_t& y)) {
-  const bool made = readPointer != nullptr;
   readPointer = read;
-  if (made) return;
-  lv_indev_t* indev = lv_indev_create();
-  lv_indev_set_type(indev, LV_INDEV_TYPE_POINTER);
-  lv_indev_set_read_cb(indev, readCb);
+  // Once only, whatever read was: a second call swaps the reader.
+  if (pointer || !read) return;
+  pointer = lv_indev_create();
+  if (!pointer) return;
+  lv_indev_set_type(pointer, LV_INDEV_TYPE_POINTER);
+  lv_indev_set_read_cb(pointer, readCb);
 }
 
-bool hasPointer() { return readPointer != nullptr; }
+bool hasPointer() { return pointer != nullptr && readPointer != nullptr; }
 
 void setTouchOnly(bool on) { onlyTouch = on; }
 bool touchOnly() { return onlyTouch; }

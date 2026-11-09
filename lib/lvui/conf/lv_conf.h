@@ -25,6 +25,9 @@
 #define LV_USE_ASSERT_STYLE 0
 #define LV_USE_ASSERT_MEM_INTEGRITY 0
 #define LV_USE_ASSERT_OBJ 0
+// A failed assert reports where and aborts (the device reboots), not hangs.
+#define LV_ASSERT_HANDLER_INCLUDE "lv_assert_hook.h"
+#define LV_ASSERT_HANDLER lvui_assert_failed(__FILE__, __LINE__);
 
 // Fonts: only the Terminus cells, through the adapter (lvui/cell_font.h).
 #define LV_FONT_MONTSERRAT_8 0

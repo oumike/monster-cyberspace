@@ -8,7 +8,7 @@
 #include "feed/feed_source.h"
 #include "hal/board.h"
 #include "lvui/cell_font.h"
-#include "screens/draw.h"
+#include "screens/lv_draw.h"
 #include "screens/screens.h"
 #include "store/locked_feed.h"
 #include "ui/feed_layout.h"
@@ -399,7 +399,7 @@ void FeedListScreen::rebuild(int cols, const Theme& t) {
   }
   empty_ = entries.empty();
   for (size_t i = 0; i < entries.size(); ++i) {
-    // With the side strip, the head lines stay in the plain font (FeedList render).
+    // With the side strip, the head lines stay in the plain font.
     rows.push_back(layoutFeedRow(entries[i], marked[i], now, cols, t, board::sideNav() ? cols : headCols() - EntryList::kBarCols));
     ids_.push_back(entries[i].id);
     if (side && sel < 0 && entries[i].id == selId_) sel = int(i);
@@ -473,39 +473,6 @@ void FeedListScreen::hints(const char32_t*& keys, const char32_t*& touch) const 
                                   : U"\u2191\u2193 pick  \u25CF open  \u2190 feed  ctrl cmds";
     touch = U"tap to open  hold: menu";
   }
-}
-
-void FeedListScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
-  // Big rows draw fewer, wider cells, which would push the side strip off the
-  // panel; with it, every row stays plain.
-  const int nav = sideNavWidth(g);
-  const int listCols = g.cols() - nav - EntryList::kBarCols;
-  refresh(listCols, t, nowMs, &t == theme_);
-  bool loading = lockedFeed().with([](FeedState& s) { return s.loading; });
-
-  g.fill(t.bg);
-  if (info_.isOpen()) {
-    drawStatus(g, t, guildTitle(), -1);
-    info_.render(g, t);
-    return;
-  }
-  drawStatus(g, t, title(), -1, true);
-  int bottom = g.rows() - 1;  // the last row holds the hint
-  // The palette is drawn over the list in plain rows, so the list drops its
-  // larger first lines while it's open.
-  TextSize ts = app().cfg.textSize;
-  if (palette_ || nav > 0) list_.setBigHeads(0, 0, 0);
-  else list_.setBigHeads(cellSize(ts).h, bigCellSize(ts).h, headCols());
-  list_.render(g, 1, bottom, t, nav);
-  // Below the New entry / New thread row, which takes the first two.
-  if (empty_) putLine(g, 1, composeRow_ ? 3 : 2, withMenuKey(emptyText(loading)), t.dim, t.bg);
-
-  if (nav > 0) renderSideNav(g, 1, bottom, nav, t);
-  if (palette_) box_.render(g, 1, bottom, nav, OverlayPlace::BottomRight, t);
-  const char32_t* keys;
-  const char32_t* touch;
-  hints(keys, touch);
-  drawHint(g, t, keys, touch);
 }
 
 // ---- LVGL ----

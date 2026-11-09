@@ -41,7 +41,6 @@ class SplashScreen : public Screen {
  public:
   void enter(const std::string&) override;
   void onKey(const KeyEvent&) override;
-  void render(Grid&, const Theme&, int64_t nowMs) override;
   void build(lv_obj_t* root) override;
   void update(int64_t nowMs) override;
 
@@ -57,7 +56,6 @@ class SetupScreen : public Screen {
  public:
   void enter(const std::string&) override;
   void onKey(const KeyEvent&) override;
-  void render(Grid&, const Theme&, int64_t nowMs) override;
   void build(lv_obj_t* root) override;
   void update(int64_t nowMs) override;
   bool hasOverlay() const override { return picker_.isOpen(); }
@@ -85,7 +83,6 @@ class LoginFormScreen : public Screen {
   void leave() override;
   void onKey(const KeyEvent&) override;
   void onEvent(const Event&) override;
-  void render(Grid&, const Theme&, int64_t nowMs) override;
   void build(lv_obj_t* root) override;
   void update(int64_t nowMs) override;
   bool acceptsText() const override { return !busy_; }
@@ -111,20 +108,15 @@ class HomeScreen : public Screen {
  public:
   void enter(const std::string&) override;
   void onKey(const KeyEvent&) override;
-  void render(Grid&, const Theme&, int64_t nowMs) override;
   void build(lv_obj_t* root) override;
   void update(int64_t nowMs) override;
 
  private:
   void openItem(int item);
   void sync();
-  // cellW: the tiles' cell width in px when drawn on RowKind::Big rows, else 0.
-  // tiles are slots for tiles first.. on; a column (homeColumn) scrolls.
-  void renderTiles(Grid&, const Theme&, const std::vector<TileRect>&, int cellW, int first,
-                   bool column);
   ListView menu_;
   int tileSel_ = 0;      // selected tile (touch boards)
-  bool tileMode_ = false;  // set each render: tiles shown this frame
+  bool tileMode_ = false;  // set each sync: tiles shown this frame
   bool tileHidden_ = false;  // touch hides the tile cursor until an arrow or Select
   // The single column (homeColumn): the top tile shown, how many fit, rows
   // from one tile to the next, and touch Up/Down steps (a row each) not yet
@@ -145,7 +137,6 @@ class SettingsScreen : public Screen {
  public:
   void enter(const std::string&) override;
   void onKey(const KeyEvent&) override;
-  void render(Grid&, const Theme&, int64_t nowMs) override;
   void build(lv_obj_t* root) override;
   void update(int64_t nowMs) override;
   bool hasOverlay() const override {
@@ -192,7 +183,7 @@ class SettingsScreen : public Screen {
   void sizeKey(const KeyEvent&);
   // The open confirm is a picker (a centred box), not a two-row confirm.
   bool confirmPicks() const;
-  // The open slider, if any, in the order render draws them.
+  // The open slider, if any, in the order sync shows them.
   const Slider* openSlider() const;
   void sync();
 
@@ -240,7 +231,6 @@ class WifiScreen : public Screen {
   void leave() override;
   void onKey(const KeyEvent&) override;
   void onEvent(const Event&) override;
-  void render(Grid&, const Theme&, int64_t nowMs) override;
   void build(lv_obj_t* root) override;
   void update(int64_t nowMs) override;
   bool hasOverlay() const override { return menu_.isOpen() || typing(); }
@@ -260,7 +250,7 @@ class WifiScreen : public Screen {
   // password null: join with the saved one.
   void join(const std::string& ssid, const std::string* password);
   void setNote(const std::string& text, bool error);
-  // The rows and their items, as render lists them.
+  // The rows and their items, as sync lists them.
   std::vector<ListItem> listItems();
   void sync();
 
@@ -293,7 +283,6 @@ class RoomListScreen : public Screen {
   void leave() override { closeOverlays(); }
   void onKey(const KeyEvent&) override;
   void onEvent(const Event&) override;
-  void render(Grid&, const Theme&, int64_t nowMs) override;
   void build(lv_obj_t* root) override;
   void update(int64_t nowMs) override;
   bool consumesBackspace() const override { return filter_.active(); }
@@ -308,7 +297,7 @@ class RoomListScreen : public Screen {
   // the rooms follow it (slugs_ holds "" for that row).
   void open(int index);
   void askMarkAll();
-  // The rows render and sync draw, filling slugs_ and unread_; shown: the
+  // The rows sync shows, filling slugs_ and unread_; shown: the
   // room rows, without Mark all read.
   std::vector<ListItem> rows(int& shown);
   void sync();
@@ -337,7 +326,6 @@ class CmailListScreen : public Screen {
   void enter(const std::string&) override;
   void onKey(const KeyEvent&) override;
   void onEvent(const Event&) override;
-  void render(Grid&, const Theme&, int64_t nowMs) override;
   void build(lv_obj_t* root) override;
   void update(int64_t nowMs) override;
   bool hasOverlay() const override { return editing_; }
@@ -350,7 +338,7 @@ class CmailListScreen : public Screen {
  private:
   void editKey(const KeyEvent&);
   void open(int index);
-  // The rows render and sync draw, filling ids_.
+  // The rows sync shows, filling ids_.
   std::vector<ListItem> rows();
   void sync();
 
@@ -383,7 +371,6 @@ class FeedListScreen : public Screen {
   void leave() override;
   void onKey(const KeyEvent&) override;
   void onEvent(const Event&) override;
-  void render(Grid&, const Theme&, int64_t nowMs) override;
   void build(lv_obj_t* root) override;
   void update(int64_t nowMs) override;
   bool hasOverlay() const override { return palette_ || info_.isOpen(); }
@@ -401,7 +388,7 @@ class FeedListScreen : public Screen {
   void open();         // the first page
   void requestMore();  // the next page
   void rebuild(int cols, const Theme& t);
-  // rebuild when render and sync need it: on a store event (dirty_), a new
+  // rebuild when sync needs it: on a store event (dirty_), a new
   // width or theme (sameTheme false), or for the ages.
   void refresh(int listCols, const Theme& t, int64_t nowMs, bool sameTheme);
   void remember();     // selId_ from the selection
@@ -456,7 +443,6 @@ class TopicsScreen : public Screen {
   void leave() override { palette_ = false; }
   void onKey(const KeyEvent&) override;
   void onEvent(const Event&) override;
-  void render(Grid&, const Theme&, int64_t nowMs) override;
   void build(lv_obj_t* root) override;
   void update(int64_t nowMs) override;
   bool hasOverlay() const override { return palette_; }
@@ -466,7 +452,7 @@ class TopicsScreen : public Screen {
   void paletteKey(const KeyEvent&);
   void open();
   void rebuild(int cols, const Theme& t);
-  // rebuild when render and sync need it (sameTheme false: a new theme).
+  // rebuild when sync needs it (sameTheme false: a new theme).
   void refresh(int listCols, const Theme& t, bool sameTheme);
   void remember();
   const char* emptyText() const;  // before withMenuKey
@@ -498,13 +484,12 @@ class MembersScreen : public Screen {
   void enter(const std::string& slug) override;
   void onKey(const KeyEvent&) override;
   void onEvent(const Event&) override;
-  void render(Grid&, const Theme&, int64_t nowMs) override;
   void build(lv_obj_t* root) override;
   void update(int64_t nowMs) override;
 
  private:
   void requestMore();
-  // The rows render and sync draw, filling names_ and more_; name: the
+  // The rows sync shows, filling names_ and more_; name: the
   // guild's, for the status bar.
   std::vector<ListItem> rows(int64_t nowMs, std::u32string& name);
   // What an empty list says; loading: the store's flag.
@@ -534,7 +519,6 @@ class ProfileScreen : public Screen {
   void leave() override { closeOverlays(); }
   void onKey(const KeyEvent&) override;
   void onEvent(const Event&) override;
-  void render(Grid&, const Theme&, int64_t nowMs) override;
   void build(lv_obj_t* root) override;
   void update(int64_t nowMs) override;
   bool hasOverlay() const override { return menu_ || linkOpen_; }
@@ -550,10 +534,9 @@ class ProfileScreen : public Screen {
   void send(int act);
   void doAct(int act);  // a picked action or link
   void buildLinks();    // links_ for the profile shown
-  void renderLinks(Grid& g, const Theme& t, int top, int bottom);
   // The first row of the links under the text, in a grid of that size.
   int linksTop(int gridRows, int gridCols) const;
-  // Lays text_ out again when render and sync need it: on an event (dirty_),
+  // Lays text_ out again when sync needs it: on an event (dirty_),
   // for the ages, or a new theme (sameTheme false).
   void refreshText(const Theme& t, int64_t nowMs, bool sameTheme);
   // What the screen says before the profile loads; loading: the store's flag.
@@ -605,7 +588,6 @@ class GuildListScreen : public Screen {
   void leave() override { palette_ = false; }
   void onKey(const KeyEvent&) override;
   void onEvent(const Event&) override;
-  void render(Grid&, const Theme&, int64_t nowMs) override;
   void build(lv_obj_t* root) override;
   void update(int64_t nowMs) override;
   bool hasOverlay() const override { return palette_; }
@@ -617,7 +599,7 @@ class GuildListScreen : public Screen {
   void requestMore();
   void step(bool down);  // moves the selection, skipping the dividers
   void rebuild(int cols, const Theme& t);
-  // rebuild when render and sync need it: on a store event (dirty_), or a
+  // rebuild when sync needs it: on a store event (dirty_), or a
   // new width or theme (sameTheme false).
   void refresh(int listCols, const Theme& t, bool sameTheme);
   void remember();
@@ -666,7 +648,6 @@ class NotificationsScreen : public Screen {
   void leave() override { closeOverlays(); }
   void onKey(const KeyEvent&) override;
   void onEvent(const Event&) override;
-  void render(Grid&, const Theme&, int64_t nowMs) override;
   void build(lv_obj_t* root) override;
   void update(int64_t nowMs) override;
   bool hasOverlay() const override { return confirm_; }
@@ -679,7 +660,7 @@ class NotificationsScreen : public Screen {
   // Row 0 is "Mark all read" when anything is unread; items follow it.
   void open(int row);
   void askMarkAll();
-  // Rebuilds items_ and rows_ as render does: when the count or marking_
+  // Rebuilds items_ and rows_ as sync needs: when the count or marking_
   // changed, or a second has passed.
   void refreshRows(int64_t nowMs);
   void sync(int64_t nowMs);
@@ -712,7 +693,6 @@ class ComingSoonScreen : public Screen {
  public:
   void enter(const std::string& name) override { name_ = name; }
   void onKey(const KeyEvent&) override;
-  void render(Grid&, const Theme&, int64_t nowMs) override;
   void build(lv_obj_t* root) override;
   void update(int64_t nowMs) override;
 

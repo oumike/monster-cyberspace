@@ -17,26 +17,43 @@ size_t lvglFree() {
 }
 
 size_t (*freeProbe)() = lvglFree;
+// The label and the timer that hides it live and die together: whichever
+// goes first (the timer firing, or the label deleted with its layer) clears
+// both pointers, so neither dangles.
 lv_obj_t* oomLabel = nullptr;
+lv_timer_t* oomTimer = nullptr;
+
+void oomDeleted(lv_event_t*) {
+  oomLabel = nullptr;
+  if (oomTimer) lv_timer_delete(oomTimer);
+  oomTimer = nullptr;
+}
 
 void hideOom(lv_timer_t*) {
-  lv_obj_delete(oomLabel);
-  oomLabel = nullptr;
+  oomTimer = nullptr;  // a repeat count of 1: LVGL deletes it
+  if (oomLabel) lv_obj_delete(oomLabel);
 }
 
 void showOom() {
-  static lv_timer_t* timer = nullptr;
+  if (oomLabel && oomTimer) {
+    lv_timer_reset(oomTimer);
+    return;
+  }
   if (!oomLabel) {
     oomLabel = lv_label_create(lv_layer_top());
     if (!oomLabel) return;
+    lv_obj_add_event_cb(oomLabel, oomDeleted, LV_EVENT_DELETE, nullptr);
     addStyle(oomLabel, Role::Error);
     lv_label_set_text(oomLabel, "Out of memory");
     lv_obj_center(oomLabel);
-    timer = lv_timer_create(hideOom, ScreenHost::kOomMs, nullptr);
-    lv_timer_set_repeat_count(timer, 1);
-  } else {
-    lv_timer_reset(timer);
   }
+  oomTimer = lv_timer_create(hideOom, ScreenHost::kOomMs, nullptr);
+  // No timer to hide it: don't leave the label up for good.
+  if (!oomTimer) {
+    lv_obj_delete(oomLabel);
+    return;
+  }
+  lv_timer_set_repeat_count(oomTimer, 1);
 }
 
 }  // namespace

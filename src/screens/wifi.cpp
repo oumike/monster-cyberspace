@@ -3,7 +3,6 @@
 #include "app/app_state.h"
 #include "app/ui_task.h"
 #include "chat/chat_source.h"
-#include "screens/draw.h"
 #include "screens/lv_draw.h"
 #include "screens/screens.h"
 
@@ -239,53 +238,6 @@ std::vector<ListItem> WifiScreen::listItems() {
   items.push_back(ListItem{U"Other network\u2026", U""});
   items.push_back(ListItem{scanning_ ? U"Scanning\u2026" : U"Scan again", U""});
   return items;
-}
-
-void WifiScreen::render(Grid& g, const Theme& t, int64_t) {
-  g.fill(t.bg);
-  drawStatus(g, t, U"wi-fi", -1);
-  const int bottom = g.rows() - 1;
-  buttons_ = ButtonPad::active();
-
-  if (mode_ == Mode::Name || mode_ == Mode::Password) {
-    const bool name = mode_ == Mode::Name;
-    int r = 2;
-    if (!name) r = putWrapped(g, 1, r, "Password for " + ssid_, t.dim, t.bg);
-    else putLine(g, 1, r++, "Network name", t.dim, t.bg);
-    input_.setDisabled(false);
-    input_.render(g, ++r, t);
-    r += 2;
-    if (!note_.empty()) r = putWrapped(g, 1, r, note_, noteError_ ? t.error : t.fg, t.bg) + 1;
-    if (!name) putWrapped(g, 1, r, "Leave it empty for an open network.", t.dim, t.bg);
-    drawHint(g, t, name ? U"\u25CF next  back: cancel" : U"\u25CF join  back: cancel",
-             name ? U"enter: next" : U"enter: join");
-    return;
-  }
-
-  if (mode_ == Mode::Joining) {
-    int r = putWrapped(g, 1, 2, "Joining " + ssid_ + "\u2026", t.fg, t.bg);
-    putWrapped(g, 1, r + 1, "This takes up to 12 seconds.", t.dim, t.bg);
-    drawHint(g, t, U"back: leave (it keeps trying)", U"back: leave (it keeps trying)");
-    return;
-  }
-
-  std::vector<ListItem> items = listItems();
-
-  int top = 1;
-  if (!note_.empty()) top = putWrapped(g, 1, 1, note_, noteError_ ? t.error : t.fg, t.bg);
-  if (buttons_) {
-    pad_.render(g, t, items, top + 1, bottom, true);
-  } else {
-    list_.setItems(std::move(items));
-    list_.render(g, top, bottom, 0, g.cols(), t);
-  }
-  if (menu_.isOpen()) {
-    menu_.render(g, 1, bottom, 0, OverlayPlace::Centre, t);
-    drawHint(g, t, U"\u2191\u2193 pick  \u25CF select  back: cancel", U"tap: select  outside: cancel");
-    return;
-  }
-  if (buttons_) return drawHint(g, t, U"", U"tap to select  drag to scroll");
-  drawHint(g, t, U"\u2191\u2193 pick  \u25CF select  back: leave", U"tap to select  swipe to scroll");
 }
 
 void WifiScreen::build(lv_obj_t* root) {

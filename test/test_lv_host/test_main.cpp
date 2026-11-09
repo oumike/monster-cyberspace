@@ -89,9 +89,67 @@ void test_emit_reaches_sink() {
   lvui::setKeySink(nullptr);
 }
 
+void test_oom_label_survives_layer_clean() {
+  lvui::ScreenHost host;
+  TEST_ASSERT_TRUE(host.show([](lv_obj_t*) {}));
+  TEST_ASSERT_FALSE(host.show([](lv_obj_t*) { starved = true; }));
+  TEST_ASSERT_NOT_NULL(findOom());
+  // Whoever owns the top layer clears it: the label goes, and its timer with it.
+  lv_obj_clean(lv_layer_top());
+  now += lvui::ScreenHost::kOomMs + 10;
+  lv_timer_handler();
+  starved = false;
+  TEST_ASSERT_FALSE(host.show([](lv_obj_t*) { starved = true; }));
+  TEST_ASSERT_NOT_NULL(findOom());
+  now += lvui::ScreenHost::kOomMs + 10;
+  lv_timer_handler();
+  TEST_ASSERT_NULL(findOom());
+  starved = false;
+}
+
+int pointers() {
+  int n = 0;
+  for (lv_indev_t* i = lv_indev_get_next(nullptr); i; i = lv_indev_get_next(i))
+    if (lv_indev_get_type(i) == LV_INDEV_TYPE_POINTER) ++n;
+  return n;
+}
+bool noTouch(int16_t&, int16_t&) { return false; }
+
+void test_pointer_made_once() {
+  const int before = pointers();
+  lvui::pointerBegin(nullptr);
+  TEST_ASSERT_FALSE(lvui::hasPointer());
+  lvui::pointerBegin(noTouch);
+  lvui::pointerBegin(noTouch);
+  TEST_ASSERT_TRUE(lvui::hasPointer());
+  TEST_ASSERT_EQUAL(before + 1, pointers());
+}
+
+const char* assertFile = nullptr;
+int assertLine = 0;
+void onAssert(const char* file, int line) {
+  assertFile = file;
+  assertLine = line;
+}
+
+// LVGL's asserts reach the handler with where they failed (no silent hang).
+void test_assert_reaches_handler() {
+  lvui::setAssertHandler(onAssert);
+  void* none = nullptr;
+  const int line = __LINE__ + 1;
+  LV_ASSERT_NULL(none);
+  TEST_ASSERT_NOT_NULL(assertFile);
+  TEST_ASSERT_NOT_NULL(strstr(assertFile, "test_lv_host"));
+  TEST_ASSERT_EQUAL(line, assertLine);
+  lvui::setAssertHandler(nullptr);
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_host_build_failure_keeps_previous);
   RUN_TEST(test_emit_reaches_sink);
+  RUN_TEST(test_oom_label_survives_layer_clean);
+  RUN_TEST(test_pointer_made_once);
+  RUN_TEST(test_assert_reaches_handler);
   return UNITY_END();
 }

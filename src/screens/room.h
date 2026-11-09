@@ -42,7 +42,6 @@ class RoomScreen : public Screen {
   void leave() override;
   void onKey(const KeyEvent&) override;
   void onEvent(const Event&) override;
-  void render(Grid&, const Theme&, int64_t nowMs) override;
   void build(lv_obj_t* root) override;
   void update(int64_t nowMs) override;
   bool hasOverlay() const override;
@@ -101,7 +100,7 @@ class RoomScreen : public Screen {
   // What a frame takes from the chat state, under the lock: the presence
   // (into the drawer when shown), the typers, this room's mutes, a mark read
   // (sent once the lock is let go) and the log laid out again when its
-  // inputs changed. render and sync both run it. sameTheme: the theme the
+  // inputs changed. sync runs it. sameTheme: the theme the
   // lines bake is still t's.
   struct Frame {
     int online = 0;
@@ -110,7 +109,6 @@ class RoomScreen : public Screen {
   Frame refresh(const Theme& t, int logCols, bool shown, bool sameTheme);
   // The hint row for the typing view, keys and touch.
   void hints(bool drawer, bool docked, bool offline, const char32_t*& keys, const char32_t*& touch) const;
-  // LVGL: sync draws what render draws.
   void sync();
   void syncReader(const Theme& t);
   InputLine input_;

@@ -27,7 +27,6 @@ class ComposerScreen : public Screen {
   void enter(const std::string&) override;
   void onKey(const KeyEvent&) override;
   void onEvent(const Event&) override;
-  void render(Grid&, const Theme&, int64_t nowMs) override;
   void build(lv_obj_t* root) override;
   void update(int64_t nowMs) override;
   bool hasOverlay() const override { return menu_ != Menu::None; }
@@ -52,7 +51,7 @@ class ComposerScreen : public Screen {
   void save();          // the focused field into the draft
   InputLine* line();    // the focused one-line field, or null
 
-  // Where render and sync put the fields, from the screen's rows.
+  // Where sync puts the fields, from the screen's rows.
   struct Rows {
     int cw, check, topics, title, label, bodyTop, bodyBottom;
     int pad;  // touch boards pad the title with a row above and below
@@ -72,7 +71,7 @@ class ComposerScreen : public Screen {
   bool toFeed_ = false;  // ... or to the feed list, even from a guild thread
   Overlay box_;
 
-  // A touch target the grid's tap map gives the title's padding and the
+  // A touch target on the title's padding and the
   // checkboxes: a tap (or long press) emits {Focus, index, field}.
   struct FieldTap final : lvui::Tappable {
     void tapped(lv_obj_t* obj, bool hold) override;

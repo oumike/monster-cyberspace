@@ -2,9 +2,18 @@
 
 #include <lvgl.h>
 
+#include <cstdio>
+#include <cstdlib>
+
 namespace lvui {
 
 namespace {
+void reportAndAbort(const char* file, int line) {
+  std::fprintf(stderr, "[lvgl] assert failed at %s:%d\n", file, line);
+  std::abort();
+}
+void (*assertHandler)(const char*, int) = reportAndAbort;
+
 uint32_t (*tickSource)() = nullptr;
 uint32_t tick() { return tickSource ? tickSource() : 0; }
 bool started = false;
@@ -15,6 +24,10 @@ void setTickSource(uint32_t (*ms)()) {
   if (started) lv_tick_set_cb(tick);
 }
 
+void setAssertHandler(void (*handler)(const char* file, int line)) {
+  assertHandler = handler ? handler : reportAndAbort;
+}
+
 void init() {
   if (started) return;
   lv_init();
@@ -23,6 +36,9 @@ void init() {
 }
 
 }  // namespace lvui
+
+// Here, in the object init() pulls into the link, so LVGL's own archive finds it.
+extern "C" void lvui_assert_failed(const char* file, int line) { lvui::assertHandler(file, line); }
 
 #if LV_USE_STDLIB_MALLOC == LV_STDLIB_CUSTOM
 #include <esp_heap_caps.h>

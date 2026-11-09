@@ -1,6 +1,6 @@
 #pragma once
 
-// draw.h's helpers for screens drawn with LVGL (lib/lvui views).
+// Helpers for the screens, drawn with LVGL (lib/lvui views).
 
 #include <lvgl.h>
 
@@ -8,6 +8,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <string>
 #include <string_view>
 
 #include "app/app_state.h"
@@ -18,8 +19,14 @@
 #include "lvui/views/side_nav_strip.h"
 #include "lvui/views/view_util.h"
 #include "ui/menu_key.h"
+#include "util/utf8.h"
 
 namespace rc {
+
+// A UTF-8 message naming the commands key as "Ctrl", with the board's name for it.
+inline std::string withMenuKey(std::string_view utf8) {
+  return u32ToUtf8(withMenuKey(utf8ToU32(utf8), board::menuKeyName()));
+}
 
 // drawHint: the last row, the commands key named as the board names it.
 inline void syncHint(lvui::HintBar& h, std::u32string_view text) {
@@ -29,17 +36,6 @@ inline void syncHint(lvui::HintBar& h, std::u32string_view text) {
 // Keyed boards show `keys`; touch boards show `touch`.
 inline void syncHint(lvui::HintBar& h, std::u32string_view keys, std::u32string_view touch) {
   syncHint(h, board::hasTouch() ? touch : keys);
-}
-
-// The app's theme (currentTheme(): the saved one, paper on e-paper) on the
-// LVGL styles, applied when it differs from the last one this applied: a
-// theme picked in Settings shows at once, on every view.
-inline void syncTheme() {
-  static const Theme* shown = nullptr;
-  const Theme& t = currentTheme();
-  if (&t == shown) return;
-  shown = &t;
-  lvui::applyTheme(t);
 }
 
 // narrowGrid for a screen's cell grid.

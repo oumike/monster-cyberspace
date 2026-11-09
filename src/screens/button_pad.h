@@ -41,14 +41,11 @@ class ButtonPad {
     hidden_ = false;
     selected_ = i;
   }
-  // Over grid rows [top, bottom). keepRight shortens the label rather than
-  // dropping `right` when both don't fit. columns 0: columns(). header:
-  // rows the caller draws above the buttons, from `top`; they scroll away a
-  // row per drag step before the buttons scroll.
-  void render(Grid& g, const Theme& t, const std::vector<ListItem>& items, int top, int bottom,
-              bool keepRight, int columns = 0, int header = 0);
-  // render for LVGL: the buttons in v, over its parent's cell rows
-  // [top, bottom). The caller draws any header rows.
+  // The buttons in v, over its parent's cell rows [top, bottom). keepRight
+  // shortens the label rather than dropping `right` when both don't fit.
+  // columns 0: columns(). header: rows the caller draws above the buttons,
+  // from `top`; they scroll away a row per drag step before the buttons
+  // scroll.
   void sync(lvui::TileGrid& v, const std::vector<ListItem>& items, int top, int bottom,
             bool keepRight, int columns = 0, int header = 0);
   // Header rows scrolled off the top: the caller draws header row i at
@@ -57,7 +54,7 @@ class ButtonPad {
 
  private:
   // Lays the buttons out over a grid gridCols wide and scrolls them to keep
-  // the cursor shown, as render and sync draw them.
+  // the cursor shown, as sync shows them.
   ButtonGrid layout(int gridCols, const std::vector<ListItem>& items, int top, int bottom, int cols,
                     int header);
 

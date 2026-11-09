@@ -1,7 +1,10 @@
 #include "lvui/views/keyboard.h"
 
 #include <algorithm>
+#include <cstdlib>
 #include <numeric>
+
+#include "input/gestures.h"
 
 #include "lvui/cell_font.h"
 #include "lvui/input.h"
@@ -24,8 +27,11 @@ void Keyboard::create(lv_obj_t* parent) {
   lv_obj_remove_style_all(matrix_);
   lv_obj_remove_flag(matrix_, LV_OBJ_FLAG_SCROLLABLE);
   lv_obj_add_event_cb(matrix_, eventCb, LV_EVENT_PRESSED, this);
+  lv_obj_add_event_cb(matrix_, eventCb, LV_EVENT_PRESSING, this);
+  lv_obj_add_event_cb(matrix_, eventCb, LV_EVENT_PRESS_LOST, this);
   lv_obj_add_event_cb(matrix_, eventCb, LV_EVENT_VALUE_CHANGED, this);
   keys_ = -1;
+  pressKey_ = -1;
 }
 
 int Keyboard::keyOf(uint32_t button) const {
@@ -35,12 +41,38 @@ int Keyboard::keyOf(uint32_t button) const {
 void Keyboard::eventCb(lv_event_t* e) {
   auto* self = static_cast<Keyboard*>(lv_event_get_user_data(e));
   if (!self->osk_) return;
-  const int k = self->keyOf(lv_buttonmatrix_get_selected_button(self->matrix_));
-  if (k < 0) return;
-  if (lv_event_get_code(e) == LV_EVENT_PRESSED) {
-    self->osk_->touch(k, lv_tick_get());
+  const lv_event_code_t code = lv_event_get_code(e);
+  lv_point_t p{0, 0};
+  if (lv_indev_t* in = lv_indev_active()) lv_indev_get_point(in, &p);
+  if (code == LV_EVENT_PRESS_LOST) {
+    self->pressKey_ = -1;
     return;
   }
+  if (code == LV_EVENT_PRESSING) {
+    // A finger that slides past the tap slop is a drag: it types nothing
+    // (LVGL would type the key under the release).
+    if (self->pressKey_ >= 0 &&
+        (std::abs(p.x - self->pressAt_.x) > rc::kTapSlopPx || std::abs(p.y - self->pressAt_.y) > rc::kTapSlopPx))
+      self->pressKey_ = -1;
+    return;
+  }
+  const uint32_t button = lv_buttonmatrix_get_selected_button(self->matrix_);
+  const int k = self->keyOf(button);
+  if (code == LV_EVENT_PRESSED) {
+    self->pressKey_ = k;
+    self->pressAt_ = p;
+    if (k < 0) return;
+    // The light is the key the finger went down on, at once.
+    self->osk_->touch(k, lv_tick_get());
+    if (!self->on_[k]) {
+      self->on_[k] = 1;
+      lv_buttonmatrix_set_button_ctrl(self->matrix_, button, LV_BUTTONMATRIX_CTRL_CHECKED);
+    }
+    return;
+  }
+  const bool same = k >= 0 && k == self->pressKey_;
+  self->pressKey_ = -1;
+  if (!same) return;
   // The press may turn the page: the map is rebuilt at the next sync.
   const rc::OskOutput o = self->osk_->press(k, lv_tick_get());
   if (o.key.action != rc::Action::None) emit(o.key);
@@ -134,11 +166,11 @@ void Keyboard::sync(rc::Osk& osk, rc::TextSize ts) {
     lv_obj_set_style_border_color(matrix_, color(t.dim), LV_PART_ITEMS);
     lv_obj_set_style_border_width(matrix_, 1, LV_PART_ITEMS);
     lv_obj_set_style_radius(matrix_, 0, LV_PART_ITEMS);
-    for (lv_style_selector_t s : {lv_style_selector_t(LV_PART_ITEMS | LV_STATE_CHECKED),
-                                  lv_style_selector_t(LV_PART_ITEMS | LV_STATE_PRESSED)}) {
-      lv_obj_set_style_bg_color(matrix_, color(t.selectBg), s);
-      lv_obj_set_style_text_color(matrix_, color(t.selectFg), s);
-    }
+    // Only the Osk's light (checked): LVGL's pressed key follows a sliding
+    // finger, the light stays on the key it went down on.
+    const lv_style_selector_t lit = LV_PART_ITEMS | LV_STATE_CHECKED;
+    lv_obj_set_style_bg_color(matrix_, color(t.selectBg), lit);
+    lv_obj_set_style_text_color(matrix_, color(t.selectFg), lit);
   }
   if (n != keys_ || osk.page() != page_ || col0 != col0_ || w0 != w0_ || ts != ts_ || c.w != cw_ || c.h != ch_) {
     keys_ = n;

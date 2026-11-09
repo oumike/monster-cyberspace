@@ -2,9 +2,11 @@
 
 #include <Arduino.h>
 #include <esp_heap_caps.h>
+#include <lvgl.h>
 
 #include <algorithm>
 #include <iterator>
+#include <memory>
 #include <mutex>
 
 #include "app/app_state.h"
@@ -17,14 +19,22 @@
 #include "feed/feed_source.h"
 #endif
 #include "hal/board.h"
+#include "lvui/cell_font.h"
+#include "lvui/display.h"
+#include "lvui/input.h"
+#include "lvui/styles.h"
+#include "lvui/views/banner.h"
+#include "lvui/views/button_rows.h"
+#include "lvui/views/cell_text.h"
+#include "lvui/views/keyboard.h"
+#include "lvui/views/menu_overlay.h"
+#include "lvui/views/view_util.h"
 #include "input/backspace.h"
 #include "input/double_tap.h"
 #include "input/function_keys.h"
 #include "input/gestures.h"
 #include "input/key_event.h"
-#include "input/touch_resolve.h"
 #include "screens/composer.h"
-#include "screens/draw.h"
 #include "screens/router.h"
 #include "store/locked_chat.h"
 #include "chat/room_read.h"
@@ -38,15 +48,14 @@
 #include "ui/haptics.h"
 #include "ui/led_level.h"
 #include "ui/kb_light.h"
+#include "ui/lv/board_glue.h"
 #include "ui/notify_light.h"
-#include "ui/renderer.h"
 #include "ui/screenshot.h"
 #include <vector>
 #include "ui/room_layout.h"
 #include "ui/rotation.h"
 #include "ui/screen_timeout.h"
 #include "ui/splash_layout.h"
-#include "ui/tap_map.h"
 #include "ui/theme.h"
 #include "ui/wifi_light.h"
 #include "ui/widgets/banner.h"
@@ -71,8 +80,6 @@ constexpr size_t kMaxMentionNotes = 50;  // the oldest go first
 // screensaver the screen timeout locks into.
 enum class Power { On, Dark, Saver, Bounce };
 
-Renderer renderer;
-Grid grid(1, 1);
 Banner topBanner;
 Gestures gestures;
 DoubleTap doubleTap;  // wakes boards with doubleTapWakes
@@ -91,10 +98,7 @@ bool oskWanted = false;  // ui::showKeyboard()
 // The last Backspace that deleted text (backspaceIsBack boards).
 uint32_t lastDeleteMs = 0;
 bool deletedOnce = false;
-TouchResolver resolver;
-TapMap taps;
 Osk osk;
-Grid oskGrid(1, 1);
 bool oskShown = false;
 SymbolTable symbols;
 // Boards that can't type (board::canType): canned replies instead of a text
@@ -113,25 +117,20 @@ Bouncer bouncer;
 // The monster's word on the screensaver, a new one every kSayMs.
 MonsterWords words;
 std::string saying;
-#ifndef RC_SPLASH_SCALE
-#define RC_SPLASH_SCALE 1
-#endif
 int64_t sayUntil = 0;
 constexpr int64_t kSayMs = 20000;
+// Set when the screen must be built again: the theme, text size, rotation
+// or keyboard dock changed, or the screen woke.
 bool needResize = true;
-// The text size the grid was last sized for: the saved one, or Compact on a
-// screen that asks for it.
-TextSize gridSize = TextSize::Comfortable;
-
-// The splash and the monster screensaver look the same at every text size.
-bool fixedSize() {
-  return router::current() == router::Id::Splash || power == Power::Bounce || power == Power::Dark;
-}
+// The text size the root font was last set to: the saved one, or Compact on
+// a screen that asks for it.
+TextSize shownSize = TextSize::Comfortable;
 
 TextSize wantedSize() {
   // A board with one text size uses it everywhere, splash and screensaver too.
   if (TextSize only; board::fixedTextSize(only)) return only;
-  if (fixedSize()) return TextSize::Comfortable;
+  // The splash looks the same at every text size.
+  if (router::current() == router::Id::Splash) return TextSize::Comfortable;
   const TextSize s = router::screen().compactText() ? TextSize::Compact : app().cfg.textSize;
 #if RC_LOW_MEM
   // Without PSRAM a Compact grid on a big panel does not fit beside Wi-Fi.
@@ -140,37 +139,158 @@ TextSize wantedSize() {
   return s;
 }
 
+// The monster screensaver's size: the same at every text size.
+TextSize bounceSize() {
+  if (TextSize only; board::fixedTextSize(only)) return only;
+  return TextSize::Comfortable;
+}
+
 int64_t nowMs() { return int64_t(millis()); }
 
-int oskOffsetPx = 0;  // the header's extra height, which moves the keyboard down
+// This frame's touch sample. LVGL's pointer and the gesture recogniser both
+// read it, so they see the same finger; the last point stays on release.
+struct TouchSample {
+  bool down = false;
+  int16_t x = 0, y = 0;
+} touch;
 
-void resizeGrid() {
-  int cols, rows;
-  const TextSize ts = gridSize = wantedSize();
-  const int rowH = cellSize(ts).h;
-  // Touch boards without a keyboard or without keys that move a selection get
-  // a taller status bar, easier to tap.
-  const HeaderSize hd = !fixedSize() && board::hasTouch() &&
-                                (!board::hasKeyboard() || !board::hasKeys())
-                            ? touchHeader(board::panelWidth(), ts)
-                            : HeaderSize{};
-  gridDims(board::panelWidth(), board::panelHeight(), ts, cols, rows, hd.px);
-  gestures.setWidth(board::panelWidth());
-  oskOffsetPx = hd.px > 0 ? std::max(0, hd.px - rowH) : 0;
-  const int slack = std::max(0, board::panelHeight() - rows * rowH - oskOffsetPx);
-  grid.setHeader(hd);
-  if (oskShown) {
-    const int k = Osk::rows(ts);
-    grid.resize(cols, rows - k);
-    grid.setBottomPad(0);
-    oskGrid.resize(cols, Osk::gridRows());
-    oskGrid.setBottomPad(slack);
-    osk.layout(cols, ts);
-  } else {
-    grid.resize(cols, rows);
-    grid.setBottomPad(slack);
+// LVGL's pointer: the finger only while the screen is on and not swallowed.
+bool readTouchCached(int16_t& x, int16_t& y) {
+  x = touch.x;
+  y = touch.y;
+  return touch.down && power == Power::On && !touchSwallow;
+}
+
+// The keys LVGL's views emit while lv_timer_handler runs. They are handled
+// once it returns: a key may change screens, and that deletes the tree the
+// tap's event is still running in. held: the finger was still down (a long
+// press), as the grid's LongPress.
+struct TapKey {
+  KeyEvent key;
+  bool held;
+};
+std::vector<TapKey> tapKeys;
+// An edge swipe acted this frame: LVGL's tap from the same finger is dropped.
+bool dropTaps = false;
+
+void queueKey(const KeyEvent& k) { tapKeys.push_back(TapKey{k, touch.down}); }
+
+void showOsk(bool on);
+
+// F10's table closes on a tap anywhere.
+struct HelpTap : lvui::Tappable {
+  void tapped(lv_obj_t*, bool) override { lvui::emit(KeyEvent{Action::KeysHelp}); }
+} helpTap;
+
+// What the UI task draws over every screen, on lv_layer_top(): in `area`
+// (the screen above the keyboard) the emoji tray, the canned picker, F10's
+// keys and the banner; the docked keyboard below it; the screensaver over
+// all; and the last image before sleep or power off.
+struct Layers {
+  lv_obj_t* root = nullptr;
+  lv_obj_t* area = nullptr;
+  lvui::SymbolBox symbols;
+  lvui::MenuOverlay canned;
+  lv_obj_t* help = nullptr;
+  lvui::CellText helpText;
+  lvui::Banner banner;
+  lv_obj_t* oskBox = nullptr;
+  lvui::Keyboard keyboard;
+  lv_obj_t* saver = nullptr;
+  lvui::CellText saverText;
+  lv_obj_t* last = nullptr;
+  lvui::CellText lastText;
+};
+std::unique_ptr<Layers> layers;
+
+int displayW() { return int(lv_display_get_horizontal_resolution(lv_display_get_default())); }
+int displayH() { return int(lv_display_get_vertical_resolution(lv_display_get_default())); }
+
+// The function keys' table: a centred box over the area.
+void buildHelp(Layers& L, int cols, int rows, lvui::Cell c) {
+  const Theme& t = currentTheme();
+  L.help = lvui::plainBox(L.area);
+  lv_obj_set_size(L.help, lv_pct(100), lv_pct(100));
+  lvui::addTap(L.help, &helpTap);
+  size_t count = 0;
+  const FunctionKey* keys = board::functionKeys(count);
+  const int n = int(count);
+  // The title and the keys, with a blank row above and below when they fit.
+  const int content = n + 1, pad = rows >= content + 2 ? 1 : 0;
+  const int w = std::max(1, std::min(cols - 2, 27)), h = std::max(1, std::min(rows, content + 2 * pad));
+  lv_obj_t* frame = lvui::plainBox(L.help);
+  lvui::addStyle(frame, lvui::Role::Screen);
+  lv_obj_set_style_border_color(frame, lvui::color(t.dim), LV_PART_MAIN);
+  lv_obj_set_style_border_width(frame, 1, LV_PART_MAIN);
+  lv_obj_set_style_border_post(frame, true, LV_PART_MAIN);
+  lvui::place(frame, std::max(0, (cols - w) / 2) * c.w, std::max(0, (rows - h) / 2) * c.h, w * c.w, h * c.h);
+  L.helpText.create(frame);
+  L.helpText.begin();
+  L.helpText.line(2, pad, std::u32string_view(U"function keys"), t.fg, w - 4);
+  for (int i = 0; i < n && pad + 1 + i < h; ++i) {
+    L.helpText.line(2, pad + 1 + i, std::u32string_view(keys[i].key), t.selectBg, 5);
+    L.helpText.line(8, pad + 1 + i, std::u32string_view(keys[i].label), t.fg, w - 10);
   }
+  L.helpText.end();
+  lvui::setHidden(L.help, true);
+}
+
+// Sets the root font for size ts and builds the layers over the screen again
+// for it (row heights are fixed when a view is made). The screen itself is
+// built next (router::rebuild, or the go this runs inside).
+void relayout(TextSize ts) {
+  shownSize = ts;
   needResize = false;
+  const lv_font_t* f = lvui::font(ts);
+  lv_obj_set_style_text_font(lv_screen_active(), f, LV_PART_MAIN);
+  lv_obj_set_style_text_font(lv_layer_top(), f, LV_PART_MAIN);
+  const lvui::Cell c = lvui::cellOf(lv_screen_active());
+  const int w = displayW(), h = displayH();
+  // The docked keyboard takes the bottom rows; screens fill what is left.
+  const int oskH = oskShown ? std::min(h, Osk::rows(ts) * c.h) : 0;
+  lv_obj_set_style_pad_bottom(lv_screen_active(), oskH, LV_PART_MAIN);
+  gestures.setWidth(board::panelWidth());
+  const int cols = std::max(1, w / std::max(1, c.w)), rows = std::max(1, (h - oskH) / std::max(1, c.h));
+
+  if (layers && layers->root) lv_obj_delete(layers->root);
+  layers = std::make_unique<Layers>();
+  Layers& L = *layers;
+  L.root = lvui::plainBox(lv_layer_top());
+  lv_obj_set_size(L.root, w, h);
+  L.area = lvui::plainBox(L.root);
+  lv_obj_set_size(L.area, w, h - oskH);
+  L.symbols.create(L.area);
+  L.canned.create(L.area);
+  L.canned.setPlace(OverlayPlace::Centre, (rows - 1) * c.h);
+  buildHelp(L, cols, rows, c);
+  L.banner.create(L.area);
+  L.banner.setOnHide([] { topBanner.hide(); });
+
+  L.oskBox = lvui::plainBox(L.root);
+  lv_obj_set_size(L.oskBox, w, std::max(1, oskH));
+  lv_obj_align(L.oskBox, LV_ALIGN_BOTTOM_LEFT, 0, 0);
+  L.keyboard.create(L.oskBox);
+  L.keyboard.setOnHide([] { showOsk(false); });
+  if (oskShown) osk.layout(cols, ts);
+  lvui::setHidden(L.oskBox, !oskShown);
+
+  L.saver = lvui::plainBox(L.root);
+  lv_obj_set_size(L.saver, w, h);
+  lvui::addStyle(L.saver, lvui::Role::Screen);
+  L.saverText.create(L.saver);
+  lvui::setHidden(L.saver, true);
+
+  L.last = lvui::plainBox(L.root);
+  lv_obj_set_size(L.last, w, h);
+  L.lastText.create(L.last);
+  lvui::setHidden(L.last, true);
+}
+
+// router's hook before each build: the font the screen about to be built
+// wants is set first.
+void beforeBuild() {
+  const TextSize ts = wantedSize();
+  if (needResize || ts != shownSize || !layers) relayout(ts);
 }
 
 // The on-screen keyboard docks below the screen while a text field has focus.
@@ -183,7 +303,8 @@ void showOsk(bool on) {
 
 // The screensaver: the newest messages of the current room, read-only.
 void drawSaver(const Theme& t) {
-  grid.fill(t.bg);
+  lvui::CellText& tx = layers->saverText;
+  const int cols = tx.cols(), rows = tx.rows();
   std::string room;
   std::vector<DisplayLine> lines;
   lockedChat().with([&](ChatState& s) {
@@ -193,25 +314,26 @@ void drawSaver(const Theme& t) {
     size_t from = all.size() > 12 ? all.size() - 12 : 0;
     last.assign(all.begin() + from, all.end());
     LayoutOptions o;
-    o.size = gridSize;
-    o.cols = grid.cols();
+    o.size = shownSize;
+    o.cols = cols;
     o.selfUsername = s.self;
     o.revealed = &s.revealed;
     o.theme = &t;
     lines = layoutRoom(last, o);
   });
+  tx.begin();
   std::u32string head = utf8ToU32(room.empty() ? std::string("no room open") : "#" + room);
-  grid.putText(0, 0, head, t.dim, t.bg, grid.cols());
+  tx.line(0, 0, head, t.dim, cols);
   std::u32string clock = utf8ToU32(clockText());
-  grid.putText(grid.cols() - int(clock.size()), 0, clock, t.dim, t.bg, int(clock.size()));
-  int bottom = grid.rows() - 1;  // the last row holds the hint
+  tx.line(cols - int(clock.size()), 0, clock, t.dim, int(clock.size()));
+  int bottom = rows - 1;  // the last row holds the hint
   int row = bottom - 1;
   for (int i = int(lines.size()) - 1; i >= 0 && row >= 1; --i, --row) {
     int col = 0;
-    for (const Span& sp : lines[i].spans)
-      col += grid.putText(col, row, sp.text, sp.fg, t.bg, grid.cols() - col);
+    for (const Span& sp : lines[i].spans) col += tx.line(col, row, sp.text, sp.fg, cols - col);
   }
-  grid.putText(0, bottom, utf8ToU32(board::wakeHint()), t.dim, t.bg, grid.cols());
+  tx.line(0, bottom, utf8ToU32(board::wakeHint()), t.dim, cols);
+  tx.end();
 }
 
 void applyRotation(uint8_t r) {
@@ -219,9 +341,8 @@ void applyRotation(uint8_t r) {
   app().cfg.rotation = rotationFromIndex(r);
   settings::saveUiPrefs(app().cfg);
   board::setRotation(app().cfg.rotation);
-  renderer.resize();
+  lvglResize();
   gestures.reset();
-  resolver.reset();
   needResize = true;
 }
 
@@ -285,6 +406,7 @@ void applyStatusLights() {
 }
 
 void drawBounce(const Theme& t);
+void syncSaver(int64_t now);
 
 // The keyboard light follows the setting while the screen is on.
 void applyKbLight() {
@@ -381,11 +503,12 @@ void goDark() {
   sentBacklight = 0;
   // An e-paper panel keeps its last image with the power off, so it is left
   // showing the still screensaver rather than a frozen screen.
-  if (board::eink()) {
+  if (board::eink() && layers) {
     sayUntil = 0;
-    if (wantedSize() != gridSize) resizeGrid();
+    lvui::setHidden(layers->oskBox, true);
+    syncSaver(nowMs());
     drawBounce(currentTheme());
-    renderer.draw(grid, gridSize);
+    lv_refr_now(nullptr);
   }
   board::displaySleep(true);
 }
@@ -397,11 +520,10 @@ void drawBounce(const Theme& t) {
     saying = words.next(esp_random(), app().mascot.phrases);
     sayUntil = nowMs() + kSayMs;
   }
-  // E-paper keeps it still, so it may be the splash's big monster.
-  std::vector<SplashLine> ls =
-      splashLayout(grid.cols(), grid.rows(), "", saying,
-                   board::eink() ? RC_SPLASH_SCALE : 1, &app().mascot.art);
-  int minC = grid.cols(), minR = grid.rows(), maxC = 0, maxR = 0;
+  lvui::CellText& tx = layers->saverText;
+  const int cols = tx.cols(), rows = tx.rows();
+  std::vector<SplashLine> ls = splashLayout(cols, rows, "", saying, 1, &app().mascot.art);
+  int minC = cols, minR = rows, maxC = 0, maxR = 0;
   ls.erase(std::remove_if(ls.begin(), ls.end(),
                           [](const SplashLine& l) {
                             return l.role == SplashRole::Detail || l.role == SplashRole::Prompt;
@@ -413,20 +535,50 @@ void drawBounce(const Theme& t) {
     maxC = std::max(maxC, l.col + int(utf8ToU32(l.text).size()));
     maxR = std::max(maxR, l.row + 1);
   }
-  grid.fill(t.bg);
-  if (ls.empty()) return;
-  const int w = maxC - minC, h = maxR - minR;
-  const int maxX = std::max(0, grid.cols() - w), maxY = std::max(0, grid.rows() - h);
-  // A scaled monster's cols count scaled cells: draw it where the layout
-  // centred it.
-  const bool scaled = std::any_of(ls.begin(), ls.end(), [](const SplashLine& l) { return l.scale > 1; });
-  if (board::eink()) bouncer = Bouncer{maxX / 2, maxY / 2, 0, 0};
-  else bouncer.step(maxX, maxY);
-  for (const SplashLine& l : ls) {
-    const int c = scaled ? l.col : bouncer.x + l.col - minC, r = scaled ? l.row : bouncer.y + l.row - minR;
-    putLine(grid, c, r, l.text, l.role == SplashRole::Art ? t.selectBg : t.fg, t.bg);
-    grid.setRowScale(r, l.scale);
+  tx.begin();
+  if (!ls.empty()) {
+    const int w = maxC - minC, h = maxR - minR;
+    const int maxX = std::max(0, cols - w), maxY = std::max(0, rows - h);
+    if (board::eink()) bouncer = Bouncer{maxX / 2, maxY / 2, 0, 0};
+    else bouncer.step(maxX, maxY);
+    for (const SplashLine& l : ls)
+      tx.line(bouncer.x + l.col - minC, bouncer.y + l.row - minR, l.text,
+              l.role == SplashRole::Art ? t.selectBg : t.fg);
   }
+  tx.end();
+}
+
+// The screensaver layer: hidden while the screen is on; the peek's messages,
+// or the monster (in its own size), each frame it is due.
+void syncSaver(int64_t now) {
+  Layers& L = *layers;
+  const bool shown = power != Power::On;
+  lvui::setHidden(L.saver, !shown);
+  if (!shown) return;
+  const lv_font_t* f = lvui::font(power == Power::Saver ? shownSize : bounceSize());
+  if (lv_obj_get_style_text_font(L.saver, LV_PART_MAIN) != f)
+    lv_obj_set_style_text_font(L.saver, f, LV_PART_MAIN);
+  const Theme& t = currentTheme();
+  if (power == Power::Saver) {
+    drawSaver(t);
+  } else if (power == Power::Bounce && now >= nextBounce) {
+    // E-paper draws it once.
+    nextBounce = board::eink() ? INT64_MAX : now + kBounceStepMs;
+    drawBounce(t);
+  }
+}
+
+// Everything over the screen, from its models.
+void syncLayers(int64_t now) {
+  Layers& L = *layers;
+  const bool on = power == Power::On;
+  L.symbols.sync(symbols);
+  L.canned.sync(canned.box());
+  lvui::setHidden(L.help, !(on && keysHelp));
+  L.banner.sync(topBanner, now);
+  lvui::setHidden(L.oskBox, !(on && oskShown));
+  if (on && oskShown) L.keyboard.sync(osk, shownSize);
+  syncSaver(now);
 }
 
 // The screen timeout ran out: lock into the screensaver or screen off.
@@ -609,17 +761,31 @@ void finalScreen(const std::string& line, bool whole) {
   showOsk(false);
   const Theme& t = currentTheme();
   panelOn();
-  const int w = int(utf8ToU32(line).size());
+  Layers& L = *layers;
+  lvui::setHidden(L.oskBox, true);
+  lvui::setHidden(L.last, false);
+  if (whole) lvui::setBgColor(L.last, t.bg);
+  else lv_obj_set_style_bg_opa(L.last, LV_OPA_TRANSP, LV_PART_MAIN);
+  lvui::CellText& tx = L.lastText;
+  const int cols = tx.cols(), rows = tx.rows();
+  const std::u32string text = utf8ToU32(line);
+  const int w = int(text.size()), c0 = std::max(0, (cols - w) / 2);
+  tx.begin();
   if (whole) {
-    grid.fill(t.bg);
-    putLine(grid, std::max(0, (grid.cols() - w) / 2), grid.rows() / 2, line, t.fg, t.bg);
+    tx.line(c0, rows / 2, text, t.fg);
   } else {
-    const int row = grid.rows() - 1;
-    putLine(grid, 0, row, std::string(grid.cols(), ' '), t.fg, t.bg);
-    putLine(grid, std::max(0, (grid.cols() - w) / 2), row, line, t.fg, t.bg);
+    std::u32string row(std::max(cols, 0), U' ');
+    for (int i = 0; i < w && c0 + i < cols; ++i) row[c0 + i] = text[i];
+    tx.filled(0, rows - 1, row, t.fg, t.bg);
   }
-  renderer.draw(grid, gridSize);
+  tx.end();
+  lv_refr_now(nullptr);
   board::displaySleep(true);
+}
+
+// Sleep or power off came back: the screen goes on as it was.
+void hideFinal() {
+  if (layers) lvui::setHidden(layers->last, true);
 }
 
 // A canned reply goes in as typing, then Select sends it through the
@@ -716,45 +882,6 @@ void sendCanned(const std::u32string& text) {
   router::screen().onKey(KeyEvent{Action::Select});
 }
 
-// The function keys' table: a centred box over the screen; a tap anywhere closes it.
-void renderKeysHelp(Grid& g, const Theme& t) {
-  size_t count = 0;
-  const FunctionKey* keys = board::functionKeys(count);
-  const int n = int(count);
-  // Rows drawn big, shifted, scaled, padded or skipped (Home's tiles) don't
-  // line up with plain cells: then the box goes on a blank screen.
-  bool odd = false;
-  for (int r = 1; r < g.rows(); ++r)
-    odd = odd || g.rowKind(r) != RowKind::Normal || g.rowShift(r) != 0 || g.rowScale(r) != 1 ||
-          g.rowPad(r) >= 0;
-  if (odd)
-    for (int r = 1; r < g.rows(); ++r) {
-      g.setRowKind(r, RowKind::Normal);
-      g.setRowShift(r, 0);
-      g.setRowScale(r, 1);
-      g.setRowPad(r, -1);
-      g.fillRow(r, t.bg);
-    }
-  // The title and the keys, with a blank row above and below when they fit.
-  const int content = n + 1, pad = g.rows() >= content + 2 ? 1 : 0;
-  const int w = std::min(g.cols() - 2, 27), h = std::min(g.rows(), content + 2 * pad);
-  const int c0 = std::max(0, (g.cols() - w) / 2), r0 = std::max(0, (g.rows() - h) / 2);
-  for (int r = r0; r < r0 + h; ++r)
-    for (int c = c0; c < c0 + w; ++c) g.put(c, r, U' ', t.fg, t.bg);
-  g.outline(c0, r0, c0 + w - 1, r0 + h - 1, t.dim);
-  g.putText(c0 + 2, r0 + pad, U"function keys", t.fg, t.bg, w - 4);
-  for (int i = 0; i < n && r0 + pad + 1 + i < r0 + h; ++i) {
-    g.putText(c0 + 2, r0 + pad + 1 + i, keys[i].key, t.selectBg, t.bg, 5);
-    g.putText(c0 + 8, r0 + pad + 1 + i, keys[i].label, t.fg, t.bg, w - 10);
-  }
-  if (activeTaps()) {
-    Target close;
-    close.kind = TargetKind::Fixed;
-    close.tap.action = Action::KeysHelp;
-    activeTaps()->addCells(0, 0, g.cols() - 1, g.rows() - 1, close);
-  }
-}
-
 void handleKey(const KeyEvent& key) {
   ++inputCount;
   int64_t now = nowMs();
@@ -778,9 +905,6 @@ void handleKey(const KeyEvent& key) {
       if (power != Power::Saver) {
         const bool wasDark = power == Power::Dark;
         power = Power::Saver;
-        grid.fill(currentTheme().bg);
-        drawSaver(currentTheme());
-        renderer.draw(grid, gridSize);
         if (wasDark) panelOn();
         setLit(255);
       }
@@ -896,8 +1020,8 @@ void handleKey(const KeyEvent& key) {
 SerialCommand console;
 
 void sendScreenshot() {
-  const uint16_t* f = renderer.frame();
-  const int w = renderer.width(), h = renderer.height();
+  const uint16_t* f = lvui::frame();
+  const int w = displayW(), h = displayH();
   if (!f || w <= 0 || h <= 0) return;
   static std::vector<uint8_t> buf;
   buf.resize(static_cast<size_t>(w) * 3);
@@ -950,67 +1074,76 @@ void logMemory(uint32_t now) {
 }
 #endif
 
+// The keys LVGL's views emitted this frame, as touch keys through handleKey.
+void runTapKeys() {
+  if (tapKeys.empty()) return;
+  std::vector<TapKey> ks;
+  ks.swap(tapKeys);
+  if (dropTaps) return;
+  if (app().cfg.tapVibrate && board::hasHaptic()) board::haptic(kTapBuzzMs);
+  const bool menuBefore = Overlay::anyOpen();
+  touchKey = true;
+  for (const TapKey& q : ks) {
+    handleKey(q.key);
+    if (q.held && !menuBefore && Overlay::anyOpen()) pressMenu = true;
+    if (q.key.action == Action::Focus && power == Power::On && !board::hasKeyboard() &&
+        router::screen().acceptsText())
+      showOsk(true);
+    // The emoji tray opened from the keyboard takes its place.
+    if (q.key.action == Action::Emoji && oskShown && symbols.isOpen()) {
+      showOsk(false);
+      oskBehindTray = true;
+    }
+  }
+  touchKey = false;
+}
+
+// One frame (spec §5): input, events, state, then LVGL draws what changed.
 void taskMain(void*) {
   ThemeId shown = app().cfg.theme;
+  // The screen and power state the last frame's changes were checked against.
+  router::Id beforeScreen = router::current();
+  Power beforePower = power;
   for (;;) {
     uint32_t start = millis();
 #if RC_LOW_MEM
     logMemory(start);
 #endif
-    router::Id beforeScreen = router::current();
-    Power beforePower = power;
-    // Touch first, so a gesture resolves against the map of the frame on
-    // screen; then the buttons. Touch acts only while lit, and wakes a dark
-    // screen only on boards where any input wakes (that finger then does
-    // nothing until it lifts).
-    if (power != Power::On && board::hasTouch() && board::anyInputWakes()) {
-      int16_t tx, ty;
-      const bool down = board::readTouch(tx, ty);
-      const bool waking = board::doubleTapWakes() ? doubleTap.feed(down, millis()) : down;
+    dropTaps = false;
+    // Touch first: one sample a frame, for LVGL's pointer and the gestures.
+    // Touch acts only while lit, and wakes a dark screen only on boards
+    // where any input wakes (that finger then does nothing until it lifts).
+    const bool readTouch = board::hasTouch() && (power == Power::On || board::anyInputWakes());
+    touch.down = false;
+    if (readTouch) {
+      int16_t tx = touch.x, ty = touch.y;
+      touch.down = board::readTouch(tx, ty);
+      if (touch.down) {
+        touch.x = tx;
+        touch.y = ty;
+      }
+    }
+    if (power != Power::On && readTouch) {
+      const bool waking = board::doubleTapWakes() ? doubleTap.feed(touch.down, millis()) : touch.down;
       if (waking && nowMs() - lockedAt >= kLockQuietMs) {
         wake();
         touchSwallow = true;
         gestures.reset();
       }
-    } else if (power == Power::On && board::hasTouch()) {
-      int16_t tx, ty;
-      bool down = board::readTouch(tx, ty);
-      if (touchSwallow && !down) touchSwallow = false;
-      if (down) {
+    } else if (power == Power::On && readTouch) {
+      if (touchSwallow && !touch.down) touchSwallow = false;
+      if (touch.down) {
         lastInputMs = nowMs();
         setLit(255);
       }
-      // A key of the on-screen keyboard lights while a finger is on it.
-      if (down && oskShown && !touchSwallow) {
-        const Target h = taps.hit(tx, ty);
-        if (h.kind == TargetKind::Osk) osk.touch(h.index, millis());
-      }
+      // Edge swipes are the gesture recogniser's; LVGL's views take the rest.
       Gesture g;
-      if (!touchSwallow && gestures.feed(down, tx, ty, millis(), g)) {
-        TouchOutput out;
-        resolver.resolve(g, taps, out);
-        if (app().cfg.tapVibrate && board::hasHaptic() && tapBuzz(g, out)) board::haptic(kTapBuzzMs);
-        if (out.hideBanner) topBanner.hide();
-        const bool menuBefore = Overlay::anyOpen();
+      if (!touchSwallow && gestures.feed(touch.down, touch.x, touch.y, millis(), g) &&
+          (g.kind == GestureKind::EdgeBack || g.kind == GestureKind::EdgeOptions)) {
+        dropTaps = true;
+        if (app().cfg.tapVibrate && board::hasHaptic()) board::haptic(kTapBuzzMs);
         touchKey = true;
-        for (const KeyEvent& k : out.keys) {
-          handleKey(k);
-          if (g.kind == GestureKind::LongPress && !menuBefore && Overlay::anyOpen())
-            pressMenu = true;
-          if (k.action == Action::Focus && power == Power::On && !board::hasKeyboard() &&
-              router::screen().acceptsText())
-            showOsk(true);
-        }
-        if (out.oskKey >= 0 && oskShown) {
-          osk.touch(out.oskKey, millis());
-          OskOutput o = osk.press(out.oskKey, millis());
-          if (o.key.action != Action::None) handleKey(o.key);
-          if (o.hide) showOsk(false);
-          if (o.key.action == Action::Emoji && symbols.isOpen()) {
-            showOsk(false);
-            oskBehindTray = true;
-          }
-        }
+        handleKey(KeyEvent{g.kind == GestureKind::EdgeBack ? Action::Back : Action::Options});
         touchKey = false;
       }
     }
@@ -1029,10 +1162,12 @@ void taskMain(void*) {
       case PowerStep::Sleep:
         finalScreen("Sleeping \u2014 updated " + clockText(), false);
         power_service::sleep();
+        hideFinal();
         break;
       case PowerStep::PowerOff:
         finalScreen("Battery empty \u2014 charge to turn on", true);
         power_service::powerOff();
+        hideFinal();
         break;
     }
 
@@ -1061,7 +1196,6 @@ void taskMain(void*) {
     if (router::current() != beforeScreen || power != beforePower) {
       gestures.reset();
       doubleTap.reset();
-      resolver.reset();
       if (router::current() != beforeScreen) {
         showOsk(false);
         oskBehindTray = false;
@@ -1093,41 +1227,25 @@ void taskMain(void*) {
     if (canned.isOpen() && (router::current() != beforeScreen || power != Power::On ||
                             !router::screen().acceptsText()))
       canned.close();
-    // Settings and web config change the theme between frames; repaint it all.
+    // Settings and web config change the theme between frames: restyle, and
+    // build it all again (views copy some colours when they are made).
     if (app().cfg.theme != shown) {
       shown = app().cfg.theme;
+      lvui::applyTheme(currentTheme());
       needResize = true;
     }
-    if (wantedSize() != gridSize) needResize = true;
-    if (needResize) resizeGrid();
+    // A text size, rotation or keyboard dock change: new fonts and sizes,
+    // so the layers and the screen are built again (beforeBuild relays out).
+    if (needResize || wantedSize() != shownSize) router::rebuild();
     if (!Overlay::anyOpen() || router::current() != beforeScreen) pressMenu = false;
     setCursorShown(baseCursor || pressMenu);
-    const Theme& t = currentTheme();
-    if (power == Power::On) {
-      taps.clear();
-      taps.setOrigin(cellSize(gridSize), 0);
-      router::screen().render(grid, t, now);
-      symbols.render(grid, grid.rows() - 1, t);
-      canned.render(grid, 0, grid.rows() - 1, t);
-      if (keysHelp) renderKeysHelp(grid, t);
-      topBanner.render(grid, 0, t, now);  // over the status bar
-      taps.mapRows(0, rowSpans(grid, cellSize(gridSize).h, bigCellSize(gridSize).h));
-      renderer.draw(grid, gridSize);
-      if (oskShown) {
-        taps.setOrigin(cellSize(gridSize), grid.rows(), oskOffsetPx);
-        osk.render(oskGrid, t, millis());
-        taps.mapRows(grid.rows(), rowSpans(oskGrid, cellSize(gridSize).h, bigCellSize(gridSize).h));
-        renderer.draw(oskGrid, gridSize, grid.rows(), oskOffsetPx);
-      }
-    } else if (power == Power::Saver) {
-      drawSaver(t);
-      renderer.draw(grid, gridSize);
-    } else if (power == Power::Bounce && now >= nextBounce) {
-      // E-paper draws it once.
-      nextBounce = board::eink() ? INT64_MAX : now + kBounceStepMs;
-      drawBounce(t);
-      renderer.draw(grid, gridSize);
-    }
+    beforeScreen = router::current();
+    beforePower = power;
+    syncLayers(now);
+    if (power == Power::On) router::screen().update(now);
+    // Dark: nothing to draw, and the panel sleeps.
+    if (power != Power::Dark) lv_timer_handler();
+    runTapKeys();
     pollConsole();
     uint32_t spent = millis() - start;
     vTaskDelay(pdMS_TO_TICKS(spent < kFrameMs ? kFrameMs - spent : 1));
@@ -1147,13 +1265,15 @@ void start() {
 #endif
   }
   power_service::begin();
-  if (!renderer.begin()) Serial.println("[ui] no memory for the frame buffer");
-  setActiveTaps(board::hasTouch() ? &taps : nullptr);
   baseCursor = board::hasKeys() || board::sideNav();
   setCursorShown(baseCursor);
-  resolver.setTouchOnly(!board::hasKeys());
+  lvui::setTouchOnly(!board::hasKeys());
   Overlay::setConfirmButtons(board::hasTouch() && !board::hasKeys());
-  resizeGrid();
+  // LVGL starts here, before the UI task that then owns it runs.
+  lvglBegin(readTouchCached);
+  lvui::applyTheme(currentTheme());
+  lvui::setKeySink(queueKey);
+  router::setBeforeBuild(beforeBuild);
   router::go(router::Id::Splash);
   board::backlight(true);
   sentBacklight = 255;

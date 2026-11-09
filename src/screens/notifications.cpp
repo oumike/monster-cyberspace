@@ -8,7 +8,6 @@
 #include "app/ui_task.h"
 #include "hal/board.h"
 #include "screens/button_pad.h"
-#include "screens/draw.h"
 #include "screens/lv_draw.h"
 #include "screens/screens.h"
 #include "store/locked_chat.h"
@@ -187,28 +186,6 @@ void NotificationsScreen::refreshRows(int64_t nowMs) {
   }
 }
 
-void NotificationsScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
-  refreshRows(nowMs);
-  g.fill(t.bg);
-  drawStatus(g, t, U"unread", unreadTotal(items_));
-  const int bottom = g.rows() - 1;
-  const int nav = buttons_ ? 0 : sideNavWidth(g);
-  if (buttons_) {
-    pad_.render(g, t, rows_, 2, bottom, true, 1);
-  } else {
-    list_.render(g, 1, bottom, 0, g.cols() - nav, t);
-    if (nav > 0) renderSideNav(g, 1, bottom, nav, t);
-  }
-  if (items_.empty()) putLine(g, 1, 2, "nothing unread", t.dim, t.bg);
-  if (confirm_) {
-    box_.render(g, 1, bottom, nav, OverlayPlace::BottomRight, t);
-    drawHint(g, t, U"\u2191\u2193 pick  \u25CF choose  back: cancel", U"tap: choose  outside: cancel");
-    return;
-  }
-  drawHint(g, t, U"\u2191\u2193 pick  \u25CF open  \u2190 home",
-           buttons_ ? U"tap to open  drag to scroll" : U"tap to open  swipe to scroll");
-}
-
 void NotificationsScreen::build(lv_obj_t* root) {
   listView_.create(root);
   padView_.create(root);
@@ -223,7 +200,7 @@ void NotificationsScreen::build(lv_obj_t* root) {
 void NotificationsScreen::update(int64_t nowMs) {
   // C-Mail, mentions and notices change with an event (ConversationsUpdated,
   // MentionAlert, the Feed's), which ui::inputSeq() counts; edited text shows
-  // with the once-a-second refresh, as render rebuilds it.
+  // with the gate's once-a-second refresh.
   if (gate_.due(text_.obj(), nowMs, {int64_t(app().mentions.size())})) sync(nowMs);
 }
 

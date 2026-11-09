@@ -13,9 +13,8 @@
 #include "lvui/input.h"
 #include "lvui/styles.h"
 #include "lvui/views/view_util.h"
-#include "screens/draw.h"
+#include "screens/lv_draw.h"
 #include "store/locked_feed.h"
-#include "ui/tap_map.h"
 
 namespace rc {
 
@@ -356,88 +355,6 @@ void ComposerScreen::hints(bool guild, const char32_t*& hint, const char32_t*& t
     hint = guild ? U"\u2191\u2193 fields  ctrl post  back: guild"
                  : U"\u2191\u2193 fields  ctrl post  back: feed";
     touch = guild ? U"tap a field  \u22ef post  \u2039 guild" : U"tap a field  \u22ef post  \u2039 feed";
-  }
-}
-
-void ComposerScreen::render(Grid& g, const Theme& t, int64_t) {
-  const bool small = app().cfg.textSize == TextSize::Compact;
-  const int rows = g.rows();
-  cols_ = g.cols() - TextArea::kBarCols;
-  g.fill(t.bg);
-  const bool guild = !gGuildSlug.empty();
-  drawStatus(g, t, statusTitle(guild), -1, true);
-
-  const Rows r = layout(rows, small, guild);
-  const int cwRow = r.cw, checkRow = r.check, topicsRow = r.topics, pad = r.pad;
-  const int titleRow = r.title, labelRow = r.label, bodyTop = r.bodyTop, bodyBottom = r.bodyBottom;
-
-  title_.setDisabled(focus_ != kTitle || gPosting);
-  if (pad) {
-    g.fillRow(titleRow - 1, t.inputBg);
-    g.fillRow(titleRow + 1, t.inputBg);
-    if (activeTaps()) {
-      Target tt;
-      tt.kind = TargetKind::Field;
-      tt.field = kTitle;
-      tt.first = static_cast<int16_t>(title_.text().size());
-      tt.len = 0;
-      activeTaps()->addCells(0, titleRow - 1, g.cols() - 1, titleRow + 1, tt);
-    }
-  }
-  title_.render(g, titleRow, t, U"Title ");
-
-  const uint16_t labelFg = focus_ == kBody ? t.fg : t.dim;
-  g.fillRow(labelRow, t.bg);
-  putLine(g, 0, labelRow, "Body", labelFg, t.bg);
-  std::string count = std::to_string(body_.length()) + "/4096";
-  putLine(g, std::max(0, g.cols() - int(count.size())), labelRow, count, t.dim, t.bg);
-  body_.render(g, bodyTop, bodyBottom, t, focus_ == kBody && !gPosting);
-  // Suggestions sit between the title and the body, over the label.
-  if (spell_.visible() && (focus_ == kTitle || focus_ == kBody) && menu_ == Menu::None)
-    spell_.render(g, labelRow, t);
-
-  topics_.setDisabled(focus_ != kTopics || gPosting);
-  topics_.render(g, topicsRow, t, U"Topics ");
-
-  if (!guild) g.fillRow(checkRow, t.bg);
-  auto box = [&](int col, bool on, const char32_t* label, bool focused) {
-    std::u32string s = std::u32string(on ? U"[x] " : U"[ ] ") + label;
-    const bool fill = focused && !t.outlined;
-    uint16_t fg = fill ? t.selectFg : t.fg, bg = fill ? t.selectBg : t.bg;
-    const int w = g.putText(col, checkRow, s, fg, bg, g.cols() - col);
-    if (focused && t.outlined && w > 0) g.outline(col, checkRow, col + w - 1, checkRow, t.selectBg);
-    return col + w;
-  };
-  int col = 0, nsfwStart = 0, nsfwEnd = 0;
-  if (!guild) {
-    col = box(0, gDraft.isPublic, U"Public", focus_ == kPublic);
-    nsfwStart = col + 2;
-    nsfwEnd = box(nsfwStart, gDraft.nsfw, U"NSFW", focus_ == kNsfw);
-  }
-  if (!guild && activeTaps()) {
-    Target tp;
-    tp.kind = TargetKind::Field;
-    tp.field = kPublic;
-    activeTaps()->addCells(0, checkRow, std::max(0, col - 1), checkRow, tp);
-    Target tn;
-    tn.kind = TargetKind::Field;
-    tn.field = kNsfw;
-    activeTaps()->addCells(nsfwStart, checkRow, std::max(nsfwStart, nsfwEnd - 1), checkRow, tn);
-  }
-
-  if (!guild) {
-    cw_.setDisabled(focus_ != kCw || gPosting);
-    cw_.render(g, cwRow, t, U"CW ");
-  }
-
-  if (menu_ != Menu::None)
-    box_.render(g, 0, rows, 0, OverlayPlace::Centre, t);
-
-  if (small) {
-    const char32_t* hint;
-    const char32_t* touch;
-    hints(guild, hint, touch);
-    drawHint(g, t, hint, touch);
   }
 }
 

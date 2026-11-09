@@ -6,7 +6,6 @@
 #include "chat/chat_source.h"
 #include "hal/board.h"
 #include "screens/button_pad.h"
-#include "screens/draw.h"
 #include "screens/lv_draw.h"
 #include "screens/screens.h"
 #include "store/locked_chat.h"
@@ -124,35 +123,6 @@ std::vector<ListItem> RoomListScreen::rows(int& shown) {
     }
   });
   return items;
-}
-
-void RoomListScreen::render(Grid& g, const Theme& t, int64_t) {
-  int shown = 0;  // room rows, without Mark all read
-  std::vector<ListItem> items = rows(shown);
-  auto drawConfirm = [&](Grid& g, const Theme& t) {
-    box_.render(g, 1, g.rows() - 1, 0, OverlayPlace::BottomRight, t);
-    drawHint(g, t, U"\u2191\u2193 pick  \u25CF choose  back: cancel", U"tap: choose  outside: cancel");
-  };
-  g.fill(t.bg);
-  drawStatus(g, t, U"rooms", shown);
-  if (shown == 0)
-    putLine(g, 1, 2, filter_.active() ? "no rooms match" : "loading rooms\u2026", t.dim, t.bg);
-  // Every touch board gets buttons, as Settings does; with keys, a cursor.
-  buttons_ = board::hasTouch();
-  pad_.setCursor(board::hasKeys());
-  if (buttons_) {
-    pad_.render(g, t, items, 2, g.rows() - 1, false);
-    if (confirm_) return drawConfirm(g, t);
-    if (filter_.active())
-      return drawHint(g, t, U"filter: " + filter_.text() + U"\u2581  \u232B erase  back clears");
-    return drawHint(g, t, U"\u2191\u2193 pick  \u25CF open  \u2190 home", U"tap to open  drag to scroll");
-  }
-  list_.setItems(std::move(items));
-  list_.render(g, 1, g.rows() - 1, 0, g.cols(), t);
-  if (confirm_) return drawConfirm(g, t);
-  if (filter_.active())
-    return drawHint(g, t, U"filter: " + filter_.text() + U"\u2581  \u232B erase  back clears");
-  drawHint(g, t, U"\u2191\u2193 pick  \u25CF open  \u2190 home", U"tap to open  swipe to scroll");
 }
 
 void RoomListScreen::build(lv_obj_t* root) {

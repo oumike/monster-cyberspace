@@ -15,9 +15,7 @@ namespace rc {
 class LinkView {
  public:
   void open(const std::string& url);
-  // Draws rows 1 to the last; the last row holds the hint.
-  void render(Grid& g, const Theme& t) const;
-  // render for LVGL: the lines into text (between the caller's begin() and
+  // Rows 1 to the last (the last holds the hint): the lines into text (between the caller's begin() and
   // end()), the QR code into qr, and the hint.
   void sync(lvui::CellText& text, lvui::QrBox& qr, lvui::HintBar& hint) const;
 

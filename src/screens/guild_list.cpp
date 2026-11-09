@@ -6,7 +6,6 @@
 #include "feed/feed_source.h"
 #include "hal/board.h"
 #include "lvui/cell_font.h"
-#include "screens/draw.h"
 #include "screens/lv_draw.h"
 #include "screens/screens.h"
 #include "store/locked_feed.h"
@@ -214,30 +213,6 @@ void GuildListScreen::hints(const char32_t*& keys, const char32_t*& touch) const
   }
 }
 
-void GuildListScreen::render(Grid& g, const Theme& t, int64_t nowMs) {
-  (void)nowMs;
-  const int nav = sideNavWidth(g);
-  const int listCols = g.cols() - nav - EntryList::kBarCols;
-  refresh(listCols, t, &t == theme_);
-  bool loading = lockedFeed().with([](FeedState& s) { return s.loading; });
-
-  g.fill(t.bg);
-  drawStatus(g, t, U"Guilds", -1, true);
-  int bottom = g.rows() - 1;
-  TextSize ts = app().cfg.textSize;
-  if (palette_ || nav > 0) list_.setBigHeads(0, 0, 0);
-  else list_.setBigHeads(cellSize(ts).h, bigCellSize(ts).h, headCols());
-  list_.render(g, 1, bottom, t, nav);
-  if (list_.size() == 0) putLine(g, 1, 2, withMenuKey(emptyText(loading)), t.dim, t.bg);
-
-  if (nav > 0) renderSideNav(g, 1, bottom, nav, t);
-  if (palette_) box_.render(g, 1, bottom, nav, OverlayPlace::BottomRight, t);
-  const char32_t* keys;
-  const char32_t* touch;
-  hints(keys, touch);
-  drawHint(g, t, keys, touch);
-}
-
 // ---- LVGL ----
 
 void GuildListScreen::build(lv_obj_t* root) {
@@ -286,7 +261,7 @@ void GuildListScreen::sync() {
 
   const lvui::Cell c = text_.cell();
   menuView_.setPlace(OverlayPlace::BottomRight, bottom * c.h, nav * c.w, c.h);
-  // render draws the box only with palette_ (leave() keeps box_ open).
+  // The box shows only with palette_ (leave() keeps box_ open).
   if (palette_) menuView_.sync(box_);
   else lvui::setHidden(menuView_.backdrop(), true);
   const char32_t* keys;

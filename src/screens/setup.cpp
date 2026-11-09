@@ -5,7 +5,6 @@
 #include "app/ui_task.h"
 #include "hal/board.h"
 #include "net/wifi_mgr.h"
-#include "screens/draw.h"
 #include "screens/lv_draw.h"
 #include "screens/screens.h"
 #include "store/backup_store.h"
@@ -63,55 +62,6 @@ void SetupScreen::onKey(const KeyEvent& k) {
     default:
       break;
   }
-}
-
-void SetupScreen::render(Grid& g, const Theme& t, int64_t) {
-  g.fill(t.bg);
-  drawStatus(g, t, U"setup", -1);
-  if (picker_.isOpen()) return picker_.render(g, t);
-  int r = 2;
-  auto line = [&](int col, const std::string& text, uint16_t fg) {
-    if (narrowGrid(g)) r = putWrapped(g, col, r, text, fg, t.bg);
-    else putLine(g, col, r++, text, fg, t.bg);
-  };
-#if !RC_FAKE_API
-  if (wifimgr::mode() == wifimgr::Mode::Setup) {
-    line(1, "Join this Wi-Fi network:", t.fg);
-    line(3, wifimgr::apSsid(), t.selectBg);
-    line(3, wifimgr::apHasPassword() ? "password required" : "open network", t.dim);
-    line(1, "then browse to:", t.fg);
-    line(3, "http://192.168.4.1", t.selectBg);
-    ++r;
-  }
-#endif
-  if (wifiUp()) {
-    line(1, "On " + wifiSsid() + ", browse to:", t.fg);
-    line(3, "http://monster-cyberspace.local", t.selectBg);
-    line(3, "http://" + wifiIp(), t.selectBg);
-    ++r;
-  }
-  if (!app().cfg.wifi.empty() && app().auth != 1 && app().auth != 2) {
-    line(1, "Sign in at monster-cyberspace.local", t.fg);
-    line(1, "or on this device.", t.fg);
-  }
-  int bottom = g.rows() - 1;
-  const int n = int(menu_.size());
-  if (buttons_) {
-    // Side by side where the shorter labels fit, else stacked; drawn last so
-    // they stay whole on a short screen.
-    std::vector<ListItem> items{ListItem{U"Join Wi-Fi", U""}, ListItem{U"Log in on device", U""}};
-    if (hasRestore_) items.push_back(ListItem{U"Restore from SD", U""});
-    int columns = n;
-    while (columns > 1 && (g.cols() - 1) / columns - 3 < 16) --columns;
-    const int rows = (n + columns - 1) / columns;
-    const int top = std::max(1, bottom - rows * (kButtonRows + 1));
-    for (int row = top; row < bottom; ++row) g.fillRow(row, t.bg);
-    pad_.render(g, t, items, top, bottom, false, columns);
-    drawHint(g, t, U"tap to select");
-    return;
-  }
-  menu_.render(g, bottom - n, bottom, 1, g.cols() - 2, t);
-  drawHint(g, t, U"\u2191\u2193 pick  \u25CF select", U"tap to select");
 }
 
 void SetupScreen::build(lv_obj_t* root) {

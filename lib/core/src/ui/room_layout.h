@@ -26,6 +26,13 @@ struct DisplayLine {
   std::string messageId;
   bool mentionTint = false;
   bool divider = false;
+  // ChatStyle::Bubbles: the row is part of a bubble covering columns
+  // [bubbleCol, bubbleCol + bubbleCols); bubbleTop / bubbleBottom on its first
+  // and last rows (rounded corners).
+  enum class Bubble : uint8_t { None, Other, Self };
+  Bubble bubble = Bubble::None;
+  uint8_t bubbleCol = 0, bubbleCols = 0;
+  bool bubbleTop = false, bubbleBottom = false;
 };
 
 struct LayoutOptions {
@@ -38,6 +45,9 @@ struct LayoutOptions {
   // Compact layout only: wrapped lines start under the nick rather than under
   // the text (the room log at Comfortable and Large).
   bool indentToNick = false;
+  // Bubbles: a dim line with the nick and time, then the text in a bubble,
+  // yours on the right (spec 2026-11-09-cyberspace-chat-style-design.md).
+  ChatStyle style = ChatStyle::Irc;
 };
 
 // Lays out messages (oldest first) into display lines no wider than o.cols,

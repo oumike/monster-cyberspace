@@ -16,6 +16,7 @@
 #include "ui/nick_color.h"
 #include "ui/room_layout.h"
 #include "ui/splash_layout.h"
+#include "ui/text_width.h"
 #include "ui/theme.h"
 #include "ui/timefmt.h"
 #include "util/utf8.h"
@@ -1187,6 +1188,128 @@ void test_layout_room_range_matches_whole() {
   TEST_ASSERT_EQUAL_STRING(dump(slice("e", "e")).c_str(), dump(range(4, 5)).c_str());
 }
 
+static LayoutOptions bubbles(int cols) {
+  LayoutOptions o = opts(TextSize::Compact, cols);
+  o.style = ChatStyle::Bubbles;
+  return o;
+}
+
+static int lineCols(const DisplayLine& l) {
+  int n = 0;
+  for (const auto& sp : l.spans) n += textWidth(sp.text);
+  return n;
+}
+
+void test_bubbles_other() {
+  std::deque<CircMessage> d{msg("m1", "bob", "hello")};
+  auto ls = layoutRoom(d, bubbles(40));
+  TEST_ASSERT_EQUAL(3, ls.size());
+  TEST_ASSERT_TRUE(ls[0].divider);
+  TEST_ASSERT_TRUE(ls[1].bubble == DisplayLine::Bubble::None);
+  TEST_ASSERT_EQUAL_STRING("bob 14:02", flat(ls[1]).c_str());
+  const Theme& t = defaultTheme();
+  TEST_ASSERT_EQUAL_HEX16(nickColor(t, "bob", false), ls[1].spans[0].fg);
+  TEST_ASSERT_EQUAL_HEX16(t.time, ls[1].spans[1].fg);
+  TEST_ASSERT_TRUE(ls[2].bubble == DisplayLine::Bubble::Other);
+  TEST_ASSERT_EQUAL(0, ls[2].bubbleCol);
+  TEST_ASSERT_EQUAL(7, ls[2].bubbleCols);
+  TEST_ASSERT_TRUE(ls[2].bubbleTop && ls[2].bubbleBottom);
+  TEST_ASSERT_EQUAL_STRING(" hello", flat(ls[2]).c_str());
+  TEST_ASSERT_EQUAL_STRING("m1", ls[1].messageId.c_str());
+  TEST_ASSERT_EQUAL_STRING("m1", ls[2].messageId.c_str());
+}
+
+void test_bubbles_self() {
+  std::deque<CircMessage> d{msg("m1", "oumike", "hi")};
+  auto ls = body(layoutRoom(d, bubbles(40)));
+  TEST_ASSERT_EQUAL(2, ls.size());
+  TEST_ASSERT_EQUAL(40, lineCols(ls[0]));
+  TEST_ASSERT_EQUAL_STRING((std::string(35, ' ') + "14:02").c_str(), flat(ls[0]).c_str());
+  TEST_ASSERT_TRUE(ls[1].bubble == DisplayLine::Bubble::Self);
+  TEST_ASSERT_EQUAL(4, ls[1].bubbleCols);
+  TEST_ASSERT_EQUAL(36, ls[1].bubbleCol);
+  TEST_ASSERT_EQUAL_STRING((std::string(36, ' ') + " hi").c_str(), flat(ls[1]).c_str());
+}
+
+void test_bubbles_wrap() {
+  std::string text;
+  for (int i = 0; i < 12; ++i) text += "word ";
+  std::deque<CircMessage> d{msg("m1", "bob", text)};
+  auto ls = body(layoutRoom(d, bubbles(40)));
+  TEST_ASSERT_TRUE(ls.size() >= 4);  // meta + at least 3 rows of 28
+  int longest = 0;
+  for (size_t i = 1; i < ls.size(); ++i) {
+    TEST_ASSERT_TRUE(ls[i].bubble == DisplayLine::Bubble::Other);
+    const int w = lineCols(ls[i]) - 1;  // less the padding space
+    TEST_ASSERT_TRUE(w <= 28);
+    longest = std::max(longest, w);
+    TEST_ASSERT_EQUAL(i == 1, ls[i].bubbleTop);
+    TEST_ASSERT_EQUAL(i == ls.size() - 1, ls[i].bubbleBottom);
+  }
+  for (size_t i = 1; i < ls.size(); ++i) TEST_ASSERT_EQUAL(longest + 2, ls[i].bubbleCols);
+}
+
+void test_bubbles_narrow() {
+  std::deque<CircMessage> d{msg("m1", "oumike", "abcdefghijkl"),
+                            msg("m2", "bob", "aaaaa\xf0\x9f\x98\x80")};
+  auto ls = body(layoutRoom(d, bubbles(10)));
+  int emoji = 0;
+  for (const auto& l : ls) {
+    TEST_ASSERT_TRUE(lineCols(l) <= 10);
+    if (l.bubble == DisplayLine::Bubble::None) continue;
+    TEST_ASSERT_TRUE(l.bubbleCol + l.bubbleCols <= 10);
+    if (flat(l).find("\xf0\x9f\x98\x80") != std::string::npos) ++emoji;
+  }
+  TEST_ASSERT_EQUAL(1, emoji);
+}
+
+void test_bubbles_deleted_and_muted() {
+  std::deque<CircMessage> d{msg("m1", "bob", "x"), msg("m2", "eve", "spam")};
+  d[0].deleted = true;
+  std::set<std::string> muted{"eve"};
+  LayoutOptions o = bubbles(40);
+  o.muted = &muted;
+  auto ls = body(layoutRoom(d, o));
+  TEST_ASSERT_EQUAL(2, ls.size());
+  TEST_ASSERT_EQUAL_STRING(" [deleted]", flat(ls[1]).c_str());
+  TEST_ASSERT_EQUAL_HEX16(defaultTheme().dim, ls[1].spans.back().fg);
+}
+
+void test_bubbles_action() {
+  std::deque<CircMessage> d{msg("m1", "bob", "waves")};
+  d[0].isAction = true;
+  auto ls = body(layoutRoom(d, bubbles(40)));
+  TEST_ASSERT_EQUAL(2, ls.size());
+  TEST_ASSERT_EQUAL_STRING("14:02", flat(ls[0]).c_str());
+  TEST_ASSERT_EQUAL_STRING(" * bob waves", flat(ls[1]).c_str());
+  TEST_ASSERT_EQUAL_HEX16(defaultTheme().sys, ls[1].spans.back().fg);
+}
+
+void test_bubbles_each_matches_layout() {
+  std::deque<CircMessage> d{msg("m1", "bob", "one"), msg("m2", "oumike", "two"),
+                            msg("m3", "bob", "three", kTs + 86400000LL),
+                            msg("m4", "oumike", "four four four four four four four four"),
+                            msg("m5", "ann", "five")};
+  auto all = layoutRoom(d, bubbles(30));
+  std::vector<DisplayLine> want;
+  bool in = false;
+  for (const auto& l : all) {
+    if (l.messageId == "m3" || (l.divider && !in && &l != &all[0])) in = true;
+    if (in) want.push_back(l);
+  }
+  std::vector<DisplayLine> got;
+  layoutRoomEach(d, bubbles(30), 2, 5, [&](DisplayLine&& l) { got.push_back(std::move(l)); });
+  TEST_ASSERT_EQUAL(want.size(), got.size());
+  for (size_t i = 0; i < got.size(); ++i) {
+    TEST_ASSERT_EQUAL_STRING(flat(want[i]).c_str(), flat(got[i]).c_str());
+    TEST_ASSERT_TRUE(want[i].bubble == got[i].bubble);
+    TEST_ASSERT_EQUAL(want[i].bubbleCol, got[i].bubbleCol);
+    TEST_ASSERT_EQUAL(want[i].bubbleCols, got[i].bubbleCols);
+    TEST_ASSERT_EQUAL(want[i].bubbleTop, got[i].bubbleTop);
+    TEST_ASSERT_EQUAL(want[i].bubbleBottom, got[i].bubbleBottom);
+  }
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_button_grid_taller_buttons);
@@ -1203,6 +1326,13 @@ int main() {
   RUN_TEST(test_right_edge_col);
   RUN_TEST(test_row_spans_scale);
   RUN_TEST(test_chat_style_helpers);
+  RUN_TEST(test_bubbles_other);
+  RUN_TEST(test_bubbles_self);
+  RUN_TEST(test_bubbles_wrap);
+  RUN_TEST(test_bubbles_narrow);
+  RUN_TEST(test_bubbles_deleted_and_muted);
+  RUN_TEST(test_bubbles_action);
+  RUN_TEST(test_bubbles_each_matches_layout);
   RUN_TEST(test_header_rows);
   RUN_TEST(test_grid_add_edges);
   RUN_TEST(test_grid_dirty);

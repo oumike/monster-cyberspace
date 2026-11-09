@@ -59,6 +59,59 @@ std::u32string cutNick(const std::u32string& nick, int maxCols) {
   return nick.substr(0, maxCols - 1) + U"\u2026";
 }
 
+// ChatStyle::Bubbles: the meta line (nick and time; yours only the time, on
+// the right), then the blocks wrapped to about three quarters of the width in a
+// bubble with a column of padding each side.
+void bubbleLines(const CircMessage& m, const LayoutOptions& o, const Theme& th, int cols, bool self,
+                 bool action, uint16_t nickFg, bool tint, const std::vector<Block>& blocks,
+                 const std::vector<std::u32string>& artLines,
+                 const std::function<void(DisplayLine&&)>& out) {
+  auto newLine = [&]() {
+    DisplayLine l;
+    l.messageId = m.id;
+    l.mentionTint = tint;
+    return l;
+  };
+  const std::u32string time = utf8ToU32(formatHHMM(m.timestamp));
+  DisplayLine meta = newLine();
+  if (self) {
+    const int pad = cols - static_cast<int>(time.size());
+    if (pad > 0) meta.spans.push_back({std::u32string(pad, U' '), th.fg});
+    meta.spans.push_back({time, th.time});
+  } else if (action) {
+    meta.spans.push_back({time, th.time});
+  } else {
+    const int timeCols = static_cast<int>(time.size()) + 1;
+    meta.spans.push_back({cutNick(utf8ToU32(m.username), cols - timeCols - 1), nickFg, th.boldNicks});
+    meta.spans.push_back({U" " + time, th.time});
+  }
+  clipLine(meta, cols);
+  out(std::move(meta));
+
+  const int inner = std::max(1, std::min(std::max(8, cols * 3 / 4) - 2, cols - 2));
+  std::vector<Span> rows;
+  for (const auto& a : artLines) rows.push_back({a.substr(0, fitChars(a, inner)), th.fg});
+  for (const auto& b : blocks)
+    for (auto& w : wrapText(b.text, inner, inner)) rows.push_back({w, b.fg});
+  if (rows.empty()) return;
+  int longest = 0;
+  for (const auto& r : rows) longest = std::max(longest, textWidth(r.text));
+  const int w = std::min(longest + 2, cols);
+  const int col = self ? cols - w : 0;
+  for (size_t i = 0; i < rows.size(); ++i) {
+    DisplayLine l = newLine();
+    l.bubble = self ? DisplayLine::Bubble::Self : DisplayLine::Bubble::Other;
+    l.bubbleCol = static_cast<uint8_t>(col);
+    l.bubbleCols = static_cast<uint8_t>(w);
+    l.bubbleTop = i == 0;
+    l.bubbleBottom = i + 1 == rows.size();
+    if (col > 0) l.spans.push_back({std::u32string(col, U' '), th.fg});
+    l.spans.push_back({U" " + rows[i].text, rows[i].fg});
+    clipLine(l, cols);
+    out(std::move(l));
+  }
+}
+
 }  // namespace
 
 std::vector<DisplayLine> layoutRoom(const std::deque<CircMessage>& msgs, const LayoutOptions& o) {
@@ -193,6 +246,11 @@ void layoutRoomEach(const std::deque<CircMessage>& msgs, const LayoutOptions& o,
       l.mentionTint = tint;
       return l;
     };
+
+    if (o.style == ChatStyle::Bubbles) {
+      bubbleLines(m, o, th, cols, self, action, nickFg, tint, blocks, artLines, out);
+      continue;
+    }
 
     head.messageId = m.id;
     head.mentionTint = tint;

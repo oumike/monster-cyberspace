@@ -3,6 +3,10 @@
 #include "lvui/styles.h"
 #include "lvui/views/view_util.h"
 
+#if LV_USE_STDLIB_MALLOC == LV_STDLIB_CUSTOM && !defined(BOARD_HAS_PSRAM)
+#include <esp_heap_caps.h>
+#endif
+
 namespace lvui {
 
 namespace {
@@ -13,6 +17,12 @@ size_t lvglFree() {
 #else
   lv_mem_monitor_t mon;
   lv_mem_monitor(&mon);
+#if !defined(BOARD_HAS_PSRAM)
+  // LVGL's budget shares the internal heap with TLS: what is really free
+  // may be less.
+  const size_t heap = heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+  if (heap < mon.free_size) return heap;
+#endif
   return mon.free_size;
 #endif
 }
@@ -71,7 +81,7 @@ bool ScreenHost::show(const std::function<void(lv_obj_t*)>& build, bool replace)
     lv_obj_delete(root_);
     root_ = nullptr;
   }
-  lv_obj_t* fresh = lv_obj_create(lv_screen_active());
+  lv_obj_t* fresh = freeProbe() >= kBuildFree ? lv_obj_create(lv_screen_active()) : nullptr;
   if (fresh) {
     lv_obj_remove_style_all(fresh);
     addStyle(fresh, Role::Screen);
@@ -90,12 +100,19 @@ bool ScreenHost::show(const std::function<void(lv_obj_t*)>& build, bool replace)
     }
     lv_obj_delete(fresh);
   }
+  failedAt_ = lv_tick_get();
   showOom();
   return false;
 }
 
 void ScreenHost::rebuild() {
-  if (build_) show(build_, false);
+  if (build_) show(build_, replaceFirst);
+}
+
+bool ScreenHost::retryDue() {
+  if (root_ || lv_tick_elaps(failedAt_) < kRetryMs) return false;
+  failedAt_ = lv_tick_get();
+  return true;
 }
 
 }  // namespace lvui

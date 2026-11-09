@@ -166,7 +166,8 @@ bool goTo(Id id, const std::string& arg) {
 
 void go(Id id, const std::string& arg) { goTo(id, arg); }
 
-// The same screen, built beside its old tree, which stays if this doesn't fit.
+// The same screen again: beside its old tree, which stays if this doesn't
+// fit, or (without PSRAM) after it, as go does.
 void rebuild() {
   if (!host.root()) {
     show();
@@ -174,6 +175,13 @@ void rebuild() {
   }
   if (beforeBuild) beforeBuild();
   host.rebuild();
+}
+
+bool hasTree() { return host.root() != nullptr; }
+
+void update(int64_t nowMs) {
+  if (!host.root() && host.retryDue()) rebuild();
+  if (host.root()) active->update(nowMs);
 }
 
 void setBeforeBuild(void (*hook)()) { beforeBuild = hook; }

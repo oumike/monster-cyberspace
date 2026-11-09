@@ -92,9 +92,18 @@ void setBase(const Place& p);
 Screen& screen();
 // Builds the current screen into a new root (go does it; this is for the
 // first screen, and after a theme, text size, rotation or keyboard change).
-// Out of memory, go keeps the screen it was on, and so does this (it builds
-// beside the old tree even where go replaces it first, without PSRAM).
+// Out of memory, go keeps the screen it was on, and so does this. Without
+// PSRAM both delete the old tree first, so running out twice (the new
+// screen, then the old one again) can leave no tree: see hasTree().
 void rebuild();
+// False while no tree stands (out of memory twice, boards without PSRAM).
+// The screen's state is still there and takes events; its views are not,
+// so nothing may call update() or send it keys until update() has built
+// it again.
+bool hasTree();
+// Each frame: the screen's update() while it has a tree; with none, builds
+// it again at most once a second (until memory is back) instead.
+void update(int64_t nowMs);
 // Called before every build, with screen() already the screen to build: the
 // UI task sets the root font for it there.
 void setBeforeBuild(void (*hook)());

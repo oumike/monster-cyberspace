@@ -93,18 +93,93 @@ void test_host_replace_first() {
   TEST_ASSERT_TRUE(host.show([&](lv_obj_t*) { TEST_ASSERT_TRUE(oldGone); }));
   TEST_ASSERT_EQUAL(before + 1, lv_obj_get_child_count(lv_screen_active()));
 
-  // A rebuild of the same screen still builds beside: out of memory keeps it.
-  lv_obj_t* kept = host.root();
-  starved = true;
-  host.rebuild();
-  TEST_ASSERT_EQUAL_PTR(kept, host.root());
-  starved = false;
-
   TEST_ASSERT_FALSE(host.show([](lv_obj_t*) { starved = true; }));
   TEST_ASSERT_NULL(host.root());
   TEST_ASSERT_EQUAL(before, lv_obj_get_child_count(lv_screen_active()));
   TEST_ASSERT_NOT_NULL(findOom());
   starved = false;
+  lvui::ScreenHost::setReplaceFirst(false);
+}
+
+// Replace first, a rebuild goes the same way: one tree at a time.
+void test_host_replace_first_rebuild() {
+  lvui::ScreenHost::setReplaceFirst(true);
+  lvui::ScreenHost host;
+  const uint32_t before = lv_obj_get_child_count(lv_screen_active());
+  int builds = 0;
+  TEST_ASSERT_TRUE(host.show([&](lv_obj_t*) { ++builds; }));
+  lv_obj_t* old = host.root();
+  bool oldGone = false;
+  lv_obj_add_event_cb(
+      old, [](lv_event_t* e) { *static_cast<bool*>(lv_event_get_user_data(e)) = true; }, LV_EVENT_DELETE,
+      &oldGone);
+  host.rebuild();
+  TEST_ASSERT_TRUE(oldGone);
+  TEST_ASSERT_EQUAL(2, builds);
+  TEST_ASSERT_EQUAL(before + 1, lv_obj_get_child_count(lv_screen_active()));
+  lv_obj_delete(host.root());
+  lvui::ScreenHost::setReplaceFirst(false);
+}
+
+// Too little free to start a build: nothing is built (a build past LVGL's
+// budget would make objects that can't be), and the old tree stays.
+size_t lowProbe() { return lvui::ScreenHost::kBuildFree - 1; }
+void test_host_needs_build_margin() {
+  lvui::ScreenHost host;
+  TEST_ASSERT_TRUE(host.show([](lv_obj_t*) {}));
+  lv_obj_t* old = host.root();
+  lvui::ScreenHost::setFreeProbe(lowProbe);
+  bool built = false;
+  TEST_ASSERT_FALSE(host.show([&](lv_obj_t*) { built = true; }));
+  TEST_ASSERT_FALSE(built);
+  TEST_ASSERT_EQUAL_PTR(old, host.root());
+  TEST_ASSERT_NOT_NULL(findOom());
+  lvui::ScreenHost::setFreeProbe(freeProbe);
+  lv_obj_delete(host.root());
+}
+
+// Replace first, both the new screen and the old one again can fail: no
+// tree is left. The caller retries at most once every kRetryMs, and the
+// screen comes back once memory does.
+struct Views {
+  int n = 0;
+};
+void test_host_double_failure_recovers() {
+  lvui::ScreenHost::setReplaceFirst(true);
+  lvui::ScreenHost host;
+  lvui::TreeViews<Views> a, b;
+  auto buildA = [&](lv_obj_t* root) { a.make(root).n = 1; };
+  TEST_ASSERT_TRUE(host.show(buildA));
+  TEST_ASSERT_FALSE(host.retryDue());  // a tree: nothing to retry
+
+  TEST_ASSERT_FALSE(host.show([&](lv_obj_t* root) {
+    b.make(root);
+    starved = true;
+  }));
+  TEST_ASSERT_FALSE(host.show(buildA));  // the old screen doesn't fit either
+  TEST_ASSERT_NULL(host.root());
+  TEST_ASSERT_NULL(a.get());
+  TEST_ASSERT_NULL(b.get());
+
+  TEST_ASSERT_FALSE(host.retryDue());  // not yet
+  now += lvui::ScreenHost::kRetryMs;
+  TEST_ASSERT_TRUE(host.retryDue());
+  TEST_ASSERT_FALSE(host.retryDue());  // once a second
+  host.rebuild();                      // still starved
+  TEST_ASSERT_NULL(host.root());
+  now += lvui::ScreenHost::kRetryMs - 1;
+  TEST_ASSERT_FALSE(host.retryDue());
+  now += 1;
+  TEST_ASSERT_TRUE(host.retryDue());
+  starved = false;
+  host.rebuild();  // the last build that fit: the old screen's
+  TEST_ASSERT_NOT_NULL(host.root());
+  TEST_ASSERT_NOT_NULL(a.get());
+  TEST_ASSERT_EQUAL(1, a->n);
+  TEST_ASSERT_FALSE(host.retryDue());
+  now += lvui::ScreenHost::kOomMs;
+  lv_timer_handler();
+  lv_obj_delete(host.root());
   lvui::ScreenHost::setReplaceFirst(false);
 }
 
@@ -203,6 +278,9 @@ int main() {
   UNITY_BEGIN();
   RUN_TEST(test_host_build_failure_keeps_previous);
   RUN_TEST(test_host_replace_first);
+  RUN_TEST(test_host_replace_first_rebuild);
+  RUN_TEST(test_host_needs_build_margin);
+  RUN_TEST(test_host_double_failure_recovers);
   RUN_TEST(test_tree_views_follow_their_tree);
   RUN_TEST(test_emit_reaches_sink);
   RUN_TEST(test_oom_label_survives_layer_clean);

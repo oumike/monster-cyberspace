@@ -732,7 +732,11 @@ void handleEvent(const Event& e) {
           banner(e.text.empty() ? std::string("Couldn't start a C-Mail") : e.text, true);
         } else {
           router::go(Id::Conversation, e.text);
-          if (router::screen().acceptsText()) sendCanned(utf8ToU32(text));
+          // Out of memory, go stays where it was (and says so): the text
+          // goes nowhere else.
+          if (router::current() == Id::Conversation && router::hasTree() &&
+              router::screen().acceptsText())
+            sendCanned(utf8ToU32(text));
         }
         return;  // not the C-Mail list's, which didn't ask
       }
@@ -856,6 +860,10 @@ void runWebCompose() {
   }
   switch (r.kind) {
     case ComposeKind::Open:
+      if (!router::hasTree()) {
+        banner("Web compose: out of memory", true);
+        break;
+      }
       if (!router::screen().acceptsText()) {
         banner("Web compose: nothing open takes text", true);
         break;
@@ -945,6 +953,9 @@ void handleKey(const KeyEvent& key) {
     }
     return;
   }
+  // No tree (out of memory, boards without PSRAM): nothing on screen to act
+  // on, so the key does nothing until router::update builds it again.
+  if (!router::hasTree()) return;
   // The help closes on any key or tap; F10 again only closes it.
   if (keysHelp) {
     keysHelp = false;
@@ -1266,7 +1277,7 @@ void taskMain(void*) {
     beforeScreen = router::current();
     beforePower = power;
     syncLayers(now);
-    if (power == Power::On) router::screen().update(now);
+    if (power == Power::On) router::update(now);
     // Dark: nothing to draw, and the panel sleeps.
     if (power != Power::Dark) lv_timer_handler();
     runTapKeys();

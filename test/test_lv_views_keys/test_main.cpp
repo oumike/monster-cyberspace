@@ -213,6 +213,7 @@ void test_osk_layer_and_emit() {
   tap(keyAt(find(rc::OskKind::Hide)));
   TEST_ASSERT_EQUAL(1, hides);
   TEST_ASSERT_EQUAL(0, keys.size());
+  lv_obj_delete(kb.obj());  // before kb, which owns the button map
 }
 
 // A finger that slides past the tap slop types nothing, even on one wide key

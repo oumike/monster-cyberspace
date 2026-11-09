@@ -195,7 +195,7 @@
 
 **Files:** `platformio.ini`, per-board flags only where needed (`RC_LV_HEAP` on `cardputer_adv`), `src/ui/lv/board_glue.cpp` (e-paper: `board::eink()` → `mono`, invalidation feeds `ui/eink` as today's dirty rows did)
 - [x] **Step 1:** `scripts/build-upload-monitor.sh -B` → all thirteen envs SUCCESS (X4 on `src/grid_ui`).
-- [x] **Step 2:** Cardputer: if RAM leaves less than today's TLS headroom (61,368 B static today), lower `RC_LV_HEAP`/draw strip until it does; record the numbers. Static plus UI heap (device model, task-15 report "Fix round 2"): main 84,936 B; branch Home 82,572 B (−2,364), Room with 8 log rows 84,540 B (−396).
+- [x] **Step 2:** Cardputer: if RAM leaves less than today's TLS headroom (61,368 B static today), lower `RC_LV_HEAP`/draw strip until it does; record the numbers. Static plus UI heap (device model with heap poisoning's 12 B per block, task-15 report "Fix round 3"): main 85,188 B (21 blocks); branch Home 79,884 B (184 blocks, −5,304), Room with 8 log rows 81,920 B (208 blocks, −3,268).
   *(Open: strip mode, one tree at a time and heap-allocated views took static
   RAM to 71,096 B and the frame to a 4,800 B strip, but the LVGL tree is
   estimated to leave ~20–30 KB less internal heap than main; the `[mem]`

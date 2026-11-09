@@ -180,7 +180,10 @@ retries.
 - PSRAM boards: LVGL heap and draw buffers in PSRAM.
 - Cardputer ADV (no PSRAM): `RC_LV_HEAP` internal heap (about 48 KB) and a
   240x20 draw buffer. If TLS no longer fits, it drops to Compact-only text
-  and fewer live objects; it never assumes PSRAM.
+  and fewer live objects; it never assumes PSRAM. There (`RC_LV_LEAN`) the
+  room log and lists are painted: one object draws every row itself, with
+  the same pixels and taps, so each of ESP-IDF's poisoned heap blocks
+  (+12 B) isn't paid per row. The `RC_LV_HEAP` budget counts that overhead.
 - If LVGL can't allocate a screen, the router shows a plain "Out of memory"
   label and stays on the previous `Place`.
 - Room logs and feeds are virtualised; `RC_CHAT_CAP` / `RC_MAX_REPLIES`

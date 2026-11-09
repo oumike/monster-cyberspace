@@ -8,8 +8,9 @@
 namespace nv3031b {
 
 bool begin();
-// Sends rows [y0, y1) of a full-width frame of host-order RGB565.
-void pushRows(const uint16_t* frame, int width, int y0, int y1);
+// Sends rows [y0, y1) of a full-width frame of host-order RGB565, drawn
+// (x0, top) px in from the panel's corner.
+void pushRows(const uint16_t* frame, int width, int y0, int y1, int x0 = 0, int top = 0);
 void sleep(bool on);
 // LovyanGFX rotation r (quarter turns from landscape, on top of offset 1).
 void setRotation(uint8_t r);

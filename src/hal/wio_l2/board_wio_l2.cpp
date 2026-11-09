@@ -5,6 +5,8 @@
 #include <SD_MMC.h>
 #include <Wire.h>
 
+#include <algorithm>
+
 #include "hal/board.h"
 #include "hal/wio_l2/audio_es8311.h"
 #include "hal/wio_l2/io_pca9555.h"
@@ -156,11 +158,24 @@ void begin() {
 
 const char* name() { return "WioL2"; }
 const char* otaSlug() { return "wio-l2"; }
-int panelWidth() { return rc::rotationPortrait(rotation) ? wio::PANEL_H : wio::PANEL_W; }
-int panelHeight() { return rc::rotationPortrait(rotation) ? wio::PANEL_W : wio::PANEL_H; }
+namespace {
+
+// Where the bezel's strip (wio::PANEL_TOP_INSET) lands for each rotation,
+// as the touch transform turns the panel: 0 top, 1 left, 2 bottom, 3 right.
+int insetLeft() { return rotation == 1 ? wio::PANEL_TOP_INSET : 0; }
+int insetTop() { return rotation == 0 ? wio::PANEL_TOP_INSET : 0; }
+
+}  // namespace
+
+int panelWidth() {
+  return rc::rotationPortrait(rotation) ? wio::PANEL_H - wio::PANEL_TOP_INSET : wio::PANEL_W;
+}
+int panelHeight() {
+  return rc::rotationPortrait(rotation) ? wio::PANEL_W : wio::PANEL_H - wio::PANEL_TOP_INSET;
+}
 
 void pushRows(const uint16_t* frame, int y0, int y1) {
-  nv3031b::pushRows(frame, panelWidth(), y0, y1);
+  nv3031b::pushRows(frame, panelWidth(), y0, y1, insetLeft(), insetTop());
 }
 
 void backlight(bool on) { backlightLevel(on ? 255 : 0); }
@@ -227,6 +242,8 @@ bool readTouch(int16_t& x, int16_t& y) {
   // LovyanGFX turns portrait the opposite way to rc::touchToFrame (as on the
   // CrowPanel 3.5"), so the portraits swap; the landscapes are unchanged.
   rc::touchToFrame(rx, ry, wio::PANEL_NATIVE_W, wio::PANEL_NATIVE_H, (4 - rotation) & 3, x, y);
+  x = int16_t(std::clamp(x - insetLeft(), 0, panelWidth() - 1));
+  y = int16_t(std::clamp(y - insetTop(), 0, panelHeight() - 1));
   return down;
 }
 

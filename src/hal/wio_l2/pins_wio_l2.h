@@ -48,6 +48,9 @@ constexpr uint32_t TFT_WRITE_HZ = 75000000;
 constexpr int PANEL_NATIVE_W = 240, PANEL_NATIVE_H = 320;
 // Driven landscape, like the M9.
 constexpr int PANEL_W = 320, PANEL_H = 240;
+// The case's bezel covers the panel's top edge (as held in landscape): the
+// UI keeps this many px clear of it, on whichever side it turns to.
+constexpr int PANEL_TOP_INSET = 4;
 
 // LP5814 I2C backlight driver (four channels).
 constexpr uint8_t LP5814_ADDR = 0x2C;

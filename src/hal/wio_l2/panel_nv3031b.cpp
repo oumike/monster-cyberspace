@@ -72,7 +72,7 @@ bool begin() {
   return ok;
 }
 
-void pushRows(const uint16_t* frame, int width, int y0, int y1) {
+void pushRows(const uint16_t* frame, int width, int y0, int y1, int x0, int top) {
   if (y1 <= y0) return;
   // A long write loses its place on this QSPI panel (later rows land
   // shifted), so each band of kRows rows gets its own window, about as
@@ -82,12 +82,15 @@ void pushRows(const uint16_t* frame, int width, int y0, int y1) {
   for (int y = y0; y < y1; y += kRows) {
     const int h = y1 - y < kRows ? y1 - y : kRows;
     // rgb565_t is host order; LovyanGFX swaps to the panel's byte order.
-    lcd.pushImage(0, y, width, h, reinterpret_cast<const lgfx::rgb565_t*>(frame + (size_t)y * width));
+    lcd.pushImage(x0, top + y, width, h, reinterpret_cast<const lgfx::rgb565_t*>(frame + (size_t)y * width));
   }
   lcd.endWrite();
 }
 
-void setRotation(uint8_t r) { lcd.setRotation(r & 3); }
+void setRotation(uint8_t r) {
+  lcd.setRotation(r & 3);
+  lcd.fillScreen(0);  // the inset strip moves to another side
+}
 
 void sleep(bool on) {
   if (on) lcd.sleep();

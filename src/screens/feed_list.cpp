@@ -60,6 +60,11 @@ void FeedListScreen::leave() {
   if (kind_ == Kind::Feed) feedSource().command(Command{CmdType::CloseFeed});
 }
 
+// leave stopped the Feed's timed refresh: start it again, keeping the place.
+void FeedListScreen::resume() {
+  if (kind_ == Kind::Feed) feedSource().command(Command{CmdType::OpenFeed});
+}
+
 void FeedListScreen::open() {
   failed_ = false;
   switch (kind_) {

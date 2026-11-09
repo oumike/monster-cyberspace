@@ -81,6 +81,18 @@ void RoomScreen::enter(const std::string& slug) {
   if (app().cfg.drawerOpen || drawerDocked()) chatSource().command(Command{CmdType::OpenPresence});
 }
 
+// leave closed the room: open it again, keeping what was typed and the view.
+void RoomScreen::resume() {
+  version_ = UINT32_MAX;
+  relayout_ = true;
+  if (dm_) {
+    chatSource().command(Command{CmdType::OpenConversation, slug_});
+    return;
+  }
+  chatSource().command(Command{CmdType::OpenRoom, slug_});
+  if (app().cfg.drawerOpen || drawerDocked()) chatSource().command(Command{CmdType::OpenPresence});
+}
+
 void RoomScreen::leave() {
   pending_.clear();
   // Leaving with text typed: clear the flag rather than let it age out.

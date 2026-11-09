@@ -35,6 +35,7 @@ class EntryScreen : public Screen {
   // reply to select once loaded; noticeId may be empty).
   void enter(const std::string& arg) override;
   void leave() override;
+  void resume() override;
   void onKey(const KeyEvent&) override;
   void onEvent(const Event&) override;
   void build(lv_obj_t* root) override;
@@ -47,6 +48,7 @@ class EntryScreen : public Screen {
   }
 
  private:
+  void open();  // asks for the entry, from scratch
   enum class View { None, Menu, Link };
   enum class Menu { Entry, Reply, ConfirmDelete, ConfirmReport };
 

@@ -148,6 +148,12 @@ bool goTo(Id id, const std::string& arg) {
   if (show()) return true;
   // Out of memory: the old tree is still up, so the old screen stays (with
   // replace first, boards without PSRAM, it went: build it again below).
+  // The new screen leaves, undoing what its enter opened. The old one
+  // already left (it had to, first: a room and a conversation share one
+  // channel, so its close must go before the new open), so it resumes,
+  // reopening that and keeping its state. Only the same screen object (a
+  // room to another room) lost its state to the new enter: it enters its
+  // old place again.
   const bool same = active == oldActive;
   active->leave();
   cur = oldCur;
@@ -155,7 +161,10 @@ bool goTo(Id id, const std::string& arg) {
   curPlace = oldPlace;
   base = oldBase;
   origin = oldOrigin;
-  active->enter(curPlace.arg);
+  if (same)
+    active->enter(curPlace.arg);
+  else
+    active->resume();
   // The same screen object built into the tree that was thrown away, so its
   // views no longer point at the old one: build it again.
   if (same || !host.root()) show();

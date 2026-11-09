@@ -62,10 +62,17 @@ void EntryScreen::enter(const std::string& arg) {
   postId_ = parts[0];
   noticeId_ = parts[1];
   wantReply_ = parts[2];
+  input_.clear();
+  open();
+}
+
+// leave closed the entry: open it again, keeping a reply being typed.
+void EntryScreen::resume() { open(); }
+
+void EntryScreen::open() {
   repliesArrived_ = false;
   log_.setLines({});
   log_.follow();
-  input_.clear();
   view_ = View::None;
   reasonMode_ = false;
   loaded_ = hidden_ = revealed_ = sending_ = moreAsked_ = false;

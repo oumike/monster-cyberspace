@@ -406,6 +406,7 @@ class FeedListScreen : public Screen {
   explicit FeedListScreen(Kind kind) : kind_(kind) {}
   void enter(const std::string&) override;
   void leave() override;
+  void resume() override;
   void onKey(const KeyEvent&) override;
   void onEvent(const Event&) override;
   void build(lv_obj_t* root) override;

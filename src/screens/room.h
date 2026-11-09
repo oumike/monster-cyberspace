@@ -41,6 +41,7 @@ class RoomScreen : public Screen {
   // slug: a room slug, or a conversation id when dm.
   void enter(const std::string& slug) override;
   void leave() override;
+  void resume() override;
   void onKey(const KeyEvent&) override;
   void onEvent(const Event&) override;
   void build(lv_obj_t* root) override;

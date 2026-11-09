@@ -16,6 +16,10 @@ class Screen {
   virtual ~Screen() = default;
   virtual void enter(const std::string& arg) { (void)arg; }
   virtual void leave() {}
+  // Back after a leave whose next screen didn't fit in memory: reopens what
+  // leave closed, keeping what enter would reset (typed text, the place in a
+  // list), so the screen carries on as it was.
+  virtual void resume() {}
   virtual void onKey(const KeyEvent&) = 0;
   virtual void onEvent(const Event&) {}
   // Creates the screen's objects under root (after enter), synced.

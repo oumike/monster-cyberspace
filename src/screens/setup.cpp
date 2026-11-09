@@ -77,7 +77,7 @@ void SetupScreen::build(lv_obj_t* root) {
 
 void SetupScreen::update(int64_t nowMs) {
   const AppState& a = app();
-  if (gate_.due(v_->text_.obj(), nowMs, {wifiUp(), setupApUp(), a.auth, a.cfg.wifi.empty()})) sync();
+  if (v_->gate_.due(v_->text_.obj(), nowMs, {wifiUp(), setupApUp(), a.auth, a.cfg.wifi.empty()})) sync();
 }
 
 void SetupScreen::sync() {

@@ -34,7 +34,7 @@ void SplashScreen::build(lv_obj_t* root) {
 
 void SplashScreen::update(int64_t nowMs) {
   if (since_ < 0) since_ = nowMs;
-  if (gate_.due(v_->text_.obj(), nowMs, {board::eink() || (nowMs - since_) / kBlinkMs % 2 == 0})) sync(nowMs);
+  if (v_->gate_.due(v_->text_.obj(), nowMs, {board::eink() || (nowMs - since_) / kBlinkMs % 2 == 0})) sync(nowMs);
   if (nowMs - since_ > kShowMs) router::go(router::bootTarget());
 }
 

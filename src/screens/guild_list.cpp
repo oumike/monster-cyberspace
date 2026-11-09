@@ -231,7 +231,7 @@ void GuildListScreen::update(int64_t nowMs) {
   // The list changes with GuildsUpdated and GuildUpdated, which
   // ui::inputSeq() counts; the store's loading flag (set with no event)
   // shows with the once-a-second refresh.
-  if (gate_.due(v_->text_.obj(), nowMs, {int64_t(app().conn)})) sync();
+  if (v_->gate_.due(v_->text_.obj(), nowMs, {int64_t(app().conn)})) sync();
 }
 
 void GuildListScreen::sync() {

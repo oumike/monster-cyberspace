@@ -6,14 +6,24 @@
 namespace lvui {
 
 void QrBox::create(lv_obj_t* parent) {
-  box_ = plainBox(parent);
-  setBgColor(box_, 0xFFFF);
-  setTextColor(box_, 0x0000);
-  setHidden(box_, true);
+  parent_ = parent;
+  index_ = static_cast<int32_t>(lv_obj_get_child_count(parent));
+  box_ = nullptr;
+  lines_.clear();
   synced_ = false;
 }
 
+// The box, made with the first sync, goes where create() would have put it.
+void QrBox::make() {
+  box_ = plainBox(parent_);
+  lv_obj_move_to_index(box_, index_);
+  setBgColor(box_, 0xFFFF);
+  setTextColor(box_, 0x0000);
+  setHidden(box_, true);
+}
+
 bool QrBox::sync(std::string_view text) {
+  if (!box_) make();
   const Cell c = cellOf(box_);
   // A new cell size (the text size changed) lays the rows out again.
   if (synced_ && text == text_ && c.w == cell_.w && c.h == cell_.h) return ok_;

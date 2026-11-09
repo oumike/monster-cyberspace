@@ -166,7 +166,7 @@ void TopicsScreen::build(lv_obj_t* root) {
 
 void TopicsScreen::update(int64_t nowMs) {
   // The topics change with TopicsUpdated, which ui::inputSeq() counts.
-  if (gate_.due(v_->text_.obj(), nowMs, {int64_t(app().conn)})) sync();
+  if (v_->gate_.due(v_->text_.obj(), nowMs, {int64_t(app().conn)})) sync();
 }
 
 void TopicsScreen::sync() {

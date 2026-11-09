@@ -253,7 +253,7 @@ void WifiScreen::build(lv_obj_t* root) {
 }
 
 void WifiScreen::update(int64_t nowMs) {
-  if (gate_.due(v_->text_.obj(), nowMs, {wifiUp(), ButtonPad::active()})) sync();
+  if (v_->gate_.due(v_->text_.obj(), nowMs, {wifiUp(), ButtonPad::active()})) sync();
 }
 
 void WifiScreen::sync() {

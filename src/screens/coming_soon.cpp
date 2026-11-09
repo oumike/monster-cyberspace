@@ -18,7 +18,7 @@ void ComingSoonScreen::build(lv_obj_t* root) {
 }
 
 void ComingSoonScreen::update(int64_t nowMs) {
-  if (gate_.due(v_->text_.obj(), nowMs)) sync();
+  if (v_->gate_.due(v_->text_.obj(), nowMs)) sync();
 }
 
 void ComingSoonScreen::sync() {

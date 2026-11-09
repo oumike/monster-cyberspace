@@ -999,7 +999,7 @@ void SettingsScreen::build(lv_obj_t* root) {
 void SettingsScreen::update(int64_t nowMs) {
   const AppState& a = app();
   // The time lines and the Firmware row follow within the gate's second.
-  if (gate_.due(v_->text_.obj(), nowMs,
+  if (v_->gate_.due(v_->text_.obj(), nowMs,
                 {wifiUp(), setupApUp(), a.auth, static_cast<int64_t>(std::hash<std::string>{}(a.user)),
                  batteryShown()}))
     sync();

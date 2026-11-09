@@ -202,7 +202,7 @@ void NotificationsScreen::update(int64_t nowMs) {
   // C-Mail, mentions and notices change with an event (ConversationsUpdated,
   // MentionAlert, the Feed's), which ui::inputSeq() counts; edited text shows
   // with the gate's once-a-second refresh.
-  if (gate_.due(v_->text_.obj(), nowMs, {int64_t(app().mentions.size())})) sync(nowMs);
+  if (v_->gate_.due(v_->text_.obj(), nowMs, {int64_t(app().mentions.size())})) sync(nowMs);
 }
 
 void NotificationsScreen::sync(int64_t nowMs) {

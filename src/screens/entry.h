@@ -115,9 +115,9 @@ class EntryScreen : public Screen {
   lv_obj_t* body_ = nullptr;
   unsigned themeSerial_ = ~0u;  // lvui::themeSerial() the lines bake
   int64_t nowMs_ = 0;           // the last update's, for build
-  SyncGate<5> gate_;
   // The views, on the heap only while their tree is up (lvui/tree_views.h).
   struct Views {
+    SyncGate<5> gate_;  // the update check, fresh with each tree
     lvui::TopBar status_;
     lvui::CellText text_;
     lvui::LogBox logView_;

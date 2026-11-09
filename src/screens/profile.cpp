@@ -457,7 +457,7 @@ void ProfileScreen::update(int64_t nowMs) {
   // The profile, follows and blocks change with ProfileUpdated and
   // PeopleWriteDone, which ui::inputSeq() counts; the store's loading flag
   // (set with no event) and the ages show with the once-a-second refresh.
-  if (gate_.due(v_->cells_.obj(), nowMs, {int64_t(app().conn)})) sync(nowMs);
+  if (v_->gate_.due(v_->cells_.obj(), nowMs, {int64_t(app().conn)})) sync(nowMs);
 }
 
 void ProfileScreen::sync(int64_t nowMs) {

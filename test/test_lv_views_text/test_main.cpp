@@ -296,6 +296,8 @@ void test_input_field_cursor_and_focus_tap() {
   tap(cellAt(f.obj(), 30, 0));
   TEST_ASSERT_EQUAL(1, keys.size());
   TEST_ASSERT_EQUAL(5, keys[0].index);
+  // Without the emoji button its label is never made.
+  TEST_ASSERT_NULL(f.emoji());
   // The emoji button (a pointer is fitted): the first cells open the tray.
   m.setEmojiButton(true);
   f.sync(m);

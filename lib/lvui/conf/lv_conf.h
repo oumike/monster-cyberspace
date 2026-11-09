@@ -6,6 +6,17 @@
 
 #define LV_COLOR_DEPTH 16
 
+// Lean: boards without PSRAM, where LVGL shares the internal heap with TLS,
+// leave out what lvui never uses. PSRAM boards and the host tests keep the
+// full set; -DRC_LV_LEAN=1 runs the host tests lean.
+#ifndef RC_LV_LEAN
+#if defined(BOARD_HAS_PSRAM) || defined(RC_NATIVE)
+#define RC_LV_LEAN 0
+#else
+#define RC_LV_LEAN 1
+#endif
+#endif
+
 // Host tests use the C library; on the ESP32 lv_init.cpp supplies
 // lv_malloc_core and friends (PSRAM, or a capped internal heap).
 #ifdef RC_NATIVE
@@ -25,6 +36,11 @@
 #define LV_USE_ASSERT_STYLE 0
 #define LV_USE_ASSERT_MEM_INTEGRITY 0
 #define LV_USE_ASSERT_OBJ 0
+
+// Lean draws no rounded corners: one circle-mask cache entry, not four.
+#if RC_LV_LEAN
+#define LV_DRAW_SW_CIRCLE_CACHE_SIZE 1
+#endif
 // A failed assert reports where and aborts (the device reboots), not hangs.
 #define LV_ASSERT_HANDLER_INCLUDE "lv_assert_hook.h"
 #define LV_ASSERT_HANDLER lvui_assert_failed(__FILE__, __LINE__);
@@ -76,6 +92,11 @@
 #define LV_USE_IMAGEBUTTON 0
 #define LV_USE_KEYBOARD 1
 #define LV_USE_LABEL 1
+// Lean: no label keeps selection bounds or a long-text hint (no view selects
+// text; the hint only speeds up labels over 1024 px tall), 20 bytes less a
+// label.
+#define LV_LABEL_TEXT_SELECTION (!RC_LV_LEAN)
+#define LV_LABEL_LONG_TXT_HINT (!RC_LV_LEAN)
 #define LV_USE_LED 0
 #define LV_USE_LINE 0
 #define LV_USE_LIST 0
@@ -85,7 +106,8 @@
 #define LV_USE_ROLLER 0
 #define LV_USE_SCALE 0
 #define LV_USE_SLIDER 1
-#define LV_USE_SPAN 1
+// No view uses spans; lean boards skip the snippet stack lv_init allocates.
+#define LV_USE_SPAN (!RC_LV_LEAN)
 #define LV_USE_SPINBOX 0
 #define LV_USE_SPINNER 0
 #define LV_USE_SWITCH 0
@@ -97,14 +119,10 @@
 
 // The default theme only styles objects lvui strips again (plainBox,
 // lineLabel, the keyboard's matrix) and the screen behind the trees, which
-// display.cpp gives the same look without it (lvui::displayBegin). Boards
-// without PSRAM leave it out for the internal RAM its styles take.
+// display.cpp gives the same look without it (lvui::displayBegin). Lean
+// boards leave it out for the internal RAM its styles take.
 #ifndef RC_LV_THEME
-#if defined(BOARD_HAS_PSRAM) || defined(RC_NATIVE)
-#define RC_LV_THEME 1
-#else
-#define RC_LV_THEME 0
-#endif
+#define RC_LV_THEME (!RC_LV_LEAN)
 #endif
 #define LV_USE_THEME_DEFAULT RC_LV_THEME
 #define LV_USE_THEME_SIMPLE 0

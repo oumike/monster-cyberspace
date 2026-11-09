@@ -13,6 +13,14 @@ void DrawerPanel::create(lv_obj_t* parent) {
   addStyle(panel_, Role::Drawer);
   addStyle(panel_, Role::DrawerEdge);
   lv_obj_set_flex_flow(panel_, LV_FLEX_FLOW_COLUMN);
+  // The header and list come with the first sync: a closed drawer is only
+  // its panel.
+  head_ = header_ = close_ = list_ = nullptr;
+  rows_.clear();
+  lastW_ = lastH_ = sel_ = -1;
+}
+
+void DrawerPanel::makeBody() {
   head_ = plainBox(panel_);
   lv_obj_set_width(head_, lv_pct(100));
   lv_obj_set_height(head_, LV_SIZE_CONTENT);
@@ -27,8 +35,6 @@ void DrawerPanel::create(lv_obj_t* parent) {
   lv_obj_set_width(list_, lv_pct(100));
   lv_obj_set_flex_grow(list_, 1);
   lv_obj_set_flex_flow(list_, LV_FLEX_FLOW_COLUMN);
-  rows_.clear();
-  lastW_ = lastH_ = sel_ = -1;
 }
 
 void DrawerPanel::setDocked(bool docked) {
@@ -63,6 +69,7 @@ void DrawerPanel::layout() {
 }
 
 void DrawerPanel::sync(const rc::Drawer& m) {
+  if (!head_) makeBody();
   layout();
   const auto& people = m.people();
   setText(header_, U"here \u00b7 " + rc::utf8ToU32(std::to_string(people.size())));

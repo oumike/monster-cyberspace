@@ -89,9 +89,9 @@ class ComposerScreen : public Screen {
   lv_obj_t* publicTap_ = nullptr;
   lv_obj_t* nsfwTap_ = nullptr;
   FieldTap titleTap_, publicField_, nsfwField_;
-  SyncGate<3> gate_;
   // The views, on the heap only while their tree is up (lvui/tree_views.h).
   struct Views {
+    SyncGate<3> gate_;  // the update check, fresh with each tree
     lvui::TopBar status_;
     lvui::CellText text_;          // the Body label, its count and the checkboxes
     lvui::TextBox bodyView_;

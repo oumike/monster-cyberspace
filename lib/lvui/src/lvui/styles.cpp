@@ -14,15 +14,20 @@ rc::Theme current{};
 unsigned serial = 0;
 
 // Every role starts from the terminal look: square, no padding, no border.
+// Without the default theme only these styles and local ones exist, so the
+// zeros LVGL already defaults to are left out; the border stays, as a later
+// role's 0 overrides an earlier role's rule.
 void base(lv_style_t* s) {
   lv_style_reset(s);
+#if RC_LV_THEME
   lv_style_set_radius(s, 0);
   lv_style_set_pad_all(s, 0);
   lv_style_set_pad_row(s, 0);
   lv_style_set_pad_column(s, 0);
-  lv_style_set_border_width(s, 0);
   lv_style_set_outline_width(s, 0);
   lv_style_set_shadow_width(s, 0);
+#endif
+  lv_style_set_border_width(s, 0);
 }
 
 void fill(lv_style_t* s, uint16_t bg, uint16_t fg) {

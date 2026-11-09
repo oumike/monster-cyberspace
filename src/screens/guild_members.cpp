@@ -122,7 +122,7 @@ void MembersScreen::update(int64_t nowMs) {
   // The members and the guild's name change with MembersUpdated and
   // GuildUpdated, which ui::inputSeq() counts; the store's loading flag (set
   // with no event) and the ages show with the once-a-second refresh.
-  if (gate_.due(v_->text_.obj(), nowMs, {int64_t(app().conn)})) sync(nowMs);
+  if (v_->gate_.due(v_->text_.obj(), nowMs, {int64_t(app().conn)})) sync(nowMs);
 }
 
 void MembersScreen::sync(int64_t nowMs) {

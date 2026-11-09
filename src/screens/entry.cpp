@@ -590,7 +590,7 @@ void EntryScreen::update(int64_t nowMs) {
   // The entry and its replies change with EntryUpdated, RepliesLoaded and
   // FeedWriteDone, which ui::inputSeq() counts; the ages show with the
   // once-a-second refresh.
-  if (gate_.due(root_, nowMs,
+  if (v_->gate_.due(root_, nowMs,
                 {int64_t(app().conn), int64_t(view_), int64_t(reasonMode_), int64_t(sending_),
                  int64_t(log_.following())}))
     sync(nowMs);

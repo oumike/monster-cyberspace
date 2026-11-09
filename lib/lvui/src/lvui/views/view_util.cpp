@@ -5,6 +5,7 @@
 #include <algorithm>
 
 #include "lvui/cell_font.h"
+#include "src/core/lv_obj_class_private.h"
 #include "lvui/styles.h"
 #include "ui/widgets/scroll_bar.h"
 #include "util/utf8.h"
@@ -38,6 +39,30 @@ void tapCb(lv_event_t* e) {
     default:
       break;
   }
+}
+
+// A label that asks for no extra draw area. lv_label adds font_h / 4 for
+// italic overhang, which allocates spec_attr on every label; a CLIP label
+// draws inside its content area anyway, so the pixels are the same.
+void lineLabelEvent(const lv_obj_class_t* cls, lv_event_t* e);
+
+const lv_obj_class_t kLineLabelClass = [] {
+  lv_obj_class_t c{};
+  c.base_class = &lv_label_class;
+  c.event_cb = lineLabelEvent;
+  c.width_def = LV_SIZE_CONTENT;
+  c.height_def = LV_SIZE_CONTENT;
+  c.name = "line_label";
+  return c;
+}();
+
+void lineLabelEvent(const lv_obj_class_t*, lv_event_t* e) {
+  // Skip lv_label's handler for this one event; lv_obj's still adds outlines.
+  if (lv_event_get_code(e) == LV_EVENT_REFR_EXT_DRAW_SIZE) {
+    lv_obj_event_base(&lv_label_class, e);
+    return;
+  }
+  lv_obj_event_base(&kLineLabelClass, e);
 }
 
 }  // namespace
@@ -85,7 +110,8 @@ lv_obj_t* plainBox(lv_obj_t* parent) {
 }
 
 lv_obj_t* lineLabel(lv_obj_t* parent) {
-  lv_obj_t* l = lv_label_create(parent);
+  lv_obj_t* l = lv_obj_class_create_obj(&kLineLabelClass, parent);
+  lv_obj_class_init_obj(l);
   lv_obj_remove_style_all(l);
   lv_label_set_long_mode(l, LV_LABEL_LONG_MODE_CLIP);
   lv_label_set_text_static(l, "");
@@ -105,6 +131,7 @@ void setText(lv_obj_t* label, const std::string& s) {
 void setText(lv_obj_t* label, std::u32string_view s) { setText(label, rc::u32ToUtf8(s)); }
 
 void setHidden(lv_obj_t* obj, bool hidden) {
+  if (!obj) return;
   if (lv_obj_has_flag(obj, LV_OBJ_FLAG_HIDDEN) != hidden) lv_obj_set_flag(obj, LV_OBJ_FLAG_HIDDEN, hidden);
 }
 

@@ -10,36 +10,38 @@
 namespace lvui {
 
 void MenuOverlay::create(lv_obj_t* layer) {
-  backdrop_ = plainBox(layer);
-  lv_obj_set_size(backdrop_, lv_pct(100), lv_pct(100));
-  addTap(backdrop_, this);
-  box_ = title_ = panel_ = buttonTitle_ = nullptr;
-  setHidden(backdrop_, true);
+  layer_ = layer;
+  backdrop_ = box_ = title_ = panel_ = buttonTitle_ = nullptr;
+  body_.reset();
   placed_ = false;
 }
 
-// What the backdrop holds, made the first time the menu opens: most trees'
-// menus never do, and the objects would sit in memory for nothing.
+// The backdrop and what it holds, made the first time the menu opens: most
+// trees' menus never do, and the objects would sit in memory for nothing.
 void MenuOverlay::makeBody() {
+  backdrop_ = plainBox(layer_);
+  lv_obj_set_size(backdrop_, lv_pct(100), lv_pct(100));
+  addTap(backdrop_, this);
+  body_ = std::make_unique<Body>();
   box_ = plainBox(backdrop_);
   addStyle(box_, Role::Screen);
   lv_obj_set_flex_flow(box_, LV_FLEX_FLOW_COLUMN);
   title_ = lineLabel(box_);
   lv_obj_set_width(title_, lv_pct(100));
-  list_.create(box_);
-  list_.setListId(rc::ListId::Menu);
-  list_.setMissBack(true);
-  lv_obj_set_width(list_.obj(), lv_pct(100));
-  lv_obj_set_flex_grow(list_.obj(), 1);
+  body_->list.create(box_);
+  body_->list.setListId(rc::ListId::Menu);
+  body_->list.setMissBack(true);
+  lv_obj_set_width(body_->list.obj(), lv_pct(100));
+  lv_obj_set_flex_grow(body_->list.obj(), 1);
   panel_ = plainBox(backdrop_);
   buttonTitle_ = lv_label_create(backdrop_);
   lv_obj_remove_style_all(buttonTitle_);
   lv_label_set_long_mode(buttonTitle_, LV_LABEL_LONG_CLIP);
-  grid_.create(backdrop_, rc::ListId::Menu);
-  grid_.setMissBack(true);
+  body_->grid.create(backdrop_, rc::ListId::Menu);
+  body_->grid.setMissBack(true);
   setHidden(panel_, true);
   setHidden(buttonTitle_, true);
-  setHidden(grid_.obj(), true);
+  setHidden(body_->grid.obj(), true);
   placed_ = false;
 }
 
@@ -54,21 +56,24 @@ void MenuOverlay::setPlace(rc::OverlayPlace p, int bottomPx, int rightReservePx,
 }
 
 void MenuOverlay::sync(const rc::Overlay& m) {
-  setHidden(backdrop_, !m.isOpen());
-  if (!m.isOpen()) return;
-  if (!box_) makeBody();
+  if (!m.isOpen()) {
+    if (backdrop_) setHidden(backdrop_, true);
+    return;
+  }
+  if (!backdrop_) makeBody();
+  setHidden(backdrop_, false);
   lv_obj_move_foreground(backdrop_);
   coverStrip();
   const bool buttons = syncButtons(m);
   setHidden(box_, buttons);
-  setHidden(grid_.obj(), !buttons);
+  setHidden(body_->grid.obj(), !buttons);
   if (!buttons) {
     // List mode hides what layoutButtons shows, so the next buttons lay out again.
     btnLaid_ = false;
     setHidden(panel_, true);
     setHidden(buttonTitle_, true);
     place(m);
-    list_.sync(m.list());
+    body_->list.sync(m.list());
   }
 }
 
@@ -105,7 +110,7 @@ bool MenuOverlay::syncButtons(const rc::Overlay& m) {
     btnItems_.clear();
     for (const auto& it : items) btnItems_.emplace_back(it.label, it.tone);
     btnOk_ = layoutButtons(m);
-    if (btnOk_) grid_.syncTiles(btnTiles_, nullptr, static_cast<int>(items.size()));
+    if (btnOk_) body_->grid.syncTiles(btnTiles_, nullptr, static_cast<int>(items.size()));
   }
   return btnOk_;
 }

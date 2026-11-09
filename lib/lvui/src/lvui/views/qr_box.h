@@ -13,7 +13,8 @@ namespace lvui {
 // A QR code as LinkView draws it from rc::qrToCells: the half-block rows in
 // black on white, two cells of margin either side and a row above and below,
 // in fixed colours (not the theme's) so phones can scan it. The caller
-// places obj(); it is (cols() x rows()) cells of the parent's font.
+// places obj(); it is (cols() x rows()) cells of the parent's font. The box
+// is made with the first sync (obj() is null before).
 class QrBox {
  public:
   QrBox() = default;
@@ -31,6 +32,10 @@ class QrBox {
   lv_obj_t* row(int i) const { return lines_[i]; }
 
  private:
+  void make();
+
+  lv_obj_t* parent_ = nullptr;
+  int32_t index_ = 0;  // the box's place among parent_'s children
   lv_obj_t* box_ = nullptr;
   std::vector<lv_obj_t*> lines_;
   std::string text_;

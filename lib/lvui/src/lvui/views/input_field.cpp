@@ -15,13 +15,12 @@ void InputField::create(lv_obj_t* parent) {
   addStyle(row_, Role::Input);
   lv_obj_set_width(row_, lv_pct(100));
   lv_obj_set_height(row_, cellOf(row_).h);
-  emoji_ = lineLabel(row_);
+  emoji_ = nullptr;  // made with the first sync that shows the emoji button
   prompt_ = lineLabel(row_);
   before_ = lineLabel(row_);
   cursor_ = lineLabel(row_);
   addStyle(cursor_, Role::Cursor);
   after_ = lineLabel(row_);
-  lv_obj_add_flag(emoji_, LV_OBJ_FLAG_HIDDEN);
   addTap(row_, this);
   laidOut_ = false;
 }
@@ -55,7 +54,11 @@ void InputField::sync(const rc::InputLine& m, std::u32string_view prompt) {
 void InputField::layout(const rc::InputLine& m, std::u32string_view prompt, int cols, Cell cell) {
   const rc::Theme& t = currentTheme();
   int col = 0;
-  setHidden(emoji_, !emojiOn_);
+  if (emojiOn_ && !emoji_) {
+    emoji_ = lineLabel(row_);
+    lv_obj_move_to_index(emoji_, 0);
+  }
+  if (emoji_) setHidden(emoji_, !emojiOn_);
   if (emojiOn_) {
     const std::u32string_view e(&rc::kTrayEmoji[0], 1);
     setText(emoji_, e);

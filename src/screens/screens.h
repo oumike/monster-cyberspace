@@ -49,9 +49,9 @@ class SplashScreen : public Screen {
   void sync(int64_t nowMs);
   int64_t since_ = -1;
   std::string say_;
-  SyncGate<1> gate_;
   // The views, on the heap only while their tree is up (lvui/tree_views.h).
   struct Views {
+    SyncGate<1> gate_;  // the update check, fresh with each tree
     lvui::CellText text_;
   };
   lvui::TreeViews<Views> v_;
@@ -74,9 +74,9 @@ class SetupScreen : public Screen {
   bool hasRestore_ = false;  // the SD list held backups on enter
   bool buttons_ = false;     // touch-only boards: the options as buttons
   ButtonPad pad_;
-  SyncGate<4> gate_;
   // The views, on the heap only while their tree is up (lvui/tree_views.h).
   struct Views {
+    SyncGate<4> gate_;  // the update check, fresh with each tree
     lvui::TopBar status_;
     lvui::CellText text_;
     lvui::ListBox menuView_;
@@ -106,9 +106,9 @@ class LoginFormScreen : public Screen {
   int focus_ = 0;  // 0 email, 1 password
   bool busy_ = false;
   std::string note_;
-  SyncGate<> gate_;
   // The views, on the heap only while their tree is up (lvui/tree_views.h).
   struct Views {
+    SyncGate<> gate_;  // the update check, fresh with each tree
     lvui::TopBar status_;
     lvui::CellText text_;
     lvui::InputField emailView_, passwordView_;
@@ -137,9 +137,9 @@ class HomeScreen : public Screen {
   bool column_ = false;
   int colTop_ = 0, colVisible_ = 1, colStride_ = 3, colCarry_ = 0;
   lv_obj_t* root_ = nullptr;
-  SyncGate<8> gate_;
   // The views, on the heap only while their tree is up (lvui/tree_views.h).
   struct Views {
+    SyncGate<8> gate_;  // the update check, fresh with each tree
     lvui::TopBar status_;
     lvui::CellText text_;
     lvui::ListBox menuView_;
@@ -227,9 +227,9 @@ class SettingsScreen : public Screen {
   lv_obj_t *choiceRow_ = nullptr, *choiceLabel_ = nullptr;
   // The open slider over rows [1, bottom), its backdrop over the whole screen.
   lv_obj_t* sliderHost_ = nullptr;
-  SyncGate<5> gate_;
   // The views, on the heap only while their tree is up (lvui/tree_views.h).
   struct Views {
+    SyncGate<5> gate_;  // the update check, fresh with each tree
     lvui::TopBar status_;
     lvui::CellText text_;
     lvui::ListBox listView_;  // menu_
@@ -288,9 +288,9 @@ class WifiScreen : public Screen {
   bool added_ = false;  // the join saved a network that wasn't saved before
   std::string note_;
   bool noteError_ = false;
-  SyncGate<2> gate_;
   // The views, on the heap only while their tree is up (lvui/tree_views.h).
   struct Views {
+    SyncGate<2> gate_;  // the update check, fresh with each tree
     lvui::TopBar status_;
     lvui::CellText text_;
     lvui::ListBox listView_;
@@ -335,9 +335,9 @@ class RoomListScreen : public Screen {
   TypeFilter filter_;  // keyboards: typing narrows the rooms
   ButtonPad pad_;  // touch boards: rooms as buttons (a cursor with keys)
   bool buttons_ = false;
-  SyncGate<> gate_;
   // The views, on the heap only while their tree is up (lvui/tree_views.h).
   struct Views {
+    SyncGate<> gate_;  // the update check, fresh with each tree
     lvui::TopBar status_;
     lvui::CellText text_;
     lvui::ListBox listView_;
@@ -377,9 +377,9 @@ class CmailListScreen : public Screen {
   std::vector<std::string> ids_;
   InputLine input_;  // the username for a new conversation
   bool editing_ = false, busy_ = false;
-  SyncGate<1> gate_;
   // The views, on the heap only while their tree is up (lvui/tree_views.h).
   struct Views {
+    SyncGate<1> gate_;  // the update check, fresh with each tree
     lvui::TopBar status_;
     lvui::CellText text_;
     lvui::ListBox listView_;
@@ -455,9 +455,9 @@ class FeedListScreen : public Screen {
   const Theme* theme_ = nullptr;  // the rows bake its colours
   unsigned themeSerial_ = ~0u;    // lvui::themeSerial() the rows bake
   int64_t nowMs_ = 0;             // the last update's, for build
-  SyncGate<1> gate_;
   // The views, on the heap only while their tree is up (lvui/tree_views.h).
   struct Views {
+    SyncGate<1> gate_;  // the update check, fresh with each tree
     lvui::TopBar status_;
     lvui::EntryListBox listView_;
     SideNavHost navView_;
@@ -504,9 +504,9 @@ class TopicsScreen : public Screen {
   int cols_ = 0;
   const Theme* theme_ = nullptr;
   unsigned themeSerial_ = ~0u;  // lvui::themeSerial() the rows bake
-  SyncGate<1> gate_;
   // The views, on the heap only while their tree is up (lvui/tree_views.h).
   struct Views {
+    SyncGate<1> gate_;  // the update check, fresh with each tree
     lvui::TopBar status_;
     lvui::EntryListBox listView_;
     SideNavHost navView_;
@@ -542,9 +542,9 @@ class MembersScreen : public Screen {
   std::vector<std::string> names_;  // usernames by row, for Select
   bool more_ = false, asked_ = false, failed_ = false;
   int64_t nowMs_ = 0;  // the last update's, for build
-  SyncGate<1> gate_;
   // The views, on the heap only while their tree is up (lvui/tree_views.h).
   struct Views {
+    SyncGate<1> gate_;  // the update check, fresh with each tree
     lvui::TopBar status_;
     lvui::ListBox listView_;
     SideNavHost navView_;
@@ -614,9 +614,9 @@ class ProfileScreen : public Screen {
   unsigned themeSerial_ = ~0u;  // lvui::themeSerial() text_'s colours came from
   int64_t nowMs_ = 0;           // the last update's, for build
   lv_obj_t* linkFocus_ = nullptr;  // the focused link's outline (keys)
-  SyncGate<1> gate_;
   // The views, on the heap only while their tree is up (lvui/tree_views.h).
   struct Views {
+    SyncGate<1> gate_;  // the update check, fresh with each tree
     lvui::TopBar status_;
     lvui::TextBox textView_;
     lvui::TileGrid padView_;
@@ -666,9 +666,9 @@ class GuildListScreen : public Screen {
   int cols_ = 0;
   const Theme* theme_ = nullptr;
   unsigned themeSerial_ = ~0u;  // lvui::themeSerial() the rows bake
-  SyncGate<1> gate_;
   // The views, on the heap only while their tree is up (lvui/tree_views.h).
   struct Views {
+    SyncGate<1> gate_;  // the update check, fresh with each tree
     lvui::TopBar status_;
     lvui::EntryListBox listView_;
     SideNavHost navView_;
@@ -731,9 +731,9 @@ class NotificationsScreen : public Screen {
   int64_t builtAt_ = 0;
   bool confirm_ = false;  // box_ asks to mark all read
   bool marking_ = false;  // a MarkAllRead is in flight
-  SyncGate<1> gate_;
   // The views, on the heap only while their tree is up (lvui/tree_views.h).
   struct Views {
+    SyncGate<1> gate_;  // the update check, fresh with each tree
     lvui::TopBar status_;
     lvui::CellText text_;
     lvui::ListBox listView_;
@@ -756,9 +756,9 @@ class ComingSoonScreen : public Screen {
  private:
   void sync();
   std::string name_;
-  SyncGate<> gate_;
   // The views, on the heap only while their tree is up (lvui/tree_views.h).
   struct Views {
+    SyncGate<> gate_;  // the update check, fresh with each tree
     lvui::TopBar status_;
     lvui::CellText text_;
     lvui::HintBar hint_;

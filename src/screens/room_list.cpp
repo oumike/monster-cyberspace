@@ -139,7 +139,7 @@ void RoomListScreen::build(lv_obj_t* root) {
 void RoomListScreen::update(int64_t nowMs) {
   // The rooms and their read marks change with an event (RoomsUpdated,
   // RoomsRead), which ui::inputSeq() counts.
-  if (gate_.due(v_->text_.obj(), nowMs)) sync();
+  if (v_->gate_.due(v_->text_.obj(), nowMs)) sync();
 }
 
 void RoomListScreen::sync() {

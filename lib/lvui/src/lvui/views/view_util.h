@@ -41,6 +41,7 @@ Cell cellOf(lv_obj_t* obj);
 // Sets the text only when it differs, so an unchanged sync redraws nothing.
 void setText(lv_obj_t* label, const std::string& s);
 void setText(lv_obj_t* label, std::u32string_view s);
+// Null is fine: a part not made yet (made with its first show) is hidden.
 void setHidden(lv_obj_t* obj, bool hidden);
 void setChecked(lv_obj_t* obj, bool on);
 // A local text colour from a theme RGB565 value, set only when it differs.

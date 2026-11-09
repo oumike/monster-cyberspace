@@ -409,7 +409,7 @@ void ComposerScreen::build(lv_obj_t* root) {
 void ComposerScreen::update(int64_t nowMs) {
   // The draft changes only with keys, and the post's result with EntryPosted,
   // both counted by ui::inputSeq().
-  if (gate_.due(root_, nowMs, {int64_t(focus_), int64_t(menu_), int64_t(gPosting)})) sync();
+  if (v_->gate_.due(root_, nowMs, {int64_t(focus_), int64_t(menu_), int64_t(gPosting)})) sync();
 }
 
 void ComposerScreen::sync() {

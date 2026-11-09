@@ -435,8 +435,9 @@ void test_top_bar_texts() {
   bar.sync(d);
   TEST_ASSERT_EQUAL_STRING(" Rooms 3", text(bar.title()));
   TEST_ASSERT_EQUAL_STRING("\u25CF \u2582\u2584\u00B7\u00B7 80% 12:34 ", text(bar.right()));
-  TEST_ASSERT_TRUE(lv_obj_has_flag(bar.back(), LV_OBJ_FLAG_HIDDEN));
-  TEST_ASSERT_TRUE(lv_obj_has_flag(bar.menu(), LV_OBJ_FLAG_HIDDEN));
+  // Without touch the ‹ glyph and the hit boxes are never made.
+  TEST_ASSERT_NULL(bar.back());
+  TEST_ASSERT_NULL(bar.menu());
 
   // Touch: ‹ at the left (Back, held Home) and ⋯ after the clock (Palette).
   d.count = -1;
@@ -447,6 +448,8 @@ void test_top_bar_texts() {
   TEST_ASSERT_EQUAL_STRING("Rooms", text(bar.title()));
   TEST_ASSERT_EQUAL_STRING("\u25CF \u2582\u2584\u00B7\u00B7 12:34 \u22EF ", text(bar.right()));
   TEST_ASSERT_FALSE(lv_obj_has_flag(bar.back(), LV_OBJ_FLAG_HIDDEN));
+  lv_obj_update_layout(bar.obj());
+  TEST_ASSERT_EQUAL_PTR(bar.title(), lv_obj_get_child(bar.obj(), 1));  // ‹ first
   tap(centre(bar.back()));
   press(centre(bar.back()), 600);
   tap(centre(bar.menu()));
@@ -462,6 +465,8 @@ void test_top_bar_texts() {
   bar.sync(d);
   const std::u32string cut = rc::utf8ToU32(text(bar.title()));
   TEST_ASSERT_TRUE(cut.back() == U'\u2026');
+  TEST_ASSERT_TRUE(lv_obj_has_flag(bar.back(), LV_OBJ_FLAG_HIDDEN));
+  TEST_ASSERT_TRUE(lv_obj_has_flag(bar.menu(), LV_OBJ_FLAG_HIDDEN));
   const int rightCells = 17;  // "● ▂▄·· 80% 12:34 "
   TEST_ASSERT_EQUAL(40 - rightCells - 1, static_cast<int>(cut.size()));
 }

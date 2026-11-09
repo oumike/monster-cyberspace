@@ -86,7 +86,7 @@ void LoginFormScreen::build(lv_obj_t* root) {
 }
 
 void LoginFormScreen::update(int64_t nowMs) {
-  if (gate_.due(v_->text_.obj(), nowMs)) sync();
+  if (v_->gate_.due(v_->text_.obj(), nowMs)) sync();
 }
 
 void LoginFormScreen::sync() {

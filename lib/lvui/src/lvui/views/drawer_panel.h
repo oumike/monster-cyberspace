@@ -37,6 +37,7 @@ class DrawerPanel : public Tappable {
   struct Row {
     lv_obj_t *row, *name, *idle;
   };
+  void makeBody();
   void layout();
 
   lv_obj_t *panel_ = nullptr, *head_ = nullptr, *header_ = nullptr, *close_ = nullptr;

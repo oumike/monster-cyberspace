@@ -800,8 +800,8 @@ void RoomScreen::build(lv_obj_t* root) {
   v_->logView_.create(body_);
   v_->drawerView_.create(body_);
   v_->navView_.create(body_);
-  readerBox_ = lvui::plainBox(root);
-  v_->readerBar_.create(readerBox_);
+  readerBox_ = nullptr;  // made when the reader first opens, at this place
+  readerIndex_ = static_cast<int32_t>(lv_obj_get_child_count(root));
   v_->qrView_.create(root);
   v_->spellView_.create(root);
   v_->inputView_.create(root);
@@ -817,7 +817,7 @@ void RoomScreen::update(int64_t nowMs) {
   // the gate through ui::inputSeq(); what ages (typing and presence going
   // stale, the mark read) is caught by its once-a-second refresh.
   const auto& c = app().cfg;
-  if (gate_.due(root_, nowMs,
+  if (v_->gate_.due(root_, nowMs,
                 {int64_t(app().conn), int64_t(view_), int64_t(reasonMode_), int64_t(c.drawerOpen),
                  int64_t(c.usersHidden), int64_t(log_.following())}))
     sync();
@@ -837,6 +837,11 @@ void RoomScreen::syncReader(const Theme& t) {
     const auto& line = rows[viewTop_ + i];
     if (int(line.size()) > viewLeft_)
       v_->text_.line(0, 1 + i, std::u32string_view(line).substr(viewLeft_), t.fg, textCols);
+  }
+  if (!readerBox_) {
+    readerBox_ = lvui::plainBox(root_);
+    lv_obj_move_to_index(readerBox_, readerIndex_);
+    v_->readerBar_.create(readerBox_);
   }
   placeCells(readerBox_, 0, 1, cols, bottom);
   v_->readerBar_.sync(cols * v_->text_.cell().w, v_->text_.cell(), avail, int(rows.size()), avail, viewTop_);

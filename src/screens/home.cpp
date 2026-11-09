@@ -377,7 +377,7 @@ void HomeScreen::update(int64_t nowMs) {
   const std::hash<std::string> hash;
   const int64_t cursor = (int64_t(tileSel_) << 40) ^ (int64_t(colTop_) << 20) ^ (int64_t(menu_.selected()) << 1) ^
                          int64_t(tileHidden_);
-  if (gate_.due(root_, nowMs,
+  if (v_->gate_.due(root_, nowMs,
                 {int64_t(a.mentions.size()), chat.unread, chat.conversations, chat.active, feedUnread(),
                  int64_t(hash(a.user)), int64_t(hash(a.cfg.lastRoom)), cursor}))
     sync();

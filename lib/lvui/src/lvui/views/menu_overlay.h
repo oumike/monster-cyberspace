@@ -2,6 +2,7 @@
 
 #include <lvgl.h>
 
+#include <memory>
 #include <string>
 
 #include "lvui/views/list_box.h"
@@ -32,12 +33,13 @@ class MenuOverlay : public Tappable {
   void setPlace(rc::OverlayPlace p, int bottomPx = -1, int rightReservePx = 0, int topPx = 0);
   void sync(const rc::Overlay& m);
 
+  // The backdrop and the rest are made when the menu first opens (null
+  // before).
   lv_obj_t* backdrop() const { return backdrop_; }
-  // The rest is made when the menu first opens (null before).
   lv_obj_t* box() const { return box_; }
   lv_obj_t* title() const { return title_; }
-  ListBox& list() { return list_; }
-  TileGrid& buttons() { return grid_; }
+  ListBox& list() { return body_->list; }
+  TileGrid& buttons() { return body_->grid; }
   lv_obj_t* buttonTitle() const { return buttonTitle_; }
 
   void tapped(lv_obj_t* obj, bool hold) override;
@@ -49,8 +51,14 @@ class MenuOverlay : public Tappable {
   bool syncButtons(const rc::Overlay& m);
   bool layoutButtons(const rc::Overlay& m);
 
+  lv_obj_t* layer_ = nullptr;
   lv_obj_t *backdrop_ = nullptr, *box_ = nullptr, *title_ = nullptr;
-  ListBox list_;
+  // The list and the touch-only buttons, on the heap from the first open.
+  struct Body {
+    ListBox list;
+    TileGrid grid;
+  };
+  std::unique_ptr<Body> body_;
   rc::OverlayPlace place_ = rc::OverlayPlace::BottomRight;
   int bottomPx_ = -1, rightPx_ = 0, topPx_ = 0;
   // What the box was last placed from.
@@ -60,7 +68,6 @@ class MenuOverlay : public Tappable {
 
   // The touch-only buttons, and what they were last laid out from.
   lv_obj_t *panel_ = nullptr, *buttonTitle_ = nullptr;
-  TileGrid grid_;
   bool btnLaid_ = false, btnOk_ = false, btnConfirm_ = false;
   int btnW_ = -1, btnH_ = -1;
   Cell btnCell_{};

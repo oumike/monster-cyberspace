@@ -29,15 +29,13 @@ void TopBar::create(lv_obj_t* parent) {
   lv_obj_set_height(bar_, hd.px > 0 ? hd.px : cellOf(bar_).h);
   lv_obj_set_flex_flow(bar_, LV_FLEX_FLOW_ROW);
   lv_obj_set_flex_align(bar_, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-  glyph_ = lineLabel(bar_);
-  lv_obj_set_width(glyph_, 2 * cellOf(glyph_).w);
-  lv_label_set_text_static(glyph_, "\u2039");
+  // The touch parts (the ‹ glyph and both hit boxes) come with the first
+  // sync that shows them: keyboard boards never make them.
+  glyph_ = backHit_ = menuHit_ = nullptr;
   title_ = lineLabel(bar_);
   lv_obj_set_flex_grow(title_, 1);
   right_ = lineLabel(bar_);
   lv_obj_set_width(right_, LV_SIZE_CONTENT);
-  backHit_ = hitBox(bar_, this);
-  menuHit_ = hitBox(bar_, this);
   last_ = TopBarData{};
   last_.title = U"\uFFFF";  // differs from any real title: the first sync draws
   lastW_ = -1;
@@ -74,14 +72,26 @@ void TopBar::sync(const TopBarData& d) {
   std::u32string left = back ? d.title : U" " + d.title;
   if (d.count >= 0) left += U" " + rc::utf8ToU32(std::to_string(d.count));
   setText(title_, fitCells(left, std::max(0, rightStart - 1 - titleCol)));
-  setHidden(glyph_, !back);
+  if (back && !glyph_) {
+    glyph_ = lineLabel(bar_);
+    lv_obj_move_to_index(glyph_, 0);  // first in the row, left of the title
+    lv_obj_set_width(glyph_, 2 * cellOf(glyph_).w);
+    lv_label_set_text_static(glyph_, "\u2039");
+  }
+  if (glyph_) setHidden(glyph_, !back);
 
-  setHidden(backHit_, !back);
-  lv_obj_set_size(backHit_, 4 * c.w, h);
-  lv_obj_align(backHit_, LV_ALIGN_LEFT_MID, 0, 0);
-  setHidden(menuHit_, !menu);
-  lv_obj_set_size(menuHit_, 4 * c.w, h);
-  lv_obj_align(menuHit_, LV_ALIGN_LEFT_MID, (cols - 4) * c.w, 0);
+  if (back && !backHit_) backHit_ = hitBox(bar_, this);
+  if (backHit_) {
+    setHidden(backHit_, !back);
+    lv_obj_set_size(backHit_, 4 * c.w, h);
+    lv_obj_align(backHit_, LV_ALIGN_LEFT_MID, 0, 0);
+  }
+  if (menu && !menuHit_) menuHit_ = hitBox(bar_, this);
+  if (menuHit_) {
+    setHidden(menuHit_, !menu);
+    lv_obj_set_size(menuHit_, 4 * c.w, h);
+    lv_obj_align(menuHit_, LV_ALIGN_LEFT_MID, (cols - 4) * c.w, 0);
+  }
 }
 
 void TopBar::tapped(lv_obj_t* obj, bool hold) {

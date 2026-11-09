@@ -141,7 +141,7 @@ void CmailListScreen::build(lv_obj_t* root) {
 void CmailListScreen::update(int64_t nowMs) {
   // The conversations change with ConversationsUpdated, which
   // ui::inputSeq() counts.
-  if (gate_.due(v_->text_.obj(), nowMs, {ButtonPad::active()})) sync();
+  if (v_->gate_.due(v_->text_.obj(), nowMs, {ButtonPad::active()})) sync();
 }
 
 void CmailListScreen::sync() {

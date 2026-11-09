@@ -196,13 +196,14 @@
 **Files:** `platformio.ini`, per-board flags only where needed (`RC_LV_HEAP` on `cardputer_adv`), `src/ui/lv/board_glue.cpp` (e-paper: `board::eink()` → `mono`, invalidation feeds `ui/eink` as today's dirty rows did)
 - [x] **Step 1:** `scripts/build-upload-monitor.sh -B` → all thirteen envs SUCCESS (X4 on `src/grid_ui`).
 - [x] **Step 2:** Cardputer: if RAM leaves less than today's TLS headroom (61,368 B static today), lower `RC_LV_HEAP`/draw strip until it does; record the numbers. Static plus UI heap (device model with heap poisoning's 12 B per block, task-15 report "Fix round 3"): main 85,188 B (21 blocks); branch Home 79,884 B (184 blocks, −5,304), Room with 8 log rows 81,920 B (208 blocks, −3,268).
-  *(Open: strip mode, one tree at a time and heap-allocated views took static
-  RAM to 71,096 B and the frame to a 4,800 B strip, but the LVGL tree is
-  estimated to leave ~20–30 KB less internal heap than main; the `[mem]`
-  console line settles it on hardware. See task-15-report.md.)*
+  *(Open: only the hardware confirmation. Strip mode (4 rows, 1,920 B), one
+  tree at a time, heap-allocated views, `RC_LV_LEAN` and painted lists and
+  logs leave static RAM at 68,904 B and the model above under main's; the
+  `[mem]` console line's `int` and `min` on a Cardputer must confirm it
+  (docs/TESTING.md, "LVGL UI"). See task-15-report.md.)*
 - [x] **Step 3:** Commit `LVGL: every board but the X4`.
 
 ### Task 16: Docs
 
 **Files:** `AGENTS.md` (layout: `lib/lvui`, `src/ui/lv`, `src/grid_ui`; commands: `pio test -e native_lv`), `docs/BUILD.md`, `docs/USE.md` (only if anything visible differs), `docs/TESTING.md` ("LVGL UI" open hardware check per board, M9 first: every screen reached, Back from each, each theme, text sizes, touch where present)
-- [ ] **Step 1:** Edit. **Step 2:** Commit `Docs: the LVGL UI`.
+- [x] **Step 1:** Edit. **Step 2:** Commit `Docs: the LVGL UI`.

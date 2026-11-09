@@ -44,6 +44,8 @@ boards and Cyberspace features come later.
   plan `docs/superpowers/plans/2026-11-02-cyberspace-tdisplay-p4.md`.
 - **Tanmatsu:** spec `docs/superpowers/specs/2026-11-04-cyberspace-tanmatsu-design.md`,
   plan `docs/superpowers/plans/2026-11-04-cyberspace-tanmatsu.md`.
+- **LVGL UI:** spec `docs/superpowers/specs/2026-11-08-cyberspace-lvgl-ui-design.md`,
+  plan `docs/superpowers/plans/2026-11-08-cyberspace-lvgl-ui.md`.
 - **Fluffy Generator (custom mascot):** spec
   `docs/superpowers/specs/2026-10-31-cyberspace-fluffy-generator-design.md`,
   plan `docs/superpowers/plans/2026-10-31-cyberspace-fluffy-generator.md`.
@@ -86,6 +88,7 @@ boards and Cyberspace features come later.
 ```sh
 pio test -e native          # host unit tests (lib/core)
 pio test -e native_lv       # host tests for the LVGL UI (lib/lvui, test_lv_*)
+PLATFORMIO_BUILD_FLAGS="-DRC_LV_LEAN=1 -DRC_LOW_MEM=1" pio test -e native_lv  # the same, built lean as the Cardputer ADV
 node --test site/*.test.mjs # flasher site tests (not `node --test site/`)
 pio run -e m9               # firmware
 pio run -e wio_l2           # Seeed Wio Tracker L2 firmware
@@ -110,6 +113,42 @@ scripts/release.sh --dist-only       # release images into dist/; releasing itse
 ## Layout
 
 `lib/core/` holds portable, Arduino-free logic with native tests in `test/`.
+`lib/lvui/` is the LVGL 9.5 UI every board but the X4 draws with (config
+`lib/lvui/conf/lv_conf.h`; host tests `test/test_lv_*`, env `native_lv`). It
+never includes `board.h` or Arduino. It holds the Terminus cell fonts and Noto
+Emoji halves as `lv_font_t`s (`cell_font`, bold a 1 px smear), one style per
+`Role` built from the theme (`styles`, `applyTheme`), the display (`display`: a
+whole RGB565 frame drawn in direct mode, or a strip without PSRAM, pushed
+through a `pushRows` callback; `frame()` for screenshots), the allocator
+(`lv_init`: PSRAM, or internal RAM capped at `RC_LV_HEAP`), the pointer and
+the key sink (`input`: views turn taps into the `KeyEvent`s screens' `onKey`
+already takes), `ScreenHost` (`host`: builds a screen's tree beside the old one
+and swaps only if it fit; without PSRAM the old tree goes first; out of memory
+it shows "Out of memory" and retries once a second), the views (`views/`:
+`TopBar`, `HintBar`, `CellText`, `ListBox`, `LogBox`, `EntryListBox`,
+`TextBox`, `InputField`, `MenuOverlay`, `TileGrid`, `Keyboard`, `SymbolBox`,
+`SpellBar`, `Banner`, `DrawerPanel`, `SideNavStrip`, `SliderBox`, `QrBox`;
+`RowGestures` gives lists and logs the tap map's drag and hold rules) and `TreeViews`
+(`tree_views.h`: a screen's views on the heap only while its tree is up).
+`RC_LV_LEAN` (on without PSRAM) leaves spans, label selection and the default
+theme out of LVGL, and paints `LogBox` and `ListBox`: one object draws every
+row, with the same pixels and taps. The views mirror the models in
+`lib/core`'s `ui/widgets` (list, log, overlay, drawer, OSK …); those widgets'
+own grid drawing now serves only `src/grid_ui/`.
+`src/ui/lv/` is the board glue (`board_glue`: `lvglBegin` hands lvui
+`board::panelWidth`/`panelHeight`/`pushRows` and touch, a strip of
+`RC_LV_STRIP_ROWS` rows and one tree at a time on boards without PSRAM, and an
+assert handler that logs and aborts; `lvglResize` follows a rotation).
+Screens in `src/screens/` `build` their tree, `update` it each frame and
+`sync` their views; `router` owns the `ScreenHost`. `src/app/ui_task.cpp`
+runs the frame: events, touch, keys, `update`, `lv_timer_handler`, then the
+taps the views queued, through `handleKey`. Its global layers (banner, symbol
+tray, canned picker, docked keyboard, F10 help, screensaver) sit on
+`lv_layer_top()`, most made on first use.
+`src/grid_ui/` is a frozen copy of the old grid UI (screens with `draw.h` and
+their router, `app/ui_task.cpp`, `ui/renderer`) that only the X4 builds
+(`-iquote src/grid_ui`, `RC_UI_GRID`, `lib_ignore` lvui and lvgl). Never
+modify it.
 `src/` holds networking, tasks, screens, and the web server; each board's HAL
 sits behind `src/hal/board.h` in `src/hal/<board>/` (boards return portable
 keys from `board::pollKey`). M9 hardware references live in the sibling
@@ -163,7 +202,8 @@ L1 Back, holds as the Core's), Media I/O's NS4168 amplifier on I2S
 SDMMC. No GPS, LoRa or RTC; `wakeHint()` is R2.
 `src/hal/x4/` is the Xteink X4 (from rhino-moshi's `include/boards/x4.h`,
 `panel_x4.cpp`, `buttons.cpp`, `power.cpp`): an ESP32-C3 with no PSRAM, so
-the renderer draws in strips (`ui/renderer`, `sys/mem`) and `RC_CHAT_CAP` /
+it has no LVGL: it keeps the grid UI in `src/grid_ui/`, whose renderer draws
+in strips (`ui/renderer`, `sys/mem`), and `RC_CHAT_CAP` /
 `RC_MAX_REPLIES` shrink the caches (20 messages: a TLS handshake can take
 ~55 KB). With `RC_LOW_MEM` the room log keeps no laid-out lines: it indexes
 which message each line belongs to and lays out only what is on screen,
@@ -202,7 +242,12 @@ People and Unread, and a wide emoji draws `?`. Unread's Home count is
 rows only when the count changes or once a second. `RC_MONO_CELLS` (default `RC_LOW_MEM`) is 0 so
 it keeps colour; `src/sys/string_instances.cpp` keeps Matter/BLE out of the
 link. `NO_OTA_ENVS` in `scripts/release.sh` ships it a factory image only,
-and the flasher hides Make your Fluffy and Phrases for it.
+and the flasher hides Make your Fluffy and Phrases for it. It draws LVGL
+lean (`RC_LV_LEAN`): a 4-row strip (`RC_LV_STRIP_ROWS`), one screen tree at a
+time, the room log and lists painted, LVGL capped at `RC_LV_HEAP` (48 KB) of
+internal RAM, and no screenshots (no frame). Every 30 s its console prints a
+`[mem]` line: internal free, largest block and minimum, the UI stack's
+headroom, and LVGL's use and peak against its budget.
 `src/hal/tdisplay_p4/` is the LilyGO T-Display P4 with the 4.1" AMOLED (ESP32-P4,
 `esp32p4_es`, 32 MB PSRAM; ported from `../../wadamesh` `variants/tdisplay_p4/`,
 pins as camillia-mt's `hw_tdisplay_p4.h`): an XL9535 expander at 0x20 on Wire
@@ -242,10 +287,15 @@ restarted through the coprocessor before `hostedSetPins`. ES8156 speaker
 (`audio_es8156`, own task, amplifier on only around a beep), SD_MMC 4-bit,
 no GPS. `board::functionKeys()` gives the F10 help its own table. Released
 and in the flasher since 2026-11-04.
-Touch: `lib/core` turns samples into gestures and resolves them against the
-per-frame `TapMap` widgets fill as they draw (`input/gestures`, `ui/tap_map`,
-`input/touch_resolve`, the `Osk` keyboard); `ui_task` feeds `handleKey` and
-docks the keyboard. Boards without touch register nothing.
+Touch: `ui_task` reads one sample a frame for LVGL's pointer and for
+`lib/core`'s edge swipes (`input/gestures`: Back, Options). The views hit-test
+their own rows and buttons and queue the same `KeyEvent`s the grid's tap map
+gave; `ui_task` runs them through `handleKey` after `lv_timer_handler`, and
+docks the `Keyboard` (the `Osk` layouts) below a screen that takes text, whose
+root shrinks above it. On touch boards without a keyboard or keys the status
+bar is 1.5 rows tall in the big font (`lvui::touchHeader`). `ui/tap_map` and
+`input/touch_resolve` stay in `lib/core` for `src/grid_ui/`. Boards without
+touch make no pointer.
 
 ## Progress (hand-off from Claude Code, 2026-10-25)
 
@@ -289,7 +339,7 @@ The Attaky Mesh Deck HAL (env `mesh_deck`) and the notification light were
 added on 2026-10-29 (flashed: it boots and finds touch, gauge and keyboard;
 the panel, touch mapping, keys and LEDs await the hardware check).
 **Still open:** the unticked items under "Open hardware checks" in
-`docs/TESTING.md` (themes, device Settings, touch UI, Wio L2, T-Deck Plus, CrowPanels, Pager, T-Deck Pro, Mesh Deck, Cyber Deck Plus, Cardputer ADV, T-Display P4, Tanmatsu, GPS time, API
+`docs/TESTING.md` (themes, device Settings, touch UI, LVGL UI, Wio L2, T-Deck Plus, CrowPanels, Pager, T-Deck Pro, Mesh Deck, Cyber Deck Plus, Cardputer ADV, T-Display P4, Tanmatsu, GPS time, API
 assumptions, settings backup, OTA, Fluffy Generator), then the human live checklist on the `m9` build.
 CI (`.github/workflows/build.yml`) runs on GitHub.
 OTA updates were added on 2026-10-28 (built without flashing): signed images
@@ -332,7 +382,8 @@ mascot art and phrases in a 4 KB `mascot` partition at 0xcb0000
 (`lib/core/src/mascot/`, `src/store/mascot_store.cpp`), set from the
 flasher's Make your Fluffy and Phrases modals or web config's Mascot section.
 The M5Stack Cardputer ADV (env `cardputer_adv`) was added on 2026-11-01
-(built without flashing; RAM 61,368 B, flash 1,953,452 B): compile-time
+(built without flashing; RAM 61,368 B, flash 1,953,452 B then; 68,904 B and
+2,435,424 B with the LVGL UI): compile-time
 feature flags (`lib/core/src/feature_flags.h`) cut it to cIRC rooms, with no OTA
 or mascot partition. Its panel offsets, ES8311 clock, push speed, key map and
 TLS heap headroom await the hardware check (docs/TESTING.md).
@@ -348,8 +399,19 @@ The Tanmatsu (env `tanmatsu`) was added on 2026-11-04 (built without
 flashing): landscape at 2x with its keyboard. It runs on hardware; brightness,
 LED and status-light settings followed, and it joined releases and the
 flasher the same day. The rest of its hardware check is open (docs/TESTING.md).
+The LVGL UI was done on 2026-11-08 on branch `lvgl-ui` (built without
+flashing; all 16 plan tasks): every board but the X4 draws with LVGL 9.5
+through `lib/lvui` and `src/ui/lv`, with the same screens, keys, touch, themes
+and Terminus fonts; the grid renderer, `draw.h` and every screen's `render`
+are gone, and the X4 builds the frozen copy in `src/grid_ui/`. Static RAM
+grew by about 1.4 KB on the M9 (68,916 B) and the T-Deck Plus (69,868 B); the
+Cardputer ADV is at 68,904 B (main 67,760 B), and a device model of its
+static RAM plus UI heap with Home or a room open puts it 3–5 KB under main's.
+The "LVGL UI" hardware check in docs/TESTING.md is open, the Cardputer's
+`[mem]` reading with it.
 The native suite is green: 759/759
-(`pio test -e native`), and `scripts/build-upload-monitor.sh -B` builds all
+(`pio test -e native`), and so is the LVGL one: 77/77 (`pio test -e
+native_lv`, and built lean). `scripts/build-upload-monitor.sh -B` builds all
 thirteen firmware envs (the X4 only from a path without spaces).
 
 Notes for whoever continues:
@@ -363,7 +425,8 @@ Notes for whoever continues:
 - Cell fonts: `src/ui/fonts/cell*.h` are generated by `scripts/bdf2cells.py`
   from Terminus 4.49.1, every glyph it has (download outside the repo, run
   with `python3 -I`). UI glyphs Terminus lacks are aliased in
-  `lib/core/src/ui/glyph_set.h`.
+  `lib/core/src/ui/glyph_set.h`. LVGL reads them as they are, through
+  `lvui/cell_font` (no converted LVGL fonts).
 - Emoji: every Noto Emoji code point Terminus lacks (`lib/core/src/ui/emoji_wide.h`)
   takes two cells; the right one holds a private-use tail code point
   (`ui/text_width.h`). `emoji_wide.h` and `src/ui/fonts/emoji_cells.h` are

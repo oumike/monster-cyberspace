@@ -34,6 +34,7 @@
 ```sh
 pio test -e native                    # unit tests on your computer
 pio test -e native_lv                 # LVGL UI tests on your computer
+PLATFORMIO_BUILD_FLAGS="-DRC_LV_LEAN=1 -DRC_LOW_MEM=1" pio test -e native_lv  # the same, built lean as the Cardputer ADV
 pio run -e m9                         # build
 pio run -e wio_l2                     # build for the Wio Tracker L2
 pio run -e tdeck                      # build for the T-Deck Plus
@@ -95,8 +96,52 @@ wide emoji draws `?` in its two cells), `RC_FEAT_OTA` and `RC_FEAT_MASCOT`.
 and backup restore leave out what is off. Only `cardputer_adv` turns any off
 (Guilds, Unread, spell, emoji, OTA and mascot). `RC_LOW_MEM` shrinks caches for boards without
 PSRAM (the X4, the Cardputer); `RC_MONO_CELLS` (defaults to `RC_LOW_MEM`)
-stores 1-bit cells, so the Cardputer sets it to 0 to keep colour.
+stores 1-bit cells in `lib/core`'s grid, which only the X4 draws with now; the
+Cardputer sets it to 0.
 `src/sys/string_instances.cpp` keeps Matter and BLE out of the link.
+
+### The LVGL UI
+
+Every firmware env but `x4` draws its UI with LVGL 9.5 (`lvgl/lvgl@9.5.0`).
+The `[lvgl]` section of `platformio.ini` adds LVGL and `lib/lvui` to an env's
+`lib_deps`, and `-DLV_CONF_INCLUDE_SIMPLE -Ilib/lvui/conf -Isrc/ui/fonts` to
+its flags, so LVGL finds `lib/lvui/conf/lv_conf.h` (RGB565, no OS, only the
+Terminus cell fonts) and lvui finds the cell fonts. `lib/lvui` holds the
+fonts, styles, display, input, screen host and views; `src/ui/lv/board_glue`
+connects it to `board.h`. Those envs leave out `src/grid_ui/` (`-<grid_ui/>`
+in `build_src_filter`).
+
+The `x4` env still builds the grid UI: `src/grid_ui/` is a frozen copy of the
+grid screens, `ui_task` and renderer, found first through
+`-iquote src/grid_ui`, with `-DRC_UI_GRID=1`, `lvui` and `lvgl` in
+`lib_ignore` (one per line: the hybrid compile misreads them on one line),
+and `src/screens/`, `src/app/ui_task.cpp` and `src/ui/lv/` filtered out.
+Don't modify `src/grid_ui/`; after editing a header in it, clean-build the
+`x4`.
+
+On boards with PSRAM, LVGL's heap and a whole frame live in PSRAM, LVGL draws
+dirty areas straight into the frame, and the rows they span go to
+`board::pushRows` after each refresh. On a board without PSRAM (only
+`cardputer_adv` among the LVGL envs):
+
+| Flag | Default | What it does |
+|---|---|---|
+| `RC_LV_HEAP` | 49152 | LVGL's budget of internal RAM, in bytes, counting each block's overhead (the allocator's 4 B, and 12 B more with heap poisoning on, as the Cardputer builds) |
+| `RC_LV_STRIP_ROWS` | 4 | LVGL draws into a strip this many full-width rows tall and pushes it a strip at a time; there is no whole frame |
+| `RC_LV_LEAN` | 1 without PSRAM, 0 with it and on the host | Leaves spans, label text selection, long-text hints and the default theme out of LVGL, keeps one circle-mask cache entry, and paints the room log and lists (one object draws every row, the same pixels and taps) |
+
+The screen host also builds one screen tree at a time there, deleting the
+old one first. If a screen doesn't fit, "Out of memory" shows and the build
+is tried again once a second; keys reach no screen meanwhile. The console's
+`[mem]` line, every 30 s on `RC_LOW_MEM` boards, gives internal free, largest
+block and minimum, the UI stack's headroom, and LVGL's use and peak against
+`RC_LV_HEAP`.
+
+`native_lv` builds LVGL and `lib/lvui` for the host, with a memory display
+and no SDL, and runs `test/test_lv_*`. It runs full by default; with
+`PLATFORMIO_BUILD_FLAGS="-DRC_LV_LEAN=1 -DRC_LOW_MEM=1"` it runs as the
+Cardputer builds. `native` ignores `lvui`, so the `lib/core` suite never
+builds LVGL.
 
 ## Screenshots
 
@@ -104,9 +149,10 @@ Every firmware answers `screenshot` on its serial console with the frame on
 screen. `scripts/screenshot.py PORT` saves it as a PNG in `screenshots/`;
 `--watch` saves each new screen once it settles, while you move around the
 device (Ctrl-C stops). It needs pyserial (PlatformIO's Python has it) and opens
-the port without resetting the board. Only the frame buffer is read. The
-Cardputer ADV (no PSRAM) draws in strips and keeps no frame, so it answers
-that it has none and the script exits.
+the port without resetting the board. Only the frame buffer is read: on the
+LVGL boards, LVGL's whole frame (`lvui::frame()`).
+The Cardputer ADV (no PSRAM) draws in strips and keeps no frame, so it answers
+`@@NOSHOT` and the script exits.
 
 The README's screenshots come from the demo build: `RC_FAKE_API` swaps the
 network for scripted rooms, C-Mail and Feed with made-up users, a fixed clock,

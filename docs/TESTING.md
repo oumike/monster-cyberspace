@@ -24,6 +24,85 @@ These were built without flashing and still need a run on the device. The
 scripted fake-API builds (`m9_fake`, `wio_l2_fake`, `tdeck_fake`) were removed
 on 2026-10-27; the sections marked `m9_fake` passed on it before then.
 
+**LVGL UI (branch `lvgl-ui`; every board but the X4, the M9 first):**
+
+The UI was redrawn with LVGL (built without flashing). Compare each board
+with `main` on the same board: the flow, the look and the keys should match.
+"Every screen" means Splash, Setup, Login, Wi-Fi, Home, the room list, a room,
+the C-Mail list and a conversation, Unread, the Feed lists (Watched,
+Bookmarks, Following, a user's entries, Topics and a topic), an entry, the
+composer, Guilds (a guild and its members), a profile, Settings and Coming
+soon, wherever the board has them.
+
+- [ ] M9 (`m9`): every screen is reached as on `main`, and Back from each goes
+      where it did.
+- [ ] M9: each of the 19 themes in Settings recolours the screen at once,
+      open menus too; colours, selections and nick colours match `main`.
+- [ ] M9: Compact, Comfortable and Large: every screen rebuilds at the new
+      size with no cut or overlapping rows; Splash keeps its own size.
+- [ ] M9: the palette, menus and confirms, the symbol table, the emoji tray,
+      F10's help, banners and the reader open over the screen and close
+      with Back as on `main`. F10's help is a framed box that hides the rows
+      beneath it.
+- [ ] M9: screen off, the screensaver and wake as on `main`; `screenshot`
+      (`scripts/screenshot.py`) saves the screen as shown.
+- [ ] Settings parity (the M9, then each board): every Settings item,
+      picker and slider `main` has is there and acts the same; a change from
+      web config shows on the device at once.
+- [ ] First open: the room menu, the canned picker, the reader, a QR code,
+      the member drawer, the side strip, the symbol table, the emoji tray
+      and F10's help open with no visible pause the first time (they are
+      made on first open).
+- [ ] Wio Tracker L2 (`wio_l2`, touch only): every screen and Back, each
+      theme, each text size; every tap, hold and drag gives what it did on
+      `main` (lists, logs, tiles, menus, the status bar, edge swipes).
+- [ ] T-Deck Plus (`tdeck`): every screen and Back, each theme, each text
+      size; keyboard, trackball and touch as on `main`.
+- [ ] CrowPanel Advance 3.5" (`crowpanel35`) and 5.0" (`crowpanel50`): every
+      screen and Back, each theme, each text size, each orientation; touch
+      as on `main`.
+- [ ] T-LoRa Pager (`pager`, no touch): every screen and Back, each theme,
+      each text size; keyboard and wheel as on `main`.
+- [ ] T-Deck Pro (`tdeck_pro`, e-paper): every screen and Back, each text
+      size, keys and touch, the ▲ ● ▼ side strip; selections stay outlined
+      and text clears the bezel.
+- [ ] T-Deck Pro: moving a cursor, typing and a new message refresh
+      partially, full refreshes come no more often than on `main`, and the
+      screensaver is drawn once, still.
+- [ ] Mesh Deck (`mesh_deck`) and Cyber Deck Plus (`cyber_deck_plus`): every
+      screen and Back, each theme, each text size; front buttons, gamepad,
+      keyboard module and touch as on `main`.
+- [ ] Cardputer ADV (`cardputer_adv`, Compact only): every screen and Back,
+      each theme; keys as on `main`. `screenshot` answers that there is no
+      frame.
+- [ ] Cardputer ADV: compare the console's `[mem]` line with `main`'s
+      build on the same device, on Home and in a room after a minute: the
+      `int` and `min` figures are no lower than `main`'s, rooms load and
+      messages send (TLS still fits), `ui stack free` stays well above 0
+      after opening every screen, and `lvgl … max` stays under 49152.
+- [ ] Cardputer ADV: scrolling a room, typing and moving a list cursor
+      redraw as quickly as on `main` (it draws in 4-row strips), with no
+      tearing.
+- [ ] Out of memory (the Cardputer ADV, if it happens): "Out of memory"
+      shows, the screen stays or comes back within a second or two, keys do
+      nothing meanwhile, and the device doesn't restart.
+- [ ] T-Display P4 (`tdisplay_p4`): portrait, landscape and landscape with the
+      keyboard: every screen and Back, each theme, each text size; text is
+      sharp at 2x, clear of the rounded corners, and taps land where
+      pressed; turning the screen redraws everything at the new size.
+- [ ] Tanmatsu (`tanmatsu`): landscape at 2x: every screen and Back, each
+      theme, each text size; keyboard and function keys as on `main`.
+- [ ] Touch status bar (touch boards lacking a keyboard or keys, such as the
+      Wio L2 and the CrowPanels): the bar is 1.5 rows tall in the bigger font with its
+      text centred, the rows below line up, `‹` and `⋯` respond across the
+      whole bar, and with a menu open a tap on the bar closes the menu.
+      Known: with a Settings slider open, a tap on the bar reaches `‹` or
+      `⋯`.
+- [ ] On-screen keyboard (touch boards without a keyboard): a key lights as
+      the finger goes down, not on release, and stays lit while held; a tap
+      types once; a finger that slides on or off a key types nothing; it docks below a text field
+      and the screen above it shrinks, not covered.
+
 **M9 keyboard (doubled letters):**
 
 - [ ] Type a sentence slowly, holding each key a moment: no letter comes out

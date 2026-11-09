@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "chat/message.h"
+#include "input/gestures.h"
 #include "lvui/cell_font.h"
 #include "lvui/display.h"
 #include "lvui/input.h"
@@ -499,6 +500,21 @@ void test_slider_taps() {
   // A stray tap outside the box is swallowed.
   keys.clear();
   tap({2, 2});
+  TEST_ASSERT_EQUAL(0, keys.size());
+  // A drag is no tap: down on Set, across the box and up sends nothing,
+  // nor does a hold that moved off it first.
+  ptrX = static_cast<int16_t>(setBtn.x);
+  ptrY = static_cast<int16_t>(setBtn.y);
+  ptrDown = true;
+  step();
+  for (int i = 1; i <= 8; ++i) {
+    ptrX = static_cast<int16_t>(setBtn.x - 20 * kCellW * i / 8);
+    step();
+  }
+  step(rc::kLongPressMs);
+  ptrDown = false;
+  step();
+  step();
   TEST_ASSERT_EQUAL(0, keys.size());
 }
 

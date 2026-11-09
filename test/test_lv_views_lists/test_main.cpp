@@ -225,6 +225,77 @@ std::vector<rc::FeedRow> tenEntries() {
   return rows;
 }
 
+// A finger down at from, still for stillMs, moved by (dx, dy) in `moves`
+// even steps stepMs apart, still again for endMs, then up.
+std::vector<Sample> movePath(lv_point_t from, int dx, int dy, int moves, uint32_t stepMs, uint32_t stillMs = 0,
+                             uint32_t endMs = 0) {
+  std::vector<Sample> out;
+  uint32_t t = now;
+  int x = from.x, y = from.y;
+  auto at = [&](bool down, uint32_t dt) {
+    t += dt;
+    out.push_back(Sample{down, static_cast<int16_t>(x), static_cast<int16_t>(y), t});
+  };
+  at(true, 40);
+  for (uint32_t s = 40; s <= stillMs; s += 40) at(true, 40);
+  for (int i = 1; i <= moves; ++i) {
+    x = from.x + dx * i / moves;
+    y = from.y + dy * i / moves;
+    at(true, stepMs);
+  }
+  for (uint32_t s = 40; s <= endMs; s += 40) at(true, 40);
+  at(false, 40);
+  at(false, 40);
+  return out;
+}
+
+void playSamples(const std::vector<Sample>& ss) {
+  for (const Sample& s : ss) {
+    ptrX = s.x;
+    ptrY = s.y;
+    ptrDown = s.down;
+    now = s.ms;
+    lv_timer_handler();
+  }
+}
+
+// The keys today's grid makes for the same samples on a Fixed target over
+// o's area (tap, and hold for a long press; None: as the tap), through
+// rc::Gestures and rc::TouchResolver.
+std::vector<rc::KeyEvent> gridFixedKeys(lv_obj_t* o, Action tapAct, Action holdAct, const std::vector<Sample>& ss,
+                                        bool* edge = nullptr) {
+  lv_obj_update_layout(lv_screen_active());
+  lv_obj_update_layout(lv_layer_top());
+  lv_area_t a;
+  lv_obj_get_coords(o, &a);
+  rc::TapMap map;
+  map.clear();
+  map.setOrigin(rc::CellSize{1, 1}, 0);
+  rc::Target t;
+  t.kind = rc::TargetKind::Fixed;
+  t.tap.action = tapAct;
+  t.hold.action = holdAct;
+  map.addCells(a.x1, a.y1, a.x2, a.y2, t);
+  rc::Gestures gs;
+  gs.setWidth(320);
+  rc::TouchResolver tr;
+  std::vector<rc::KeyEvent> out;
+  if (edge) *edge = false;
+  for (const Sample& s : ss) {
+    rc::Gesture g;
+    if (!gs.feed(s.down, s.x, s.y, s.ms, g)) continue;
+    // Edge swipes are ui_task's, not a view's.
+    if (g.kind == rc::GestureKind::EdgeBack || g.kind == rc::GestureKind::EdgeOptions) {
+      if (edge) *edge = true;
+      continue;
+    }
+    rc::TouchOutput r;
+    tr.resolve(g, map, r);
+    out.insert(out.end(), r.keys.begin(), r.keys.end());
+  }
+  return out;
+}
+
 }  // namespace
 
 void setUp() {
@@ -989,6 +1060,92 @@ void test_overlay_painted_taps() {
   test_overlay_bar_column_is_backdrop();
 }
 
+// A tap target acts as the grid's Fixed target: a tap within the slop, a
+// long press of a still finger at rc::kLongPressMs; a drag, a moved hold or a
+// swipe acts on nothing.
+void test_tap_targets_keep_gesture_rules() {
+  lvui::TopBar bar;
+  bar.create(lv_screen_active());
+  lvui::TopBarData d;
+  d.title = U"Rooms";
+  d.touch.on = true;
+  bar.sync(d);
+  const lv_point_t back = centre(bar.back());
+  struct Case {
+    const char* name;
+    std::vector<Sample> path;
+    int want;
+  };
+  const Case cases[] = {
+      {"still tap", movePath(back, 0, 0, 0, 40), 1},
+      {"tap within the slop", movePath(back, 6, 4, 2, 40), 1},
+      {"drag past the slop", movePath(back, 0, 40, 8, 40), 0},
+      {"sideways drag", movePath(back, 30, 0, 6, 40), 0},
+      {"still hold", movePath(back, 0, 0, 0, 40, 600), 1},
+      {"hold that moved first", movePath(back, 0, 20, 2, 40, 0, 700), 0},
+      {"moved just before the long press", movePath(back, 12, 0, 1, 40, 480), 0},
+  };
+  for (const Case& c : cases) {
+    keys.clear();
+    const auto want = gridFixedKeys(bar.back(), Action::Back, Action::OpenHome, c.path);
+    TEST_ASSERT_EQUAL_MESSAGE(c.want, want.size(), c.name);
+    playSamples(c.path);
+    TEST_ASSERT_EQUAL_MESSAGE(want.size(), keys.size(), c.name);
+    for (size_t i = 0; i < want.size(); ++i) TEST_ASSERT_TRUE_MESSAGE(want[i].action == keys[i].action, c.name);
+  }
+
+  // The long press acts when the still finger reaches rc::kLongPressMs, not
+  // before (read on every call, as board_glue sets the pointer).
+  keys.clear();
+  lv_timer_t* read = lv_indev_get_read_timer(lv_indev_get_next(nullptr));
+  lv_timer_set_period(read, 1);
+  ptrX = static_cast<int16_t>(back.x);
+  ptrY = static_cast<int16_t>(back.y);
+  ptrDown = true;
+  step();
+  const uint32_t down = now;
+  while (now - down + 20 < rc::kLongPressMs) step(20);
+  TEST_ASSERT_EQUAL(0, keys.size());
+  step(20);
+  TEST_ASSERT_EQUAL(1, keys.size());
+  TEST_ASSERT_TRUE(keys[0].action == Action::OpenHome);
+  ptrDown = false;
+  step();
+  step();
+  lv_timer_set_period(read, LV_DEF_REFR_PERIOD);
+  TEST_ASSERT_EQUAL(1, keys.size());
+}
+
+// An edge swipe that starts on a target, slow enough that LVGL's long press
+// would come first, is ui_task's EdgeBack alone: the target emits nothing.
+void test_edge_swipe_from_target_emits_nothing() {
+  lvui::TopBar bar;
+  bar.create(lv_screen_active());
+  lvui::TopBarData d;
+  d.title = U"Rooms";
+  d.touch.on = true;
+  bar.sync(d);
+  const lv_point_t back = centre(bar.back());
+  TEST_ASSERT_TRUE(back.x < 40);
+  const auto path = movePath(back, 64, 0, 13, 40);
+  bool edge = false;
+  const auto want = gridFixedKeys(bar.back(), Action::Back, Action::OpenHome, path, &edge);
+  TEST_ASSERT_TRUE(edge);
+  TEST_ASSERT_EQUAL(0, want.size());
+  TEST_ASSERT_TRUE(path.back().ms - path.front().ms > rc::kLongPressMs);
+  playSamples(path);
+  TEST_ASSERT_EQUAL(0, keys.size());
+
+  // From the right edge, on the side strip's buttons: a drag down them.
+  lvui::SideNavStrip nav;
+  nav.create(lv_screen_active());
+  nav.sync();
+  const auto drag = movePath(centre(nav.button(0)), 0, 60, 12, 50);
+  TEST_ASSERT_EQUAL(0, gridFixedKeys(nav.button(0), Action::Up, Action::None, drag).size());
+  playSamples(drag);
+  TEST_ASSERT_EQUAL(0, keys.size());
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_list_box_mirrors_model);
@@ -1014,5 +1171,7 @@ int main() {
   RUN_TEST(test_list_box_painted_has_no_row_objects);
   RUN_TEST(test_list_painted_taps);
   RUN_TEST(test_overlay_painted_taps);
+  RUN_TEST(test_tap_targets_keep_gesture_rules);
+  RUN_TEST(test_edge_swipe_from_target_emits_nothing);
   return UNITY_END();
 }

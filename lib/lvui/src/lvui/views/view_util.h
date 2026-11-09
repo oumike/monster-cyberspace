@@ -12,7 +12,8 @@
 namespace lvui {
 
 // A view whose objects take taps. tapped() gets the object the tap was added
-// to; hold is a long press. A press is a tap or a long press, never both.
+// to; hold is a long press. A press is a tap or a long press, never both,
+// and neither once the finger moved past rc::kTapSlopPx (rc::Gestures' rules).
 class Tappable {
  public:
   virtual void tapped(lv_obj_t* obj, bool hold) = 0;

@@ -4,6 +4,7 @@
 
 #include <algorithm>
 
+#include "input/gestures.h"
 #include "lvui/cell_font.h"
 #include "src/core/lv_obj_class_private.h"
 #include "src/misc/lv_area_private.h"
@@ -18,24 +19,36 @@ namespace {
 
 Header shownHeader;
 
-// One pointer, so one press at a time: set when its long press acted.
+// One pointer, so one press at a time: the object it went down on, the
+// press (lvui::press().serial) and whether its long press acted.
+lv_obj_t* pressedObj = nullptr;
+uint32_t pressedSerial = 0;
 bool longSent = false;
-lv_point_t downAt{0, 0};
 
+// As rc::Gestures: a tap and a long press only from a finger that stayed
+// within rc::kTapSlopPx of where it went down (a drag or a swipe acts on no
+// such target), a tap only when lifted before rc::kLongPressMs. LVGL starts
+// a long press over when the finger slides onto another object; that one
+// was never pressed, so it acts on nothing.
 void tapCb(lv_event_t* e) {
   auto* v = static_cast<Tappable*>(lv_event_get_user_data(e));
   lv_obj_t* obj = static_cast<lv_obj_t*>(lv_event_get_current_target(e));
+  const Press& p = press();
+  const bool same = obj == pressedObj && p.serial == pressedSerial;
   switch (lv_event_get_code(e)) {
     case LV_EVENT_PRESSED:
+      pressedObj = obj;
+      pressedSerial = p.serial;
       longSent = false;
-      if (lv_indev_t* in = lv_indev_active()) lv_indev_get_point(in, &downAt);
       break;
     case LV_EVENT_LONG_PRESSED:
+      if (!same || p.moved) break;
       longSent = true;
       v->tapped(obj, true);
       break;
     case LV_EVENT_CLICKED:
-      if (!longSent) v->tapped(obj, false);
+      if (same && !longSent && !p.moved && lv_tick_elaps(p.ms) < rc::kLongPressMs) v->tapped(obj, false);
+      pressedObj = nullptr;
       longSent = false;
       break;
     default:
@@ -158,7 +171,7 @@ void addTap(lv_obj_t* obj, Tappable* v) {
   lv_obj_add_event_cb(obj, tapCb, LV_EVENT_CLICKED, v);
 }
 
-lv_point_t tapPoint() { return downAt; }
+lv_point_t tapPoint() { return {press().x, press().y}; }
 
 Header touchHeader(rc::TextSize s) {
   Header h;

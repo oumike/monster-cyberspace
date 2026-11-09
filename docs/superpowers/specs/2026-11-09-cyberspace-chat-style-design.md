@@ -96,7 +96,7 @@ Mentions keep `mentionTint` on the bubble rows. The tint fills the row behind
 the bubble, so the bubble still stands out.
 
 A reply's "↳ @parent" line becomes part of the meta line:
-`nick ↳ @parent · 3h`.
+`nick ↳ @parent HH:MM`.
 
 `layoutRoomEach` gives the same lines one at a time, so the X4-style
 low-memory path keeps working.

@@ -23,11 +23,22 @@ struct ListItem {
 };
 
 // A vertical menu that scrolls to keep the selection visible. Up and Down wrap.
+// With columns > 1 the items fill a grid across then down, each cell showing
+// its label with `right` at the cell's end; Up and Down move a row (wrapping
+// within the column), left and right a column.
 class ListView {
  public:
   void setItems(std::vector<ListItem> items);
+  void setColumns(int n) { cols_ = n < 1 ? 1 : n; }
+  int columns() const { return cols_; }
   void up();
   void down();
+  // A column over; false (and no move) at the edge or with one column.
+  bool left();
+  bool right();
+  // In the first column, or with nothing to the right.
+  bool atLeftEdge() const { return sel_ % cols_ == 0; }
+  bool atRightEdge() const;
   int selected() const { return sel_; }
   void setSelected(int i);
   // Picks item `i`; refuses (and returns false) when out of range.
@@ -42,6 +53,7 @@ class ListView {
  private:
   std::vector<ListItem> items_;
   int sel_ = 0;
+  int cols_ = 1;
   ListId listId_ = ListId::Main;
 };
 

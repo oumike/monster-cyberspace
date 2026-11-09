@@ -12,6 +12,12 @@
 
 namespace rc {
 
+namespace {
+// A room cell: "• #slug" and its online count with room to spare. Screens
+// with two of these side by side show the rooms in two columns.
+constexpr int kRoomCellCols = 24;
+}  // namespace
+
 void RoomListScreen::enter(const std::string&) {
   filter_.clear();
   pad_.reset();
@@ -76,11 +82,17 @@ void RoomListScreen::onKey(const KeyEvent& k) {
     case Action::Activate:
       if (k.target == uint8_t(ListId::Main) && list_.select(k.index)) onKey(KeyEvent{k.then});
       break;
-    case Action::Select:
     case Action::Right:
+      // Across the grid first; from its last column, into the room.
+      if (!list_.right()) open(list_.selected());
+      break;
+    case Action::Select:
       open(list_.selected());
       break;
     case Action::Left:
+      if (list_.left()) break;
+      router::go(router::Id::Home);
+      break;
     case Action::Back:
       router::go(router::Id::Home);
       break;
@@ -140,11 +152,15 @@ void RoomListScreen::render(Grid& g, const Theme& t, int64_t) {
       return drawHint(g, t, U"filter: " + filter_.text() + U"\u2581  \u232B erase  back clears");
     return drawHint(g, t, U"\u2191\u2193 pick  \u25CF open  \u2190 home", U"tap to open  drag to scroll");
   }
+  list_.setColumns(g.cols() >= 2 * kRoomCellCols ? 2 : 1);
   list_.setItems(std::move(items));
   list_.render(g, 1, g.rows() - 1, 0, g.cols(), t);
   if (confirm_) return drawConfirm(g, t);
   if (filter_.active())
     return drawHint(g, t, U"filter: " + filter_.text() + U"\u2581  \u232B erase  back clears");
+  if (list_.columns() > 1)
+    return drawHint(g, t, U"\u2190\u2191\u2193\u2192 pick  \u25CF open  back: home",
+                    U"tap to open  swipe to scroll");
   drawHint(g, t, U"\u2191\u2193 pick  \u25CF open  \u2190 home", U"tap to open  swipe to scroll");
 }
 

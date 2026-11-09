@@ -247,6 +247,77 @@ void test_list_scrolls() {
   TEST_ASSERT_EQUAL_STRING("  item4", rowText(g, 1, 0, 7).c_str());
 }
 
+void test_list_grid_moves() {
+  // Two columns, filled across then down: 0 1 / 2 3 / 4.
+  std::vector<ListItem> items;
+  for (int i = 0; i < 5; ++i) items.push_back({utf8ToU32("r" + std::to_string(i)), U""});
+  ListView lv;
+  lv.setColumns(2);
+  lv.setItems(items);
+  TEST_ASSERT_TRUE(lv.atLeftEdge());
+  TEST_ASSERT_FALSE(lv.left());
+  lv.down();
+  TEST_ASSERT_EQUAL(2, lv.selected());
+  lv.down();
+  TEST_ASSERT_EQUAL(4, lv.selected());
+  TEST_ASSERT_TRUE(lv.atRightEdge());  // nothing to its right
+  TEST_ASSERT_FALSE(lv.right());
+  lv.down();  // wraps to the top of its column
+  TEST_ASSERT_EQUAL(0, lv.selected());
+  TEST_ASSERT_TRUE(lv.right());
+  TEST_ASSERT_EQUAL(1, lv.selected());
+  TEST_ASSERT_TRUE(lv.atRightEdge());
+  lv.up();  // wraps to the last item in its column
+  TEST_ASSERT_EQUAL(3, lv.selected());
+  lv.down();  // the row below has no item here: the last one
+  TEST_ASSERT_EQUAL(4, lv.selected());
+  lv.up();
+  TEST_ASSERT_EQUAL(2, lv.selected());
+  TEST_ASSERT_TRUE(lv.right());
+  TEST_ASSERT_EQUAL(3, lv.selected());
+  TEST_ASSERT_TRUE(lv.left());
+  TEST_ASSERT_EQUAL(2, lv.selected());
+}
+
+void test_list_grid_render() {
+  std::vector<ListItem> items;
+  for (int i = 0; i < 10; ++i)
+    items.push_back({utf8ToU32("r" + std::to_string(i)), utf8ToU32(std::to_string(i + 10))});
+  items[3].marker = true;
+  ListView lv;
+  lv.setColumns(2);
+  lv.setItems(items);
+  Grid g(30, 3);
+  lv.render(g, 0, 3, 0, 30, T());  // five rows in three: the bar takes column 29
+  TEST_ASSERT_EQUAL_STRING("  r0       10   r1        11 ", rowText(g, 0, 0, 29).c_str());
+  TEST_ASSERT_EQUAL_STRING("\xe2\x80\xa2 r3", rowText(g, 1, 14, 18).c_str());
+  // The selection outlines its own cell only.
+  TEST_ASSERT_EQUAL(kEdgeTop | kEdgeBottom | kEdgeLeft, g.at(0, 0).edges);
+  TEST_ASSERT_EQUAL(kEdgeTop | kEdgeBottom | kEdgeRight, g.at(13, 0).edges);
+  TEST_ASSERT_EQUAL(0, g.at(14, 0).edges);
+  // Scrolls by rows to keep the selection shown, the bar in the last column.
+  for (int i = 0; i < 4; ++i) lv.down();
+  TEST_ASSERT_EQUAL(8, lv.selected());
+  lv.render(g, 0, 2, 0, 30, T());
+  TEST_ASSERT_EQUAL_STRING("  r6", rowText(g, 0, 0, 4).c_str());
+  TEST_ASSERT_EQUAL_STRING("  r8", rowText(g, 1, 0, 4).c_str());
+  TEST_ASSERT_EQUAL(kScrollBarCp, g.at(29, 1).cp);
+}
+
+void test_list_grid_taps() {
+  std::vector<ListItem> items = {{U"a", U""}, {U"b", U""}, {U"c", U""}};
+  ListView lv;
+  lv.setColumns(2);
+  lv.setItems(items);
+  TapMap taps;
+  taps.setOrigin(CellSize{10, 10}, 0);
+  setActiveTaps(&taps);
+  Grid g(20, 4);
+  lv.render(g, 0, 4, 0, 20, T());
+  TEST_ASSERT_EQUAL(1, taps.hit(125, 5).index);  // column 12, row 0
+  TEST_ASSERT_EQUAL(2, taps.hit(35, 15).index);  // column 3, row 1
+}
+
 void test_cursor_hidden() {
   // Boards with no keys draw no selection outline; taps pick by position.
   std::vector<ListItem> items = {{U"a", U""}, {U"b", U""}};
@@ -1978,6 +2049,9 @@ int main() {
   RUN_TEST(test_cursor_hidden);
   RUN_TEST(test_log_preserves_selection_on_setLines);
   RUN_TEST(test_list_scrolls);
+  RUN_TEST(test_list_grid_moves);
+  RUN_TEST(test_list_grid_render);
+  RUN_TEST(test_list_grid_taps);
   RUN_TEST(test_list_wraps);
   RUN_TEST(test_list_colours_follow_theme);
   RUN_TEST(test_drawer_wraps);

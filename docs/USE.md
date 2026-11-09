@@ -537,6 +537,11 @@ and it clears whenever you return to the list.
 On touch boards the rooms are buttons. With keys too (T-Deck Plus), the
 trackball or arrows move the selection through them and Centre opens one.
 
+Elsewhere, a screen wide enough (48 or more text columns, such as the
+Tanmatsu's) lists the rooms in two columns, each name with its online count
+beside it. Up and Down move a row, Left and Right a column; Left from the
+left column goes Home and Right from the right column opens the room.
+
 ## In a room
 
 The keyboard always types into the input line at the bottom.

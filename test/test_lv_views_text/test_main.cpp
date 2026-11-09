@@ -605,6 +605,119 @@ void test_cell_text_unchanged_frame_invalidates_nothing() {
   TEST_ASSERT_EQUAL(LV_OPA_TRANSP, lv_obj_get_style_bg_opa(ct.label(2), LV_PART_MAIN));
 }
 
+// A room in Bubbles: bob, then a long one of yours, then ann; `self` is "me".
+rc::LogView bubbleLog(const rc::Theme& th) {
+  std::deque<rc::CircMessage> msgs{msg("a", "bob", "hello"),
+                                   msg("b", "me", "a reply long enough to wrap onto a second row of its bubble"),
+                                   msg("c", "ann", "hi")};
+  rc::LayoutOptions o;
+  o.cols = kW / kCellW - rc::LogView::kBarCols;
+  o.selfUsername = "me";
+  o.theme = &th;
+  o.style = rc::ChatStyle::Bubbles;
+  rc::LogView m;
+  m.setLines(rc::layoutRoom(msgs, o));
+  return m;
+}
+
+void test_log_bubble_rows() {
+  for (bool painted : {false, true}) {
+    lv_obj_clean(lv_screen_active());
+    const rc::Theme& th = rc::defaultTheme();
+    lvui::applyTheme(th);
+    lvui::LogBox::setPainted(painted);
+    rc::LogView m = bubbleLog(th);
+    lvui::LogBox box;
+    box.create(lv_screen_active());
+    box.sync(m);
+    int others = 0, mine = 0, metas = 0;
+    for (int r = 0; r < box.rows(); ++r) {
+      lvui::LogBox::BubbleShown b;
+      if (!box.bubbleAt(r, b)) {
+        if (!box.rowText(r).empty() && box.rowText(r).find("\xe2\x94\x80") == std::string::npos) ++metas;
+        continue;
+      }
+      const bool self = b.col > 0;
+      (self ? mine : others) += 1;
+      TEST_ASSERT_EQUAL_HEX16(rc::bubbleFill(th, self), b.fill);
+      TEST_ASSERT_FALSE(b.outlined);
+      if (!self) TEST_ASSERT_TRUE(b.top && b.bottom);
+      TEST_ASSERT_LESS_OR_EQUAL(kW / kCellW - rc::LogView::kBarCols, b.col + b.cols);
+    }
+    TEST_ASSERT_EQUAL(2, others);
+    TEST_ASSERT_GREATER_THAN(1, mine);  // it wraps
+    TEST_ASSERT_EQUAL(3, metas);
+  }
+  lvui::LogBox::setPainted(RC_LV_LEAN);
+}
+
+void test_log_bubble_painted_matches_objects() {
+  for (const rc::Theme* th : {&rc::defaultTheme(), &rc::paperTheme()}) {
+    std::vector<uint16_t> want;
+    for (bool painted : {false, true}) {
+      lv_obj_clean(lv_screen_active());
+      lvui::applyTheme(*th);
+      lvui::LogBox::setPainted(painted);
+      rc::LogView m = bubbleLog(*th);
+      lvui::LogBox box;
+      box.create(lv_screen_active());
+      box.sync(m);
+      if (th->outlined) {
+        lvui::LogBox::BubbleShown b;
+        for (int r = 0; r < box.rows(); ++r)
+          if (box.bubbleAt(r, b)) TEST_ASSERT_TRUE(b.outlined);
+      }
+      const std::vector<uint16_t> got = shot();
+      if (!painted) {
+        want = got;
+        continue;
+      }
+      int diff = 0;
+      for (size_t i = 0; i < got.size(); ++i) diff += got[i] != want[i];
+      TEST_ASSERT_EQUAL(0, diff);
+    }
+  }
+  lvui::applyTheme(rc::defaultTheme());
+  lvui::LogBox::setPainted(RC_LV_LEAN);
+}
+
+void test_log_bubble_selection() {
+  const rc::Theme& th = rc::defaultTheme();
+  lvui::applyTheme(th);
+  rc::LogView m = bubbleLog(th);
+  m.up();  // ann
+  m.up();  // mine, wrapped
+  lvui::LogBox box;
+  box.create(lv_screen_active());
+  box.sync(m);
+  int top = -1, bottom = -1, col = 0, cols = 0;
+  for (int r = 0; r < box.rows(); ++r) {
+    lvui::LogBox::BubbleShown b;
+    if (box.bubbleAt(r, b) && b.col > 0) {
+      if (top < 0) top = r;
+      bottom = r;
+      col = b.col;
+      cols = b.cols;
+    }
+  }
+  TEST_ASSERT_GREATER_THAN(0, bottom - top);
+  const lv_area_t a = box.selectionArea();
+  TEST_ASSERT_EQUAL(col, a.x1);
+  TEST_ASSERT_EQUAL(col + cols - 1, a.x2);
+  TEST_ASSERT_EQUAL(top, a.y1);
+  TEST_ASSERT_EQUAL(bottom, a.y2);
+  // Two rows tall, so only its meta line and first bubble row show: the
+  // outline covers that bubble row alone.
+  lv_obj_set_height(box.obj(), 2 * kCellH);
+  box.sync(m);
+  const lv_area_t one = box.selectionArea();
+  lvui::LogBox::BubbleShown b;
+  TEST_ASSERT_TRUE(box.bubbleAt(one.y1, b));
+  TEST_ASSERT_TRUE(b.top);
+  TEST_ASSERT_EQUAL(one.y1, one.y2);
+  TEST_ASSERT_EQUAL(col, one.x1);
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_log_view_virtualised);
@@ -613,6 +726,9 @@ int main() {
   RUN_TEST(test_log_painted_matches_labels);
   RUN_TEST(test_log_painted_redraws_changed_rows);
   RUN_TEST(test_log_painted_taps);
+  RUN_TEST(test_log_bubble_rows);
+  RUN_TEST(test_log_bubble_painted_matches_objects);
+  RUN_TEST(test_log_bubble_selection);
   RUN_TEST(test_input_field_cursor_and_focus_tap);
   RUN_TEST(test_text_box_wraps_like_wrap);
   RUN_TEST(test_text_area_cursor_and_tap);

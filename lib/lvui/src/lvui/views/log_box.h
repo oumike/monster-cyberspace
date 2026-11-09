@@ -20,23 +20,36 @@ namespace lvui {
 // rc::cursorShown(). The last column holds the scroll bar. Keys scroll
 // through the model; touch is RowGestures on ListId::Log, items the message
 // ordinals.
-class LogBox : public RowGestures::Rows {
+//
+// Painted (the default with RC_LV_LEAN, boards without PSRAM): one object
+// draws every row's tint and spans itself, with the same pixels, so a row
+// costs no objects; row() and span() are then null.
+class LogBox : public RowGestures::Rows, Painter {
  public:
   LogBox() = default;
   LogBox(const LogBox&) = delete;
   LogBox& operator=(const LogBox&) = delete;
+
+  // Whether boxes created from now on are painted.
+  static void setPainted(bool on);
 
   // Fills the parent; resize obj() to taste.
   void create(lv_obj_t* parent);
   void sync(const rc::LogView& m);
 
   lv_obj_t* obj() const { return box_; }
+  bool painted() const { return painted_; }
   int rows() const { return static_cast<int>(rows_.size()); }
   lv_obj_t* row(int r) const { return rows_[r].obj; }
   // The text row r shows (its spans joined), for tests and screenshots.
   std::string rowText(int r) const;
-  // The label of span i of row r.
-  lv_obj_t* span(int r, int i) const { return rows_[r].spans[i].label; }
+  // The label of span i of row r (null when painted).
+  lv_obj_t* span(int r, int i) const { return painted_ ? nullptr : rows_[r].spans[i].label; }
+  // Row r's spans as shown, either way.
+  int spanCount(int r) const { return rows_[r].used; }
+  std::string spanText(int r, int i) const;
+  uint16_t spanFg(int r, int i) const;
+  bool spanBold(int r, int i) const;
   lv_obj_t* selection() const { return sel_; }
   const ScrollBarView& scrollBar() const { return bar_; }
 
@@ -56,11 +69,31 @@ class LogBox : public RowGestures::Rows {
     int used;
     bool mention;
     int msg;
+    // Painted: its spans, runs_[run, run + used), and its text,
+    // text_[text, end); `next` the same in next_ / nextText_ during a sync.
+    struct Painted {
+      uint16_t run, text, end;
+      int used;
+      bool mention;
+    } now, next;
+  };
+  // A painted span: NUL-ended text at text_[at].
+  struct Run {
+    uint16_t at, fg;
+    bool bold;
   };
   void shape(int rows, int cols, Cell cell);
   void fill(Row& row, const rc::DisplayLine* l);
+  // Painted: a row's spans into next_ / nextText_ (row.next).
+  void fillPainted(Row& row, const rc::DisplayLine* l);
+  bool samePainted(const Row& row) const;
+  void paint(lv_obj_t* box, lv_layer_t* layer) override;
 
   lv_obj_t *box_ = nullptr, *lines_ = nullptr, *sel_ = nullptr;
+  bool painted_ = false;
+  // Painted: the spans and text shown, and the next ones while a sync builds them.
+  std::vector<Run> runs_, next_;
+  std::string text_, nextText_;
   ScrollBarView bar_;
   RowGestures touch_;
   std::vector<Row> rows_;

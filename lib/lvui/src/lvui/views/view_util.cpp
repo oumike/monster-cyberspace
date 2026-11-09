@@ -6,6 +6,8 @@
 
 #include "lvui/cell_font.h"
 #include "src/core/lv_obj_class_private.h"
+#include "src/misc/lv_area_private.h"
+#include "src/misc/lv_text_private.h"
 #include "lvui/styles.h"
 #include "ui/widgets/scroll_bar.h"
 #include "util/utf8.h"
@@ -65,7 +67,89 @@ void lineLabelEvent(const lv_obj_class_t*, lv_event_t* e) {
   lv_obj_event_base(&kLineLabelClass, e);
 }
 
+void paintedEvent(const lv_obj_class_t* cls, lv_event_t* e);
+
+const lv_obj_class_t kPaintedClass = [] {
+  lv_obj_class_t c{};
+  c.base_class = &lv_obj_class;
+  c.event_cb = paintedEvent;
+  c.name = "painted_box";
+  return c;
+}();
+
+void paintedEvent(const lv_obj_class_t*, lv_event_t* e) {
+  if (lv_obj_event_base(&kPaintedClass, e) != LV_RESULT_OK) return;
+  if (lv_event_get_code(e) != LV_EVENT_DRAW_MAIN) return;
+  lv_obj_t* obj = static_cast<lv_obj_t*>(lv_event_get_current_target(e));
+  if (auto* p = static_cast<Painter*>(lv_obj_get_user_data(obj))) p->paint(obj, lv_event_get_layer(e));
+}
+
 }  // namespace
+
+lv_obj_t* paintedBox(lv_obj_t* parent, Painter* p) {
+  lv_obj_t* o = lv_obj_class_create_obj(&kPaintedClass, parent);
+  lv_obj_class_init_obj(o);
+  lv_obj_remove_style_all(o);
+  lv_obj_remove_flag(o, LV_OBJ_FLAG_SCROLLABLE);
+  lv_obj_remove_flag(o, LV_OBJ_FLAG_CLICKABLE);
+  lv_obj_set_user_data(o, p);
+  return o;
+}
+
+int32_t paintLabel(lv_layer_t* layer, lv_obj_t* box, const char* text, int32_t x, int32_t y, int32_t w,
+                   int32_t h, lv_color_t fg, const lv_font_t* font, const lv_area_t& clip) {
+  const bool content = w < 0;
+  // As lv_label: its style is the box's (a lineLabel sets none of its own but
+  // size, colour and font). LONG_MODE_CLIP expands, so a line never wraps; a
+  // label sized to its content also fits (lv_label's get_label_flags).
+  if (w < 0) w = textWidth(text, font);
+  if (w <= 0 || !text[0]) return w;
+  const lv_area_t a{x, y, x + w - 1, y + h - 1};
+  lv_area_t c;
+  if (!lv_area_intersect(&c, &a, &clip) || !lv_area_intersect(&c, &c, &layer->_clip_area)) return w;
+  lv_draw_label_dsc_t d;
+  lv_draw_label_dsc_init(&d);
+  d.base.layer = layer;
+  lv_obj_init_draw_label_dsc(box, LV_PART_MAIN, &d);
+  d.color = fg;
+  d.font = font;
+  d.text = text;
+  d.flag = static_cast<lv_text_flag_t>(LV_TEXT_FLAG_EXPAND | (content ? LV_TEXT_FLAG_FIT : 0));
+  lv_text_attributes_t at = {};
+  at.max_width = w;
+  at.text_flags = d.flag;
+  lv_text_get_size_attributes(&d.text_size, text, font, &at);
+  const lv_area_t saved = layer->_clip_area;
+  layer->_clip_area = c;
+  lv_draw_label(layer, &d, &a);
+  layer->_clip_area = saved;
+  return w;
+}
+
+int32_t textWidth(const char* text, const lv_font_t* font) {
+  // A lineLabel's letter and line space are LVGL's defaults, 0; its self
+  // size is measured expanded (lv_label's LV_EVENT_GET_SELF_SIZE).
+  lv_text_attributes_t at = {};
+  at.max_width = LV_COORD_MAX;
+  at.text_flags = LV_TEXT_FLAG_EXPAND;
+  lv_point_t size;
+  lv_text_get_size_attributes(&size, text, font, &at);
+  return size.x;
+}
+
+void paintRect(lv_layer_t* layer, const lv_area_t& a, lv_color_t bg, lv_opa_t bgOpa, lv_color_t border,
+               int32_t borderW) {
+  lv_draw_rect_dsc_t d;
+  lv_draw_rect_dsc_init(&d);
+  d.base.layer = layer;
+  d.bg_color = bg;
+  d.bg_opa = bgOpa;
+  d.border_color = border;
+  d.border_width = borderW;
+  d.border_opa = LV_OPA_COVER;
+  d.border_side = LV_BORDER_SIDE_FULL;
+  lv_draw_rect(layer, &d, &a);
+}
 
 void addTap(lv_obj_t* obj, Tappable* v) {
   lv_obj_add_flag(obj, LV_OBJ_FLAG_CLICKABLE);

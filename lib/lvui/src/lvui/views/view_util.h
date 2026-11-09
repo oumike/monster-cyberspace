@@ -32,6 +32,32 @@ lv_obj_t* plainBox(lv_obj_t* parent);
 // A one-line label, clipped (as the grid cuts text at a width), one cell high.
 lv_obj_t* lineLabel(lv_obj_t* parent);
 
+// Draws a box's contents itself (paintedBox): rows of text and fills in one
+// object rather than an object each, for boards without PSRAM.
+class Painter {
+ public:
+  // In the box's LV_EVENT_DRAW_MAIN; layer->_clip_area is the box's clip.
+  virtual void paint(lv_obj_t* box, lv_layer_t* layer) = 0;
+
+ protected:
+  ~Painter() = default;
+};
+// A plainBox that calls p->paint when it draws. It takes no event list, so
+// it costs what a plainBox does.
+lv_obj_t* paintedBox(lv_obj_t* parent, Painter* p);
+// Draws text as a lineLabel of width w at (x, y) would (one line, never
+// wrapped), one cell high, in fg and font, clipped to that box and to clip
+// (the parent's), and returns w. w < 0: the label's own width
+// (LV_SIZE_CONTENT), which it returns.
+int32_t paintLabel(lv_layer_t* layer, lv_obj_t* box, const char* text, int32_t x, int32_t y, int32_t w,
+                   int32_t h, lv_color_t fg, const lv_font_t* font, const lv_area_t& clip);
+// The width a LV_SIZE_CONTENT lineLabel of text in font takes.
+int32_t textWidth(const char* text, const lv_font_t* font);
+// Fills, or outlines, an area as an object of that size with the style
+// would: bg_opa 0 skips the fill, border 0 the outline.
+void paintRect(lv_layer_t* layer, const lv_area_t& a, lv_color_t bg, lv_opa_t bgOpa, lv_color_t border,
+               int32_t borderW);
+
 // The cell an object's font draws: every glyph is one cell wide.
 struct Cell {
   int w, h;

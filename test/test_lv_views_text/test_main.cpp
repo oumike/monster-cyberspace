@@ -136,14 +136,21 @@ rc::CircMessage msg(const char* id, const char* user, const char* content) {
   return m;
 }
 
-// The label of row r whose text starts with `prefix`, or null.
-lv_obj_t* spanStarting(const lvui::LogBox& box, int r, const char* prefix) {
-  lv_obj_t* row = box.row(r);
-  for (uint32_t i = 0; i < lv_obj_get_child_count(row); ++i) {
-    lv_obj_t* l = lv_obj_get_child(row, i);
-    if (!hidden(l) && std::string(text(l)).rfind(prefix, 0) == 0) return l;
+// The span of row r whose text starts with `prefix`, or -1.
+int spanStarting(const lvui::LogBox& box, int r, const char* prefix) {
+  for (int i = 0; i < box.spanCount(r); ++i) {
+    if (box.span(r, i)) TEST_ASSERT_EQUAL_STRING(box.spanText(r, i).c_str(), text(box.span(r, i)));
+    if (box.spanText(r, i).rfind(prefix, 0) == 0) return i;
   }
-  return nullptr;
+  return -1;
+}
+
+// The whole frame, drawn now.
+std::vector<uint16_t> shot() {
+  lv_obj_invalidate(lv_screen_active());
+  lv_refr_now(nullptr);
+  const uint16_t* f = lvui::frame();
+  return std::vector<uint16_t>(f, f + kW * kH);
 }
 
 }  // namespace
@@ -178,11 +185,13 @@ void test_log_view_virtualised() {
   TEST_ASSERT_EQUAL_STRING("m299 line 2", box.rowText(box.rows() - 1).c_str());
   TEST_ASSERT_FALSE(hidden(box.scrollBar().thumb()));
   // Every frame syncs: the same shape keeps the same objects.
-  lv_obj_t* firstRow = box.row(0);
-  lv_obj_t* firstSpan = box.span(0, 0);
-  box.sync(m);
-  TEST_ASSERT_EQUAL_PTR(firstRow, box.row(0));
-  TEST_ASSERT_EQUAL_PTR(firstSpan, box.span(0, 0));
+  if (!box.painted()) {
+    lv_obj_t* firstRow = box.row(0);
+    lv_obj_t* firstSpan = box.span(0, 0);
+    box.sync(m);
+    TEST_ASSERT_EQUAL_PTR(firstRow, box.row(0));
+    TEST_ASSERT_EQUAL_PTR(firstSpan, box.span(0, 0));
+  }
 
   while (!m.atTop()) {
     m.up();
@@ -251,16 +260,113 @@ void test_log_nick_colour() {
   lvui::LogBox box;
   box.create(lv_screen_active());
   box.sync(m);
-  lv_obj_t* alice = nullptr;
-  lv_obj_t* bob = nullptr;
+  int alice = -1, bob = -1, aliceRow = -1, bobRow = -1;
   for (int r = 0; r < box.rows(); ++r) {
-    if (!alice) alice = spanStarting(box, r, "alice");
-    if (!bob) bob = spanStarting(box, r, "bob");
+    if (alice < 0 && (alice = spanStarting(box, r, "alice")) >= 0) aliceRow = r;
+    if (bob < 0 && (bob = spanStarting(box, r, "bob")) >= 0) bobRow = r;
   }
-  TEST_ASSERT_NOT_NULL(alice);
-  TEST_ASSERT_NOT_NULL(bob);
-  TEST_ASSERT_EQUAL_HEX16(rc::nickColor(th, "alice", false), textColour(alice));
-  TEST_ASSERT_EQUAL_HEX16(rc::nickColor(th, "bob", true), textColour(bob));
+  TEST_ASSERT_GREATER_OR_EQUAL(0, alice);
+  TEST_ASSERT_GREATER_OR_EQUAL(0, bob);
+  TEST_ASSERT_EQUAL_HEX16(rc::nickColor(th, "alice", false), box.spanFg(aliceRow, alice));
+  TEST_ASSERT_EQUAL_HEX16(rc::nickColor(th, "bob", true), box.spanFg(bobRow, bob));
+  if (!box.painted()) {
+    TEST_ASSERT_EQUAL_HEX16(rc::nickColor(th, "alice", false), textColour(box.span(aliceRow, alice)));
+    TEST_ASSERT_EQUAL_HEX16(rc::nickColor(th, "bob", true), textColour(box.span(bobRow, bob)));
+  }
+}
+
+// A log of coloured, bold, wide, tinted and too-long lines, the second
+// message selected.
+rc::LogView paintLog() {
+  std::vector<rc::DisplayLine> lines;
+  auto line = [&](const char* id, std::vector<rc::Span> spans, bool mention = false) {
+    rc::DisplayLine l;
+    l.messageId = id;
+    l.spans = std::move(spans);
+    l.mentionTint = mention;
+    lines.push_back(std::move(l));
+  };
+  for (int i = 0; i < 6; ++i) line(("o" + std::to_string(i)).c_str(), {{U"older " + rc::utf8ToU32(std::to_string(i)), 0x8410}});
+  line("a", {{U"12:00 ", 0x07FF}, {U"alice", 0xF800, true}, {U": hi \U0001F600 there", 0xFFFF}});
+  line("b", {{U"12:01 ", 0x07FF}, {U"bob", 0x07E0, true}, {U": @alice look", 0xFFFF}}, true);
+  line("b", {{U"      a second line for bob", 0xFFFF}}, true);
+  line("c", {{U"12:02 ", 0x07FF},
+             {U"carol", 0xFFE0},
+             {U": a line far too long for the row, so it runs past the bar column and is cut", 0xFFFF}});
+  line("d", {});
+  line("e", {{U"\u2022 sys", 0x8410}, {U"", 0xFFFF}, {U" end", 0xF81F, true}});
+  rc::LogView m;
+  m.setLines(std::move(lines));
+  return m;
+}
+
+void test_log_painted_matches_labels() {
+  for (int pass = 0; pass < 2; ++pass) {
+    std::vector<uint16_t> want;
+    for (bool painted : {false, true}) {
+      lv_obj_clean(lv_screen_active());
+      lvui::LogBox::setPainted(painted);
+      rc::LogView m = paintLog();
+      // The second pass selects message b, so the outline shows too.
+      if (pass == 1)
+        while (!m.atTop()) m.up();
+      lvui::LogBox box;
+      box.create(lv_screen_active());
+      lv_obj_set_size(box.obj(), kW, 11 * kCellH);
+      box.sync(m);
+      TEST_ASSERT_EQUAL(painted, box.painted());
+      if (painted) TEST_ASSERT_LESS_OR_EQUAL(1 + 2 + 2, descendants(box.obj()));
+      const std::vector<uint16_t> got = shot();
+      if (!painted) {
+        want = got;
+        continue;
+      }
+      int diff = 0;
+      for (size_t i = 0; i < got.size(); ++i) diff += got[i] != want[i];
+      TEST_ASSERT_EQUAL_MESSAGE(0, diff, pass ? "selected" : "following");
+      // A changed row is drawn again, and still matches.
+      lv_obj_clean(lv_screen_active());
+    }
+  }
+  lvui::LogBox::setPainted(RC_LV_LEAN);
+}
+
+void test_log_painted_redraws_changed_rows() {
+  lvui::LogBox::setPainted(true);
+  rc::LogView m;
+  m.setLines(threeLiners(10));
+  lvui::LogBox box;
+  box.create(lv_screen_active());
+  box.sync(m);
+  step();
+  lv_display_t* disp = lv_display_get_default();
+  int count = 0;
+  auto cb = [](lv_event_t* e) { ++*static_cast<int*>(lv_event_get_user_data(e)); };
+  lv_display_add_event_cb(disp, cb, LV_EVENT_INVALIDATE_AREA, &count);
+  box.sync(m);
+  TEST_ASSERT_EQUAL(0, count);
+  // One new line scrolls every row up: each row is drawn again.
+  m.setLines(threeLiners(11));
+  box.sync(m);
+  lv_display_remove_event_cb_with_user_data(disp, cb, &count);
+  TEST_ASSERT_GREATER_OR_EQUAL(1, count);
+  TEST_ASSERT_EQUAL_STRING("m10 line 2", box.rowText(box.rows() - 1).c_str());
+  // Its pixels match the labels' after the change.
+  const std::vector<uint16_t> got = shot();
+  lv_obj_clean(lv_screen_active());
+  lvui::LogBox::setPainted(false);
+  lvui::LogBox ref;
+  ref.create(lv_screen_active());
+  ref.sync(m);
+  const std::vector<uint16_t> want = shot();
+  TEST_ASSERT_TRUE(got == want);
+  lvui::LogBox::setPainted(RC_LV_LEAN);
+}
+
+void test_log_painted_taps() {
+  lvui::LogBox::setPainted(true);
+  test_log_rows_tap_and_hold();
+  lvui::LogBox::setPainted(RC_LV_LEAN);
 }
 
 void test_input_field_cursor_and_focus_tap() {
@@ -488,6 +594,9 @@ int main() {
   RUN_TEST(test_log_view_virtualised);
   RUN_TEST(test_log_rows_tap_and_hold);
   RUN_TEST(test_log_nick_colour);
+  RUN_TEST(test_log_painted_matches_labels);
+  RUN_TEST(test_log_painted_redraws_changed_rows);
+  RUN_TEST(test_log_painted_taps);
   RUN_TEST(test_input_field_cursor_and_focus_tap);
   RUN_TEST(test_text_box_wraps_like_wrap);
   RUN_TEST(test_text_area_cursor_and_tap);

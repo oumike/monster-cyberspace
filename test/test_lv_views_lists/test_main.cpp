@@ -236,6 +236,8 @@ void setUp() {
   lvui::setKeySink(sink);
   lvui::applyTheme(rc::defaultTheme());
   rc::setCursorShown(true);
+  // The label rows; the painted ones are checked against them below.
+  lvui::ListBox::setPainted(false);
   lv_obj_clean(lv_screen_active());
   lv_obj_clean(lv_layer_top());
   step();
@@ -252,6 +254,16 @@ std::vector<rc::ListItem> numberedItems(int n) {
   for (int i = 0; i < n; ++i) items.push_back(rc::ListItem{U"row " + rc::utf8ToU32(std::to_string(i)), U""});
   return items;
 }
+
+// The centre of row k as shown, painted or not.
+lv_point_t rowCentre(const lvui::ListBox& box, int k) {
+  lv_obj_update_layout(lv_screen_active());
+  lv_obj_update_layout(lv_layer_top());
+  const lv_area_t a = box.rowArea(k);
+  return {(a.x1 + a.x2) / 2, (a.y1 + a.y2) / 2};
+}
+
+bool inArea(const lv_area_t& a, lv_point_t p) { return p.x >= a.x1 && p.x <= a.x2 && p.y >= a.y1 && p.y <= a.y2; }
 
 // Cell rows [1, 14) of the 40x15 screen, as a screen places a list.
 void placeListBox(lvui::ListBox& box) { lvui::place(box.obj(), 0, 16, 320, 13 * 16); }
@@ -328,20 +340,20 @@ void test_list_tap_emits_activate() {
   box.create(lv_screen_active());
   placeListBox(box);
   box.sync(lv);
-  tap(centre(box.row(2)));
+  tap(rowCentre(box, 2));
   TEST_ASSERT_EQUAL(1, keys.size());
   assertActivate(keys[0], 2, ListId::Main, Action::Select);
 
   // A long press: the palette on that row, and no tap after it.
   keys.clear();
-  press(centre(box.row(1)), 600);
+  press(rowCentre(box, 1), 600);
   TEST_ASSERT_EQUAL(1, keys.size());
   assertActivate(keys[0], 1, ListId::Main, Action::Palette);
 
   // The list id set after create names later keys.
   keys.clear();
   box.setListId(ListId::Drawer);
-  tap(centre(box.row(0)));
+  tap(rowCentre(box, 0));
   TEST_ASSERT_EQUAL(1, keys.size());
   assertActivate(keys[0], 0, ListId::Drawer, Action::Select);
 
@@ -372,15 +384,13 @@ void test_overlay_captures_taps() {
   menu.create();
   menu.setPlace(rc::OverlayPlace::Centre);
   menu.sync(ov);
-  lv_obj_t* top = menu.list().row(0);
-  lv_point_t p = centre(top);
+  lv_point_t p = rowCentre(menu.list(), 0);
   // Put list row 2 under the overlay's row 0.
-  lv_area_t row2;
-  lv_obj_get_coords(under.row(2), &row2);
+  const lv_area_t row2 = under.rowArea(2);
   lv_obj_set_y(under.obj(), lv_obj_get_y(under.obj()) + p.y - (row2.y1 + row2.y2) / 2);
   lv_obj_update_layout(lv_screen_active());
-  TEST_ASSERT_TRUE(contains(under.row(2), p));
-  TEST_ASSERT_TRUE(contains(top, p));
+  TEST_ASSERT_TRUE(inArea(under.rowArea(2), p));
+  TEST_ASSERT_TRUE(inArea(menu.list().rowArea(0), p));
 
   tap(p);
   TEST_ASSERT_EQUAL(1, keys.size());
@@ -751,11 +761,11 @@ void test_overlay_bar_column_is_backdrop() {
   lv_obj_update_layout(lv_layer_top());
   lv_area_t bar;
   lv_obj_get_coords(menu.list().obj(), &bar);
-  tap({bar.x2 - 2, centre(menu.list().row(0)).y});
+  tap({bar.x2 - 2, rowCentre(menu.list(), 0).y});
   TEST_ASSERT_EQUAL(1, keys.size());
   TEST_ASSERT_TRUE(keys[0].action == Action::Back);
   keys.clear();
-  tap(centre(menu.list().row(1)));
+  tap(rowCentre(menu.list(), 1));
   TEST_ASSERT_EQUAL(1, keys.size());
   assertActivate(keys[0], 1, ListId::Menu, Action::Select);
 }
@@ -836,6 +846,149 @@ void test_touch_header_rows_match_grid() {
   lv_obj_delete(host.root());
 }
 
+// The whole frame, drawn now.
+std::vector<uint16_t> shot() {
+  lv_obj_invalidate(lv_screen_active());
+  lv_obj_invalidate(lv_layer_top());
+  lv_refr_now(nullptr);
+  const uint16_t* f = lvui::frame();
+  return std::vector<uint16_t>(f, f + 320 * 240);
+}
+
+int frameDiff(const std::vector<uint16_t>& a, const std::vector<uint16_t>& b) {
+  int d = 0;
+  for (size_t i = 0; i < a.size(); ++i) d += a[i] != b[i];
+  return d;
+}
+
+// Lists drawn painted and as label rows: the same pixels.
+void test_list_box_painted_matches_labels() {
+  std::vector<rc::ListItem> odd = threeItems();
+  odd.push_back(rc::ListItem{U"Marked", U"12", rc::ItemTone::Normal, true});
+  odd.push_back(rc::ListItem{U"", U"right only"});
+  odd.push_back(rc::ListItem{U"a label far too long for its row, cut where a word would wrap it here",
+                             U"and right"});
+  odd.push_back(rc::ListItem{U"wide \U0001F600 and \u2022", U"\u2713", rc::ItemTone::Error, true});
+  odd.push_back(rc::ListItem{U"short", U"a right text longer than the whole row of forty cells, cut"});
+  struct Case {
+    std::vector<rc::ListItem> items;
+    int selected;
+    bool cursor;
+    int h;
+  };
+  const Case cases[] = {{threeItems(), 1, true, 13}, {threeItems(), 2, true, 13}, {numberedItems(30), 20, true, 13},
+                        {odd, 3, true, 13},          {odd, 6, true, 4},           {odd, 0, false, 13}};
+  int i = 0;
+  for (const Case& c : cases) {
+    std::vector<uint16_t> want;
+    for (bool painted : {false, true}) {
+      lv_obj_clean(lv_screen_active());
+      rc::setCursorShown(c.cursor);
+      lvui::ListBox::setPainted(painted);
+      rc::ListView lv;
+      lv.setItems(c.items);
+      lv.setSelected(c.selected);
+      lvui::ListBox box;
+      box.create(lv_screen_active());
+      lvui::place(box.obj(), 0, 16, 320, c.h * 16);
+      box.sync(lv);
+      TEST_ASSERT_EQUAL(painted, box.painted());
+      const std::vector<uint16_t> got = shot();
+      if (!painted) {
+        want = got;
+        continue;
+      }
+      char msg[32];
+      snprintf(msg, sizeof msg, "case %d", i);
+      TEST_ASSERT_EQUAL_MESSAGE(0, frameDiff(got, want), msg);
+      // The selection moved, an item changed and the list shrank: drawn again,
+      // still the same as label rows drawn that way from the start.
+      lv.setSelected((c.selected + 1) % lv.size());
+      std::vector<rc::ListItem> next = c.items;
+      next[0].label += U" changed";
+      next.pop_back();
+      lv.setItems(next);
+      lv.setSelected((c.selected + 1) % lv.size());
+      box.sync(lv);
+      lv_refr_now(nullptr);
+      const uint16_t* f = lvui::frame();
+      const std::vector<uint16_t> partial(f, f + 320 * 240);
+      lv_obj_clean(lv_screen_active());
+      lvui::ListBox::setPainted(false);
+      lvui::ListBox ref;
+      ref.create(lv_screen_active());
+      lvui::place(ref.obj(), 0, 16, 320, c.h * 16);
+      ref.sync(lv);
+      snprintf(msg, sizeof msg, "case %d changed", i);
+      TEST_ASSERT_EQUAL_MESSAGE(0, frameDiff(partial, shot()), msg);
+    }
+    ++i;
+  }
+  rc::setCursorShown(true);
+}
+
+// A menu overlay painted: the same pixels as label rows.
+void test_menu_overlay_painted_matches_labels() {
+  std::vector<uint16_t> want;
+  for (bool painted : {false, true}) {
+    lv_obj_clean(lv_screen_active());
+    lv_obj_clean(lv_layer_top());
+    lvui::ListBox::setPainted(painted);
+    rc::Overlay ov;
+    ov.open(U"Menu", numberedItems(20));
+    lvui::MenuOverlay menu;
+    menu.create();
+    menu.setPlace(rc::OverlayPlace::Centre);
+    menu.sync(ov);
+    const std::vector<uint16_t> got = shot();
+    if (!painted)
+      want = got;
+    else
+      TEST_ASSERT_EQUAL(0, frameDiff(got, want));
+  }
+}
+
+void test_list_box_painted_has_no_row_objects() {
+  lvui::ListBox::setPainted(true);
+  rc::ListView lv;
+  lv.setItems(numberedItems(30));
+  lvui::ListBox box;
+  box.create(lv_screen_active());
+  placeListBox(box);
+  box.sync(lv);
+  TEST_ASSERT_EQUAL(13, box.shownItems());
+  TEST_ASSERT_NULL(box.row(0));
+  // The box, its painted rows and the scroll bar's track and thumb.
+  TEST_ASSERT_EQUAL(2u + 2u, lv_obj_get_child_count(box.obj()) + lv_obj_get_child_count(lv_obj_get_child(box.obj(), 1)) + 1);
+  // An unchanged sync draws nothing again.
+  lv_refr_now(nullptr);
+  lv_display_t* disp = lv_display_get_default();
+  int count = 0;
+  auto cb = [](lv_event_t* e) { ++*static_cast<int*>(lv_event_get_user_data(e)); };
+  lv_display_add_event_cb(disp, cb, LV_EVENT_INVALIDATE_AREA, &count);
+  box.sync(lv);
+  TEST_ASSERT_EQUAL(0, count);
+  lv.setSelected(1);
+  box.sync(lv);
+  lv_display_remove_event_cb_with_user_data(disp, cb, &count);
+  // The old row and the new one.
+  TEST_ASSERT_EQUAL(2, count);
+}
+
+void test_list_painted_taps() {
+  lvui::ListBox::setPainted(true);
+  test_list_tap_emits_activate();
+}
+
+void test_overlay_painted_taps() {
+  lvui::ListBox::setPainted(true);
+  test_overlay_captures_taps();
+  keys.clear();
+  lv_obj_clean(lv_screen_active());
+  lv_obj_clean(lv_layer_top());
+  test_overlay_bar_column_is_backdrop();
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_list_box_mirrors_model);
@@ -856,5 +1009,10 @@ int main() {
   RUN_TEST(test_list_box_drag_names_its_list);
   RUN_TEST(test_overlay_bar_column_is_backdrop);
   RUN_TEST(test_touch_header_rows_match_grid);
+  RUN_TEST(test_list_box_painted_matches_labels);
+  RUN_TEST(test_menu_overlay_painted_matches_labels);
+  RUN_TEST(test_list_box_painted_has_no_row_objects);
+  RUN_TEST(test_list_painted_taps);
+  RUN_TEST(test_overlay_painted_taps);
   return UNITY_END();
 }

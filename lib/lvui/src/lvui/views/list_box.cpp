@@ -1,21 +1,39 @@
 #include "lvui/views/list_box.h"
 
 #include <algorithm>
+#include <cstring>
 
 #include "lvui/input.h"
 #include "lvui/styles.h"
+#include "src/misc/lv_area_private.h"
 #include "ui/widgets/scroll_bar.h"
+#include "util/utf8.h"
 
 namespace lvui {
 
+namespace {
+bool paintNew = RC_LV_LEAN;
+}  // namespace
+
+void ListBox::setPainted(bool on) { paintNew = on; }
+
 void ListBox::create(lv_obj_t* parent) {
+  painted_ = paintNew;
   box_ = plainBox(parent);
   rows_.clear();
+  lines_now_.clear();
+  lines_next_.clear();
+  text_.clear();
+  nextText_.clear();
   shown_ = first_ = width_ = 0;
   cell_ = {0, 0};
   model_ = nullptr;
-  lines_ = plainBox(box_);
-  lv_obj_set_flex_flow(lines_, LV_FLEX_FLOW_COLUMN);
+  if (painted_) {
+    lines_ = paintedBox(box_, this);
+  } else {
+    lines_ = plainBox(box_);
+    lv_obj_set_flex_flow(lines_, LV_FLEX_FLOW_COLUMN);
+  }
   bar_.create(box_);
   touch_.attach(box_, this, list_, /*holdToAct*/ false, /*wraps*/ true);
 }
@@ -76,6 +94,7 @@ void ListBox::sync(const rc::ListView& m) {
   if (height <= 0 || cols <= 0) {
     shown_ = width_ = 0;
     for (Row& r : rows_) setHidden(r.row, true);
+    if (painted_) syncPainted(items, m.selected());
     bar_.sync(0, cell, 0, 0, 0, 0);
     return;
   }
@@ -86,6 +105,11 @@ void ListBox::sync(const rc::ListView& m) {
   width_ = bar ? cols - 1 : cols;
   shown_ = std::clamp(n - first_, 0, height);
   place(lines_, 0, 0, width_ * cell.w, height * cell.h);
+  if (painted_) {
+    syncPainted(items, m.selected());
+    bar_.sync(bar ? cols * cell.w : 0, cell, bar ? height : 0, n, height, first_);
+    return;
+  }
   while (static_cast<int>(rows_.size()) < shown_) rows_.push_back(makeRow(lines_));
   for (int k = 0; k < static_cast<int>(rows_.size()); ++k) {
     Row& r = rows_[k];
@@ -96,6 +120,80 @@ void ListBox::sync(const rc::ListView& m) {
     setChecked(r.row, i == m.selected() && rc::cursorShown());
   }
   bar_.sync(bar ? cols * cell.w : 0, cell, bar ? height : 0, n, height, first_);
+}
+
+bool ListBox::sameLine(int k) const {
+  const int was = static_cast<int>(lines_now_.size()), now = static_cast<int>(lines_next_.size());
+  if (k >= was || k >= now) return k >= was && k >= now;
+  const Line &a = lines_next_[k], &b = lines_now_[k];
+  return a.marker == b.marker && a.error == b.error && a.checked == b.checked &&
+         std::strcmp(nextText_.c_str() + a.label, text_.c_str() + b.label) == 0 &&
+         std::strcmp(nextText_.c_str() + a.right, text_.c_str() + b.right) == 0;
+}
+
+void ListBox::syncPainted(const std::vector<rc::ListItem>& items, int selected) {
+  lines_next_.clear();
+  nextText_.clear();
+  for (int k = 0; k < shown_; ++k) {
+    const rc::ListItem& it = items[first_ + k];
+    Line l{};
+    l.marker = it.marker;
+    l.error = it.tone == rc::ItemTone::Error;
+    l.checked = first_ + k == selected && rc::cursorShown();
+    l.label = static_cast<uint16_t>(nextText_.size());
+    nextText_ += rc::u32ToUtf8(it.label);
+    nextText_ += '\0';
+    l.right = static_cast<uint16_t>(nextText_.size());
+    // One cell between the label and the right text, one after it.
+    if (!it.right.empty()) nextText_ += " " + rc::u32ToUtf8(it.right) + " ";
+    nextText_ += '\0';
+    lines_next_.push_back(l);
+  }
+  const int rows = static_cast<int>(std::max(lines_now_.size(), lines_next_.size()));
+  for (int k = 0; k < rows; ++k) {
+    if (sameLine(k)) continue;
+    const lv_area_t a = rowArea(k);
+    lv_obj_invalidate_area(lines_, &a);
+  }
+  lines_now_.swap(lines_next_);
+  text_.swap(nextText_);
+}
+
+lv_area_t ListBox::rowArea(int i) const {
+  if (!painted_) {
+    lv_area_t a;
+    lv_obj_get_coords(rows_[i].row, &a);
+    return a;
+  }
+  lv_area_t a;
+  lv_obj_get_coords(lines_, &a);
+  a.y1 += i * cell_.h;
+  a.y2 = a.y1 + cell_.h - 1;
+  return a;
+}
+
+void ListBox::paint(lv_obj_t* box, lv_layer_t* layer) {
+  lv_area_t a;
+  lv_obj_get_coords(box, &a);
+  const lv_font_t* font = lv_obj_get_style_text_font(box, LV_PART_MAIN);
+  const rc::Theme& t = currentTheme();
+  const int32_t cw = cell_.w, h = cell_.h, w = lv_area_get_width(&a);
+  for (int k = 0; k < static_cast<int>(lines_now_.size()); ++k) {
+    const Line& l = lines_now_[k];
+    const lv_area_t ra{a.x1, a.y1 + k * h, a.x2, a.y1 + (k + 1) * h - 1};
+    lv_area_t c;
+    if (!lv_area_intersect(&c, &ra, &layer->_clip_area)) continue;
+    // As a row (Role::Item, Focused when checked): the outline first, then
+    // its marker, its label growing to fill, and its right text at its width.
+    if (l.checked) paintRect(layer, ra, color(t.bg), LV_OPA_TRANSP, color(t.selectBg), 1);
+    const lv_color_t fg = color(l.error ? t.error : t.fg);
+    const char* right = text_.c_str() + l.right;
+    const int32_t rightW = right[0] ? textWidth(right, font) : 0;
+    const int32_t labelW = std::max<int32_t>(0, w - 2 * cw - rightW);
+    if (l.marker) paintLabel(layer, box, "\u2022", a.x1, ra.y1, 2 * cw, h, fg, font, a);
+    paintLabel(layer, box, text_.c_str() + l.label, a.x1 + 2 * cw, ra.y1, labelW, h, fg, font, a);
+    if (right[0]) paintLabel(layer, box, right, a.x1 + 2 * cw + labelW, ra.y1, -1, h, fg, font, a);
+  }
 }
 
 int ListBox::itemAt(lv_point_t p) const {

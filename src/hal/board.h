@@ -49,6 +49,13 @@ void kbLight(uint8_t duty, bool screenOn);
 // bit 0 red, bit 1 green, bit 2 blue, 0 off. A no-op without one.
 bool hasNotifyLight();
 void notifyLight(uint8_t rgb);
+// Lights of their own for C-Mail and the Feed (the Tanmatsu's A and B), in
+// notifyLight's rgb bits. With one, that source blinks there instead of on
+// the notification light. Default: none.
+bool hasCmailLight();
+void cmailLight(uint8_t rgb);
+bool hasFeedLight();
+void feedLight(uint8_t rgb);
 // A power light and a Wi-Fi light (the Tanmatsu's LEDs), each set in
 // notifyLight's rgb bits. hasLedLevel: the status LEDs (these and the
 // notification light) dim together, ledLevel giving each lit channel's value

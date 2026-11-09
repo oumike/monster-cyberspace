@@ -393,9 +393,10 @@ power button above it does nothing in the firmware; holding it 2 s cuts the
 power.
 
 **Notification light:** the LED marked for messages blinks twice every second
-for the last room, mentions, Feed and C-Mail, each in its colour, as on the
-Mesh Deck (**Channel light**, **Mention light**, **Feed light**, **C-Mail
-light** and **Light timeout** in Settings and web config). The power LED is green
+for the last room and mentions, each in its colour, as on the Mesh Deck. On
+the right, the **A** LED blinks the same way for C-Mail and the **B** LED for
+the Feed (**Channel light**, **Mention light**, **A light (C-Mail)**, **B
+light (Feed)** and **Light timeout** in Settings and web config). The power LED is green
 (**Power light** in Settings and web config picks its colour, or Off). The
 radio LED shows Wi-Fi: green when joined, blue while the setup AP is up with
 no network joined, yellow while it looks for one (**Wi-Fi joined**, **Wi-Fi

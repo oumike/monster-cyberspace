@@ -304,7 +304,9 @@ void SettingsScreen::applyChoice(Confirm c, int i) {
                                                        : s.notifyCmail;
       colour = kLedColorOrder[i];
       settings::saveNotifyLights(s);
-      ui::notifyLightPreview(colour);
+      ui::notifyLightPreview(colour, c == Confirm::NotifyFeed    ? NotifySource::Feed
+                                     : c == Confirm::NotifyCmail ? NotifySource::Cmail
+                                                                 : NotifySource::Channel);
     }
     return;
   }
@@ -624,10 +626,10 @@ void SettingsScreen::activate(int item) {
       openColour(Confirm::NotifyMention, U"mention light", app().cfg.notifyMention);
       break;
     case kNotifyFeed:
-      openColour(Confirm::NotifyFeed, U"Feed light", app().cfg.notifyFeed);
+      openColour(Confirm::NotifyFeed, board::hasFeedLight() ? U"B light (Feed)" : U"Feed light", app().cfg.notifyFeed);
       break;
     case kNotifyCmail:
-      openColour(Confirm::NotifyCmail, U"C-Mail light", app().cfg.notifyCmail);
+      openColour(Confirm::NotifyCmail, board::hasCmailLight() ? U"A light (C-Mail)" : U"C-Mail light", app().cfg.notifyCmail);
       break;
     case kNotifyTimeout: {
       std::vector<ListItem> rows;
@@ -818,10 +820,10 @@ void SettingsScreen::render(Grid& g, const Theme& t, int64_t) {
         rows.push_back(ListItem{U"Mention light", ledColorLabel(a.cfg.notifyMention)});
         break;
       case kNotifyFeed:
-        rows.push_back(ListItem{U"Feed light", ledColorLabel(a.cfg.notifyFeed)});
+        rows.push_back(ListItem{board::hasFeedLight() ? U"B light (Feed)" : U"Feed light", ledColorLabel(a.cfg.notifyFeed)});
         break;
       case kNotifyCmail:
-        rows.push_back(ListItem{U"C-Mail light", ledColorLabel(a.cfg.notifyCmail)});
+        rows.push_back(ListItem{board::hasCmailLight() ? U"A light (C-Mail)" : U"C-Mail light", ledColorLabel(a.cfg.notifyCmail)});
         break;
       case kNotifyTimeout:
         rows.push_back(ListItem{U"Light timeout", notifyTimeoutLabel(a.cfg.notifyTimeoutSecs)});

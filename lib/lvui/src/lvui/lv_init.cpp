@@ -42,6 +42,7 @@ extern "C" void lvui_assert_failed(const char* file, int line) { lvui::assertHan
 
 #if LV_USE_STDLIB_MALLOC == LV_STDLIB_CUSTOM
 #include <esp_heap_caps.h>
+#include <sdkconfig.h>
 
 #ifndef RC_LV_HEAP
 #define RC_LV_HEAP 49152
@@ -55,6 +56,20 @@ constexpr uint32_t kCaps = MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT;
 constexpr uint32_t kCaps = MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT;
 size_t used = 0;
 size_t maxUsed = 0;
+#if defined(CONFIG_HEAP_POISONING_LIGHT) || defined(CONFIG_HEAP_POISONING_COMPREHENSIVE)
+// Heap poisoning wraps each block in an 8 B head (canary, size) and a 4 B
+// tail canary, which heap_caps_get_allocated_size leaves out.
+constexpr size_t kPoison = 12;
+#else
+constexpr size_t kPoison = 0;
+#endif
+// What a block of n bytes takes from the heap: n and the poisoning, rounded
+// to 4 B (12 B at least), and TLSF's 4 B header. `used`, the budget and
+// lv_mem_monitor count this, so they match heap_caps_get_free_size.
+size_t cost(size_t n) {
+  const size_t b = (n + kPoison + 3) & ~size_t(3);
+  return (b < 12 ? 12 : b) + 4;
+}
 #endif
 }  // namespace
 
@@ -80,21 +95,22 @@ void lv_mem_monitor_core(lv_mem_monitor_t *mon) {
 }
 #else
 void *lv_malloc_core(size_t size) {
-  if (used + size > RC_LV_HEAP) return nullptr;
+  if (used + cost(size) > RC_LV_HEAP) return nullptr;
   void *p = heap_caps_malloc(size, kCaps);
   if (p) {
-    used += heap_caps_get_allocated_size(p);
+    used += cost(heap_caps_get_allocated_size(p));
     if (used > maxUsed) maxUsed = used;
   }
   return p;
 }
 
 void *lv_realloc_core(void *p, size_t size) {
-  size_t old = p ? heap_caps_get_allocated_size(p) : 0;
-  if (size > old && used - old + size > RC_LV_HEAP) return nullptr;
+  const size_t old = p ? cost(heap_caps_get_allocated_size(p)) : 0;
+  const size_t want = size ? cost(size) : 0;
+  if (want > old && used - old + want > RC_LV_HEAP) return nullptr;
   void *q = heap_caps_realloc(p, size, kCaps);
   if (q) {
-    used = used - old + heap_caps_get_allocated_size(q);
+    used = used - old + cost(heap_caps_get_allocated_size(q));
     if (used > maxUsed) maxUsed = used;
   } else if (size == 0) {
     used -= old;
@@ -104,7 +120,7 @@ void *lv_realloc_core(void *p, size_t size) {
 
 void lv_free_core(void *p) {
   if (!p) return;
-  used -= heap_caps_get_allocated_size(p);
+  used -= cost(heap_caps_get_allocated_size(p));
   heap_caps_free(p);
 }
 

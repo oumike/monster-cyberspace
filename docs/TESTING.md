@@ -29,7 +29,7 @@ on 2026-10-27; the sections marked `m9_fake` passed on it before then.
 The UI was redrawn with LVGL (built without flashing). Compare each board
 with `main` on the same board: the flow, the look and the keys should match.
 "Every screen" means Splash, Setup, Login, Wi-Fi, Home, the room list, a room,
-the C-Mail list and a conversation, Unread, the Feed lists (Watched,
+the C-Mail list and a conversation, Unread, the Feed, the Feed lists (Watched,
 Bookmarks, Following, a user's entries, Topics and a topic), an entry, the
 composer, Guilds (a guild and its members), a profile, Settings and Coming
 soon, wherever the board has them.
@@ -41,9 +41,9 @@ soon, wherever the board has them.
 - [ ] M9: Compact, Comfortable and Large: every screen rebuilds at the new
       size with no cut or overlapping rows; Splash keeps its own size.
 - [ ] M9: the palette, menus and confirms, the symbol table, the emoji tray,
-      F10's help, banners and the reader open over the screen and close
-      with Back as on `main`. F10's help is a framed box that hides the rows
-      beneath it.
+      F10's help, banners, the reader, Settings' backup picker and the
+      link/QR view open over the screen and close with Back as on `main`.
+      F10's help is a framed box that hides the rows beneath it.
 - [ ] M9: screen off, the screensaver and wake as on `main`; `screenshot`
       (`scripts/screenshot.py`) saves the screen as shown.
 - [ ] Settings parity (the M9, then each board): every Settings item,
@@ -122,8 +122,10 @@ soon, wherever the board has them.
 **Feed selection box (any board):**
 
 - [ ] With Text size Comfortable and then Large, the selected Feed, Topics
-      or guild row's box has one straight right side down its big head line
-      and its second line (`Grid::setRightEdgeCol`). Compact unchanged.
+      or guild row is one plain rectangle, a 1 px outline in the theme's
+      selection colour around the whole row: its big head line and its
+      second line, the full width, with straight sides (`lvui::EntryListBox`;
+      not the grid's L shape). Compact the same, around its two lines.
 
 **Scroll bars (any board):**
 

@@ -466,7 +466,7 @@ async function loadPrefs(){const p=await call('GET','/api/prefs');if(p.tz===unde
   if(showRow('themerow',!!p.theme)){const sel=$('theme');sel.innerHTML='';
     for(const t of themes){const o=document.createElement('option');o.value=t.key;o.textContent=t.label;sel.appendChild(o);}sel.value=p.theme;}
   paintTheme();
-  if(showRow('tsizerow',!!p.textSize)){$('tsize').value=Math.max(0,TSIZES.indexOf(p.textSize));tsizeShow();}
+  if(showRow('tsizerow',!!p.textSize)){$('tsize').max=p.noLarge?1:2;$('tsize').value=Math.max(0,TSIZES.indexOf(p.textSize));tsizeShow();}
   if(showRow('rotrow',p.rotation!==undefined))$('rot').value=String(p.rotation);
   if(showRow('brightrow',p.brightness!==undefined)){$('bright').value=p.brightness;brightShow();}
   $('scrsecs').value=String(p.screenOnSecs);$('scrsaver').value=p.screenSaver?'1':'0';

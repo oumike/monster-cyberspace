@@ -1404,14 +1404,22 @@ void start() {
 
 void setTextSize(TextSize s) {
   if (TextSize only; board::fixedTextSize(only)) s = only;
+  if (s == TextSize::Large && !board::hasLargeText()) s = TextSize::Compact;  // the cycle wraps
   app().cfg.textSize = s;
   settings::saveUiPrefs(app().cfg);
   needResize = true;
 }
 
-std::u32string textSizeItem() { return U"Text size: " + textSizeLabel(nextTextSize(app().cfg.textSize)); }
+namespace {
+TextSize nextSize(TextSize s) {
+  const TextSize n = nextTextSize(s);
+  return n == TextSize::Large && !board::hasLargeText() ? nextTextSize(n) : n;
+}
+}  // namespace
 
-void cycleTextSize() { setTextSize(nextTextSize(app().cfg.textSize)); }
+std::u32string textSizeItem() { return U"Text size: " + textSizeLabel(nextSize(app().cfg.textSize)); }
+
+void cycleTextSize() { setTextSize(nextSize(app().cfg.textSize)); }
 
 void setRotation(uint8_t r) { applyRotation(r); }
 

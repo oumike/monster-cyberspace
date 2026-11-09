@@ -114,10 +114,13 @@ ButtonGrid ButtonPad::layout(int gridCols, const std::vector<ListItem>& items, i
   // The header scrolls only as far as the buttons need, and fully away
   // before they scroll.
   header_ = std::max(0, header);
+  // A header too tall to leave room for one button row scrolls away too.
+  auto needsShift = [&](int shift) {
+    const ButtonGrid g = buttonGrid(gridCols, top + header_ - shift, bottom, n, cols, 0, height_);
+    return g.maxScroll > 0 || (n > 0 && g.visibleRows == 0);
+  };
   int maxShift = 0;
-  while (maxShift < header_ &&
-         buttonGrid(gridCols, top + header_ - maxShift, bottom, n, cols, 0, height_).maxScroll > 0)
-    ++maxShift;
+  while (maxShift < header_ && needsShift(maxShift)) ++maxShift;
   header_ = maxShift;
   shift_ = std::min(std::max(0, shift_), maxShift);
   if (shift_ < maxShift) scroll_ = 0;

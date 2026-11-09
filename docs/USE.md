@@ -815,7 +815,8 @@ too; on a touch screen its buttons drop to fewer columns when two would cut thei
 
 - **Comfortable:** larger 8×16 text.
 - **Compact:** 6×12 text.
-- **Large:** like Comfortable, one size up: 10×18 text and 12×24 titles.
+- **Large:** like Comfortable, one size up: 10×18 text and 12×24 titles. Not on the
+  Wio Tracker L2, whose screen is too small for it; a saved or restored Large becomes Comfortable there.
 
 Room messages read `14:02 nick: message`, with a divider when the day
 changes, at every size. A long message wraps under the nick at every size.

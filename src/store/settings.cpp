@@ -61,6 +61,7 @@ void load(rc::Settings& s) {
   s.textSize = rc::textSizeFromIndex(p.getUChar("tsize", 1));
   // A board with one text size keeps it whatever was saved or restored.
   if (rc::TextSize only; board::fixedTextSize(only)) s.textSize = only;
+  if (s.textSize == rc::TextSize::Large && !board::hasLargeText()) s.textSize = rc::TextSize::Comfortable;
   s.drawerOpen = p.getBool("drawer", false);
   s.usersHidden = p.getBool("usershide", false);
   s.buzzer = p.getBool("buzz", true);

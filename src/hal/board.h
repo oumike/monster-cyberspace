@@ -145,6 +145,9 @@ bool sleepsOnBattery();
 // Compact) sets out and returns true; the UI then uses it on every screen and
 // hides the text-size choice. Default false.
 bool fixedTextSize(rc::TextSize& out);
+// False on a panel too small for Large text (the Wio Tracker L2): Large is
+// not offered and becomes Comfortable. Default true.
+bool hasLargeText();
 // Battery volts, 0 when unknown. Default 0.
 float batteryVolts();
 // Deep sleep: wakes on the board's wake button, or after timerUs (0: no

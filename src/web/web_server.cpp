@@ -428,7 +428,10 @@ esp_err_t getPrefs(httpd_req_t* req) {
   if (!authorized(req)) return ESP_OK;
   Settings s = current();
   JsonDocument d;
-  if (rc::TextSize only; !board::fixedTextSize(only)) d["textSize"] = rc::textSizeKey(s.textSize);
+  if (rc::TextSize only; !board::fixedTextSize(only)) {
+    d["textSize"] = rc::textSizeKey(s.textSize);
+    if (!board::hasLargeText()) d["noLarge"] = true;
+  }
   if (board::hasSound()) d["buzzer"] = s.buzzer;
   if (board::hasVolume()) d["volume"] = s.volume;
   d["screenOnSecs"] = s.screenOnSecs;
@@ -537,6 +540,8 @@ std::string parsePrefs(JsonVariantConst doc, const Settings& s, PrefsChange& c) 
     c.size = only;  // ignore any posted textSize
   else if (doc["textSize"].is<const char*>() && !rc::parseTextSize(doc["textSize"].as<const char*>(), c.size))
     return "Text size: compact, comfortable or large";
+  else if (c.size == rc::TextSize::Large && !board::hasLargeText())
+    c.size = rc::TextSize::Comfortable;
   c.buzzer = doc["buzzer"].is<bool>() ? doc["buzzer"].as<bool>() : s.buzzer;
   c.volume = s.volume;
   if (!doc["volume"].isNull()) {

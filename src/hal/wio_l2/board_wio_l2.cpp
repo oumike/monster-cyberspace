@@ -167,6 +167,9 @@ int insetTop() { return rotation == 0 ? wio::PANEL_TOP_INSET : 0; }
 
 }  // namespace
 
+// Large leaves Settings and the Feed too few cells on 320x236.
+bool hasLargeText() { return false; }
+
 int panelWidth() {
   return rc::rotationPortrait(rotation) ? wio::PANEL_H - wio::PANEL_TOP_INSET : wio::PANEL_W;
 }

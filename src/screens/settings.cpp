@@ -181,6 +181,8 @@ std::u32string wakeLabel(uint32_t mins) {
 constexpr TextSize kSizeOrder[] = {TextSize::Compact, TextSize::Comfortable, TextSize::Large};
 // Low-memory boards (no PSRAM) offer no Compact: its grid does not fit.
 constexpr int kFirstSize = RC_LOW_MEM ? 1 : 0;
+// One past the last size offered: Large only where the board has room.
+int lastSize() { return board::hasLargeText() ? 3 : 2; }
 }  // namespace
 
 void SettingsScreen::enter(const std::string&) {
@@ -486,7 +488,7 @@ void SettingsScreen::closeBrightness() {
 void SettingsScreen::sizeKey(const KeyEvent& k) {
   if (sizeSlider_.key(k) != Slider::Result::Picked) return;
   const int s = sizeSlider_.value() + kFirstSize;
-  if (s >= kFirstSize && s < 3 && kSizeOrder[s] != app().cfg.textSize) ui::setTextSize(kSizeOrder[s]);
+  if (s >= kFirstSize && s < lastSize() && kSizeOrder[s] != app().cfg.textSize) ui::setTextSize(kSizeOrder[s]);
 }
 
 void SettingsScreen::onKey(const KeyEvent& k) {
@@ -549,7 +551,7 @@ void SettingsScreen::activate(int item) {
     case kTextSize: {
       std::vector<std::u32string> names;
       int sel = 0;
-      for (int i = kFirstSize; i < 3; ++i) {
+      for (int i = kFirstSize; i < lastSize(); ++i) {
         if (kSizeOrder[i] == app().cfg.textSize) sel = i - kFirstSize;
         names.push_back(textSizeLabel(kSizeOrder[i]));
       }
@@ -1069,7 +1071,8 @@ void SettingsScreen::sync() {
     // As many columns as keep 16 cells inside a button (as Setup's).
     int columns = ButtonPad::columns();
     while (columns > 1 && (cols - 1) / columns - 3 < 16) --columns;
-    pad_.sync(v_->padView_, rows, 1, bottom, true, columns, header);
+    // A value that doesn't fit beside its label is left off.
+    pad_.sync(v_->padView_, rows, 1, bottom, false, columns, header);
     layoutStatus(fields, narrow, valueW, pad_.headerShift(), bottom, put);
   } else {
     layoutStatus(fields, narrow, valueW, 0, menuTop, put);

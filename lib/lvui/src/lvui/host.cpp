@@ -97,6 +97,8 @@ bool ScreenHost::show(const std::function<void(lv_obj_t*)>& build, bool replace)
     // the padding, which must not make the root scroll.
     lv_obj_remove_flag(fresh, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_style_pad_top(fresh, header().extra, LV_PART_MAIN);
+    // Builds size their cells from the root (CellText::cols): lay it out first.
+    lv_obj_update_layout(fresh);
     build(fresh);
     if (freeProbe() >= kMinFree) {
       if (root_) lv_obj_delete(root_);

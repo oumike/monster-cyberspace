@@ -362,6 +362,8 @@ void FeedListScreen::onEvent(const Event& e) {
 }
 
 void FeedListScreen::rebuild(int cols, const Theme& t) {
+  // A root not laid out yet has no columns; never cut to a negative width.
+  cols = std::max(cols, 1);
   std::vector<Entry> entries;
   std::vector<std::string> replyIds;
   std::vector<bool> marked;

@@ -77,6 +77,19 @@ void test_host_build_failure_keeps_previous() {
   TEST_ASSERT_EQUAL(children, lv_obj_get_child_count(lv_screen_active()));
 }
 
+// A build sees its root at full size, laid out: screens size their cells
+// from it (CellText::cols), and a 0-wide root gave the Feed negative columns.
+void test_host_build_sees_root_size() {
+  lvui::ScreenHost host;
+  int32_t w = -1, h = -1;
+  TEST_ASSERT_TRUE(host.show([&](lv_obj_t* root) {
+    w = lv_obj_get_content_width(root);
+    h = lv_obj_get_height(root);
+  }));
+  TEST_ASSERT_EQUAL(48, w);
+  TEST_ASSERT_EQUAL(32, h);
+}
+
 // Boards without PSRAM: the old tree goes before the new one is built, so
 // two never stand at once. A build that doesn't fit leaves no tree; the
 // caller builds the old screen again.
@@ -313,6 +326,7 @@ void test_assert_reaches_handler() {
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_host_build_failure_keeps_previous);
+  RUN_TEST(test_host_build_sees_root_size);
   RUN_TEST(test_host_replace_first);
   RUN_TEST(test_host_replace_first_rebuild);
   RUN_TEST(test_host_needs_build_margin);

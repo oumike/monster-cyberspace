@@ -45,6 +45,11 @@ const Theme& paperTheme();
 bool cursorShown();
 void setCursorShown(bool on);
 
+// a moved pctB percent of the way to b, per RGB565 channel.
+uint16_t blend565(uint16_t a, uint16_t b, int pctB);
+// A chat bubble's fill (ChatStyle::Bubbles): yours tinted with selfNick, others' with fg.
+uint16_t bubbleFill(const Theme& t, bool self);
+
 ThemeId nextTheme(ThemeId id);  // wraps round
 ThemeId themeFromIndex(int i);  // out of range gives Default
 // Stable keys for settings, backup and web config: "default", "bw", "wb",

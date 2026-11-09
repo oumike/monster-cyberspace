@@ -238,3 +238,17 @@ const char* themeLabel(ThemeId id) {
 }
 
 }  // namespace rc
+
+namespace rc {
+
+uint16_t blend565(uint16_t a, uint16_t b, int pctB) {
+  auto mix = [pctB](int x, int y) { return x + (y - x) * pctB / 100; };
+  const int r = mix(a >> 11, b >> 11), g = mix((a >> 5) & 0x3F, (b >> 5) & 0x3F), bl = mix(a & 0x1F, b & 0x1F);
+  return static_cast<uint16_t>((r << 11) | (g << 5) | bl);
+}
+
+uint16_t bubbleFill(const Theme& t, bool self) {
+  return self ? blend565(t.bg, t.selfNick, 30) : blend565(t.bg, t.fg, 15);
+}
+
+}  // namespace rc

@@ -182,6 +182,25 @@ void test_dark_colour_themes_have_light_colour_nicks() {
   }
 }
 
+void test_blend565() {
+  TEST_ASSERT_EQUAL_HEX16(0x0000, blend565(0x0000, 0xFFFF, 0));
+  TEST_ASSERT_EQUAL_HEX16(0xFFFF, blend565(0x0000, 0xFFFF, 100));
+  const uint16_t half = blend565(0x0000, 0xF800, 50);
+  TEST_ASSERT_EQUAL(15, half >> 11);
+  TEST_ASSERT_EQUAL(0, (half >> 5) & 0x3F);
+  TEST_ASSERT_EQUAL(0, half & 0x1F);
+}
+
+void test_bubble_fill() {
+  for (ThemeId id : {ThemeId::Default, ThemeId::Light}) {
+    const Theme& t = theme(id);
+    TEST_ASSERT_EQUAL_HEX16(blend565(t.bg, t.fg, 15), bubbleFill(t, false));
+    TEST_ASSERT_EQUAL_HEX16(blend565(t.bg, t.selfNick, 30), bubbleFill(t, true));
+    TEST_ASSERT_NOT_EQUAL(t.bg, bubbleFill(t, false));
+    TEST_ASSERT_NOT_EQUAL(t.bg, bubbleFill(t, true));
+  }
+}
+
 int main(int, char**) {
   UNITY_BEGIN();
   RUN_TEST(test_every_theme_readable);
@@ -197,5 +216,7 @@ int main(int, char**) {
   RUN_TEST(test_site_colours_match);
   RUN_TEST(test_light_colour_themes_have_dark_colour_nicks);
   RUN_TEST(test_dark_colour_themes_have_light_colour_nicks);
+  RUN_TEST(test_blend565);
+  RUN_TEST(test_bubble_fill);
   return UNITY_END();
 }

@@ -49,12 +49,14 @@ std::vector<rc::KeyEvent> keys;
 // does on Main.
 rc::EntryList* liveModel = nullptr;
 rc::ListView* liveList = nullptr;
+rc::Drawer* liveDrawer = nullptr;
 ListId liveId = ListId::Main;
 void sink(const rc::KeyEvent& e) {
   keys.push_back(e);
   if (e.action != Action::Activate || e.target != static_cast<uint8_t>(liveId)) return;
   if (liveModel) liveModel->select(e.index);
   if (liveList) liveList->select(e.index);
+  if (liveDrawer) liveDrawer->select(e.index);
 }
 
 void step(uint32_t ms = 40) {
@@ -174,6 +176,7 @@ void drawModel(const rc::EntryList& el, rc::Grid& g, int top, int bottom) {
 void drawModel(const rc::ListView& lv, rc::Grid& g, int top, int bottom) {
   lv.render(g, top, bottom, 0, g.cols(), rc::defaultTheme());
 }
+void drawModel(const rc::Drawer& d, rc::Grid& g, int top, int bottom) { d.render(g, top, bottom, rc::defaultTheme()); }
 
 template <typename Model>
 std::vector<rc::KeyEvent> gridKeys(Model el, int top, int bottom, const std::vector<Sample>& ss) {
@@ -315,6 +318,7 @@ void setUp() {
   keys.clear();
   liveModel = nullptr;
   liveList = nullptr;
+  liveDrawer = nullptr;
   liveId = ListId::Main;
 }
 void tearDown() {}
@@ -1146,6 +1150,70 @@ void test_edge_swipe_from_target_emits_nothing() {
   TEST_ASSERT_EQUAL(0, keys.size());
 }
 
+std::vector<rc::PresenceEntry> people(int n) {
+  std::vector<rc::PresenceEntry> out;
+  for (int i = 0; i < n; ++i) out.push_back(person(("p" + std::to_string(i)).c_str()));
+  return out;
+}
+
+// The drawer's names are the grid's wrapping ListId::Drawer: a tap, a drag
+// and a flick give the keys its tap map gives, and nothing scrolls natively.
+// A long list shows Drawer::render's window, the scroll bar in its last column.
+void test_drawer_drag_steps_selection() {
+  rc::Drawer d;
+  d.setPeople(people(30), 0, 60000);
+  lvui::DrawerPanel panel;
+  panel.create(lv_screen_active());
+  panel.sync(d);
+  liveDrawer = &d;
+  liveId = ListId::Drawer;
+  TEST_ASSERT_FALSE(lv_obj_has_flag(panel.obj(), LV_OBJ_FLAG_SCROLLABLE));
+  // 15 rows: the header, then 14 names.
+  TEST_ASSERT_EQUAL(14, panel.shownItems());
+  TEST_ASSERT_FALSE(lv_obj_has_flag(panel.scrollBar().thumb(), LV_OBJ_FLAG_HIDDEN));
+  // The names stop a column short of the bar.
+  lv_obj_update_layout(lv_screen_active());
+  TEST_ASSERT_EQUAL(13 * 8, lv_obj_get_width(panel.row(0)));
+
+  const int x = 25 * 8 + 4;  // the edge column: a row target too
+  const auto tapPath = fingerPath({x, 3 * 16 + 8}, 0, 0, 40);
+  const auto wantTap = gridKeys(d, 0, 15, tapPath);
+  TEST_ASSERT_EQUAL(1, wantTap.size());
+  play(tapPath, panel, d);
+  assertSameKeys(wantTap, keys);
+  assertActivate(keys[0], 2, ListId::Drawer, Action::Select);
+  TEST_ASSERT_EQUAL(2, d.selected());
+
+  keys.clear();
+  const auto drag = fingerPath({x + 3 * 8, 8 * 16 + 8}, -3 * 16, 12, 60);
+  const auto want = gridKeys(d, 0, 15, drag);
+  TEST_ASSERT_EQUAL(3, want.size());
+  play(drag, panel, d);
+  assertSameKeys(want, keys);
+  TEST_ASSERT_EQUAL(5, d.selected());
+
+  keys.clear();
+  const auto flick = fingerPath({x + 3 * 8, 10 * 16 + 8}, -80, 0, 40);
+  const auto wantFlick = gridKeys(d, 0, 15, flick);
+  TEST_ASSERT_EQUAL(1, wantFlick.size());
+  playLifting(flick, panel, d);
+  assertSameKeys(wantFlick, keys);
+  TEST_ASSERT_EQUAL(18, d.selected());
+  // The selection past the bottom sits on the last row, as the grid draws it.
+  panel.sync(d);
+  TEST_ASSERT_EQUAL_STRING("p18", text(panel.name(13)));
+  TEST_ASSERT_EQUAL_STRING("p5", text(panel.name(0)));
+  TEST_ASSERT_TRUE(lv_obj_has_state(panel.row(13), LV_STATE_CHECKED));
+  TEST_ASSERT_EQUAL(0, lv_obj_get_scroll_y(panel.obj()));
+
+  // A drag on the header steps nothing.
+  keys.clear();
+  const auto head = fingerPath({x + 3 * 8, 8}, 3 * 16, 12, 60);
+  TEST_ASSERT_EQUAL(0, gridKeys(d, 0, 15, head).size());
+  play(head, panel, d);
+  TEST_ASSERT_EQUAL(0, keys.size());
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_list_box_mirrors_model);
@@ -1173,5 +1241,6 @@ int main() {
   RUN_TEST(test_overlay_painted_taps);
   RUN_TEST(test_tap_targets_keep_gesture_rules);
   RUN_TEST(test_edge_swipe_from_target_emits_nothing);
+  RUN_TEST(test_drawer_drag_steps_selection);
   return UNITY_END();
 }

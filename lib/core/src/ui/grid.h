@@ -173,6 +173,13 @@ bool parseTextSize(std::string_view key, TextSize& out);
 std::u32string textSizeLabel(TextSize s);  // U"Compact" ...
 // The saved index (the enum's value); out of range is Compact.
 TextSize textSizeFromIndex(int i);
+// How messages are drawn in rooms, C-Mail and replies. Saved by index: append only.
+enum class ChatStyle : uint8_t { Irc = 0, Bubbles = 1 };
+ChatStyle nextChatStyle(ChatStyle s);  // wraps round
+ChatStyle chatStyleFromIndex(int i);   // out of range is Irc
+const char* chatStyleKey(ChatStyle s);  // "irc", "bubbles": backups and the web page
+bool parseChatStyle(std::string_view key, ChatStyle& out);  // false (out unchanged) for anything else
+std::u32string chatStyleLabel(ChatStyle s);  // U"IRC", U"Bubbles"
 struct CellSize {
   int w, h;
 };

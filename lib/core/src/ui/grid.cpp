@@ -199,6 +199,28 @@ TextSize textSizeFromIndex(int i) {
   return i >= 0 && i <= static_cast<int>(TextSize::Large) ? static_cast<TextSize>(i) : TextSize::Compact;
 }
 
+ChatStyle nextChatStyle(ChatStyle s) {
+  return s == ChatStyle::Irc ? ChatStyle::Bubbles : ChatStyle::Irc;
+}
+
+ChatStyle chatStyleFromIndex(int i) {
+  return i == static_cast<int>(ChatStyle::Bubbles) ? ChatStyle::Bubbles : ChatStyle::Irc;
+}
+
+const char* chatStyleKey(ChatStyle s) { return s == ChatStyle::Bubbles ? "bubbles" : "irc"; }
+
+bool parseChatStyle(std::string_view key, ChatStyle& out) {
+  for (ChatStyle s : {ChatStyle::Irc, ChatStyle::Bubbles}) {
+    if (key == chatStyleKey(s)) {
+      out = s;
+      return true;
+    }
+  }
+  return false;
+}
+
+std::u32string chatStyleLabel(ChatStyle s) { return s == ChatStyle::Bubbles ? U"Bubbles" : U"IRC"; }
+
 CellSize cellSize(TextSize s) {
   switch (s) {
     case TextSize::Compact: return CellSize{6, 12};

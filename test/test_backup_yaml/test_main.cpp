@@ -302,6 +302,25 @@ void test_vibrate_missing_keeps_current() {
   TEST_ASSERT_TRUE(s.alertVibrate);
 }
 
+void test_chat_style_round_trip() {
+  Settings in;
+  in.chatStyle = ChatStyle::Bubbles;
+  std::string y = backupToYaml(in, {"M9", "0.1.0", 0});
+  TEST_ASSERT_NOT_EQUAL(std::string::npos, y.find("chatStyle: bubbles"));
+  Settings out;
+  std::string err, note;
+  TEST_ASSERT_TRUE_MESSAGE(run(y, out, err, note), err.c_str());
+  TEST_ASSERT_TRUE(out.chatStyle == ChatStyle::Bubbles);
+}
+
+void test_chat_style_missing_keeps() {
+  Settings s;
+  s.chatStyle = ChatStyle::Bubbles;
+  std::string err, note;
+  TEST_ASSERT_TRUE_MESSAGE(run(std::string(kHead) + "buzzer: false\n", s, err, note), err.c_str());
+  TEST_ASSERT_TRUE(s.chatStyle == ChatStyle::Bubbles);
+}
+
 void test_missing_keys_keep_current() {
   Settings s = full(), want = full();
   std::string err, note;
@@ -403,6 +422,7 @@ void test_bad_values_rejected() {
       {"apPassword: abc\n", "line 3: setup-AP password: 8-63 printable characters, or empty"},
       {"pagePassword: \"a\\nb\"\n", "line 3: page password: up to 63 printable characters"},
       {"textSize: huge\n", "line 3: text size: compact, comfortable or large"},
+      {"chatStyle: fancy\n", "line 3: chat style: irc or bubbles"},
       {"theme: pink\n", "line 3: theme: default, bw or wb"},
       {"kbLight: dim\n", "line 3: keyboard light: off, low, medium or high"},
       {"powerLight: dim\n",
@@ -584,6 +604,8 @@ int main(int, char**) {
   RUN_TEST(test_bom_crlf_no_final_newline);
   RUN_TEST(test_vibrate_round_trip);
   RUN_TEST(test_vibrate_missing_keeps_current);
+  RUN_TEST(test_chat_style_round_trip);
+  RUN_TEST(test_chat_style_missing_keeps);
   RUN_TEST(test_missing_keys_keep_current);
   RUN_TEST(test_empty_wifi_list_clears);
   RUN_TEST(test_empty_token_replaces_current);

@@ -64,7 +64,7 @@ struct Item {
 };
 
 struct Staged {
-  Str format, version, timezone, tzName, ntpServer, pagePassword, apPassword, textSize, theme,
+  Str format, version, timezone, tzName, ntpServer, pagePassword, apPassword, textSize, chatStyle, theme,
       rotation, lastRoom, email, refreshToken, screenOnSecs, kbLight,
       notifyLight, notifyMention, notifyFeed, notifyCmail, notifyTimeout, idleSecs, wakeMins, volume, brightness, powerLight, wifiJoined, wifiSetup, wifiLooking, ledLevel;
   Bool drawerOpen, usersHidden, buzzer, tapVibrate, alertVibrate, autoUpdate, screenSaver, spellCheck, webConfig;
@@ -277,6 +277,7 @@ bool parse(std::string_view yaml, Staged& st, std::string& err) {
              : key == "pagePassword" ? &st.pagePassword
              : key == "apPassword"   ? &st.apPassword
              : key == "textSize"     ? &st.textSize
+             : key == "chatStyle"    ? &st.chatStyle
              : key == "theme"        ? &st.theme
              : key == "rotation"     ? &st.rotation
              : key == "screenOnSecs" ? &st.screenOnSecs
@@ -419,6 +420,7 @@ std::string backupToYaml(const Settings& s, const BackupMeta& m) {
   o += "pagePassword: " + yamlQuote(s.pagePassword) + "\n";
   o += "apPassword: " + yamlQuote(s.apPassword) + "\n";
   o += std::string("textSize: ") + textSizeKey(s.textSize) + "\n";
+  o += std::string("chatStyle: ") + chatStyleKey(s.chatStyle) + "  # irc | bubbles\n";
   o += std::string("theme: ") + themeKey(s.theme) +
        "  # default | bw | wb | dark | light | lcd | c64 | vt320 | matrix | poetry | brutalist | grid |"
        " crypt | bubblegum | top8 | bubblegumdark | top8dark | sepiadark | c64dark\n";
@@ -529,6 +531,8 @@ bool backupFromYaml(std::string_view yaml, Settings& inOut, std::string& err, st
     err = at(st.pagePassword.line, "page password: up to 63 printable characters");
   } else if (TextSize ts; st.textSize.has && !parseTextSize(st.textSize.v, ts)) {
     err = at(st.textSize.line, "text size: compact, comfortable or large");
+  } else if (ChatStyle cs; st.chatStyle.has && !parseChatStyle(st.chatStyle.v, cs)) {
+    err = at(st.chatStyle.line, "chat style: irc or bubbles");
   } else if (st.theme.has && !parseThemeId(st.theme.v, theme)) {
     err = at(st.theme.line, "theme: default, bw or wb");
   } else if (st.rotation.has && !plainInt(st.rotation, rotation)) {
@@ -601,6 +605,7 @@ bool backupFromYaml(std::string_view yaml, Settings& inOut, std::string& err, st
   if (st.apPassword.has) inOut.apPassword = st.apPassword.v;
   if (st.textSize.has)
     parseTextSize(st.textSize.v, inOut.textSize);
+  if (st.chatStyle.has) parseChatStyle(st.chatStyle.v, inOut.chatStyle);
   if (st.theme.has) inOut.theme = theme;
   if (st.rotation.has) inOut.rotation = rotationFromIndex(rotation);
   if (st.drawerOpen.has) inOut.drawerOpen = st.drawerOpen.v;

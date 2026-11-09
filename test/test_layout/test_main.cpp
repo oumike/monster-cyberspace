@@ -124,6 +124,23 @@ void test_text_size_cycle_and_names() {
   TEST_ASSERT_TRUE(textSizeFromIndex(9) == TextSize::Compact);
 }
 
+void test_chat_style_helpers() {
+  TEST_ASSERT_TRUE(nextChatStyle(ChatStyle::Irc) == ChatStyle::Bubbles);
+  TEST_ASSERT_TRUE(nextChatStyle(ChatStyle::Bubbles) == ChatStyle::Irc);
+  TEST_ASSERT_TRUE(chatStyleFromIndex(1) == ChatStyle::Bubbles);
+  TEST_ASSERT_TRUE(chatStyleFromIndex(0) == ChatStyle::Irc);
+  TEST_ASSERT_TRUE(chatStyleFromIndex(7) == ChatStyle::Irc);
+  TEST_ASSERT_EQUAL_STRING("irc", chatStyleKey(ChatStyle::Irc));
+  TEST_ASSERT_EQUAL_STRING("bubbles", chatStyleKey(ChatStyle::Bubbles));
+  ChatStyle c = ChatStyle::Irc;
+  TEST_ASSERT_TRUE(parseChatStyle("bubbles", c));
+  TEST_ASSERT_TRUE(c == ChatStyle::Bubbles);
+  TEST_ASSERT_FALSE(parseChatStyle("x", c));
+  TEST_ASSERT_TRUE(c == ChatStyle::Bubbles);
+  TEST_ASSERT_TRUE(chatStyleLabel(ChatStyle::Irc) == U"IRC");
+  TEST_ASSERT_TRUE(chatStyleLabel(ChatStyle::Bubbles) == U"Bubbles");
+}
+
 void test_header_rows() {
   // 1.5x a row in the big font; row 0 takes 24 px of 240, so 14 rows fit.
   HeaderSize h = touchHeader(320, TextSize::Comfortable);
@@ -1185,6 +1202,7 @@ int main() {
   RUN_TEST(test_row_spans_shift);
   RUN_TEST(test_right_edge_col);
   RUN_TEST(test_row_spans_scale);
+  RUN_TEST(test_chat_style_helpers);
   RUN_TEST(test_header_rows);
   RUN_TEST(test_grid_add_edges);
   RUN_TEST(test_grid_dirty);

@@ -23,6 +23,7 @@ struct Settings {
   std::vector<WifiNet> wifi;
   std::string email, refreshToken, tz = "UTC0", pagePassword, apPassword;
   TextSize textSize = TextSize::Compact;
+  ChatStyle chatStyle = ChatStyle::Irc;
   bool drawerOpen = false, buzzer = true;
   bool usersHidden = false;  // the docked user list in rooms, hidden
   uint8_t volume = kVolumeDefault;  // alert sound, percent (ui/volume.h)

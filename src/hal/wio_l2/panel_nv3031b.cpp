@@ -74,10 +74,16 @@ bool begin() {
 
 void pushRows(const uint16_t* frame, int width, int y0, int y1) {
   if (y1 <= y0) return;
+  // A long write loses its place on this QSPI panel (later rows land
+  // shifted), so each band of kRows rows gets its own window, about as
+  // much as one text row of the old grid UI sent.
+  constexpr int kRows = 16;
   lcd.startWrite();
-  // rgb565_t is host order; LovyanGFX swaps to the panel's byte order.
-  lcd.pushImage(0, y0, width, y1 - y0,
-                reinterpret_cast<const lgfx::rgb565_t*>(frame + (size_t)y0 * width));
+  for (int y = y0; y < y1; y += kRows) {
+    const int h = y1 - y < kRows ? y1 - y : kRows;
+    // rgb565_t is host order; LovyanGFX swaps to the panel's byte order.
+    lcd.pushImage(0, y, width, h, reinterpret_cast<const lgfx::rgb565_t*>(frame + (size_t)y * width));
+  }
   lcd.endWrite();
 }
 

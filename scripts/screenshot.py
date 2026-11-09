@@ -4,7 +4,7 @@
 Sends "screenshot" and saves the frame on screen as a PNG. It reads the frame
 buffer only: nothing on the device or the network is touched.
 
-  scripts/screenshot.py PORT                 one shot into screenshots/
+  scripts/screenshot.py PORT                 one shot into docs/screenshots/
   scripts/screenshot.py PORT --watch         a shot each time the screen changes
                                              and settles (Ctrl-C to stop)
   scripts/screenshot.py PORT -o DIR --name mesh-deck --scale 2
@@ -125,7 +125,7 @@ def grab_retry(s, tries=3):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("port")
-    ap.add_argument("-o", "--out", default="screenshots")
+    ap.add_argument("-o", "--out", default="docs/screenshots")
     ap.add_argument("--name", default="screen", help="file name prefix")
     ap.add_argument("--baud", type=int, default=115200)
     ap.add_argument("--scale", type=int, default=1, help="enlarge each pixel N times (crisp, for docs)")

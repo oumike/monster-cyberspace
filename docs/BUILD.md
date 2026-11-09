@@ -146,7 +146,7 @@ builds LVGL.
 ## Screenshots
 
 Every firmware answers `screenshot` on its serial console with the frame on
-screen. `scripts/screenshot.py PORT` saves it as a PNG in `screenshots/`;
+screen. `scripts/screenshot.py PORT` saves it as a PNG in `docs/screenshots/`;
 `--watch` saves each new screen once it settles, while you move around the
 device (Ctrl-C stops). It needs pyserial (PlatformIO's Python has it) and opens
 the port without resetting the board. Only the frame buffer is read: on the

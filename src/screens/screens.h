@@ -223,7 +223,7 @@ class SettingsScreen : public Screen {
   // The objects held here go with them: a tree thrown away gives back the
   // old tree's.
   struct Views {
-    // Everything under frame_, which carries the screen's text size.
+    // The screen root, which everything is under.
     lv_obj_t* frame_ = nullptr;
     // The time zone list: a title bar over a panel.
     lv_obj_t *zonePanel_ = nullptr, *zoneTitle_ = nullptr;

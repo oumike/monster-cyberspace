@@ -965,8 +965,7 @@ const Slider* SettingsScreen::openSlider() const {
 
 void SettingsScreen::build(lv_obj_t* root) {
   v_.make(root);
-  v_->frame_ = lvui::plainBox(root);
-  lv_obj_set_size(v_->frame_, lv_pct(100), lv_pct(100));
+  v_->frame_ = root;
   v_->padView_.create(v_->frame_);
   v_->listView_.create(v_->frame_);
   // Over the buttons, as the grid draws the header lines after them.
@@ -1092,7 +1091,7 @@ void SettingsScreen::sync() {
     // The box centred over rows [1, bottom), its backdrop over everything.
     lv_obj_t* back = v_->sliderView_.backdrop();
     lv_obj_set_style_pad_top(back, c.h, 0);
-    lv_obj_set_style_pad_bottom(back, std::max(0, int(lv_obj_get_height(v_->frame_)) - bottom * c.h), 0);
+    lv_obj_set_style_pad_bottom(back, std::max(0, int(lv_obj_get_content_height(v_->frame_)) - bottom * c.h), 0);
     v_->sliderView_.sync(*slider);
     if (slider == &volume_)
       syncHint(v_->hint_, U"\u2190\u2192 volume  \u25CF set  back: cancel", U"tap the bar  Set or Cancel");

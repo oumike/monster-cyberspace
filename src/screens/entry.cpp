@@ -479,6 +479,7 @@ void EntryScreen::rebuild(int cols, int logRows, const Theme& t) {
     o.self = app().user;
     o.revealed = revealed_;
     o.theme = &t;
+    o.style = app().cfg.chatStyle;
     lines = layoutEntry(*e, s.store.replies(), o);
     for (const auto& r : s.store.replies()) authors[r.id] = r.author;
   });
@@ -525,12 +526,13 @@ void EntryScreen::selectBlock(const std::string& id) {
 
 void EntryScreen::refresh(int logCols, int logRows, const Theme& t, int64_t nowMs, bool sameTheme) {
   if (dirty_ || logCols != cols_ || logRows != logRows_ || app().cfg.textSize != size_ ||
-      !sameTheme || nowMs - builtAt_ >= kAgeRefreshMs) {
+      app().cfg.chatStyle != style_ || !sameTheme || nowMs - builtAt_ >= kAgeRefreshMs) {
     rebuild(logCols, logRows, t);
     dirty_ = false;
     cols_ = logCols;
     logRows_ = logRows;
     size_ = app().cfg.textSize;
+    style_ = app().cfg.chatStyle;
     theme_ = &t;
     builtAt_ = nowMs;
   }

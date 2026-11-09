@@ -13,6 +13,8 @@ namespace rc::ui {
 void start();
 // Switches the text size, saves it and redraws everything.
 void setTextSize(TextSize s);
+// Sets and saves the chat style; the logs lay out again on their next frame.
+void setChatStyle(ChatStyle s);
 // The menu item "Text size: <next>" and what picking it does.
 std::u32string textSizeItem();
 void cycleTextSize();

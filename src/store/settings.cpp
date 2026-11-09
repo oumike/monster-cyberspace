@@ -71,6 +71,7 @@ void load(rc::Settings& s) {
   if (!rc::validScreenTimeout(s.screenOnSecs)) s.screenOnSecs = 30;
   s.screenSaver = p.getBool("scrsaver", true);
   s.spellCheck = p.getBool("spell", true);
+  s.chatStyle = rc::chatStyleFromIndex(p.getUChar("cstyle", 0));
   s.tapVibrate = p.getBool("tapVib", true);
   s.alertVibrate = p.getBool("alertVib", true);
   s.kbLight = rc::kbLightFromIndex(p.getUChar("kblight", board::kbLightDefault()),
@@ -231,6 +232,13 @@ void saveNotifyTimeout(uint16_t secs) {
   p.end();
 }
 
+void saveChatStyle(rc::ChatStyle style) {
+  Preferences p;
+  if (!p.begin(kNs, false)) return;
+  p.putUChar("cstyle", static_cast<uint8_t>(style));
+  p.end();
+}
+
 void saveSpellCheck(bool on) {
   Preferences p;
   if (!p.begin(kNs, false)) return;
@@ -299,6 +307,7 @@ void saveAll(const rc::Settings& s) {
   if (RC_FEAT_OTA) saveAutoUpdate(s.autoUpdate);
   saveScreen(s.screenOnSecs, s.screenSaver);
   if (RC_FEAT_SPELL) saveSpellCheck(s.spellCheck);
+  saveChatStyle(s.chatStyle);
   saveVibrate(s.tapVibrate, s.alertVibrate);
   saveNotifyLights(s);
   saveNotifyTimeout(s.notifyTimeoutSecs);

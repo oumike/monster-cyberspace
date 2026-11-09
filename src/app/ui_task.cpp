@@ -1410,6 +1410,11 @@ void setTextSize(TextSize s) {
   needResize = true;
 }
 
+void setChatStyle(ChatStyle s) {
+  app().cfg.chatStyle = s;
+  settings::saveChatStyle(s);
+}
+
 namespace {
 TextSize nextSize(TextSize s) {
   const TextSize n = nextTextSize(s);

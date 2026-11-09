@@ -45,6 +45,7 @@ std::u32string volumeLabel(uint8_t pct) {
 enum Item {
   kTheme,
   kTextSize,
+  kChatStyle,
   kZone,
   kRotation,
   kBrightness,
@@ -88,6 +89,7 @@ std::vector<Item> menuItems() {
   std::vector<Item> v;
   if (!board::eink()) v.push_back(kTheme);
   if (TextSize only; !board::fixedTextSize(only)) v.push_back(kTextSize);
+  v.push_back(kChatStyle);
   v.push_back(kZone);
   if (board::canRotate()) v.push_back(kRotation);
   if (!board::eink()) v.push_back(kBrightness);
@@ -677,6 +679,9 @@ void SettingsScreen::activate(int item) {
       settings::saveVibrate(a.cfg.tapVibrate, a.cfg.alertVibrate);
       break;
     }
+    case kChatStyle:
+      ui::setChatStyle(nextChatStyle(app().cfg.chatStyle));
+      break;
     case kSpellCheck:
       app().cfg.spellCheck = !app().cfg.spellCheck;
       settings::saveSpellCheck(app().cfg.spellCheck);
@@ -768,6 +773,9 @@ std::vector<ListItem> itemRows(const std::vector<Item>& items, bool buttons, boo
         break;
       case kTextSize:
         rows.push_back(ListItem{U"Text size", textSizeLabel(a.cfg.textSize)});
+        break;
+      case kChatStyle:
+        rows.push_back(ListItem{U"Chat style", chatStyleLabel(a.cfg.chatStyle)});
         break;
       case kZone:
         rows.push_back(ListItem{U"Time zone", widen(zoneLabel(ts.tzName))});

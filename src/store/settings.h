@@ -37,6 +37,8 @@ void saveNotifyLights(const rc::Settings& s);
 void saveNotifyTimeout(uint16_t secs);
 // The device's Settings and web config: spell suggestions while typing.
 void saveSpellCheck(bool on);
+// The device's Settings and web config: IRC lines or chat bubbles.
+void saveChatStyle(rc::ChatStyle style);
 // The device's Settings and web config: buzz on a tap and on an alert
 // (board::hasHaptic).
 void saveVibrate(bool tap, bool alert);

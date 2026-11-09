@@ -681,6 +681,7 @@ LayoutOptions RoomScreen::logOptions(const std::string& self, const std::set<std
   o.muted = &muted_;
   o.revealed = &revealed;
   o.theme = theme_;
+  o.style = style_;
   return o;
 }
 
@@ -749,8 +750,11 @@ RoomScreen::Frame RoomScreen::refresh(const Theme& t, int logCols, bool shown, b
         markRead = true;
       }
     }
-    if (!relayout_ && s.store.version() == version_ && logCols == cols_ && sameTheme) return;
+    if (!relayout_ && s.store.version() == version_ && logCols == cols_ && sameTheme &&
+        app().cfg.chatStyle == style_)
+      return;
     relayout_ = false;
+    style_ = app().cfg.chatStyle;
     theme_ = &t;
     version_ = s.store.version();
     cols_ = logCols;

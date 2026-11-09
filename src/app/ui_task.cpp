@@ -460,12 +460,19 @@ void applyKbLight() {
 
 // The new-message light: a double blink per source (the last room, mentions,
 // Feed, C-Mail) in its colour while it has something unread, for the
-// configured time after its last message.
-NotifyBlinker blinker;
-uint8_t notifyShown = 0;
+// configured time after its last message. A board with a light of its own
+// for C-Mail or the Feed blinks that source there instead.
+NotifyBlinker blinker, cmailBlinker, feedBlinker;
+uint8_t notifyShown = 0, cmailShown = 0, feedShown = 0;
+
+NotifyBlinker* blinkerFor(NotifySource s) {
+  if (s == NotifySource::Cmail && board::hasCmailLight()) return &cmailBlinker;
+  if (s == NotifySource::Feed && board::hasFeedLight()) return &feedBlinker;
+  return board::hasNotifyLight() ? &blinker : nullptr;
+}
 
 void notifyMessage(NotifySource s) {
-  if (board::hasNotifyLight()) blinker.message(s, millis());
+  if (NotifyBlinker* b = blinkerFor(s)) b->message(s, millis());
 }
 
 #if RC_FEAT_CIRC
@@ -502,15 +509,24 @@ void watchChannel() {
 }
 #endif
 
+void showLight(NotifyBlinker& b, const NotifyInputs* in, uint8_t& shown, void (*write)(uint8_t)) {
+  const uint8_t rgb = in && b.active() ? b.tick(millis(), *in, app().cfg.notifyTimeoutSecs) : 0;
+  if (rgb == shown) return;
+  shown = rgb;
+  write(rgb);
+}
+
 void applyNotifyLight() {
-  if (!board::hasNotifyLight()) return;
+  const bool msg = board::hasNotifyLight(), mail = board::hasCmailLight(),
+             feed = board::hasFeedLight();
+  if (!msg && !mail && !feed) return;
 #if RC_FEAT_CIRC
-  watchChannel();
+  if (msg) watchChannel();
 #endif
-  uint8_t rgb = 0;
-  if (blinker.active()) {
+  NotifyInputs in;
+  const bool any = blinker.active() || cmailBlinker.active() || feedBlinker.active();
+  if (any) {
     const Settings& c = app().cfg;
-    NotifyInputs in;
     in.color[int(NotifySource::Channel)] = c.notifyLight;
     in.color[int(NotifySource::Mention)] = c.notifyMention;
     in.color[int(NotifySource::Feed)] = c.notifyFeed;
@@ -526,11 +542,11 @@ void applyNotifyLight() {
 #if RC_FEAT_CMAIL
     in.unread[int(NotifySource::Cmail)] = cmailUnread() > 0;
 #endif
-    rgb = blinker.tick(millis(), in, c.notifyTimeoutSecs);
   }
-  if (rgb == notifyShown) return;
-  notifyShown = rgb;
-  board::notifyLight(rgb);
+  const NotifyInputs* p = any ? &in : nullptr;
+  if (msg) showLight(blinker, p, notifyShown, board::notifyLight);
+  if (mail) showLight(cmailBlinker, p, cmailShown, board::cmailLight);
+  if (feed) showLight(feedBlinker, p, feedShown, board::feedLight);
 }
 
 void goDark() {
@@ -766,7 +782,7 @@ void handleEvent(const Event& e) {
       break;
 #endif
     case EvtType::NotifyPreview:
-      notifyLightPreview(ledColorFromIndex(e.code));
+      notifyLightPreview(ledColorFromIndex(e.code & 0xff), NotifySource((e.code >> 8) & 0xff));
       break;
     case EvtType::PhrasesChanged:
       app().cfg.phrases = splitPhrases(e.text);
@@ -1446,8 +1462,8 @@ void previewLedLevel(int level) {
   applyStatusLights();
 }
 
-void notifyLightPreview(LedColor c) {
-  if (board::hasNotifyLight()) blinker.preview(c, millis());
+void notifyLightPreview(LedColor c, NotifySource s) {
+  if (NotifyBlinker* b = blinkerFor(s)) b->preview(c, millis());
 }
 
 }  // namespace rc::ui

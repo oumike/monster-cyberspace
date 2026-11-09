@@ -67,15 +67,18 @@ void wifiCoprocessor() {
 // ---- Lights -----------------------------------------------------------------
 
 // Six GRB LEDs; manual mode, so LED 0 (power) is ours to light. LED 1 is the
-// radio (Wi-Fi) light, LED 2 the one the badge marks for messages.
+// radio (Wi-Fi) light, LED 2 the one the badge marks for messages. On the
+// right, top to bottom: LED 3 "C" (by the power button, unused), LED 4 "A"
+// (C-Mail) and LED 5 "B" (Feed).
 // Each status LED keeps its rgb bits, lit at one shared level.
-constexpr int kPowerLed = 0, kWifiLed = 1, kMessageLed = 2;
+constexpr int kPowerLed = 0, kWifiLed = 1, kMessageLed = 2, kCmailLed = 4, kFeedLed = 5;
+constexpr int kLedCount = 6;
 uint8_t ledLevelValue = 0x20;
-uint8_t ledRgb[3] = {2, 0, 0};  // power green until the setting arrives
-uint8_t leds[18] = {};
+uint8_t ledRgb[kLedCount] = {2};  // power green until the setting arrives
+uint8_t leds[kLedCount * 3] = {};
 
 void writeLeds() {
-  for (int i = 0; i < 3; ++i) {
+  for (int i = 0; i < kLedCount; ++i) {
     const uint8_t rgb = ledRgb[i], v = ledLevelValue;
     leds[i * 3] = rgb & 2 ? v : 0;      // G
     leds[i * 3 + 1] = rgb & 1 ? v : 0;  // R
@@ -257,6 +260,10 @@ void kbLight(uint8_t duty, bool screenOn) {
 
 bool hasNotifyLight() { return true; }
 void notifyLight(uint8_t rgb) { setLed(kMessageLed, rgb); }
+bool hasCmailLight() { return true; }
+void cmailLight(uint8_t rgb) { setLed(kCmailLed, rgb); }
+bool hasFeedLight() { return true; }
+void feedLight(uint8_t rgb) { setLed(kFeedLed, rgb); }
 bool hasPowerLight() { return true; }
 void powerLight(uint8_t rgb) { setLed(kPowerLed, rgb); }
 bool hasWifiLight() { return true; }

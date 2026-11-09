@@ -25,14 +25,16 @@ void ListBox::create(lv_obj_t* parent) {
   lines_next_.clear();
   text_.clear();
   nextText_.clear();
-  shown_ = first_ = width_ = 0;
+  shown_ = first_ = width_ = colW_ = 0;
+  cols_ = 1;
   cell_ = {0, 0};
   model_ = nullptr;
   if (painted_) {
     lines_ = paintedBox(box_, this);
   } else {
     lines_ = plainBox(box_);
-    lv_obj_set_flex_flow(lines_, LV_FLEX_FLOW_COLUMN);
+    // Rows, or with columns cells, across then down.
+    lv_obj_set_flex_flow(lines_, LV_FLEX_FLOW_ROW_WRAP);
   }
   bar_.create(box_);
   touch_.attach(box_, this, list_, /*holdToAct*/ false, /*wraps*/ true);
@@ -91,8 +93,9 @@ void ListBox::sync(const rc::ListView& m) {
   const int cols = lv_obj_get_content_width(box_) / cell.w;
   const auto& items = m.items();
   const int n = static_cast<int>(items.size());
+  cols_ = std::max(1, m.columns());
   if (height <= 0 || cols <= 0) {
-    shown_ = width_ = 0;
+    shown_ = width_ = colW_ = 0;
     for (Row& r : rows_) setHidden(r.row, true);
     if (painted_) syncPainted(items, m.selected());
     bar_.sync(0, cell, 0, 0, 0, 0);
@@ -100,14 +103,19 @@ void ListBox::sync(const rc::ListView& m) {
   }
   // As ListView::render: the selection on the last row once it passes it,
   // and the last column for the bar when the list is longer than the rows.
-  first_ = std::max(0, m.selected() - height + 1);
-  const bool bar = rc::needsScrollBar(n, height) && cols > 3;
+  // With columns the items fill cells across then down, the last cell of a
+  // row taking any spare columns.
+  const int total = (n + cols_ - 1) / cols_;
+  const int firstRow = std::max(0, m.selected() / cols_ - height + 1);
+  first_ = firstRow * cols_;
+  const bool bar = rc::needsScrollBar(total, height) && cols > 3;
   width_ = bar ? cols - 1 : cols;
-  shown_ = std::clamp(n - first_, 0, height);
+  colW_ = width_ / cols_;
+  shown_ = std::clamp(n - first_, 0, height * cols_);
   place(lines_, 0, 0, width_ * cell.w, height * cell.h);
   if (painted_) {
     syncPainted(items, m.selected());
-    bar_.sync(bar ? cols * cell.w : 0, cell, bar ? height : 0, n, height, first_);
+    bar_.sync(bar ? cols * cell.w : 0, cell, bar ? height : 0, total, height, firstRow);
     return;
   }
   while (static_cast<int>(rows_.size()) < shown_) rows_.push_back(makeRow(lines_));
@@ -116,10 +124,11 @@ void ListBox::sync(const rc::ListView& m) {
     setHidden(r.row, k >= shown_);
     if (k >= shown_) continue;
     const int i = first_ + k;
+    lv_obj_set_width(r.row, cellCols(k % cols_) * cell.w);
     fillRow(r, items[i]);
     setChecked(r.row, i == m.selected() && rc::cursorShown());
   }
-  bar_.sync(bar ? cols * cell.w : 0, cell, bar ? height : 0, n, height, first_);
+  bar_.sync(bar ? cols * cell.w : 0, cell, bar ? height : 0, total, height, firstRow);
 }
 
 bool ListBox::sameLine(int k) const {
@@ -159,6 +168,8 @@ void ListBox::syncPainted(const std::vector<rc::ListItem>& items, int selected) 
   text_.swap(nextText_);
 }
 
+int ListBox::cellCols(int col) const { return col == cols_ - 1 ? width_ - col * colW_ : colW_; }
+
 lv_area_t ListBox::rowArea(int i) const {
   if (!painted_) {
     lv_area_t a;
@@ -167,7 +178,10 @@ lv_area_t ListBox::rowArea(int i) const {
   }
   lv_area_t a;
   lv_obj_get_coords(lines_, &a);
-  a.y1 += i * cell_.h;
+  const int col = i % cols_;
+  a.x1 += col * colW_ * cell_.w;
+  a.x2 = a.x1 + cellCols(col) * cell_.w - 1;
+  a.y1 += i / cols_ * cell_.h;
   a.y2 = a.y1 + cell_.h - 1;
   return a;
 }
@@ -177,10 +191,11 @@ void ListBox::paint(lv_obj_t* box, lv_layer_t* layer) {
   lv_obj_get_coords(box, &a);
   const lv_font_t* font = lv_obj_get_style_text_font(box, LV_PART_MAIN);
   const rc::Theme& t = currentTheme();
-  const int32_t cw = cell_.w, h = cell_.h, w = lv_area_get_width(&a);
+  const int32_t cw = cell_.w, h = cell_.h;
   for (int k = 0; k < static_cast<int>(lines_now_.size()); ++k) {
     const Line& l = lines_now_[k];
-    const lv_area_t ra{a.x1, a.y1 + k * h, a.x2, a.y1 + (k + 1) * h - 1};
+    const lv_area_t ra = rowArea(k);
+    const int32_t x = ra.x1, w = lv_area_get_width(&ra);
     lv_area_t c;
     if (!lv_area_intersect(&c, &ra, &layer->_clip_area)) continue;
     // As a row (Role::Item, Focused when checked): the outline first, then
@@ -190,9 +205,9 @@ void ListBox::paint(lv_obj_t* box, lv_layer_t* layer) {
     const char* right = text_.c_str() + l.right;
     const int32_t rightW = right[0] ? textWidth(right, font) : 0;
     const int32_t labelW = std::max<int32_t>(0, w - 2 * cw - rightW);
-    if (l.marker) paintLabel(layer, box, "\u2022", a.x1, ra.y1, 2 * cw, h, fg, font, a);
-    paintLabel(layer, box, text_.c_str() + l.label, a.x1 + 2 * cw, ra.y1, labelW, h, fg, font, a);
-    if (right[0]) paintLabel(layer, box, right, a.x1 + 2 * cw + labelW, ra.y1, -1, h, fg, font, a);
+    if (l.marker) paintLabel(layer, box, "\u2022", x, ra.y1, 2 * cw, h, fg, font, a);
+    paintLabel(layer, box, text_.c_str() + l.label, x + 2 * cw, ra.y1, labelW, h, fg, font, a);
+    if (right[0]) paintLabel(layer, box, right, x + 2 * cw + labelW, ra.y1, -1, h, fg, font, a);
   }
 }
 
@@ -201,8 +216,10 @@ int ListBox::itemAt(lv_point_t p) const {
   lv_area_t a;
   lv_obj_get_content_coords(box_, &a);
   if (p.x < a.x1 || p.y < a.y1) return -1;
-  const int k = (p.y - a.y1) / cell_.h, c = (p.x - a.x1) / cell_.w;
-  if (k >= shown_ || c >= width_) return -1;
+  const int r = (p.y - a.y1) / cell_.h, c = (p.x - a.x1) / cell_.w;
+  if (c >= width_ || colW_ <= 0) return -1;
+  const int k = r * cols_ + std::min(c / colW_, cols_ - 1);
+  if (k >= shown_) return -1;
   return first_ + k;
 }
 

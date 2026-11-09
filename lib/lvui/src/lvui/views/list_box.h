@@ -20,7 +20,9 @@ namespace lvui {
 // touch is RowGestures on a wrapping list (ListView::render's TapMap::setList
 // wraps), so a tap on a row emits {Activate, row, list, then Select}, a long
 // press then Palette (input/touch_resolve), and a drag or swipe steps the
-// selection.
+// selection. With rc::ListView::columns() > 1 the items fill one-row cells
+// across then down, as ListView::render lays them out; "rows" below then
+// means those cells.
 //
 // Painted (the default with RC_LV_LEAN, boards without PSRAM): one object
 // draws every row's outline, marker, label and right text itself, with the
@@ -79,6 +81,8 @@ class ListBox : public RowGestures::Rows, public Painter {
   };
   bool sameLine(int k) const;
   void syncPainted(const std::vector<rc::ListItem>& items, int selected);
+  // Text columns of the cell in column col (the last takes the spare ones).
+  int cellCols(int col) const;
 
   lv_obj_t *box_ = nullptr, *lines_ = nullptr;
   std::vector<Row> rows_;
@@ -90,7 +94,7 @@ class ListBox : public RowGestures::Rows, public Painter {
   bool missBack_ = false;
   ScrollBarView bar_;
   RowGestures touch_;
-  int shown_ = 0, first_ = 0, width_ = 0;
+  int shown_ = 0, first_ = 0, width_ = 0, cols_ = 1, colW_ = 0;
   Cell cell_{0, 0};
   const rc::ListView* model_ = nullptr;
 };

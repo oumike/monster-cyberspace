@@ -114,7 +114,9 @@ this firmware.
 
 - **Keyboard light:** register 12, `KbLight::Medium` by default, off with the
   screen.
-- **Notification light:** LED 2, the "messages" LED. `board::begin()` sets the
+- **Notification light:** LED 2, the "messages" LED, for the last room and
+  mentions; C-Mail blinks on LED 4 ("A", `board::cmailLight`) and the Feed on
+  LED 5 ("B", `board::feedLight`). LED 3 ("C", by the power button) stays off. `board::begin()` sets the
   LEDs to manual (register 145 = 0) and lights LED 0 (power) dim green itself,
   since manual mode stops the coprocessor's own power LED.
 - **Battery:** VBAT (continuous ADC enabled at boot), read twice per sample

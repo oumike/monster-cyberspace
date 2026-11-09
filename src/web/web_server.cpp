@@ -477,6 +477,9 @@ esp_err_t getPrefs(httpd_req_t* req) {
     if (RC_FEAT_ENTRIES) d["notifyFeed"] = rc::ledColorKey(s.notifyFeed);
     if (RC_FEAT_CMAIL) d["notifyCmail"] = rc::ledColorKey(s.notifyCmail);
     d["notifyTimeout"] = s.notifyTimeoutSecs;
+    // The page names a source after the board's own light for it.
+    if (board::hasFeedLight()) d["feedLightName"] = "B light";
+    if (board::hasCmailLight()) d["cmailLightName"] = "A light";
   }
   d["webConfig"] = s.webConfig;
   if (!board::canType()) {
@@ -702,17 +705,19 @@ void applyPrefs(const PrefsChange& c, const Settings& s) {
     const struct {
       rc::LedColor from, to;
       rc::LedColor& dst;
-    } lights[] = {{s.notifyLight, c.notifyLight, cfg.notifyLight},
-                  {s.notifyMention, c.notifyMention, cfg.notifyMention},
-                  {s.notifyFeed, c.notifyFeed, cfg.notifyFeed},
-                  {s.notifyCmail, c.notifyCmail, cfg.notifyCmail}};
+      rc::NotifySource src;
+    } lights[] = {{s.notifyLight, c.notifyLight, cfg.notifyLight, rc::NotifySource::Channel},
+                  {s.notifyMention, c.notifyMention, cfg.notifyMention, rc::NotifySource::Mention},
+                  {s.notifyFeed, c.notifyFeed, cfg.notifyFeed, rc::NotifySource::Feed},
+                  {s.notifyCmail, c.notifyCmail, cfg.notifyCmail, rc::NotifySource::Cmail}};
     bool changed = false;
     for (const auto& l : lights) {
       if (l.to == l.from) continue;
       l.dst = l.to;
       changed = true;
       // Several changed at once: the last one previews.
-      rc::postEvent(rc::Event{rc::EvtType::NotifyPreview, "", static_cast<int>(l.to), true});
+      rc::postEvent(rc::Event{rc::EvtType::NotifyPreview, "",
+                              static_cast<int>(l.to) | static_cast<int>(l.src) << 8, true});
     }
     if (changed) settings::saveNotifyLights(cfg);
   }

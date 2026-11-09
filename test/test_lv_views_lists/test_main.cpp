@@ -1050,6 +1050,52 @@ void test_list_box_painted_has_no_row_objects() {
   TEST_ASSERT_EQUAL(2, count);
 }
 
+// Two columns, as ListView::render lays them out: cells across then down,
+// the selection's row kept on the last, the bar in the last column and the
+// last cell taking the spare ones; taps name the cell's item; painted the
+// same pixels.
+void test_list_box_columns() {
+  std::vector<uint16_t> want;
+  for (bool painted : {false, true}) {
+    lv_obj_clean(lv_screen_active());
+    lvui::ListBox::setPainted(painted);
+    rc::ListView lv;
+    lv.setColumns(2);
+    lv.setItems(numberedItems(20));
+    lv.setSelected(13);
+    lvui::ListBox box;
+    box.create(lv_screen_active());
+    lvui::place(box.obj(), 0, 16, 320, 4 * 16);
+    box.sync(lv);
+    // Ten rows of two, four shown: rows 3-6, items 6-13.
+    TEST_ASSERT_EQUAL(6, box.firstShown());
+    TEST_ASSERT_EQUAL(8, box.shownItems());
+    TEST_ASSERT_FALSE(lv_obj_has_flag(box.scrollBar().thumb(), LV_OBJ_FLAG_HIDDEN));
+    lv_obj_update_layout(lv_screen_active());
+    // 39 columns beside the bar: 19 and 20 cells.
+    const lv_area_t a = box.rowArea(7), b = box.rowArea(6);
+    TEST_ASSERT_EQUAL(16 + 3 * 16, a.y1);
+    TEST_ASSERT_EQUAL(19 * 8, a.x1);
+    TEST_ASSERT_EQUAL(20 * 8, lv_area_get_width(&a));
+    TEST_ASSERT_EQUAL(0, b.x1);
+    TEST_ASSERT_EQUAL(19 * 8, lv_area_get_width(&b));
+    if (!painted) {
+      TEST_ASSERT_EQUAL_STRING("row 13", text(box.label(7)));
+      TEST_ASSERT_TRUE(lv_obj_has_state(box.row(7), LV_STATE_CHECKED));
+      TEST_ASSERT_FALSE(lv_obj_has_state(box.row(6), LV_STATE_CHECKED));
+    }
+    const std::vector<uint16_t> got = shot();
+    if (!painted)
+      want = got;
+    else
+      TEST_ASSERT_EQUAL(0, frameDiff(got, want));
+    keys.clear();
+    tap(rowCentre(box, 1));
+    TEST_ASSERT_EQUAL(1, static_cast<int>(keys.size()));
+    assertActivate(keys[0], 7, ListId::Main, Action::Select);
+  }
+}
+
 void test_list_painted_taps() {
   lvui::ListBox::setPainted(true);
   test_list_tap_emits_activate();
@@ -1237,6 +1283,7 @@ int main() {
   RUN_TEST(test_list_box_painted_matches_labels);
   RUN_TEST(test_menu_overlay_painted_matches_labels);
   RUN_TEST(test_list_box_painted_has_no_row_objects);
+  RUN_TEST(test_list_box_columns);
   RUN_TEST(test_list_painted_taps);
   RUN_TEST(test_overlay_painted_taps);
   RUN_TEST(test_tap_targets_keep_gesture_rules);

@@ -52,8 +52,9 @@ void previewBrightness(int pct);
 void previewLedLevel(int level);
 // Forces every row to be redrawn on the next frame.
 void redrawAll();
-// One double blink of the new-message light in c (board::hasNotifyLight).
+// One double blink in c on the light that shows source s (the new-message
+// light, or a board's own C-Mail or Feed light).
 // UI task only; the web server posts EvtType::NotifyPreview instead.
-void notifyLightPreview(LedColor c);
+void notifyLightPreview(LedColor c, NotifySource s = NotifySource::Channel);
 
 }  // namespace rc::ui

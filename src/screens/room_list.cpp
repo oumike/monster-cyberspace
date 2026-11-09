@@ -12,6 +12,12 @@
 
 namespace rc {
 
+namespace {
+// A room cell: "• #slug" and its online count with room to spare. Screens
+// with two of these side by side show the rooms in two columns.
+constexpr int kRoomCellCols = 24;
+}  // namespace
+
 void RoomListScreen::enter(const std::string&) {
   filter_.clear();
   pad_.reset();
@@ -76,11 +82,17 @@ void RoomListScreen::onKey(const KeyEvent& k) {
     case Action::Activate:
       if (k.target == uint8_t(ListId::Main) && list_.select(k.index)) onKey(KeyEvent{k.then});
       break;
-    case Action::Select:
     case Action::Right:
+      // Across the grid first; from its last column, into the room.
+      if (!list_.right()) open(list_.selected());
+      break;
+    case Action::Select:
       open(list_.selected());
       break;
     case Action::Left:
+      if (list_.left()) break;
+      router::go(router::Id::Home);
+      break;
     case Action::Back:
       router::go(router::Id::Home);
       break;
@@ -158,6 +170,7 @@ void RoomListScreen::sync() {
   if (buttons_) {
     pad_.sync(v_->padView_, items, 2, bottom, false);
   } else {
+    list_.setColumns(v_->text_.cols() >= 2 * kRoomCellCols ? 2 : 1);
     list_.setItems(std::move(items));
     placeCells(v_->listView_.obj(), 0, 1, v_->text_.cols(), bottom);
     v_->listView_.sync(list_);
@@ -168,6 +181,8 @@ void RoomListScreen::sync() {
   if (confirm_)
     return syncHint(v_->hint_, U"\u2191\u2193 pick  \u25CF choose  back: cancel", U"tap: choose  outside: cancel");
   if (filter_.active()) return syncHint(v_->hint_, U"filter: " + filter_.text() + U"\u2581  \u232B erase  back clears");
+  if (!buttons_ && list_.columns() > 1)
+    return syncHint(v_->hint_, U"\u2190\u2191\u2193\u2192 pick  \u25CF open  back: home", U"tap to open  swipe to scroll");
   syncHint(v_->hint_, U"\u2191\u2193 pick  \u25CF open  \u2190 home",
            buttons_ ? U"tap to open  drag to scroll" : U"tap to open  swipe to scroll");
 }

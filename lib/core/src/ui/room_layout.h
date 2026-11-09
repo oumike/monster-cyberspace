@@ -33,6 +33,8 @@ struct DisplayLine {
   Bubble bubble = Bubble::None;
   uint8_t bubbleCol = 0, bubbleCols = 0;
   bool bubbleTop = false, bubbleBottom = false;
+  // The nick and time line above a bubble (never in the selection outline).
+  bool bubbleMeta = false;
 };
 
 struct LayoutOptions {

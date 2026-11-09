@@ -280,6 +280,7 @@ void LogBox::sync(const rc::LogView& m) {
   // The selected rows, and those of them in a bubble, which the outline then hugs.
   struct {
     int top = -1, bottom = -1, btop = -1, bbottom = -1, bcol = 0, bcols = 0;
+    bool meta = false;  // a bubble's meta line shows, which stays outside the outline
   } sel;
   next_.clear();
   nextText_.clear();
@@ -291,6 +292,7 @@ void LogBox::sync(const rc::LogView& m) {
       fillPainted(row, s.line);
     else
       fill(row, s.line);
+    if (s.selected && s.line && s.line->bubbleMeta) sel.meta = true;
     if (s.selected) {
       if (sel.top < 0 || r < sel.top) sel.top = r;
       if (r > sel.bottom) sel.bottom = r;
@@ -319,7 +321,8 @@ void LogBox::sync(const rc::LogView& m) {
     text_.swap(nextText_);
   }
 
-  const bool outline = sel.top >= 0 && rc::cursorShown();
+  // A bubble message whose bubble rows are all off screen gets no outline.
+  const bool outline = sel.top >= 0 && rc::cursorShown() && (sel.btop >= 0 || !sel.meta);
   setHidden(sel_, !outline);
   selArea_ = {0, 0, -1, -1};
   if (outline) {

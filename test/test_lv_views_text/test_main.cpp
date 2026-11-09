@@ -715,6 +715,13 @@ void test_log_bubble_selection() {
   TEST_ASSERT_TRUE(box.bubbleAt(one.y1, b));
   TEST_ASSERT_TRUE(b.top);
   TEST_ASSERT_EQUAL(one.y1, one.y2);
+  // One row tall, showing only its meta line: no outline at all.
+  lv_obj_set_height(box.obj(), kCellH);
+  box.sync(m);
+  TEST_ASSERT_FALSE(box.bubbleAt(0, b));
+  const lv_area_t none = box.selectionArea();
+  TEST_ASSERT_GREATER_THAN(none.x2, none.x1);
+  TEST_ASSERT_TRUE(lv_obj_has_flag(box.selection(), LV_OBJ_FLAG_HIDDEN));
   TEST_ASSERT_EQUAL(col, one.x1);
 }
 

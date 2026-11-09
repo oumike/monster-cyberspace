@@ -1339,6 +1339,30 @@ void test_entry_bubbles_replies_only() {
   TEST_ASSERT_EQUAL_STRING("r1", b[div + 1].messageId.c_str());
 }
 
+// A reply's meta line on a narrow log keeps its time: the nick, then the
+// parent, give way first. The meta line is marked as one.
+void test_bubbles_reply_meta_keeps_time() {
+  std::deque<CircMessage> d{msg("m1", "longnickname", "hi"), msg("m2", "oumike", "yo")};
+  for (int cols : {26, 20, 14}) {
+    LayoutOptions o = bubbles(cols);
+    o.metaExtra = "anotherlongone";
+    auto ls = layoutRoom(d, o);
+    int metas = 0;
+    for (const auto& l : ls) {
+      if (l.divider || l.bubble != DisplayLine::Bubble::None) {
+        TEST_ASSERT_FALSE(l.bubbleMeta);
+        continue;
+      }
+      ++metas;
+      TEST_ASSERT_TRUE(l.bubbleMeta);
+      const std::string f = flat(l);
+      TEST_ASSERT_TRUE_MESSAGE(f.size() >= 5 && f.substr(f.size() - 5) == "14:02", f.c_str());
+      TEST_ASSERT_LESS_OR_EQUAL(cols, lineCols(l));
+    }
+    TEST_ASSERT_EQUAL(2, metas);
+  }
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_button_grid_taller_buttons);
@@ -1363,6 +1387,7 @@ int main() {
   RUN_TEST(test_bubbles_action);
   RUN_TEST(test_bubbles_each_matches_layout);
   RUN_TEST(test_entry_bubbles_replies_only);
+  RUN_TEST(test_bubbles_reply_meta_keeps_time);
   RUN_TEST(test_header_rows);
   RUN_TEST(test_grid_add_edges);
   RUN_TEST(test_grid_dirty);

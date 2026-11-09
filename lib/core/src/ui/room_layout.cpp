@@ -74,19 +74,36 @@ void bubbleLines(const CircMessage& m, const LayoutOptions& o, const Theme& th, 
   };
   const std::u32string time = utf8ToU32(formatHHMM(m.timestamp));
   DisplayLine meta = newLine();
-  const std::u32string extra =
-      o.metaExtra.empty() ? U"" : U"\u21b3 @" + utf8ToU32(o.metaExtra) + U" ";
+  meta.bubbleMeta = true;
+  // The time always shows: the nick, then the reply's parent, give way to it.
+  const std::u32string parent = utf8ToU32(o.metaExtra);
+  const int parentW = textWidth(parent);
+  // "↳ @parent" cut to fit `room` columns, or empty when even a short one won't.
+  auto replyTo = [&](int room) -> std::u32string {
+    if (parent.empty() || room < 5) return U"";
+    return U"\u21b3 @" + (parentW + 3 <= room ? parent : cutNick(parent, room - 3));
+  };
+  const int timeW = static_cast<int>(time.size());
   if (self) {
-    const int pad = cols - static_cast<int>(time.size()) - textWidth(extra);
+    const std::u32string extra = replyTo(cols - timeW - 1);
+    const int extraW = extra.empty() ? 0 : textWidth(extra) + 1;
+    const int pad = cols - timeW - extraW;
     if (pad > 0) meta.spans.push_back({std::u32string(pad, U' '), th.fg});
-    if (!extra.empty()) meta.spans.push_back({extra, th.dim});
+    if (!extra.empty()) meta.spans.push_back({extra + U" ", th.dim});
     meta.spans.push_back({time, th.time});
   } else if (action) {
     meta.spans.push_back({time, th.time});
   } else {
-    const int timeCols = static_cast<int>(time.size()) + 1;
-    meta.spans.push_back({cutNick(utf8ToU32(m.username), cols - timeCols - 1), nickFg, th.boldNicks});
-    if (!extra.empty()) meta.spans.push_back({U" " + extra.substr(0, extra.size() - 1), th.dim});
+    const int avail = cols - timeW - 1;  // before " HH:MM"
+    const std::u32string nick = utf8ToU32(m.username);
+    const int nickW = textWidth(nick);
+    // The nick keeps up to 6 columns before the parent is cut.
+    const int replyFull = parent.empty() ? 0 : parentW + 4;
+    const int nickMax = std::max(std::min(nickW, 6), avail - replyFull);
+    const std::u32string shown = cutNick(nick, std::min(nickMax, avail));
+    meta.spans.push_back({shown, nickFg, th.boldNicks});
+    const std::u32string extra = replyTo(avail - textWidth(shown) - 1);
+    if (!extra.empty()) meta.spans.push_back({U" " + extra, th.dim});
     meta.spans.push_back({U" " + time, th.time});
   }
   clipLine(meta, cols);

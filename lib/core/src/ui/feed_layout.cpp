@@ -158,8 +158,11 @@ std::vector<DisplayLine> layoutEntry(const Entry& e, const std::deque<Reply>& re
   lo.cols = cols;
   lo.selfUsername = o.self;
   lo.theme = &th;
+  lo.style = o.style;
+  const bool bubbles = o.style == ChatStyle::Bubbles;
   for (const auto& r : replies) {
-    if (!r.parentAuthor.empty()) {
+    if (bubbles) lo.metaExtra = r.parentAuthor;
+    if (!bubbles && !r.parentAuthor.empty()) {
       DisplayLine l;
       l.messageId = r.id;
       l.spans.push_back({U"\u21b3 @" + utf8ToU32(r.parentAuthor), th.dim});

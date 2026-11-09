@@ -1310,6 +1310,35 @@ void test_bubbles_each_matches_layout() {
   }
 }
 
+void test_entry_bubbles_replies_only() {
+  Entry e = feedEntry();
+  e.replies = 1;
+  Reply r;
+  r.id = "r1";
+  r.author = "ann";
+  r.parentAuthor = "bob";
+  r.body = "agreed";
+  r.createdMs = kTs;
+  std::deque<Reply> rs{r};
+  EntryLayoutOptions irc = entryOpts(true);
+  EntryLayoutOptions bub = irc;
+  bub.style = ChatStyle::Bubbles;
+  auto a = layoutEntry(e, rs, irc);
+  auto b = layoutEntry(e, rs, bub);
+  size_t div = 0;
+  while (!a[div].divider) ++div;
+  TEST_ASSERT_TRUE(b[div].divider);
+  for (size_t i = 0; i <= div; ++i) {
+    TEST_ASSERT_EQUAL_STRING(flat(a[i]).c_str(), flat(b[i]).c_str());
+    TEST_ASSERT_TRUE(b[i].bubble == DisplayLine::Bubble::None);
+  }
+  TEST_ASSERT_EQUAL(div + 3, b.size());
+  TEST_ASSERT_EQUAL_STRING("ann \xe2\x86\xb3 @bob 14:02", flat(b[div + 1]).c_str());
+  TEST_ASSERT_TRUE(b[div + 2].bubble == DisplayLine::Bubble::Other);
+  TEST_ASSERT_EQUAL_STRING(" agreed", flat(b[div + 2]).c_str());
+  TEST_ASSERT_EQUAL_STRING("r1", b[div + 1].messageId.c_str());
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_button_grid_taller_buttons);
@@ -1333,6 +1362,7 @@ int main() {
   RUN_TEST(test_bubbles_deleted_and_muted);
   RUN_TEST(test_bubbles_action);
   RUN_TEST(test_bubbles_each_matches_layout);
+  RUN_TEST(test_entry_bubbles_replies_only);
   RUN_TEST(test_header_rows);
   RUN_TEST(test_grid_add_edges);
   RUN_TEST(test_grid_dirty);

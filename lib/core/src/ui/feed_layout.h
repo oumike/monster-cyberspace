@@ -37,6 +37,7 @@ struct EntryLayoutOptions {
   std::string self;
   bool revealed = false;  // the CW/NSFW body is shown
   const Theme* theme = nullptr;
+  ChatStyle style = ChatStyle::Irc;  // Bubbles: replies only; the entry keeps its look
 };
 
 // Header lines (messageId = entry id): "author · 3h", then "#t1 #t2 · public · NSFW".

@@ -74,15 +74,19 @@ void bubbleLines(const CircMessage& m, const LayoutOptions& o, const Theme& th, 
   };
   const std::u32string time = utf8ToU32(formatHHMM(m.timestamp));
   DisplayLine meta = newLine();
+  const std::u32string extra =
+      o.metaExtra.empty() ? U"" : U"\u21b3 @" + utf8ToU32(o.metaExtra) + U" ";
   if (self) {
-    const int pad = cols - static_cast<int>(time.size());
+    const int pad = cols - static_cast<int>(time.size()) - textWidth(extra);
     if (pad > 0) meta.spans.push_back({std::u32string(pad, U' '), th.fg});
+    if (!extra.empty()) meta.spans.push_back({extra, th.dim});
     meta.spans.push_back({time, th.time});
   } else if (action) {
     meta.spans.push_back({time, th.time});
   } else {
     const int timeCols = static_cast<int>(time.size()) + 1;
     meta.spans.push_back({cutNick(utf8ToU32(m.username), cols - timeCols - 1), nickFg, th.boldNicks});
+    if (!extra.empty()) meta.spans.push_back({U" " + extra.substr(0, extra.size() - 1), th.dim});
     meta.spans.push_back({U" " + time, th.time});
   }
   clipLine(meta, cols);

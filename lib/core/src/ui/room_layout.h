@@ -48,6 +48,8 @@ struct LayoutOptions {
   // Bubbles: a dim line with the nick and time, then the text in a bubble,
   // yours on the right (spec 2026-11-09-cyberspace-chat-style-design.md).
   ChatStyle style = ChatStyle::Irc;
+  // Bubbles: shown dim after the nick on the meta line (a reply's "@parent").
+  std::string metaExtra;
 };
 
 // Lays out messages (oldest first) into display lines no wider than o.cols,

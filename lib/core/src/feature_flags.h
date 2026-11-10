@@ -33,6 +33,11 @@
 #ifndef RC_FEAT_OTA
 #define RC_FEAT_OTA 1
 #endif
+// Notes (private notes with revisions): PSRAM boards only, with the Feed,
+// whose worker runs them.
+#ifndef RC_FEAT_NOTES
+#define RC_FEAT_NOTES RC_FEAT_FEED
+#endif
 #ifndef RC_FEAT_MASCOT
 #define RC_FEAT_MASCOT 1
 #endif
@@ -49,9 +54,11 @@ namespace rc {
 struct Features {
   bool cmail, feed, guilds, people, unread;
   bool circ = true;
+  bool notes = true;
 };
 
 constexpr Features kBuiltFeatures{RC_FEAT_CMAIL != 0, RC_FEAT_FEED != 0, RC_FEAT_GUILDS != 0,
-                                  RC_FEAT_PEOPLE != 0, RC_FEAT_UNREAD != 0, RC_FEAT_CIRC != 0};
+                                  RC_FEAT_PEOPLE != 0, RC_FEAT_UNREAD != 0, RC_FEAT_CIRC != 0,
+                                  RC_FEAT_NOTES != 0};
 
 }  // namespace rc

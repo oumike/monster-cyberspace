@@ -17,8 +17,24 @@ static void expectItems(const std::vector<HomeItem>& want, const std::vector<Hom
 void test_all_features_keeps_todays_order() {
   Features f{true, true, true, true, true};
   expectItems({HomeItem::Unread, HomeItem::Messages, HomeItem::Rooms, HomeItem::Cmail, HomeItem::Feed,
+               HomeItem::Following, HomeItem::Notes, HomeItem::Guilds, HomeItem::Profile, HomeItem::Settings},
+              homeItems(f));
+}
+
+// Notes, after Following, only with Notes (and the Feed) built.
+void test_notes_off_drops_notes() {
+  Features f{true, true, true, true, true};
+  f.notes = false;
+  expectItems({HomeItem::Unread, HomeItem::Messages, HomeItem::Rooms, HomeItem::Cmail, HomeItem::Feed,
                HomeItem::Following, HomeItem::Guilds, HomeItem::Profile, HomeItem::Settings},
               homeItems(f));
+}
+
+void test_span_first_with_notes() {
+  TEST_ASSERT_FALSE(homeSpanFirst(homeItems(Features{true, true, true, true, true})));  // 10
+  Features f{true, true, true, true, true};
+  f.notes = false;
+  TEST_ASSERT_TRUE(homeSpanFirst(homeItems(f)));  // 9: 1 + 4x2
 }
 
 // Following, after the Feed, needs both the Feed and People.
@@ -33,7 +49,7 @@ void test_following_needs_feed_and_people() {
 void test_profile_needs_people() {
   Features f{true, true, true, false, true};
   expectItems({HomeItem::Unread, HomeItem::Messages, HomeItem::Rooms, HomeItem::Cmail, HomeItem::Feed,
-               HomeItem::Guilds, HomeItem::Settings},
+               HomeItem::Notes, HomeItem::Guilds, HomeItem::Settings},
               homeItems(f));
   Features p{false, false, false, true, false};
   expectItems({HomeItem::Messages, HomeItem::Rooms, HomeItem::Profile, HomeItem::Settings}, homeItems(p));
@@ -41,8 +57,10 @@ void test_profile_needs_people() {
 
 // Unread takes a row of its own only when the rest then fill their rows.
 void test_span_first_only_with_full_rows() {
-  TEST_ASSERT_TRUE(homeSpanFirst(homeItems(Features{true, true, true, true, true})));     // 9: 1 + 4x2
-  TEST_ASSERT_TRUE(homeSpanFirst(homeItems(Features{true, true, true, false, true})));   // 7: 1 + 3x2
+  Features nine{true, true, true, true, true};
+  nine.notes = false;
+  TEST_ASSERT_TRUE(homeSpanFirst(homeItems(nine)));                                       // 9: 1 + 4x2
+  TEST_ASSERT_FALSE(homeSpanFirst(homeItems(Features{true, true, true, false, true})));  // 8
   TEST_ASSERT_FALSE(homeSpanFirst(homeItems(Features{true, true, true, true, false})));  // no unread
   TEST_ASSERT_FALSE(homeSpanFirst({}));
 }
@@ -55,12 +73,12 @@ void test_rooms_only() {
 void test_unread_off_only_drops_unread() {
   Features f{true, true, true, true, false};
   expectItems({HomeItem::Messages, HomeItem::Rooms, HomeItem::Cmail, HomeItem::Feed, HomeItem::Following,
-               HomeItem::Guilds, HomeItem::Profile, HomeItem::Settings},
+               HomeItem::Notes, HomeItem::Guilds, HomeItem::Profile, HomeItem::Settings},
               homeItems(f));
 }
 
 void test_circ_off_drops_messages_and_rooms() {
-  Features f{true, true, true, true, true, false};
+  Features f{true, true, true, true, true, false, false};
   const auto items = homeItems(f);
   expectItems({HomeItem::Unread, HomeItem::Cmail, HomeItem::Feed, HomeItem::Following, HomeItem::Guilds,
                HomeItem::Profile, HomeItem::Settings},
@@ -76,6 +94,8 @@ int main(int, char**) {
   RUN_TEST(test_unread_off_only_drops_unread);
   RUN_TEST(test_profile_needs_people);
   RUN_TEST(test_following_needs_feed_and_people);
+  RUN_TEST(test_notes_off_drops_notes);
+  RUN_TEST(test_span_first_with_notes);
   RUN_TEST(test_span_first_only_with_full_rows);
   return UNITY_END();
 }

@@ -69,7 +69,13 @@ CsApi::CsApi(HttpsClient& h)
       followL_(makeFollowLimiter()),
       unfollowL_(makeFollowLimiter()),
       pokeL_(makePokeLimiter()),
-      profileL_(makeProfileLimiter()) {}
+      profileL_(makeProfileLimiter())
+#if RC_FEAT_NOTES
+      ,
+      noteL_(makeNoteLimiter())
+#endif
+{
+}
 
 void CsApi::adopt(const Tokens& t) {
   tokens_ = t;
@@ -681,5 +687,52 @@ ApiError CsApi::updateProfile(const std::string& json) {
   HttpResult r;
   return call("PATCH", "/v1/users/me", json, r);
 }
+
+#if RC_FEAT_NOTES
+ApiError CsApi::notes(const std::string& cursor, int limit, std::vector<NoteRow>& out,
+                      std::string& next) {
+  HttpResult r;
+  ApiError e = call("GET", "/v1/notes" + pageQuery(limit, cursor), "", r);
+  if (e.ok() && !parseNoteList(r.body, out, next)) return badBody(r.status);
+  return e;
+}
+
+ApiError CsApi::note(const std::string& id, int revision, Note& out) {
+  std::string path = "/v1/notes/" + enc(id);
+  if (revision > 0) path += "?revision=" + std::to_string(revision);
+  HttpResult r;
+  ApiError e = call("GET", path, "", r);
+  if (e.ok() && !parseNote(r.body, out)) return badBody(r.status);
+  return e;
+}
+
+ApiError CsApi::noteRevisions(const std::string& id, const std::string& cursor, int limit,
+                              std::vector<NoteRow>& out, std::string& next) {
+  HttpResult r;
+  ApiError e =
+      call("GET", "/v1/notes/" + enc(id) + "/revisions" + pageQuery(limit, cursor), "", r);
+  if (e.ok() && !parseNoteList(r.body, out, next)) return badBody(r.status);
+  return e;
+}
+
+ApiError CsApi::createNote(const std::string& json, std::string& id) {
+  ApiError l = limited(noteL_);
+  if (!l.ok()) return l;
+  HttpResult r;
+  ApiError e = call("POST", "/v1/notes", json, r);
+  if (e.ok() && !parseNoteId(r.body, id)) return badBody(r.status);
+  return e;
+}
+
+ApiError CsApi::updateNote(const std::string& id, const std::string& json) {
+  HttpResult r;
+  return call("PATCH", "/v1/notes/" + enc(id), json, r);
+}
+
+ApiError CsApi::deleteNote(const std::string& id) {
+  HttpResult r;
+  return call("DELETE", "/v1/notes/" + enc(id), "", r);
+}
+#endif
 
 }  // namespace rc

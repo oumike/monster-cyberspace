@@ -468,6 +468,11 @@ void FakeFeedSource::command(const Command& c) {
     case CmdType::OpenUserReplies: post(EvtType::UserRepliesUpdated, "", 0, false); break;
     case CmdType::OpenUserGuilds: post(EvtType::UserGuildsUpdated, "", 0, false); break;
     case CmdType::SaveProfile: post(EvtType::ProfileSaved, "Not in the demo", 0, false); break;
+    case CmdType::OpenNotes: post(EvtType::NotesUpdated); break;  // no notes in the demo
+    case CmdType::OpenNote: post(EvtType::NoteUpdated, "", 0, false); break;
+    case CmdType::OpenNoteHistory: post(EvtType::NoteHistoryUpdated, "", 0, false); break;
+    case CmdType::SaveNote: post(EvtType::NoteSaved, "Not in the demo", 0, false); break;
+    case CmdType::DeleteNote: post(EvtType::NoteDeleted, "Not in the demo", 0, false); break;
     default: break;
   }
 }

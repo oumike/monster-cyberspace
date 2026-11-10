@@ -73,6 +73,13 @@ enum class CmdType {
   OpenUserReplies,       // a = username; n = 1 to append the next page
   OpenUserGuilds,        // a = username
   SaveProfile,           // a = PATCH JSON (profilePatchJson), b = my username
+  // Notes (RC_FEAT_NOTES).
+  OpenNotes,             // n = 1 to append the next page
+  OpenNote,              // a = id; n = revision, 0 the latest
+  OpenNoteHistory,       // a = id; n = 1 to append the next page
+  SaveNote,              // a = id, "" for a new note; b = JSON (noteBodyJson)
+  DeleteNote,            // a = id
+  CloseNotes,            // Notes left for Home: its state cleared
   MarkAllRead,           // Unread: every notification and unread C-Mail
   MarkRoomsRead,         // the rooms list: every unread cIRC room
 };
@@ -123,6 +130,12 @@ enum class EvtType {
   UserRepliesUpdated,   // ok=false on a failed load
   UserGuildsUpdated,    // ok=false on a failed load
   ProfileSaved,         // ok; text = error when !ok
+  // Notes.
+  NotesUpdated,         // ok=false on a failed load
+  NoteUpdated,          // ok=false on a failed load
+  NoteHistoryUpdated,   // ok=false on a failed load
+  NoteSaved,            // ok: text = the note's id; !ok: text = error
+  NoteDeleted,          // ok; text = error when !ok
   // The device's Wi-Fi screen.
   WifiScanned,          // text = rc::encodeWifiScan
   // code 0 joining (text = SSID), 1 joined (text = SSID), 2 forgotten

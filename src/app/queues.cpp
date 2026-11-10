@@ -105,6 +105,21 @@ void refuseCommand(const Command& c) {
     case CmdType::OpenUserGuilds:
       postEvent(Event{EvtType::UserGuildsUpdated, "", 0, false});
       break;
+    case CmdType::OpenNotes:
+      postEvent(Event{EvtType::NotesUpdated, "", 0, false});
+      break;
+    case CmdType::OpenNote:
+      postEvent(Event{EvtType::NoteUpdated, "", 0, false});
+      break;
+    case CmdType::OpenNoteHistory:
+      postEvent(Event{EvtType::NoteHistoryUpdated, "", 0, false});
+      break;
+    case CmdType::SaveNote:
+      postEvent(Event{EvtType::NoteSaved, busy, 0, false});
+      return;
+    case CmdType::DeleteNote:
+      postEvent(Event{EvtType::NoteDeleted, busy, 0, false});
+      return;
     default:
       break;
   }

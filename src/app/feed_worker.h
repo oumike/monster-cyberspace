@@ -59,6 +59,14 @@ class FeedWorker {
   void refreshGuildState();
   void setLoading(bool on);
   std::string openPostId();
+#if RC_FEAT_NOTES
+  void openNotes(bool append);
+  void openNote(const std::string& id, int revision);
+  void openNoteHistory(const std::string& id, bool append);
+  void saveNote(const Command& c);
+  void deleteNote(const std::string& id);
+  void clearNotes();
+#endif
 
   CsApi& api_;
   bool feedOpen_ = false;

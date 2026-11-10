@@ -7,8 +7,10 @@
 #include "cs/api_parse.h"
 #include "cs/rate_limiter.h"
 #include "feed/entry.h"
+#include "feature_flags.h"
 #include "guild/guild.h"
 #include "net/https_client.h"
+#include "notes/notes.h"
 #include "people/profile.h"
 
 namespace rc {
@@ -128,6 +130,19 @@ class CsApi {
   // PATCH /v1/users/me with a profilePatchJson body.
   ApiError updateProfile(const std::string& json);
 
+#if RC_FEAT_NOTES
+  // Notes (private, with revisions). revision 0 = the latest.
+  ApiError notes(const std::string& cursor, int limit, std::vector<NoteRow>&, std::string& next);
+  ApiError note(const std::string& id, int revision, Note&);
+  ApiError noteRevisions(const std::string& id, const std::string& cursor, int limit,
+                         std::vector<NoteRow>&, std::string& next);
+  // POST /v1/notes with a noteBodyJson body; the new note's id.
+  ApiError createNote(const std::string& json, std::string& id);
+  // PATCH /v1/notes/:id: adds a revision.
+  ApiError updateNote(const std::string& id, const std::string& json);
+  ApiError deleteNote(const std::string& id);
+#endif
+
   const Tokens& tokens() const { return tokens_; }
   bool signedIn() const { return !tokens_.refreshToken.empty(); }
   // Restores a session from the refresh token saved in NVS.
@@ -149,6 +164,9 @@ class CsApi {
   RateLimiter cmailSendL_, startL_, cmailReadL_, typingL_, readAllL_;
   RateLimiter entryL_, replyL_, bookmarkL_, watchL_, membershipL_;
   RateLimiter followL_, unfollowL_, pokeL_, profileL_;
+#if RC_FEAT_NOTES
+  RateLimiter noteL_;
+#endif
 };
 
 }  // namespace rc

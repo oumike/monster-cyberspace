@@ -805,6 +805,11 @@ class Worker {
     if (c.type == CmdType::OpenUserReplies) post(EvtType::UserRepliesUpdated, 0, "", false);
     if (c.type == CmdType::OpenUserGuilds) post(EvtType::UserGuildsUpdated, 0, "", false);
     if (c.type == CmdType::SaveProfile) post(EvtType::ProfileSaved, 0, why, false);
+    if (c.type == CmdType::OpenNotes) post(EvtType::NotesUpdated, 0, "", false);
+    if (c.type == CmdType::OpenNote) post(EvtType::NoteUpdated, 0, "", false);
+    if (c.type == CmdType::OpenNoteHistory) post(EvtType::NoteHistoryUpdated, 0, "", false);
+    if (c.type == CmdType::SaveNote) post(EvtType::NoteSaved, 0, why, false);
+    if (c.type == CmdType::DeleteNote) post(EvtType::NoteDeleted, 0, why, false);
     return false;
   }
 
@@ -855,6 +860,9 @@ class Worker {
 #if RC_FEAT_ENTRIES
       case CmdType::CloseFeed:
       case CmdType::CloseGuild:
+#if RC_FEAT_NOTES
+      case CmdType::CloseNotes:
+#endif
         feed_.handle(c);
         return;
       case CmdType::OpenFeed:

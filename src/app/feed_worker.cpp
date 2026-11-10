@@ -12,6 +12,9 @@
 #include "app/queues.h"
 #include "feed/markdown_text.h"
 #include "store/locked_feed.h"
+#if RC_FEAT_NOTES
+#include "store/locked_notes.h"
+#endif
 #include "ui/guild_layout.h"
 
 namespace rc {
@@ -104,6 +107,14 @@ bool FeedWorker::isFeedCommand(CmdType t) {
     case CmdType::JoinGuild:
     case CmdType::LeaveGuild:
     case CmdType::PromoteGuild:
+#if RC_FEAT_NOTES
+    case CmdType::OpenNotes:
+    case CmdType::OpenNote:
+    case CmdType::OpenNoteHistory:
+    case CmdType::SaveNote:
+    case CmdType::DeleteNote:
+    case CmdType::CloseNotes:
+#endif
       return true;
     default:
       return false;
@@ -146,6 +157,14 @@ void FeedWorker::handle(const Command& c) {
     case CmdType::JoinGuild:
     case CmdType::LeaveGuild:
     case CmdType::PromoteGuild: guildMembership(c); break;
+#if RC_FEAT_NOTES
+    case CmdType::OpenNotes: openNotes(c.n == 1); break;
+    case CmdType::OpenNote: openNote(c.a, int(c.n)); break;
+    case CmdType::OpenNoteHistory: openNoteHistory(c.a, c.n == 1); break;
+    case CmdType::SaveNote: saveNote(c); break;
+    case CmdType::DeleteNote: deleteNote(c.a); break;
+    case CmdType::CloseNotes: clearNotes(); break;
+#endif
     default: break;
   }
 }
@@ -173,6 +192,9 @@ void FeedWorker::signOut() {
     s.topicsLoaded = false;
     s.loading = false;
   });
+#if RC_FEAT_NOTES
+  clearNotes();
+#endif
   post(EvtType::FeedUpdated);
 }
 
@@ -827,6 +849,136 @@ void FeedWorker::onNotice(const Mention& m, bool buzzer) {
   });
   post(EvtType::FeedAlert, text, buzzer ? 1 : 0);
 }
+
+#if RC_FEAT_NOTES
+// ---- notes ----
+
+void FeedWorker::clearNotes() {
+  lockedNotes().with([](NotesState& s) { s = NotesState{}; });
+}
+
+void FeedWorker::openNotes(bool append) {
+  std::string cursor;
+  if (append) {
+    cursor = lockedNotes().with([](NotesState& s) { return s.listCursor; });
+    if (cursor.empty()) {
+      post(EvtType::NotesUpdated);
+      return;
+    }
+  }
+  std::vector<NoteRow> page;
+  std::string next;
+  lockedNotes().with([](NotesState& s) { s.loading = true; });
+  ApiError e = fetchList(20, [&](int limit) {
+    page.clear();
+    return api_.notes(cursor, limit, page, next);
+  });
+  lockedNotes().with([&](NotesState& s) {
+    s.loading = false;
+    if (!e.ok()) return;
+    if (!append) s.list.clear();
+    for (auto& r : page) s.list.push_back(std::move(r));
+    s.listCursor = next;
+  });
+  if (!e.ok()) {
+    fail(e);
+    post(EvtType::NotesUpdated, "", 0, false);
+    return;
+  }
+  post(EvtType::NotesUpdated);
+}
+
+void FeedWorker::openNote(const std::string& id, int revision) {
+  Note n;
+  lockedNotes().with([&](NotesState& s) {
+    s.loading = true;
+    if (s.open.id != id || s.open.revision != revision) s.open = Note{};
+  });
+  ApiError e = api_.note(id, revision, n);
+  lockedNotes().with([&](NotesState& s) {
+    s.loading = false;
+    if (!e.ok()) return;
+    if (revision == 0) s.latestRevision = n.revision;
+    else if (s.open.id != id && s.historyId != id) s.latestRevision = 0;
+    s.open = std::move(n);
+  });
+  if (!e.ok()) {
+    fail(e);
+    post(EvtType::NoteUpdated, "", e.http, false);
+    return;
+  }
+  post(EvtType::NoteUpdated);
+}
+
+void FeedWorker::openNoteHistory(const std::string& id, bool append) {
+  std::string cursor;
+  if (append) {
+    cursor = lockedNotes().with(
+        [&](NotesState& s) { return s.historyId == id ? s.historyCursor : std::string(); });
+    if (cursor.empty()) {
+      post(EvtType::NoteHistoryUpdated);
+      return;
+    }
+  }
+  std::vector<NoteRow> page;
+  std::string next;
+  lockedNotes().with([&](NotesState& s) {
+    s.loading = true;
+    if (!append) {
+      s.historyId = id;
+      s.history.clear();
+      s.historyCursor.clear();
+    }
+  });
+  ApiError e = fetchList(20, [&](int limit) {
+    page.clear();
+    return api_.noteRevisions(id, cursor, limit, page, next);
+  });
+  lockedNotes().with([&](NotesState& s) {
+    s.loading = false;
+    if (!e.ok() || s.historyId != id) return;
+    for (auto& r : page) {
+      if (r.revision > s.latestRevision && s.open.id == id) s.latestRevision = r.revision;
+      s.history.push_back(std::move(r));
+    }
+    s.historyCursor = next;
+  });
+  if (!e.ok()) {
+    fail(e);
+    post(EvtType::NoteHistoryUpdated, "", 0, false);
+    return;
+  }
+  post(EvtType::NoteHistoryUpdated);
+}
+
+void FeedWorker::saveNote(const Command& c) {
+  std::string id = c.a;
+  ApiError e = id.empty() ? api_.createNote(c.b, id) : api_.updateNote(id, c.b);
+  if (!e.ok()) {
+    std::string text = id.empty() && e.http == 429 && e.code != "LOCAL_RATE_LIMIT"
+                           ? "Notes can be created 3 times a minute, 30 a day"
+                           : errorText(e, false);
+    post(EvtType::NoteSaved, text, e.http, false);
+    return;
+  }
+  post(EvtType::NoteSaved, id);  // the screens fetch the note and the list again
+}
+
+void FeedWorker::deleteNote(const std::string& id) {
+  ApiError e = api_.deleteNote(id);
+  if (!e.ok()) {
+    post(EvtType::NoteDeleted, errorText(e, true), e.http, false);
+    return;
+  }
+  lockedNotes().with([&](NotesState& s) {
+    s.list.erase(std::remove_if(s.list.begin(), s.list.end(),
+                                [&](const NoteRow& r) { return r.id == id; }),
+                 s.list.end());
+    if (s.open.id == id) s.open = Note{};
+  });
+  post(EvtType::NoteDeleted);
+}
+#endif  // RC_FEAT_NOTES
 
 }  // namespace rc
 

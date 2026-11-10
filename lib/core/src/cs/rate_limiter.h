@@ -44,6 +44,10 @@ RateLimiter makeWatchLimiter();
 RateLimiter makeMembershipLimiter();
 // Follows and unfollows each have their own.
 RateLimiter makeFollowLimiter();
+// Profile saves: 2 a minute, 15 a day.
+RateLimiter makeProfileLimiter();
+// Note creates: 3 a minute, 30 a day.
+RateLimiter makeNoteLimiter();
 // One poke an hour, eight a day, across everyone.
 RateLimiter makePokeLimiter();
 

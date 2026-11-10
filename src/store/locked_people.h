@@ -17,6 +17,10 @@ struct PeopleState {
   bool loading = false;
   FollowIndex follows;          // who I follow
   std::vector<std::string> blocked;  // usernames I blocked on the website
+  std::string listUser;              // whose replies or guilds these are
+  std::vector<UserReply> replies;
+  std::string repliesCursor;
+  std::vector<UserGuild> guilds;
 };
 
 class LockedPeople {

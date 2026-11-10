@@ -55,6 +55,8 @@ RateLimiter makeBookmarkLimiter() { return RateLimiter({{5, 60000}, {75, 8640000
 RateLimiter makeWatchLimiter() { return RateLimiter({{10, 60000}, {100, 86400000}}); }
 RateLimiter makeMembershipLimiter() { return RateLimiter({{3, 60000}, {15, 86400000}}); }
 RateLimiter makeFollowLimiter() { return RateLimiter({{3, 60000}, {15, 86400000}}); }
+RateLimiter makeProfileLimiter() { return RateLimiter({{2, 60000}, {15, 86400000}}); }
+RateLimiter makeNoteLimiter() { return RateLimiter({{3, 60000}, {30, 86400000}}); }
 RateLimiter makePokeLimiter() { return RateLimiter({{1, 3600000}, {8, 86400000}}); }
 
 }  // namespace rc

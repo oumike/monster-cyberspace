@@ -122,6 +122,11 @@ class CsApi {
   ApiError poke(const std::string& username);
   ApiError userPosts(const std::string& username, const std::string& cursor, int limit,
                      std::vector<Entry>&, std::string& next);
+  ApiError userReplies(const std::string& username, const std::string& cursor, int limit,
+                       std::vector<UserReply>&, std::string& next);
+  ApiError userGuilds(const std::string& username, std::vector<UserGuild>&);
+  // PATCH /v1/users/me with a profilePatchJson body.
+  ApiError updateProfile(const std::string& json);
 
   const Tokens& tokens() const { return tokens_; }
   bool signedIn() const { return !tokens_.refreshToken.empty(); }
@@ -143,7 +148,7 @@ class CsApi {
   RateLimiter sendL_, presenceL_, deleteL_, flagL_, readL_, resendL_;
   RateLimiter cmailSendL_, startL_, cmailReadL_, typingL_, readAllL_;
   RateLimiter entryL_, replyL_, bookmarkL_, watchL_, membershipL_;
-  RateLimiter followL_, unfollowL_, pokeL_;
+  RateLimiter followL_, unfollowL_, pokeL_, profileL_;
 };
 
 }  // namespace rc

@@ -465,6 +465,9 @@ void FakeFeedSource::command(const Command& c) {
       else openUserPosts(c.a);
       break;
     case CmdType::OpenFollowingPosts: openFollowingPosts(); break;
+    case CmdType::OpenUserReplies: post(EvtType::UserRepliesUpdated, "", 0, false); break;
+    case CmdType::OpenUserGuilds: post(EvtType::UserGuildsUpdated, "", 0, false); break;
+    case CmdType::SaveProfile: post(EvtType::ProfileSaved, "Not in the demo", 0, false); break;
     default: break;
   }
 }

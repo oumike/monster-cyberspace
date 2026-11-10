@@ -33,6 +33,9 @@ class PeopleWorker {
   void openUserPosts(const std::string& username, bool append);
   // The Feed's entries by people I follow, newest first.
   void openFollowingPosts(bool append);
+  void openUserReplies(const std::string& username, bool append);
+  void openUserGuilds(const std::string& username);
+  void saveProfile(const Command& c);
 
   CsApi& api_;
 };

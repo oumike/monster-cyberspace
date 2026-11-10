@@ -96,6 +96,15 @@ void refuseCommand(const Command& c) {
     case CmdType::Poke:
       postEvent(Event{EvtType::PeopleWriteDone, busy, 0, false});
       return;
+    case CmdType::SaveProfile:
+      postEvent(Event{EvtType::ProfileSaved, busy, 0, false});
+      return;
+    case CmdType::OpenUserReplies:
+      postEvent(Event{EvtType::UserRepliesUpdated, "", 0, false});
+      break;
+    case CmdType::OpenUserGuilds:
+      postEvent(Event{EvtType::UserGuildsUpdated, "", 0, false});
+      break;
     default:
       break;
   }

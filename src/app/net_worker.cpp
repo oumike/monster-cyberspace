@@ -802,6 +802,9 @@ class Worker {
       post(EvtType::PeopleWriteDone, 0, why, false);
     if (c.type == CmdType::OpenUserPosts || c.type == CmdType::OpenFollowingPosts)
       post(EvtType::SideListUpdated, 0, "", false);
+    if (c.type == CmdType::OpenUserReplies) post(EvtType::UserRepliesUpdated, 0, "", false);
+    if (c.type == CmdType::OpenUserGuilds) post(EvtType::UserGuildsUpdated, 0, "", false);
+    if (c.type == CmdType::SaveProfile) post(EvtType::ProfileSaved, 0, why, false);
     return false;
   }
 

@@ -18,7 +18,7 @@ namespace rc {
 
 namespace {
 
-constexpr int kFollowLimit = 50, kFollowPages = 10, kPostsLimit = 10;
+constexpr int kFollowLimit = 50, kFollowPages = 10, kPostsLimit = 10, kRepliesLimit = 20;
 // Following: the API can't list entries by followed users and has no user
 // lookup by id, so Feed pages are scanned for their authorIds: up to
 // kScanPages pages of kScanLimit per load, stopping once kScanWant are found.
@@ -57,6 +57,9 @@ bool PeopleWorker::isPeopleCommand(CmdType t) {
     case CmdType::Poke:
     case CmdType::OpenUserPosts:
     case CmdType::OpenFollowingPosts:
+    case CmdType::OpenUserReplies:
+    case CmdType::OpenUserGuilds:
+    case CmdType::SaveProfile:
       return true;
     default:
       return false;
@@ -71,6 +74,9 @@ void PeopleWorker::handle(const Command& c) {
     case CmdType::Poke: poke(c); break;
     case CmdType::OpenUserPosts: openUserPosts(c.a, c.n == 1); break;
     case CmdType::OpenFollowingPosts: openFollowingPosts(c.n == 1); break;
+    case CmdType::OpenUserReplies: openUserReplies(c.a, c.n == 1); break;
+    case CmdType::OpenUserGuilds: openUserGuilds(c.a); break;
+    case CmdType::SaveProfile: saveProfile(c); break;
     default: break;
   }
 }
@@ -292,6 +298,70 @@ void PeopleWorker::openFollowingPosts(bool append) {
     s.loading = false;
   });
   post(EvtType::SideListUpdated);
+}
+
+void PeopleWorker::openUserReplies(const std::string& username, bool append) {
+  std::string cursor;
+  if (append) {
+    cursor = lockedPeople().with([&](PeopleState& s) {
+      return s.listUser == username ? s.repliesCursor : std::string();
+    });
+    if (cursor.empty()) {
+      post(EvtType::UserRepliesUpdated);
+      return;
+    }
+  } else {
+    lockedPeople().with([&](PeopleState& s) {
+      s.listUser = username;
+      s.replies.clear();
+      s.repliesCursor.clear();
+    });
+  }
+  std::vector<UserReply> page;
+  std::string next;
+  ApiError e = api_.userReplies(username, cursor, kRepliesLimit, page, next);
+  if (!e.ok()) {
+    banner(e.http == 404 ? "No such user" : errorText(e));
+    post(EvtType::UserRepliesUpdated, "", 0, false);
+    return;
+  }
+  lockedPeople().with([&](PeopleState& s) {
+    if (s.listUser != username) return;
+    for (auto& r : page) s.replies.push_back(std::move(r));
+    s.repliesCursor = next;
+  });
+  post(EvtType::UserRepliesUpdated);
+}
+
+void PeopleWorker::openUserGuilds(const std::string& username) {
+  lockedPeople().with([&](PeopleState& s) {
+    s.listUser = username;
+    s.guilds.clear();
+  });
+  std::vector<UserGuild> guilds;
+  ApiError e = api_.userGuilds(username, guilds);
+  if (!e.ok()) {
+    banner(e.http == 404 ? "No such user" : errorText(e));
+    post(EvtType::UserGuildsUpdated, "", 0, false);
+    return;
+  }
+  lockedPeople().with([&](PeopleState& s) {
+    if (s.listUser == username) s.guilds = std::move(guilds);
+  });
+  post(EvtType::UserGuildsUpdated);
+}
+
+void PeopleWorker::saveProfile(const Command& c) {
+  ApiError e = api_.updateProfile(c.a);
+  if (!e.ok()) {
+    std::string text = e.http == 429 && e.code != "LOCAL_RATE_LIMIT"
+                           ? std::string("Profile can be saved 2 times a minute, 15 a day")
+                           : errorText(e);
+    post(EvtType::ProfileSaved, text, e.http, false);
+    return;
+  }
+  post(EvtType::ProfileSaved);
+  openProfile(c.b);
 }
 
 }  // namespace rc

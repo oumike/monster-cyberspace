@@ -70,6 +70,9 @@ enum class CmdType {
   Poke,                  // a = username
   OpenUserPosts,         // a = username; n = 1 to append the next page
   OpenFollowingPosts,    // entries by people I follow; n = 1 for older ones
+  OpenUserReplies,       // a = username; n = 1 to append the next page
+  OpenUserGuilds,        // a = username
+  SaveProfile,           // a = PATCH JSON (profilePatchJson), b = my username
   MarkAllRead,           // Unread: every notification and unread C-Mail
   MarkRoomsRead,         // the rooms list: every unread cIRC room
 };
@@ -117,6 +120,9 @@ enum class EvtType {
   // People.
   ProfileUpdated,       // ok=false on a failed load; code = 404 when there's no such user
   PeopleWriteDone,      // follow/unfollow/poke: ok; text = error or the success banner
+  UserRepliesUpdated,   // ok=false on a failed load
+  UserGuildsUpdated,    // ok=false on a failed load
+  ProfileSaved,         // ok; text = error when !ok
   // The device's Wi-Fi screen.
   WifiScanned,          // text = rc::encodeWifiScan
   // code 0 joining (text = SSID), 1 joined (text = SSID), 2 forgotten

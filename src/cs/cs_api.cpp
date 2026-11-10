@@ -68,7 +68,8 @@ CsApi::CsApi(HttpsClient& h)
       membershipL_(makeMembershipLimiter()),
       followL_(makeFollowLimiter()),
       unfollowL_(makeFollowLimiter()),
-      pokeL_(makePokeLimiter()) {}
+      pokeL_(makePokeLimiter()),
+      profileL_(makeProfileLimiter()) {}
 
 void CsApi::adopt(const Tokens& t) {
   tokens_ = t;
@@ -656,6 +657,29 @@ ApiError CsApi::userPosts(const std::string& username, const std::string& cursor
       call("GET", "/v1/users/" + enc(username) + "/posts" + pageQuery(limit, cursor), "", r);
   if (e.ok() && !parseFeedPage(r.body, out, next)) return badBody(r.status);
   return e;
+}
+
+ApiError CsApi::userReplies(const std::string& username, const std::string& cursor, int limit,
+                            std::vector<UserReply>& out, std::string& next) {
+  HttpResult r;
+  ApiError e =
+      call("GET", "/v1/users/" + enc(username) + "/replies" + pageQuery(limit, cursor), "", r);
+  if (e.ok() && !parseUserReplies(r.body, out, next)) return badBody(r.status);
+  return e;
+}
+
+ApiError CsApi::userGuilds(const std::string& username, std::vector<UserGuild>& out) {
+  HttpResult r;
+  ApiError e = call("GET", "/v1/users/" + enc(username) + "/guilds", "", r);
+  if (e.ok() && !parseUserGuilds(r.body, out)) return badBody(r.status);
+  return e;
+}
+
+ApiError CsApi::updateProfile(const std::string& json) {
+  ApiError l = limited(profileL_);
+  if (!l.ok()) return l;
+  HttpResult r;
+  return call("PATCH", "/v1/users/me", json, r);
 }
 
 }  // namespace rc

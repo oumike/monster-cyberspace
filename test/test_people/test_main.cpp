@@ -10,6 +10,7 @@
 #include "people/profile_edit.h"
 #include <ArduinoJson.h>
 #include "ui/profile_layout.h"
+#include "ui/widgets/input_line.h"
 #include "util/utf8.h"
 
 using namespace rc;
@@ -65,10 +66,25 @@ void test_profile_missing_fields() {
 }
 
 void test_profile_bio_cut() {
-  std::string body = "{\"data\":{\"username\":\"x\",\"bio\":\"" + std::string(2000, 'a') + "\"}}";
+  std::string body = "{\"data\":{\"username\":\"x\",\"bio\":\"" + std::string(3000, 'a') + "\"}}";
   Profile p;
   TEST_ASSERT_TRUE(parseProfile(body, p));
   TEST_ASSERT_EQUAL(int(kProfileBioBytes), int(p.bio.size()));
+}
+
+// A 640-emoji bio (the server's limit) loads whole and can be edited whole.
+void test_profile_bio_keeps_640_emoji() {
+  std::string bio;
+  for (int i = 0; i < 640; ++i) bio += "\xF0\x9F\x98\x80";
+  Profile p;
+  TEST_ASSERT_TRUE(parseProfile("{\"data\":{\"username\":\"x\",\"bio\":\"" + bio + "\"}}", p));
+  TEST_ASSERT_EQUAL_STRING(bio.c_str(), p.bio.c_str());
+  InputLine in;
+  in.setMaxBytes(kProfileBioBytes);
+  in.setText(utf8ToU32(bio));
+  TEST_ASSERT_EQUAL_STRING(bio.c_str(), in.utf8().c_str());
+  in.insert(U'a');
+  TEST_ASSERT_EQUAL(640, int(in.text().size()));
 }
 
 void test_blocked_users() {
@@ -363,5 +379,6 @@ int main(int, char**) {
   RUN_TEST(test_profile_field_error_url);
   RUN_TEST(test_profile_field_error_counts_chars);
   RUN_TEST(test_profile_line_roles);
+  RUN_TEST(test_profile_bio_keeps_640_emoji);
   return UNITY_END();
 }

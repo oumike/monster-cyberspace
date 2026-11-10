@@ -37,6 +37,7 @@
 #include "input/key_event.h"
 #include "screens/composer.h"
 #include "screens/router.h"
+#include "screens/screens.h"
 #include "store/locked_chat.h"
 #include "chat/room_read.h"
 #if RC_FEAT_ENTRIES
@@ -838,6 +839,9 @@ void handleEvent(const Event& e) {
 #if RC_FEAT_COMPOSER
   // A post that settles after the Composer was left still clears its draft.
   if (cur != Id::Composer) composerBackgroundEvent(e);
+#endif
+#if RC_FEAT_NOTES
+  if (cur != Id::NoteEdit) noteBackgroundEvent(e);
 #endif
   router::screen().onEvent(e);
 }

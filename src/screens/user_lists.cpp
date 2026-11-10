@@ -72,7 +72,7 @@ void UserListScreen::onKey(const KeyEvent& k) {
       if (i < 0 || i >= int(keys_.size()) || keys_[i].empty()) break;
       if (!guilds_) {
 #if RC_FEAT_ENTRIES
-        router::go(router::Id::Entry, keys_[i]);
+        router::goFrom(router::Id::UserReplies, router::Id::Entry, keys_[i]);
 #endif
       } else {
 #if RC_FEAT_GUILDS

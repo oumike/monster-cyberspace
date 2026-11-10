@@ -15,7 +15,9 @@ class InputLine {
  public:
   static constexpr size_t kMaxBytes = 2048;
 
-  // Refuses a character that would push the UTF-8 length past kMaxBytes.
+  // The cap, kMaxBytes unless set (Edit profile's Bio takes more).
+  void setMaxBytes(size_t n) { maxBytes_ = n; }
+  // Refuses a character that would push the UTF-8 length past the cap.
   void insert(char32_t c);
   void backspace();
   bool left();
@@ -47,7 +49,7 @@ class InputLine {
 
  private:
   std::u32string text_;
-  size_t cursor_ = 0, bytes_ = 0;
+  size_t cursor_ = 0, bytes_ = 0, maxBytes_ = kMaxBytes;
   bool disabled_ = false;
   bool emojiButton_ = false;
   uint8_t fieldId_ = 0;

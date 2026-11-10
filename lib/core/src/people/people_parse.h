@@ -9,7 +9,7 @@
 namespace rc {
 
 // Bios are cut to this many bytes (the API allows 640 characters).
-constexpr size_t kProfileBioBytes = 1024;
+constexpr size_t kProfileBioBytes = 2560;  // 640 characters of up to 4 bytes
 
 // A user's replies are cut to this many bytes for their list rows.
 constexpr size_t kUserReplyBytes = 512;

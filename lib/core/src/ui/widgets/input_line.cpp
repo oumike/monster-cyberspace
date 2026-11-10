@@ -15,7 +15,7 @@ static size_t utf8Bytes(char32_t c) {
 
 void InputLine::insert(char32_t c) {
   size_t n = utf8Bytes(c);
-  if (bytes_ + n > kMaxBytes) return;
+  if (bytes_ + n > maxBytes_) return;
   text_.insert(text_.begin() + cursor_, c);
   ++cursor_;
   bytes_ += n;
@@ -59,7 +59,7 @@ bool InputLine::replace(size_t start, size_t len, std::u32string_view with) {
   size_t out = 0, in = 0;
   for (size_t i = 0; i < len; ++i) out += utf8Bytes(text_[start + i]);
   for (char32_t c : with) in += utf8Bytes(c);
-  if (bytes_ - out + in > kMaxBytes) return false;
+  if (bytes_ - out + in > maxBytes_) return false;
   text_.replace(start, len, with);
   bytes_ = bytes_ - out + in;
   if (cursor_ >= start + len) cursor_ = cursor_ - len + with.size();

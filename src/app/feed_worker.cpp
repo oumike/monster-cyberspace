@@ -904,10 +904,11 @@ void FeedWorker::openNote(const std::string& id, int revision) {
   });
   if (!e.ok()) {
     fail(e);
-    post(EvtType::NoteUpdated, "", e.http, false);
+    post(EvtType::NoteUpdated, id + "\n" + std::to_string(revision), e.http, false);
     return;
   }
-  post(EvtType::NoteUpdated);
+  // Tagged with what was asked for, so a late answer can't fill another view.
+  post(EvtType::NoteUpdated, id + "\n" + std::to_string(revision));
 }
 
 void FeedWorker::openNoteHistory(const std::string& id, bool append) {

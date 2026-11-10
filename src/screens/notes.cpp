@@ -21,7 +21,8 @@ std::u32string age(int64_t ms) {
 
 // A NoteEdit's text outlives the screen until it is saved or discarded.
 struct NoteDraft {
-  std::string id;  // the note it edits; "" for a new one
+  std::string user;  // whose draft: another sign-in starts afresh
+  std::string id;    // the note it edits; "" for a new one
   std::string text;
   bool set = false;
 } gNoteDraft;
@@ -242,6 +243,7 @@ void NoteScreen::menuKey(const KeyEvent& k) {
 
 void NoteScreen::onEvent(const Event& e) {
   if (e.type == EvtType::NoteUpdated) {
+    if (e.text != id_ + "\n" + std::to_string(revision_)) return;
     std::string content;
     bool mine = false;
     lockedNotes().with([&](NotesState& s) {
@@ -334,8 +336,8 @@ void NoteEditScreen::enter(const std::string& id) {
   saving_ = false;
   id_ = id;
   // Keep a draft of this same note; else start from the note (or empty).
-  if (!gNoteDraft.set || gNoteDraft.id != id) {
-    gNoteDraft = NoteDraft{id, "", true};
+  if (!gNoteDraft.set || gNoteDraft.id != id || gNoteDraft.user != app().user) {
+    gNoteDraft = NoteDraft{app().user, id, "", true};
     if (!id.empty())
       lockedNotes().with([&](NotesState& s) {
         if (s.open.id == id) gNoteDraft.text = s.open.content;
@@ -441,6 +443,11 @@ void NoteEditScreen::discard() {
   body_.clear();
   if (id_.empty()) router::go(router::Id::Notes);
   else router::go(router::Id::Note, id_);
+}
+
+void noteBackgroundEvent(const Event& e) {
+  // A save that settles after the editor was left still clears its draft.
+  if (e.type == EvtType::NoteSaved && e.ok) gNoteDraft = NoteDraft{};
 }
 
 void NoteEditScreen::onEvent(const Event& e) {

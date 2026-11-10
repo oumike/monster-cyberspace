@@ -6,6 +6,7 @@
 #include "feed/feed_source.h"
 #include "screens/lv_draw.h"
 #include "screens/screens.h"
+#include "people/people_parse.h"
 #include "store/locked_people.h"
 #include "ui/nick_color.h"
 
@@ -32,6 +33,7 @@ void ProfileEditScreen::enter(const std::string&) {
   const std::string* vals[kFields] = {&before_.displayName, &before_.bio, &before_.websiteUrl,
                                       &before_.websiteName, &before_.locationName};
   for (int i = 0; i < kFields; ++i) {
+    fields_[i].setMaxBytes(i == 1 ? kProfileBioBytes : InputLine::kMaxBytes);
     fields_[i].setText(utf8ToU32(*vals[i]));
     fields_[i].setFieldId(uint8_t(i));
   }

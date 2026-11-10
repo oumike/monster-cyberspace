@@ -914,6 +914,9 @@ class NoteScreen : public Screen {
   lvui::TreeViews<Views> v_;
 };
 
+// Clears the note draft when its save settles with the editor closed.
+void noteBackgroundEvent(const Event& e);
+
 // A note's text, new ("" arg) or an edit (arg = id): one multi-line body.
 // The menu saves or discards; the text is kept across visits until then.
 class NoteEditScreen : public Screen {

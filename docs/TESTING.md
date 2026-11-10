@@ -24,6 +24,21 @@ These were built without flashing and still need a run on the device. The
 scripted fake-API builds (`m9_fake`, `wio_l2_fake`, `tdeck_fake`) were removed
 on 2026-10-27; the sections marked `m9_fake` passed on it before then.
 
+**Fuller profiles and Notes (the M9 and the Wio L2):**
+
+- [ ] Profile → Replies: someone's replies, newest first with ages; Centre
+  opens the entry at that reply; the end loads more; "no replies yet".
+- [ ] Profile → Guilds: name and role; Centre opens the guild; "not in a guild".
+- [ ] Your profile → Edit profile: change Name and Bio, save, the profile
+  shows them; empty Location clears it; a website without `http` and a
+  65-character Name are refused with a banner; Back with changes asks.
+- [ ] Home → Notes (tile and row): list, "+ New note", write two lines, save
+  (opens the note); Edit adds a revision; History lists both, an old one is
+  read-only with "rev 1 of 2"; Delete asks, then the list no longer has it.
+- [ ] Notes: Back with text asks "Discard changes?"; leave the editor
+  another way (Home) and reopen — the text is kept; Discard drops it. Offline: saving says "Offline: not saved".
+- [ ] Cardputer ADV build: no Notes on Home.
+
 **Chat style (2.1.0; the M9 and the Wio L2):**
 
 - [ ] Chat style: Bubbles on the M9 and Wio L2 — room, C-Mail, entry with

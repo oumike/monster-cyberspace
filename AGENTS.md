@@ -49,6 +49,9 @@ boards and Cyberspace features come later.
 - **Chat style (IRC or Bubbles):** spec
   `docs/superpowers/specs/2026-11-09-cyberspace-chat-style-design.md`,
   plan `docs/superpowers/plans/2026-11-09-cyberspace-chat-style.md`.
+- **Fuller profiles and Notes (issue #9, items 5 and 2):** spec
+  `docs/superpowers/specs/2026-11-10-cyberspace-profiles-notes-design.md`,
+  plan `docs/superpowers/plans/2026-11-10-cyberspace-profiles-notes.md`.
 - **Fluffy Generator (custom mascot):** spec
   `docs/superpowers/specs/2026-10-31-cyberspace-fluffy-generator-design.md`,
   plan `docs/superpowers/plans/2026-10-31-cyberspace-fluffy-generator.md`.
@@ -422,7 +425,15 @@ flashing): Settings and web config pick it (NVS `cstyle`, backup
 bubbles (`DisplayLine::bubble*` from `layoutRoomEach`, fill
 `rc::bubbleFill`), which `lvui::LogBox` draws in both its object and painted
 modes. Its hardware check in docs/TESTING.md is open.
-The native suite is green: 775/775
+Fuller profiles and Notes (issue #9, items 5 and 2) were added on 2026-11-10
+(built without flashing): a profile's Replies and Guilds lists and your own
+Edit profile (`src/screens/user_lists.cpp`, `profile_edit.cpp`,
+`lib/core/src/people/profile_edit`), and Notes from Home (`RC_FEAT_NOTES`,
+default `RC_FEAT_FEED`, 0 on the Cardputer ADV and X4): list, read, write,
+history and delete (`src/screens/notes.cpp`, `lib/core/src/notes/`,
+`src/store/locked_notes`, commands on `FeedWorker`). Their hardware check in
+docs/TESTING.md is open.
+The native suite is green: 799/799
 (`pio test -e native`), and so is the LVGL one: 86/86 (`pio test -e
 native_lv`, and built lean). `scripts/build-upload-monitor.sh -B` builds all
 thirteen firmware envs (the X4 only from a path without spaces).

@@ -741,9 +741,10 @@ You must be signed in. Open one from:
 - a guild's **Members**: Centre or Right on a member (tap on touch boards)
 
 **On a profile:** Up/Down scroll. Under the bio are **Entries**,
-**Bookmarks** (on your own profile: the Feed's Bookmarks list, and Back
-returns to the profile), **Guild** (when they have one), **Website** (when
-they have one) and **Refresh**:
+**Replies**, **Bookmarks** (on your own profile: the Feed's Bookmarks list,
+and Back returns to the profile), **Edit profile** (your own profile),
+**Guilds**, **Guild** (when they have one), **Website** (when they have one)
+and **Refresh**:
 buttons in a row on touch boards (tap one), a list on the others. With keys,
 Down at the end of the profile moves into them (the d-pad picks, Centre
 opens) and Up from the first goes back to scrolling. Centre, Right or
@@ -760,6 +761,20 @@ Under the bio:
 - **Entries** lists their public entries (on your own profile, yours; it says
   "no entries yet" until you post), paged like the Feed; Back returns to the
   profile.
+- **Replies** lists the replies they've written, newest first, each with its
+  first line and age; Centre opens the entry scrolled to that reply. The end
+  of the list loads more.
+- **Guilds** lists the guilds they belong to (at most six: their own guild
+  first, then apprenticeships) with their role; Centre opens one.
+- **Edit profile** (your own profile only) has one line each for Name, Bio,
+  Website, Site name and Location, filled with what's set now. Up/Down (or
+  Centre) move between them; Centre on the last line, or **Ctrl** (⋯ on
+  touch), saves. Only the lines you changed are sent; an emptied line clears
+  it. Name, Site name and Location take 64 characters, Bio 640, and the
+  website must start with `http://` or `https://`; anything else is refused
+  with a banner before it's sent. A refused save keeps your edits. Back with
+  changes asks "Discard changes?". The server allows 2 saves a minute, 15 a
+  day.
 - **Guild** opens their guild, **Website** shows the link with its QR code,
   **Refresh** reloads the profile (also when it couldn't load).
 
@@ -873,6 +888,33 @@ reads further back; with none found yet it says `none in recent entries`.
 Open an entry like a Feed entry; Back returns to the list without reading it
 again. Ctrl or ⋯ offers Refresh and text size; Back from the list goes Home.
 A follow or unfollow makes the next visit read it afresh.
+
+## Notes
+
+Your private notes from cyberspace.online, from Home → **Notes** (a tile on
+touch boards). Not on the Cardputer ADV or the X4. You must be signed in.
+
+- **The list:** **+ New note** first, then your notes, newest first, each
+  with its first line (or "(empty)") and when it was last changed. The end of
+  the list loads more. Centre opens one; Back goes Home.
+- **A note** scrolls with Up/Down. The status bar shows its revision and age.
+  Centre, Right or **Ctrl** (⋯ on touch) opens **Edit**, **History** and
+  **Delete…**. Delete asks "Delete this note and all its revisions?" and
+  returns to the list. Back returns to the list.
+- **Writing** (+ New note, or Edit): one text box, up to 32,768 characters,
+  with the count above it. Centre starts a new line, the d-pad moves the
+  cursor. **Ctrl** (⋯ on touch) opens **Save** and **Discard…**. An empty
+  note is refused. Saving an edit adds a revision; a saved note opens. Back
+  with changes asks "Discard changes?"; leaving another way (Home) keeps the
+  text for the next time you open the same note. The server allows 3 new
+  notes a minute and 30 a day; a refused save keeps the text, and nothing is
+  retried.
+- **History** lists the note's revisions, newest first ("rev N" and age).
+  Centre opens one, read-only, with "rev N of M" in the status bar; Back
+  returns to History, then to the note.
+
+Topics on a note are kept but not shown; an edit sends only the text. Old
+revisions can't be restored from the device.
 
 ## Unread
 

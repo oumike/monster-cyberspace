@@ -1,6 +1,10 @@
-### Monster for Cyberspace 2.1.1
+### Monster for Cyberspace (next release)
 
-### Mesh Deck lights
+### Fuller profiles
 
-- The Mesh Deck's three LEDs now each have their own job, like the Tanmatsu's: the front LED blinks for the last room and mentions, the keyboard's left half for C-Mail and its right half for the Feed. Settings and web config call them **Left light (C-Mail)** and **Right light (Feed)**.
-- Without the keyboard module (or one of its halves), that source blinks on the front LED as before.
+- A profile now lists the person's **Replies** (Centre opens the entry at that reply) and their **Guilds** with their role.
+- Your own profile has **Edit profile**: name, bio, website, site name and location, checked on the device before saving.
+
+### Notes
+
+- **Notes** on Home: your private cyberspace.online notes. Read, write, edit and delete them, and browse each note's revisions. Not on the Cardputer ADV or the X4.

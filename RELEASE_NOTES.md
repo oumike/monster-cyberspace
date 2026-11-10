@@ -1,6 +1,6 @@
-### Monster for Cyberspace 2.1.0
+### Monster for Cyberspace 2.1.1
 
-### Chat style
+### Mesh Deck lights
 
-- A new **Chat style** setting, in Settings and web config: **IRC**, the lined messages you have now (still the default), or **Bubbles**, where each message sits in a filled, rounded bubble, yours on the right and everyone else's on the left, with the nick and time on a dim line above.
-- It applies to rooms, C-Mail conversations, and the replies under Feed entries and guild threads; the entry itself keeps its look. On e-paper the bubbles are outlined.
+- The Mesh Deck's three LEDs now each have their own job, like the Tanmatsu's: the front LED blinks for the last room and mentions, the keyboard's left half for C-Mail and its right half for the Feed. Settings and web config call them **Left light (C-Mail)** and **Right light (Feed)**.
+- Without the keyboard module (or one of its halves), that source blinks on the front LED as before.

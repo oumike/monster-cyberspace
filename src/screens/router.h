@@ -74,6 +74,10 @@ enum class Id {
   UserReplies,    // a user's replies; arg = username
   UserGuilds,     // the guilds a user is in; arg = username
   ProfileEdit,    // Edit profile (your own)
+  Notes,          // my notes (Home)
+  Note,           // a note; arg = id, or "id\nN" for revision N
+  NoteHistory,    // a note's revisions; arg = id
+  NoteEdit,       // a note's text; arg = id, or "" for a new note
 };
 
 struct Place {

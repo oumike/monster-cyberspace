@@ -38,6 +38,10 @@
 #if RC_FEAT_PEOPLE
 #include "people/profile_edit.h"
 #endif
+#if RC_FEAT_NOTES
+#include "notes/notes.h"
+#include "ui/widgets/text_area.h"
+#endif
 
 namespace rc {
 
@@ -839,6 +843,115 @@ class ProfileEditScreen : public Screen {
     lvui::InputField fieldViews_[kFields];
     lvui::MenuOverlay menuView_;
     lvui::HintBar hint_;
+  };
+  lvui::TreeViews<Views> v_;
+};
+#endif
+
+#if RC_FEAT_NOTES
+// My notes (Home → Notes): a pinned "+ New note" row, then the notes, newest
+// first. Or (history = true) one note's revisions, newest first.
+class NoteListScreen : public Screen {
+ public:
+  explicit NoteListScreen(bool history) : history_(history) {}
+  void enter(const std::string& id) override;
+  void onKey(const KeyEvent&) override;
+  void onEvent(const Event&) override;
+  void build(lv_obj_t* root) override;
+  void update(int64_t nowMs) override;
+
+ private:
+  void request(bool append);
+  std::vector<ListItem> rows();
+  void sync();
+  const bool history_;
+  ListView list_;
+  std::string id_;                 // history: the note's id
+  std::vector<std::string> keys_;  // by row: the Note arg ("" for + New note)
+  bool more_ = false, asked_ = false, failed_ = false, loading_ = false;
+  struct Views {
+    SyncGate<2> gate_;
+    lvui::TopBar status_;
+    lvui::ListBox listView_;
+    SideNavHost navView_;
+    lvui::CellText text_;
+    lvui::HintBar hint_;
+  };
+  lvui::TreeViews<Views> v_;
+};
+
+// One note, read-only and scrolling. On the latest revision the menu has
+// Edit, History and Delete; an old revision has none.
+class NoteScreen : public Screen {
+ public:
+  void enter(const std::string& arg) override;
+  void onKey(const KeyEvent&) override;
+  void onEvent(const Event&) override;
+  void build(lv_obj_t* root) override;
+  void update(int64_t nowMs) override;
+  bool hasOverlay() const override { return box_.isOpen(); }
+  void closeOverlays() override {
+    box_.close();
+    confirm_ = false;
+  }
+
+ private:
+  void menuKey(const KeyEvent&);
+  void sync();
+  std::string id_;
+  int revision_ = 0;  // 0: the latest
+  TextView text_;
+  Overlay box_;
+  bool confirm_ = false, loaded_ = false, failed_ = false, busy_ = false;
+  struct Views {
+    SyncGate<2> gate_;
+    lvui::TopBar status_;
+    lvui::TextBox textView_;
+    lvui::CellText cells_;
+    lvui::HintBar hint_;
+    lvui::MenuOverlay menuView_;
+  };
+  lvui::TreeViews<Views> v_;
+};
+
+// A note's text, new ("" arg) or an edit (arg = id): one multi-line body.
+// The menu saves or discards; the text is kept across visits until then.
+class NoteEditScreen : public Screen {
+ public:
+  void enter(const std::string& id) override;
+  void onKey(const KeyEvent&) override;
+  void onEvent(const Event&) override;
+  void build(lv_obj_t* root) override;
+  void update(int64_t nowMs) override;
+  bool hasOverlay() const override { return menu_ != Menu::None; }
+  void closeOverlays() override {
+    menu_ = Menu::None;
+    box_.close();
+  }
+  bool acceptsText() const override { return menu_ == Menu::None && !saving_; }
+  bool consumesBackspace() const override { return acceptsText() && body_.length() > 0; }
+  std::u32string paletteLabel() const override { return U"save or discard\u2026"; }
+
+ private:
+  enum class Menu { None, Actions, ConfirmDiscard };
+  void menuKey(const KeyEvent&);
+  void save();
+  void leave();
+  void discard();
+  void sync();
+  TextArea body_{kNoteMaxChars};
+  std::string id_;
+  Menu menu_ = Menu::None;
+  Overlay box_;
+  bool saving_ = false;
+  int cols_ = 40;
+  struct Views {
+    SyncGate<2> gate_;
+    lvui::TopBar status_;
+    lvui::CellText text_;
+    lvui::TextBox bodyView_;
+    lvui::HintBar hint_;
+    lvui::MenuOverlay menuView_;
   };
   lvui::TreeViews<Views> v_;
 };

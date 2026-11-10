@@ -124,7 +124,7 @@ std::vector<ListItem> UserListScreen::rows(int64_t nowMs) {
     for (const auto& r : replies) {
       ListItem it;
       it.label = firstLine(r.content);
-      if (r.createdMs >= 0) it.right = utf8ToU32(relativeAge(r.createdMs, nowMs));
+      if (r.createdMs >= 0) it.right = utf8ToU32(relativeAge(r.createdMs, nowEpochMs()));
       items.push_back(std::move(it));
       keys_.push_back(r.postId.empty() ? std::string() : r.postId + "\n\n" + r.replyId);
     }

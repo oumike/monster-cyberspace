@@ -52,6 +52,12 @@ UserListScreen userReplies{false};
 UserListScreen userGuilds{true};
 ProfileEditScreen profileEdit;
 #endif
+#if RC_FEAT_NOTES
+NoteListScreen notes{false};
+NoteListScreen noteHistory{true};
+NoteScreen note;
+NoteEditScreen noteEdit;
+#endif
 #if RC_FEAT_PEOPLE && RC_FEAT_FEED
 FeedListScreen followingPosts{FeedListScreen::Kind::Following};
 #endif
@@ -111,6 +117,12 @@ Screen* lookup(Id id) {
     case Id::UserReplies: return &userReplies;
     case Id::UserGuilds: return &userGuilds;
     case Id::ProfileEdit: return &profileEdit;
+#endif
+#if RC_FEAT_NOTES
+    case Id::Notes: return &notes;
+    case Id::NoteHistory: return &noteHistory;
+    case Id::Note: return &note;
+    case Id::NoteEdit: return &noteEdit;
 #endif
 #if RC_FEAT_PEOPLE && RC_FEAT_FEED
     case Id::Following: return &followingPosts;

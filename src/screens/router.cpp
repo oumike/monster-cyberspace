@@ -48,6 +48,9 @@ MembersScreen members;
 #if RC_FEAT_PEOPLE
 ProfileScreen profile;
 FeedListScreen userPosts{FeedListScreen::Kind::User};
+UserListScreen userReplies{false};
+UserListScreen userGuilds{true};
+ProfileEditScreen profileEdit;
 #endif
 #if RC_FEAT_PEOPLE && RC_FEAT_FEED
 FeedListScreen followingPosts{FeedListScreen::Kind::Following};
@@ -105,6 +108,9 @@ Screen* lookup(Id id) {
 #if RC_FEAT_PEOPLE
     case Id::Profile: return &profile;
     case Id::UserPosts: return &userPosts;
+    case Id::UserReplies: return &userReplies;
+    case Id::UserGuilds: return &userGuilds;
+    case Id::ProfileEdit: return &profileEdit;
 #endif
 #if RC_FEAT_PEOPLE && RC_FEAT_FEED
     case Id::Following: return &followingPosts;

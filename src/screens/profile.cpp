@@ -27,7 +27,8 @@ namespace {
 constexpr int64_t kAgeRefreshMs = 60000;  // re-lay so "active 3m ago" keeps up
 
 enum ProfileAct {
-  kFollow, kUnfollow, kMessage, kPoke, kEntries, kBookmarks, kGuild, kWebsite, kRefresh
+  kFollow, kUnfollow, kMessage, kPoke, kEntries, kBookmarks, kGuild, kWebsite, kRefresh,
+  kReplies, kGuilds, kEdit
 };
 
 std::string lower(std::string s) {
@@ -202,7 +203,14 @@ void ProfileScreen::buildLinks() {
   };
   if (v.loaded) {
     add(kEntries, U"Entries");
-    if (isSelf(v.p.username)) add(kBookmarks, U"Bookmarks");
+#if RC_FEAT_ENTRIES
+    add(kReplies, U"Replies");
+#endif
+    if (isSelf(v.p.username)) {
+      add(kBookmarks, U"Bookmarks");
+      add(kEdit, U"Edit profile");
+    }
+    add(kGuilds, U"Guilds");
     if (!v.p.guildSlug.empty()) add(kGuild, U"Guild");
     if (!v.p.websiteUrl.empty()) add(kWebsite, U"Website");
   }
@@ -322,6 +330,15 @@ void ProfileScreen::doAct(int act) {
       break;
     case kBookmarks:
       router::goFrom(router::Id::Profile, router::Id::Bookmarks);
+      break;
+    case kReplies:
+      router::go(router::Id::UserReplies, user_);
+      break;
+    case kGuilds:
+      router::go(router::Id::UserGuilds, user_);
+      break;
+    case kEdit:
+      router::go(router::Id::ProfileEdit);
       break;
     case kGuild:
       if (!v.p.guildSlug.empty()) router::go(router::Id::Guild, v.p.guildSlug);

@@ -35,6 +35,9 @@
 #include "ui/widgets/overlay.h"
 #include "ui/widgets/slider.h"
 #include "ui/widgets/text_view.h"
+#if RC_FEAT_PEOPLE
+#include "people/profile_edit.h"
+#endif
 
 namespace rc {
 
@@ -770,5 +773,75 @@ class ComingSoonScreen : public Screen {
   };
   lvui::TreeViews<Views> v_;
 };
+
+#if RC_FEAT_PEOPLE
+// A user's replies (Profile → Replies), newest first; Select opens the entry
+// at the reply. Or (guilds = true) the guilds they are in, at most six.
+class UserListScreen : public Screen {
+ public:
+  explicit UserListScreen(bool guilds) : guilds_(guilds) {}
+  void enter(const std::string& username) override;
+  void onKey(const KeyEvent&) override;
+  void onEvent(const Event&) override;
+  void build(lv_obj_t* root) override;
+  void update(int64_t nowMs) override;
+
+ private:
+  void request(bool append);
+  std::vector<ListItem> rows(int64_t nowMs);
+  const char* emptyText() const;
+  void sync(int64_t nowMs);
+  const bool guilds_;
+  ListView list_;
+  std::string user_;
+  std::vector<std::string> keys_;  // by row: the Entry arg, or the guild slug
+  bool more_ = false, asked_ = false, failed_ = false, loading_ = false;
+  int64_t nowMs_ = 0;
+  struct Views {
+    SyncGate<1> gate_;
+    lvui::TopBar status_;
+    lvui::ListBox listView_;
+    SideNavHost navView_;
+    lvui::CellText text_;
+    lvui::HintBar hint_;
+  };
+  lvui::TreeViews<Views> v_;
+};
+
+// Edit profile (your own): display name, bio, website and its name, and
+// location, each a one-line field; Select on the last saves.
+class ProfileEditScreen : public Screen {
+ public:
+  void enter(const std::string&) override;
+  void onKey(const KeyEvent&) override;
+  void onEvent(const Event&) override;
+  void build(lv_obj_t* root) override;
+  void update(int64_t nowMs) override;
+  void closeOverlays() override { box_.close(); }
+  bool acceptsText() const override { return !busy_ && !box_.isOpen(); }
+  bool consumesBackspace() const override { return acceptsText(); }
+
+ private:
+  static constexpr int kFields = 5;
+  void save();
+  void leave();
+  ProfileFields current() const;
+  void sync();
+  InputLine fields_[kFields];
+  ProfileFields before_;
+  Overlay box_;  // "Discard changes?"
+  int focus_ = 0;
+  bool busy_ = false;
+  struct Views {
+    SyncGate<> gate_;
+    lvui::TopBar status_;
+    lvui::CellText text_;
+    lvui::InputField fieldViews_[kFields];
+    lvui::MenuOverlay menuView_;
+    lvui::HintBar hint_;
+  };
+  lvui::TreeViews<Views> v_;
+};
+#endif
 
 }  // namespace rc

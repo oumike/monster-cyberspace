@@ -71,6 +71,9 @@ enum class Id {
   Topics,         // every topic, from the Feed's commands
   Topic,          // a topic's entries; arg = its name
   Following,      // entries by people I follow (Home)
+  UserReplies,    // a user's replies; arg = username
+  UserGuilds,     // the guilds a user is in; arg = username
+  ProfileEdit,    // Edit profile (your own)
 };
 
 struct Place {

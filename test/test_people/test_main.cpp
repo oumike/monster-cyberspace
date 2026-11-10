@@ -7,6 +7,8 @@
 #include "feed/feed_parse.h"
 #include "people/follow_index.h"
 #include "people/people_parse.h"
+#include "people/profile_edit.h"
+#include <ArduinoJson.h>
 #include "ui/profile_layout.h"
 #include "util/utf8.h"
 
@@ -202,6 +204,139 @@ void test_profile_line_roles() {
   TEST_ASSERT_TRUE(joined == profileText(p, true, 0, true));
 }
 
+void test_user_replies_parse() {
+  std::vector<UserReply> r;
+  std::string cur;
+  TEST_ASSERT_TRUE(parseUserReplies(fx::kUserReplies, r, cur));
+  TEST_ASSERT_EQUAL(2, int(r.size()));
+  TEST_ASSERT_EQUAL_STRING("r1", r[0].replyId.c_str());
+  TEST_ASSERT_EQUAL_STRING("p1", r[0].postId.c_str());
+  TEST_ASSERT_EQUAL_STRING("First **reply**\nsecond line", r[0].content.c_str());
+  TEST_ASSERT_TRUE(r[0].createdMs == parseIsoMs("2026-10-30T12:00:00.000Z"));
+  TEST_ASSERT_EQUAL_STRING("r2", r[1].replyId.c_str());
+  TEST_ASSERT_EQUAL_STRING("", r[1].content.c_str());
+  TEST_ASSERT_EQUAL_STRING("r2", cur.c_str());
+}
+
+void test_user_replies_end_cursor() {
+  std::vector<UserReply> r;
+  std::string cur = "x";
+  TEST_ASSERT_TRUE(parseUserReplies(fx::kUserRepliesEnd, r, cur));
+  TEST_ASSERT_EQUAL(0, int(r.size()));
+  TEST_ASSERT_EQUAL_STRING("", cur.c_str());
+}
+
+void test_user_replies_cut() {
+  std::string big(2000, 'a');
+  std::string body = std::string(R"({"data":[{"replyId":"r","postId":"p","content":")") + big +
+                     R"(","deleted":false,"createdAt":"2026-10-30T12:00:00.000Z"}],"cursor":null})";
+  std::vector<UserReply> r;
+  std::string cur;
+  TEST_ASSERT_TRUE(parseUserReplies(body, r, cur));
+  TEST_ASSERT_TRUE(r[0].content.size() <= kUserReplyBytes);
+}
+
+void test_user_guilds_parse() {
+  std::vector<UserGuild> g;
+  TEST_ASSERT_TRUE(parseUserGuilds(fx::kUserGuilds, g));
+  TEST_ASSERT_EQUAL(2, int(g.size()));
+  TEST_ASSERT_EQUAL_STRING("night-owls", g[0].slug.c_str());
+  TEST_ASSERT_EQUAL_STRING("Night Owls", g[0].name.c_str());
+  TEST_ASSERT_EQUAL_STRING("🦉", g[0].icon.c_str());
+  TEST_ASSERT_EQUAL_STRING("member", g[0].role.c_str());
+  TEST_ASSERT_EQUAL_STRING("apprentice", g[1].role.c_str());
+}
+
+void test_user_guilds_missing_icon() {
+  std::vector<UserGuild> g;
+  TEST_ASSERT_TRUE(parseUserGuilds(fx::kUserGuildsNoIcon, g));
+  TEST_ASSERT_EQUAL(1, int(g.size()));
+  TEST_ASSERT_EQUAL_STRING("", g[0].icon.c_str());
+  TEST_ASSERT_EQUAL_STRING("founder", g[0].role.c_str());
+}
+
+namespace {
+ProfileFields baseFields() { return ProfileFields{"Ann", "old bio", "https://ann.example", "site", "London"}; }
+}  // namespace
+
+void test_profile_fields_from_profile() {
+  Profile p;
+  TEST_ASSERT_TRUE(parseProfile(fx::kProfileFull, p));
+  ProfileFields f = profileFields(p);
+  TEST_ASSERT_EQUAL_STRING("Ann Example", f.displayName.c_str());
+  TEST_ASSERT_EQUAL_STRING("https://ann.example", f.websiteUrl.c_str());
+  TEST_ASSERT_EQUAL_STRING("my site", f.websiteName.c_str());
+  TEST_ASSERT_EQUAL_STRING("London, UK", f.locationName.c_str());
+}
+
+void test_patch_only_changed() {
+  ProfileFields a = baseFields(), b = a;
+  b.bio = "new";
+  TEST_ASSERT_EQUAL_STRING("{\"bio\":\"new\"}", profilePatchJson(a, b).c_str());
+}
+
+void test_patch_blank_is_null() {
+  ProfileFields a = baseFields(), b = a;
+  b.displayName = "  ";
+  TEST_ASSERT_EQUAL_STRING("{\"displayName\":null}", profilePatchJson(a, b).c_str());
+}
+
+void test_patch_no_change_empty() {
+  TEST_ASSERT_EQUAL_STRING("", profilePatchJson(baseFields(), baseFields()).c_str());
+}
+
+void test_patch_escapes() {
+  ProfileFields a = baseFields(), b = a;
+  b.bio = "say \"hi\"\nback\\slash";
+  std::string j = profilePatchJson(a, b);
+  JsonDocument d;
+  TEST_ASSERT_FALSE(deserializeJson(d, j));
+  TEST_ASSERT_EQUAL_STRING(b.bio.c_str(), d["bio"].as<const char*>());
+}
+
+void test_profile_field_error_limits() {
+  ProfileFields f = baseFields();
+  TEST_ASSERT_NULL(profileFieldError(f));
+  f.displayName = std::string(64, 'a');
+  TEST_ASSERT_NULL(profileFieldError(f));
+  f.displayName += "a";
+  TEST_ASSERT_EQUAL_STRING("Display name: 64 characters at most", profileFieldError(f));
+  f = baseFields();
+  f.bio = std::string(640, 'b');
+  TEST_ASSERT_NULL(profileFieldError(f));
+  f.bio += "b";
+  TEST_ASSERT_EQUAL_STRING("Bio: 640 characters at most", profileFieldError(f));
+  f = baseFields();
+  f.websiteName = std::string(65, 'c');
+  TEST_ASSERT_EQUAL_STRING("Website name: 64 characters at most", profileFieldError(f));
+  f = baseFields();
+  f.locationName = std::string(65, 'd');
+  TEST_ASSERT_EQUAL_STRING("Location: 64 characters at most", profileFieldError(f));
+}
+
+void test_profile_field_error_url() {
+  ProfileFields f = baseFields();
+  f.websiteUrl = "ftp://x";
+  TEST_ASSERT_EQUAL_STRING("Website must start with http:// or https://", profileFieldError(f));
+  f.websiteUrl = "";
+  TEST_ASSERT_NULL(profileFieldError(f));
+  f.websiteUrl = "https://a";
+  TEST_ASSERT_NULL(profileFieldError(f));
+  f.websiteUrl = "http://a";
+  TEST_ASSERT_NULL(profileFieldError(f));
+  f.websiteUrl = "https://" + std::string(2041, 'a');
+  TEST_ASSERT_EQUAL_STRING("Website: 2048 characters at most", profileFieldError(f));
+}
+
+void test_profile_field_error_counts_chars() {
+  ProfileFields f = baseFields();
+  f.bio.clear();
+  for (int i = 0; i < 640; ++i) f.bio += "🙂";
+  TEST_ASSERT_NULL(profileFieldError(f));
+  f.bio += "🙂";
+  TEST_ASSERT_EQUAL_STRING("Bio: 640 characters at most", profileFieldError(f));
+}
+
 int main(int, char**) {
   UNITY_BEGIN();
   RUN_TEST(test_profile_full);
@@ -214,6 +349,19 @@ int main(int, char**) {
   RUN_TEST(test_follow_index_cap);
   RUN_TEST(test_profile_text);
   RUN_TEST(test_profile_text_bare);
+  RUN_TEST(test_user_replies_parse);
+  RUN_TEST(test_user_replies_end_cursor);
+  RUN_TEST(test_user_replies_cut);
+  RUN_TEST(test_user_guilds_parse);
+  RUN_TEST(test_user_guilds_missing_icon);
+  RUN_TEST(test_profile_fields_from_profile);
+  RUN_TEST(test_patch_only_changed);
+  RUN_TEST(test_patch_blank_is_null);
+  RUN_TEST(test_patch_no_change_empty);
+  RUN_TEST(test_patch_escapes);
+  RUN_TEST(test_profile_field_error_limits);
+  RUN_TEST(test_profile_field_error_url);
+  RUN_TEST(test_profile_field_error_counts_chars);
   RUN_TEST(test_profile_line_roles);
   return UNITY_END();
 }

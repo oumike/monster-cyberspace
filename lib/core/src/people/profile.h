@@ -22,4 +22,15 @@ struct Follow {
   std::string followId, followerId, followedId;
 };
 
+// GET /v1/users/:username/replies: one reply, deleted ones left out.
+struct UserReply {
+  std::string replyId, postId, content;
+  int64_t createdMs = -1;
+};
+
+// GET /v1/users/:username/guilds. role: founder, member or apprentice.
+struct UserGuild {
+  std::string slug, name, icon, role;
+};
+
 }  // namespace rc

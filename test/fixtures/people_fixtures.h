@@ -33,4 +33,24 @@ static const char* kFollowPageEnd = R"({"data":[
 
 static const char* kFollowCreated = R"({"data":{"followId":"f9"}})";
 
+static const char* kUserReplies = R"({"data":[
+  {"replyId":"r1","postId":"p1","authorId":"u42","authorUsername":"ann","content":"First **reply**\nsecond line",
+   "deleted":false,"createdAt":"2026-10-30T12:00:00.000Z"},
+  {"replyId":"rx","postId":"p1","authorId":"u42","authorUsername":"ann","content":"","deleted":true,
+   "createdAt":"2026-10-30T11:00:00.000Z"},
+  {"replyId":"r2","postId":"p2","authorId":"u42","authorUsername":"ann","deleted":false,
+   "createdAt":"2026-10-29T12:00:00.000Z"}
+],"cursor":"r2"})";
+
+static const char* kUserRepliesEnd = R"({"data":[],"cursor":null})";
+
+static const char* kUserGuilds = R"({"data":[
+  {"guildId":"g1","slug":"night-owls","name":"Night Owls","icon":"🦉","role":"member","joinedAt":"2026-05-01T00:00:00.000Z"},
+  {"guildId":"g2","slug":"early-birds","name":"Early Birds","icon":"🐦","role":"apprentice","joinedAt":"2026-06-01T00:00:00.000Z"}
+],"cursor":null})";
+
+static const char* kUserGuildsNoIcon = R"({"data":[
+  {"guildId":"g3","slug":"plain","name":"Plain","role":"founder","joinedAt":"2026-05-01T00:00:00.000Z"}
+],"cursor":null})";
+
 }  // namespace fx

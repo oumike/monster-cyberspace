@@ -104,4 +104,35 @@ bool parseFollowId(std::string_view body, std::string& followId) {
   return true;
 }
 
+bool parseUserReplies(std::string_view body, std::vector<UserReply>& out, std::string& cursor) {
+  JsonDocument doc;
+  if (!load(body, doc) || !doc["data"].is<JsonArrayConst>()) return false;
+  out.clear();
+  for (JsonVariantConst d : doc["data"].as<JsonArrayConst>()) {
+    if (d["deleted"].as<bool>()) continue;
+    UserReply r;
+    r.replyId = str(d["replyId"]);
+    if (r.replyId.empty()) continue;
+    r.postId = str(d["postId"]);
+    r.content = str(d["content"]);
+    truncateUtf8(r.content, kUserReplyBytes);
+    std::string created = str(d["createdAt"]);
+    r.createdMs = created.empty() ? -1 : parseIsoMs(created);
+    out.push_back(std::move(r));
+  }
+  cursor = cursorOf(doc["cursor"]);
+  return true;
+}
+
+bool parseUserGuilds(std::string_view body, std::vector<UserGuild>& out) {
+  JsonDocument doc;
+  if (!load(body, doc) || !doc["data"].is<JsonArrayConst>()) return false;
+  out.clear();
+  for (JsonVariantConst d : doc["data"].as<JsonArrayConst>()) {
+    UserGuild g{str(d["slug"]), str(d["name"]), str(d["icon"]), str(d["role"])};
+    if (!g.slug.empty()) out.push_back(std::move(g));
+  }
+  return true;
+}
+
 }  // namespace rc

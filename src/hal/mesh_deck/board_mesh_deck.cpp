@@ -114,7 +114,14 @@ bool hasKbLight() { return false; }
 uint8_t kbLightDefault() { return 0; }
 void kbLight(uint8_t, bool) {}
 bool hasNotifyLight() { return true; }
-void notifyLight(uint8_t rgb) { attaky_core::setLed(rgb); }
+void notifyLight(uint8_t rgb) { attaky_core::setFrontLed(rgb); }
+// The keyboard halves' LEDs, while that half is fitted: C-Mail left, Feed right.
+bool hasCmailLight() { return attaky_core::keyboardHalfPresent(attaky_core::kKbLeft); }
+void cmailLight(uint8_t rgb) { attaky_core::setKbLed(attaky_core::kKbLeft, rgb); }
+const char* cmailLightName() { return "Left light"; }
+bool hasFeedLight() { return attaky_core::keyboardHalfPresent(attaky_core::kKbRight); }
+void feedLight(uint8_t rgb) { attaky_core::setKbLed(attaky_core::kKbRight, rgb); }
+const char* feedLightName() { return "Right light"; }
 bool eink() { return false; }
 
 bool readTouch(int16_t& x, int16_t& y) {

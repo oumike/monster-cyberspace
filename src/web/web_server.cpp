@@ -482,8 +482,8 @@ esp_err_t getPrefs(httpd_req_t* req) {
     if (RC_FEAT_CMAIL) d["notifyCmail"] = rc::ledColorKey(s.notifyCmail);
     d["notifyTimeout"] = s.notifyTimeoutSecs;
     // The page names a source after the board's own light for it.
-    if (board::hasFeedLight()) d["feedLightName"] = "B light";
-    if (board::hasCmailLight()) d["cmailLightName"] = "A light";
+    if (board::hasFeedLight()) d["feedLightName"] = board::feedLightName();
+    if (board::hasCmailLight()) d["cmailLightName"] = board::cmailLightName();
   }
   d["webConfig"] = s.webConfig;
   if (!board::canType()) {

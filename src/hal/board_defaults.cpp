@@ -26,8 +26,10 @@ __attribute__((weak)) bool hasPowerLight() { return false; }
 __attribute__((weak)) void powerLight(uint8_t) {}
 __attribute__((weak)) bool hasCmailLight() { return false; }
 __attribute__((weak)) void cmailLight(uint8_t) {}
+__attribute__((weak)) const char* cmailLightName() { return "C-Mail light"; }
 __attribute__((weak)) bool hasFeedLight() { return false; }
 __attribute__((weak)) void feedLight(uint8_t) {}
+__attribute__((weak)) const char* feedLightName() { return "Feed light"; }
 __attribute__((weak)) bool hasWifiLight() { return false; }
 __attribute__((weak)) void wifiLight(uint8_t) {}
 __attribute__((weak)) bool hasLedLevel() { return false; }

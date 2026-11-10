@@ -49,13 +49,16 @@ void kbLight(uint8_t duty, bool screenOn);
 // bit 0 red, bit 1 green, bit 2 blue, 0 off. A no-op without one.
 bool hasNotifyLight();
 void notifyLight(uint8_t rgb);
-// Lights of their own for C-Mail and the Feed (the Tanmatsu's A and B), in
-// notifyLight's rgb bits. With one, that source blinks there instead of on
-// the notification light. Default: none.
+// Lights of their own for C-Mail and the Feed (the Tanmatsu's A and B, the
+// Mesh Deck's keyboard halves), in notifyLight's rgb bits. With one, that
+// source blinks there instead of on the notification light; Settings and web
+// config name it cmailLightName / feedLightName (UTF-8). Default: none.
 bool hasCmailLight();
 void cmailLight(uint8_t rgb);
+const char* cmailLightName();
 bool hasFeedLight();
 void feedLight(uint8_t rgb);
+const char* feedLightName();
 // A power light and a Wi-Fi light (the Tanmatsu's LEDs), each set in
 // notifyLight's rgb bits. hasLedLevel: the status LEDs (these and the
 // notification light) dim together, ledLevel giving each lit channel's value

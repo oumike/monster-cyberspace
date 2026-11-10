@@ -262,8 +262,10 @@ bool hasNotifyLight() { return true; }
 void notifyLight(uint8_t rgb) { setLed(kMessageLed, rgb); }
 bool hasCmailLight() { return true; }
 void cmailLight(uint8_t rgb) { setLed(kCmailLed, rgb); }
+const char* cmailLightName() { return "A light"; }
 bool hasFeedLight() { return true; }
 void feedLight(uint8_t rgb) { setLed(kFeedLed, rgb); }
+const char* feedLightName() { return "B light"; }
 bool hasPowerLight() { return true; }
 void powerLight(uint8_t rgb) { setLed(kPowerLed, rgb); }
 bool hasWifiLight() { return true; }

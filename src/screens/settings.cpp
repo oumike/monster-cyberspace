@@ -42,6 +42,14 @@ std::u32string volumeLabel(uint8_t pct) {
   return s + U"%";
 }
 
+// A source with a light of its own is named after that light.
+std::u32string feedLightLabel() {
+  return board::hasFeedLight() ? utf8ToU32(board::feedLightName()) + U" (Feed)" : U"Feed light";
+}
+std::u32string cmailLightLabel() {
+  return board::hasCmailLight() ? utf8ToU32(board::cmailLightName()) + U" (C-Mail)" : U"C-Mail light";
+}
+
 enum Item {
   kTheme,
   kTextSize,
@@ -634,10 +642,10 @@ void SettingsScreen::activate(int item) {
       openColour(Confirm::NotifyMention, U"mention light", app().cfg.notifyMention);
       break;
     case kNotifyFeed:
-      openColour(Confirm::NotifyFeed, board::hasFeedLight() ? U"B light (Feed)" : U"Feed light", app().cfg.notifyFeed);
+      openColour(Confirm::NotifyFeed, feedLightLabel().c_str(), app().cfg.notifyFeed);
       break;
     case kNotifyCmail:
-      openColour(Confirm::NotifyCmail, board::hasCmailLight() ? U"A light (C-Mail)" : U"C-Mail light", app().cfg.notifyCmail);
+      openColour(Confirm::NotifyCmail, cmailLightLabel().c_str(), app().cfg.notifyCmail);
       break;
     case kNotifyTimeout: {
       std::vector<ListItem> rows;
@@ -825,10 +833,10 @@ std::vector<ListItem> itemRows(const std::vector<Item>& items, bool buttons, boo
         rows.push_back(ListItem{U"Mention light", ledColorLabel(a.cfg.notifyMention)});
         break;
       case kNotifyFeed:
-        rows.push_back(ListItem{board::hasFeedLight() ? U"B light (Feed)" : U"Feed light", ledColorLabel(a.cfg.notifyFeed)});
+        rows.push_back(ListItem{feedLightLabel(), ledColorLabel(a.cfg.notifyFeed)});
         break;
       case kNotifyCmail:
-        rows.push_back(ListItem{board::hasCmailLight() ? U"A light (C-Mail)" : U"C-Mail light", ledColorLabel(a.cfg.notifyCmail)});
+        rows.push_back(ListItem{cmailLightLabel(), ledColorLabel(a.cfg.notifyCmail)});
         break;
       case kNotifyTimeout:
         rows.push_back(ListItem{U"Light timeout", notifyTimeoutLabel(a.cfg.notifyTimeoutSecs)});

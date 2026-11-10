@@ -93,7 +93,7 @@ bool gaugeReg16(uint8_t reg, uint16_t& v) {
 constexpr uint8_t kKbAddr[2] = {KB_LEFT_ADDR, KB_RIGHT_ADDR};
 constexpr uint8_t kRows = 0x1F, kKbLedOff = 0xE0;
 constexpr uint8_t kReleaseScans = 2, kLostScans = 10;
-uint8_t kbLed = kKbLedOff;  // rides along in every row write
+uint8_t kbLed[2] = {kKbLedOff, kKbLedOff};  // each half's, riding along in every row write
 bool kbReady[2] = {};
 uint8_t kbFails[2] = {};
 uint8_t kbStable[2][5] = {}, kbReported[2][5] = {}, kbRelCand[2][5] = {}, kbRelCount[2][5] = {};
@@ -101,20 +101,20 @@ uint8_t kbStable[2][5] = {}, kbReported[2][5] = {}, kbRelCand[2][5] = {}, kbRelC
 bool kbConfigure(uint8_t h) {
   const uint8_t a = kKbAddr[h];
   return writeReg(a, kAwConfig0, 0xFF) && writeReg(a, kAwConfig1, 0x00) &&
-         writeReg(a, kAwOutput0, 0x00) && writeReg(a, kAwOutput1, kRows | kbLed);
+         writeReg(a, kAwOutput0, 0x00) && writeReg(a, kAwOutput1, kRows | kbLed[h]);
 }
 
 bool kbScanHalf(uint8_t h, uint8_t rows[5]) {
   const uint8_t a = kKbAddr[h];
   for (uint8_t r = 0; r < 5; ++r) {
-    if (!writeReg(a, kAwOutput1, uint8_t((kRows & ~(1u << r)) | kbLed))) return false;
+    if (!writeReg(a, kAwOutput1, uint8_t((kRows & ~(1u << r)) | kbLed[h]))) return false;
     delayMicroseconds(50);
     uint8_t cols;
     if (!readRegs(a, kAwInput0, &cols, 1)) return false;
     rows[r] = uint8_t(~cols & 0x1F);
     if (rows[r] == 0x1F) return false;  // a glitched read, not five fingers
   }
-  writeReg(a, kAwOutput1, kRows | kbLed);
+  writeReg(a, kAwOutput1, kRows | kbLed[h]);
   return true;
 }
 
@@ -258,15 +258,24 @@ int keyboardScan(KeyChange* out, int max) {
   return n;
 }
 
+void setFrontLed(uint8_t rgb) {
+  if (!expander) return;
+  uint8_t out;
+  if (readRegs(EXPANDER_ADDR, kAwOutput1, &out, 1))
+    writeReg(EXPANDER_ADDR, kAwOutput1, uint8_t((out | kFrontLedMask) & ~(rgb & 7)));
+}
+
+bool keyboardHalfPresent(uint8_t half) { return half < 2 && kbReady[half]; }
+
+void setKbLed(uint8_t half, uint8_t rgb) {
+  if (half >= 2) return;
+  kbLed[half] = uint8_t(kKbLedOff & ~(((rgb & 1) ? 0x80 : 0) | ((rgb & 2) ? 0x40 : 0) | ((rgb & 4) ? 0x20 : 0)));
+  if (kbReady[half]) writeReg(kKbAddr[half], kAwOutput1, kRows | kbLed[half]);
+}
+
 void setLed(uint8_t rgb) {
-  if (expander) {
-    uint8_t out;
-    if (readRegs(EXPANDER_ADDR, kAwOutput1, &out, 1))
-      writeReg(EXPANDER_ADDR, kAwOutput1, uint8_t((out | kFrontLedMask) & ~(rgb & 7)));
-  }
-  kbLed = uint8_t(kKbLedOff & ~(((rgb & 1) ? 0x80 : 0) | ((rgb & 2) ? 0x40 : 0) | ((rgb & 4) ? 0x20 : 0)));
-  for (uint8_t h = 0; h < 2; ++h)
-    if (kbReady[h]) writeReg(kKbAddr[h], kAwOutput1, kRows | kbLed);
+  setFrontLed(rgb);
+  for (uint8_t h = 0; h < 2; ++h) setKbLed(h, rgb);
 }
 
 }  // namespace attaky_core

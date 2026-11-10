@@ -455,7 +455,8 @@ Buttons: BOOT tap = Back, BOOT hold (0.6 s) = Home; Wake tap = screen off
 - [ ] D-pad arrows move the right way and repeat when held; Select selects, held turns the screen off and on; L1 goes back, held goes Home; R2 and BOOT turn the screen off and on; the power button does nothing in the UI
 - [ ] Every key types the right character, with Shift, Sym and Alt held or tapped; Del deletes and repeats, then goes back; Tab opens the palette; Mic opens the emoji tray while typing; Sym opens the symbol table while typing (Sym again: emoji); Alt/Fn + W/A/S/D, Del, Enter, H, C, M, F
 - [ ] Unplugging and replugging the keyboard module: `keyboard … half lost` / `found`, and the on-screen keyboard shows only while it's out
-- [ ] Notification light: a mention or C-Mail blinks the front and keyboard LEDs twice a second in the chosen colour; it stops once read or after the timeout; Off keeps it dark; picking a colour in Settings or web config blinks it once
+- [ ] Notification light: a mention blinks the front LED twice a second in the chosen colour; it stops once read or after the timeout; Off keeps it dark; picking a colour in Settings or web config blinks it once
+- [ ] Separate lights (2026-11-09): with the keyboard module, a new C-Mail blinks only the left half's LED and a Feed notice only the right half's, neither on the front LED; Settings and web config name them Left light (C-Mail) and Right light (Feed), and picking their colour previews on that LED; with the keyboard unplugged at boot both blink on the front LED and Settings says C-Mail light and Feed light
 - [ ] Battery %: Settings shows a sensible value; the charging state follows the USB cable
 - [ ] GPS: outdoors with Wi-Fi off, `[time] set from GPS` within 15 min, then `[gps] off`
 - [ ] With the LoRa/GPS module: the log shows `[meshdeck] LoRa radio asleep` and the high-pitched whine is gone; without one, `[meshdeck] no LoRa radio`

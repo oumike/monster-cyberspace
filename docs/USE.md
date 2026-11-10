@@ -270,15 +270,17 @@ keyboard; the module can be plugged in while it runs.
 
 The power button is not used by the firmware: holding it cuts the power.
 
-**Notification light:** the front LED and the keyboard's LEDs blink while
-something is unread: the last room you opened (the channel), a mention in
-another room, a Feed notification or a C-Mail. Each pending one gets a double
-blink in its own colour, one after another, then a pause, repeating each
-second at most; each stops when read, or the light timeout after its last
-message. Settings has **Channel light** (Blue by default), **Mention light**
-(Yellow), **Feed light** (Green) and **C-Mail light** (Magenta), each a colour
-or Off, and **Light timeout** (15 s by default, up to Until read); picking a
-colour blinks it once. Web config has them under Lights and sound.
+**Notification light:** the LEDs blink while something is unread. The front
+LED is for the last room you opened (the channel) and a mention in another
+room; with the keyboard module fitted, the left half's LED is for C-Mail and
+the right half's for the Feed (without a half, its source blinks on the front
+LED). Each pending one gets a double blink in its own colour, one after
+another, then a pause, repeating each second at most; each stops when read, or
+the light timeout after its last message. Settings has **Channel light** (Blue
+by default), **Mention light** (Yellow), **Right light (Feed)** (Green) and
+**Left light (C-Mail)** (Magenta), each a colour or Off, and **Light timeout**
+(15 s by default, up to Until read); picking a colour blinks it once on its
+LED. Web config has them under Lights and sound.
 
 There is no RTC, speaker or SD slot: the clock comes from Wi-Fi or the GPS,
 and backups go through web config. The setup AP is
@@ -302,7 +304,8 @@ plugged in while it runs.
 | X, Y, L2, R1, R2, FN keys | Not used yet |
 
 The Core's **R2** (or BOOT) turns the screen off and on, as on the Mesh Deck.
-The notification light works as on the Mesh Deck.
+The notification light works as on the Mesh Deck, except that every source,
+C-Mail and the Feed too, blinks on all its LEDs together.
 
 The speaker beeps for mentions and C-Mail when **Alert sound** is on (Settings or web config);
 between beeps it is idle. Backups go to the microSD slot. There is no RTC or

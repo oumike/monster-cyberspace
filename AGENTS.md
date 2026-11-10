@@ -195,7 +195,10 @@ FT6636 touch, the AW9523 front buttons (`MeshDeckPad`) and keyboard module
 RTC, SD or buzzer. The LoRa module's SX1262, when fitted, is unused: `radioSleep()`
 puts it to sleep at boot (awake, it whines). Console: UART0 (CH340). Its RGB LEDs are the notification
 light (`board::hasNotifyLight`/`notifyLight`; the blinker, colours and
-timeouts in `ui/notify_light`, settings `notifyLight`/`notifyTimeoutSecs`).
+timeouts in `ui/notify_light`, settings `notifyLight`/`notifyTimeoutSecs`):
+the front LED for rooms and mentions, and while each keyboard half is fitted
+its LED for C-Mail (left) and the Feed (right) (`board::cmailLight`/`feedLight`,
+`attaky_core::setFrontLed`/`setKbLed`); the Cyber Deck Plus lights all together.
 `src/hal/cyber_deck_plus/` is the Attaky Cyber Deck Plus 1.0 (PR #6, from the
 Attaky "cyberdeck plus 1.0" datasheet): the Mesh Deck's Core through
 `src/hal/attaky/`, plus a gamepad of two TCA9555s at 0x22/0x26

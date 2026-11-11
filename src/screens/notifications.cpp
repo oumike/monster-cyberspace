@@ -8,7 +8,9 @@
 #include "app/ui_task.h"
 #include "hal/board.h"
 #include "screens/button_pad.h"
+#include "feed/feed_source.h"
 #include "screens/lv_draw.h"
+#include "screens/people_nav.h"
 #include "screens/screens.h"
 #include "store/locked_chat.h"
 #include "store/locked_feed.h"
@@ -23,6 +25,7 @@ const char* tag(UnreadKind k) {
     case UnreadKind::Cmail: return "mail  ";
     case UnreadKind::Mention: return "irc   ";
     case UnreadKind::Feed: return "feed  ";
+    case UnreadKind::People: return "people";
   }
   return "";
 }
@@ -32,6 +35,7 @@ const char* kindName(UnreadKind k) {
     case UnreadKind::Cmail: return "C-Mail";
     case UnreadKind::Mention: return "Mention";
     case UnreadKind::Feed: return "Feed";
+    case UnreadKind::People: return "People";
   }
   return "";
 }
@@ -54,7 +58,10 @@ std::vector<UnreadItem> gatherUnread() {
     mentions.push_back(UnreadItem{UnreadKind::Mention, it->slug, it->text, it->at, 1});
   lockedFeed().with([&](FeedState& s) {
     for (auto it = s.notices.rbegin(); it != s.notices.rend(); ++it)
-      feed.push_back(UnreadItem{UnreadKind::Feed, it->postId + '\n' + it->id, it->text, it->at, 1});
+      if (!it->user.empty())
+        feed.push_back(UnreadItem{UnreadKind::People, it->user + '\n' + it->id, it->text, it->at, 1});
+      else
+        feed.push_back(UnreadItem{UnreadKind::Feed, it->postId + '\n' + it->id, it->text, it->at, 1});
   });
   return mergeUnread(std::move(cmail), std::move(mentions), std::move(feed));
 }
@@ -100,6 +107,15 @@ void NotificationsScreen::open(int row) {
     case UnreadKind::Feed:
       router::goFrom(Id::Notifications, Id::Entry, it.target);
       break;
+    case UnreadKind::People: {
+      // Read once opened, as an entry's notice is when Entry opens it.
+      const size_t nl = it.target.find('\n');
+      feedSource().command(Command{CmdType::MarkNoticeRead, it.target.substr(nl + 1)});
+#if RC_FEAT_PEOPLE
+      people::openProfile(it.target.substr(0, nl));
+#endif
+      break;
+    }
   }
 }
 

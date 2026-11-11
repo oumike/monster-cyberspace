@@ -59,6 +59,8 @@ struct Mention {
   // Feed notifications: preview is metadata.replyContent, else postContent,
   // else the top-level reason.
   std::string type, targetId, replyId, preview;
+  std::string targetType;          // "post" | "reply" (bookmark: which one was saved)
+  std::string postTitle, postSlug;  // metadata, when the server sends them
   int64_t at = 0;  // createdAt in epoch ms; 0 when missing or malformed
 };
 bool parseMentions(std::string_view body, std::vector<Mention>& out);

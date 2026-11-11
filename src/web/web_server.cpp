@@ -438,6 +438,7 @@ esp_err_t getPrefs(httpd_req_t* req) {
   d["screenSaver"] = s.screenSaver;
   if (RC_FEAT_SPELL) d["spellCheck"] = s.spellCheck;
   d["chatStyle"] = rc::chatStyleKey(s.chatStyle);
+  if (RC_FEAT_UNREAD && RC_FEAT_ENTRIES) d["unreadFilter"] = rc::unreadFilterKey(s.unreadFilter);
   if (!board::eink()) d["theme"] = rc::themeKey(s.theme);
   // The page draws itself in the device's colours: each theme's [bg, fg,
   // dim, barBg, barFg, hintBg, hintFg, selectBg, selectFg, inputBg, error].
@@ -525,6 +526,7 @@ struct PrefsChange {
   uint32_t screenOnSecs;
   bool screenSaver, spellCheck, tapVibrate, alertVibrate;
   rc::ChatStyle chatStyle;
+  rc::UnreadFilter unreadFilter;
   rc::KbLight kbLight;
   rc::Settings lights;
   uint8_t brightness;
@@ -572,6 +574,11 @@ std::string parsePrefs(JsonVariantConst doc, const Settings& s, PrefsChange& c) 
   if (!doc["chatStyle"].isNull() && (!doc["chatStyle"].is<const char*>() ||
                                      !rc::parseChatStyle(doc["chatStyle"].as<const char*>(), c.chatStyle)))
     return "Chat style: irc or bubbles";
+  c.unreadFilter = s.unreadFilter;
+  if (!doc["unreadFilter"].isNull() &&
+      (!doc["unreadFilter"].is<const char*>() ||
+       !rc::parseUnreadFilter(doc["unreadFilter"].as<const char*>(), c.unreadFilter)))
+    return "Unread shows: all or mentions";
   c.tapVibrate = doc["tapVibrate"].is<bool>() ? doc["tapVibrate"].as<bool>() : s.tapVibrate;
   c.alertVibrate = doc["alertVibrate"].is<bool>() ? doc["alertVibrate"].as<bool>() : s.alertVibrate;
   c.kbLight = s.kbLight;
@@ -690,6 +697,7 @@ void applyPrefs(const PrefsChange& c, const Settings& s) {
     cfg.chatStyle = c.chatStyle;
     settings::saveChatStyle(c.chatStyle);
   }
+  if (c.unreadFilter != s.unreadFilter) rc::ui::setUnreadFilter(c.unreadFilter);
   if (board::hasHaptic() && (c.tapVibrate != s.tapVibrate || c.alertVibrate != s.alertVibrate)) {
     cfg.tapVibrate = c.tapVibrate;
     cfg.alertVibrate = c.alertVibrate;

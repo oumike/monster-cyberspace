@@ -73,17 +73,21 @@ bool spanFirst() {
 constexpr int kTilePercent = 90;  // of the area between the status bar and the hint
 
 #if RC_FEAT_FEED
-// The newest unread Feed notice as an Entry arg ("postId\nnoticeId"), or "".
+// The newest unread notice about an entry as an Entry arg ("postId\nnoticeId"),
+// or "". Followers and pokes open profiles from Unread instead.
 std::string newestNotice() {
   return lockedFeed().with([](FeedState& s) {
-    if (s.notices.empty()) return std::string();
-    const FeedNotice& n = s.notices.back();
-    return n.postId + '\n' + n.id;
+    for (auto it = s.notices.rbegin(); it != s.notices.rend(); ++it)
+      if (!it->postId.empty()) return it->postId + '\n' + it->id;
+    return std::string();
   });
 }
 
 int feedUnread() {
-  return lockedFeed().with([](FeedState& s) { return int(s.notices.size()); });
+  return lockedFeed().with([](FeedState& s) {
+    return int(std::count_if(s.notices.begin(), s.notices.end(),
+                             [](const FeedNotice& n) { return !n.postId.empty(); }));
+  });
 }
 #else
 int feedUnread() { return 0; }

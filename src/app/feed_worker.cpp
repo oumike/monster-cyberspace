@@ -67,11 +67,6 @@ ApiError fetchList(int limit, F fetch) {
   }
 }
 
-bool endsWith(const std::string& s, const char* tail) {
-  std::string t(tail);
-  return s.size() >= t.size() && s.compare(s.size() - t.size(), t.size(), t) == 0;
-}
-
 }  // namespace
 
 FeedWorker::FeedWorker(CsApi& api) : api_(api) {}
@@ -107,6 +102,7 @@ bool FeedWorker::isFeedCommand(CmdType t) {
     case CmdType::JoinGuild:
     case CmdType::LeaveGuild:
     case CmdType::PromoteGuild:
+    case CmdType::MarkNoticeRead:
 #if RC_FEAT_NOTES
     case CmdType::OpenNotes:
     case CmdType::OpenNote:
@@ -131,6 +127,7 @@ void FeedWorker::handle(const Command& c) {
       refreshFirst(true, true);
       break;
     case CmdType::OpenEntry: openEntry(c); break;
+    case CmdType::MarkNoticeRead: markNoticeRead(c.a); break;
     case CmdType::MoreReplies: moreReplies(); break;
     case CmdType::PostEntry: postEntry(c); break;
     case CmdType::PostReply: postReply(c); break;
@@ -184,6 +181,7 @@ void FeedWorker::markOpen() {
 void FeedWorker::signOut() {
   feedOpen_ = false;
   seen_.clear();
+  seenSocial_.clear();
   lockedFeed().with([](FeedState& s) {
     s.store.clear();
     s.guilds.clear();
@@ -290,14 +288,7 @@ void FeedWorker::loadBookmarkMap() {
 // ---- entry and replies ----
 
 void FeedWorker::openEntry(const Command& c) {
-  if (!c.b.empty()) {
-    api_.markNotificationRead(c.b);
-    lockedFeed().with([&](FeedState& s) {
-      auto& n = s.notices;
-      n.erase(std::remove_if(n.begin(), n.end(), [&](const FeedNotice& x) { return x.id == c.b; }),
-              n.end());
-    });
-  }
+  if (!c.b.empty()) markNoticeRead(c.b);
   setLoading(true);
   Entry entry;
   ApiError e = api_.entry(c.a, entry);
@@ -805,49 +796,62 @@ void FeedWorker::guildMembership(const Command& c) {
 // ---- notifications ----
 
 void FeedWorker::onNotice(const Mention& m, bool buzzer) {
-  if (!seen_.insert(m.id).second) return;
-  if (seen_.size() > kMaxSeen) {
-    seen_.clear();
-    seen_.insert(m.id);
+  const bool social = isSocialNotice(m.type);
+  if (social) {
+    // Replies & mentions dropped the listed ones: list them again after All.
+    bool forget = false;
+    const bool off = lockedFeed().with([&](FeedState& s) {
+      forget = s.socialDropped;
+      s.socialDropped = false;
+      return s.unreadFilter == UnreadFilter::Mentions;
+    });
+    if (forget) seenSocial_.clear();
+    if (off) return;
+  }
+  std::set<std::string>& seen = social ? seenSocial_ : seen_;
+  if (!seen.insert(m.id).second) return;
+  if (seen.size() > kMaxSeen) {
+    seen.clear();
+    seen.insert(m.id);
   }
   if (m.type == "post_cooldown") {
     post(EvtType::FeedAlert, "Entry held for review (saved as a note)", 0);
     return;
   }
-  if (m.type == "guild_new_thread") {
-    if (m.targetId.empty()) return;
-    std::string preview = m.preview;
-    truncateCodePoints(preview, kPreviewCodePoints);
-    std::string text = guildNoticeText(m.actorUsername, m.guildName, preview);
-    lockedFeed().with([&](FeedState& s) {
-      for (const auto& n : s.notices)
-        if (n.id == m.id) return;
-      s.notices.push_back(FeedNotice{m.id, m.targetId, text, m.at});
-      if (s.notices.size() > kMaxNotices) s.notices.erase(s.notices.begin());
-    });
-    post(EvtType::FeedAlert, text, buzzer ? 1 : 0);
-    return;
-  }
-  // A notice without a target would open GET /v1/posts/; drop it.
-  if (m.targetId.empty()) return;
-  if (m.targetId == openPostId()) {
+  NoticeView v = describeNotice(m, kPreviewCodePoints);
+  if (v.open == NoticeOpen::None) return;
+  if (!social && m.type != "guild_new_thread" && m.targetId == openPostId()) {
     // The entry is on screen: refresh its replies instead of alerting.
     api_.markNotificationRead(m.id);
     fetchNewReplies(m.targetId);
     return;
   }
-  std::string preview = m.preview;
-  truncateCodePoints(preview, kPreviewCodePoints);
-  bool mention = endsWith(m.type, "_mention");
-  std::string text =
-      "@" + m.actorUsername + (mention ? " mentioned you: " : " replied: ") + preview;
-  lockedFeed().with([&](FeedState& s) {
+  bool filtered = false;
+  bool added = lockedFeed().with([&](FeedState& s) {
+    // The filter may have changed since the check above.
+    if (social && s.unreadFilter == UnreadFilter::Mentions) {
+      filtered = true;
+      return false;
+    }
     for (const auto& n : s.notices)
-      if (n.id == m.id) return;
-    s.notices.push_back(FeedNotice{m.id, m.targetId, text, m.at});
+      if (n.id == m.id) return false;
+    FeedNotice n{m.id, v.open == NoticeOpen::Entry ? m.targetId : std::string(), v.text, m.at};
+    n.user = v.user;
+    n.social = social;
+    s.notices.push_back(std::move(n));
     if (s.notices.size() > kMaxNotices) s.notices.erase(s.notices.begin());
+    return true;
   });
-  post(EvtType::FeedAlert, text, buzzer ? 1 : 0);
+  if (filtered) seenSocial_.erase(m.id);
+  if (added) post(EvtType::FeedAlert, v.text, buzzer ? 1 : 0);
+}
+
+void FeedWorker::markNoticeRead(const std::string& id) {
+  api_.markNotificationRead(id);
+  lockedFeed().with([&](FeedState& s) {
+    auto& n = s.notices;
+    n.erase(std::remove_if(n.begin(), n.end(), [&](const FeedNotice& x) { return x.id == id; }), n.end());
+  });
 }
 
 #if RC_FEAT_NOTES

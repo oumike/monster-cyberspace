@@ -1450,6 +1450,20 @@ void setChatStyle(ChatStyle s) {
   settings::saveChatStyle(s);
 }
 
+void setUnreadFilter(UnreadFilter f) {
+  app().cfg.unreadFilter = f;
+  settings::saveUnreadFilter(f);
+#if RC_FEAT_ENTRIES
+  lockedFeed().with([f](FeedState& s) {
+    s.unreadFilter = f;
+    if (f != UnreadFilter::Mentions) return;
+    s.socialDropped = true;
+    auto& n = s.notices;
+    n.erase(std::remove_if(n.begin(), n.end(), [](const FeedNotice& x) { return x.social; }), n.end());
+  });
+#endif
+}
+
 namespace {
 TextSize nextSize(TextSize s) {
   const TextSize n = nextTextSize(s);

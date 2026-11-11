@@ -54,6 +54,7 @@ enum Item {
   kTheme,
   kTextSize,
   kChatStyle,
+  kUnreadFilter,
   kZone,
   kRotation,
   kBrightness,
@@ -98,6 +99,7 @@ std::vector<Item> menuItems() {
   if (!board::eink()) v.push_back(kTheme);
   if (TextSize only; !board::fixedTextSize(only)) v.push_back(kTextSize);
   v.push_back(kChatStyle);
+  if (RC_FEAT_UNREAD && RC_FEAT_ENTRIES) v.push_back(kUnreadFilter);
   v.push_back(kZone);
   if (board::canRotate()) v.push_back(kRotation);
   if (!board::eink()) v.push_back(kBrightness);
@@ -690,6 +692,9 @@ void SettingsScreen::activate(int item) {
     case kChatStyle:
       ui::setChatStyle(nextChatStyle(app().cfg.chatStyle));
       break;
+    case kUnreadFilter:
+      ui::setUnreadFilter(nextUnreadFilter(app().cfg.unreadFilter));
+      break;
     case kSpellCheck:
       app().cfg.spellCheck = !app().cfg.spellCheck;
       settings::saveSpellCheck(app().cfg.spellCheck);
@@ -784,6 +789,9 @@ std::vector<ListItem> itemRows(const std::vector<Item>& items, bool buttons, boo
         break;
       case kChatStyle:
         rows.push_back(ListItem{U"Chat style", chatStyleLabel(a.cfg.chatStyle)});
+        break;
+      case kUnreadFilter:
+        rows.push_back(ListItem{U"Unread shows", unreadFilterLabel(a.cfg.unreadFilter)});
         break;
       case kZone:
         rows.push_back(ListItem{U"Time zone", widen(zoneLabel(ts.tzName))});

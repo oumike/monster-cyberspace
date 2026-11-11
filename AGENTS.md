@@ -433,7 +433,15 @@ default `RC_FEAT_FEED`, 0 on the Cardputer ADV and X4): list, read, write,
 history and delete (`src/screens/notes.cpp`, `lib/core/src/notes/`,
 `src/store/locked_notes`, commands on `FeedWorker`). Their hardware check in
 docs/TESTING.md is open.
-The native suite is green: 799/799
+More Unread notification types (issue #9 item 4) were added on 2026-11-11
+(built without flashing): new followers, pokes, bookmarks and new entries by
+people you follow (`new_post_following`/`new_post_friend`), described by
+`ui/notice_text` (`describeNotice`); followers and pokes are `UnreadKind::People`
+rows that open the profile and send `CmdType::MarkNoticeRead`. Settings and
+web config's Unread shows (`UnreadFilter`, NVS `unrflt`, backup
+`unreadFilter`) picks All or Replies & mentions; `FeedState::unreadFilter`
+hands it to the poll (`noticeTypes`). Its hardware check is open.
+The native suite is green: 811/811
 (`pio test -e native`), and so is the LVGL one: 86/86 (`pio test -e
 native_lv`, and built lean). `scripts/build-upload-monitor.sh -B` builds all
 thirteen firmware envs (the X4 only from a path without spaces).

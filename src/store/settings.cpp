@@ -72,6 +72,7 @@ void load(rc::Settings& s) {
   s.screenSaver = p.getBool("scrsaver", true);
   s.spellCheck = p.getBool("spell", true);
   s.chatStyle = rc::chatStyleFromIndex(p.getUChar("cstyle", 0));
+  s.unreadFilter = rc::unreadFilterFromIndex(p.getUChar("unrflt", 0));
   s.tapVibrate = p.getBool("tapVib", true);
   s.alertVibrate = p.getBool("alertVib", true);
   s.kbLight = rc::kbLightFromIndex(p.getUChar("kblight", board::kbLightDefault()),
@@ -239,6 +240,13 @@ void saveChatStyle(rc::ChatStyle style) {
   p.end();
 }
 
+void saveUnreadFilter(rc::UnreadFilter f) {
+  Preferences p;
+  if (!p.begin(kNs, false)) return;
+  p.putUChar("unrflt", static_cast<uint8_t>(f));
+  p.end();
+}
+
 void saveSpellCheck(bool on) {
   Preferences p;
   if (!p.begin(kNs, false)) return;
@@ -308,6 +316,7 @@ void saveAll(const rc::Settings& s) {
   saveScreen(s.screenOnSecs, s.screenSaver);
   if (RC_FEAT_SPELL) saveSpellCheck(s.spellCheck);
   saveChatStyle(s.chatStyle);
+  saveUnreadFilter(s.unreadFilter);
   saveVibrate(s.tapVibrate, s.alertVibrate);
   saveNotifyLights(s);
   saveNotifyTimeout(s.notifyTimeoutSecs);

@@ -741,7 +741,12 @@ class Worker {
     refreshConversations();
 #endif
     std::vector<Mention> ms;
-    ApiError e = api_.mentions(ms);
+#if RC_FEAT_ENTRIES
+    UnreadFilter filter = lockedFeed().with([](FeedState& s) { return s.unreadFilter; });
+#else
+    UnreadFilter filter = UnreadFilter::Mentions;
+#endif
+    ApiError e = api_.mentions(ms, filter);
     if (!e.ok()) {
       checkAuthError(e);
       return;

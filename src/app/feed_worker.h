@@ -34,6 +34,7 @@ class FeedWorker {
   void more();
   void loadBookmarkMap();
   void openEntry(const Command& c);
+  void markNoticeRead(const std::string& id);  // PATCH, then off the Unread list
   void fetchNewReplies(const std::string& postId);
   void moreReplies();
   void postEntry(const Command& c);
@@ -72,6 +73,7 @@ class FeedWorker {
   bool feedOpen_ = false;
   int64_t nextRefresh_ = 0;
   std::set<std::string> seen_;  // notification ids already alerted
+  std::set<std::string> seenSocial_;  // the same for isSocialNotice types
 };
 
 }  // namespace rc

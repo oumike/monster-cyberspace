@@ -313,6 +313,21 @@ void test_chat_style_round_trip() {
   TEST_ASSERT_TRUE(out.chatStyle == ChatStyle::Bubbles);
 }
 
+void test_unread_filter_round_trip() {
+  Settings in;
+  in.unreadFilter = UnreadFilter::Mentions;
+  std::string y = backupToYaml(in, {"M9", "0.1.0", 0});
+  TEST_ASSERT_NOT_EQUAL(std::string::npos, y.find("unreadFilter: mentions"));
+  Settings out;
+  std::string err, note;
+  TEST_ASSERT_TRUE_MESSAGE(run(y, out, err, note), err.c_str());
+  TEST_ASSERT_TRUE(out.unreadFilter == UnreadFilter::Mentions);
+  Settings keep;
+  keep.unreadFilter = UnreadFilter::Mentions;
+  TEST_ASSERT_TRUE_MESSAGE(run(std::string(kHead) + "buzzer: false\n", keep, err, note), err.c_str());
+  TEST_ASSERT_TRUE(keep.unreadFilter == UnreadFilter::Mentions);
+}
+
 void test_chat_style_missing_keeps() {
   Settings s;
   s.chatStyle = ChatStyle::Bubbles;
@@ -423,6 +438,7 @@ void test_bad_values_rejected() {
       {"pagePassword: \"a\\nb\"\n", "line 3: page password: up to 63 printable characters"},
       {"textSize: huge\n", "line 3: text size: compact, comfortable or large"},
       {"chatStyle: fancy\n", "line 3: chat style: irc or bubbles"},
+      {"unreadFilter: some\n", "line 3: unread filter: all or mentions"},
       {"theme: pink\n", "line 3: theme: default, bw or wb"},
       {"kbLight: dim\n", "line 3: keyboard light: off, low, medium or high"},
       {"powerLight: dim\n",
@@ -605,6 +621,7 @@ int main(int, char**) {
   RUN_TEST(test_vibrate_round_trip);
   RUN_TEST(test_vibrate_missing_keeps_current);
   RUN_TEST(test_chat_style_round_trip);
+  RUN_TEST(test_unread_filter_round_trip);
   RUN_TEST(test_chat_style_missing_keeps);
   RUN_TEST(test_missing_keys_keep_current);
   RUN_TEST(test_empty_wifi_list_clears);

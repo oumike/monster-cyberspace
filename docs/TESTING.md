@@ -199,6 +199,18 @@ soon, wherever the board has them.
 - [ ] Touch Home: the unread tile spans the top row; Up from either tile of
       the next row goes to it and Down from it goes to the left tile; taps
       open every tile. With nothing unread, Unread says "nothing unread".
+- [ ] More notification types (issue #9 item 4): have a second account follow
+      you, poke you, bookmark your entry and post an entry while you follow
+      it: Unread shows `people  @x followed you`, `people  @x poked you`,
+      `feed  @x bookmarked your entry` and `feed  @x posted: <title>`; the
+      people rows open the profile (Back returns to Unread), the feed rows the
+      entry, and each is then read on the website. Home's Feed tile skips the
+      people rows.
+- [ ] Settings → Unread shows: Replies & mentions drops those four kinds from
+      Unread, the Home count and the light at once and fetches no more of
+      them; All brings new ones back. Web config's Unread shows follows it
+      both ways, and it survives a reboot and a backup restore
+      (`unreadFilter: all | mentions`).
 - [ ] Settings → Alert sound (boards with a speaker or buzzer): switching it on beeps once and mentions beep; off, they don't; web config's Sound on alerts follows it both ways; the item and the checkbox are absent on the Mesh Deck, T-Deck Pro, CrowPanels and X4
 - [ ] Brightness (every board but the e-paper ones): Settings → Brightness opens a slider from 10% to 100%; each step changes the backlight at once, Set keeps it, Cancel and Back restore it; dimming and the screensaver stay at or below it; waking from screen off comes back at it, not full; it survives a reboot and a backup restore; web config's slider applies it within a second
 - [ ] Alert sound volume (Wio L2, T-Deck Plus, Pager, Cyber Deck Plus, Cardputer ADV, T-Display P4, Tanmatsu): Settings → Alert sound opens a slider; Left/Right and taps on the bar, "-" and "+" move it in 10% steps, each beeping at that loudness, 100% without clipping, 10% still audible; Set keeps it, Cancel and Back restore the old level; the level survives a reboot and a backup restore; web config shows a slider instead of the checkbox (far left Off), saving a new level beeps once; the M9 keeps the on/off toggle
@@ -210,7 +222,7 @@ soon, wherever the board has them.
 - [ ] Touch boards: the new-entry Title has a padded row above and below;
       tapping the padding focuses the title, cursor at the end
 - [ ] Touch boards (the T-Display P4 too): Unread's rows are two-line buttons
-      (C-Mail, Mention or Feed over the text, the C-Mail count on the right),
+      (C-Mail, Mention, Feed or People over the text, the C-Mail count on the right),
       "✓ Mark all read" first; a tap opens one, a drag scrolls; with keys
       (T-Deck Plus, the P4's keyboard) the arrows move a cursor and Centre opens.
 

@@ -81,6 +81,7 @@ enum class CmdType {
   DeleteNote,            // a = id
   CloseNotes,            // Notes left for Home: its state cleared
   MarkAllRead,           // Unread: every notification and unread C-Mail
+  MarkNoticeRead,        // Unread: a = a Feed notice's id (a follower or poke, opened as a profile)
   MarkRoomsRead,         // the rooms list: every unread cIRC room
 };
 

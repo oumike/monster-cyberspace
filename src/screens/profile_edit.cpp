@@ -62,7 +62,7 @@ void ProfileEditScreen::save() {
   feedSource().command(c);
 }
 
-void ProfileEditScreen::leave() {
+void ProfileEditScreen::cancel() {
   if (!busy_ && !profilePatchJson(before_, current()).empty()) {
     box_.confirm(U"Discard changes?", U"Discard");
     return;
@@ -77,7 +77,7 @@ void ProfileEditScreen::onKey(const KeyEvent& k) {
     return;
   }
   if (busy_) {
-    if (k.action == Action::Back) leave();
+    if (k.action == Action::Back) cancel();
     return;
   }
   InputLine& in = fields_[focus_];
@@ -117,7 +117,7 @@ void ProfileEditScreen::onKey(const KeyEvent& k) {
       save();
       break;
     case Action::Back:
-      leave();
+      cancel();
       break;
     default:
       break;

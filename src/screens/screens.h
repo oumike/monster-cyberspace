@@ -828,7 +828,7 @@ class ProfileEditScreen : public Screen {
  private:
   static constexpr int kFields = 5;
   void save();
-  void leave();
+  void cancel();  // not leave(): that is the router's hook
   ProfileFields current() const;
   void sync();
   InputLine fields_[kFields];
@@ -939,7 +939,7 @@ class NoteEditScreen : public Screen {
   enum class Menu { None, Actions, ConfirmDiscard };
   void menuKey(const KeyEvent&);
   void save();
-  void leave();
+  void cancel();  // not leave(): that is the router's hook
   void discard();
   void sync();
   TextArea body_{kNoteMaxChars};

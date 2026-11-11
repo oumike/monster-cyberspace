@@ -349,7 +349,7 @@ void NoteEditScreen::enter(const std::string& id) {
 
 void NoteEditScreen::onKey(const KeyEvent& k) {
   if (menu_ != Menu::None) return menuKey(k);
-  if (k.action == Action::Back) return leave();
+  if (k.action == Action::Back) return cancel();
   if (saving_) return;
   switch (k.action) {
     case Action::Char:
@@ -423,7 +423,7 @@ void NoteEditScreen::save() {
   feedSource().command(Command{CmdType::SaveNote, id_, noteBodyJson(text)});
 }
 
-void NoteEditScreen::leave() {
+void NoteEditScreen::cancel() {
   if (saving_) {
     router::go(id_.empty() ? router::Id::Notes : router::Id::Note, id_);
     return;

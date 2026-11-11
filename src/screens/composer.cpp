@@ -153,7 +153,9 @@ void ComposerScreen::fieldKey(const KeyEvent& k) {
       if (focus_ < (gGuildSlug.empty() ? kCw : kTopics)) ++focus_;
       break;
     case Action::Select:
-      if (focus_ == kBody) {
+      if (focus_ == kBody && board::selectOpensActions()) {
+        onKey(KeyEvent{Action::Palette});
+      } else if (focus_ == kBody) {
         body_.insert(U'\n');
         save();
       } else if (focus_ == kPublic) {
@@ -344,8 +346,11 @@ void ComposerScreen::hints(bool guild, const char32_t*& hint, const char32_t*& t
     hint = U"\u2190\u2192 spelling  \u25CF keep";
     touch = U"tap a spelling, or keep typing";
   } else if (focus_ == kBody) {
-    hint = guild ? U"\u25CF new line  \u2191\u2193 lines  ctrl post  back: guild"
-                 : U"\u25CF new line  \u2191\u2193 lines  ctrl post  back: feed";
+    if (board::selectOpensActions())
+      hint = guild ? U"\u25CF post  \u2191\u2193 lines  back: guild" : U"\u25CF post  \u2191\u2193 lines  back: feed";
+    else
+      hint = guild ? U"\u25CF new line  \u2191\u2193 lines  ctrl post  back: guild"
+                   : U"\u25CF new line  \u2191\u2193 lines  ctrl post  back: feed";
     touch = guild ? U"\u25CF new line  \u2191\u2193 lines  \u22ef post  \u2039 guild"
                   : U"\u25CF new line  \u2191\u2193 lines  \u22ef post  \u2039 feed";
   } else if (focus_ == kPublic || focus_ == kNsfw) {

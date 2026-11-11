@@ -92,6 +92,7 @@ bool backspaceIsBack() { return false; }
 bool anyInputWakes() { return false; }
 bool upDownOnly() { return false; }
 bool sideNav() { return false; }
+bool selectOpensActions() { return true; }
 void textEntry(bool) {}
 bool hasKbLight() { return true; }
 uint8_t kbLightDefault() { return 3; }  // High: the controller's own default

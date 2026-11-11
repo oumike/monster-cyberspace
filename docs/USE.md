@@ -72,6 +72,7 @@ Dedicated buttons work from anywhere and close whatever is open first.
 | Sym | The command palette (slash commands in a room or conversation) |
 | Ctrl | While typing: the emoji tray. Elsewhere (the Feed list): the palette |
 | Hold Back/Del | Clear the input line |
+| D-pad centre in a note or a new entry's body | Its Save or Post menu (the body takes no new lines) |
 | Hold d-pad centre | Screen off; with the screen off, screen on |
 
 **Emoji tray:** Ctrl, while you're typing, opens 40 emoji (camillia-mt's tray):

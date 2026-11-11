@@ -37,7 +37,11 @@ void refuseCommand(const Command& c) {
       postEvent(Event{EvtType::EntryPosted, busy, 0, false});
       return;
     case CmdType::PostReply:
+    case CmdType::EditReply:
       postEvent(Event{EvtType::FeedWriteDone, busy, 0, false});
+      return;
+    case CmdType::EditEntry:
+      postEvent(Event{EvtType::EntryEdited, busy, 0, false});
       return;
     case CmdType::StartConversation:
       postEvent(Event{EvtType::ConversationStarted, busy, 0, false});

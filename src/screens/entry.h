@@ -58,6 +58,9 @@ class EntryScreen : public Screen {
   void down();
   void select();
   void send();
+  void sendEdit();     // the reply being edited (editReplyId_)
+  void stopEditing();  // restores the input from before Edit
+  void editTarget();   // Edit picked in a menu
   void openMenu(Menu m, std::u32string title, std::vector<ListItem> items);
   void openEntryMenu();
   void openReplyMenu(const std::string& replyId);
@@ -101,6 +104,8 @@ class EntryScreen : public Screen {
   bool hidden_ = false;       // a CW/NSFW body not yet revealed
   bool revealed_ = false;
   bool sending_ = false;      // a reply waits for FeedWriteDone
+  std::string editReplyId_;   // set: input_ holds this reply's new text
+  std::u32string editSavedInput_;  // what the line held before Edit (savedInput_ is reason mode's)
   bool moreAsked_ = false;    // a MoreReplies is outstanding
   std::u32string title_;
   std::map<std::string, std::string> authors_;  // reply id → author

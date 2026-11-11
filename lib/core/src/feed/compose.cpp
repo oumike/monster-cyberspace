@@ -2,6 +2,8 @@
 
 #include <ArduinoJson.h>
 
+#include "feed/entry.h"
+
 namespace rc {
 
 namespace {
@@ -122,6 +124,46 @@ std::string bookmarkJson(const std::string& postId, const std::string& replyId) 
     doc["replyId"] = replyId;
     doc["type"] = "reply";
   }
+  return serialize(doc);
+}
+
+bool editWindowOpen(int64_t createdMs, int64_t nowMs) {
+  constexpr int64_t kClockSetMs = 1600000000000LL;  // 2020: before that the clock isn't set
+  if (createdMs <= 0 || nowMs < kClockSetMs || nowMs <= createdMs) return true;
+  return nowMs - createdMs <= kEditWindowMs;
+}
+
+EntryDraft draftFromEntry(const Entry& e) {
+  EntryDraft d;
+  d.title = e.title;
+  d.body = e.body;
+  for (const std::string& t : e.topics) {
+    if (!d.topics.empty()) d.topics += ", ";
+    d.topics += t;
+  }
+  d.cw = e.contentWarning;
+  d.isPublic = e.isPublic;
+  d.nsfw = e.nsfw;
+  return d;
+}
+
+std::string entryPatchJson(const EntryDraft& d, bool guild) {
+  JsonDocument doc;
+  doc["content"] = d.body;
+  doc["title"] = std::string(trim(d.title));
+  JsonArray arr = doc["topics"].to<JsonArray>();
+  for (const std::string& t : splitTopics(d.topics)) arr.add(t);
+  if (!guild) {
+    doc["isPublic"] = d.isPublic;
+    doc["isNSFW"] = d.nsfw;
+    doc["contentWarning"] = std::string(trim(d.cw));
+  }
+  return serialize(doc);
+}
+
+std::string replyPatchJson(const std::string& body) {
+  JsonDocument doc;
+  doc["content"] = body;
   return serialize(doc);
 }
 

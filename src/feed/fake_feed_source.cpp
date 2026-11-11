@@ -170,6 +170,8 @@ class FakeFeedSource : public FeedSource {
   void postEntry(const Command& c);
   void postReply(const Command& c);
   void remove(const Command& c, bool reply);
+  void editEntry(const Command& c);
+  void editReply(const Command& c);
   void flag();
   void bookmark(const Command& c);
   void unbookmark(const Command& c);
@@ -204,6 +206,7 @@ class FakeFeedSource : public FeedSource {
   RateLimiter entryL_ = makeEntryLimiter();
   RateLimiter replyL_ = makeReplyLimiter();
   RateLimiter deleteL_ = makeDeleteLimiter();
+  RateLimiter editL_ = makeEditLimiter();
   RateLimiter flagL_ = makeFlagLimiter();
   RateLimiter bookmarkL_ = makeBookmarkLimiter();
   RateLimiter watchL_ = makeWatchLimiter();
@@ -434,6 +437,8 @@ void FakeFeedSource::command(const Command& c) {
     case CmdType::PostReply: postReply(c); break;
     case CmdType::DeleteEntry: remove(c, false); break;
     case CmdType::DeleteReply: remove(c, true); break;
+    case CmdType::EditEntry: editEntry(c); break;
+    case CmdType::EditReply: editReply(c); break;
     case CmdType::FlagEntry:
     case CmdType::FlagReply: flag(); break;
     case CmdType::Bookmark: bookmark(c); break;
@@ -690,6 +695,66 @@ void FakeFeedSource::remove(const Command& c, bool reply) {
     post(EvtType::EntryUpdated);
     post(EvtType::SideListUpdated);
   }
+}
+
+void FakeFeedSource::editEntry(const Command& c) {
+  JsonDocument doc;
+  if (deserializeJson(doc, c.b)) {
+    post(EvtType::EntryEdited, "Bad request", 400, false);
+    return;
+  }
+  std::string why;
+  {
+    std::lock_guard<std::mutex> g(mu_);
+    Entry* e = findEntry(c.a);
+    if (limited(editL_, why)) {
+    } else if (!e || e->deleted) {
+      why = "Gone";
+    } else if (e->author != kSelf || !editWindowOpen(e->createdMs, epochMs())) {
+      why = "Can't edit: supporters only, within 5 minutes";
+    } else {
+      e->body = doc["content"] | e->body.c_str();
+      if (doc["title"].is<const char*>()) e->title = doc["title"].as<const char*>();
+      if (doc["topics"].is<JsonArray>()) {
+        e->topics.clear();
+        for (JsonVariant t : doc["topics"].as<JsonArray>()) e->topics.push_back(t.as<const char*>());
+      }
+      if (doc["contentWarning"].is<const char*>())
+        e->contentWarning = doc["contentWarning"].as<const char*>();
+      if (doc["isPublic"].is<bool>()) e->isPublic = doc["isPublic"];
+      if (doc["isNSFW"].is<bool>()) e->nsfw = doc["isNSFW"];
+      e->edited = true;
+    }
+  }
+  if (!why.empty()) {
+    post(EvtType::EntryEdited, why, 403, false);
+    return;
+  }
+  post(EvtType::EntryEdited, c.a);
+}
+
+void FakeFeedSource::editReply(const Command& c) {
+  std::string why = validateReply(c.b);
+  if (why.empty()) {
+    std::lock_guard<std::mutex> g(mu_);
+    Reply* r = findReply(c.a);
+    if (limited(editL_, why)) {
+    } else if (!r || r->deleted) {
+      why = "Gone";
+    } else if (r->author != kSelf || !editWindowOpen(r->createdMs, epochMs())) {
+      why = "Can't edit: supporters only, within 5 minutes";
+    } else {
+      r->body = c.b;
+      r->edited = true;
+    }
+  }
+  if (!why.empty()) {
+    post(EvtType::FeedWriteDone, why, 403, false);
+    return;
+  }
+  lockedFeed().with([&](FeedState& s) { s.store.editReply(c.a, c.b); });
+  post(EvtType::FeedWriteDone);
+  post(EvtType::RepliesLoaded);
 }
 
 void FakeFeedSource::flag() {

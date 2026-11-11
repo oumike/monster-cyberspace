@@ -42,6 +42,12 @@ class FeedStore {
   // drops the oldest.
   void appendReplies(std::vector<Reply> page, const std::string& cursor);
   const std::deque<Reply>& replies() const { return replies_; }
+  // After an edit: the held reply's new body (cut as appendReplies cuts),
+  // marked edited; nothing when it isn't held.
+  void editReply(const std::string& id, std::string body);
+  // After an edit: the open entry with that id (keeping its replies) and its
+  // copies in the feed and side lists (as previews).
+  void replaceEntry(const Entry& e);
   bool repliesEnd() const { return repliesLoaded_ && repliesCursor_.empty(); }
   // The cursor if set, else the newest held reply's id ("" when none).
   std::string repliesResumeCursor() const;

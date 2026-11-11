@@ -98,6 +98,31 @@ void FeedStore::appendReplies(std::vector<Reply> page, const std::string& cursor
   while (replies_.size() > kMaxReplies) replies_.pop_front();
 }
 
+void FeedStore::editReply(const std::string& id, std::string body) {
+  for (auto& held : replies_) {
+    if (held.id != id) continue;
+    held.truncated = truncateUtf8(body, kReplyBodyBytes);
+    held.body = std::move(body);
+    held.edited = true;
+    return;
+  }
+}
+
+void FeedStore::replaceEntry(const Entry& e) {
+  for (auto* list : {&feed_, &side_}) {
+    for (auto& held : *list) {
+      if (held.id != e.id) continue;
+      held = e;
+      cutPreview(held);
+    }
+  }
+  if (entry_ && entry_->id == e.id) {
+    Entry open = e;
+    if (truncateUtf8(open.body, kEntryBodyBytes)) open.truncated = true;
+    *entry_ = std::move(open);
+  }
+}
+
 std::string FeedStore::repliesResumeCursor() const {
   if (!repliesCursor_.empty()) return repliesCursor_;
   if (!replies_.empty()) return replies_.back().id;

@@ -86,6 +86,10 @@ boards and Cyberspace features come later.
   logic in `lib/core`, and hardware access outside `src/hal/` only through
   `src/hal/board.h`. Never include `src/hal/<board>/` headers elsewhere or
   hard-code panel size, pins or key codes.
+- **Contributions** follow [CONTRIBUTING.md](CONTRIBUTING.md): sign off
+  commits (`git commit -s`), an SPDX header on new source files, exact
+  dependency versions. Only the maintainer and GitHub Actions push to `main`
+  directly; an agent does so only when told to for that change.
 - **Long-term idea, not to be built yet:** a LoRa gateway that bridges cIRC to
   other devices. It needs the Cyberspace operator's permission first (spec §12).
 
@@ -96,6 +100,8 @@ pio test -e native          # host unit tests (lib/core)
 pio test -e native_lv       # host tests for the LVGL UI (lib/lvui, test_lv_*)
 PLATFORMIO_BUILD_FLAGS="-DRC_LV_LEAN=1 -DRC_LOW_MEM=1" pio test -e native_lv  # the same, built lean as the Cardputer ADV
 node --test site/*.test.mjs # flasher site tests (not `node --test site/`)
+python3 -m unittest discover -s tools -p 'test_*.py'  # tools/ tests (the PR checker)
+python3 tools/pr_guidelines.py origin/main HEAD      # CI's CONTRIBUTING.md check, run locally
 pio run -e m9               # firmware
 pio run -e wio_l2           # Seeed Wio Tracker L2 firmware
 pio run -e tdeck            # LilyGO T-Deck Plus firmware

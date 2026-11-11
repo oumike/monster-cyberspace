@@ -8,6 +8,7 @@ on:
       - 'docs/**'
       - 'README.md'
       - 'AGENTS.md'
+      - 'CONTRIBUTING.md'
       - 'RELEASE_NOTES.md'
       - '.gitignore'
   pull_request:
@@ -34,6 +35,37 @@ concurrency:
 # `./scripts/release.sh --dist-only` locally.
 
 jobs:
+  # The CONTRIBUTING.md rules a machine can check: sign-off on every commit,
+  # an SPDX header on every new source file, exact versions for every
+  # dependency, no board header outside src/hal/, src/grid_ui/ untouched, no
+  # private keys, and no script naming the live Cyberspace API. Pull requests
+  # only: pushes to main come from the maintainer and release automation.
+  guidelines:
+    name: Contribution guidelines
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Guideline checker tests
+        run: python3 -m unittest discover -s tools -p 'test_*.py' -v
+
+      - name: Check the pull request against CONTRIBUTING.md
+        run: >
+          python3 tools/pr_guidelines.py
+          ${{ github.event.pull_request.base.sha }}
+          ${{ github.event.pull_request.head.sha }}
+
   build:
     name: PlatformIO build
     runs-on: ubuntu-latest

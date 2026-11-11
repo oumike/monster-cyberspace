@@ -5,7 +5,6 @@
 
 #include "app/app_state.h"
 #include "app/ui_task.h"
-#include "hal/board.h"
 #include "feed/feed_source.h"
 #include "screens/lv_draw.h"
 #include "screens/screens.h"
@@ -371,15 +370,12 @@ void NoteEditScreen::onKey(const KeyEvent& k) {
     case Action::Down:
       body_.down(cols_);
       break;
+    case Action::Select:
+      body_.insert(U'\n');
+      break;
     case Action::Focus:
       body_.setCursor(k.index);
       break;
-    case Action::Select:
-      if (!board::selectOpensActions()) {
-        body_.insert(U'\n');
-        break;
-      }
-      [[fallthrough]];
     case Action::Palette:
     case Action::Options:
       menu_ = Menu::Actions;
@@ -500,9 +496,7 @@ void NoteEditScreen::sync() {
   else if (saving_)
     syncHint(v_->hint_, U"saving\u2026", U"saving\u2026");
   else
-    syncHint(v_->hint_,
-             board::selectOpensActions() ? U"\u25CF save  \u2191\u2193 lines  back: cancel"
-                                         : U"\u25CF new line  \u2191\u2193 lines  ctrl save  back: cancel",
+    syncHint(v_->hint_, U"\u25CF new line  \u2191\u2193 lines  ctrl save  back: cancel",
              U"\u25CF new line  \u22ef save  \u2039 cancel");
 }
 

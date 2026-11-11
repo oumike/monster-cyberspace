@@ -142,9 +142,6 @@ bool canType();
 // Web config may send text for the device (the X4 only; spec
 // 2026-10-30-cyberspace-x4-design.md §4.4). Defaults to false.
 bool webCompose();
-// Centre (Select) in a multi-line body (a note, a new entry) opens its
-// Save/Post menu instead of starting a new line (the M9). Default false.
-bool selectOpensActions();
 // Boards that sleep on battery and wake on a timer (the X4). Defaults: none.
 bool sleepsOnBattery();
 // A board whose panel takes one text size only (the Cardputer ADV's 240x135:

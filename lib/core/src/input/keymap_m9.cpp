@@ -15,7 +15,7 @@ KeyEvent mapM9Key(uint8_t raw, bool earlyController) {
     case 0x86: if (earlyController) e.action = Action::Back; break;
     case 0x87: if (!earlyController) e.action = Action::Back; break;
     case 0x88: e.action = Action::Palette; break;
-    // Ctrl: the emoji tray while typing, the palette elsewhere.
+    // Ctrl: the actions, then the emoji tray, while typing; the palette elsewhere.
     case 0x90: e.action = Action::Emoji; break;
     case 0x89: e.action = Action::ClearLine; break;
     case 0xA3: e.action = Action::ScreenOff; break;

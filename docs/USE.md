@@ -70,11 +70,11 @@ Dedicated buttons work from anywhere and close whatever is open first.
 | Map | Guilds: the guild list, once you are signed in. In the composer it asks "Discard draft?" first |
 | Back | Up one level, or closes a menu or drawer. It never deletes text |
 | Sym | The command palette (slash commands in a room or conversation) |
-| Ctrl | While typing: the emoji tray. Elsewhere (the Feed list): the palette |
+| Ctrl | While typing: the actions (the command palette, or Save/Post in a note or new entry); Ctrl again while they're open: the emoji tray. Elsewhere (the Feed list): the palette |
 | Hold Back/Del | Clear the input line |
 | Hold d-pad centre | Screen off; with the screen off, screen on |
 
-**Emoji tray:** Ctrl, while you're typing, opens 40 emoji (camillia-mt's tray):
+**Emoji tray:** Ctrl twice, while you're typing, opens 40 emoji (camillia-mt's tray):
 the d-pad moves, Centre inserts one and keeps the tray open for more, and Back
 closes it; other keys do nothing while it's open. Emoji take two cells.
 

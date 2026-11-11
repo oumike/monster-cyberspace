@@ -108,6 +108,10 @@ SymbolTable symbols;
 CannedPicker canned;
 bool keysHelp = false;  // F10's table of the function keys
 bool cannedEmoji = false;
+// board::emojiKeyOpensActions: the emoji key opened the screen's actions
+// while typing, on this screen; pressed again while they're open, the tray.
+bool emojiOpenedActions = false;
+router::Id emojiActionsScreen = router::Id::Splash;
 Power power = Power::On;
 int64_t saverUntil = 0, lastActivitySent = -kActivityMs;
 int64_t lastInputMs = 0, lockedAt = INT64_MIN / 2, nextBounce = 0;
@@ -1091,6 +1095,33 @@ void handleKey(const KeyEvent& key) {
   }
   // The symbol and emoji keys open their pickers while typing, and are the
   // palette elsewhere.
+#if RC_FEAT_EMOJI
+  if (k.action == Action::Emoji && board::emojiKeyOpensActions()) {
+    Screen& s = router::screen();
+    bool again = emojiOpenedActions && emojiActionsScreen == router::current() && s.hasOverlay();
+    emojiOpenedActions = false;
+    if (again) {
+      s.closeOverlays();
+      if (s.acceptsText()) {
+        symbols.setBackspaceCloses(board::backspaceIsBack());
+        symbols.open(U"", SymbolTable::Set::Emoji, board::upDownOnly());
+      }
+      return;
+    }
+    if (s.acceptsText()) {
+      s.onKey(KeyEvent{Action::Palette});
+      if (s.hasOverlay()) {
+        emojiOpenedActions = true;
+        emojiActionsScreen = router::current();
+      } else if (s.acceptsText()) {
+        // No actions here: straight to the tray.
+        symbols.setBackspaceCloses(board::backspaceIsBack());
+        symbols.open(U"", SymbolTable::Set::Emoji, board::upDownOnly());
+      }
+      return;
+    }
+  }
+#endif
   if (k.action == Action::Symbols || k.action == Action::Emoji) {
     if (router::screen().acceptsText()) {
       symbols.setBackspaceCloses(board::backspaceIsBack());

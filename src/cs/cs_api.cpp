@@ -345,10 +345,10 @@ ApiError CsApi::mutedUsers(MutedUsers& out) {
   return e;
 }
 
-ApiError CsApi::mentions(std::vector<Mention>& out) {
+ApiError CsApi::mentions(std::vector<Mention>& out, UnreadFilter filter) {
   HttpResult r;
-  ApiError e = call("GET", "/v1/notifications?read=false&type=chat_mention,reply,thread_reply,post_mention,"
-                     "reply_mention,post_cooldown,guild_new_thread&limit=20", "", r);
+  ApiError e = call("GET", std::string("/v1/notifications?read=false&type=") + noticeTypes(filter) + "&limit=30",
+                    "", r);
   if (e.ok() && !parseMentions(r.body, out)) return badBody(r.status);
   return e;
 }

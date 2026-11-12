@@ -447,7 +447,15 @@ only). Entries edit in the Composer (`composerEditEntry`, PATCH JSON from
 (`editReplyId_`); `CmdType::EditEntry`/`EditReply` on `FeedWorker`,
 `EvtType::EntryEdited`, `makeEditLimiter` (5 a minute, 30 a day). Its
 hardware check in docs/TESTING.md is open.
-The native suite is green: 808/808
+More Unread notification types (issue #9 item 4) were added on 2026-11-11
+(built without flashing): new followers, pokes, bookmarks and new entries by
+people you follow (`new_post_following`/`new_post_friend`), described by
+`ui/notice_text` (`describeNotice`); followers and pokes are `UnreadKind::People`
+rows that open the profile and send `CmdType::MarkNoticeRead`. Settings and
+web config's Unread shows (`UnreadFilter`, NVS `unrflt`, backup
+`unreadFilter`) picks All or Replies & mentions; `FeedState::unreadFilter`
+hands it to the poll (`noticeTypes`). Its hardware check is open.
+The native suite is green: 819/819
 (`pio test -e native`), and so is the LVGL one: 86/86 (`pio test -e
 native_lv`, and built lean). `scripts/build-upload-monitor.sh -B` builds all
 thirteen firmware envs (the X4 only from a path without spaces).

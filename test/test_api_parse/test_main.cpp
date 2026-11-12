@@ -170,6 +170,19 @@ void test_guild_new_thread_notice() {
   TEST_ASSERT_EQUAL_STRING("rain", m[0].actorUsername.c_str());
 }
 
+void test_social_notices() {
+  std::vector<Mention> m;
+  TEST_ASSERT_TRUE(parseMentions(fx::kSocialNotices, m));
+  TEST_ASSERT_EQUAL(3, m.size());
+  TEST_ASSERT_EQUAL_STRING("new_follower", m[0].type.c_str());
+  TEST_ASSERT_EQUAL_STRING("user", m[0].targetType.c_str());
+  TEST_ASSERT_EQUAL_STRING("reply", m[1].targetType.c_str());
+  TEST_ASSERT_EQUAL_STRING("p7", m[1].targetId.c_str());
+  TEST_ASSERT_EQUAL_STRING("night-walk", m[1].postSlug.c_str());
+  TEST_ASSERT_EQUAL_STRING("Moths at dusk", m[2].postTitle.c_str());
+  TEST_ASSERT_EQUAL_STRING("they came back", m[2].preview.c_str());
+}
+
 void test_mention_without_created_at() {
   std::vector<Mention> m;
   TEST_ASSERT_TRUE(parseMentions(fx::kMentionNoTime, m));
@@ -272,5 +285,6 @@ int main() {
   RUN_TEST(test_typing_ack);
   RUN_TEST(test_cmail_history_sender_aliases);
   RUN_TEST(test_guild_new_thread_notice);
+  RUN_TEST(test_social_notices);
   return UNITY_END();
 }

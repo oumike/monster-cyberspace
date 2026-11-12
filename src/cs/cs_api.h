@@ -12,6 +12,7 @@
 #include "net/https_client.h"
 #include "notes/notes.h"
 #include "people/profile.h"
+#include "ui/notice_text.h"
 
 namespace rc {
 
@@ -64,7 +65,8 @@ class CsApi {
   // Notifications.
   // GET /v1/settings, reading only mutedUsersByRoom.
   ApiError mutedUsers(MutedUsers&);
-  ApiError mentions(std::vector<Mention>&);
+  // Unread notifications of the types the filter takes (ui/notice_text.h).
+  ApiError mentions(std::vector<Mention>&, UnreadFilter filter);
   ApiError markNotificationRead(const std::string& id);
   // POST /v1/notifications/read-all, once (up to 5,000 per call).
   ApiError markAllNotificationsRead();

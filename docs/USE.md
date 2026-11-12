@@ -928,7 +928,9 @@ revisions can't be restored from the device.
 ## Unread
 
 **Unread** lists everything waiting for you in one place, newest first:
-unread C-Mail conversations, cIRC mentions of you, and Feed and guild alerts.
+unread C-Mail conversations, cIRC mentions of you, Feed and guild alerts, and
+new followers, pokes, bookmarks of your posts and new entries by people you
+follow.
 Open it from Home on every board: it is the second item in the Home list,
 after Messages (`Unread  N`, marked while N is above 0), and the first of
 the Home tiles on touch boards (full-width when the tile count leaves it a row
@@ -937,22 +939,29 @@ total; with nothing waiting it says "nothing unread".
 
 - Each row starts with what it is: `mail` (`@name: last message`, with the
   conversation's unread count on the right), `irc` (`@name in #room: …`) or
-  `feed` (`@name replied: …`, or a new guild thread).
+  `feed` (`@name replied: …`, a new guild thread, `@name bookmarked your
+  entry`, `@name posted: <title>`) or `people` (`@name followed you`,
+  `@name poked you`).
 - Up/Down pick, Centre or Right opens (tap on touch boards); Left or Back
   goes Home.
-- On touch boards the rows are buttons: what it is (C-Mail, Mention or Feed)
-  on top, the text dim under it, and a C-Mail's count on the right. Tap one
-  to open it and drag to scroll. With keys too (T-Deck Plus, the T-Display
+- On touch boards the rows are buttons: what it is on top (C-Mail, Mention,
+  Feed or People), the text dim under it, and a C-Mail's count on the right.
+  Tap one to open it and drag to scroll. With keys too (T-Deck Plus, the T-Display
   P4's keyboard), the arrows move the selection through them and Centre
   opens one.
 - Opening a row opens the conversation, the room (which becomes your last
-  room) or the entry, and marks it read the way opening it anywhere else
+  room), the entry, or the follower's or poker's profile, and marks it read the way opening it anywhere else
   does. Back from there returns to Unread, so you can work down the list.
 - **✓ Mark all read** is the top row while anything is unread. It asks
   first, then marks every notification read on your account (mentions, Feed
   and guild alerts, and any the device doesn't list) and each unread C-Mail
   conversation, as the website would. Nothing is retried; if some C-Mail
   stays unread you get "Some C-Mail stayed unread".
+- **Settings → Unread shows** (and web config) picks **All** (the default) or
+  **Replies & mentions**, which leaves out followers, pokes, bookmarks and new
+  entries: they then don't count on Home, light the notification light or
+  beep. Switching to it drops those already listed; they stay unread on the
+  website.
 - Nothing is fetched for this screen: it shows what the device already knows
   from the checks described under [Alerts](#alerts).
 

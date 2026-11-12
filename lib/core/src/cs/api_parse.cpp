@@ -150,6 +150,9 @@ bool parseMentions(std::string_view body, std::vector<Mention>& out) {
     m.type = str(n["type"]);
     m.targetId = str(n["targetId"]);
     m.replyId = str(md["replyId"]);
+    m.targetType = str(n["targetType"]);
+    m.postTitle = str(md["postTitle"]);
+    m.postSlug = str(md["postSlug"]);
     m.preview = str(md["replyContent"]);
     if (m.preview.empty()) m.preview = str(md["postContent"]);
     if (m.preview.empty()) m.preview = str(n["reason"]);

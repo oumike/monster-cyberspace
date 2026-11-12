@@ -65,6 +65,15 @@ static const char* kGuildNotice = R"({"data":[
    "metadata":{"guildSlug":"night-owls","guildName":"Night Owls","postContent":"hello"}}
 ],"cursor":null})";
 
+static const char* kSocialNotices = R"({"data":[
+  {"id":"s1","type":"new_follower","actorId":"u2","actorUsername":"rain","targetType":"user",
+   "read":false,"createdAt":"2026-06-03T12:05:00.000Z"},
+  {"id":"s2","type":"bookmark","actorUsername":"moth","targetId":"p7","targetType":"reply",
+   "read":false,"metadata":{"postSlug":"night-walk","replyId":"r3"}},
+  {"id":"s3","type":"new_post_friend","actorUsername":"kiwi","targetId":"p8","targetType":"post",
+   "read":false,"metadata":{"postTitle":"Moths at dusk","postContent":"they came back"}}
+],"cursor":null})";
+
 static const char* kMentionNoTime = R"({"data":[
   {"id":"n5","type":"chat_mention","actorUsername":"rain","metadata":{"roomSlug":"general"}},
   {"id":"n6","type":"chat_mention","actorUsername":"rain","createdAt":"yesterday",

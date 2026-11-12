@@ -12,6 +12,7 @@
 #include "core_version.h"
 #include "hal/board.h"
 #include "store/backup_store.h"
+#include "store/locked_feed.h"
 #if RC_FEAT_MASCOT
 #include "store/mascot_store.h"
 #endif
@@ -40,6 +41,9 @@ void setup() {
   memMark("board");
   backupstore::begin();
   settings::load(app().cfg);
+#if RC_FEAT_ENTRIES
+  lockedFeed().with([](FeedState& s) { s.unreadFilter = app().cfg.unreadFilter; });
+#endif
   board::setVolume(app().cfg.volume);
 #if RC_FEAT_MASCOT
   mascotstore::load(app().mascot);

@@ -4,6 +4,7 @@
 #include <string>
 
 #include "ui/grid.h"
+#include "ui/notice_text.h"
 #include "ui/notify_light.h"
 #include "web/compose_req.h"
 
@@ -15,6 +16,9 @@ void start();
 void setTextSize(TextSize s);
 // Sets and saves the chat style; the logs lay out again on their next frame.
 void setChatStyle(ChatStyle s);
+// Sets and saves the Unread filter and hands it to the network side; Mentions
+// drops the follower, poke, bookmark and new-entry notices already listed.
+void setUnreadFilter(UnreadFilter f);
 // The menu item "Text size: <next>" and what picking it does.
 std::u32string textSizeItem();
 void cycleTextSize();

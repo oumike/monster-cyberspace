@@ -7,6 +7,7 @@
 #include "config/phrases.h"
 #include "ui/brightness.h"
 #include "ui/led_level.h"
+#include "ui/notice_text.h"
 #include "ui/grid.h"
 #include "ui/kb_light.h"
 #include "ui/notify_light.h"
@@ -24,6 +25,7 @@ struct Settings {
   std::string email, refreshToken, tz = "UTC0", pagePassword, apPassword;
   TextSize textSize = TextSize::Compact;
   ChatStyle chatStyle = ChatStyle::Irc;
+  UnreadFilter unreadFilter = UnreadFilter::All;  // Mentions: no follows, pokes, bookmarks, new entries
   bool drawerOpen = false, buzzer = true;
   bool usersHidden = false;  // the docked user list in rooms, hidden
   uint8_t volume = kVolumeDefault;  // alert sound, percent (ui/volume.h)

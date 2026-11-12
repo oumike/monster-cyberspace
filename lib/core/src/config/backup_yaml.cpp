@@ -64,7 +64,7 @@ struct Item {
 };
 
 struct Staged {
-  Str format, version, timezone, tzName, ntpServer, pagePassword, apPassword, textSize, chatStyle, theme,
+  Str format, version, timezone, tzName, ntpServer, pagePassword, apPassword, textSize, chatStyle, unreadFilter, theme,
       rotation, lastRoom, email, refreshToken, screenOnSecs, kbLight,
       notifyLight, notifyMention, notifyFeed, notifyCmail, notifyTimeout, idleSecs, wakeMins, volume, brightness, powerLight, wifiJoined, wifiSetup, wifiLooking, ledLevel;
   Bool drawerOpen, usersHidden, buzzer, tapVibrate, alertVibrate, autoUpdate, screenSaver, spellCheck, webConfig;
@@ -278,6 +278,7 @@ bool parse(std::string_view yaml, Staged& st, std::string& err) {
              : key == "apPassword"   ? &st.apPassword
              : key == "textSize"     ? &st.textSize
              : key == "chatStyle"    ? &st.chatStyle
+             : key == "unreadFilter" ? &st.unreadFilter
              : key == "theme"        ? &st.theme
              : key == "rotation"     ? &st.rotation
              : key == "screenOnSecs" ? &st.screenOnSecs
@@ -421,6 +422,7 @@ std::string backupToYaml(const Settings& s, const BackupMeta& m) {
   o += "apPassword: " + yamlQuote(s.apPassword) + "\n";
   o += std::string("textSize: ") + textSizeKey(s.textSize) + "\n";
   o += std::string("chatStyle: ") + chatStyleKey(s.chatStyle) + "  # irc | bubbles\n";
+  o += std::string("unreadFilter: ") + unreadFilterKey(s.unreadFilter) + "  # all | mentions\n";
   o += std::string("theme: ") + themeKey(s.theme) +
        "  # default | bw | wb | dark | light | lcd | c64 | vt320 | matrix | poetry | brutalist | grid |"
        " crypt | bubblegum | top8 | bubblegumdark | top8dark | sepiadark | c64dark\n";
@@ -533,6 +535,8 @@ bool backupFromYaml(std::string_view yaml, Settings& inOut, std::string& err, st
     err = at(st.textSize.line, "text size: compact, comfortable or large");
   } else if (ChatStyle cs; st.chatStyle.has && !parseChatStyle(st.chatStyle.v, cs)) {
     err = at(st.chatStyle.line, "chat style: irc or bubbles");
+  } else if (UnreadFilter uf; st.unreadFilter.has && !parseUnreadFilter(st.unreadFilter.v, uf)) {
+    err = at(st.unreadFilter.line, "unread filter: all or mentions");
   } else if (st.theme.has && !parseThemeId(st.theme.v, theme)) {
     err = at(st.theme.line, "theme: default, bw or wb");
   } else if (st.rotation.has && !plainInt(st.rotation, rotation)) {
@@ -606,6 +610,7 @@ bool backupFromYaml(std::string_view yaml, Settings& inOut, std::string& err, st
   if (st.textSize.has)
     parseTextSize(st.textSize.v, inOut.textSize);
   if (st.chatStyle.has) parseChatStyle(st.chatStyle.v, inOut.chatStyle);
+  if (st.unreadFilter.has) parseUnreadFilter(st.unreadFilter.v, inOut.unreadFilter);
   if (st.theme.has) inOut.theme = theme;
   if (st.rotation.has) inOut.rotation = rotationFromIndex(rotation);
   if (st.drawerOpen.has) inOut.drawerOpen = st.drawerOpen.v;

@@ -50,7 +50,8 @@ After that, updates come over the air (Settings → Firmware, or web config). Th
   C-Mail [spec](docs/superpowers/specs/2026-10-25-cyberspace-m9-cmail-design.md)
   and [plan](docs/superpowers/plans/2026-10-25-cyberspace-m9-cmail.md)
 
-Contributors and coding agents: read [AGENTS.md](AGENTS.md) first.
+Contributors and coding agents: read [AGENTS.md](AGENTS.md) first, then
+[CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 

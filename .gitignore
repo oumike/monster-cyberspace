@@ -15,3 +15,5 @@ src/spell_dict_en.h
 
 # Generated from site/mascots.json by tools/gen_mascot_presets.py on every build.
 src/web/mascot_presets.h
+
+__pycache__/

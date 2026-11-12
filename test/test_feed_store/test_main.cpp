@@ -231,6 +231,39 @@ void test_close_entry() {
   TEST_ASSERT_EQUAL(0, (int)s.replies().size());
 }
 
+void test_edit_reply_in_place() {
+  FeedStore s;
+  s.openEntry(E("p1"));
+  s.appendReplies({R("r1"), R("r2")}, "");
+  s.editReply("r1", "edited");
+  TEST_ASSERT_EQUAL(2, (int)s.replies().size());
+  TEST_ASSERT_EQUAL_STRING("r1", s.replies()[0].id.c_str());
+  TEST_ASSERT_EQUAL_STRING("edited", s.replies()[0].body.c_str());
+  TEST_ASSERT_TRUE(s.replies()[0].edited);
+  s.editReply("r9", "x");  // not held: nothing
+  s.editReply("r2", std::string(5000, 'y'));
+  TEST_ASSERT_EQUAL((int)kReplyBodyBytes, (int)s.replies()[1].body.size());
+  TEST_ASSERT_TRUE(s.replies()[1].truncated);
+  TEST_ASSERT_EQUAL(2, (int)s.replies().size());
+}
+
+void test_replace_entry_keeps_replies_and_cuts_previews() {
+  FeedStore s;
+  s.mergeFirstPage({E("p1"), E("p2")}, "");
+  s.openEntry(E("p1"));
+  s.appendReplies({R("r1")}, "");
+  Entry e = E("p1");
+  e.body = std::string(400, 'x');
+  e.edited = true;
+  s.replaceEntry(e);
+  TEST_ASSERT_EQUAL(400, (int)s.entry()->body.size());
+  TEST_ASSERT_TRUE(s.entry()->edited);
+  TEST_ASSERT_EQUAL(1, (int)s.replies().size());
+  TEST_ASSERT_TRUE(s.feed()[0].truncated);
+  TEST_ASSERT_TRUE(s.feed()[0].edited);
+  TEST_ASSERT_EQUAL_STRING("body p2", s.feed()[1].body.c_str());
+}
+
 int main(int, char**) {
   UNITY_BEGIN();
   RUN_TEST(test_first_page_prepends_new_keeps_cursor);
@@ -248,5 +281,7 @@ int main(int, char**) {
   RUN_TEST(test_side_list_reply_ids);
   RUN_TEST(test_side_tag_cleared_by_new_list);
   RUN_TEST(test_close_entry);
+  RUN_TEST(test_edit_reply_in_place);
+  RUN_TEST(test_replace_entry_keeps_replies_and_cuts_previews);
   return UNITY_END();
 }

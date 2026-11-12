@@ -39,6 +39,8 @@ class FeedWorker {
   void postEntry(const Command& c);
   void postReply(const Command& c);
   void remove(const Command& c, bool reply);
+  void editEntry(const Command& c);
+  void editReply(const Command& c);
   void flag(const Command& c, bool reply);
   void bookmark(const Command& c);
   void unbookmark(const Command& c);

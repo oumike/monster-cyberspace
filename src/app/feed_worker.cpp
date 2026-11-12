@@ -10,6 +10,7 @@
 #include <algorithm>
 
 #include "app/queues.h"
+#include "feed/compose.h"
 #include "feed/markdown_text.h"
 #include "store/locked_feed.h"
 #if RC_FEAT_NOTES
@@ -39,6 +40,15 @@ void post(EvtType t, const std::string& text = "", int code = 0, bool ok = true)
 }
 
 void banner(const std::string& text, bool ok = false) { post(EvtType::Banner, text, 0, ok); }
+
+// An edit's 403: not a supporter, past the window, or not yours.
+std::string editErrorText(const ApiError& e) {
+  if (e.http == 403) return "Can't edit: supporters only, within 5 minutes";
+  if (e.http == 404) return "Gone";
+  if (e.code == "LOCAL_RATE_LIMIT") return e.message;
+  if (e.http == 429) return "Slow down";
+  return e.message;
+}
 
 std::string errorText(const ApiError& e, bool deleteOrFlag) {
   if (deleteOrFlag && e.http == 403) return "Not allowed";
@@ -88,6 +98,8 @@ bool FeedWorker::isFeedCommand(CmdType t) {
     case CmdType::PostReply:
     case CmdType::DeleteEntry:
     case CmdType::DeleteReply:
+    case CmdType::EditEntry:
+    case CmdType::EditReply:
     case CmdType::FlagEntry:
     case CmdType::FlagReply:
     case CmdType::Bookmark:
@@ -136,6 +148,8 @@ void FeedWorker::handle(const Command& c) {
     case CmdType::PostReply: postReply(c); break;
     case CmdType::DeleteEntry: remove(c, false); break;
     case CmdType::DeleteReply: remove(c, true); break;
+    case CmdType::EditEntry: editEntry(c); break;
+    case CmdType::EditReply: editReply(c); break;
     case CmdType::FlagEntry: flag(c, false); break;
     case CmdType::FlagReply: flag(c, true); break;
     case CmdType::Bookmark: bookmark(c); break;
@@ -307,7 +321,10 @@ void FeedWorker::openEntry(const Command& c) {
     post(EvtType::EntryUpdated, "", 0, false);
     return;
   }
-  lockedFeed().with([&](FeedState& s) { s.store.openEntry(std::move(entry)); });
+  lockedFeed().with([&](FeedState& s) {
+    s.store.replaceEntry(entry);  // the feed's and side list's copies, edited since
+    s.store.openEntry(std::move(entry));
+  });
   post(EvtType::EntryUpdated);
 
   std::vector<Reply> replies;
@@ -389,6 +406,28 @@ void FeedWorker::remove(const Command& c, bool reply) {
     post(EvtType::EntryUpdated);
     post(EvtType::SideListUpdated);
   }
+}
+
+void FeedWorker::editEntry(const Command& c) {
+  ApiError e = api_.editEntry(c.a, c.b);
+  if (!e.ok()) {
+    post(EvtType::EntryEdited, editErrorText(e), e.http, false);
+    return;
+  }
+  // The Entry screen opens it again, which reads it back and refreshes the
+  // lists' copies.
+  post(EvtType::EntryEdited, c.a);
+}
+
+void FeedWorker::editReply(const Command& c) {
+  ApiError e = api_.editReply(c.a, replyPatchJson(c.b));
+  if (!e.ok()) {
+    post(EvtType::FeedWriteDone, editErrorText(e), e.http, false);
+    return;
+  }
+  lockedFeed().with([&](FeedState& s) { s.store.editReply(c.a, c.b); });
+  post(EvtType::FeedWriteDone);
+  post(EvtType::RepliesLoaded);
 }
 
 void FeedWorker::flag(const Command& c, bool reply) {

@@ -1,11 +1,14 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <string>
 #include <string_view>
 #include <vector>
 
 namespace rc {
+
+struct Entry;
 
 struct EntryDraft {
   std::string title, body, topics, cw;  // topics: comma-separated as typed
@@ -36,5 +39,19 @@ std::string replyJson(const std::string& postId, const std::string& body,
 std::string flagJson(const std::string& reason);
 // {postId, type:"post"} when postId is set, else {replyId, type:"reply"}.
 std::string bookmarkJson(const std::string& postId, const std::string& replyId);
+
+// Editing (PATCH /v1/posts/:id, /v1/replies/:id): only your own, and only
+// within kEditWindowMs of publishing (the API answers 403 after).
+constexpr int64_t kEditWindowMs = 5 * 60 * 1000;
+// True within the window, and whenever it can't be told: no publish time,
+// a clock not yet set, or a clock behind the server's.
+bool editWindowOpen(int64_t createdMs, int64_t nowMs);
+// An entry's fields as the composer edits them (topics joined with ", ").
+EntryDraft draftFromEntry(const Entry& e);
+// Every field explicitly, so a cleared one is removed: title "" and
+// contentWarning "", topics [] and both flags. A guild thread (guild=true)
+// sends only content, title and topics.
+std::string entryPatchJson(const EntryDraft& d, bool guild);
+std::string replyPatchJson(const std::string& body);  // {"content":…}
 
 }  // namespace rc

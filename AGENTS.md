@@ -433,7 +433,15 @@ default `RC_FEAT_FEED`, 0 on the Cardputer ADV and X4): list, read, write,
 history and delete (`src/screens/notes.cpp`, `lib/core/src/notes/`,
 `src/store/locked_notes`, commands on `FeedWorker`). Their hardware check in
 docs/TESTING.md is open.
-The native suite is green: 799/799
+Editing your own entries and replies (issue #9 item 3) was added on
+2026-11-11 (built without flashing): Edit in an entry's and a reply's menu
+while `feed/compose` `editWindowOpen` (5 minutes; the API allows supporters
+only). Entries edit in the Composer (`composerEditEntry`, PATCH JSON from
+`entryPatchJson`), replies in the Entry screen's input line
+(`editReplyId_`); `CmdType::EditEntry`/`EditReply` on `FeedWorker`,
+`EvtType::EntryEdited`, `makeEditLimiter` (5 a minute, 30 a day). Its
+hardware check in docs/TESTING.md is open.
+The native suite is green: 808/808
 (`pio test -e native`), and so is the LVGL one: 86/86 (`pio test -e
 native_lv`, and built lean). `scripts/build-upload-monitor.sh -B` builds all
 thirteen firmware envs (the X4 only from a path without spaces).

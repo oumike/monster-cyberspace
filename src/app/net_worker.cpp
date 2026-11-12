@@ -776,7 +776,9 @@ class Worker {
     const char* why = online() ? "Not signed in" : "Offline";
     if (c.type == CmdType::Send) post(EvtType::SendDone, 0, why, false);
     if (c.type == CmdType::PostEntry) post(EvtType::EntryPosted, 0, why, false);
-    if (c.type == CmdType::PostReply) post(EvtType::FeedWriteDone, 0, why, false);
+    if (c.type == CmdType::PostReply || c.type == CmdType::EditReply)
+      post(EvtType::FeedWriteDone, 0, why, false);
+    if (c.type == CmdType::EditEntry) post(EvtType::EntryEdited, 0, why, false);
     if (c.type == CmdType::StartConversation) post(EvtType::ConversationStarted, 0, why, false);
     if (c.type == CmdType::LoadOlder) post(EvtType::OlderLoaded, 0);
     if (c.type == CmdType::OpenEntry) post(EvtType::EntryUpdated, 0, "", false);

@@ -69,7 +69,8 @@ CsApi::CsApi(HttpsClient& h)
       followL_(makeFollowLimiter()),
       unfollowL_(makeFollowLimiter()),
       pokeL_(makePokeLimiter()),
-      profileL_(makeProfileLimiter())
+      profileL_(makeProfileLimiter()),
+      editL_(makeEditLimiter())
 #if RC_FEAT_NOTES
       ,
       noteL_(makeNoteLimiter())
@@ -443,6 +444,20 @@ ApiError CsApi::deleteReply(const std::string& id) {
   if (!l.ok()) return l;
   HttpResult r;
   return call("DELETE", "/v1/replies/" + enc(id), "", r);
+}
+
+ApiError CsApi::editEntry(const std::string& id, const std::string& json) {
+  ApiError l = limited(editL_);
+  if (!l.ok()) return l;
+  HttpResult r;
+  return call("PATCH", "/v1/posts/" + enc(id), json, r);
+}
+
+ApiError CsApi::editReply(const std::string& id, const std::string& json) {
+  ApiError l = limited(editL_);
+  if (!l.ok()) return l;
+  HttpResult r;
+  return call("PATCH", "/v1/replies/" + enc(id), json, r);
 }
 
 ApiError CsApi::flagEntry(const std::string& id, const std::string& reason) {

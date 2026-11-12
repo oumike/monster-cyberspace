@@ -48,6 +48,7 @@ RateLimiter makeFollowLimiter();
 RateLimiter makeProfileLimiter();
 // Note creates: 3 a minute, 30 a day.
 RateLimiter makeNoteLimiter();
+RateLimiter makeEditLimiter();  // entry and reply edits: 5 a minute, 30 a day
 // One poke an hour, eight a day, across everyone.
 RateLimiter makePokeLimiter();
 

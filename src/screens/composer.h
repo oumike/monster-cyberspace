@@ -11,6 +11,7 @@
 #include "lvui/views/text_box.h"
 #include "lvui/views/top_bar.h"
 #include "screens/lv_draw.h"
+#include "feed/compose.h"
 #include "screens/router.h"
 #include "ui/widgets/input_line.h"
 #include "ui/widgets/list_view.h"
@@ -33,7 +34,7 @@ class ComposerScreen : public Screen {
   bool hasOverlay() const override { return menu_ != Menu::None; }
   void closeOverlays() override { menu_ = Menu::None; box_.close(); }
   bool acceptsText() const override;
-  std::u32string paletteLabel() const override { return U"post or discard\u2026"; }
+  std::u32string paletteLabel() const override;
   bool consumesBackspace() const override;
 
  private:
@@ -70,6 +71,7 @@ class ComposerScreen : public Screen {
   Menu menu_ = Menu::None;
   bool toMap_ = false;  // the pending leave goes to the guild list
   bool toFeed_ = false;  // ... or to the feed list, even from a guild thread
+  std::string lastEditId_;  // the entry a discarded edit goes back to
   Overlay box_;
 
   // A touch target on the title's padding and the
@@ -107,5 +109,9 @@ class ComposerScreen : public Screen {
 // Settles a post that finished while another screen was showing: a success
 // clears the draft, a failure shows its banner and keeps it.
 void composerBackgroundEvent(const Event&);
+// Opens the Composer on a copy of an entry of yours (guildSlug set for a
+// guild thread); Save sends EditEntry, Discard and Back return to it.
+void composerEditEntry(const std::string& postId, const std::string& guildSlug,
+                       const EntryDraft& draft);
 
 }  // namespace rc

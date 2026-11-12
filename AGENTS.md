@@ -86,6 +86,10 @@ boards and Cyberspace features come later.
   logic in `lib/core`, and hardware access outside `src/hal/` only through
   `src/hal/board.h`. Never include `src/hal/<board>/` headers elsewhere or
   hard-code panel size, pins or key codes.
+- **Contributions** follow [CONTRIBUTING.md](CONTRIBUTING.md): sign off
+  commits (`git commit -s`), an SPDX header on new source files, exact
+  dependency versions. Only the maintainer and GitHub Actions push to `main`
+  directly; an agent does so only when told to for that change.
 - **Long-term idea, not to be built yet:** a LoRa gateway that bridges cIRC to
   other devices. It needs the Cyberspace operator's permission first (spec §12).
 
@@ -96,6 +100,8 @@ pio test -e native          # host unit tests (lib/core)
 pio test -e native_lv       # host tests for the LVGL UI (lib/lvui, test_lv_*)
 PLATFORMIO_BUILD_FLAGS="-DRC_LV_LEAN=1 -DRC_LOW_MEM=1" pio test -e native_lv  # the same, built lean as the Cardputer ADV
 node --test site/*.test.mjs # flasher site tests (not `node --test site/`)
+python3 -m unittest discover -s tools -p 'test_*.py'  # tools/ tests (the PR checker)
+python3 tools/pr_guidelines.py origin/main HEAD      # CI's CONTRIBUTING.md check, run locally
 pio run -e m9               # firmware
 pio run -e wio_l2           # Seeed Wio Tracker L2 firmware
 pio run -e tdeck            # LilyGO T-Deck Plus firmware
@@ -433,6 +439,14 @@ default `RC_FEAT_FEED`, 0 on the Cardputer ADV and X4): list, read, write,
 history and delete (`src/screens/notes.cpp`, `lib/core/src/notes/`,
 `src/store/locked_notes`, commands on `FeedWorker`). Their hardware check in
 docs/TESTING.md is open.
+Editing your own entries and replies (issue #9 item 3) was added on
+2026-11-11 (built without flashing): Edit in an entry's and a reply's menu
+while `feed/compose` `editWindowOpen` (5 minutes; the API allows supporters
+only). Entries edit in the Composer (`composerEditEntry`, PATCH JSON from
+`entryPatchJson`), replies in the Entry screen's input line
+(`editReplyId_`); `CmdType::EditEntry`/`EditReply` on `FeedWorker`,
+`EvtType::EntryEdited`, `makeEditLimiter` (5 a minute, 30 a day). Its
+hardware check in docs/TESTING.md is open.
 More Unread notification types (issue #9 item 4) were added on 2026-11-11
 (built without flashing): new followers, pokes, bookmarks and new entries by
 people you follow (`new_post_following`/`new_post_friend`), described by
@@ -441,7 +455,7 @@ rows that open the profile and send `CmdType::MarkNoticeRead`. Settings and
 web config's Unread shows (`UnreadFilter`, NVS `unrflt`, backup
 `unreadFilter`) picks All or Replies & mentions; `FeedState::unreadFilter`
 hands it to the poll (`noticeTypes`). Its hardware check is open.
-The native suite is green: 811/811
+The native suite is green: 819/819
 (`pio test -e native`), and so is the LVGL one: 86/86 (`pio test -e
 native_lv`, and built lean). `scripts/build-upload-monitor.sh -B` builds all
 thirteen firmware envs (the X4 only from a path without spaces).

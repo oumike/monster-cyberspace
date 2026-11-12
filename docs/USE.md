@@ -641,11 +641,20 @@ Feed alerts; with one waiting, **Feed** opens its entry instead of the list.
   Nothing is retried: a failed reply stays in the line.
 - **Entry menu** (Centre on an empty line, or Tab, which opens it with text
   in the line too): Reply, Bookmark/Unbookmark,
-  Watch/Unwatch, Show link (text and a QR code), Delete… on your own entry or
-  Report… on others' (both confirm; a report takes an optional reason), and
-  Text size.
+  Watch/Unwatch, Show link (text and a QR code), Edit (see below), Delete… on
+  your own entry or Report… on others' (both confirm; a report takes an
+  optional reason), and Text size.
 - **Reply menu** (Centre on a selected reply): Reply, Bookmark/Unbookmark,
-  Show link, and Delete… (yours) or Report… (others').
+  Show link, Edit (see below), and Delete… (yours) or Report… (others').
+- **Edit** shows on your own entry or reply for 5 minutes after you publish
+  it (cyberspace.online allows editing to supporters only, within those
+  5 minutes; anyone else gets "Can't edit: supporters only, within 5
+  minutes"). Editing an entry opens it in the New entry fields; its menu has
+  **Save…** ("Save changes? (5 per minute, 30 per day)") and **Discard…**,
+  and a saved entry reopens. Editing a reply puts its text in the input
+  line ("editing reply"): Centre or Enter saves it, Back cancels and brings
+  back what you were typing. Edits notify nobody, and nothing is retried.
+  Replies with line breaks and cut-short items can't be edited on the device.
 
 **New entry** (the + New entry row, or palette → New entry):
 

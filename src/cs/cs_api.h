@@ -82,6 +82,9 @@ class CsApi {
   ApiError postReply(const std::string& json, std::string& replyId);
   ApiError deleteEntry(const std::string& id);
   ApiError deleteReply(const std::string& id);
+  // PATCH; supporters only, within 5 minutes of publishing (else 403).
+  ApiError editEntry(const std::string& id, const std::string& json);
+  ApiError editReply(const std::string& id, const std::string& json);
   ApiError flagEntry(const std::string& id, const std::string& reason);
   ApiError flagReply(const std::string& id, const std::string& reason);
   ApiError watchStatus(const std::string& postId, bool& watching);
@@ -165,7 +168,7 @@ class CsApi {
   RateLimiter sendL_, presenceL_, deleteL_, flagL_, readL_, resendL_;
   RateLimiter cmailSendL_, startL_, cmailReadL_, typingL_, readAllL_;
   RateLimiter entryL_, replyL_, bookmarkL_, watchL_, membershipL_;
-  RateLimiter followL_, unfollowL_, pokeL_, profileL_;
+  RateLimiter followL_, unfollowL_, pokeL_, profileL_, editL_;
 #if RC_FEAT_NOTES
   RateLimiter noteL_;
 #endif

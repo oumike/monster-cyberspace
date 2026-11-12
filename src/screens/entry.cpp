@@ -12,6 +12,9 @@
 #include "feed/feed_source.h"
 #include "lvui/views/view_util.h"
 #include "screens/lv_draw.h"
+#if RC_FEAT_COMPOSER
+#include "screens/composer.h"
+#endif
 #include "screens/people_nav.h"
 #include "store/locked_feed.h"
 #include "ui/feed_layout.h"
@@ -41,6 +44,19 @@ std::string lower(std::string s) {
 
 bool isSelf(const std::string& author) {
   return !app().user.empty() && lower(author) == lower(app().user);
+}
+
+// Your own entry, as the Composer can take it, still in the API's edit window.
+bool entryEditable(const Entry& e) {
+  return RC_FEAT_COMPOSER && isSelf(e.author) && !e.deleted && !e.truncated &&
+         utf8ToU32(e.body).size() <= kBodyMaxChars && editWindowOpen(e.createdMs, nowEpochMs());
+}
+
+// Your own reply, as the one-line input can take it, still in the window.
+bool replyEditable(const Reply& r) {
+  return isSelf(r.author) && !r.deleted && !r.truncated &&
+         r.body.find('\n') == std::string::npos && r.body.size() <= InputLine::kMaxBytes &&
+         editWindowOpen(r.createdMs, nowEpochMs());
 }
 
 std::string entryUrl(const Entry& e) {
@@ -83,6 +99,7 @@ void EntryScreen::open() {
 }
 
 void EntryScreen::leave() {
+  stopEditing();
   view_ = View::None;
   box_.close();
   reasonMode_ = false;
@@ -90,6 +107,14 @@ void EntryScreen::leave() {
   log_.setLines({});
   authors_.clear();
   lockedFeed().with([](FeedState& s) { s.store.closeEntry(); });
+}
+
+// Back to the reply that was being typed before Edit.
+void EntryScreen::stopEditing() {
+  if (editReplyId_.empty()) return;
+  editReplyId_.clear();
+  input_.setText(editSavedInput_);
+  editSavedInput_.clear();
 }
 
 bool EntryScreen::hasOverlay() const {
@@ -178,8 +203,13 @@ void EntryScreen::typingKey(const KeyEvent& k) {
       openEntryMenu();
       break;
     case Action::Back:
-      if (!log_.following()) log_.follow();
-      else leaveToList();
+      if (!editReplyId_.empty()) {
+        if (!sending_) stopEditing();
+      } else if (!log_.following()) {
+        log_.follow();
+      } else {
+        leaveToList();
+      }
       break;
     default:
       break;
@@ -201,6 +231,10 @@ void EntryScreen::down() {
 
 void EntryScreen::select() {
   if (!loaded_) return;
+  if (!editReplyId_.empty()) {
+    sendEdit();
+    return;
+  }
   if (!input_.text().empty()) {
     send();
     return;
@@ -235,6 +269,25 @@ void EntryScreen::send() {
   sending_ = true;
   feedSource().command(
       Command{CmdType::PostReply, replyJson(postId_, body, selectedReply())});
+}
+
+void EntryScreen::sendEdit() {
+  if (sending_) {
+    ui::banner("Still sending\u2026", true);
+    return;
+  }
+  std::string body = input_.utf8();
+  std::string err = validateReply(body);
+  if (!err.empty()) {
+    ui::banner(err, true);
+    return;
+  }
+  if (app().conn == 0) {
+    ui::banner("Offline: not saved", true);
+    return;
+  }
+  sending_ = true;
+  feedSource().command(Command{CmdType::EditReply, editReplyId_, body});
 }
 
 void EntryScreen::reasonKey(const KeyEvent& k) {
@@ -285,7 +338,7 @@ void EntryScreen::openMenu(Menu m, std::u32string title, std::vector<ListItem> i
 
 void EntryScreen::openEntryMenu() {
   Entry e;
-  bool found = false, marked = false, watching = false;
+  bool found = false, marked = false, watching = false, editable = false;
   lockedFeed().with([&](FeedState& s) {
     const Entry* p = s.store.entry();
     if (!p || p->id != postId_) return;
@@ -293,6 +346,7 @@ void EntryScreen::openEntryMenu() {
     e.author = p->author;
     e.slug = p->slug;
     e.deleted = p->deleted;
+    editable = entryEditable(*p);
     marked = !s.store.bookmarkIdFor(postId_).empty();
     watching = s.store.watching();
   });
@@ -308,6 +362,7 @@ void EntryScreen::openEntryMenu() {
     menuKeys_.push_back(key);
   };
   if (!e.deleted) add(U"Reply", "reply");
+  if (editable) add(U"Edit", "edit");
   add(marked ? U"Unbookmark" : U"Bookmark", marked ? "unbookmark" : "bookmark");
   add(watching ? U"Unwatch" : U"Watch", watching ? "unwatch" : "watch");
   add(U"Show link", "link");
@@ -323,7 +378,7 @@ void EntryScreen::openEntryMenu() {
 
 void EntryScreen::openReplyMenu(const std::string& replyId) {
   std::string author, link;
-  bool found = false, deleted = false, marked = false;
+  bool found = false, deleted = false, marked = false, editable = false;
   lockedFeed().with([&](FeedState& s) {
     const Entry* p = s.store.entry();
     if (!p || p->id != postId_) return;
@@ -332,6 +387,7 @@ void EntryScreen::openReplyMenu(const std::string& replyId) {
       found = true;
       author = r.author;
       deleted = r.deleted;
+      editable = replyEditable(r);
       link = entryUrl(*p) + "#" + r.id;
       marked = !s.store.bookmarkIdFor(r.id).empty();
       break;
@@ -349,6 +405,7 @@ void EntryScreen::openReplyMenu(const std::string& replyId) {
     menuKeys_.push_back(key);
   };
   if (!deleted) add(U"Reply", "reply");
+  if (editable && editReplyId_.empty()) add(U"Edit", "edit");
   add(marked ? U"Unbookmark" : U"Bookmark", marked ? "unbookmark" : "bookmark");
   add(U"Show link", "link");
   if (RC_FEAT_PEOPLE && !author.empty()) add(U"Author's profile", "author");
@@ -358,6 +415,41 @@ void EntryScreen::openReplyMenu(const std::string& replyId) {
   }
   openMenu(Menu::Reply, utf8ToU32(author.empty() ? std::string("reply") : author),
            std::move(items));
+}
+
+// Edit from a menu: the entry in the Composer, a reply in the input line.
+void EntryScreen::editTarget() {
+  if (!targetReply_) {
+#if RC_FEAT_COMPOSER
+    EntryDraft d;
+    std::string guild;
+    bool ok = lockedFeed().with([&](FeedState& s) {
+      const Entry* p = s.store.entry();
+      if (!p || p->id != postId_ || !entryEditable(*p)) return false;
+      d = draftFromEntry(*p);
+      guild = p->guildSlug;
+      return true;
+    });
+    if (ok) composerEditEntry(postId_, guild, d);
+#endif
+    return;
+  }
+  if (sending_ || !editReplyId_.empty()) return;
+  std::string body;
+  bool ok = lockedFeed().with([&](FeedState& s) {
+    for (const auto& r : s.store.replies()) {
+      if (r.id != target_) continue;
+      if (!replyEditable(r)) return false;
+      body = r.body;
+      return true;
+    }
+    return false;
+  });
+  if (!ok) return;
+  editSavedInput_ = input_.text();
+  input_.setText(utf8ToU32(body));
+  editReplyId_ = target_;
+  ui::showKeyboard();
 }
 
 void EntryScreen::menuKey(const KeyEvent& k) {
@@ -385,6 +477,9 @@ void EntryScreen::pickMenu() {
         // The selection stays, so the next send answers this reply (or the entry).
         if (menu_ == Menu::Entry) log_.follow();
         ui::showKeyboard();
+      } else if (key == "edit") {
+        editTarget();
+        return;
       } else if (key == "bookmark") {
         feedSource().command(
             Command{CmdType::Bookmark, postId_, targetReply_ ? target_ : std::string()});
@@ -441,10 +536,22 @@ void EntryScreen::onEvent(const Event& e) {
       repliesArrived_ = true;
       dirty_ = true;
       break;
+    case EvtType::EntryEdited:
+      if (e.ok && e.text == postId_) open();  // saved after the Composer was left
+      break;
     case EvtType::FeedWriteDone:
       dirty_ = true;
       if (!sending_) break;
       sending_ = false;
+      if (!editReplyId_.empty()) {
+        if (e.ok) {
+          stopEditing();
+          ui::banner("Reply saved", false);
+        } else {  // the text stays, to save again by hand
+          ui::banner(e.text.empty() ? std::string("Not saved") : e.text, true);
+        }
+        break;
+      }
       if (e.ok) {
         input_.clear();
         log_.follow();
@@ -556,7 +663,10 @@ void EntryScreen::hints(const std::string& reply, bool offline, const char32_t*&
     hint = U"\u2191\u2193 pick  \u25CF choose  back: close";
     touch = U"tap: choose  outside: close";
   } else if (sending_) {
-    hint = touch = U"sending\u2026";
+    hint = touch = editReplyId_.empty() ? U"sending\u2026" : U"saving\u2026";
+  } else if (!editReplyId_.empty()) {
+    hint = U"editing reply  \u25CF save  back: cancel";
+    touch = U"editing reply  enter: save  \u2039 cancel";
   } else if (moreAsked_) {
     hint = touch = U"loading replies\u2026";
   } else if (offline) {
@@ -601,7 +711,8 @@ void EntryScreen::update(int64_t nowMs) {
   // FeedWriteDone, which ui::inputSeq() counts; the ages show with the
   // once-a-second refresh.
   if (v_->gate_.due(v_->root_, nowMs,
-                {int64_t(app().conn), int64_t(view_), int64_t(reasonMode_), int64_t(sending_),
+                {int64_t(app().conn), int64_t(view_), int64_t(reasonMode_) | int64_t(!editReplyId_.empty()) << 1,
+                 int64_t(sending_),
                  int64_t(log_.following())}))
     sync(nowMs);
 }

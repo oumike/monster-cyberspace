@@ -43,6 +43,8 @@ enum class CmdType {
   PostReply,             // a = JSON
   DeleteEntry,           // a = id
   DeleteReply,           // a = id
+  EditEntry,             // a = postId, b = PATCH JSON (entryPatchJson)
+  EditReply,             // a = replyId, b = the new body
   FlagEntry,             // a = id, b = reason
   FlagReply,             // a = id, b = reason
   Bookmark,              // a = postId, b = replyId ("" for the entry)
@@ -118,6 +120,7 @@ enum class EvtType {
   SideListUpdated,
   FeedWriteDone,        // a reply's result: ok; text = error message when !ok
   EntryPosted,          // text = postId; !ok: text = error (the entry wasn't posted)
+  EntryEdited,          // text = postId; !ok: text = error (nothing changed)
   FeedAlert,            // text = banner; code = 1 to beep
   TopicsUpdated,        // ok=false on a failed load
   // Guilds.

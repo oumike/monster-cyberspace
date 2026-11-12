@@ -39,6 +39,19 @@ on 2026-10-27; the sections marked `m9_fake` passed on it before then.
   another way (Home) and reopen — the text is kept; Discard drops it. Offline: saving says "Offline: not saved".
 - [ ] Cardputer ADV build: no Notes on Home.
 
+**Edit entries and replies (issue #9 item 3; a supporter account, the M9 and the Wio L2):**
+
+- [ ] Post an entry: its menu has Edit; change the title, body and topics,
+  Save… asks, then the entry reopens with the changes and the Feed list shows
+  them. Clear the title: the entry has none.
+- [ ] Reply, then the reply's menu → Edit: the line holds its text and the
+  hint says "editing reply"; change it, Centre saves ("Reply saved"); Edit
+  again, Back cancels and the earlier draft is back.
+- [ ] After 5 minutes (or on others' items) there is no Edit; a non-supporter
+  account gets "Can't edit: supporters only, within 5 minutes".
+- [ ] Editing an entry, Back with changes asks "Discard changes?"; Discard
+  returns to the entry unchanged. Offline, Save says why and keeps the edit.
+
 **Chat style (2.1.0; the M9 and the Wio L2):**
 
 - [ ] Chat style: Bubbles on the M9 and Wio L2 — room, C-Mail, entry with

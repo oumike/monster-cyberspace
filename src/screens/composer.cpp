@@ -22,32 +22,72 @@ namespace {
 
 // The draft outlives the screen; only Post and Discard clear it.
 EntryDraft gDraft;
-bool gPosting = false;  // a PostEntry waits for its result
+bool gPosting = false;  // a PostEntry, PostGuildThread or EditEntry waits for its result
+bool gPostingEdit = false;  // the one in flight is an EditEntry
 std::string gGuildSlug;  // set: a new thread in that guild (Title, Body, Topics only)
+// Editing an entry (composerEditEntry): its id, and a draft of its own, so
+// the new-entry draft above stays as it was.
+std::string gEditId, gEditGuild;
+EntryDraft gEditDraft, gEditOrig;
+bool gEditing = false;  // the screen shows gEditDraft
+
+EntryDraft& D() { return gEditing ? gEditDraft : gDraft; }
+
+bool sameDraft(const EntryDraft& a, const EntryDraft& b) {
+  return a.title == b.title && a.body == b.body && a.topics == b.topics && a.cw == b.cw &&
+         a.isPublic == b.isPublic && a.nsfw == b.nsfw;
+}
 
 bool hasText() {
+  if (gEditing) return !sameDraft(gEditDraft, gEditOrig);  // anything changed
   return !gDraft.title.empty() || !gDraft.body.empty() || !gDraft.topics.empty() ||
          !gDraft.cw.empty();
 }
 
-// True when the event settles the post in flight.
+// True when the event settles the post (or edit) in flight.
 bool settle(const Event& e) {
-  if (!gPosting || e.type != EvtType::EntryPosted) return false;
+  if (!gPosting) return false;
+  const bool edit = gPostingEdit;
+  if (e.type != (edit ? EvtType::EntryEdited : EvtType::EntryPosted)) return false;
   gPosting = false;
-  if (e.ok) gDraft = EntryDraft{};
-  else  // the draft stays, to post again by hand
-    ui::banner(e.text.empty() ? std::string("Not posted") : e.text, true);
+  if (!edit) {
+    if (e.ok) gDraft = EntryDraft{};
+    else  // the draft stays, to post again by hand
+      ui::banner(e.text.empty() ? std::string("Not posted") : e.text, true);
+    return true;
+  }
+  if (e.ok) {
+    gEditDraft = gEditOrig = EntryDraft{};
+    gEditId.clear();
+    ui::banner("Entry saved", false);
+  } else {  // the changes stay, to save again by hand
+    ui::banner(e.text.empty() ? std::string("Not saved") : e.text, true);
+  }
   return true;
 }
 
 }  // namespace
+
+void composerEditEntry(const std::string& postId, const std::string& guildSlug,
+                       const EntryDraft& draft) {
+  if (gPosting) {
+    ui::banner("Still posting\u2026", true);
+    return;
+  }
+  gEditId = postId;
+  gEditGuild = guildSlug;
+  gEditDraft = gEditOrig = draft;
+  router::go(router::Id::Composer, "edit:" + postId);
+}
 
 void composerBackgroundEvent(const Event& e) { settle(e); }
 
 void ComposerScreen::enter(const std::string& key) {
   menu_ = Menu::None;
   toMap_ = toFeed_ = false;
-  gGuildSlug = key.rfind("guild:", 0) == 0 ? key.substr(6) : std::string();
+  gEditing = key.rfind("edit:", 0) == 0 && key.substr(5) == gEditId && !gEditId.empty();
+  if (gEditing) gGuildSlug = gEditGuild;
+  else gGuildSlug = key.rfind("guild:", 0) == 0 ? key.substr(6) : std::string();
   spell_.hide();
   title_.setFieldId(kTitle);
   body_.setFieldId(kBody);
@@ -55,6 +95,10 @@ void ComposerScreen::enter(const std::string& key) {
   cw_.setFieldId(kCw);
   load();
   if (!gGuildSlug.empty() && focus_ > kTopics) focus_ = kTitle;
+}
+
+std::u32string ComposerScreen::paletteLabel() const {
+  return gEditing ? U"save or discard\u2026" : U"post or discard\u2026";
 }
 
 bool ComposerScreen::acceptsText() const {
@@ -70,20 +114,20 @@ bool ComposerScreen::consumesBackspace() const {
 }
 
 void ComposerScreen::load() {
-  title_.setText(utf8ToU32(gDraft.title));
-  topics_.setText(utf8ToU32(gDraft.topics));
-  cw_.setText(utf8ToU32(gDraft.cw));
+  title_.setText(utf8ToU32(D().title));
+  topics_.setText(utf8ToU32(D().topics));
+  cw_.setText(utf8ToU32(D().cw));
   body_.clear();
-  for (char32_t c : utf8ToU32(gDraft.body)) body_.insert(c);
+  for (char32_t c : utf8ToU32(D().body)) body_.insert(c);
   if (!hasText()) focus_ = kTitle;
 }
 
 void ComposerScreen::save() {
   switch (focus_) {
-    case kTitle: gDraft.title = title_.utf8(); break;
-    case kBody: gDraft.body = body_.utf8(); break;
-    case kTopics: gDraft.topics = topics_.utf8(); break;
-    case kCw: gDraft.cw = cw_.utf8(); break;
+    case kTitle: D().title = title_.utf8(); break;
+    case kBody: D().body = body_.utf8(); break;
+    case kTopics: D().topics = topics_.utf8(); break;
+    case kCw: D().cw = cw_.utf8(); break;
     default: break;
   }
 }
@@ -157,9 +201,9 @@ void ComposerScreen::fieldKey(const KeyEvent& k) {
         body_.insert(U'\n');
         save();
       } else if (focus_ == kPublic) {
-        gDraft.isPublic = !gDraft.isPublic;
+        D().isPublic = !D().isPublic;
       } else if (focus_ == kNsfw) {
-        gDraft.nsfw = !gDraft.nsfw;
+        D().nsfw = !D().nsfw;
       } else if (focus_ < (gGuildSlug.empty() ? kCw : kTopics)) {
         ++focus_;
       }
@@ -167,17 +211,18 @@ void ComposerScreen::fieldKey(const KeyEvent& k) {
     case Action::Palette:
     case Action::Options: {
       openMenu(Menu::Actions, gGuildSlug.empty() ? U"entry" : U"thread",
-               {ListItem{U"Post\u2026", U""}, ListItem{U"Discard\u2026", U"", ItemTone::Error}});
+               {ListItem{gEditing ? U"Save\u2026" : U"Post\u2026", U""},
+                ListItem{U"Discard\u2026", U"", ItemTone::Error}});
       break;
     }
     case Action::Focus:
       if (!gGuildSlug.empty() && k.target > kTopics) break;
       if (k.target == kPublic) {
         focus_ = kPublic;
-        gDraft.isPublic = !gDraft.isPublic;
+        D().isPublic = !D().isPublic;
       } else if (k.target == kNsfw) {
         focus_ = kNsfw;
-        gDraft.nsfw = !gDraft.nsfw;
+        D().nsfw = !D().nsfw;
       } else if (k.target < kFieldCount) {
         focus_ = k.target;
         if (InputLine* f = line()) f->setCursor(k.index);
@@ -190,6 +235,10 @@ void ComposerScreen::fieldKey(const KeyEvent& k) {
 }
 
 void ComposerScreen::goBack() {
+  if (gEditing && !toMap_ && !toFeed_) {
+    const std::string id = gEditId.empty() ? lastEditId_ : gEditId;
+    if (!id.empty()) return router::go(router::Id::Entry, id);
+  }
   if (toMap_) router::go(router::Id::GuildList);
   else if (!gGuildSlug.empty() && !toFeed_) router::go(router::Id::Guild, gGuildSlug);
   else router::go(router::Id::FeedList);
@@ -201,12 +250,18 @@ void ComposerScreen::askLeave(bool toMap, bool toFeed) {
   // A post in flight keeps the draft until it settles.
   if (gPosting) return goBack();
   if (!hasText()) return discard();
-  openMenu(Menu::ConfirmDiscard, U"Discard draft?",
+  openMenu(Menu::ConfirmDiscard, gEditing ? U"Discard changes?" : U"Discard draft?",
            {ListItem{U"Cancel", U""}, ListItem{U"Discard", U"", ItemTone::Error}});
 }
 
 void ComposerScreen::discard() {
-  gDraft = EntryDraft{};
+  if (gEditing) {
+    lastEditId_ = gEditId;
+    gEditId.clear();
+    gEditDraft = gEditOrig = EntryDraft{};
+    return goBack();
+  }
+  D() = EntryDraft{};
   load();
   focus_ = kTitle;
   goBack();
@@ -261,10 +316,14 @@ void ComposerScreen::pick() {
         break;
       }
       gPosting = true;
-      if (gGuildSlug.empty())
-        feedSource().command(Command{CmdType::PostEntry, entryJson(gDraft)});
+      gPostingEdit = gEditing;
+      if (gEditing)
+        feedSource().command(
+            Command{CmdType::EditEntry, gEditId, entryPatchJson(D(), !gGuildSlug.empty())});
+      else if (gGuildSlug.empty())
+        feedSource().command(Command{CmdType::PostEntry, entryJson(D())});
       else
-        feedSource().command(Command{CmdType::PostGuildThread, gGuildSlug, guildThreadJson(gDraft)});
+        feedSource().command(Command{CmdType::PostGuildThread, gGuildSlug, guildThreadJson(D())});
       break;
     case Menu::ConfirmDiscard:
       if (i == 1) discard();
@@ -280,13 +339,18 @@ void ComposerScreen::post() {
     ui::banner("Still posting\u2026", true);
     return;
   }
-  std::string err = validateDraft(gDraft);
+  std::string err = validateDraft(D());
   if (!err.empty()) {
     ui::banner(err, true);
     return;
   }
   if (app().conn == 0) {
     ui::banner("Offline: not posted", true);
+    return;
+  }
+  if (gEditing) {
+    openMenu(Menu::ConfirmPost, U"Save changes? (5 per minute, 30 per day)",
+             {ListItem{U"Cancel", U""}, ListItem{U"Save", U""}});
     return;
   }
   openMenu(Menu::ConfirmPost,
@@ -299,6 +363,11 @@ void ComposerScreen::post() {
 
 void ComposerScreen::onEvent(const Event& e) {
   if (!settle(e) || !e.ok) return;
+  if (gEditing) {
+    focus_ = kTitle;
+    router::go(router::Id::Entry, e.text);  // opened again, edited
+    return;
+  }
   load();  // the cleared draft
   focus_ = kTitle;
   router::go(router::Id::Entry, e.text);
@@ -325,6 +394,7 @@ ComposerScreen::Rows ComposerScreen::layout(int rows, bool small, bool guild) {
 }
 
 std::u32string ComposerScreen::statusTitle(bool guild) const {
+  if (gEditing) return guild ? U"edit thread" : U"edit entry";
   if (!guild) return U"new entry";
   std::string name = lockedFeed().with([](FeedState& s) {
     const Guild* gd = s.guilds.guild();
@@ -339,10 +409,21 @@ void ComposerScreen::hints(bool guild, const char32_t*& hint, const char32_t*& t
     hint = U"\u2191\u2193 pick  \u25CF choose  back: close";
     touch = U"tap: choose  outside: close";
   } else if (gPosting) {
-    hint = touch = U"posting\u2026";
+    hint = touch = gEditing ? U"saving\u2026" : U"posting\u2026";
   } else if (spell_.visible() && (focus_ == kTitle || focus_ == kBody)) {
     hint = U"\u2190\u2192 spelling  \u25CF keep";
     touch = U"tap a spelling, or keep typing";
+  } else if (gEditing) {
+    if (focus_ == kBody) {
+      hint = U"\u25CF new line  \u2191\u2193 lines  ctrl save  back: entry";
+      touch = U"\u25CF new line  \u2191\u2193 lines  \u22ef save  \u2039 entry";
+    } else if (focus_ == kPublic || focus_ == kNsfw) {
+      hint = U"\u25CF toggle  \u2191\u2193 fields  ctrl save  back: entry";
+      touch = U"tap to toggle  \u22ef save  \u2039 entry";
+    } else {
+      hint = U"\u2191\u2193 fields  ctrl save  back: entry";
+      touch = U"tap a field  \u22ef save  \u2039 entry";
+    }
   } else if (focus_ == kBody) {
     hint = guild ? U"\u25CF new line  \u2191\u2193 lines  ctrl post  back: guild"
                  : U"\u25CF new line  \u2191\u2193 lines  ctrl post  back: feed";
@@ -462,9 +543,9 @@ void ComposerScreen::sync() {
       }
       return col + w;
     };
-    const int col = box(0, gDraft.isPublic, U"Public", focus_ == kPublic);
+    const int col = box(0, D().isPublic, U"Public", focus_ == kPublic);
     const int nsfwStart = col + 2;
-    const int nsfwEnd = box(nsfwStart, gDraft.nsfw, U"NSFW", focus_ == kNsfw);
+    const int nsfwEnd = box(nsfwStart, D().nsfw, U"NSFW", focus_ == kNsfw);
     placeCells(v_->publicTap_, 0, r.check, std::max(1, col), r.check + 1);
     placeCells(v_->nsfwTap_, nsfwStart, r.check, std::max(1, nsfwEnd - nsfwStart), r.check + 1);
   }

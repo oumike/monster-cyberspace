@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <ctime>
 
 #include "app/app_state.h"
 #include "app/ui_task.h"
@@ -95,6 +96,7 @@ void RoomScreen::resume() {
 
 void RoomScreen::leave() {
   pending_.clear();
+  slash_.close();
   // Leaving with text typed: clear the flag rather than let it age out.
   stopTyping();
   chatSource().command(Command{CmdType::CloseRoom});
@@ -133,12 +135,13 @@ void RoomScreen::stopTyping() {
 
 bool RoomScreen::hasOverlay() const {
   // The drawer is not an overlay: it persists across rooms.
-  return view_ != View::None || reasonMode_ || !log_.following();
+  return view_ != View::None || reasonMode_ || slash_.isOpen() || !log_.following();
 }
 
 void RoomScreen::closeOverlays() {
   view_ = View::None;
   box_.close();
+  slash_.close();
   if (reasonMode_) {
     reasonMode_ = false;
     input_.setText(savedInput_);
@@ -185,6 +188,7 @@ void RoomScreen::onKey(const KeyEvent& k) {
 }
 
 void RoomScreen::typingKey(const KeyEvent& k) {
+  if (slash_.isOpen() && slashKey(k)) return;
 #if RC_FEAT_SPELL
   if (spell_.key(k, input_)) return;
 #endif
@@ -196,30 +200,22 @@ void RoomScreen::typingKey(const KeyEvent& k) {
       spell_.typed(input_, spell::english(), app().cfg.spellCheck);
 #endif
       noteTyping();
+      refreshSlash();
       break;
     case Action::Backspace:
       input_.backspace();
       noteTyping();
+      refreshSlash();
       break;
     case Action::ClearLine:
       input_.clear();
       noteTyping();
+      refreshSlash();
       break;
-    case Action::Palette: {
-      // Nothing to type commands with: hold Confirm opens the room's menu.
-      if (!board::canType()) {
-        openRoomMenu();
-        break;
-      }
-      std::vector<ListItem> items;
-      menuKeys_.clear();
-      for (const auto& e : paletteEntries(dm_ ? PaletteKind::Cmail : PaletteKind::Circ)) {
-        items.push_back(ListItem{e.label, U""});
-        menuKeys_.push_back(u32ToUtf8(e.insert));
-      }
-      openMenu(Menu::Palette, U"commands", std::move(items));
+    case Action::Palette:
+      // "/" opens the commands, so the commands button opens the room's menu.
+      openRoomMenu();
       break;
-    }
     case Action::Options:
       // An edge swipe from the right: the user list first, then the menu.
       if (!dm_ && !drawer && !drawerDocked()) {
@@ -300,6 +296,58 @@ void RoomScreen::typingKey(const KeyEvent& k) {
   }
 }
 
+void RoomScreen::refreshSlash() {
+  const std::u32string& text = input_.text();
+  const bool wasOpen = slash_.isOpen();
+  if (!board::canType() || reasonMode_ || (!wasOpen && text != U"/")) return;
+  slashHits_ = paletteMatches(dm_ ? PaletteKind::Cmail : PaletteKind::Circ, text);
+  if (slashHits_.empty()) {
+    slash_.close();
+    return;
+  }
+  std::vector<ListItem> items;
+  items.reserve(slashHits_.size());
+  for (const PaletteEntry* e : slashHits_) items.push_back(ListItem{e->label, e->hint});
+  slash_.open(U"commands", std::move(items));
+}
+
+// The picker's keys; false lets the key reach the input line.
+bool RoomScreen::slashKey(const KeyEvent& k) {
+  switch (k.action) {
+    case Action::Up:
+    case Action::Down:
+      slash_.key(k);
+      return true;
+    case Action::Select:
+    case Action::Palette:
+      pickSlash(slash_.selected());
+      return true;
+    case Action::Activate:
+      if (k.target != uint8_t(ListId::Menu)) return false;
+      pickSlash(k.index);
+      return true;
+    case Action::Back:
+      slash_.close();
+      return true;
+    default:
+      return false;
+  }
+}
+
+void RoomScreen::pickSlash(int i) {
+  slash_.close();
+  if (i < 0 || i >= int(slashHits_.size())) return;
+  std::tm tm{};
+  const std::tm* clock = nullptr;
+  const int64_t ms = nowEpochMs();
+  if (ms >= 1700000000000LL) {
+    time_t t = time_t(ms / 1000);
+    if (localtime_r(&t, &tm)) clock = &tm;
+  }
+  input_.setText(paletteInsert(*slashHits_[i], clock));
+  noteTyping();
+}
+
 void RoomScreen::send() {
   if (app().conn == 0) {
     ui::banner("Offline: not sent", true);
@@ -378,6 +426,7 @@ void RoomScreen::viewerKey(const KeyEvent& k) {
 // ---- menus ----
 
 void RoomScreen::openMenu(Menu m, std::u32string title, std::vector<ListItem> items) {
+  slash_.close();
   menu_ = m;
   // A message's actions and their confirms are buttons on touch-only boards.
   if (m == Menu::Message || m == Menu::ConfirmDelete || m == Menu::ConfirmReport)
@@ -490,9 +539,6 @@ void RoomScreen::pickMenu() {
   const std::string key = menuKeys_[i];
   view_ = View::None;
   switch (menu_) {
-    case Menu::Palette:
-      insertText(utf8ToU32(key));
-      break;
     case Menu::Room:
       if (key == "who") {
         log_.follow();
@@ -784,6 +830,9 @@ void RoomScreen::hints(bool drawer, bool docked, bool offline, const char32_t*& 
   } else if (reasonMode_) {
     hint = U"type a reason (optional)  \u25CF report  back: cancel";
     touch = U"type a reason (optional)  enter: report";
+  } else if (slash_.isOpen()) {
+    hint = U"\u2191\u2193 pick  \u25CF fill in  back: close";
+    touch = U"tap a command, or keep typing";
   } else if (view_ == View::Menu) {
     hint = U"\u2191\u2193 pick  \u25CF choose  back: close";
     touch = U"tap: choose  outside: close";
@@ -798,10 +847,10 @@ void RoomScreen::hints(bool drawer, bool docked, bool offline, const char32_t*& 
     hint = U"offline: reading only";
     touch = U"offline: reading only";
   } else if (dm_) {
-    hint = U"\u25CF send  \u2191\u2193 scroll  ctrl cmds";
+    hint = U"\u25CF send  \u2191\u2193 scroll  / cmds";
     touch = U"tap the line to type  tap a message for actions";
   } else {
-    hint = U"\u25CF send  \u2191\u2193 scroll  \u2192 who's here  ctrl cmds";
+    hint = U"\u25CF send  \u2191\u2193 scroll  \u2192 who's here  / cmds";
     touch = U"tap the line to type  tap a message for actions";
   }
 }
@@ -935,7 +984,7 @@ void RoomScreen::sync() {
 
   const lvui::Cell c = v_->text_.cell();
   v_->menuView_.setPlace(OverlayPlace::BottomRight, logBottom * c.h, reserve * c.w, 1 * c.h);
-  v_->menuView_.sync(box_);
+  v_->menuView_.sync(slash_.isOpen() ? slash_ : box_);
 
   const bool offline = app().conn == 0;
   input_.setDisabled(offline || view_ != View::None);

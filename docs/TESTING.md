@@ -24,6 +24,17 @@ These were built without flashing and still need a run on the device. The
 scripted fake-API builds (`m9_fake`, `wio_l2_fake`, `tdeck_fake`) were removed
 on 2026-10-27; the sections marked `m9_fake` passed on it before then.
 
+**Slash commands (issue #9 item 6; the M9, the T-Deck Plus and a touch board):**
+
+- [ ] In a room, `/` on an empty line lists the commands with hints; `/mu`
+  narrows it; Centre or a tap fills in `/mute ` and the list closes; a space
+  or Back closes it and keeps the text.
+- [ ] `/localtime` fills in the device's time; `/help` shows the server's
+  answer in a banner, in a room and in a conversation.
+- [ ] In a conversation the list has no `/art`, `/localtime` or muting.
+- [ ] The commands button (M9 Sym, Tanmatsu Tab, a hold on touch) opens the
+  room menu; the symbol tray's **commands…** types `/`.
+
 **Fuller profiles and Notes (the M9 and the Wio L2):**
 
 - [ ] Profile → Replies: someone's replies, newest first with ages; Centre

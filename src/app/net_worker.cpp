@@ -915,7 +915,7 @@ class Worker {
     switch (c.type) {
       case CmdType::Send: {
         std::string id, reply;
-        ApiError e = dm_ && c.a == room_ ? api_.cmailSend(c.a, c.b, id)
+        ApiError e = dm_ && c.a == room_ ? api_.cmailSend(c.a, c.b, id, reply)
                                          : api_.send(roomKey(c.a), c.b, id, reply);
         if (e.ok()) {
           if (changesMutes(c.b)) loadMutes();

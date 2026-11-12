@@ -455,7 +455,15 @@ rows that open the profile and send `CmdType::MarkNoticeRead`. Settings and
 web config's Unread shows (`UnreadFilter`, NVS `unrflt`, backup
 `unreadFilter`) picks All or Replies & mentions; `FeedState::unreadFilter`
 hands it to the poll (`noticeTypes`). Its hardware check is open.
-The native suite is green: 819/819
+Slash commands (issue #9 item 6) were added on 2026-11-12 (built without
+flashing; spec `docs/superpowers/specs/2026-11-12-cyberspace-slash-programs-design.md`):
+`/` on an empty line in a room or conversation opens a filtered list of
+commands with hints (`ui/widgets/palette`: `paletteMatches`, `paletteInsert`;
+`RoomScreen::slash_`); the commands button (`Action::Palette`) opens the room
+menu, and the symbol tray's **commands…** types `/`
+(`Screen::paletteTypesSlash`). C-Mail sends show `/help`'s reply as rooms do.
+Item 7 (guild badge) already existed as Make my guild. Its hardware check is open.
+The native suite is green: 821/821
 (`pio test -e native`), and so is the LVGL one: 86/86 (`pio test -e
 native_lv`, and built lean). `scripts/build-upload-monitor.sh -B` builds all
 thirteen firmware envs (the X4 only from a path without spaces).

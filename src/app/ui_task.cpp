@@ -1089,7 +1089,12 @@ void handleKey(const KeyEvent& key) {
       c.ch = o.ch;
       router::screen().onKey(c);
     } else if (o.kind == SymbolTable::Kind::Commands) {
-      router::screen().onKey(KeyEvent{Action::Palette});
+      KeyEvent c{Action::Palette};
+      if (router::screen().paletteTypesSlash()) {
+        c.action = Action::Char;
+        c.ch = U'/';
+      }
+      router::screen().onKey(c);
     }
     if (o.kind != SymbolTable::Kind::PassThrough) return;
   }

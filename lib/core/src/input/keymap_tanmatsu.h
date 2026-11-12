@@ -17,14 +17,14 @@ constexpr uint32_t kTanmatsuRepeatDelayMs = 450, kTanmatsuRepeatMs = 70;
 
 // The Tanmatsu has F1-F6 only; Fn reaches the rest. F10's help shows this,
 // Ctrl tapped alone (emoji tray while typing, palette elsewhere) and Tab
-// (the palette: commands, the composer's Post).
+// (the palette: a screen's menu, the composer's Post).
 constexpr FunctionKey kTanmatsuFunctionKeys[] = {
     {U"F1", U"home", Action::OpenHome},         {U"F2", U"messages", Action::OpenCirc},
     {U"F3", U"c-mail", Action::OpenCmail},      {U"F4", U"feed", Action::OpenFeed},
     {U"F5", U"guilds", Action::OpenMap},        {U"F6", U"profile", Action::OpenProfile},
     {U"Fn+F1", U"settings", Action::OpenSettings}, {U"Fn+F4", U"navigational help", Action::KeysHelp},
     {U"Fn+F5", U"keyboard light", Action::KbLightStep}, {U"Ctrl", U"emoji, palette", Action::Emoji},
-    {U"Tab", U"commands, post", Action::Palette},
+    {U"Tab", U"menus, post", Action::Palette},
 };
 constexpr size_t kTanmatsuFunctionKeyCount = std::size(kTanmatsuFunctionKeys);
 

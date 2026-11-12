@@ -39,6 +39,9 @@ class Screen {
   // The symbol table's last row, which opens this screen's palette; empty
   // when there is none.
   virtual std::u32string paletteLabel() const { return U""; }
+  // The symbol tray's paletteLabel entry types "/" (the slash command picker)
+  // instead of sending Action::Palette.
+  virtual bool paletteTypesSlash() const { return false; }
   // Drawn in Compact text whatever the saved text size.
   virtual bool compactText() const { return false; }
 };

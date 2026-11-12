@@ -301,17 +301,15 @@ ApiError CsApi::cmailHistory(const std::string& id, int64_t before, std::vector<
   return e;
 }
 
-ApiError CsApi::cmailSend(const std::string& id, const std::string& utf8, std::string& messageId) {
+ApiError CsApi::cmailSend(const std::string& id, const std::string& utf8, std::string& messageId,
+                          std::string& reply) {
   ApiError l = limited(cmailSendL_);
   if (!l.ok()) return l;
   JsonDocument d;
   d["content"] = utf8;
   HttpResult r;
   ApiError e = call("POST", "/v1/cmail/" + enc(id), json(d), r);
-  if (e.ok()) {
-    std::string reply;
-    parseSendResult(r.body, messageId, reply);
-  }
+  if (e.ok()) parseSendResult(r.body, messageId, reply);
   return e;
 }
 

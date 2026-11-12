@@ -57,7 +57,9 @@ class CsApi {
   ApiError startConversation(const std::string& username, ConversationInfo& out);
   ApiError cmailHistory(const std::string& id, int64_t before, std::vector<CircMessage>&,
                         int64_t& cursor, int limit = 50);
-  ApiError cmailSend(const std::string& id, const std::string& utf8, std::string& messageId);
+  // reply: the server's answer to a command that posts nothing (/help).
+  ApiError cmailSend(const std::string& id, const std::string& utf8, std::string& messageId,
+                     std::string& reply);
   ApiError cmailRead(const std::string& id);
   ApiError cmailTyping(const std::string& id, TypingCadence& out);
   ApiError cmailTypingClear(const std::string& id);

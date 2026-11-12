@@ -446,24 +446,53 @@ void test_banner_expires() {
 
 void test_palette_lists_commands() {
   const auto& p = paletteEntries();
-  TEST_ASSERT_EQUAL(25, p.size());
+  TEST_ASSERT_EQUAL(30, p.size());
   TEST_ASSERT_EQUAL_STRING("/me ", u32ToUtf8(p[0].insert).c_str());
-  TEST_ASSERT_EQUAL_STRING("/muted ", u32ToUtf8(p.back().insert).c_str());
+  TEST_ASSERT_EQUAL_STRING("/help ", u32ToUtf8(p.back().insert).c_str());
+  for (const auto& e : p) TEST_ASSERT_FALSE(e.hint.empty());
 }
 
 void test_palette_cmail_drops_circ_only() {
   const auto& p = paletteEntries(PaletteKind::Cmail);
-  bool art = false, muted = false, me = false;
+  bool art = false, muted = false, localtime = false, me = false;
   for (const auto& e : p) {
     std::string s = u32ToUtf8(e.insert);
     art |= s == "/art ";
     muted |= s == "/muted ";
+    localtime |= s == "/localtime ";
     me |= s == "/me ";
   }
   TEST_ASSERT_FALSE(art);
   TEST_ASSERT_FALSE(muted);
+  TEST_ASSERT_FALSE(localtime);
   TEST_ASSERT_TRUE(me);
-  TEST_ASSERT_EQUAL(int(paletteEntries().size()) - 2, int(p.size()));
+  TEST_ASSERT_EQUAL(int(paletteEntries().size()) - 6, int(p.size()));
+}
+
+void test_palette_matches_prefix() {
+  auto all = paletteMatches(PaletteKind::Circ, U"/");
+  TEST_ASSERT_EQUAL(30, all.size());
+  auto mu = paletteMatches(PaletteKind::Circ, U"/MU");
+  TEST_ASSERT_EQUAL(2, mu.size());
+  TEST_ASSERT_EQUAL_STRING("/mute", u32ToUtf8(mu[0]->label).c_str());
+  TEST_ASSERT_EQUAL_STRING("/muted", u32ToUtf8(mu[1]->label).c_str());
+  TEST_ASSERT_EQUAL(0, paletteMatches(PaletteKind::Cmail, U"/mu").size());
+  TEST_ASSERT_EQUAL(0, paletteMatches(PaletteKind::Circ, U"/zzz").size());
+  TEST_ASSERT_EQUAL(0, paletteMatches(PaletteKind::Circ, U"me").size());
+  TEST_ASSERT_EQUAL(0, paletteMatches(PaletteKind::Circ, U"/me x").size());
+  auto me = paletteMatches(PaletteKind::Circ, U"/me");
+  TEST_ASSERT_EQUAL(1, me.size());
+}
+
+void test_palette_insert_localtime() {
+  const PaletteEntry* lt = paletteMatches(PaletteKind::Circ, U"/localtime")[0];
+  std::tm tm{};
+  tm.tm_hour = 9;
+  tm.tm_min = 5;
+  TEST_ASSERT_EQUAL_STRING("/localtime 09:05 ", u32ToUtf8(paletteInsert(*lt, &tm)).c_str());
+  TEST_ASSERT_EQUAL_STRING("/localtime ", u32ToUtf8(paletteInsert(*lt, nullptr)).c_str());
+  const PaletteEntry* me = paletteMatches(PaletteKind::Circ, U"/me")[0];
+  TEST_ASSERT_EQUAL_STRING("/me ", u32ToUtf8(paletteInsert(*me, &tm)).c_str());
 }
 
 void test_qr_small_url() {
@@ -2060,6 +2089,8 @@ int main() {
   RUN_TEST(test_banner_expires);
   RUN_TEST(test_palette_lists_commands);
   RUN_TEST(test_palette_cmail_drops_circ_only);
+  RUN_TEST(test_palette_matches_prefix);
+  RUN_TEST(test_palette_insert_localtime);
   RUN_TEST(test_qr_small_url);
   RUN_TEST(test_entry_list_outline);
   RUN_TEST(test_entry_list_rows_act_on_tap);

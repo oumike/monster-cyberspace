@@ -23,6 +23,7 @@
 #include "ui/widgets/list_view.h"
 #include "ui/widgets/log_view.h"
 #include "ui/widgets/overlay.h"
+#include "ui/widgets/palette.h"
 #include "ui/widgets/spell_strip.h"
 
 namespace rc {
@@ -50,13 +51,14 @@ class RoomScreen : public Screen {
   void closeOverlays() override;
   bool acceptsText() const override { return view_ == View::None; }
   std::u32string paletteLabel() const override { return U"commands\u2026"; }
+  bool paletteTypesSlash() const override { return true; }
   bool consumesBackspace() const override {
     return view_ == View::None && !input_.text().empty();
   }
 
  private:
   enum class View { None, Menu, Reader, Link };
-  enum class Menu { Room, Person, Message, MutePick, UnmutePick, Palette, ConfirmDelete, ConfirmReport };
+  enum class Menu { Room, Person, Message, MutePick, UnmutePick, ConfirmDelete, ConfirmReport };
 
   // Keys by mode.
   void typingKey(const KeyEvent&);
@@ -77,6 +79,11 @@ class RoomScreen : public Screen {
   void openLink(const std::string& url);
   bool isMuted(const std::string& name);
   void insertText(const std::u32string& s);
+  // The slash command picker: opens on a "/" typed into an empty input and
+  // filters as you type (spec 2026-11-12). Non-modal: the input keeps focus.
+  void refreshSlash();
+  bool slashKey(const KeyEvent& k);
+  void pickSlash(int i);
   bool drawerOpen() const;
   // A wide panel keeps the who's-here list docked on the right of a room,
   // whether or not the drawer has the keys.
@@ -117,6 +124,8 @@ class RoomScreen : public Screen {
   SpellStrip spell_;
   Drawer drawer_;
   Overlay box_;
+  Overlay slash_;
+  std::vector<const PaletteEntry*> slashHits_;
   View view_ = View::None;
   Menu menu_ = Menu::Room;
   std::vector<std::string> menuKeys_;  // the action or name behind each item

@@ -69,8 +69,8 @@ Dedicated buttons work from anywhere and close whatever is open first.
 | Fn under Back | Feed: the entry list. Press it again anywhere in the Feed for the list |
 | Map | Guilds: the guild list, once you are signed in. In the composer it asks "Discard draft?" first |
 | Back | Up one level, or closes a menu or drawer. It never deletes text |
-| Sym | The command palette (slash commands in a room or conversation) |
-| Ctrl | While typing: the actions (the command palette, or Save/Post in a note or new entry); Ctrl again while they're open: the emoji tray. Elsewhere (the Feed list): the palette |
+| Sym | The screen's menu (the room menu in a room or conversation, the palette in the Feed) |
+| Ctrl | While typing: the actions (the room menu, or Save/Post in a note or new entry); Ctrl again while they're open: the emoji tray. Elsewhere (the Feed list): the palette |
 | Hold Back/Del | Clear the input line |
 | Hold d-pad centre | Screen off; with the screen off, screen on |
 
@@ -168,7 +168,7 @@ on the real one.
 | Backspace | Deletes while there's text to delete; otherwise Back. Holding it to clear a line stops at the empty line instead of leaving the screen |
 | Trackball roll | Up, Down, Left, Right (moves between Home tiles too) |
 | Hold the trackball click 2 s | Screen off |
-| `⋯`, or a long-press | The screen's menu or the command palette (there's no Sym key) |
+| `⋯`, or a long-press | The screen's menu (there's no Sym key) |
 | Mic key (left of Space), while typing | The emoji tray |
 
 **Screen off:** any key, trackball roll or touch wakes the screen. The press
@@ -190,7 +190,7 @@ the wheel.
 | Wheel click, or Enter | Select (send, in a room) |
 | Backspace | Deletes while there's text to delete; otherwise Back. Hold it to repeat |
 | Sym + Backspace, or hold BOOT | Home |
-| Sym + Enter | The command palette (while typing: Sym, then **commands…**) |
+| Sym + Enter | The screen's menu (while typing, Sym then **commands…** types `/`) |
 | BOOT tap | Back |
 | Hold the wheel click 2 s | Screen off |
 
@@ -230,7 +230,7 @@ log and replies are drawn bold, since the panel has no colours.
 | Enter | Select (send, in a room) |
 | Backspace | Deletes while there's text to delete; otherwise Back. Hold it to repeat |
 | Sym + Backspace, or Alt + Backspace | Back |
-| Sym + Enter, or Alt + Enter | The command palette |
+| Sym + Enter, or Alt + Enter | The screen's menu (the room menu, the Feed palette) |
 | Sym + Space, or Alt + H | Home |
 | Alt + C / M / F | cIRC, C-Mail, Feed |
 | Touch | Tap and swipe as on the other touch boards |
@@ -260,11 +260,11 @@ keyboard; the module can be plugged in while it runs.
 | Keys | Type. Shift, Sym and Alt work held, or tapped for the next key (they lapse after 1.5 s). Shift gives capitals and the symbols on the number row; Sym gives `? / - _ = + [ ] { } : ; ' " ` ~ \ | & < > * @ # % ^ ! ?` on q … m , . |
 | Enter | Select (send, in a room) |
 | Del | Deletes while there's text to delete; otherwise Back. Hold it to repeat |
-| Tab | The command palette |
+| Tab | The screen's menu (the room menu, the Feed palette) |
 | Mic, while typing | The emoji tray |
 | Sym, while typing | The symbol table: pick with the d-pad and Enter, or type a key for its Sym character. Sym again switches to the emoji tray |
 | Alt (or Fn) + W / A / S / D | Up, Left, Down, Right (hold to repeat) |
-| Alt + Del, Alt + Enter | Back, the command palette |
+| Alt + Del, Alt + Enter | Back, the screen's menu |
 | Alt + H / C / M / F | Home, cIRC, C-Mail, Feed |
 | Touch | Tap and swipe as on the other touch boards |
 
@@ -341,7 +341,7 @@ There are three ways to hold it:
 | Enter | Select (send, in a room) |
 | Backspace | Deletes while there's text to delete; otherwise Back. Hold it to repeat |
 | Esc, or Alt + Backspace | Back |
-| Tab | The command palette |
+| Tab | The screen's menu (the room menu, the Feed palette) |
 | Emoji key, while typing | The emoji tray |
 | F1 … F7 | From anywhere: Home, Messages (your last room; again for the room list), C-Mail, Feed, Guilds, your Profile, Settings |
 | F10 | Navigational help, a table of the function keys; any key or tap closes it |
@@ -574,8 +574,14 @@ The keyboard always types into the input line at the bottom.
   list does the same. Right at the
   end of the line, an edge swipe or Show user list brings it back. The choice
   is kept across rooms and restarts.
-- **Commands:** type slash commands such as `/me`, `/dice` and `/mute name`,
-  or pick them from the palette (on the M9, Sym).
+- **Commands:** typing `/` at the start of an empty line lists the slash
+  commands, each with a one-line hint; keep typing to narrow the list
+  (`/mu` leaves `/mute` and `/muted`). Up/Down pick, Centre (or a
+  tap) fills in the command and you add the rest, then Centre sends. Back
+  closes the list and keeps your text. `/localtime` fills in the clock's
+  time. On boards without a `/` key, the symbol tray's **commands…** types
+  it. A command that posts nothing (`/help`) shows the server's answer in a
+  banner. The commands button (Sym, Tab, a hold) opens the room menu.
 
 Sending is disabled while offline; nothing is queued or retried for you.
 
@@ -595,7 +601,8 @@ C-Mail is private, one-to-one messaging. Open it with Fn under Home, or
 - **A conversation** works like a room, titled `@name`: type and press Centre
   to send. Scrolling, the reader and links work the same way. There is no
   drawer. Its menu (Centre on an empty line) has Mark read and Close
-  conversation. The message menu has Reveal,
+  conversation. `/` lists the commands that work in C-Mail (no `/art`,
+  `/localtime` or muting). The message menu has Reveal,
   Show full and Show link; C-Mail has no reply, delete or report.
 - **Typing:** while you type, the other person sees "…is typing". The device
   tells the server only as you press keys, and clears it when you empty the

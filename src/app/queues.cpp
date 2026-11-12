@@ -121,6 +121,13 @@ void refuseCommand(const Command& c) {
     case CmdType::SaveNote:
       postEvent(Event{EvtType::NoteSaved, busy, 0, false});
       return;
+    case CmdType::OpenPrograms:
+    case CmdType::MorePrograms:
+      postEvent(Event{EvtType::ProgramsLoaded, "", 0, false});
+      break;
+    case CmdType::OpenProgram:
+      postEvent(Event{EvtType::ProgramLoaded, c.a + "\n" + std::to_string(c.n), 0, false});
+      break;
     case CmdType::DeleteNote:
       postEvent(Event{EvtType::NoteDeleted, busy, 0, false});
       return;

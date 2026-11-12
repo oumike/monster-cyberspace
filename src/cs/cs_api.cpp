@@ -748,4 +748,31 @@ ApiError CsApi::deleteNote(const std::string& id) {
 }
 #endif
 
+#if RC_FEAT_PROGRAMS
+namespace {
+ApiError tooLargeToShow(ApiError e) {
+  if (e.code == "TOO_LARGE") e.message = "Too large to show here";
+  return e;
+}
+}  // namespace
+
+ApiError CsApi::programs(const std::string& before, std::vector<ProgramInfo>& out, std::string& next) {
+  std::string path = "/v1/programs?limit=30";
+  if (!before.empty()) path += "&before=" + enc(before);
+  HttpResult r;
+  ApiError e = call("GET", path, "", r);
+  if (e.ok() && !parseProgramPage(r.body, out, next)) return badBody(r.status);
+  return tooLargeToShow(e);
+}
+
+ApiError CsApi::programSource(const std::string& id, int release, ProgramSource& out) {
+  std::string path = "/v1/programs/" + enc(id) + "/source";
+  if (release > 0) path += "?release=" + std::to_string(release);
+  HttpResult r;
+  ApiError e = call("GET", path, "", r);
+  if (e.ok() && !parseProgramSource(r.body, out)) return badBody(r.status);
+  return tooLargeToShow(e);
+}
+#endif
+
 }  // namespace rc

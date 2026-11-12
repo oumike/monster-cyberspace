@@ -155,9 +155,9 @@ bool parseProgramSource(std::string_view body, ProgramSource& out);
 ### Worker and state
 
 On `FeedWorker` (`isFeedCommand`): `CmdType::OpenPrograms` (first page),
-`MorePrograms` (next page), `OpenProgram` (`a` = id, `b` = release or empty).
+`MorePrograms` (next page), `OpenProgram` (`a` = id, `n` = release or 0).
 `MorePrograms` follows a non-null cursor past empty pages, at most 5 requests
-for one key press. State in `FeedState::programs`: the list, the cursor,
+for one key press. State in `lockedPrograms()` (`src/store/locked_programs`): the list, the cursor,
 `loading`, and the open `ProgramSource`. Events `ProgramsLoaded`,
 `ProgramLoaded`, with errors as banners. Nothing is polled or retried.
 

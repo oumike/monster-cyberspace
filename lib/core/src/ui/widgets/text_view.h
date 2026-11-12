@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <functional>
 #include <string>
 #include <string_view>
@@ -31,6 +32,14 @@ class TextView {
   void down();
   void pageUp();
   void pageDown();
+  // Source code: no markdown. Unwrapped, long lines run off the right and
+  // left()/right() scroll them by kCodeStep columns; wrap folds them. Back to
+  // the left edge.
+  void setCode(bool wrap);
+  void left();
+  void right();
+  int leftCol() const { return left_; }
+  static constexpr int kCodeStep = 8;
   int top() const { return top_; }
   // Scrolled to the last line (or the text fits), as of the last render.
   bool atEnd() const { return top_ >= maxTop(); }
@@ -59,6 +68,7 @@ class TextView {
   };
   void layout(int width);
   int maxTop() const;
+  int maxLeft() const { return std::max(0, longest_ - laidOutWidth_); }
 
   std::u32string text_;
   std::vector<Style> styles_;
@@ -68,6 +78,9 @@ class TextView {
   int laidOutRows_ = -1;
   int rows_ = 0;
   int top_ = 0;
+  bool code_ = false, wrap_ = true;
+  int left_ = 0;     // code, unwrapped: the first column shown
+  int longest_ = 0;  // code: the widest source line, in cells
 };
 
 }  // namespace rc

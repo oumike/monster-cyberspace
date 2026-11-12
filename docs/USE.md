@@ -932,6 +932,25 @@ touch boards). Not on the Cardputer ADV or the X4. You must be signed in.
 Topics on a note are kept but not shown; an edit sends only the text. Old
 revisions can't be restored from the device.
 
+## Programs
+
+Programs published on cyberspace.online, from Home → **Programs** (a tile on
+touch boards), read only: nothing runs, installs or is published from the
+device. Not on the Cardputer ADV or the X4. You must be signed in.
+
+- **The list:** newest first, each row the program's name and `@owner`, with
+  its runtime (`term` or `web`) on the right. **Older…** last loads the next
+  page. Centre opens one; **Ctrl** (⋯ on touch) offers Refresh and text size;
+  Back goes Home.
+- **A program** shows its name, `@owner`, runtime, release, age and
+  description, a rule, then its source as it is, unwrapped: Up/Down scroll,
+  Left/Right scroll sideways 8 columns at a time, and Left at the left edge
+  (or Back) returns to the list. A wasm program shows only its size, and
+  source past 32 KB is cut off with a note. Centre or **Ctrl** (⋯ on touch)
+  opens **Releases…** (when there is more than one: pick one to read it),
+  **Author's profile**, **Wrap long lines** (for touch boards, which can't
+  scroll sideways) and **Refresh**.
+
 ## Unread
 
 **Unread** lists everything waiting for you in one place, newest first:

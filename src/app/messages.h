@@ -82,6 +82,11 @@ enum class CmdType {
   SaveNote,              // a = id, "" for a new note; b = JSON (noteBodyJson)
   DeleteNote,            // a = id
   CloseNotes,            // Notes left for Home: its state cleared
+  // Programs (RC_FEAT_PROGRAMS): the read-only gallery.
+  OpenPrograms,          // the first page
+  MorePrograms,          // the next page
+  OpenProgram,           // a = id; n = release, 0 the current one
+  ClosePrograms,         // Programs left for Home: its state cleared
   MarkAllRead,           // Unread: every notification and unread C-Mail
   MarkNoticeRead,        // Unread: a = a Feed notice's id (a follower or poke, opened as a profile)
   MarkRoomsRead,         // the rooms list: every unread cIRC room
@@ -140,6 +145,9 @@ enum class EvtType {
   NoteHistoryUpdated,   // ok=false on a failed load
   NoteSaved,            // ok: text = the note's id; !ok: text = error
   NoteDeleted,          // ok; text = error when !ok
+  // Programs.
+  ProgramsLoaded,       // ok=false on a failed load
+  ProgramLoaded,        // text = "id\nrelease" as asked; ok=false on a failed load
   // The device's Wi-Fi screen.
   WifiScanned,          // text = rc::encodeWifiScan
   // code 0 joining (text = SSID), 1 joined (text = SSID), 2 forgotten

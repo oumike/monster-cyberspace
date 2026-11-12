@@ -23,7 +23,7 @@ namespace rc {
 
 namespace {
 enum Item {
-  kMessages, kUnread, kRooms, kCmail, kFeed, kFollowing, kGuilds, kProfile, kSettings, kNotes
+  kMessages, kUnread, kRooms, kCmail, kFeed, kFollowing, kGuilds, kProfile, kSettings, kNotes, kPrograms
 };
 
 Item toItem(HomeItem h) {
@@ -38,6 +38,7 @@ Item toItem(HomeItem h) {
     case HomeItem::Profile: return kProfile;
     case HomeItem::Settings: return kSettings;
     case HomeItem::Notes: return kNotes;
+    case HomeItem::Programs: return kPrograms;
   }
   return kSettings;
 }
@@ -155,6 +156,8 @@ std::vector<lvui::HomeTileInfo> tileInfos() {
         return {U"notes", U"", false};
       case kGuilds:
         return {U"guilds", U"", false};
+      case kPrograms:
+        return {U"programs", U"", false};
       case kProfile:
         return {U"profile", a.user.empty() ? std::u32string() : utf8ToU32("@" + a.user), false};
       case kSettings:
@@ -222,6 +225,7 @@ std::vector<ListItem> menuRows() {
       case kFollowing: rows.push_back(ListItem{U"Following", U""}); break;
       case kNotes: rows.push_back(ListItem{U"Notes", U""}); break;
       case kGuilds: rows.push_back(ListItem{U"Guilds", U""}); break;
+      case kPrograms: rows.push_back(ListItem{U"Programs", U""}); break;
       case kProfile: rows.push_back(ListItem{U"Profile", U""}); break;
       case kSettings: rows.push_back(ListItem{U"Settings", U""}); break;
     }
@@ -274,6 +278,11 @@ void HomeScreen::openItem(int item) {
 #if RC_FEAT_NOTES
     case kNotes:
       router::go(router::Id::Notes);
+      break;
+#endif
+#if RC_FEAT_PROGRAMS
+    case kPrograms:
+      router::go(router::Id::Programs);
       break;
 #endif
 #if RC_FEAT_GUILDS

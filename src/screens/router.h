@@ -81,6 +81,8 @@ enum class Id {
   Note,           // a note; arg = id, or "id\nN" for revision N
   NoteHistory,    // a note's revisions; arg = id
   NoteEdit,       // a note's text; arg = id, or "" for a new note
+  Programs,       // published programs (Home)
+  Program,        // a program's source; arg = id, or "id@N" for release N
 };
 
 struct Place {

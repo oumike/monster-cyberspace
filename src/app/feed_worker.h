@@ -70,6 +70,11 @@ class FeedWorker {
   void deleteNote(const std::string& id);
   void clearNotes();
 #endif
+#if RC_FEAT_PROGRAMS
+  void openPrograms(bool more);
+  void openProgram(const std::string& id, int release);
+  void clearPrograms();
+#endif
 
   CsApi& api_;
   bool feedOpen_ = false;

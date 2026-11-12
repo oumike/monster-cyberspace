@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include <ctime>
 #include <map>
 #include <mutex>
 #include <set>
@@ -21,6 +22,9 @@
 #include "feed/markdown_text.h"
 #include "store/locked_feed.h"
 #include "store/locked_people.h"
+#if RC_FEAT_PROGRAMS
+#include "store/locked_programs.h"
+#endif
 
 // The scripted fake Feed for the demo build (RC_FAKE_API): no network, no account.
 // 15 entries, newest first, served 10 to a page (Down at the end loads the
@@ -194,6 +198,10 @@ class FakeFeedSource : public FeedSource {
   void openFollowingPosts();
   void openTopics();
   void openTopic(const std::string& name);
+#if RC_FEAT_PROGRAMS
+  void openPrograms();
+  void openProgram(const std::string& id, int release);
+#endif
 
   // Lock order: mu_, then lockedFeed(); never the other way round.
   std::mutex mu_;  // guards everything below
@@ -478,6 +486,11 @@ void FakeFeedSource::command(const Command& c) {
     case CmdType::OpenNoteHistory: post(EvtType::NoteHistoryUpdated, "", 0, false); break;
     case CmdType::SaveNote: post(EvtType::NoteSaved, "Not in the demo", 0, false); break;
     case CmdType::DeleteNote: post(EvtType::NoteDeleted, "Not in the demo", 0, false); break;
+#if RC_FEAT_PROGRAMS
+    case CmdType::OpenPrograms:
+    case CmdType::MorePrograms: openPrograms(); break;
+    case CmdType::OpenProgram: openProgram(c.a, int(c.n)); break;
+#endif
     default: break;
   }
 }
@@ -1305,6 +1318,48 @@ void FakeFeedSource::openTopic(const std::string& name) {
   });
   post(EvtType::SideListUpdated);
 }
+
+#if RC_FEAT_PROGRAMS
+// ---- programs: two made-up ones, one page ----
+
+void FakeFeedSource::openPrograms() {
+  const int64_t now = int64_t(time(nullptr)) * 1000;
+  std::vector<ProgramInfo> list{
+      {"demo-hello", "hello", "neon", "Greets whoever runs it", "term", 2, now - 3600000},
+      {"demo-dice", "dice", "pixel", "Rolls dice in the browser terminal", "web", 1, now - 86400000},
+  };
+  lockedPrograms().with([&](ProgramsState& s) {
+    s.list = std::move(list);
+    s.cursor.clear();
+    s.loaded = true;
+    s.loading = false;
+  });
+  post(EvtType::ProgramsLoaded);
+}
+
+void FakeFeedSource::openProgram(const std::string& id, int release) {
+  ProgramSource src;
+  lockedPrograms().with([&](ProgramsState& s) {
+    for (const auto& p : s.list)
+      if (p.id == id) src.info = p;
+  });
+  if (src.info.id.empty()) {
+    post(EvtType::ProgramLoaded, id + "\n" + std::to_string(release), 404, false);
+    return;
+  }
+  if (release > 0) src.info.release = release;
+  src.text = src.info.runtime == "term"
+                 ? "export default async (p) => {\n\tp.print('hello, ' + (p.args[0] || 'cyberspace'))\n\treturn 0\n}\n"
+                 : "export default {\n\tname: 'dice',\n\tdescription: 'Rolls dice',\n\trun(ctx, args) {\n"
+                   "\t\tctx.print(String(1 + Math.floor(Math.random() * 6)))\n\t},\n}\n";
+  src.bytes = src.text.size();
+  lockedPrograms().with([&](ProgramsState& s) {
+    s.open = std::move(src);
+    s.openRelease = release;
+  });
+  post(EvtType::ProgramLoaded, id + "\n" + std::to_string(release));
+}
+#endif
 
 }  // namespace rc
 

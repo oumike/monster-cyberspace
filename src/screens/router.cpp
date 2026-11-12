@@ -58,6 +58,10 @@ NoteListScreen noteHistory{true};
 NoteScreen note;
 NoteEditScreen noteEdit;
 #endif
+#if RC_FEAT_PROGRAMS
+ProgramListScreen programs;
+ProgramScreen program;
+#endif
 #if RC_FEAT_PEOPLE && RC_FEAT_FEED
 FeedListScreen followingPosts{FeedListScreen::Kind::Following};
 #endif
@@ -123,6 +127,10 @@ Screen* lookup(Id id) {
     case Id::NoteHistory: return &noteHistory;
     case Id::Note: return &note;
     case Id::NoteEdit: return &noteEdit;
+#endif
+#if RC_FEAT_PROGRAMS
+    case Id::Programs: return &programs;
+    case Id::Program: return &program;
 #endif
 #if RC_FEAT_PEOPLE && RC_FEAT_FEED
     case Id::Following: return &followingPosts;

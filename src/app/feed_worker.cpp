@@ -16,6 +16,9 @@
 #if RC_FEAT_NOTES
 #include "store/locked_notes.h"
 #endif
+#if RC_FEAT_PROGRAMS
+#include "store/locked_programs.h"
+#endif
 #include "ui/guild_layout.h"
 
 namespace rc {
@@ -123,6 +126,12 @@ bool FeedWorker::isFeedCommand(CmdType t) {
     case CmdType::DeleteNote:
     case CmdType::CloseNotes:
 #endif
+#if RC_FEAT_PROGRAMS
+    case CmdType::OpenPrograms:
+    case CmdType::MorePrograms:
+    case CmdType::OpenProgram:
+    case CmdType::ClosePrograms:
+#endif
       return true;
     default:
       return false;
@@ -176,6 +185,12 @@ void FeedWorker::handle(const Command& c) {
     case CmdType::DeleteNote: deleteNote(c.a); break;
     case CmdType::CloseNotes: clearNotes(); break;
 #endif
+#if RC_FEAT_PROGRAMS
+    case CmdType::OpenPrograms: openPrograms(false); break;
+    case CmdType::MorePrograms: openPrograms(true); break;
+    case CmdType::OpenProgram: openProgram(c.a, int(c.n)); break;
+    case CmdType::ClosePrograms: clearPrograms(); break;
+#endif
     default: break;
   }
 }
@@ -206,6 +221,9 @@ void FeedWorker::signOut() {
   });
 #if RC_FEAT_NOTES
   clearNotes();
+#endif
+#if RC_FEAT_PROGRAMS
+  clearPrograms();
 #endif
   post(EvtType::FeedUpdated);
 }
@@ -1023,6 +1041,77 @@ void FeedWorker::deleteNote(const std::string& id) {
   post(EvtType::NoteDeleted);
 }
 #endif  // RC_FEAT_NOTES
+
+#if RC_FEAT_PROGRAMS
+// ---- programs (read only) ----
+
+void FeedWorker::clearPrograms() {
+  lockedPrograms().with([](ProgramsState& s) { s = ProgramsState{}; });
+}
+
+// The first page, or (more) the next. A page can come back empty with a
+// cursor still set: follow it, at most kProgramPages requests a key press.
+void FeedWorker::openPrograms(bool more) {
+  constexpr int kProgramPages = 5;
+  std::string cursor;
+  if (more) {
+    cursor = lockedPrograms().with([](ProgramsState& s) { return s.cursor; });
+    if (cursor.empty()) {
+      post(EvtType::ProgramsLoaded);
+      return;
+    }
+  }
+  lockedPrograms().with([](ProgramsState& s) { s.loading = true; });
+  std::vector<ProgramInfo> got, page;
+  ApiError e;
+  for (int i = 0; i < kProgramPages; ++i) {
+    std::string next;
+    page.clear();
+    e = api_.programs(cursor, page, next);
+    if (!e.ok()) break;
+    for (auto& p : page) got.push_back(std::move(p));
+    cursor = next;
+    if (!got.empty() || cursor.empty()) break;
+  }
+  lockedPrograms().with([&](ProgramsState& s) {
+    s.loading = false;
+    if (!e.ok()) return;
+    if (!more) s.list.clear();
+    for (auto& p : got) s.list.push_back(std::move(p));
+    s.cursor = cursor;
+    s.loaded = true;
+  });
+  if (!e.ok()) {
+    banner(errorText(e, false));
+    post(EvtType::ProgramsLoaded, "", e.http, false);
+    return;
+  }
+  post(EvtType::ProgramsLoaded);
+}
+
+void FeedWorker::openProgram(const std::string& id, int release) {
+  const std::string tag = id + "\n" + std::to_string(release);
+  lockedPrograms().with([&](ProgramsState& s) {
+    s.loading = true;
+    if (s.open.info.id != id || s.openRelease != release) s.open = ProgramSource{};
+  });
+  ProgramSource src;
+  ApiError e = api_.programSource(id, release, src);
+  lockedPrograms().with([&](ProgramsState& s) {
+    s.loading = false;
+    if (!e.ok()) return;
+    s.open = std::move(src);
+    s.openRelease = release;
+  });
+  if (!e.ok()) {
+    banner(e.http == 404 ? std::string("Program not found") : errorText(e, false));
+    post(EvtType::ProgramLoaded, tag, e.http, false);
+    return;
+  }
+  // Tagged with what was asked for, so a late answer can't fill another view.
+  post(EvtType::ProgramLoaded, tag);
+}
+#endif  // RC_FEAT_PROGRAMS
 
 }  // namespace rc
 

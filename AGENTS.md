@@ -463,7 +463,14 @@ commands with hints (`ui/widgets/palette`: `paletteMatches`, `paletteInsert`;
 menu, and the symbol tray's **commands…** types `/`
 (`Screen::paletteTypesSlash`). C-Mail sends show `/help`'s reply as rooms do.
 Item 7 (guild badge) already existed as Make my guild. Its hardware check is open.
-The native suite is green: 821/821
+Programs (issue #9 item 8) were added on 2026-11-12 (built without flashing):
+a read-only gallery from Home (`RC_FEAT_PROGRAMS`, default `RC_FEAT_FEED`, 0
+with `RC_LOW_MEM`): the list and one program's source with its releases
+(`src/screens/programs.cpp`, `lib/core/src/programs/`, `src/store/locked_programs`,
+commands on `FeedWorker`). Source shows unwrapped through `TextView`'s code
+mode (`setCode`, `left`/`right`), cut at 32 KB; wasm shows its size. Its
+hardware check in docs/TESTING.md is open.
+The native suite is green: 829/829
 (`pio test -e native`), and so is the LVGL one: 86/86 (`pio test -e
 native_lv`, and built lean). `scripts/build-upload-monitor.sh -B` builds all
 thirteen firmware envs (the X4 only from a path without spaces).

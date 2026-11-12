@@ -17,6 +17,7 @@
 #include "lvui/views/tile_grid.h"
 #include "lvui/views/top_bar.h"
 #include "net/wifi_list.h"
+#include "programs/programs.h"
 #include "screens/backup_picker.h"
 #include "screens/button_pad.h"
 #if RC_FEAT_ENTRIES
@@ -953,6 +954,85 @@ class NoteEditScreen : public Screen {
     lvui::TopBar status_;
     lvui::CellText text_;
     lvui::TextBox bodyView_;
+    lvui::HintBar hint_;
+    lvui::MenuOverlay menuView_;
+  };
+  lvui::TreeViews<Views> v_;
+};
+#endif
+
+#if RC_FEAT_PROGRAMS
+// Programs (Home → Programs): published programs, newest first, read only.
+// Rows "name  @owner" with the runtime on the right, then Older… while the
+// API has more.
+class ProgramListScreen : public Screen {
+ public:
+  void enter(const std::string& arg) override;
+  void onKey(const KeyEvent&) override;
+  void onEvent(const Event&) override;
+  void build(lv_obj_t* root) override;
+  void update(int64_t nowMs) override;
+  bool hasOverlay() const override { return box_.isOpen(); }
+  void closeOverlays() override { box_.close(); }
+
+ private:
+  void request(bool more);
+  void menuKey(const KeyEvent&);
+  void sync();
+  ListView list_;
+  Overlay box_;
+  std::vector<std::string> ids_;  // by row; "" for Older…
+  bool more_ = false, loading_ = false, failed_ = false;
+  struct Views {
+    SyncGate<2> gate_;
+    lvui::TopBar status_;
+    lvui::ListBox listView_;
+    SideNavHost navView_;
+    lvui::CellText text_;
+    lvui::HintBar hint_;
+    lvui::MenuOverlay menuView_;
+  };
+  lvui::TreeViews<Views> v_;
+};
+
+// One program's source (arg "id" or "id@N" for release N): a header, a
+// rule, then the code unwrapped, scrolled with the arrows. The menu lists
+// its releases, opens the author's profile and refreshes.
+class ProgramScreen : public Screen {
+ public:
+  void enter(const std::string& arg) override;
+  void onKey(const KeyEvent&) override;
+  void onEvent(const Event&) override;
+  void build(lv_obj_t* root) override;
+  void update(int64_t nowMs) override;
+  bool hasOverlay() const override { return box_.isOpen(); }
+  void closeOverlays() override {
+    box_.close();
+    releases_ = false;
+  }
+
+ private:
+  enum class Act : uint8_t { Releases, Profile, Wrap, Refresh };
+  void request();
+  void menuKey(const KeyEvent&);
+  void fill(int width);
+  void sync();
+  std::string id_;
+  int release_ = 0;  // asked for; 0 the current one
+  ProgramSource src_;
+  int latest_ = 0;   // the newest release seen
+  int width_ = -1;   // the header was wrapped for
+  uint32_t colours_ = 0;  // and the theme's fg and dim it was filled with
+  TextView text_;
+  Overlay box_;
+  std::vector<Act> acts_;  // the menu's rows
+  bool wrap_ = false;      // fold long lines (touch boards can't scroll sideways)
+  bool releases_ = false, loaded_ = false, failed_ = false, loading_ = false;
+  struct Views {
+    SyncGate<2> gate_;
+    lvui::TopBar status_;
+    lvui::TextBox textView_;
+    lvui::CellText cells_;
     lvui::HintBar hint_;
     lvui::MenuOverlay menuView_;
   };

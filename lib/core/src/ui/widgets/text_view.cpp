@@ -3,6 +3,7 @@
 #include <algorithm>
 
 #include "ui/tap_map.h"
+#include "ui/text_width.h"
 #include "ui/widgets/scroll_bar.h"
 #include "ui/wrap.h"
 
@@ -28,8 +29,30 @@ void TextView::down() { top_ = std::min(maxTop(), top_ + 1); }
 void TextView::pageUp() { top_ = std::max(0, top_ - std::max(1, rows_ - 1)); }
 void TextView::pageDown() { top_ = std::min(maxTop(), top_ + std::max(1, rows_ - 1)); }
 
+void TextView::setCode(bool wrap) {
+  code_ = true;
+  wrap_ = wrap;
+  left_ = 0;
+  laidOutFor_ = -1;
+}
+
+void TextView::left() {
+  if (!code_ || wrap_ || left_ == 0) return;
+  left_ = std::max(0, left_ - kCodeStep);
+  laidOutFor_ = -1;
+}
+
+void TextView::right() {
+  if (!code_ || wrap_) return;
+  const int to = std::min(maxLeft(), left_ + kCodeStep);
+  if (to == left_) return;
+  left_ = to;
+  laidOutFor_ = -1;
+}
+
 void TextView::layout(int width) {
   lines_.clear();
+  longest_ = 0;
   laidOutWidth_ = width;
   size_t start = 0;
   int para = -1;
@@ -39,6 +62,19 @@ void TextView::layout(int width) {
     if (end == std::u32string::npos) end = text_.size();
     std::u32string_view src(text_.data() + start, end - start);
     start = end + 1;
+    if (code_) {
+      longest_ = std::max(longest_, textWidth(src));
+      if (wrap_) {
+        for (auto& w : wrapText(src, width, width)) lines_.push_back(Line{std::move(w), false, para});
+      } else {
+        size_t skip = 0;
+        for (int cells = 0; skip < src.size() && cells < left_; ++skip) cells += cellWidth(src[skip]);
+        src.remove_prefix(skip);
+        lines_.push_back(Line{std::u32string(src.substr(0, fitChars(src, width))), false, para});
+      }
+      if (end == text_.size()) break;
+      continue;
+    }
 
     size_t lead = src.find_first_not_of(U' ');
     if (lead == std::u32string_view::npos) lead = src.size();

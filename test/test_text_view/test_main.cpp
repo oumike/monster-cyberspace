@@ -34,6 +34,31 @@ void test_headings_lose_their_marks_and_are_bold() {
   TEST_ASSERT_FALSE(g.at(0, 1).bold);
 }
 
+// Code: marks stay, long lines run off the right and Left/Right scroll them
+// (by kCodeStep, no further than the longest line's end); wrap folds them.
+void test_code_mode_keeps_marks_and_scrolls_sideways() {
+  Grid g(10, 3);
+  TextView v;
+  v.setCode(false);
+  v.setText(U"# not a heading\n- x");
+  v.render(g, 0, 3, 0, 10, defaultTheme());
+  TEST_ASSERT_EQUAL_STRING("# not a he", rowText(g, 0).c_str());
+  TEST_ASSERT_FALSE(g.at(2, 0).bold);
+  TEST_ASSERT_EQUAL_STRING("- x", rowText(g, 1).c_str());
+  v.left();
+  TEST_ASSERT_EQUAL(0, v.leftCol());
+  v.right();
+  v.render(g, 0, 3, 0, 10, defaultTheme());
+  TEST_ASSERT_EQUAL(5, v.leftCol());  // "# not a heading" is 15 wide
+  TEST_ASSERT_EQUAL_STRING(" a heading", rowText(g, 0).c_str());
+  TEST_ASSERT_EQUAL_STRING("", rowText(g, 1).c_str());
+  v.setCode(true);
+  TEST_ASSERT_EQUAL(0, v.leftCol());
+  v.render(g, 0, 3, 0, 10, defaultTheme());
+  TEST_ASSERT_EQUAL_STRING("# not a", rowText(g, 0).c_str());
+  TEST_ASSERT_EQUAL_STRING("heading", rowText(g, 1).c_str());
+}
+
 void test_bullets_hang() {
   Grid g(12, 4);
   TextView v;
@@ -98,6 +123,7 @@ int main(int, char**) {
   UNITY_BEGIN();
   RUN_TEST(test_headings_lose_their_marks_and_are_bold);
   RUN_TEST(test_bullets_hang);
+  RUN_TEST(test_code_mode_keeps_marks_and_scrolls_sideways);
   RUN_TEST(test_scrolls_and_clamps);
   RUN_TEST(test_scrollbar_only_when_it_overflows);
   RUN_TEST(test_rows_register_for_drag_scrolling);

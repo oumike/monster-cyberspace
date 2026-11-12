@@ -35,6 +35,18 @@ on 2026-10-27; the sections marked `m9_fake` passed on it before then.
 - [ ] The commands button (M9 Sym, Tanmatsu Tab, a hold on touch) opens the
   room menu; the symbol tray's **commands…** types `/`.
 
+**Programs (issue #9 item 8; the M9 and a touch board):**
+
+- [ ] Home → Programs (tile and row): the list loads, newest first, with
+  name, `@owner` and runtime; **Older…** loads more; Back goes Home.
+- [ ] A program: header, rule and source; Up/Down and Left/Right scroll,
+  Left at the edge returns to the list; **Wrap long lines** folds them.
+- [ ] A wasm program shows "wasm binary, N bytes: can't be shown here"; a
+  source over 32 KB ends "… cut off at 32 KB".
+- [ ] **Releases…** opens an older release (status bar "release N");
+  **Author's profile** opens the profile.
+- [ ] Cardputer ADV build: no Programs on Home.
+
 **Fuller profiles and Notes (the M9 and the Wio L2):**
 
 - [ ] Profile → Replies: someone's replies, newest first with ages; Centre

@@ -11,6 +11,7 @@
 #include "guild/guild.h"
 #include "net/https_client.h"
 #include "notes/notes.h"
+#include "programs/programs.h"
 #include "people/profile.h"
 #include "ui/notice_text.h"
 
@@ -148,6 +149,14 @@ class CsApi {
   // PATCH /v1/notes/:id: adds a revision.
   ApiError updateNote(const std::string& id, const std::string& json);
   ApiError deleteNote(const std::string& id);
+#endif
+
+#if RC_FEAT_PROGRAMS
+  // The gallery, newest first; before = the previous page's cursor ("" for
+  // the first). A body past the client's cap: "Too large to show here".
+  ApiError programs(const std::string& before, std::vector<ProgramInfo>&, std::string& next);
+  // A program's source; release 0 = the current one.
+  ApiError programSource(const std::string& id, int release, ProgramSource&);
 #endif
 
   const Tokens& tokens() const { return tokens_; }

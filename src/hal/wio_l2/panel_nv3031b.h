@@ -12,6 +12,9 @@ bool begin();
 // (x0, top) px in from the panel's corner.
 void pushRows(const uint16_t* frame, int width, int y0, int y1, int x0 = 0, int top = 0);
 void sleep(bool on);
+// Paints black everything outside the UI's area (x0, y0, w, h): the bezel
+// strip, which no frame covers.
+void clearAround(int x0, int y0, int w, int h);
 // LovyanGFX rotation r (quarter turns from landscape, on top of offset 1).
 void setRotation(uint8_t r);
 

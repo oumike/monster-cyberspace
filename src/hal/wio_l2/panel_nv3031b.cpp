@@ -97,6 +97,16 @@ void sleep(bool on) {
   else lcd.wakeup();
 }
 
+void clearAround(int x0, int y0, int w, int h) {
+  const int W = lcd.width(), H = lcd.height();
+  lcd.startWrite();
+  if (y0 > 0) lcd.fillRect(0, 0, W, y0, 0);
+  if (y0 + h < H) lcd.fillRect(0, y0 + h, W, H - y0 - h, 0);
+  if (x0 > 0) lcd.fillRect(0, y0, x0, h, 0);
+  if (x0 + w < W) lcd.fillRect(x0 + w, y0, W - x0 - w, h, 0);
+  lcd.endWrite();
+}
+
 }  // namespace nv3031b
 
 #endif

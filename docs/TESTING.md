@@ -426,6 +426,7 @@ Buttons: BOOT tap = Back, BOOT hold (0.6 s) = Home; Wake tap = screen off
 - [ ] Tap accuracy: in each of the four orientations, the `‹` (top-left), `⋯` (top-right, in a room) and the bottom-left and bottom-right Home tiles or keyboard keys respond where tapped (this confirms the Portrait and Portrait 180 touch direction)
 - [ ] Every screen by touch: Home tiles, Rooms, Room (tap a message, hold for the menu, the drawer, the menus), C-Mail, Feed (drag, swipe a page, load more at the end), Entry, Composer (fields, checkboxes, `⋯` Post/Discard), Settings, Login
 - [ ] Keyboard: tapping a field docks it and hides it again with `▼`; all three pages (`?123`, `#+=`, `ABC`); the emoji key beside `?123` opens the emoji tray; `⇧` one-shot and double-tap caps lock; `⌫`; enter sends in a room and makes a new line in the Composer Body; the keys span the screen's full width in every orientation and text size (on the Wio L2 in portrait too, where they were narrower)
+- [ ] Bezel strip: after the screen goes off and wakes, in each orientation, the 4 px edge outside the UI stays black (it showed as a grey bar at the top until a reboot)
 - [ ] Keyboard goes away on Back out of a room, on a screen change and when the screen turns off
 - [ ] `‹` tap goes back and hold goes Home; `⋯` opens the screen menu; a swipe right from the left edge goes back; a tap on a banner dismisses it; tapping outside a menu closes it
 - [ ] Touch never wakes a dark screen, and a finger left down across a screen change fires nothing on the new screen
@@ -725,6 +726,7 @@ is open.
 - [ ] Auto-update on: the daily check (or 20 s after joining Wi-Fi) installs by itself; off: it only shows `available`
 - [ ] Web config Firmware: Check, Install and the auto-update checkbox work and match the device
 - [ ] Off Wi-Fi, Settings → Firmware says `Can't check now: is Wi-Fi up?`
+- [ ] Rollback (seen once on the Wio L2, 2026-11-13, not reproduced): after an OTA install, a later reboot went back to the previous firmware. The bootloader does that when the new image restarts before `[ota] new firmware is running fine` (30 s, `kValidAfterMs`): a reboot or crash in those first 30 s. If it happens again, note how long the new image ran and catch the serial log of that boot (a panic?)
 
 **Fluffy Generator, flasher (a Chromium browser):**
 

@@ -195,6 +195,9 @@ void displaySleep(bool sleep) {
     nv3031b::sleep(true);
   } else {
     nv3031b::sleep(false);
+    // The panel can wake with stale pixels in the bezel strip, which the UI
+    // never draws over (it showed as a grey bar until a reboot).
+    nv3031b::clearAround(insetLeft(), insetTop(), panelWidth(), panelHeight());
     backlight(true);
   }
 }

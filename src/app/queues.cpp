@@ -128,6 +128,12 @@ void refuseCommand(const Command& c) {
     case CmdType::OpenProgram:
       postEvent(Event{EvtType::ProgramLoaded, c.a + "\n" + std::to_string(c.n), 0, false});
       break;
+    case CmdType::Search:
+      postEvent(Event{EvtType::SearchUpdated, "all", 0, false});
+      break;
+    case CmdType::SearchMore:
+      postEvent(Event{EvtType::SearchUpdated, c.a, 0, false});
+      break;
     case CmdType::DeleteNote:
       postEvent(Event{EvtType::NoteDeleted, busy, 0, false});
       return;

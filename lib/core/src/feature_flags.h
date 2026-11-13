@@ -57,6 +57,16 @@
 #define RC_FEAT_ENTRIES (RC_FEAT_FEED || RC_FEAT_GUILDS || RC_FEAT_PEOPLE)
 #define RC_FEAT_COMPOSER (RC_FEAT_FEED || RC_FEAT_GUILDS)
 
+// Search (people, entries, replies): its hits open profiles and entries, and
+// the entries worker runs it; PSRAM boards only.
+#ifndef RC_FEAT_SEARCH
+#if RC_LOW_MEM
+#define RC_FEAT_SEARCH 0
+#else
+#define RC_FEAT_SEARCH (RC_FEAT_PEOPLE && RC_FEAT_ENTRIES)
+#endif
+#endif
+
 namespace rc {
 
 // The features that shape portable choices (Home's tiles, Settings items).
@@ -65,10 +75,12 @@ struct Features {
   bool circ = true;
   bool notes = true;
   bool programs = true;
+  bool search = true;
 };
 
 constexpr Features kBuiltFeatures{RC_FEAT_CMAIL != 0, RC_FEAT_FEED != 0, RC_FEAT_GUILDS != 0,
                                   RC_FEAT_PEOPLE != 0, RC_FEAT_UNREAD != 0, RC_FEAT_CIRC != 0,
-                                  RC_FEAT_NOTES != 0, RC_FEAT_PROGRAMS != 0};
+                                  RC_FEAT_NOTES != 0, RC_FEAT_PROGRAMS != 0,
+                                  RC_FEAT_SEARCH != 0};
 
 }  // namespace rc

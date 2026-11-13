@@ -62,7 +62,7 @@ ListBox::Row ListBox::makeRow(lv_obj_t* parent) {
   lv_obj_set_flex_grow(r.label, 1);
   r.right = lineLabel(r.row);
   lv_obj_set_width(r.right, LV_SIZE_CONTENT);
-  r.error = false;
+  r.tone = rc::ItemTone::Normal;
   return r;
 }
 
@@ -71,15 +71,14 @@ void ListBox::fillRow(Row& r, const rc::ListItem& it) {
   setText(r.label, it.label);
   // One cell between the label and the right text, one after it.
   setText(r.right, it.right.empty() ? std::u32string() : U" " + it.right + U" ");
-  const bool error = it.tone == rc::ItemTone::Error;
-  if (error != r.error) {
+  if (it.tone != r.tone) {
     for (lv_obj_t* l : {r.marker, r.label, r.right}) {
-      if (error)
-        addStyle(l, Role::Error);
-      else
-        lv_obj_remove_style(l, style(Role::Error), 0);
+      lv_obj_remove_style(l, style(Role::Error), 0);
+      lv_obj_remove_style(l, style(Role::Dim), 0);
+      if (it.tone == rc::ItemTone::Error) addStyle(l, Role::Error);
+      else if (it.tone == rc::ItemTone::Dim) addStyle(l, Role::Dim);
     }
-    r.error = error;
+    r.tone = it.tone;
   }
 }
 
@@ -135,7 +134,7 @@ bool ListBox::sameLine(int k) const {
   const int was = static_cast<int>(lines_now_.size()), now = static_cast<int>(lines_next_.size());
   if (k >= was || k >= now) return k >= was && k >= now;
   const Line &a = lines_next_[k], &b = lines_now_[k];
-  return a.marker == b.marker && a.error == b.error && a.checked == b.checked &&
+  return a.marker == b.marker && a.tone == b.tone && a.checked == b.checked &&
          std::strcmp(nextText_.c_str() + a.label, text_.c_str() + b.label) == 0 &&
          std::strcmp(nextText_.c_str() + a.right, text_.c_str() + b.right) == 0;
 }
@@ -147,7 +146,7 @@ void ListBox::syncPainted(const std::vector<rc::ListItem>& items, int selected) 
     const rc::ListItem& it = items[first_ + k];
     Line l{};
     l.marker = it.marker;
-    l.error = it.tone == rc::ItemTone::Error;
+    l.tone = it.tone;
     l.checked = first_ + k == selected && rc::cursorShown();
     l.label = static_cast<uint16_t>(nextText_.size());
     nextText_ += rc::u32ToUtf8(it.label);
@@ -201,7 +200,8 @@ void ListBox::paint(lv_obj_t* box, lv_layer_t* layer) {
     // As a row (Role::Item, Focused when checked): the outline first, then
     // its marker, its label growing to fill, and its right text at its width.
     if (l.checked) paintRect(layer, ra, color(t.bg), LV_OPA_TRANSP, color(t.selectBg), 1);
-    const lv_color_t fg = color(l.error ? t.error : t.fg);
+    const lv_color_t fg =
+        color(l.tone == rc::ItemTone::Error ? t.error : l.tone == rc::ItemTone::Dim ? t.dim : t.fg);
     const char* right = text_.c_str() + l.right;
     const int32_t rightW = right[0] ? textWidth(right, font) : 0;
     const int32_t labelW = std::max<int32_t>(0, w - 2 * cw - rightW);

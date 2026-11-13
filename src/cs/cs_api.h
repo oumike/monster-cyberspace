@@ -12,6 +12,7 @@
 #include "net/https_client.h"
 #include "notes/notes.h"
 #include "programs/programs.h"
+#include "search/search.h"
 #include "people/profile.h"
 #include "ui/notice_text.h"
 
@@ -157,6 +158,15 @@ class CsApi {
   ApiError programs(const std::string& before, std::vector<ProgramInfo>&, std::string& next);
   // A program's source; release 0 = the current one.
   ApiError programSource(const std::string& id, int release, ProgramSource&);
+#endif
+
+#if RC_FEAT_SEARCH
+  // type=all: up to 8 people, entries and replies. q trimmed, 1–512 characters.
+  ApiError searchAll(const std::string& q, std::vector<SearchHit>& users, std::vector<SearchHit>& posts,
+                     std::vector<SearchHit>& replies);
+  // One type's page (0-based); next = the following page, "" at the end.
+  ApiError searchPage(const std::string& q, const std::string& type, int page, std::vector<SearchHit>&,
+                      std::string& next);
 #endif
 
   const Tokens& tokens() const { return tokens_; }

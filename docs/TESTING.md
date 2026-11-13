@@ -47,6 +47,18 @@ on 2026-10-27; the sections marked `m9_fake` passed on it before then.
   **Author's profile** opens the profile.
 - [ ] Cardputer ADV build: no Programs on Home.
 
+**Search (issue #9 item 1; the M9 and a touch board):**
+
+- [ ] Home → Search (tile and row, right after Unread): the query line is
+  open for typing; an empty query or offline shows a banner and sends nothing.
+- [ ] A search shows People, Entries and Replies under dim headings the
+  cursor skips; empty groups are left out; "no results" when nothing matched.
+- [ ] A hit opens a profile, an entry, or a reply's entry; Back returns to
+  the results with the query kept. Up from the first hit returns to the line.
+- [ ] **More…** (a group with 8 hits) opens that kind's list; Down on the
+  last row loads the next page; Back returns to Search.
+- [ ] Cardputer ADV build: no Search on Home.
+
 **Fuller profiles and Notes (the M9 and the Wio L2):**
 
 - [ ] Profile → Replies: someone's replies, newest first with ages; Centre

@@ -1040,4 +1040,81 @@ class ProgramScreen : public Screen {
 };
 #endif
 
+#if RC_FEAT_SEARCH
+// Search (Home → Search): a query line on top, then people, entries and
+// replies under dim headings, up to 8 each; a full group ends with More…,
+// which opens SearchListScreen. One request a key press (Enter), never
+// retried or timed.
+class SearchScreen : public Screen {
+ public:
+  void enter(const std::string&) override;
+  void onKey(const KeyEvent&) override;
+  void onEvent(const Event&) override;
+  void build(lv_obj_t* root) override;
+  void update(int64_t nowMs) override;
+  bool acceptsText() const override { return editing_; }
+  bool consumesBackspace() const override { return editing_ && !input_.text().empty(); }
+  // Opening a hit or More…: the next enter() is a return, keeping the list
+  // (false from Home: a fresh query line).
+  static void markReturn(bool on = true) { returning_ = on; }
+
+ private:
+  void editKey(const KeyEvent&);
+  void run();
+  // The next selectable row up or down; false at the top going up.
+  bool step(bool down);
+  // Selects the first hit; false when there is none.
+  bool selectFirst();
+  std::vector<ListItem> rows(int64_t nowMs);
+  void sync(int64_t nowMs);
+  static bool returning_;
+  ListView list_;
+  InputLine input_;
+  std::string query_;              // kept between visits
+  std::vector<std::string> keys_;  // by row: "" a heading, else searchOpen's key
+  bool editing_ = true, busy_ = false, failed_ = false;
+  int64_t nowMs_ = 0;
+  struct Views {
+    SyncGate<1> gate_;
+    lvui::TopBar status_;
+    lvui::InputField inputView_;
+    lvui::ListBox listView_;
+    SideNavHost navView_;
+    lvui::CellText text_;
+    lvui::HintBar hint_;
+  };
+  lvui::TreeViews<Views> v_;
+};
+
+// One group of the last search, paged (arg = "users", "posts" or "replies"):
+// Down on the last row loads the next page while there is one.
+class SearchListScreen : public Screen {
+ public:
+  void enter(const std::string& type) override;
+  void onKey(const KeyEvent&) override;
+  void onEvent(const Event&) override;
+  void build(lv_obj_t* root) override;
+  void update(int64_t nowMs) override;
+
+ private:
+  void request(bool next);
+  std::vector<ListItem> rows(int64_t nowMs);
+  void sync(int64_t nowMs);
+  ListView list_;
+  std::string type_;
+  std::vector<std::string> keys_;
+  bool more_ = false, asked_ = false, failed_ = false, loading_ = false;
+  int64_t nowMs_ = 0;
+  struct Views {
+    SyncGate<1> gate_;
+    lvui::TopBar status_;
+    lvui::ListBox listView_;
+    SideNavHost navView_;
+    lvui::CellText text_;
+    lvui::HintBar hint_;
+  };
+  lvui::TreeViews<Views> v_;
+};
+#endif
+
 }  // namespace rc

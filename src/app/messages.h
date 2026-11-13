@@ -87,6 +87,10 @@ enum class CmdType {
   MorePrograms,          // the next page
   OpenProgram,           // a = id; n = release, 0 the current one
   ClosePrograms,         // Programs left for Home: its state cleared
+  // Search (RC_FEAT_SEARCH): one request a key press, never retried.
+  Search,                // a = the trimmed query: people, entries and replies, 8 of each
+  SearchMore,            // a = type ("users", "posts", "replies"); n = 0 its first page, 1 the next
+  CloseSearch,           // Search left for Home: its state cleared
   MarkAllRead,           // Unread: every notification and unread C-Mail
   MarkNoticeRead,        // Unread: a = a Feed notice's id (a follower or poke, opened as a profile)
   MarkRoomsRead,         // the rooms list: every unread cIRC room
@@ -148,6 +152,8 @@ enum class EvtType {
   // Programs.
   ProgramsLoaded,       // ok=false on a failed load
   ProgramLoaded,        // text = "id\nrelease" as asked; ok=false on a failed load
+  // Search.
+  SearchUpdated,        // text = the type loaded ("all" or a list's); ok=false on a failed load
   // The device's Wi-Fi screen.
   WifiScanned,          // text = rc::encodeWifiScan
   // code 0 joining (text = SSID), 1 joined (text = SSID), 2 forgotten

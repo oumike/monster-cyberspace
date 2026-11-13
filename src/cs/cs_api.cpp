@@ -775,4 +775,22 @@ ApiError CsApi::programSource(const std::string& id, int release, ProgramSource&
 }
 #endif
 
+#if RC_FEAT_SEARCH
+ApiError CsApi::searchAll(const std::string& q, std::vector<SearchHit>& users, std::vector<SearchHit>& posts,
+                          std::vector<SearchHit>& replies) {
+  HttpResult r;
+  ApiError e = call("GET", searchPath(q, "all", 0), "", r);
+  if (e.ok() && !parseSearchAll(r.body, users, posts, replies)) return badBody(r.status);
+  return e;
+}
+
+ApiError CsApi::searchPage(const std::string& q, const std::string& type, int page, std::vector<SearchHit>& out,
+                           std::string& next) {
+  HttpResult r;
+  ApiError e = call("GET", searchPath(q, type, page), "", r);
+  if (e.ok() && !parseSearchPage(r.body, out, next)) return badBody(r.status);
+  return e;
+}
+#endif
+
 }  // namespace rc

@@ -8,6 +8,7 @@
 #include <esp_timer.h>
 
 #include <algorithm>
+#include <cstdlib>
 
 #include "app/queues.h"
 #include "feed/compose.h"
@@ -18,6 +19,9 @@
 #endif
 #if RC_FEAT_PROGRAMS
 #include "store/locked_programs.h"
+#endif
+#if RC_FEAT_SEARCH
+#include "store/locked_search.h"
 #endif
 #include "ui/guild_layout.h"
 
@@ -132,6 +136,11 @@ bool FeedWorker::isFeedCommand(CmdType t) {
     case CmdType::OpenProgram:
     case CmdType::ClosePrograms:
 #endif
+#if RC_FEAT_SEARCH
+    case CmdType::Search:
+    case CmdType::SearchMore:
+    case CmdType::CloseSearch:
+#endif
       return true;
     default:
       return false;
@@ -191,6 +200,11 @@ void FeedWorker::handle(const Command& c) {
     case CmdType::OpenProgram: openProgram(c.a, int(c.n)); break;
     case CmdType::ClosePrograms: clearPrograms(); break;
 #endif
+#if RC_FEAT_SEARCH
+    case CmdType::Search: search(c.a); break;
+    case CmdType::SearchMore: searchMore(c.a, c.n != 0); break;
+    case CmdType::CloseSearch: clearSearch(); break;
+#endif
     default: break;
   }
 }
@@ -224,6 +238,9 @@ void FeedWorker::signOut() {
 #endif
 #if RC_FEAT_PROGRAMS
   clearPrograms();
+#endif
+#if RC_FEAT_SEARCH
+  clearSearch();
 #endif
   post(EvtType::FeedUpdated);
 }
@@ -1112,6 +1129,83 @@ void FeedWorker::openProgram(const std::string& id, int release) {
   post(EvtType::ProgramLoaded, tag);
 }
 #endif  // RC_FEAT_PROGRAMS
+
+#if RC_FEAT_SEARCH
+// ---- search: one request a key press, never retried ----
+
+void FeedWorker::clearSearch() {
+  lockedSearch().with([](SearchState& s) { s = SearchState{}; });
+}
+
+void FeedWorker::search(const std::string& typed) {
+  const std::string q = searchQuery(typed);
+  if (!searchQueryOk(q)) {
+    banner(q.empty() ? "Type something to search for" : "Search is too long");
+    post(EvtType::SearchUpdated, "all", 0, false);
+    return;
+  }
+  lockedSearch().with([&](SearchState& s) {
+    s.loading = true;
+    s.query = q;
+  });
+  std::vector<SearchHit> users, posts, replies;
+  ApiError e = api_.searchAll(q, users, posts, replies);
+  lockedSearch().with([&](SearchState& s) {
+    s.loading = false;
+    if (!e.ok() || s.query != q) return;
+    s.users = std::move(users);
+    s.posts = std::move(posts);
+    s.replies = std::move(replies);
+    s.searched = true;
+  });
+  if (!e.ok()) {
+    banner(e.http == 429 ? std::string("Too many searches; try again later") : errorText(e, false));
+    post(EvtType::SearchUpdated, "all", e.http, false);
+    return;
+  }
+  post(EvtType::SearchUpdated, "all");
+}
+
+// The first page of one type's list for the last query, or (next) the
+// following page while there is one.
+void FeedWorker::searchMore(const std::string& type, bool next) {
+  std::string q, cursor;
+  lockedSearch().with([&](SearchState& s) {
+    q = s.query;
+    if (next && s.listType == type) cursor = s.cursor;
+  });
+  if (q.empty() || (next && cursor.empty())) {
+    post(EvtType::SearchUpdated, type);
+    return;
+  }
+  const int page = next ? std::max(0, atoi(cursor.c_str())) : 0;
+  lockedSearch().with([&](SearchState& s) {
+    s.loading = true;
+    if (!next) {
+      s.listType = type;
+      s.list.clear();
+      s.cursor.clear();
+      s.listLoaded = false;
+    }
+  });
+  std::vector<SearchHit> got;
+  std::string more;
+  ApiError e = api_.searchPage(q, type, page, got, more);
+  lockedSearch().with([&](SearchState& s) {
+    s.loading = false;
+    if (!e.ok() || s.listType != type || s.query != q) return;
+    for (auto& h : got) s.list.push_back(std::move(h));
+    s.cursor = more;
+    s.listLoaded = true;
+  });
+  if (!e.ok()) {
+    banner(e.http == 429 ? std::string("Too many searches; try again later") : errorText(e, false));
+    post(EvtType::SearchUpdated, type, e.http, false);
+    return;
+  }
+  post(EvtType::SearchUpdated, type);
+}
+#endif  // RC_FEAT_SEARCH
 
 }  // namespace rc
 

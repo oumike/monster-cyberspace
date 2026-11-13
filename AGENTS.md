@@ -52,6 +52,8 @@ boards and Cyberspace features come later.
 - **Fuller profiles and Notes (issue #9, items 5 and 2):** spec
   `docs/superpowers/specs/2026-11-10-cyberspace-profiles-notes-design.md`,
   plan `docs/superpowers/plans/2026-11-10-cyberspace-profiles-notes.md`.
+- **Search (issue #9 item 1):** spec
+  `docs/superpowers/specs/2026-11-13-cyberspace-search-design.md`.
 - **Fluffy Generator (custom mascot):** spec
   `docs/superpowers/specs/2026-10-31-cyberspace-fluffy-generator-design.md`,
   plan `docs/superpowers/plans/2026-10-31-cyberspace-fluffy-generator.md`.
@@ -470,8 +472,17 @@ with `RC_LOW_MEM`): the list and one program's source with its releases
 commands on `FeedWorker`). Source shows unwrapped through `TextView`'s code
 mode (`setCode`, `left`/`right`), cut at 32 KB; wasm shows its size. Its
 hardware check in docs/TESTING.md is open.
-The native suite is green: 829/829
-(`pio test -e native`), and so is the LVGL one: 86/86 (`pio test -e
+Search (issue #9 item 1) was added on 2026-11-13 (built without flashing;
+spec `docs/superpowers/specs/2026-11-13-cyberspace-search-design.md`): Home's
+Search, right after Unread (`RC_FEAT_SEARCH`, `RC_FEAT_PEOPLE &&
+RC_FEAT_ENTRIES`, 0 with `RC_LOW_MEM`), a query line and People, Entries and
+Replies groups under dim headings (`ItemTone::Dim`, skipped by the cursor),
+each group's **More…** opening a paged list (`src/screens/search.cpp`,
+`lib/core/src/search/`, `src/store/locked_search`, `CmdType::Search`/
+`SearchMore`/`CloseSearch` on `FeedWorker`). Only a key press searches; no
+device-side limiter (user decision). Its hardware check in docs/TESTING.md is open.
+The native suite is green: 838/838
+(`pio test -e native`), and so is the LVGL one: 88/88 (`pio test -e
 native_lv`, and built lean). `scripts/build-upload-monitor.sh -B` builds all
 thirteen firmware envs (the X4 only from a path without spaces).
 

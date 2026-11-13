@@ -10,9 +10,9 @@ namespace rc {
 // Profile is your own profile (with People built).
 // Following lists the Feed entries by people I follow (Feed and People);
 // Notes, shown after it, needs Notes and the Feed. Programs, after Guilds,
-// needs Programs and the Feed.
+// needs Programs and the Feed. Search, after Unread, needs Search and People.
 enum class HomeItem { Unread, Messages, Rooms, Cmail, Feed, Following, Guilds, Profile, Settings, Notes,
-                      Programs };
+                      Programs, Search };
 
 // Home's tiles for the built features, in display order.
 std::vector<HomeItem> homeItems(const Features& f);

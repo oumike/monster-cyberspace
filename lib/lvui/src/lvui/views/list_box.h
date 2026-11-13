@@ -70,14 +70,15 @@ class ListBox : public RowGestures::Rows, public Painter {
  private:
   struct Row {
     lv_obj_t *row, *marker, *label, *right;
-    bool error;
+    rc::ItemTone tone;
   };
   Row makeRow(lv_obj_t* parent);
   void fillRow(Row& r, const rc::ListItem& it);
   // A painted row: NUL-ended label and right texts in text_.
   struct Line {
     uint16_t label, right;
-    bool marker, error, checked;
+    rc::ItemTone tone;
+    bool marker, checked;
   };
   bool sameLine(int k) const;
   void syncPainted(const std::vector<rc::ListItem>& items, int selected);

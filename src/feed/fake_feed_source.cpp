@@ -25,6 +25,9 @@
 #if RC_FEAT_PROGRAMS
 #include "store/locked_programs.h"
 #endif
+#if RC_FEAT_SEARCH
+#include "store/locked_search.h"
+#endif
 
 // The scripted fake Feed for the demo build (RC_FAKE_API): no network, no account.
 // 15 entries, newest first, served 10 to a page (Down at the end loads the
@@ -201,6 +204,12 @@ class FakeFeedSource : public FeedSource {
 #if RC_FEAT_PROGRAMS
   void openPrograms();
   void openProgram(const std::string& id, int release);
+#endif
+#if RC_FEAT_SEARCH
+  void search(const std::string& typed);
+  void searchMore(const std::string& type);
+  void searchHits(const std::string& q, std::vector<SearchHit>& users, std::vector<SearchHit>& posts,
+                  std::vector<SearchHit>& replies);
 #endif
 
   // Lock order: mu_, then lockedFeed(); never the other way round.
@@ -490,6 +499,11 @@ void FakeFeedSource::command(const Command& c) {
     case CmdType::OpenPrograms:
     case CmdType::MorePrograms: openPrograms(); break;
     case CmdType::OpenProgram: openProgram(c.a, int(c.n)); break;
+#endif
+#if RC_FEAT_SEARCH
+    case CmdType::Search: search(c.a); break;
+    case CmdType::SearchMore: searchMore(c.a); break;
+    case CmdType::CloseSearch: lockedSearch().with([](SearchState& s) { s = SearchState{}; }); break;
 #endif
     default: break;
   }
@@ -1358,6 +1372,102 @@ void FakeFeedSource::openProgram(const std::string& id, int release) {
     s.openRelease = release;
   });
   post(EvtType::ProgramLoaded, id + "\n" + std::to_string(release));
+}
+#endif
+
+#if RC_FEAT_SEARCH
+// ---- search: a case-blind match over the script, every hit on one page ----
+
+namespace {
+std::string lower(std::string s) {
+  for (char& c : s)
+    if (c >= 'A' && c <= 'Z') c = char(c - 'A' + 'a');
+  return s;
+}
+std::string firstLineOf(const std::string& body) {
+  std::string s = body.substr(0, body.find('\n'));
+  truncateUtf8(s, kSearchLineMax);
+  return s;
+}
+}  // namespace
+
+void FakeFeedSource::searchHits(const std::string& q, std::vector<SearchHit>& users,
+                                std::vector<SearchHit>& posts, std::vector<SearchHit>& replies) {
+  const std::string lq = lower(q);
+  auto has = [&](const std::string& s) { return lower(s).find(lq) != std::string::npos; };
+  std::set<std::string> seen;
+  auto person = [&](const std::string& u) {
+    if (!u.empty() && has(u) && seen.insert(u).second) {
+      SearchHit h;
+      h.kind = SearchKind::User;
+      h.user = u;
+      users.push_back(h);
+    }
+  };
+  std::lock_guard<std::mutex> g(mu_);
+  for (const Entry& e : entries_) {
+    person(e.author);
+    if (!has(e.title) && !has(e.body)) continue;
+    SearchHit h;
+    h.kind = SearchKind::Post;
+    h.id = e.id;
+    h.user = e.author;
+    h.title = e.title;
+    h.line = firstLineOf(e.body);
+    h.createdMs = e.createdMs;
+    h.replies = int(replies_[e.id].size());
+    posts.push_back(h);
+  }
+  for (auto& [pid, rs] : replies_)
+    for (const Reply& r : rs) {
+      person(r.author);
+      if (!has(r.body)) continue;
+      SearchHit h;
+      h.kind = SearchKind::Reply;
+      h.id = r.id;
+      h.postId = pid;
+      h.user = r.author;
+      h.line = firstLineOf(r.body);
+      h.createdMs = r.createdMs;
+      replies.push_back(h);
+    }
+}
+
+void FakeFeedSource::search(const std::string& typed) {
+  const std::string q = searchQuery(typed);
+  if (!searchQueryOk(q)) {
+    banner("Type something to search for");
+    post(EvtType::SearchUpdated, "all", 0, false);
+    return;
+  }
+  std::vector<SearchHit> users, posts, replies;
+  searchHits(q, users, posts, replies);
+  for (auto* v : {&users, &posts, &replies})
+    if (v->size() > 8) v->resize(8);
+  lockedSearch().with([&](SearchState& s) {
+    s.query = q;
+    s.users = std::move(users);
+    s.posts = std::move(posts);
+    s.replies = std::move(replies);
+    s.searched = true;
+    s.loading = false;
+  });
+  post(EvtType::SearchUpdated, "all");
+}
+
+void FakeFeedSource::searchMore(const std::string& type) {
+  const std::string q = lockedSearch().with([](SearchState& s) { return s.query; });
+  std::vector<SearchHit> users, posts, replies;
+  if (!q.empty()) searchHits(q, users, posts, replies);
+  std::vector<SearchHit>& got = type == "users" ? users : type == "replies" ? replies : posts;
+  lockedSearch().with([&](SearchState& s) {
+    s.listType = type;
+    s.list = std::move(got);
+    s.cursor.clear();
+    s.listLoaded = true;
+    s.loading = false;
+  });
+  post(EvtType::SearchUpdated, type);
 }
 #endif
 

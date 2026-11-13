@@ -991,6 +991,25 @@ total; with nothing waiting it says "nothing unread".
 - Nothing is fetched for this screen: it shows what the device already knows
   from the checks described under [Alerts](#alerts).
 
+## Search
+
+Search cyberspace.online for people, entries and replies, from Home →
+**Search** (a tile on touch boards), right after Unread. Not on the Cardputer
+ADV or the X4. You must be signed in and online.
+
+- **The query line** (`search>`) is open for typing when you arrive, with your
+  last search still there. Centre/Enter searches; nothing is sent until you
+  press it, and nothing is retried.
+- **Results** come in up to three groups, **People**, **Entries** and
+  **Replies**, each under a dim heading the cursor skips; empty groups are left
+  out. A group with 8 hits ends in **More…**, which opens that kind's own list:
+  Down on its last row loads the next page, and Back returns to your results.
+- Centre (or a tap) opens a hit: a person's profile, an entry, or a reply's
+  entry. Back from there returns to the results. Up from the first hit goes
+  back to the query line; Back leaves for Home.
+- The site allows 30 searches a minute, 60 an hour and 200 a day; past that
+  you get "Too many searches; try again later".
+
 ## Alerts
 
 While you're signed in, the device checks every minute, even with the screen

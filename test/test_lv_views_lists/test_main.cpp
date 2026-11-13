@@ -343,6 +343,24 @@ bool inArea(const lv_area_t& a, lv_point_t p) { return p.x >= a.x1 && p.x <= a.x
 // Cell rows [1, 14) of the 40x15 screen, as a screen places a list.
 void placeListBox(lvui::ListBox& box) { lvui::place(box.obj(), 0, 16, 320, 13 * 16); }
 
+// A Dim item (Search's group headers) draws dim, and a row reused for a
+// Normal item draws plain again.
+void test_list_box_dim_item() {
+  rc::ListView lv;
+  lv.setItems({rc::ListItem{U"People", U"", rc::ItemTone::Dim}, rc::ListItem{U"@neon", U""}});
+  lvui::ListBox box;
+  box.create(lv_screen_active());
+  placeListBox(box);
+  box.sync(lv);
+  const rc::Theme& t = rc::defaultTheme();
+  TEST_ASSERT_EQUAL_HEX16(t.dim, rgb565(lv_obj_get_style_text_color(box.label(0), LV_PART_MAIN)));
+  TEST_ASSERT_EQUAL_HEX16(t.fg, rgb565(lv_obj_get_style_text_color(box.label(1), LV_PART_MAIN)));
+  lv.setItems({rc::ListItem{U"@neon", U""}, rc::ListItem{U"Entries", U"", rc::ItemTone::Dim}});
+  box.sync(lv);
+  TEST_ASSERT_EQUAL_HEX16(t.fg, rgb565(lv_obj_get_style_text_color(box.label(0), LV_PART_MAIN)));
+  TEST_ASSERT_EQUAL_HEX16(t.dim, rgb565(lv_obj_get_style_text_color(box.label(1), LV_PART_MAIN)));
+}
+
 void test_list_box_mirrors_model() {
   rc::ListView lv;
   lv.setItems(threeItems());
@@ -1263,6 +1281,7 @@ void test_drawer_drag_steps_selection() {
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_list_box_mirrors_model);
+  RUN_TEST(test_list_box_dim_item);
   RUN_TEST(test_list_box_scrolls_selection_into_view);
   RUN_TEST(test_list_tap_emits_activate);
   RUN_TEST(test_overlay_captures_taps);

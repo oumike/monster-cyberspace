@@ -83,6 +83,8 @@ enum class Id {
   NoteEdit,       // a note's text; arg = id, or "" for a new note
   Programs,       // published programs (Home)
   Program,        // a program's source; arg = id, or "id@N" for release N
+  Search,         // search people, entries and replies (Home)
+  SearchList,     // one group of the last search, paged; arg = its type
 };
 
 struct Place {

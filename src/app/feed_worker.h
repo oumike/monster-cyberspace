@@ -75,6 +75,11 @@ class FeedWorker {
   void openProgram(const std::string& id, int release);
   void clearPrograms();
 #endif
+#if RC_FEAT_SEARCH
+  void search(const std::string& typed);
+  void searchMore(const std::string& type, bool next);
+  void clearSearch();
+#endif
 
   CsApi& api_;
   bool feedOpen_ = false;

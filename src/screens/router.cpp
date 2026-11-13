@@ -62,6 +62,10 @@ NoteEditScreen noteEdit;
 ProgramListScreen programs;
 ProgramScreen program;
 #endif
+#if RC_FEAT_SEARCH
+SearchScreen search;
+SearchListScreen searchList;
+#endif
 #if RC_FEAT_PEOPLE && RC_FEAT_FEED
 FeedListScreen followingPosts{FeedListScreen::Kind::Following};
 #endif
@@ -131,6 +135,10 @@ Screen* lookup(Id id) {
 #if RC_FEAT_PROGRAMS
     case Id::Programs: return &programs;
     case Id::Program: return &program;
+#endif
+#if RC_FEAT_SEARCH
+    case Id::Search: return &search;
+    case Id::SearchList: return &searchList;
 #endif
 #if RC_FEAT_PEOPLE && RC_FEAT_FEED
     case Id::Following: return &followingPosts;

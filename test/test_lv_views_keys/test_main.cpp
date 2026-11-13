@@ -216,6 +216,31 @@ void test_osk_layer_and_emit() {
   lv_obj_delete(kb.obj());  // before kb, which owns the button map
 }
 
+// The keys fill the box's width whatever the cell count: the Wio L2 in
+// portrait is 236 px, 29 cells of 8, which whole-cell keys left 160 px wide.
+void test_osk_spans_the_width() {
+  const rc::TextSize ts = rc::TextSize::Comfortable;
+  rc::Osk osk;
+  osk.reset();
+  osk.layout(lvui::Keyboard::kLayoutCols, ts);
+  lv_obj_t* box = lv_obj_create(lv_screen_active());
+  lv_obj_remove_style_all(box);
+  lv_obj_set_size(box, 236, rc::Osk::rows(ts) * 16);
+  lvui::Keyboard kb;
+  kb.create(box);
+  kb.sync(osk, ts);
+  const lv_area_t m = coords(kb.matrix());
+  TEST_ASSERT_EQUAL(0, m.x1);
+  TEST_ASSERT_EQUAL(235, m.x2);
+  // "p", the top row's last key, sits at the right edge and types.
+  const int band = rc::Osk::keyRows(ts) * 16;
+  keys.clear();
+  tap(lv_point_t{230, m.y1 + band / 2});
+  TEST_ASSERT_EQUAL(1, keys.size());
+  TEST_ASSERT_EQUAL(U'p', keys[0].ch);
+  lv_obj_delete(box);
+}
+
 // A finger that slides past the tap slop types nothing, even on one wide key
 // (as the grid's drag; LVGL alone types it), and the light stays on the key
 // it went down on.
@@ -541,6 +566,7 @@ int main() {
   UNITY_BEGIN();
   RUN_TEST(test_osk_layer_and_emit);
   RUN_TEST(test_osk_slide_types_nothing);
+  RUN_TEST(test_osk_spans_the_width);
   RUN_TEST(test_symbols_emit_char);
   RUN_TEST(test_home_tiles_span_first);
   RUN_TEST(test_spell_emit);

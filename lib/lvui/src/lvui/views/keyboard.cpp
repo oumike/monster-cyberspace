@@ -81,7 +81,8 @@ void Keyboard::eventCb(lv_event_t* e) {
 
 // The Osk's rows as matrix rows: each key's width, and the gaps before and
 // after a row (the letters' half-unit offset) as hidden spacers, in units of
-// the row's greatest common width so every edge lands on Osk's cell.
+// the row's greatest common width. The matrix spans the box, so the Osk's
+// cells only set proportions.
 void Keyboard::rebuild(const rc::Osk& osk, rc::TextSize ts) {
   const std::vector<rc::OskKey>& keys = osk.keys();
   const int n = static_cast<int>(keys.size());
@@ -143,7 +144,8 @@ void Keyboard::rebuild(const rc::Osk& osk, rc::TextSize ts) {
 
   const int band = rc::Osk::keyRows(ts) * c.h;
   lv_obj_set_height(box_, rc::Osk::rows(ts) * c.h);
-  place(matrix_, left * c.w, 0, (right - left) * c.w, static_cast<int>(rows.size()) * band);
+  lv_obj_set_pos(matrix_, 0, 0);
+  lv_obj_set_size(matrix_, lv_pct(100), static_cast<int>(rows.size()) * band);
 }
 
 void Keyboard::sync(rc::Osk& osk, rc::TextSize ts) {

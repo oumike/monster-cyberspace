@@ -313,7 +313,7 @@ void relayout(TextSize ts) {
     L.keyboard = std::make_unique<lvui::Keyboard>();
     L.keyboard->create(L.oskBox);
     L.keyboard->setOnHide([] { showOsk(false); });
-    osk.layout(cols, ts);
+    osk.layout(lvui::Keyboard::kLayoutCols, ts);
   }
 
   L.saver = lvui::plainBox(L.root);

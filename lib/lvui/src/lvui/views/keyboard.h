@@ -18,12 +18,16 @@ namespace lvui {
 // (Osk::touch); a tap presses it (Osk::press) and emits the KeyEvent it
 // makes, if any, then calls the hide callback when the key asks for that. A
 // finger that slides past kTapSlopPx, or off its key, presses nothing.
-// Lay the Osk out (Osk::layout) for the parent's width in cells first.
+// The keys span the parent's width: lay the Osk out (Osk::layout) for
+// kLayoutCols first, which only sets the keys' proportions.
 class Keyboard {
  public:
   Keyboard() = default;
   Keyboard(const Keyboard&) = delete;
   Keyboard& operator=(const Keyboard&) = delete;
+
+  // Ten key units of two cells: the letters' half-key offset stays whole.
+  static constexpr int kLayoutCols = 20;
 
   void create(lv_obj_t* parent);
   // Rebuilds the keys when the Osk's page or layout changed; keeps a

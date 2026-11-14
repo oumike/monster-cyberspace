@@ -1,9 +1,5 @@
 ### Monster for Cyberspace (next release)
 
-### Search
+### Changes
 
-- New **Search** on Home, just above Settings: search cyberspace.online for people, entries and replies. Type a query and press Enter; nothing is sent until you do. Results come in **People**, **Entries** and **Replies** groups, and a group with 8 hits ends in **More…**, which opens a longer list that loads more as you scroll. Open a hit to see the profile, entry or reply; Back returns to your results. Not on the Cardputer ADV.
-
-### Fixes
-
-- Wio Tracker L2: a grey bar no longer appears at the top of the screen after it wakes.
+- C-Mail now counts conversations, not messages, as cyberspace.online does since v4.2: three new messages in one conversation count as 1 on Home's C-Mail item, the Unread total and the screensaver. Each conversation's row still shows how many messages are waiting.

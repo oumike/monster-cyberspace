@@ -113,7 +113,7 @@ int mailUnread() {
 }
 
 // What Home shows from the chat state, as scalars, under one lock: the C-Mail
-// unread sum and conversations with unread (unreadCmailCount), and with
+// unread message sum (so a new message redraws) and conversations with unread (unreadCmailCount), and with
 // `active` (list mode) a mask of the rooms the "active" field lists.
 struct ChatInputs {
   int64_t unread = 0, conversations = 0, active = 0;
@@ -188,11 +188,7 @@ std::vector<Field> listFields(const Theme& t) {
   const int mentions = int(a.mentions.size());
   out.push_back({"mentions", std::to_string(mentions) + " unread", mentions ? t.selectBg : t.fg});
 #if RC_FEAT_CMAIL
-  int cmail = lockedChat().with([](ChatState& s) {
-    int n = 0;
-    for (const auto& c : s.conversations) n += c.unread;
-    return n;
-  });
+  int cmail = cmailUnread();
   out.push_back({"c-mail", std::to_string(cmail) + " unread", cmail ? t.selectBg : t.fg});
 #endif
 #if RC_FEAT_FEED

@@ -52,10 +52,12 @@ void test_unknown_times_go_last_in_source_order() {
   TEST_ASSERT_EQUAL_STRING("f1 c1 c0 m0 f0 ", order(out).c_str());
 }
 
-void test_total_counts_cmail_messages() {
+// A conversation counts once, however many messages wait in it (as the
+// website's C-Mail badge since v4.2).
+void test_total_counts_conversations_not_messages() {
   auto out = mergeUnread({item(UnreadKind::Cmail, "c1", 10, 3), item(UnreadKind::Cmail, "c2", 20, 2)},
                          {item(UnreadKind::Mention, "m1", 30)}, {item(UnreadKind::Feed, "f1", 40)});
-  TEST_ASSERT_EQUAL(7, unreadTotal(out));
+  TEST_ASSERT_EQUAL(4, unreadTotal(out));
 }
 
 void test_empty() {
@@ -73,8 +75,8 @@ void test_count_matches_the_rows() {
   convs[2].unread = 2;
   convs[2].partnerDeleted = true;  // not listed, so not counted
   convs[3].unread = 1;
-  TEST_ASSERT_EQUAL(4, unreadCmailCount(convs));
-  TEST_ASSERT_EQUAL(4 + 2 + 5, unreadCount(convs, 2, 5));
+  TEST_ASSERT_EQUAL(2, unreadCmailCount(convs));
+  TEST_ASSERT_EQUAL(2 + 2 + 5, unreadCount(convs, 2, 5));
   // The rows the screen would build from the same data total the same.
   std::vector<UnreadItem> cmail;
   for (const auto& c : convs)
@@ -90,7 +92,7 @@ int main(int, char**) {
   RUN_TEST(test_merges_newest_first_across_sources);
   RUN_TEST(test_ties_keep_source_order);
   RUN_TEST(test_unknown_times_go_last_in_source_order);
-  RUN_TEST(test_total_counts_cmail_messages);
+  RUN_TEST(test_total_counts_conversations_not_messages);
   RUN_TEST(test_empty);
   RUN_TEST(test_count_matches_the_rows);
   return UNITY_END();

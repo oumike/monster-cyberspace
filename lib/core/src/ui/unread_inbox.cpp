@@ -16,16 +16,12 @@ std::vector<UnreadItem> mergeUnread(std::vector<UnreadItem> cmail, std::vector<U
   return out;
 }
 
-int unreadTotal(const std::vector<UnreadItem>& items) {
-  int n = 0;
-  for (const auto& i : items) n += i.count;
-  return n;
-}
+int unreadTotal(const std::vector<UnreadItem>& items) { return int(items.size()); }
 
 int unreadCmailCount(const std::vector<ConversationInfo>& conversations) {
   int n = 0;
   for (const auto& c : conversations)
-    if (c.unread > 0 && !c.partnerDeleted) n += c.unread;
+    if (c.unread > 0 && !c.partnerDeleted) ++n;
   return n;
 }
 

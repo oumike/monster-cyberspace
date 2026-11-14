@@ -10,7 +10,7 @@ LockedChat& lockedChat() {
 int cmailUnread() {
   return lockedChat().with([](ChatState& s) {
     int n = 0;
-    for (const auto& c : s.conversations) n += c.unread;
+    for (const auto& c : s.conversations) n += c.unread > 0;
     return n;
   });
 }

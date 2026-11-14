@@ -961,7 +961,9 @@ Open it from Home on every board: it is the second item in the Home list,
 after Messages (`Unread  N`, marked while N is above 0), and the first of
 the Home tiles on touch boards (full-width when the tile count leaves it a row
 of its own). The status bar shows the
-total; with nothing waiting it says "nothing unread".
+total; with nothing waiting it says "nothing unread". A C-Mail conversation
+counts once however many messages wait in it, here and on Home's C-Mail
+item, as on the website's C-Mail badge.
 
 - Each row starts with what it is: `mail` (`@name: last message`, with the
   conversation's unread count on the right), `irc` (`@name in #room: …`) or

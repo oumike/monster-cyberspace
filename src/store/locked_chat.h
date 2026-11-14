@@ -54,7 +54,8 @@ class LockedChat {
 
 LockedChat& lockedChat();
 
-// Unread C-Mail across every conversation. Takes the lock.
+// Conversations with unread C-Mail (one each, however many messages, as the
+// website's badge). Takes the lock.
 int cmailUnread();
 
 }  // namespace rc

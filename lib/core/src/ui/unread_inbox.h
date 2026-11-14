@@ -17,7 +17,7 @@ struct UnreadItem {
   std::string target;  // conversation id | room slug | "postId\nnoticeId" | "user\nnoticeId"
   std::string text;    // the display line
   int64_t at = 0;      // epoch ms; 0 = unknown
-  int count = 1;       // C-Mail: the conversation's unread messages
+  int count = 1;       // C-Mail: the conversation's unread messages (shown on its row)
 };
 
 // The three sources, each newest first, merged newest first (People rows
@@ -26,11 +26,12 @@ struct UnreadItem {
 std::vector<UnreadItem> mergeUnread(std::vector<UnreadItem> cmail, std::vector<UnreadItem> mentions,
                                     std::vector<UnreadItem> feed);
 
-// The sum of the items' counts.
+// One per row: a C-Mail conversation counts once however many messages wait
+// in it (as the website's C-Mail badge since v4.2).
 int unreadTotal(const std::vector<UnreadItem>& items);
 
-// The unread C-Mail messages the Unread screen lists: conversations with
-// unread messages whose partner isn't deleted.
+// The C-Mail conversations the Unread screen lists: those with unread
+// messages whose partner isn't deleted.
 int unreadCmailCount(const std::vector<ConversationInfo>& conversations);
 // unreadTotal of the rows the screen would build, without building them (Home
 // shows it every frame): the C-Mail count plus one per mention and notice.

@@ -994,7 +994,7 @@ total; with nothing waiting it says "nothing unread".
 ## Search
 
 Search cyberspace.online for people, entries and replies, from Home →
-**Search** (a tile on touch boards), right after Unread. Not on the Cardputer
+**Search** (a tile on touch boards), just above Settings. Not on the Cardputer
 ADV or the X4. You must be signed in and online.
 
 - **The query line** (`search>`) is open for typing when you arrive, with your

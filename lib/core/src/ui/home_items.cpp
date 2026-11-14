@@ -5,7 +5,6 @@ namespace rc {
 std::vector<HomeItem> homeItems(const Features& f) {
   std::vector<HomeItem> out;
   if (f.unread) out.push_back(HomeItem::Unread);
-  if (f.search && f.people) out.push_back(HomeItem::Search);
   if (f.circ) {
     out.push_back(HomeItem::Messages);
     out.push_back(HomeItem::Rooms);
@@ -17,6 +16,7 @@ std::vector<HomeItem> homeItems(const Features& f) {
   if (f.guilds) out.push_back(HomeItem::Guilds);
   if (f.feed && f.programs) out.push_back(HomeItem::Programs);
   if (f.people) out.push_back(HomeItem::Profile);
+  if (f.search && f.people) out.push_back(HomeItem::Search);
   out.push_back(HomeItem::Settings);
   return out;
 }

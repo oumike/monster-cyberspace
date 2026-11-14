@@ -49,7 +49,7 @@ on 2026-10-27; the sections marked `m9_fake` passed on it before then.
 
 **Search (issue #9 item 1; the M9 and a touch board):**
 
-- [ ] Home → Search (tile and row, right after Unread): the query line is
+- [ ] Home → Search (tile and row, just above Settings): the query line is
   open for typing; an empty query or offline shows a banner and sends nothing.
 - [ ] A search shows People, Entries and Replies under dim headings the
   cursor skips; empty groups are left out; "no results" when nothing matched.

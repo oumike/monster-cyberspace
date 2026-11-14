@@ -94,7 +94,7 @@ device before any request.
 
 ## Home
 
-**Search** goes on Home right after Unread (before Messages), on every board
+**Search** goes on Home just above Settings (moved there after review; first placed after Unread), on every board
 with `RC_FEAT_SEARCH`.
 
 ## Tests
@@ -103,7 +103,7 @@ with `RC_FEAT_SEARCH`.
   (all three kinds, a null cursor, a missing group, bad JSON), the content cut
   to its first line, `searchQueryOk` (empty, spaces only, 512 and 513
   characters) and `searchPath` encoding (`&`, space, `#`, UTF-8).
-- `test/test_home_items/`: Search after Unread only with the flag.
+- `test/test_home_items/`: Search just before Settings only with the flag.
 
 ## Docs
 

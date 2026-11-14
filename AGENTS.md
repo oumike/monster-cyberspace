@@ -474,7 +474,7 @@ mode (`setCode`, `left`/`right`), cut at 32 KB; wasm shows its size. Its
 hardware check in docs/TESTING.md is open.
 Search (issue #9 item 1) was added on 2026-11-13 (built without flashing;
 spec `docs/superpowers/specs/2026-11-13-cyberspace-search-design.md`): Home's
-Search, right after Unread (`RC_FEAT_SEARCH`, `RC_FEAT_PEOPLE &&
+Search, just above Settings (`RC_FEAT_SEARCH`, `RC_FEAT_PEOPLE &&
 RC_FEAT_ENTRIES`, 0 with `RC_LOW_MEM`), a query line and People, Entries and
 Replies groups under dim headings (`ItemTone::Dim`, skipped by the cursor),
 each group's **More…** opening a paged list (`src/screens/search.cpp`,

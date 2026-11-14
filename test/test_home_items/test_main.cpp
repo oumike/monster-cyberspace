@@ -16,30 +16,30 @@ static void expectItems(const std::vector<HomeItem>& want, const std::vector<Hom
 
 void test_all_features_keeps_todays_order() {
   Features f{true, true, true, true, true};
-  expectItems({HomeItem::Unread, HomeItem::Search, HomeItem::Messages, HomeItem::Rooms, HomeItem::Cmail,
+  expectItems({HomeItem::Unread, HomeItem::Messages, HomeItem::Rooms, HomeItem::Cmail,
                HomeItem::Feed, HomeItem::Following, HomeItem::Notes, HomeItem::Guilds, HomeItem::Programs,
-               HomeItem::Profile, HomeItem::Settings},
+               HomeItem::Profile, HomeItem::Search, HomeItem::Settings},
               homeItems(f));
 }
 
-// Search, right after Unread, only with Search and People built.
-void test_search_after_unread() {
+// Search, just before Settings, only with Search and People built.
+void test_search_before_settings() {
   Features f{true, true, true, true, true};
   f.search = false;
   for (HomeItem h : homeItems(f)) TEST_ASSERT_TRUE(h != HomeItem::Search);
   Features noPeople{true, true, true, false, true};
   for (HomeItem h : homeItems(noPeople)) TEST_ASSERT_TRUE(h != HomeItem::Search);
-  Features noUnread{true, true, true, true, false};
-  TEST_ASSERT_EQUAL(int(HomeItem::Search), int(homeItems(noUnread).front()));
+  const auto all = homeItems(Features{true, true, true, true, true});
+  TEST_ASSERT_EQUAL(int(HomeItem::Search), int(all[all.size() - 2]));
 }
 
 // Programs, after Guilds, only with Programs (and the Feed) built.
 void test_programs_needs_feed() {
   Features f{true, true, true, true, true};
   f.programs = false;
-  expectItems({HomeItem::Unread, HomeItem::Search, HomeItem::Messages, HomeItem::Rooms, HomeItem::Cmail,
+  expectItems({HomeItem::Unread, HomeItem::Messages, HomeItem::Rooms, HomeItem::Cmail,
                HomeItem::Feed, HomeItem::Following, HomeItem::Notes, HomeItem::Guilds, HomeItem::Profile,
-               HomeItem::Settings},
+               HomeItem::Search, HomeItem::Settings},
               homeItems(f));
   Features noFeed{true, false, true, true, true};
   for (HomeItem h : homeItems(noFeed)) TEST_ASSERT_TRUE(h != HomeItem::Programs);
@@ -49,9 +49,9 @@ void test_programs_needs_feed() {
 void test_notes_off_drops_notes() {
   Features f{true, true, true, true, true};
   f.notes = false;
-  expectItems({HomeItem::Unread, HomeItem::Search, HomeItem::Messages, HomeItem::Rooms, HomeItem::Cmail,
+  expectItems({HomeItem::Unread, HomeItem::Messages, HomeItem::Rooms, HomeItem::Cmail,
                HomeItem::Feed, HomeItem::Following, HomeItem::Guilds, HomeItem::Programs, HomeItem::Profile,
-               HomeItem::Settings},
+               HomeItem::Search, HomeItem::Settings},
               homeItems(f));
 }
 
@@ -67,8 +67,8 @@ void test_span_first_with_notes() {
 // Following, after the Feed, needs both the Feed and People.
 void test_following_needs_feed_and_people() {
   Features noFeed{true, false, true, true, true};
-  expectItems({HomeItem::Unread, HomeItem::Search, HomeItem::Messages, HomeItem::Rooms, HomeItem::Cmail,
-               HomeItem::Guilds, HomeItem::Profile, HomeItem::Settings},
+  expectItems({HomeItem::Unread, HomeItem::Messages, HomeItem::Rooms, HomeItem::Cmail,
+               HomeItem::Guilds, HomeItem::Profile, HomeItem::Search, HomeItem::Settings},
               homeItems(noFeed));
 }
 
@@ -79,7 +79,7 @@ void test_profile_needs_people() {
                HomeItem::Notes, HomeItem::Guilds, HomeItem::Programs, HomeItem::Settings},
               homeItems(f));
   Features p{false, false, false, true, false};
-  expectItems({HomeItem::Search, HomeItem::Messages, HomeItem::Rooms, HomeItem::Profile, HomeItem::Settings},
+  expectItems({HomeItem::Messages, HomeItem::Rooms, HomeItem::Profile, HomeItem::Search, HomeItem::Settings},
               homeItems(p));
 }
 
@@ -105,9 +105,9 @@ void test_rooms_only() {
 
 void test_unread_off_only_drops_unread() {
   Features f{true, true, true, true, false};
-  expectItems({HomeItem::Search, HomeItem::Messages, HomeItem::Rooms, HomeItem::Cmail, HomeItem::Feed,
+  expectItems({HomeItem::Messages, HomeItem::Rooms, HomeItem::Cmail, HomeItem::Feed,
                HomeItem::Following, HomeItem::Notes, HomeItem::Guilds, HomeItem::Programs, HomeItem::Profile,
-               HomeItem::Settings},
+               HomeItem::Search, HomeItem::Settings},
               homeItems(f));
 }
 
@@ -132,7 +132,7 @@ int main(int, char**) {
   RUN_TEST(test_following_needs_feed_and_people);
   RUN_TEST(test_notes_off_drops_notes);
   RUN_TEST(test_programs_needs_feed);
-  RUN_TEST(test_search_after_unread);
+  RUN_TEST(test_search_before_settings);
   RUN_TEST(test_span_first_with_notes);
   RUN_TEST(test_span_first_only_with_full_rows);
   return UNITY_END();

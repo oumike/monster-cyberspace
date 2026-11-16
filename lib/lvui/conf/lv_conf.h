@@ -17,9 +17,10 @@
 #endif
 #endif
 
-// Host tests use the C library; on the ESP32 lv_init.cpp supplies
-// lv_malloc_core and friends (PSRAM, or a capped internal heap).
-#ifdef RC_NATIVE
+// Host tests and the Linux builds use the C library; on the ESP32
+// lv_init.cpp supplies lv_malloc_core and friends (PSRAM, or a capped
+// internal heap).
+#if defined(RC_NATIVE) || defined(RC_LINUX)
 #define LV_USE_STDLIB_MALLOC LV_STDLIB_CLIB
 #else
 #define LV_USE_STDLIB_MALLOC LV_STDLIB_CUSTOM

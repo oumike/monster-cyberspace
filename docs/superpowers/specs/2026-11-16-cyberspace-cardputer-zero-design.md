@@ -214,7 +214,11 @@ are converted into the same evdev codes and fed through
 `keymap_cardputer_zero`, with host keys standing in for the device's
 modifiers: Left Alt = `fn`, Right Alt = `sym`. The keymap therefore gets
 tested by hand on the desktop too. Battery reads 80 %. `beep` is silent, and
-`MONSTER_SIM_BEEP=1` logs it. Closing the window sets the quit flag.
+`MONSTER_SIM_BEEP=1` logs it. Closing the window (or SIGTERM) sets the quit flag.
+`MONSTER_SIM_SHOT=<file.bmp>` writes the last frame on exit, for checks that
+can't see the window. Both HALs build `flags_cardputer_zero.cpp`, so the flags
+can't drift, and both implement `linuxhal::runMainLoop` (`linux/replace/linux_hal.h`):
+macOS lets only the main thread touch SDL, so the simulator presents frames there.
 **Agents run the simulator only as the demo build** (`-DRC_FAKE_API=1`). That
 build has no network and is the only way an agent may exercise the UI (the
 hard rule against calling the live API).

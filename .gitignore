@@ -17,3 +17,6 @@ src/spell_dict_en.h
 src/web/mascot_presets.h
 
 __pycache__/
+
+# Linux builds (CardputerZero and the simulator): scripts/build-cardputer-zero.sh
+linux/build/

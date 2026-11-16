@@ -44,18 +44,18 @@ Tasks 1, 2, 4–7 do not depend on it and may start first.
 ### Task 1: The Linux build skeleton and the simulator window
 
 **Files:**
-- Create: `linux/CMakeLists.txt`, `linux/CMakePresets.json`, `linux/docker/Dockerfile`, `scripts/build-cardputer-zero.sh`, `src/hal/linux_sim/board_linux_sim.cpp`, `linux/replace/main.cpp` (a stub that brings up lvui and the splash only)
-- Modify: `.gitignore` (`linux/build/`)
+- Create: `linux/CMakeLists.txt`, `linux/CMakePresets.json`, `linux/docker/Dockerfile`, `scripts/build-cardputer-zero.sh`, `linux/replace/linux_hal.h` (`linuxhal::runMainLoop`, `end`), `src/hal/cardputer_zero/flags_cardputer_zero.cpp` (the board's flags, built by both HALs), `src/hal/cardputer_zero/board_cardputer_zero.cpp` (stub), `src/hal/linux_sim/board_linux_sim.cpp`, `linux/replace/main.cpp` (a stub that brings up lvui and a name label only)
+- Modify: `.gitignore` (`linux/build/`), `lib/lvui/conf/lv_conf.h` (libc allocator for `RC_LINUX`)
 
 **Interfaces:**
-- Presets `sim` (host, SDL2, `BOARD_LINUX_SIM`) and `cp0` (aarch64, `BOARD_CARDPUTER_ZERO`); both add `RC_LINUX=1`, `LV_CONF_INCLUDE_SIMPLE`, `-Ilib/lvui/conf`, `-Isrc/ui/fonts`, and fetch `lvgl` v9.5.0, ArduinoJson v7.4.3, QRCode 0.0.1 by tag.
-- `scripts/build-cardputer-zero.sh`: no flag builds `cp0` in the container (`docker run --platform linux/arm64`), `--sim` builds on the host, `--deb` packages; `--fake` adds `-DRC_FAKE_API=1`.
+- Presets `sim` (host, SDL2, `BOARD_LINUX_SIM`) and `cp0` (aarch64, `BOARD_CARDPUTER_ZERO`); both add `RC_LINUX=1`, `BOARD_HAS_PSRAM=1` (whole frame, full LVGL), `LV_CONF_INCLUDE_SIMPLE`, `-Ilib/lvui/conf`, `-Isrc/ui/fonts`, and fetch `lvgl` v9.5.0, ArduinoJson v7.4.3 and QRCode 0.0.1 (its one release, commit eafbde4) as tarballs pinned by SHA-256.
+- `scripts/build-cardputer-zero.sh`: no flag builds `cp0` in the container (`docker run --platform linux/arm64`), `--sim` builds on the host, `--fake` adds `-DRC_FAKE_API=1` (into `build/<target>-fake`), `--clean`; Task 9 adds `--deb`.
 
-- [ ] **Step 1:** Write `CMakeLists.txt` with source lists: `lib/core/src/**`, `lib/lvui/src/**`, the cell fonts, the chosen HAL, and (later tasks) `src/**` minus the files `linux/replace/` overrides; for now only lvui, core and the HAL.
-- [ ] **Step 2:** The sim HAL: SDL2 window at 3×, `pushRows` into a streaming texture, `pollKey` empty for now, every flag per spec §5.1.
-- [ ] **Step 3: Run** `scripts/build-cardputer-zero.sh --sim --fake` and launch `linux/build/sim/monster-cyberspace`. Expected: the splash in a 960×510 window; closing it exits 0.
-- [ ] **Step 4:** Write the Dockerfile (`debian:trixie` by digest, `build-essential cmake ninja-build libcurl4-openssl-dev libasound2-dev pkg-config git`) and run `scripts/build-cardputer-zero.sh`. Expected: an aarch64 ELF (`file` says ARM aarch64). The `cp0` HAL is a stub returning 320×170 until Task 8.
-- [ ] **Step 5: Commit** `git commit -s -m "Linux build skeleton and SDL simulator window"`
+- [x] **Step 1:** Write `CMakeLists.txt` with source lists: `lib/core/src/**`, `lib/lvui/src/**`, the cell fonts, the chosen HAL, and (later tasks) `src/**` minus the files `linux/replace/` overrides; for now only lvui, core and the HAL.
+- [x] **Step 2:** The sim HAL: SDL2 window at 3×, `pushRows` into a shared frame the main thread presents (macOS lets only it touch SDL), `pollKey` empty for now, every flag per spec §5.1. `MONSTER_SIM_SHOT=<file.bmp>` writes the last frame on exit, so agents can check the UI without seeing the window.
+- [x] **Step 3: Run** `scripts/build-cardputer-zero.sh --sim --fake` and launch `linux/build/sim-fake/monster-cyberspace`. Expected: the name label in a 960×510 window; closing it (or SIGTERM) exits 0.
+- [x] **Step 4:** Write the Dockerfile (`debian:trixie` by digest, `build-essential ca-certificates cmake ninja-build pkg-config file libcurl4-openssl-dev libasound2-dev`) and run `scripts/build-cardputer-zero.sh`. Expected: an aarch64 ELF (`file` says ARM aarch64). The `cp0` HAL is a stub returning 320×170 until Task 8.
+- [x] **Step 5: Commit** `git commit -s -m "Linux build skeleton and SDL simulator window"`
 
 ### Task 2: Compatibility shims
 

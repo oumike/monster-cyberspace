@@ -1,0 +1,27 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": { "major": 3, "minor": 25, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "sim",
+      "displayName": "Desktop simulator (SDL2)",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/sim",
+      "cacheVariables": { "MC_BOARD": "sim", "CMAKE_BUILD_TYPE": "RelWithDebInfo" }
+    },
+    {
+      "name": "cp0",
+      "displayName": "CardputerZero (aarch64, run in linux/docker's container)",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/cp0",
+      "cacheVariables": { "MC_BOARD": "cp0", "CMAKE_BUILD_TYPE": "Release" }
+    }
+  ],
+  "buildPresets": [
+    { "name": "sim", "configurePreset": "sim" },
+    { "name": "cp0", "configurePreset": "cp0" }
+  ],
+  "testPresets": [
+    { "name": "sim", "configurePreset": "sim", "output": { "outputOnFailure": true } }
+  ]
+}

@@ -54,6 +54,9 @@ boards and Cyberspace features come later.
   plan `docs/superpowers/plans/2026-11-10-cyberspace-profiles-notes.md`.
 - **Search (issue #9 item 1):** spec
   `docs/superpowers/specs/2026-11-13-cyberspace-search-design.md`.
+- **CardputerZero (Linux port, not built yet):** spec
+  `docs/superpowers/specs/2026-11-16-cyberspace-cardputer-zero-design.md`,
+  plan `docs/superpowers/plans/2026-11-16-cyberspace-cardputer-zero.md`.
 - **Fluffy Generator (custom mascot):** spec
   `docs/superpowers/specs/2026-10-31-cyberspace-fluffy-generator-design.md`,
   plan `docs/superpowers/plans/2026-10-31-cyberspace-fluffy-generator.md`.

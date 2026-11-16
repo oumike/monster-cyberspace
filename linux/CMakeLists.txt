@@ -61,6 +61,18 @@ target_compile_definitions(lvgl PUBLIC ${MC_DEFS})
 file(GLOB_RECURSE CORE_SOURCES CONFIGURE_DEPENDS "${REPO}/lib/core/src/*.cpp")
 file(GLOB_RECURSE LVUI_SOURCES CONFIGURE_DEPENDS "${REPO}/lib/lvui/src/*.cpp")
 
+# The Arduino, FreeRTOS and ESP-IDF APIs src/ uses, over POSIX
+# (spec section 4.1).
+add_library(mc_compat STATIC
+  compat/arduino_compat.cpp
+  compat/freertos_compat.cpp
+  compat/preferences.cpp
+  compat/fs_compat.cpp)
+target_include_directories(mc_compat PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/compat")
+target_compile_definitions(mc_compat PUBLIC ${MC_DEFS})
+find_package(Threads REQUIRED)
+target_link_libraries(mc_compat PUBLIC Threads::Threads)
+
 set(HAL_SOURCES
   "${REPO}/src/hal/board_defaults.cpp"
   "${REPO}/src/hal/cardputer_zero/flags_cardputer_zero.cpp")
@@ -86,12 +98,18 @@ target_include_directories(monster-cyberspace PRIVATE
   "${REPO}/lib/lvui/src"
   "${arduinojson_SOURCE_DIR}/src"
   "${qrcode_SOURCE_DIR}/src")
-target_link_libraries(monster-cyberspace PRIVATE lvgl)
-find_package(Threads REQUIRED)
-target_link_libraries(monster-cyberspace PRIVATE Threads::Threads)
+target_link_libraries(monster-cyberspace PRIVATE lvgl mc_compat)
 
 if(MC_BOARD STREQUAL "sim")
   find_package(PkgConfig REQUIRED)
   pkg_check_modules(SDL2 REQUIRED IMPORTED_TARGET sdl2)
   target_link_libraries(monster-cyberspace PRIVATE PkgConfig::SDL2)
 endif()
+
+# ctest --preset sim: the compat layer's own tests.
+enable_testing()
+foreach(t preferences fs rtos)
+  add_executable(test_${t} tests/test_${t}.cpp)
+  target_link_libraries(test_${t} PRIVATE mc_compat)
+  add_test(NAME ${t} COMMAND test_${t})
+endforeach()

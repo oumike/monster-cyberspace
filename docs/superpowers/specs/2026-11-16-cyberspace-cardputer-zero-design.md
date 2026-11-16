@@ -111,18 +111,19 @@ of a shim.
 
 ### 4.1 Shims — `linux/compat/`
 
-Each shim implements only what `src/` uses today (counted 2026-11-16) and
-fails to compile on anything else, so a new use is noticed:
+Each shim implements only what `src/` uses (counted 2026-11-16, Task 2) and
+fails to compile on anything else, so a new use is noticed. CTest covers
+them (`linux/tests/`, `ctest --preset sim`, and in the container):
 
 | Header | Provides | Backed by |
 | --- | --- | --- |
-| `Arduino.h` | `millis`, `micros`, `delay`, `Serial` (`begin`, `printf`, `println`, `write`, `read`, `available`, `flush`), `ESP.restart`, `String` (the few uses) | `std::chrono`, stdout/stdin, `execv(/proc/self/exe)` |
-| `freertos/FreeRTOS.h`, `task.h`, `semphr.h` | `xTaskCreate(PinnedToCore)`, `vTaskDelay`, `vTaskDelete(nullptr)`, `pdMS_TO_TICKS`, `portMAX_DELAY`, mutex and binary semaphores | `std::thread` (detached), `std::timed_mutex`, a counting semaphore |
-| `esp_timer.h` | `esp_timer_get_time`, periodic timers | `steady_clock`, a timer thread |
-| `esp_heap_caps.h` | `heap_caps_malloc/calloc/realloc/free` (malloc), the size queries (return large constants), `heap_caps_malloc_extmem_enable` (no-op) | libc |
-| `Preferences.h` | `begin/end/get*/put*/remove/clear/isKey` per namespace | one file per namespace in `$XDG_CONFIG_HOME/monster-cyberspace/` (`~/.config/...`), written atomically (tmp + rename), mode 0600 |
-| `FS.h` | `fs::FS`, `File` (`open`, `openNextFile`, `read`, `write`, `print`, `size`, `name`, `isDirectory`, `close`) | POSIX files under a root directory |
-| `esp_http_server.h` | the 25 `httpd_*` calls `web_server.cpp` makes (§7) | a small POSIX-socket server, one thread |
+| `Arduino.h` | `millis`, `micros`, `delay`, `yield`, `random(max)`, `random(min, max)`, `esp_random`, `Serial` (`begin`, `printf`, `print`, `println`, `write`, `read`, `available`, `flush`), `ESP.restart`, a minimal `String` (what `Preferences::getString` returns); includes the FreeRTOS headers, as the ESP core's does | `std::chrono`, `<random>` and `std::random_device`, stdout and non-blocking stdin (end of input stops polling), `execv` of itself with the arguments `main()` passes to `compat::setArgs` |
+| `freertos/FreeRTOS.h`, `task.h`, `semphr.h` | `xTaskCreate(PinnedToCore)`, `vTaskDelay`, `xTaskGetTickCount`, `xTaskGetHandle`, `uxTaskGetStackHighWaterMark` (a constant; logs only), `pdMS_TO_TICKS`, `portMAX_DELAY`, `portNUM_PROCESSORS` (2), mutexes (`xSemaphoreCreateMutex`, `Take` with a timeout, `Give`, `vSemaphoreDelete`); no binary semaphores or queues, which nothing uses | detached `std::thread`s named after the task (a task ends when its function returns), `std::timed_mutex` |
+| `esp_timer.h` (+ `esp_err.h`) | `esp_timer_get_time`, `esp_timer_create`, `start_once`, `start_periodic`, `stop`, `delete` | `steady_clock`, one thread per started timer |
+| `esp_heap_caps.h` | `heap_caps_malloc/calloc/realloc/free`, the size queries (the system's free memory, at most `UINT_MAX`, so the low-memory paths never trigger), the `MALLOC_CAP_*` flags | libc, `sysinfo` |
+| `Preferences.h` | `begin` (read-only fails on a namespace never created), `end`, `clear`, `remove`, `isKey`, `put`/`get` `Bool`, `UChar`, `UShort`, `UInt`, `String`; keys over 15 characters fail as in NVS | one text file per namespace in `$MONSTER_CONFIG_DIR`, else `$XDG_CONFIG_HOME/monster-cyberspace/`, else `~/.config/monster-cyberspace/` (directory 0700, files 0600), written atomically (tmp, fsync, rename); namespaces shared across `Preferences` in the process |
+| `FS.h` | `fs::FS` (`open`, `exists`, `mkdir`, `remove`, `rmdir`), `File` (`openNextFile`, `read`, `write`, `size`, `name`, `path`, `isDirectory`, `close`) | POSIX files under a root directory; `..` refused |
+| `esp_http_server.h` | the 25 `httpd_*` calls `web_server.cpp` makes (§7), added in Task 7 | a small POSIX-socket server, one thread |
 | `ESPmDNS.h`, `WiFi.h` | not shimmed: their only user, `wifi_mgr.cpp`, is replaced | — |
 
 `Preferences` files hold the same keys as NVS, so backup YAML, settings and

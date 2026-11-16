@@ -60,16 +60,16 @@ Tasks 1, 2, 4–7 do not depend on it and may start first.
 ### Task 2: Compatibility shims
 
 **Files:**
-- Create: `linux/compat/Arduino.h`, `linux/compat/arduino_compat.cpp`, `linux/compat/freertos/{FreeRTOS,task,semphr}.h`, `linux/compat/freertos_compat.cpp`, `linux/compat/esp_timer.h`, `linux/compat/esp_heap_caps.h`, `linux/compat/Preferences.h`, `linux/compat/preferences.cpp`, `linux/compat/FS.h`, `linux/compat/fs_compat.cpp`
-- Test: `linux/tests/test_preferences.cpp`, `test_fs.cpp`, `test_freertos.cpp` (CTest)
+- Create: `linux/compat/Arduino.h`, `linux/compat/arduino_compat.cpp`, `linux/compat/freertos/{FreeRTOS,task,semphr}.h`, `linux/compat/freertos_compat.cpp`, `linux/compat/esp_err.h`, `linux/compat/esp_timer.h`, `linux/compat/esp_heap_caps.h`, `linux/compat/Preferences.h`, `linux/compat/preferences.cpp`, `linux/compat/FS.h`, `linux/compat/fs_compat.cpp`
+- Test: `linux/tests/check.h`, `test_preferences.cpp`, `test_fs.cpp`, `test_rtos.cpp` (CTest, wired in `linux/CMakeLists.txt` as `mc_compat` plus one executable per test)
 
 **Interfaces:** exactly the API listed in spec §4.1, nothing more; `Preferences` root from `$XDG_CONFIG_HOME` or `~/.config`, overridable by `MONSTER_CONFIG_DIR` (tests use a temp dir).
 
-- [ ] **Step 1: Write the failing tests:** `Preferences` put/get of every type used by `src/store/settings.cpp`, `remove`, `clear`, `isKey`, persistence across instances, file mode 0600, and a crash-safe write (a leftover `.tmp` is ignored); `FS` open/write/read/list/remove under a temp root; binary semaphore `take` with a 50 ms timeout returns false, then true after `give`; `xTaskCreatePinnedToCore` runs the function.
-- [ ] **Step 2: Run** `ctest --preset sim`. Expected: build failure (missing headers).
-- [ ] **Step 3: Implement** the shims.
-- [ ] **Step 4: Run** `ctest --preset sim`. Expected: all pass.
-- [ ] **Step 5: Commit** `git commit -s -m "Linux shims for the Arduino, FreeRTOS and ESP APIs the app uses"`
+- [x] **Step 1: Write the failing tests:** `Preferences` put/get of every type used by `src/store/settings.cpp`, `remove`, `clear`, `isKey`, persistence across instances, file mode 0600, and a crash-safe write (a leftover `.tmp` is ignored); `FS` open/write/read/list/remove under a temp root; mutex `take` with a 50 ms timeout returns false while held, then true after `give` (only mutexes are used); `xTaskCreatePinnedToCore` runs the function and `xTaskGetHandle` finds it until it returns; `millis`/`delay`/`vTaskDelay`; `random` ranges; a periodic `esp_timer` ticks and stops; the heap queries report plenty.
+- [x] **Step 2: Run** `ctest --preset sim`. Expected: build failure (missing headers).
+- [x] **Step 3: Implement** the shims.
+- [x] **Step 4: Run** `ctest --preset sim`. Expected: all pass.
+- [x] **Step 5: Commit** `git commit -s -m "Linux shims for the Arduino, FreeRTOS and ESP APIs the app uses"`
 
 ### Task 3: The CardputerZero keymap
 

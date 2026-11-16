@@ -35,8 +35,10 @@
 **Files:**
 - Modify: `docs/superpowers/specs/2026-11-16-cyberspace-cardputer-zero-design.md` §11 (write the answers in)
 
+M5Stack's docs and sources already settled the input form (raw evdev; the kernel applies the modifiers), the framebuffer's name and the launcher's `SIGINT` (spec §2, §2.1), so Tasks 3 and 8 may start without it; this probe confirms them.
+
 - [ ] **Step 1:** The user runs spec §11's commands on the device (or allows the agent to over SSH) and pastes the output.
-- [ ] **Step 2:** Record the framebuffer depth, the keyboard's evdev behaviour (raw codes vs needs xkbcommon), backlight and power-supply names, ALSA device and OS/glibc in §11; adjust §5 if anything differs.
+- [ ] **Step 2:** Record the framebuffer depth, any key codes that differ from spec §2 (one-shot and locked shift, `fn+U/I`, `fn+H`), backlight and power-supply names, ALSA device, OS/glibc and the app's user in §11; adjust §5 and the keymap if anything differs.
 - [ ] **Step 3: Commit** `git commit -s -m "CardputerZero spec: device probe results"`
 
 Tasks 1, 2, 4–7 do not depend on it and may start first.
@@ -74,18 +76,18 @@ Tasks 1, 2, 4–7 do not depend on it and may start first.
 ### Task 3: The CardputerZero keymap
 
 **Files:**
-- Create: `lib/core/src/input/keymap_cardputer_zero.h`, `.cpp`
+- Create: `lib/core/src/input/keymap_cardputer_zero.h`, `.cpp` (with the `sym` keymap-file parser and the built-in table)
 - Test: `test/test_keymap_cardputer_zero/test_main.cpp`
 
 **Interfaces:**
-- `struct rc::ZeroKeyIn { uint16_t code; uint8_t value; /* 0 up 1 down 2 repeat */ uint32_t ms; };` (or keysym-based per Task 0's finding)
-- `class rc::CardputerZeroKeys { bool feed(const ZeroKeyIn&, KeyEvent& out); bool quitRequested() const; };` holding shift/sym/fn state (held, latched once, locked) and the Esc hold timer (1000 ms).
+- `struct rc::ZeroKeyIn { uint16_t code; uint8_t value; /* 0 up 1 down 2 repeat */ uint32_t ms; uint8_t mods; /* ZeroMod bits from modifier_state, 0 if unknown */ };`
+- `class rc::CardputerZeroKeys { bool feed(const ZeroKeyIn&, KeyEvent& out); bool quitRequested() const; bool loadSymMap(const char* text); };` tracking held `KEY_LEFTSHIFT`/`KEY_FN` and the Esc hold timer (1000 ms); no latching (the kernel does it, spec §2).
 
-- [ ] **Step 1: Write the failing tests:** every letter, digit and printed punctuation; shift; the sym layer; `fn+F/X/Z/C` arrows and plain `KEY_UP…` arrows; `fn+K/N/L/M`; `fn+1…0`/`O`/`P` to F1–F12; `fn+Backspace` Delete; Enter → Select; Tab; Backspace; short Esc → Back with no quit; Esc held 1000 ms → no Back and `quitRequested()`; latched shift applies to one key only; locked shift until tapped again; unknown codes and modifiers alone give no key.
+- [ ] **Step 1: Write the failing tests:** every letter, digit and printed punctuation; held `KEY_LEFTSHIFT` and the `mods` shift bit both give capitals; the built-in `sym` table and a parsed keymap file (comments, bad lines, unknown keysyms skipped); `KEY_UP…` arrows and the `fn+F/X/Z/C` fallback; `KEY_HOME/END/PAGEUP/PAGEDOWN`; `KEY_F1…F12`; `KEY_DELETE`; Enter → Select; Tab; Backspace; short Esc → Back with no quit; Esc held 1000 ms → no Back and `quitRequested()`; repeats of arrows and Backspace; unknown codes and modifiers alone give no key.
 - [ ] **Step 2: Run** `nice pio test -e native -f test_keymap_cardputer_zero`. Expected: build failure.
 - [ ] **Step 3: Implement.**
 - [ ] **Step 4: Run** `nice pio test -e native`. Expected: all pass.
-- [ ] **Step 5:** Wire the sim HAL's `pollKey`: SDL key → evdev code (Left Alt = fn, Right Alt = sym) → `CardputerZeroKeys`.
+- [ ] **Step 5:** Wire the sim HAL's `pollKey`: SDL key → the device's evdev code (spec §5.1: Shift = `KEY_LEFTSHIFT`, Left Alt = `KEY_FN`, typed symbols as `sym` codes) → `CardputerZeroKeys`.
 - [ ] **Step 6: Commit** `git commit -s -m "CardputerZero keymap, with the simulator's keys through it"`
 
 ### Task 4: Linux network, time and restart replacements
@@ -143,8 +145,8 @@ Tasks 1, 2, 4–7 do not depend on it and may start first.
 **Files:**
 - Create: `src/hal/cardputer_zero/board_cardputer_zero.cpp`, `fb_cardputer_zero.cpp`, `input_cardputer_zero.cpp`, `power_cardputer_zero.cpp`, `audio_cardputer_zero.cpp`
 
-- [ ] **Step 1:** Framebuffer: open, `FBIOGET_VSCREENINFO`, `mmap`, 16/32 bpp `pushRows`; black on exit.
-- [ ] **Step 2:** Keyboard reader thread (no grab) into `CardputerZeroKeys`; device path per spec §5; xkbcommon only if Task 0 requires it.
+- [ ] **Step 1:** Framebuffer: pick the node (spec §5: `LV_LINUX_FBDEV_DEVICE`, `/proc/fb`'s `fb_st7789v`, `/dev/fb0`), `FBIOGET_VSCREENINFO`, `mmap`, 16/32 bpp `pushRows`; black on exit.
+- [ ] **Step 2:** Keyboard reader thread (no grab, raw evdev) into `CardputerZeroKeys`; device path per spec §5; `modifier_state` read on each press; the `sym` table from `/usr/share/keymaps/tca8418_keypad_m5stack_keymap.map`; `SIGINT`/`SIGTERM` set the quit flag.
 - [ ] **Step 3:** Battery and backlight sysfs; ALSA beep thread; every flag per spec §5.
 - [ ] **Step 4: Run** `scripts/build-cardputer-zero.sh`. Expected: aarch64 binary, no warnings from the new files.
 - [ ] **Step 5: Commit** `git commit -s -m "CardputerZero HAL: framebuffer, keyboard, battery, backlight, beep"`
@@ -152,10 +154,10 @@ Tasks 1, 2, 4–7 do not depend on it and may start first.
 ### Task 9: Packaging, release, CI and docs
 
 **Files:**
-- Create: `linux/packaging/monster-cyberspace.desktop`, `linux/packaging/icon.png` (from the existing app art), CPack settings in `linux/CMakeLists.txt`, `.github/workflows/linux.yml`
+- Create: `linux/packaging/monster-cyberspace.desktop`, `linux/packaging/icon.png` (from the existing app art), `linux/packaging/postinst`, `postrm`, CPack settings in `linux/CMakeLists.txt`, `.github/workflows/linux.yml`
 - Modify: `scripts/release.sh` (`LINUX_TARGETS`), `site/` (download note, not a flasher entry), `docs/BUILD.md`, `docs/USE.md`, `docs/TESTING.md` (open hardware check, spec §10), `AGENTS.md` (board paragraph, commands, progress), `README.md` (board list), `platformio.ini` header comment unchanged
 
-- [ ] **Step 1: Run** `scripts/build-cardputer-zero.sh --deb`. Expected: `dist/monster-cyberspace-cardputer-zero-<version>_arm64.deb`; `dpkg-deb -c` lists `/usr/bin/monster-cyberspace`, the `.desktop` and the icon; `dpkg-deb -I` shows `Depends: libcurl4, libasound2`.
+- [ ] **Step 1: Run** `scripts/build-cardputer-zero.sh --deb`. Expected: `dist/monster-cyberspace-cardputer-zero-<version>_arm64.deb`; `dpkg-deb -c` lists `/usr/share/APPLaunch/bin/monster-cyberspace`, the `.desktop` and `share/images/monster-cyberspace.png`; `dpkg-deb -I` shows `Section: APPLaunch`, `Architecture: arm64`, `Depends: libcurl4, libasound2`, and the `postinst`/`postrm` that restart `APPLaunch.service`.
 - [ ] **Step 2:** `release.sh --dist-only` builds and stages it next to the ESP images; no OTA manifest entry; `node --test site/*.test.mjs` passes.
 - [ ] **Step 3:** CI workflow (arm64 device build + package artifact; host simulator build + CTest).
 - [ ] **Step 4:** Docs, including the install steps (`sudo apt install ./…deb`) and the long-Esc exit.

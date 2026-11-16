@@ -36,7 +36,7 @@ and the `CardputerZero/Template` and `CardputerZero/launcher` repositories:
 | Part | Details | How the port reaches it |
 | --- | --- | --- |
 | SoC | RP3A0 (BCM2837), 4× Cortex-A53 @ 1 GHz, 512 MB LPDDR2 | aarch64 Linux (Raspberry Pi OS / Debian 13 "trixie" based) |
-| Display | 1.9" ST7789v3, 320×170, SPI (CM0 GPIO 10/11/25/8, TE 5); reset and backlight PWM on the M5IOE1 expander | the kernel's framebuffer, `/dev/fb0` (launcher and Template use LVGL's fbdev path) |
+| Display | 1.9" ST7789v3, 320×170, SPI (CM0 GPIO 10/11/25/8, TE 5); reset and backlight PWM on the M5IOE1 expander | the kernel's framebuffer: the `/dev/fbN` whose `/proc/fb` name is `fb_st7789v`, often `/dev/fb1` (`fb0` may be HDMI); `LV_LINUX_FBDEV_DEVICE` overrides it, as for stock apps |
 | Keyboard | 46 keys, TCA8418 at 0x34 on I²C1 (GPIO 2/3), INT GPIO 27; `shift`, `sym`, `fn` modifiers (hold, tap once to latch, tap twice to lock) | evdev, `/dev/input/by-path/platform-3f804000.i2c-event` (the launcher's default) |
 | Wi-Fi / Ethernet | 2.4 GHz b/g/n; USB Ethernet in Host mode | managed by Linux (NetworkManager); the app only reads the state |
 | Battery | 1750 mAh, BQ27220 gauge | power-supply sysfs (`/sys/class/power_supply/*/capacity`, `status`) |
@@ -49,10 +49,26 @@ and the `CardputerZero/Template` and `CardputerZero/launcher` repositories:
 Fn layer (from the usage guide): `fn+F/X/Z/C` are Up/Down/Left/Right,
 `fn+K/N` Home/End, `fn+L/M` PgUp/PgDn, `fn+1…0` F1…F10, `fn+O/P` F11/F12,
 `fn+Backspace` Delete, `fn+U/I` brightness, `fn+S/D` volume, `fn+H` app
-help. **Unknown until a device is probed:** whether the kernel keymap or a
-userspace layer (the launcher's libinput + xkbcommon reader) applies `sym`
-and `fn`. That decides whether we see `KEY_UP` or `KEY_F` + an `fn` code. §5
-handles both, and §11 lists the probe.
+help.
+
+**Input form (from M5Stack's docs and sources, 2026-11-16):** the kernel's
+TCA8418 driver applies the modifiers itself, holding, latching and locking
+them and lighting their LEDs, and emits ordinary evdev codes. Letters and
+digits are `KEY_A…`/`KEY_1…`; the `fn` layer arrives already mapped
+(`KEY_UP/DOWN/LEFT/RIGHT`, `KEY_HOME`, `KEY_F1…`, `KEY_DELETE`,
+`KEY_VOLUMEUP` …); the modifiers themselves are `KEY_LEFTSHIFT`,
+`KEY_COMPOSE` (`sym`) and `KEY_FN` (0x1d0). The `sym` layer reuses codes
+that carry no legend of their own (26 `!`, 27 `@`, 39 `#` …), translated
+by `/usr/share/keymaps/tca8418_keypad_m5stack_keymap.map` (`keycode N =
+<keysym name>` lines; the launcher has a built-in copy for when the file is
+missing). The current modes are readable at
+`/sys/bus/i2c/devices/1-0034/modifier_state` (`version 1`, `sequence`,
+`shift`, `sym`, `fn`: 0 inactive, 1 held, 2 one-shot, 3 locked), which
+Keyboard-Guide reads on each key press. Sources: the launcher's
+`docs/launcher-project-guide/07-input-system-and-key-mapping.md` and
+`ext_components/cp0_lvgl/src/cp0/cp0_keyboard_keymap.c`, Keyboard-Guide's
+`src/input/keyboard_guide_input.cpp`, and the `skill` repository's
+`cardputer-zero-application/references/applauncher-contract.md`.
 
 ### 2.1 The launcher contract
 
@@ -61,13 +77,17 @@ handles both, and §11 lists the probe.
   directory every 3 s.
 - Starting an app runs `ExecBlocking`: the launcher clears its input group,
   stops its LVGL timers and waits for the process to exit, then redraws
-  home. The app owns `/dev/fb0` and the keyboard while it runs.
+  home. The app owns the panel's framebuffer and the keyboard while it runs.
 - The launcher keeps reading the keyboard and records Esc state in a shared
-  atomic. A **long Esc** is the system-wide "back to home" gesture and the
-  launcher may kill an app that ignores it. Our app exits by itself on a long
-  Esc (§5) so it never has to be killed.
+  atomic. A **long Esc** is the system-wide "back to home" gesture: the
+  launcher sends the app `SIGINT`, then `SIGKILL` if it hasn't exited. Our
+  app treats `SIGINT` and `SIGTERM` as quit and also exits by itself on a
+  long Esc (§5), so it never has to be killed.
+- `Exec` is run with `execlp` and no arguments, not through a shell; an
+  absolute path is used as it is. `Icon` is relative to
+  `/usr/share/APPLaunch/`. The package's `Section` is `APPLaunch`.
 - Apps run as the logged-in user (`run_as_user`), not root. That user must
-  be able to open `/dev/fb0` and the input device; stock apps do, and §11 checks it.
+  be able to open the framebuffer and the input device; stock apps do, and §11 checks it.
 
 ## 3. Architecture
 
@@ -145,7 +165,7 @@ The CMake build compiles these instead of the `src/` file of the same name:
 | `store/nvs_migrate.cpp` | no-op |
 | `store/mascot_store.cpp` | the same encoded blob as the partition, in `~/.config/monster-cyberspace/mascot.bin`; still posts `EvtType::MascotChanged` |
 | `sys/mem.cpp` | `malloc`/`calloc` |
-| `src/main.cpp` | a `main()` that runs today's `setup()` steps (minus `nvsmigrate` and OTA), then waits for the quit flag (§5), stops the workers, and returns 0 |
+| `src/main.cpp` | a `main()` that runs today's `setup()` steps (minus `nvsmigrate` and OTA), then waits for the quit flag (§5; `SIGINT` and `SIGTERM` set it too, §2.1), stops the workers, and returns 0 |
 
 `app/ota_service.cpp` and `app/power_service.cpp` are not built
 (`RC_FEAT_OTA=0`, and `sleepsOnBattery()` is false).
@@ -153,7 +173,7 @@ The CMake build compiles these instead of the `src/` file of the same name:
 ### 4.3 Dependencies
 
 Device (Debian trixie arm64 packages): `libcurl4` (OpenSSL),
-`libasound2`, `libxkbcommon0` (only if §5's probe says we need it). The
+`libasound2` (no xkbcommon: the kernel applies the modifiers, §2). The
 `.deb` lists them in `Depends`. LVGL 9.5.0, ArduinoJson 7.4.3 and QRCode
 0.0.1 are pinned the same as in `platformio.ini` and fetched by CMake
 (`FetchContent`, exact tags). Simulator: SDL2 and libcurl from the host.
@@ -162,7 +182,9 @@ Fonts stay the compiled-in Terminus cells, so FreeType is not needed.
 ## 5. Device HAL — `src/hal/cardputer_zero/`
 
 - **`name()`** "CardputerZero"; **`otaSlug()`** "cardputer-zero".
-- **Display:** opens `/dev/fb0`, reads `FBIOGET_VSCREENINFO`, and `mmap`s it.
+- **Display:** opens `LV_LINUX_FBDEV_DEVICE` if set, else the `/dev/fbN`
+  named `fb_st7789v` in `/proc/fb`, else `/dev/fb0`; reads
+  `FBIOGET_VSCREENINFO`, and `mmap`s it.
   `panelWidth/Height` are 320×170 (taken from the framebuffer, checked
   against those numbers). `pushRows` converts lvui's RGB565 frame rows into
   the framebuffer's format: 16 bpp is copied, 32 bpp (XRGB8888, the Template's
@@ -170,27 +192,34 @@ Fonts stay the compiled-in Terminus cells, so FreeType is not needed.
   in direct mode, as on PSRAM boards, so nothing in lvui changes.
 - **No status bar of the launcher's:** the app owns the whole 320×170.
 - **Keyboard:** a reader thread opens the evdev node (path from
-  `MONSTER_KEYBOARD_DEVICE`, else the launcher's default, else the first
-  `/dev/input/event*` with `KEY_A`). It does **not** `EVIOCGRAB` it: the
-  launcher has to see a long Esc. Events go through a portable keymap
+  `MONSTER_KEYBOARD_DEVICE`, else `APPLAUNCH_LINUX_KEYBOARD_DEVICE`, else the
+  launcher's default, else the first `/dev/input/event*` with `KEY_A`). It
+  does **not** `EVIOCGRAB` it: the launcher has to see a long Esc. It reads
+  raw evdev (no libinput or xkbcommon): the kernel already applies the
+  modifiers (§2). Events go through a portable keymap
   `lib/core/src/input/keymap_cardputer_zero.{h,cpp}` (native tests) that
   turns evdev code + press/release/repeat + modifier state into
-  `rc::KeyEvent`s:
-  - letters, digits, punctuation and the `sym` layer to text (UTF-32);
-    shifted forms per the printed legends;
-  - `fn+F/X/Z/C` (or `KEY_UP/DOWN/LEFT/RIGHT` if the kernel already maps
-    them) to arrows; `fn+K/N/L/M` to Home/End/PgUp/PgDn; `fn+1…0`, `fn+O/P`
-    to F1…F12, giving the F10 help and the rest of `rc::kFunctionKeys`;
+  `rc::KeyEvent`s. The modifier state is the held `KEY_LEFTSHIFT`/`KEY_FN`
+  the keymap tracks, plus, on the device, the `shift`/`sym`/`fn` modes the
+  reader takes from `modifier_state` on each press (a one-shot or locked
+  shift may never show up as a `KEY_LEFTSHIFT` event). The keymap does no
+  latching of its own:
+  - letters, digits and punctuation to text (UTF-32), shifted forms per the
+    printed legends; the `sym` codes through a table loaded from the system
+    keymap file, with the launcher's built-in table as the fallback (the
+    parser lives in `lib/core` and is tested there);
+  - `KEY_UP/DOWN/LEFT/RIGHT` to arrows (and `fn+F/X/Z/C`, should a raw
+    letter arrive while `fn` is active); `KEY_HOME/END/PAGEUP/PAGEDOWN`;
+    `KEY_F1…F12`, giving the F10 help and the rest of `rc::kFunctionKeys`;
+    `KEY_DELETE`;
   - Enter/OK to Select; Tab to Tab (the entry menu); Backspace erases, and
     Back when nothing takes it (`backspaceIsBack()`);
   - **Esc short:** Back. **Esc held ≥ 1 s:** sets the quit flag, so the app
     returns to the launcher (§2.1);
-  - `fn+U/I` step the backlight, `fn+S/D` the beep volume, `fn+H` the F10
-    help.
-  If the probe (§11) shows that raw evdev codes do not carry the `sym` layer
-  or latched modifiers, the reader uses libxkbcommon with the system keymap,
-  as the launcher does, and the keymap takes keysyms instead of codes. The
-  keymap's tests cover whichever input form is chosen.
+  - the brightness keys step the backlight, `KEY_VOLUMEUP/DOWN` the beep
+    volume, `KEY_MUTE` mutes it, and `fn+H` (`KEY_HELP`) opens the F10 help.
+    Which codes the kernel sends for `fn+U/I` and `fn+H` is checked on the
+    device (§11).
 - **Flags:** `hasKeyboard`, `hasKeys`, `backspaceIsBack`, `anyInputWakes`
   true; no touch, rotation, GPS, haptic, notification light or SD slot
   (§8 covers backups); `canType` true; `fixedTextSize` false. 320×170 is
@@ -211,10 +240,12 @@ Fonts stay the compiled-in Terminus cells, so FreeType is not needed.
 
 The same flags as the device, so the UI is identical. An SDL2 window shows
 the 320×170 frame at 3× (`MONSTER_SIM_SCALE` to change it). SDL key events
-are converted into the same evdev codes and fed through
-`keymap_cardputer_zero`, with host keys standing in for the device's
-modifiers: Left Alt = `fn`, Right Alt = `sym`. The keymap therefore gets
-tested by hand on the desktop too. Battery reads 80 %. `beep` is silent, and
+are converted into the codes the device's kernel sends (§2) and fed through
+`keymap_cardputer_zero`: host arrows, Home/End, PgUp/PgDn, F1–F12 and Delete
+as themselves, Shift as `KEY_LEFTSHIFT`, Left Alt as `KEY_FN` (so
+Alt+F/X/Z/C are arrows through the keymap's fallback), and typed symbols
+as their `sym`-layer codes from the built-in table. The keymap therefore
+gets tested by hand on the desktop too. Battery reads 80 %. `beep` is silent, and
 `MONSTER_SIM_BEEP=1` logs it. Closing the window (or SIGTERM) sets the quit flag.
 `MONSTER_SIM_SHOT=<file.bmp>` writes the last frame on exit, for checks that
 can't see the window. Both HALs build `flags_cardputer_zero.cpp`, so the flags
@@ -287,11 +318,14 @@ today. The Wi-Fi section and the X4-only compose box stay hidden.
   from MacPorts or Homebrew).
 - **Package:** CPack DEB,
   `monster-cyberspace-cardputer-zero-<version>_arm64.deb` (release naming as
-  the other boards), package name `monster-cyberspace`, installing
-  `/usr/bin/monster-cyberspace`,
-  `/usr/share/APPLaunch/applications/monster-cyberspace.desktop` and the
-  icon under `/usr/share/APPLaunch/share/images/`. No systemd unit and no
-  conffiles. The version comes from the same source as `tools/set_app_version.py`.
+  the other boards), package name `monster-cyberspace`, `Section:
+  APPLaunch`, `Architecture: arm64`, laid out as M5's Template app does:
+  the binary at `/usr/share/APPLaunch/bin/monster-cyberspace` (no wrapper
+  script: it takes no arguments), `/usr/share/APPLaunch/applications/monster-cyberspace.desktop`
+  (`Exec` the binary's absolute path, `Icon=share/images/monster-cyberspace.png`,
+  `Terminal=false`) and the icon. `postinst` and `postrm` run
+  `systemctl restart APPLaunch.service` (if it exists) so the launcher
+  lists or drops the app. No systemd unit of our own and no conffiles. The version comes from the same source as `tools/set_app_version.py`.
 - **Release:** `scripts/release.sh` gains a `LINUX_TARGETS` list. It builds
   the `.deb` and attaches it, but writes no OTA manifest (the OTA check is
   ESP-only), and the flasher doesn't list the board, since it can't flash a
@@ -327,20 +361,22 @@ today. The Wi-Fi section and the X4-only compose box stay hidden.
 
 ## 11. Open questions for the first device session
 
-These are answered on the device by a human (or by the agent over SSH, if
-the user allows it), then written back here before the HAL tasks start:
+M5Stack's docs and app sources answered the input form, the framebuffer's
+name and the launcher's exit signal (§2, §2.1). What is left is checked on
+the device by a human (or by the agent over SSH, if the user allows it) and
+written back here:
 
-1. `fbset -i` / `cat /sys/class/graphics/fb0/{bits_per_pixel,virtual_size}`:
-   the framebuffer's depth and size, and that a normal user can open it.
-2. `evtest` on the keyboard node: what each key, `shift`, `sym` and `fn`
-   send, and whether latched modifiers show up as events. This decides raw
-   codes or xkbcommon (§5).
+1. `cat /proc/fb`, then `fbset -i -fb /dev/fbN` for the `fb_st7789v` node:
+   the depth and size, and that the app's user can open it.
+2. `evtest` on the keyboard node: confirm §2's codes, and see what a
+   one-shot or locked shift, `fn+U/I`, `fn+H` and the media keys send, next
+   to `cat /sys/bus/i2c/devices/1-0034/modifier_state`.
 3. `ls /sys/class/backlight /sys/class/power_supply`: names and ranges.
 4. `aplay -l`: the default PCM plays through the speaker.
 5. `cat /etc/os-release`, `ldd --version`: confirms trixie/glibc for the
    container base.
-6. While the app runs, does the launcher still act on a long Esc, and does
-   it kill or wait?
+6. `ps -o user= -p <pid>` while the app runs: which user the launcher runs
+   it as (that decides where `~/.config` is).
 
 ## 12. Out of scope
 

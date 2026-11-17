@@ -46,20 +46,20 @@ The user's unit: ESP32-P4 revision v1.3 (esptool), the ST7123 panel.
 
 - `panel_tab5.cpp`, modelled on the T-Display P4's `panel_rm69a10.cpp` and
   the Tanmatsu's `panel_st7701.cpp`: LDO 3 at 2500 mV, release the resets on
-  0x43, DSI bus (2 lanes, 1040 Mbps), DBI command IO, then each panel's init
-  list (from `M5Tab5-Keyboard-UserDemo`'s `esp_lcd_st7123.c`,
-  `esp_lcd_st7121.c`, `esp_lcd_ili9881c.c`) and a DPI panel with one PSRAM
-  frame buffer flushed out of the cache by rows (`esp_cache_msync`).
+  0x43, DSI bus (2 lanes), DBI command IO, then each panel's init
+  list and its delays (from M5GFX's `Panel_ST7123`, `Panel_ST7121` and
+  `Panel_ILI9881C`, generated into `panel_tab5_init.h`), then MADCTL 0x00
+  and COLMOD 0x55, and a DPI panel with one PSRAM frame buffer flushed out of
+  the cache by rows (`esp_cache_msync`).
 - **Which panel** (M5's autodetect): release LCD_RST and TP_RST (0x43
   direction 0x30 … the reset bits as inputs with pull-up; LCD_RST must never
   be driven high), drive touch INT high and probe 0x14 and 0x5D: an answer
   means ILI9881C + GT911. Otherwise read the ST touch's firmware version
   (0x55, 16-bit register 0x0000): 3 is ST7123, 1 ST7121, anything else
   ST7123.
-- Timings (hsync/hbp/hfp, vsync/vbp/vfp; DPI clock): ST7123 2/40/40,
-  2/8/220, 80 MHz; ST7121 2/40/40, 20/24/220, 80 MHz (M5GFX runs it at
-  70 MHz and 900 Mbps; tuned if it misbehaves); ILI9881C 40/144/40, 4/20/108,
-  80 MHz.
+- Timings, as M5GFX (hsync/hbp/hfp, vsync/vbp/vfp; DPI clock; lane rate):
+  ST7123 2/40/40, 2/8/220, 80 MHz, 1040 Mbps; ST7121 2/40/40, 20/24/200,
+  70 MHz, 900 Mbps; ILI9881C 40/140/40, 4/20/20, 80 MHz, 1040 Mbps.
 - **2x, four rotations:** the UI is drawn at 2x through `ui/scale2x`, a
   360x640 portrait or 640x360 landscape logical panel (80x22 cells of 8x16
   text). Without the keyboard any of four rotations (`canRotate()`), default

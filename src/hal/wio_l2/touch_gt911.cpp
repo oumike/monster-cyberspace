@@ -1,4 +1,5 @@
-#if defined(BOARD_WIO_L2) || defined(BOARD_TDECK) || defined(BOARD_CROWPANEL_35) || defined(BOARD_CROWPANEL_50)
+#if defined(BOARD_WIO_L2) || defined(BOARD_TDECK) || defined(BOARD_CROWPANEL_35) || defined(BOARD_CROWPANEL_50) || \
+    defined(BOARD_TAB5)
 
 #include "hal/wio_l2/touch_gt911.h"
 

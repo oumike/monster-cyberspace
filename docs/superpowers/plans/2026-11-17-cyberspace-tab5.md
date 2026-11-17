@@ -30,16 +30,16 @@ says so. Commit once per task (`git commit -s`, a "Tested:" line).
 
 ## Task 3: Env and HAL
 
-- [ ] `boards/tab5.json` (from `tanmatsu.json`), `[env:tab5]` in
+- [x] `boards/tab5.json` (from `tanmatsu.json`), `[env:tab5]` in
       `platformio.ini`.
-- [ ] `src/hal/tab5/`: `pins_tab5.h`; `io_tab5` (the two PI4IOE5V6408s);
+- [x] `src/hal/tab5/`: `pins_tab5.h`; `io_tab5` (the two PI4IOE5V6408s);
       `panel_tab5` (detect, LDO, DSI, ST7123/ST7121/ILI9881C init lists,
       DPI frame, backlight PWM); `touch_tab5` (ST7123 protocol, GT911 through
       the shared driver); `keyboard_tab5` (Wire1, INT, event FIFO, LEDs);
       `audio_es8388`; `board_tab5.cpp` (rotation, 2x push, keys, wake, C6,
       restart); `peripherals_tab5.cpp` (INA226, RX8130, SD).
-- [ ] `pio run -e tab5` builds, no new warnings.
-- [ ] Commit "Tab5: HAL and env".
+- [x] `pio run -e tab5` builds, no new warnings.
+- [x] Commit "Tab5: HAL and env".
 
 ## Task 4: Scripts, CI, release, flasher
 

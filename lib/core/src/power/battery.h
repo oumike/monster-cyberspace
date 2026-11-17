@@ -14,7 +14,11 @@ int batteryPercentFromVolts(float v);
 // 2.5 V → -1 (no reading).
 int tanmatsuBatteryPercent(float v);
 
-// Its two VBAT bytes are rewritten while being read, so one read can pair
+// The Tab5's INA226 reads its 2S pack in mV: per cell 3.3 V empty, 4.1 V
+// full (M5Unified's), linear, clamped. Under 5000 mV there is no pack → -1.
+int tab5BatteryPercent(uint32_t packMv);
+
+// The Tanmatsu's two VBAT bytes are rewritten while being read, so one read can pair
 // bytes of two samples. Two reads count only when both are in the PMIC ADC's
 // 2304..4848 mV range and agree within 40 mV; mv is then their mean.
 bool tanmatsuVbatAgree(uint16_t a, uint16_t b, uint16_t& mv);

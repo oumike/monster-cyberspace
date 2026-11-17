@@ -73,6 +73,17 @@ void test_tanmatsu_vbat_reads_must_agree() {
   TEST_ASSERT_FALSE(tanmatsuVbatAgree(5000, 5000, mv));
 }
 
+// The Tab5's INA226 reads its 2S pack: per cell 3.3 V empty, 4.1 V full.
+void test_tab5_pack() {
+  TEST_ASSERT_EQUAL(100, tab5BatteryPercent(8400));
+  TEST_ASSERT_EQUAL(100, tab5BatteryPercent(8200));
+  TEST_ASSERT_EQUAL(50, tab5BatteryPercent(7400));
+  TEST_ASSERT_EQUAL(0, tab5BatteryPercent(6600));
+  TEST_ASSERT_EQUAL(0, tab5BatteryPercent(6000));
+  TEST_ASSERT_EQUAL(-1, tab5BatteryPercent(4999));  // no pack: USB only
+  TEST_ASSERT_EQUAL(-1, tab5BatteryPercent(0));
+}
+
 int main(int, char**) {
   UNITY_BEGIN();
   RUN_TEST(test_first_reading_shows_at_once);
@@ -80,6 +91,7 @@ int main(int, char**) {
   RUN_TEST(test_follows_a_real_change);
   RUN_TEST(test_unknown_after_several_misses);
   RUN_TEST(test_tanmatsu_curve);
+  RUN_TEST(test_tab5_pack);
   RUN_TEST(test_tanmatsu_vbat_reads_must_agree);
   return UNITY_END();
 }

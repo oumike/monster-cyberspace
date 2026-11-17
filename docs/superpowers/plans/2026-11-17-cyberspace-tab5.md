@@ -21,11 +21,11 @@ says so. Commit once per task (`git commit -s`, a "Tested:" line).
 - [x] Run it green, then the whole native suite.
 - [x] Commit "Tab5: key map".
 
-## Task 2: Battery percentage (`lib/core/src/power/tab5_battery`)
+## Task 2: Battery percentage (`lib/core/src/power/battery`)
 
-- [ ] Tests: pack mV → percent (2S, per cell 3300–4100 mV, clamped), below
-      5000 mV no reading.
-- [ ] Implement `rc::tab5BatteryPercent`; green; commit "Tab5: battery
+- [x] Tests in `test_battery_meter`: pack mV → percent (2S, per cell
+      3300–4100 mV, clamped), below 5000 mV no reading.
+- [x] Implement `rc::tab5BatteryPercent`; green; commit "Tab5: battery
       percentage".
 
 ## Task 3: Env and HAL

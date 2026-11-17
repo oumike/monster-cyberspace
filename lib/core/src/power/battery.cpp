@@ -27,6 +27,12 @@ int tanmatsuBatteryPercent(float v) {
   return 0;
 }
 
+int tab5BatteryPercent(uint32_t packMv) {
+  if (packMv < 5000) return -1;
+  const int pct = (int(packMv / 2) - 3300) * 100 / 800;
+  return pct < 0 ? 0 : pct > 100 ? 100 : pct;
+}
+
 bool tanmatsuVbatAgree(uint16_t a, uint16_t b, uint16_t& mv) {
   auto ok = [](uint16_t x) { return x >= 2304 && x <= 4848; };
   if (!ok(a) || !ok(b)) return false;

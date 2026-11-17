@@ -75,16 +75,18 @@ class SetupScreen : public Screen {
   void closeOverlays() override { picker_.close(); }
 
  private:
+  enum class Option : uint8_t { JoinWifi, LogIn, WebConfig, Restore };
   void activate(int item);
   void sync();
   ListView menu_;
   BackupPicker picker_;
+  std::vector<Option> options_;  // the menu's rows, in order
   bool hasRestore_ = false;  // the SD list held backups on enter
   bool buttons_ = false;     // touch-only boards: the options as buttons
   ButtonPad pad_;
   // The views, on the heap only while their tree is up (lvui/tree_views.h).
   struct Views {
-    SyncGate<4> gate_;  // the update check, fresh with each tree
+    SyncGate<5> gate_;  // the update check, fresh with each tree
     lvui::TopBar status_;
     lvui::CellText text_;
     lvui::ListBox menuView_;

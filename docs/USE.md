@@ -531,8 +531,8 @@ The screen is 320×170 and stays landscape; Compact and Comfortable text sizes
 are offered. Quitting from the launcher (its long Esc) closes the app cleanly
 too. **Restart app** in Settings restarts it.
 
-**Web config** is off until you turn it on: Settings → **Web config page**,
-set a page password (8 to 63 characters), then switch it on. The screen shows
+**Web config** is off until you turn it on: Settings → **Web config page**
+(or **Web config page** on the setup screen, to sign in from a browser), set a page password (8 to 63 characters), then switch it on. The screen shows
 `http://<address>:8765` and a QR code; sign in as `admin` with that password.
 It runs only while the switch is on and has no Wi-Fi section.
 

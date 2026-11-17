@@ -723,7 +723,7 @@ Then the app:
 - [ ] Beep: a mention beeps; `fn` + S/D change its volume, mute silences it
 - [ ] Battery: Settings shows a sensible percentage; the charging state follows the USB cable
 - [ ] Backlight: Brightness in Settings changes it; `fn` + U/I step it; the screen timeout turns it off and a key brings it back (that key does nothing else); after quitting, the launcher has its brightness back
-- [ ] Web config: off at first; Settings → Web config page refuses to switch on without a page password; with one, `http://<address>:8765` loads after `admin` and the password, shows no Wi-Fi section, and saving works; switching it off stops the page
+- [ ] Web config: off at first; the setup screen offers Web config page and shows `http://<address>:8765` once it is on; Settings → Web config page refuses to switch on without a page password; with one, `http://<address>:8765` loads after `admin` and the password, shows no Wi-Fi section, and saving works; switching it off stops the page
 - [ ] Backup: Back up to ~/monster-cyberspace writes a file in `~/monster-cyberspace/backups/` readable by its owner only (0600); Restore from ~/monster-cyberspace… lists and restores it
 - [ ] Relaunch keeps the settings and the sign-in; Restart app in Settings comes back; factory reset clears the settings and keeps the backups
 - [ ] Remove: `sudo apt remove monster-cyberspace` drops it from the launcher and leaves `~/.config/monster-cyberspace` and the backups

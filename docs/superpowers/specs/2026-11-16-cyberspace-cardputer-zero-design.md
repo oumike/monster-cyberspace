@@ -284,8 +284,10 @@ Kept small, each behind a flag that every ESP env leaves at today's value:
   was first planned as a `board::webConfigOptIn()` function; a compile-time
   flag keeps ESP images unchanged. With it, web config does not start at
   boot: `webConfig` defaults to off (NVS `webcfg`, backup `webConfig`), and
-  Settings' "Web config page" item opens a `WebConfigScreen`
-  (`src/screens/web_config.cpp`). There a masked field sets the page
+  Settings' "Web config page" item, and the Setup screen's (to sign in
+  from a browser), open a `WebConfigScreen` (`src/screens/web_config.cpp`;
+  Back returns to where it was opened). Setup shows `http://<ip>:8765` only
+  while the page runs, and no `monster-cyberspace.local` (no mDNS on Linux). There a masked field sets the page
   password (8 to 63 printable characters); the page can only be turned on
   once one is set. While on, it shows `http://<ip>:8765`, the user name
   `admin` and a QR code. Turning it off stops the server (`web::apply()`).

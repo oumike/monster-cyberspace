@@ -118,7 +118,7 @@ void WebConfigScreen::onKey(const KeyEvent& k) {
     case Action::Back:
       if (!password_.text().empty())
         password_.clear();
-      else
+      else if (!router::backToOrigin())
         router::go(router::Id::Settings);
       break;
     default:

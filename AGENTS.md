@@ -319,7 +319,7 @@ M5Stack CardputerZero, `sim` for the SDL2 desktop simulator). It compiles
 through shims for the Arduino, FreeRTOS and ESP-IDF calls the app makes
 (`linux/compat/`: `Preferences` as files in `~/.config/monster-cyberspace`,
 `fs::FS` rooted at `~/monster-cyberspace` and mounted at
-`/monster-cyberspace`, `esp_http_server` on port 8080) and Linux versions of
+`/monster-cyberspace`, `esp_http_server` on port 8765) and Linux versions of
 the ESP-only files (`linux/replace/`: `main()`, curl HTTPS and SSE, Wi-Fi
 status, clock, mascot file). Its CTest suite is `linux/tests/`.
 `RC_FEAT_WIFI_MGMT=0` drops the setup AP and Wi-Fi screens, and

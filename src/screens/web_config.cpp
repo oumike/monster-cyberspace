@@ -56,7 +56,7 @@ void WebConfigScreen::turn(bool on) {
   settings::saveWebConfig(on);
   web::apply();
   if (on && !web::running()) {
-    note_ = "Couldn't start the page: is port 8080 in use?";
+    note_ = "Couldn't start the page: is port " + std::to_string(web::kPort) + " in use?";
     noteIsError_ = true;
   }
 }

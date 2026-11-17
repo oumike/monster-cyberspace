@@ -1215,7 +1215,7 @@ void begin() {
     httpd_register_uri_handler(server, &u);
   }
 #if RC_WEB_OPT_IN
-  Serial.println("[web] listening on port 8080");
+  Serial.printf("[web] listening on port %d\n", kPort);
 #else
   Serial.println("[web] listening on port 80");
 #endif

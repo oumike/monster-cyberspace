@@ -59,7 +59,7 @@ FetchContent_MakeAvailable(lvgl arduinojson qrcode)
 # for RC_LINUX.
 # No OTA (the launcher's packages update it) and no Wi-Fi management (Linux
 # owns Wi-Fi); every other feature is on. Web config is an opt-in on port
-# 8080 that needs a page password (spec section 7).
+# 8765 that needs a page password (spec section 7).
 set(MC_DEFS RC_LINUX=1 BOARD_HAS_PSRAM=1 LV_CONF_INCLUDE_SIMPLE RC_FEAT_OTA=0 RC_FEAT_WIFI_MGMT=0
   RC_WEB_OPT_IN=1)
 if(MC_BOARD STREQUAL "sim")

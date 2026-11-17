@@ -287,10 +287,10 @@ Kept small, each behind a flag that every ESP env leaves at today's value:
   Settings' "Web config page" item opens a `WebConfigScreen`
   (`src/screens/web_config.cpp`). There a masked field sets the page
   password (8 to 63 printable characters); the page can only be turned on
-  once one is set. While on, it shows `http://<ip>:8080`, the user name
+  once one is set. While on, it shows `http://<ip>:8765`, the user name
   `admin` and a QR code. Turning it off stops the server (`web::apply()`).
   The page itself hides the switch that turns the password off, and its own
-  web config switch reads "Serve it on port 8080".
+  web config switch reads "Serve it on port 8765".
 - **`RC_LINUX` guards** only where a shim would be misleading: `main.cpp`
   (compiled out; the replacement has `main()`), the `[mem]` lines (they
   print RSS instead of internal heap), and Settings' "Turn setup AP on" and
@@ -305,7 +305,7 @@ Nothing else in `src/screens`, `src/app` or `lib/` changes.
 ## 7. Web config on Linux
 
 The same `web_server.cpp`, routes and page, through the `esp_http_server`
-shim. It listens on **TCP 8080** (not 80, which needs root) on all IPv4
+shim. It listens on **TCP 8765** (not 80, which needs root) on all IPv4
 interfaces, and runs only while Settings' "Web config page" is on. Every
 route already requires the page password (Basic auth). On Linux the server
 also refuses to start without one, so it is never open. No captive portal or

@@ -533,7 +533,7 @@ too. **Restart app** in Settings restarts it.
 
 **Web config** is off until you turn it on: Settings → **Web config page**,
 set a page password (8 to 63 characters), then switch it on. The screen shows
-`http://<address>:8080` and a QR code; sign in as `admin` with that password.
+`http://<address>:8765` and a QR code; sign in as `admin` with that password.
 It runs only while the switch is on and has no Wi-Fi section.
 
 **Files:** settings live in `~/.config/monster-cyberspace/` and backups in

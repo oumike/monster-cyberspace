@@ -188,10 +188,10 @@ async function call(method,url,body){
 }
 )JS"
 
-// Web config as an opt-in (RC_WEB_OPT_IN, Linux): served on port 8080 only
+// Web config as an opt-in (RC_WEB_OPT_IN, Linux): served on port 8765 only
 // while the device's Settings turn it on, and never without a page password.
 #if RC_WEB_OPT_IN
-#define RC_WEBCFG_HTML R"HTML( Serve it on port 8080</label><span class="note">Off, it stops at once; turn it back on from the device's Settings.</span>)HTML"
+#define RC_WEBCFG_HTML R"HTML( Serve it on port 8765</label><span class="note">Off, it stops at once; turn it back on from the device's Settings.</span>)HTML"
 #define RC_WEBCFG_OFF_JS R"JS(Stop serving this page? Turn it back on from the device\'s Settings.)JS"
 #define RC_PAGEOFF_HIDDEN_JS "true"
 #else

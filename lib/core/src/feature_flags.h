@@ -56,7 +56,7 @@
 #define RC_FEAT_WIFI_MGMT 1
 #endif
 
-// Web config as an opt-in (Linux): the page is served on port 8080 only
+// Web config as an opt-in (Linux): the page is served on port 8765 only
 // while Settings' "Web config page" is on, and only with a page password.
 // 0 (ESP): always served on port 80, the password optional.
 #ifndef RC_WEB_OPT_IN

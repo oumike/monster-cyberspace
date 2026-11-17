@@ -33,14 +33,17 @@ fb_bitfield red{}, green{}, blue{};
 std::vector<uint16_t> kept(size_t(kW) * kH);  // the last frame, for fbDark(false)
 bool dark = false;
 
-// /proc/fb lines are "<n> <name>": the node named fb_st7789v, if listed.
+// The panel's node: $LV_LINUX_FBDEV_DEVICE, else the device's /dev/fb_lcd
+// link, else the /proc/fb entry ("<n> <name>") named panel-mipi-dbid (the
+// device's driver) or fb_st7789v (M5's docs), else /dev/fb0.
 std::string panelNode() {
   if (const char* d = std::getenv("LV_LINUX_FBDEV_DEVICE"); d && *d) return d;
+  if (access("/dev/fb_lcd", R_OK | W_OK) == 0) return "/dev/fb_lcd";
   if (FILE* f = std::fopen("/proc/fb", "r")) {
     int n;
     char name[64];
     while (std::fscanf(f, "%d %63s", &n, name) == 2) {
-      if (std::strcmp(name, "fb_st7789v") == 0) {
+      if (std::strcmp(name, "panel-mipi-dbid") == 0 || std::strcmp(name, "fb_st7789v") == 0) {
         std::fclose(f);
         return "/dev/fb" + std::to_string(n);
       }

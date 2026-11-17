@@ -326,7 +326,7 @@ status, clock, mascot file). Its CTest suite is `linux/tests/`.
 `RC_WEB_OPT_IN=1` makes web config an opt-in with a required password
 (`src/screens/web_config.cpp`). `src/hal/cardputer_zero/` is the device HAL
 (fbdev, raw evdev without a grab so the launcher sees a long Esc, battery and
-backlight sysfs, ALSA beep); `src/hal/linux_sim/` the simulator's; both build
+backlight sysfs, a PulseAudio beep with ALSA as fallback); `src/hal/linux_sim/` the simulator's; both build
 `flags_cardputer_zero.cpp` and use `lib/core`'s `input/keymap_cardputer_zero`.
 `scripts/build-cardputer-zero.sh` builds the device in a Debian trixie arm64
 container (`linux/docker/Dockerfile`; `--deb` packages it with CPack into

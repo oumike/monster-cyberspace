@@ -176,7 +176,7 @@ if(MC_BOARD STREQUAL "sim")
   target_link_libraries(monster-cyberspace PRIVATE PkgConfig::SDL2)
 else()
   pkg_check_modules(ALSA REQUIRED IMPORTED_TARGET alsa)
-  target_link_libraries(monster-cyberspace PRIVATE PkgConfig::ALSA)
+  target_link_libraries(monster-cyberspace PRIVATE PkgConfig::ALSA ${CMAKE_DL_LIBS})
 endif()
 # The HALs are ours: hold them to -Wall -Wextra.
 file(GLOB HAL_OWN "${REPO}/src/hal/cardputer_zero/*.cpp" "${REPO}/src/hal/linux_sim/*.cpp")

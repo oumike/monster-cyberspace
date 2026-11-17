@@ -703,14 +703,14 @@ is open.
 
 **CardputerZero (`scripts/build-cardputer-zero.sh --deb`; spec 2026-11-16 §10–§11):**
 
-First write the probes' answers back into the spec's §11:
+The probes' answers are in the spec's §11 (read over SSH on 2026-11-17):
 
-- [ ] Framebuffer: `cat /proc/fb` lists `fb_st7789v`; `fbset -i -fb /dev/fbN` for it gives 320x170 and the depth (16 or 32); the launcher's user can open it
-- [ ] Keyboard codes: `evtest` on `/dev/input/by-path/platform-3f804000.i2c-event`, next to `cat /sys/bus/i2c/devices/1-0034/modifier_state`: letters, digits, the `sym` layer and the `fn` layer send what spec §2 says; note what a one-shot and a locked shift, `fn` + U/I, `fn` + H, `fn` + S/D and the media keys send
-- [ ] `ls /sys/class/backlight /sys/class/power_supply`: the names and `max_brightness`
-- [ ] `aplay -l`: the default PCM plays through the speaker
-- [ ] `cat /etc/os-release` and `ldd --version`: Debian trixie and its glibc, as the build container
-- [ ] `ps -o user= -p <pid>` while the app runs: which user the launcher runs it as (its `~/.config` holds the settings)
+- [x] Framebuffer: `cat /proc/fb` lists `fb_st7789v`; `fbset -i -fb /dev/fbN` for it gives 320x170 and the depth (16 or 32); the launcher's user can open it *(it is `panel-mipi-dbid` on `/dev/fb0`, also `/dev/fb_lcd`; 16 bpp; `root:video` 0660)*
+- [ ] Keyboard codes (`evtest` isn't installed; there is no `modifier_state` file): `evtest` on `/dev/input/by-path/platform-3f804000.i2c-event`: letters, digits, the `sym` layer and the `fn` layer send what spec §2 says; note what a one-shot and a locked shift, `fn` + U/I, `fn` + H, `fn` + S/D and the media keys send
+- [x] `ls /sys/class/backlight /sys/class/power_supply`: the names and `max_brightness` *(`backlight`, 0–100; `bq27220-0`)*
+- [x] `aplay -l`: the default PCM plays through the speaker *(no: ALSA's default is HDMI and PipeWire owns the ES8389, so the beep goes through PulseAudio)*
+- [x] `cat /etc/os-release` and `ldd --version`: Debian trixie and its glibc, as the build container *(trixie, glibc 2.41)*
+- [x] `ps -o user= -p <pid>` while the app runs: which user the launcher runs it as (its `~/.config` holds the settings) *(APPLaunch runs as the login user)*
 
 Then the app:
 

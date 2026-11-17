@@ -36,12 +36,12 @@ and the `CardputerZero/Template` and `CardputerZero/launcher` repositories:
 | Part | Details | How the port reaches it |
 | --- | --- | --- |
 | SoC | RP3A0 (BCM2837), 4× Cortex-A53 @ 1 GHz, 512 MB LPDDR2 | aarch64 Linux (Raspberry Pi OS / Debian 13 "trixie" based) |
-| Display | 1.9" ST7789v3, 320×170, SPI (CM0 GPIO 10/11/25/8, TE 5); reset and backlight PWM on the M5IOE1 expander | the kernel's framebuffer: the `/dev/fbN` whose `/proc/fb` name is `fb_st7789v`, often `/dev/fb1` (`fb0` may be HDMI); `LV_LINUX_FBDEV_DEVICE` overrides it, as for stock apps |
+| Display | 1.9" ST7789v3, 320×170, SPI (CM0 GPIO 10/11/25/8, TE 5); reset and backlight PWM on the M5IOE1 expander | the kernel's framebuffer: `/dev/fb0`, 16 bpp, named `panel-mipi-dbid` in `/proc/fb` and linked as `/dev/fb_lcd` (M5's docs say `fb_st7789v`; §11); `LV_LINUX_FBDEV_DEVICE` overrides it, as for stock apps |
 | Keyboard | 46 keys, TCA8418 at 0x34 on I²C1 (GPIO 2/3), INT GPIO 27; `shift`, `sym`, `fn` modifiers (hold, tap once to latch, tap twice to lock) | evdev, `/dev/input/by-path/platform-3f804000.i2c-event` (the launcher's default) |
 | Wi-Fi / Ethernet | 2.4 GHz b/g/n; USB Ethernet in Host mode | managed by Linux (NetworkManager); the app only reads the state |
 | Battery | 1750 mAh, BQ27220 gauge | power-supply sysfs (`/sys/class/power_supply/*/capacity`, `status`) |
 | RTC | RX8130CE | the system clock; Linux keeps NTP and the RTC |
-| Audio | ES8389 codec, AW8737A amp (EN on GPIO 24), headphone detect GPIO 17 | ALSA (default PCM) |
+| Audio | ES8389 codec, AW8737A amp (EN on GPIO 24), headphone detect GPIO 17 | PipeWire's PulseAudio server (ALSA's `default` is HDMI; §11) |
 | Backlight | PWM on M5IOE1 | backlight sysfs (`/sys/class/backlight/*`) if exposed; otherwise unsupported (probe, §11) |
 | Storage | microSD is the root filesystem | ordinary files under the user's home |
 | Not used | camera, IMU, magnetometer, IR, HDMI, Cap bus, Grove | — |
@@ -64,7 +64,8 @@ by `/usr/share/keymaps/tca8418_keypad_m5stack_keymap.map` (`keycode N =
 missing). The current modes are readable at
 `/sys/bus/i2c/devices/1-0034/modifier_state` (`version 1`, `sequence`,
 `shift`, `sym`, `fn`: 0 inactive, 1 held, 2 one-shot, 3 locked), which
-Keyboard-Guide reads on each key press. Sources: the launcher's
+Keyboard-Guide reads on each key press; the device checked in §11 has no
+such file, so it is optional. Sources: the launcher's
 `docs/launcher-project-guide/07-input-system-and-key-mapping.md` and
 `ext_components/cp0_lvgl/src/cp0/cp0_keyboard_keymap.c`, Keyboard-Guide's
 `src/input/keyboard_guide_input.cpp`, and the `skill` repository's
@@ -182,8 +183,9 @@ Fonts stay the compiled-in Terminus cells, so FreeType is not needed.
 ## 5. Device HAL — `src/hal/cardputer_zero/`
 
 - **`name()`** "CardputerZero"; **`otaSlug()`** "cardputer-zero".
-- **Display:** opens `LV_LINUX_FBDEV_DEVICE` if set, else the `/dev/fbN`
-  named `fb_st7789v` in `/proc/fb`, else `/dev/fb0`; reads
+- **Display:** opens `LV_LINUX_FBDEV_DEVICE` if set, else `/dev/fb_lcd`,
+  else the `/dev/fbN` named `panel-mipi-dbid` or `fb_st7789v` in
+  `/proc/fb`, else `/dev/fb0`; reads
   `FBIOGET_VSCREENINFO`, and `mmap`s it.
   `panelWidth/Height` are 320×170 (taken from the framebuffer, checked
   against those numbers). `pushRows` converts lvui's RGB565 frame rows into
@@ -243,8 +245,10 @@ Fonts stay the compiled-in Terminus cells, so FreeType is not needed.
   no sysfs node, dark (off, sleep or level 0) paints the framebuffer black and
   light re-draws the last frame. The brightness keys step the level by 32
   (floor 16) from the last one set; the next Brightness setting replaces it.
-- **Sound:** `beep` writes a short square wave to ALSA's default PCM on its
-  own thread; `setVolume` scales it. `hasSound` and `hasVolume` are true.
+- **Sound:** `beep` plays a short square wave on its own thread through
+  PulseAudio (PipeWire's pulse server owns the ES8389), `libpulse-simple`
+  loaded with `dlopen` as M5's apps use it, so the package needs no new
+  dependency; without it, ALSA's default PCM; `setVolume` scales it. `hasSound` and `hasVolume` are true.
 - **Clock:** `rtcRead/rtcWrite` return false (Linux owns the RTC).
 
 ### 5.1 Simulator HAL — `src/hal/linux_sim/`
@@ -405,24 +409,26 @@ there stops the server after the reply. Tested by `linux/tests/test_httpd.cpp`.
   battery, backlight, web config opt-in, backup save and restore, relaunch
   keeps settings.
 
-## 11. Open questions for the first device session
+## 11. Answers from the first device session
 
-M5Stack's docs and app sources answered the input form, the framebuffer's
-name and the launcher's exit signal (§2, §2.1). What is left is checked on
-the device by a human (or by the agent over SSH, if the user allows it) and
-written back here:
+Read-only probes over SSH on 2026-11-17 (nothing installed):
 
-1. `cat /proc/fb`, then `fbset -i -fb /dev/fbN` for the `fb_st7789v` node:
-   the depth and size, and that the app's user can open it.
-2. `evtest` on the keyboard node: confirm §2's codes, and see what a
-   one-shot or locked shift, `fn+U/I`, `fn+H` and the media keys send, next
-   to `cat /sys/bus/i2c/devices/1-0034/modifier_state`.
-3. `ls /sys/class/backlight /sys/class/power_supply`: names and ranges.
-4. `aplay -l`: the default PCM plays through the speaker.
-5. `cat /etc/os-release`, `ldd --version`: confirms trixie/glibc for the
-   container base.
-6. `ps -o user= -p <pid>` while the app runs: which user the launcher runs
-   it as (that decides where `~/.config` is).
+1. `/proc/fb` lists `0 panel-mipi-dbid`, not `fb_st7789v`; `/dev/fb0` is
+   320×170 at 16 bpp, `root:video` 0660, and `/dev/fb_lcd` links to it. The
+   app tries `/dev/fb_lcd` first and accepts either name (§5).
+2. The keyboard is `/dev/input/by-path/platform-3f804000.i2c-event`
+   (`event3`, "tca8418c"); the `sym` keymap file is where §2 says. There is
+   no `modifier_state` file, so the held-modifier tracking is all there is.
+   The key codes themselves (`evtest` isn't installed) are still to check.
+3. Backlight `/sys/class/backlight/backlight` (0–100); battery
+   `/sys/class/power_supply/bq27220-0` (`capacity`, `status`).
+4. ALSA card 0 is HDMI (vc4hdmi), card 1 ES8389Audio, and there is no
+   `asound.conf`, so ALSA's `default` is HDMI. PipeWire 1.4.2 owns the ES8389
+   and serves PulseAudio (default sink `alsa_output.platform-sound.stereo-fallback`);
+   M5's apps play through PulseAudio, and so does the beep now (§5).
+5. Debian 13 trixie, glibc 2.41, aarch64: the container base matches.
+6. APPLaunch runs as the login user (`mike`, uid 1000, in `video`, `input`,
+   `audio` and `i2c`), so the app's `~/.config` is that user's.
 
 ## 12. Out of scope
 

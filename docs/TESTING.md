@@ -170,6 +170,8 @@ soon, wherever the board has them.
       pressed; turning the screen redraws everything at the new size.
 - [ ] Tanmatsu (`tanmatsu`): landscape at 2x: every screen and Back, each
       theme, each text size; keyboard and function keys as on `main`.
+- [ ] Tab5 (`tab5`): each rotation at 2x and landscape with the keyboard:
+      every screen and Back, each theme, each text size.
 - [ ] Touch status bar (touch boards lacking a keyboard or keys, such as the
       Wio L2 and the CrowPanels): the bar is 1.5 rows tall in the bigger font with its
       text centred, the rows below line up, `‹` and `⋯` respond across the
@@ -269,7 +271,7 @@ soon, wherever the board has them.
       (`unreadFilter: all | mentions`).
 - [ ] Settings → Alert sound (boards with a speaker or buzzer): switching it on beeps once and mentions beep; off, they don't; web config's Sound on alerts follows it both ways; the item and the checkbox are absent on the Mesh Deck, T-Deck Pro, CrowPanels and X4
 - [ ] Brightness (every board but the e-paper ones): Settings → Brightness opens a slider from 10% to 100%; each step changes the backlight at once, Set keeps it, Cancel and Back restore it; dimming and the screensaver stay at or below it; waking from screen off comes back at it, not full; it survives a reboot and a backup restore; web config's slider applies it within a second
-- [ ] Alert sound volume (Wio L2, T-Deck Plus, Pager, Cyber Deck Plus, Cardputer ADV, T-Display P4, Tanmatsu): Settings → Alert sound opens a slider; Left/Right and taps on the bar, "-" and "+" move it in 10% steps, each beeping at that loudness, 100% without clipping, 10% still audible; Set keeps it, Cancel and Back restore the old level; the level survives a reboot and a backup restore; web config shows a slider instead of the checkbox (far left Off), saving a new level beeps once; the M9 keeps the on/off toggle
+- [ ] Alert sound volume (Wio L2, T-Deck Plus, Pager, Cyber Deck Plus, Cardputer ADV, T-Display P4, Tanmatsu, Tab5): Settings → Alert sound opens a slider; Left/Right and taps on the bar, "-" and "+" move it in 10% steps, each beeping at that loudness, 100% without clipping, 10% still audible; Set keeps it, Cancel and Back restore the old level; the level survives a reboot and a backup restore; web config shows a slider instead of the checkbox (far left Off), saving a new level beeps once; the M9 keeps the on/off toggle
 - [ ] Touch boards (the T-Display P4 too): every Settings picker and confirm,
       and Restore from SD card (Settings and Setup), opens as full-screen
       buttons (one column when labels are long, the time zones too); a tap
@@ -700,6 +702,23 @@ is open.
 - [ ] RTC: the time set by NTP survives a power cycle with Wi-Fi off
 - [ ] SD (FAT32 card, 4-bit): Back up to SD card, then Restore from SD card…, both work
 - [ ] Back to the launcher: reinstalling it from Nicolai Electronics' web installer brings the Tanmatsu launcher back
+
+**Tab5 (`tab5`; spec 2026-11-17 §9):**
+
+- [ ] Boots: the USB log shows `[boot] … on Tab5` and `[tab5] panel ST7123` (or ST7121, ILI9881C), with no `[tab5] no panel`
+- [ ] Panel: lights at boot, upright, colours right (no red/blue swap), nothing cut off, every logical pixel a clean 2x2 block, in all four rotations (Settings → Orientation, without the keyboard); landscape by default; if it stays dark or rolls, note the panel and try its timings in `panel_tab5.cpp`
+- [ ] Touch: taps land under the finger in each rotation; the docked on-screen keyboard types without the keyboard; a double tap wakes a dark screen
+- [ ] Brightness: each Settings → Brightness step changes the backlight; screen off and on comes back lit
+- [ ] Restart: Settings → Restart, an OTA install and web config's restart bring the panel back lit (the log shows `[tab5] restarted (full reset)`)
+- [ ] Wi-Fi through the C6 (M5Stack's ESP-Hosted image): the log shows the host and slave versions and the link up; Settings → Wi-Fi scans and joins; web config loads; the setup AP is named `Monster-Cyberspace-Tab5` and `http://192.168.4.1` loads. If the link never comes up, note the log
+- [ ] Keyboard (fitted with the power off): found at boot; the screen locks to landscape above it, right way up (else change `kKeyboardRotation` in `board_tab5.cpp`) and Orientation is hidden; every key types its character; Sym held and tapped gives the second layer; Aa tapped (one capital, LED 0 dim), tapped twice (Caps Lock, LED 0 bright) and held; arrows, Backspace and del repeat; Backspace deletes, then goes back; Esc back; Enter selects; Tab opens Post / Discard in New entry and the commands elsewhere, hints saying "tab"
+- [ ] Keyboard: Alt+1…7 open Home, messages (again: the room list), C-Mail, Feed, Guilds, your profile and Settings from any screen; Alt+0 shows the Tab5's key table; Ctrl tapped alone opens the emoji tray while typing and the palette elsewhere; Ctrl or Alt held with a key types nothing; any key wakes a dark screen
+- [ ] Keyboard LEDs: LED 1 blinks for the last room and mentions in their colours; Light timeout and Off work; both LEDs are dark otherwise
+- [ ] Speaker: with Alert sound on, a mention and a C-Mail beep through the ES8388, clean, with no hiss between beeps; the Alert sound slider changes the loudness
+- [ ] Battery (with the battery pack): Settings shows a sensible percentage; the charging state follows the USB cable (else tune the shunt threshold in `peripherals_tab5.cpp`); without the pack it shows no percentage
+- [ ] RTC: the time set by NTP survives a power cycle with Wi-Fi off
+- [ ] SD (FAT32 card, 4-bit, mounted through ESP-IDF): Back up to SD card, then Restore from SD card…, both work
+- [ ] Flasher: picking M5Stack Tab5 installs the factory image (ESP32-P4, bootloader at 0x2000) and it boots; a reflash without erase keeps the settings; an OTA update installs
 
 **CardputerZero (`scripts/build-cardputer-zero.sh --deb`; spec 2026-11-16 §10–§11):**
 

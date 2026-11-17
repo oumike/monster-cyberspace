@@ -50,10 +50,10 @@ says so. Commit once per task (`git commit -s`, a "Tested:" line).
 
 ## Task 5: Docs
 
-- [ ] AGENTS.md (intro, commands, layout, progress, native count),
+- [x] AGENTS.md (intro, commands, layout, progress, native count),
       README.md, docs/BUILD.md, docs/USE.md (keys), docs/TESTING.md
       (hardware check from spec §9).
-- [ ] Commit "Tab5: docs".
+- [x] Commit "Tab5: docs".
 
 ## Task 6: Verify
 

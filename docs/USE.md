@@ -11,7 +11,8 @@ and microSD; see Cyber Deck Plus below), and the Xteink X4
 the M5Stack Cardputer ADV (keyboard; no Guilds; see Cardputer ADV
 below), and the LilyGO T-Display P4 (touch, in portrait or landscape, or
 landscape with its keyboard expansion; see T-Display P4 below), and the
-Tanmatsu (keyboard, landscape; see Tanmatsu below), and the M5Stack
+Tanmatsu (keyboard, landscape; see Tanmatsu below), the M5Stack Tab5
+(touch, with or without its keyboard; see Tab5 below), and the M5Stack
 CardputerZero (a Linux handheld: an app for its launcher, not firmware; see
 CardputerZero below). Key names in this guide are the M9's.
 
@@ -415,6 +416,42 @@ The speaker beeps for alerts, the coprocessor's RTC keeps the clock, Settings
 shows the battery, and backups go to the microSD slot. There is no GPS. The
 setup AP is **`Monster-Cyberspace-Tanmatsu`**. The serial console is the
 USB-C port (the ESP32-P4's own USB).
+
+## Tab5
+
+The M5Stack Tab5 has a 5" 720x1280 touch screen, drawn at half its resolution
+so text is the size it is on the other boards. Without the keyboard it is a
+touch board like the CrowPanels: the on-screen keyboard docks below text
+fields, a double tap wakes the screen, and **Orientation** in Settings turns
+it to any of four ways (landscape by default). With the **Tab5 Keyboard**
+fitted (attach it with the power off; it is found at boot) it stays in
+landscape above the keys.
+
+| Key | Action |
+|---|---|
+| Letters, digits, punctuation | Type |
+| Aa | Tapped: the next letter is a capital (its LED glows dim). Tapped twice: Caps Lock (LED bright). Held: capitals while held |
+| Sym | Held: the second character of the keys that have one (`~ ? / < > { } \| : " =` and the rest). Tapped alone: for the next key only. Aa gives them too |
+| Arrows | Up, Down, Left, Right (hold to repeat) |
+| Enter | Select (send, in a room) |
+| Backspace, del | Delete while there's text; otherwise Back. Hold to repeat |
+| Esc | Back |
+| Tab | The screen's commands: Post / Discard in New entry and New thread, the palette elsewhere. Hints call it **tab** |
+| Ctrl (tapped alone) | While typing: the emoji tray. Elsewhere: the palette |
+| Alt + 1 … 7 | From anywhere: Home, Messages (your last room; again for the room list), C-Mail, Feed, Guilds, your Profile, Settings |
+| Alt + 0 | Navigational help, a table of these keys; any key closes it |
+
+Holding Ctrl or Alt with another key types nothing. A key or a double tap
+wakes the screen. The keyboard's second LED is the **notification light**: it
+blinks for the last room and mentions, each in its colour, as on the Mesh
+Deck (**Channel light**, **Mention light** and **Light timeout** in Settings
+and web config).
+
+Wi-Fi goes through the Tab5's ESP32-C6 (M5Stack's image, left as it is). The
+speaker beeps for alerts with an adjustable volume, the RTC keeps the clock,
+Settings shows the battery (with the battery pack fitted), and backups go to
+the microSD slot. There is no GPS. The setup AP is
+**`Monster-Cyberspace-Tab5`**. The serial console is the USB-C port.
 
 ## Xteink X4
 

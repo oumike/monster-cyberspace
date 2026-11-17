@@ -28,6 +28,7 @@
 | `cardputer_adv` | The firmware for the M5Stack Cardputer ADV (ESP32-S3FN8: 8 MB flash, no PSRAM; keyboard, 240x135 panel; no Guilds, no OTA; not yet tried on hardware) |
 | `tdisplay_p4` | The firmware for the LilyGO T-Display P4 (ESP32-P4, 4.1" AMOLED drawn at 2x, touch, optional keyboard expansion, haptics; Wi-Fi through its ESP32-C6; not yet tried on hardware) |
 | `tanmatsu` | The firmware for the Tanmatsu (ESP32-P4, 480x800 panel drawn at 2x in landscape, keyboard; Wi-Fi through its ESP32-C6). Replaces the Tanmatsu launcher |
+| `tab5` | The firmware for the M5Stack Tab5 (ESP32-P4, 5" 720x1280 panel drawn at 2x, touch, optional Tab5 Keyboard; Wi-Fi through its ESP32-C6; not yet tried on hardware) |
 | `native` | Host unit tests for `lib/core` |
 | `native_lv` | Host unit tests for `lib/lvui`, the LVGL UI (`test/test_lv_*`) |
 
@@ -48,6 +49,7 @@ pio run -e x4                         # build for the Xteink X4
 pio run -e cardputer_adv              # build for the Cardputer ADV
 pio run -e tdisplay_p4                # build for the T-Display P4
 pio run -e tanmatsu                   # build for the Tanmatsu
+pio run -e tab5                       # build for the Tab5
 scripts/build-upload-monitor.sh m9    # build, flash, then open the serial monitor
 ```
 
@@ -76,6 +78,7 @@ compile, run it again.
 | `--cardputer-adv`/`-C` | Board flag: M5Stack Cardputer ADV (`cardputer_adv`) |
 | `--tdisplay-p4`/`-4` | Board flag: LilyGO T-Display P4 (`tdisplay_p4`) |
 | `--tanmatsu`/`-T` | Board flag: Tanmatsu (`tanmatsu`) |
+| `--tab5`/`-b` | Board flag: M5Stack Tab5 (`tab5`) |
 | `ENV` | Or name any firmware env directly; with neither, a menu lists every firmware env |
 | `--port`/`-p PORT` | Serial port for upload and monitor (default: auto-detect) |
 | `--erase`/`-E` | Erase the whole flash in the same esptool session as the upload (`upload_erase` target); wipes saved settings |
@@ -318,8 +321,8 @@ The Cardputer ADV (8 MB) uses `partitions_8mb.csv`: one `factory` app at
 `0x7F0000`. No `otadata`, second slot or `mascot`; settings sit past the app,
 so a factory image at `0x0` keeps them, and `nvs_migrate` finds no `nvs_old`.
 
-Every board is an ESP32-S3 but the X4 (ESP32-C3) and the T-Display P4 and
-Tanmatsu (ESP32-P4s), whose ROM loads the bootloader from `0x2000` instead of `0x0`
+Every board is an ESP32-S3 but the X4 (ESP32-C3) and the T-Display P4,
+Tanmatsu and Tab5 (ESP32-P4s), whose ROM loads the bootloader from `0x2000` instead of `0x0`
 (`env_chip` and `env_boot_offset` in `scripts/release.sh`). Their factory images
 are still flashed at `0x0` (the merge pads the gap), `scripts/pages-site.sh`
 gives their manifests the `ESP32-P4` chip family, and `flash.sh` lets esptool
@@ -380,6 +383,16 @@ it keeps the esp-hosted-tanmatsu image it ships with, and whether Arduino's
 ESP-Hosted host talks to it is the first hardware check (docs/TESTING.md).
 From the browser flasher, the first install likewise needs the P4 in its
 bootloader (the steps above); later ones and OTA updates don't.
+
+### Tab5: the ESP32-C6
+
+The Tab5's Wi-Fi is its ESP32-C6, reached over SDIO through ESP-Hosted. The
+firmware power-cycles the C6 at boot and leaves its image alone: it keeps
+M5Stack's factory ESP-Hosted image, and whether Arduino's host talks to it is
+the first hardware check (docs/TESTING.md). If the C6 has lost its image,
+M5Stack's guide (docs.m5stack.com, Tab5, C6 Wi-Fi restore) puts it back.
+The panel (ST7123, ST7121 or ILI9881C, by Tab5 revision) is found at boot and
+logged; their init lists in `src/hal/tab5/panel_tab5_init.h` come from M5GFX.
 
 ### Mascot
 

@@ -14,7 +14,9 @@ development-only target, left out of releases, CI and the native tests. The M5St
 the LilyGO T-Display P4 (ESP32-P4, AMOLED). The Tanmatsu (ESP32-P4,
 keyboard) runs on hardware and is released and in the flasher. The M5Stack
 CardputerZero (Raspberry Pi CM0, Linux) is the first Linux port: an app for
-its launcher, packaged as a `.deb`, and runs on hardware. More
+its launcher, packaged as a `.deb`, and runs on hardware. The M5Stack Tab5
+(ESP32-P4, touch, optional Tab5 Keyboard) is built, not yet tried on
+hardware. More
 boards and Cyberspace features come later.
 
 - **Design spec:** `docs/superpowers/specs/2026-10-25-cyberspace-m9-circ-design.md`
@@ -59,6 +61,8 @@ boards and Cyberspace features come later.
 - **CardputerZero (Linux port):** spec
   `docs/superpowers/specs/2026-11-16-cyberspace-cardputer-zero-design.md`,
   plan `docs/superpowers/plans/2026-11-16-cyberspace-cardputer-zero.md`.
+- **M5Stack Tab5:** spec `docs/superpowers/specs/2026-11-17-cyberspace-tab5-design.md`,
+  plan `docs/superpowers/plans/2026-11-17-cyberspace-tab5.md`.
 - **Fluffy Generator (custom mascot):** spec
   `docs/superpowers/specs/2026-10-31-cyberspace-fluffy-generator-design.md`,
   plan `docs/superpowers/plans/2026-10-31-cyberspace-fluffy-generator.md`.
@@ -121,7 +125,8 @@ pio run -e x4               # Xteink X4 (ESP32-C3, no PSRAM)
 pio run -e cardputer_adv    # M5Stack Cardputer ADV (8 MB, no PSRAM, no Guilds)
 pio run -e tdisplay_p4      # LilyGO T-Display P4 (ESP32-P4, AMOLED)
 pio run -e tanmatsu         # Tanmatsu (ESP32-P4, keyboard)
-scripts/build-upload-monitor.sh m9   # flash + serial monitor (115200); -w for the Wio L2, -t for the T-Deck Plus, -3/-5 for the CrowPanels, -P for the Pager, -D for the T-Deck Pro, -M for the Mesh Deck, -K for the Cyber Deck Plus, -X for the X4, -C for the Cardputer ADV, -4 for the T-Display P4, -T for the Tanmatsu; --help for options
+pio run -e tab5             # M5Stack Tab5 (ESP32-P4, touch, optional keyboard)
+scripts/build-upload-monitor.sh m9   # flash + serial monitor (115200); -w for the Wio L2, -t for the T-Deck Plus, -3/-5 for the CrowPanels, -P for the Pager, -D for the T-Deck Pro, -M for the Mesh Deck, -K for the Cyber Deck Plus, -X for the X4, -C for the Cardputer ADV, -4 for the T-Display P4, -T for the Tanmatsu, -b for the Tab5; --help for options
 scripts/build-upload-monitor.sh -B   # build every firmware env, no device needed
 scripts/screenshot.py PORT [--watch]  # PNG screenshots over the serial console (no device writes)
 # demo build for screenshots, no network (never release): docs/BUILD.md "Screenshots"
@@ -313,6 +318,23 @@ restarted through the coprocessor before `hostedSetPins`. ES8156 speaker
 (`audio_es8156`, own task, amplifier on only around a beep), SD_MMC 4-bit,
 no GPS. `board::functionKeys()` gives the F10 help its own table. Released
 and in the flasher since 2026-11-04.
+`src/hal/tab5/` is the M5Stack Tab5 (ESP32-P4 `esp32p4_es`, 32 MB PSRAM; from
+M5GFX, M5Unified and M5's Tab5 and Tab5 Keyboard sources): two PI4IOE5V6408
+expanders at 0x43/0x44 on Wire 31/32 (`io_tab5`: resets, speaker amplifier,
+C6 power, charger), a 720x1280 MIPI-DSI panel, ST7123, ST7121 or ILI9881C by
+revision, found through its touch controller (`touch_tab5::detect`) and
+started from M5GFX's init lists (`panel_tab5`, `panel_tab5_init.h`), drawn at
+2x as a 360x640 panel in four rotations (`ui/scale2x`); ST7123/ST7121 touch at
+0x55 or the shared `gt911`. The Tab5 Keyboard on Wire1 0/1 at 0x6D
+(`keyboard_tab5`, Normal mode: one byte per key change; `Tab5Keys` in
+`input/keymap_tab5` applies Aa, Sym, Ctrl and Alt+digit F-keys), found at
+boot: it locks the rotation to landscape and turns on `hasKeyboard`, `hasKeys`
+and `backspaceIsBack`; its LED 0 shows Aa, LED 1 is the notification light.
+Without it the Tab5 is a touch board (double tap wakes). ES8388 speaker
+(`audio_es8388`), INA226 battery (`rc::tab5BatteryPercent`), RX8130 RTC
+(remapped to the PCF8563 layout), SD through ESP-IDF with LDO 4, no GPS.
+Wi-Fi is the C6's factory ESP-Hosted image, power-cycled before
+`hostedSetPins`; restarts go through the RTC watchdog as on the other P4s.
 `linux/` is the Linux build (CMake, `CMakePresets.json`: `cp0` for the
 M5Stack CardputerZero, `sim` for the SDL2 desktop simulator). It compiles
 `lib/core`, `lib/lvui` and `src/` unchanged except a few `RC_LINUX` guards,
@@ -384,7 +406,7 @@ The Attaky Mesh Deck HAL (env `mesh_deck`) and the notification light were
 added on 2026-10-29 (flashed: it boots and finds touch, gauge and keyboard;
 the panel, touch mapping, keys and LEDs await the hardware check).
 **Still open:** the unticked items under "Open hardware checks" in
-`docs/TESTING.md` (themes, device Settings, touch UI, LVGL UI, Wio L2, T-Deck Plus, CrowPanels, Pager, T-Deck Pro, Mesh Deck, Cyber Deck Plus, Cardputer ADV, T-Display P4, Tanmatsu, GPS time, API
+`docs/TESTING.md` (themes, device Settings, touch UI, LVGL UI, Wio L2, T-Deck Plus, CrowPanels, Pager, T-Deck Pro, Mesh Deck, Cyber Deck Plus, Cardputer ADV, T-Display P4, Tanmatsu, Tab5, GPS time, API
 assumptions, settings backup, OTA, Fluffy Generator), then the human live checklist on the `m9` build.
 CI (`.github/workflows/build.yml`) runs on GitHub.
 OTA updates were added on 2026-10-28 (built without flashing): signed images
@@ -516,10 +538,14 @@ scripts), `release.sh`'s `LINUX_TARGETS`, `release.yml`'s `linux` job and
 `.github/workflows/linux.yml`. The simulator's demo build is the only way an
 agent runs the app. Task 10, its hardware check in docs/TESTING.md, passed
 on the device on 2026-11-17.
-The native suite is green: 854/854
+The M5Stack Tab5 (env `tab5`) was added on 2026-11-17 (plan
+`docs/superpowers/plans/2026-11-17-cyberspace-tab5.md`; built without
+flashing): released and in the flasher from the start. Its hardware check
+in docs/TESTING.md is open.
+The native suite is green: 874/874
 (`pio test -e native`), and so is the LVGL one: 88/88 (`pio test -e
 native_lv`, and built lean). `scripts/build-upload-monitor.sh -B` builds all
-thirteen firmware envs (the X4 only from a path without spaces).
+fourteen firmware envs (the X4 only from a path without spaces).
 
 Notes for whoever continues:
 - Each task follows test-driven development: write the plan's tests first, run

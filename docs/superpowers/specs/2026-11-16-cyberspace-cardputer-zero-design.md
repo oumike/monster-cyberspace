@@ -204,20 +204,29 @@ Fonts stay the compiled-in Terminus cells, so FreeType is not needed.
   reader takes from `modifier_state` on each press (a one-shot or locked
   shift may never show up as a `KEY_LEFTSHIFT` event). The keymap does no
   latching of its own:
-  - letters, digits and punctuation to text (UTF-32), shifted forms per the
-    printed legends; the `sym` codes through a table loaded from the system
-    keymap file, with the launcher's built-in table as the fallback (the
-    parser lives in `lib/core` and is tested there);
-  - `KEY_UP/DOWN/LEFT/RIGHT` to arrows (and `fn+F/X/Z/C`, should a raw
-    letter arrive while `fn` is active); `KEY_HOME/END/PAGEUP/PAGEDOWN`;
-    `KEY_F1…F12`, giving the F10 help and the rest of `rc::kFunctionKeys`;
-    `KEY_DELETE`;
-  - Enter/OK to Select; Tab to Tab (the entry menu); Backspace erases, and
-    Back when nothing takes it (`backspaceIsBack()`);
+  - letters, digits, space, `-` and `=` to text (UTF-32), shifted as the US
+    layout (as the launcher's xkbcommon does); the `sym` codes through a
+    table loaded from the system keymap file, with the launcher's built-in
+    table as the fallback, whatever Shift says, as in the launcher's
+    `process_key` (the parser lives in `lib/core` and is tested there);
+  - `KEY_UP/DOWN/LEFT/RIGHT` to arrows; `KEY_HOME` Home (as the ADV's
+    Fn+Backspace), `KEY_PAGEUP/PAGEDOWN` Up/Down, `KEY_END` nothing;
+    `KEY_F1…F10` as `rc::functionKeyAction`, F11/F12 nothing, so F10's
+    table is `rc::kCardputerZeroFunctionKeys` (`board::functionKeys`);
+    `KEY_DELETE` Backspace (fields have no forward delete). Should a raw key
+    arrive while `fn` is active (the simulator's Left Alt), the keymap
+    applies the printed fn layer itself: `F/X/Z/C` arrows, `K` Home, `L/M`
+    Up/Down, `1…0` F1…F10, `H` help, `U/I` and `S/D` the system keys;
+  - Enter/OK to Select; Tab to the palette (menus, the composer's Post);
+    Backspace erases, and Back when nothing takes it (`backspaceIsBack()`);
+  - held arrows and Backspace repeat after 500 ms, every 70 ms, timed by the
+    keymap (`poll`); the kernel's repeat events are ignored, as the launcher
+    times its own;
   - **Esc short:** Back. **Esc held ≥ 1 s:** sets the quit flag, so the app
     returns to the launcher (§2.1);
-  - the brightness keys step the backlight, `KEY_VOLUMEUP/DOWN` the beep
-    volume, `KEY_MUTE` mutes it, and `fn+H` (`KEY_HELP`) opens the F10 help.
+  - the brightness keys, `KEY_VOLUMEUP/DOWN` and `KEY_MUTE` come out of
+    `takeSystemKey()` for the HAL (backlight steps, beep volume, mute), and
+    `fn+H` (`KEY_HELP`) opens the F10 help.
     Which codes the kernel sends for `fn+U/I` and `fn+H` is checked on the
     device (§11).
 - **Flags:** `hasKeyboard`, `hasKeys`, `backspaceIsBack`, `anyInputWakes`

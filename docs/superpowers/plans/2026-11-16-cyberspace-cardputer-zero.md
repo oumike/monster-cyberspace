@@ -80,15 +80,16 @@ Tasks 1, 2, 4–7 do not depend on it and may start first.
 - Test: `test/test_keymap_cardputer_zero/test_main.cpp`
 
 **Interfaces:**
-- `struct rc::ZeroKeyIn { uint16_t code; uint8_t value; /* 0 up 1 down 2 repeat */ uint32_t ms; uint8_t mods; /* ZeroMod bits from modifier_state, 0 if unknown */ };`
-- `class rc::CardputerZeroKeys { bool feed(const ZeroKeyIn&, KeyEvent& out); bool quitRequested() const; bool loadSymMap(const char* text); };` tracking held `KEY_LEFTSHIFT`/`KEY_FN` and the Esc hold timer (1000 ms); no latching (the kernel does it, spec §2).
+- `struct rc::ZeroKeyIn { uint16_t code; uint8_t value; /* 0 up 1 down 2 repeat */ uint32_t ms; uint8_t mods; /* kZeroModShift/kZeroModFn from modifier_state, 0 if unknown */ };`; evdev codes as `rc::zerokey::k*`.
+- `class rc::CardputerZeroKeys { bool feed(const ZeroKeyIn&, KeyEvent& out); bool poll(uint32_t ms, KeyEvent& out); bool quitRequested() const; ZeroSystemKey takeSystemKey(); bool loadSymMap(const char* text); };` tracking held `KEY_LEFTSHIFT`/`KEY_FN`, repeats and the Esc hold timer (1000 ms); no latching (the kernel does it, spec §2).
+- `rc::kCardputerZeroFunctionKeys`: F10's table, returned by both HALs' `board::functionKeys` (`flags_cardputer_zero.cpp`).
 
-- [ ] **Step 1: Write the failing tests:** every letter, digit and printed punctuation; held `KEY_LEFTSHIFT` and the `mods` shift bit both give capitals; the built-in `sym` table and a parsed keymap file (comments, bad lines, unknown keysyms skipped); `KEY_UP…` arrows and the `fn+F/X/Z/C` fallback; `KEY_HOME/END/PAGEUP/PAGEDOWN`; `KEY_F1…F12`; `KEY_DELETE`; Enter → Select; Tab; Backspace; short Esc → Back with no quit; Esc held 1000 ms → no Back and `quitRequested()`; repeats of arrows and Backspace; unknown codes and modifiers alone give no key.
-- [ ] **Step 2: Run** `nice pio test -e native -f test_keymap_cardputer_zero`. Expected: build failure.
-- [ ] **Step 3: Implement.**
-- [ ] **Step 4: Run** `nice pio test -e native`. Expected: all pass.
-- [ ] **Step 5:** Wire the sim HAL's `pollKey`: SDL key → the device's evdev code (spec §5.1: Shift = `KEY_LEFTSHIFT`, Left Alt = `KEY_FN`, typed symbols as `sym` codes) → `CardputerZeroKeys`.
-- [ ] **Step 6: Commit** `git commit -s -m "CardputerZero keymap, with the simulator's keys through it"`
+- [x] **Step 1: Write the failing tests:** every letter, digit and printed punctuation; held `KEY_LEFTSHIFT` and the `mods` shift bit both give capitals; the built-in `sym` table and a parsed keymap file (comments, bad lines, unknown keysyms skipped); `KEY_UP…` arrows and the `fn+F/X/Z/C` fallback; `KEY_HOME/END/PAGEUP/PAGEDOWN`; `KEY_F1…F12`; `KEY_DELETE`; Enter → Select; Tab; Backspace; short Esc → Back with no quit; Esc held 1000 ms → no Back and `quitRequested()`; repeats of arrows and Backspace; unknown codes and modifiers alone give no key.
+- [x] **Step 2: Run** `nice pio test -e native -f test_keymap_cardputer_zero`. Expected: build failure.
+- [x] **Step 3: Implement.**
+- [x] **Step 4: Run** `nice pio test -e native`. Expected: all pass.
+- [x] **Step 5:** Wire the sim HAL's `pollKey` (and, until Task 6, show the last key on Task 1's screen): SDL key → the device's evdev code (spec §5.1: Shift = `KEY_LEFTSHIFT`, Left Alt = `KEY_FN`, typed symbols as `sym` codes) → `CardputerZeroKeys`.
+- [x] **Step 6: Commit** `git commit -s -m "CardputerZero keymap, with the simulator's keys through it"`
 
 ### Task 4: Linux network, time and restart replacements
 

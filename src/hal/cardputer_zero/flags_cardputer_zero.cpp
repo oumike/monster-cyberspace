@@ -4,6 +4,7 @@
 #if defined(BOARD_CARDPUTER_ZERO) || defined(BOARD_LINUX_SIM)
 
 #include "hal/board.h"
+#include "input/keymap_cardputer_zero.h"
 
 namespace board {
 
@@ -25,6 +26,10 @@ bool readTouch(int16_t&, int16_t&) { return false; }
 bool canRotate() { return false; }
 void setRotation(uint8_t) {}
 bool hasKeyboard() { return true; }
+const rc::FunctionKey* functionKeys(size_t& count) {
+  count = rc::kCardputerZeroFunctionKeyCount;
+  return rc::kCardputerZeroFunctionKeys;
+}
 bool hasKeys() { return true; }
 bool backspaceIsBack() { return true; }
 bool anyInputWakes() { return true; }

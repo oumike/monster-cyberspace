@@ -484,7 +484,7 @@ each group's **More…** opening a paged list (`src/screens/search.cpp`,
 `lib/core/src/search/`, `src/store/locked_search`, `CmdType::Search`/
 `SearchMore`/`CloseSearch` on `FeedWorker`). Only a key press searches; no
 device-side limiter (user decision). Its hardware check in docs/TESTING.md is open.
-The native suite is green: 838/838
+The native suite is green: 854/854
 (`pio test -e native`), and so is the LVGL one: 88/88 (`pio test -e
 native_lv`, and built lean). `scripts/build-upload-monitor.sh -B` builds all
 thirteen firmware envs (the X4 only from a path without spaces).

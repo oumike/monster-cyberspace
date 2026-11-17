@@ -143,6 +143,15 @@ add_custom_command(
   COMMENT "Generating src/spell_dict_en.h")
 add_custom_target(spell_dict DEPENDS "${REPO}/src/spell_dict_en.h")
 
+# Web config's Fluffy presets, from site/mascots.json as the PlatformIO
+# builds do (tools/gen_mascot_presets.py).
+add_custom_command(
+  OUTPUT "${REPO}/src/web/mascot_presets.h"
+  COMMAND Python3::Interpreter "${REPO}/tools/gen_mascot_presets.py"
+  DEPENDS "${REPO}/site/mascots.json" "${REPO}/tools/gen_mascot_presets.py"
+  COMMENT "Generating src/web/mascot_presets.h")
+add_custom_target(mascot_presets DEPENDS "${REPO}/src/web/mascot_presets.h")
+
 set(MC_INCLUDES
   "${CMAKE_CURRENT_SOURCE_DIR}/replace"
   "${REPO}/src"
@@ -166,7 +175,7 @@ add_executable(monster-cyberspace
   ${REPLACE_SOURCES}
   ${APP_SOURCES}
   "${CMAKE_CURRENT_SOURCE_DIR}/replace/main.cpp")
-add_dependencies(monster-cyberspace spell_dict)
+add_dependencies(monster-cyberspace spell_dict mascot_presets)
 target_include_directories(monster-cyberspace PRIVATE ${MC_INCLUDES})
 target_link_libraries(monster-cyberspace PRIVATE lvgl mc_compat CURL::libcurl)
 

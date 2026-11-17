@@ -178,6 +178,9 @@ bool show() {
 
 // go, false when the new screen didn't fit in memory (and nothing moved).
 bool goTo(Id id, const std::string& arg) {
+  // Setup is for signing in: once signed in (say from web config, opened
+  // from setup), going back there lands on Home.
+  if (id == Id::Setup && (app().auth == 1 || app().auth == 2)) id = Id::Home;
   const Id oldCur = cur;
   Screen* const oldActive = active;
   const Place oldPlace = curPlace, oldBase = base;

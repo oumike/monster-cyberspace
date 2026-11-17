@@ -188,8 +188,8 @@ Fonts stay the compiled-in Terminus cells, so FreeType is not needed.
   `/proc/fb`, else `/dev/fb0`; reads
   `FBIOGET_VSCREENINFO`, and `mmap`s it.
   The panel is 320×170 (checked against the framebuffer); the UI is drawn
-  6 px in from the sides and 5 px from top and bottom, which the case
-  covers (found on the device), so `panelWidth/Height` are 308×160 and the
+  2 px in from the sides and the top, which the case covers (found on the
+  device), so `panelWidth/Height` are 316×168 and the
   margin repeats the frame's edge pixels. `pushRows` converts lvui's RGB565 frame rows into
   the framebuffer's format: 16 bpp is copied, 32 bpp (XRGB8888, the Template's
   `LV_COLOR_DEPTH 32`) is expanded. lvui keeps drawing a whole RGB565 frame

@@ -9,12 +9,12 @@ namespace cp0 {
 
 constexpr int kW = 320;  // the panel
 constexpr int kH = 170;
-// The UI is drawn this far in from each edge, which the case's bezel covers;
-// the margin repeats the frame's edge pixels.
-constexpr int kInsetX = 6;
-constexpr int kInsetY = 5;
+// The UI is drawn this far in from the sides and the top, which the case's
+// bezel covers (none at the bottom); the margin repeats the frame's edge pixels.
+constexpr int kInsetX = 2;
+constexpr int kInsetTop = 2;
 constexpr int kUiW = kW - 2 * kInsetX;  // board::panelWidth()
-constexpr int kUiH = kH - 2 * kInsetY;  // board::panelHeight()
+constexpr int kUiH = kH - kInsetTop;    // board::panelHeight()
 
 uint32_t nowMs();
 

@@ -70,7 +70,7 @@ void putPixel(uint8_t* row, int x, uint16_t p) {
     reinterpret_cast<uint32_t*>(row)[x] = expand(p);
 }
 
-// Panel rows [y0, y1) from src (kUiW x kUiH, drawn kInsetX/kInsetY in, the
+// Panel rows [y0, y1) from src (kUiW x kUiH, drawn kInsetX/kInsetTop in, the
 // margin repeating its edge pixels), or black when src is null.
 void blit(const uint16_t* src, int y0, int y1) {
   const int w = std::min(kW, fbW);
@@ -82,14 +82,14 @@ void blit(const uint16_t* src, int y0, int y1) {
       std::memset(row, 0, size_t(w) * size_t(bpp / 8));
       continue;
     }
-    const uint16_t* in = src + size_t(std::clamp(y - kInsetY, 0, kUiH - 1)) * kUiW;
+    const uint16_t* in = src + size_t(std::clamp(y - kInsetTop, 0, kUiH - 1)) * kUiW;
     for (int x = 0; x < w; ++x) putPixel(row, x, in[std::clamp(x - kInsetX, 0, kUiW - 1)]);
   }
 }
 
 // The panel rows a frame's rows [y0, y1) reach, the margin included at the ends.
 void blitUi(const uint16_t* src, int y0, int y1) {
-  blit(src, y0 == 0 ? 0 : y0 + kInsetY, y1 >= kUiH ? kH : y1 + kInsetY);
+  blit(src, y0 == 0 ? 0 : y0 + kInsetTop, y1 >= kUiH ? kH : y1 + kInsetTop);
 }
 
 }  // namespace

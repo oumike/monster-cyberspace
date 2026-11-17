@@ -715,7 +715,7 @@ The probes' answers are in the spec's §11 (read over SSH on 2026-11-17):
 Then the app:
 
 - [ ] Install: `sudo apt install ./monster-cyberspace-cardputer-zero-vX.Y.Z_arm64.deb` pulls in nothing unexpected; **Monster for Cyberspace** shows in the launcher within a few seconds, with its icon
-- [ ] Start: full screen (320x170, nothing of the launcher's showing), colours right, not mirrored, nothing cut off (the UI is inset 6/5 px from the edges)
+- [ ] Start: full screen (320x170, nothing of the launcher's showing), colours right, not mirrored, nothing cut off (the UI is inset 2 px from the sides and top)
 - [ ] Keys: every key types the right character with `shift` held, one-shot and locked, and with `sym`; `fn` + F X Z C are arrows, `fn` + L/M Up/Down, `fn` + K Home, `fn` + 1…7 F1…F7 and `fn` + 0 / `fn` + H the key help; Enter selects; Tab opens menus; Ctrl tapped alone opens the actions (then the emoji tray) while typing and the menu elsewhere; Backspace deletes, repeats when held, then goes back; held arrows repeat
 - [ ] Esc: a short press goes back; holding it a second quits to the launcher, which redraws its home; the launcher's own long Esc also ends the app (no kill needed)
 - [ ] First start (nothing saved): no setup AP and no Wi-Fi screen; setup offers Log in on this device and Restore backup; Settings' wi-fi line shows the network and address

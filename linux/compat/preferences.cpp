@@ -91,8 +91,6 @@ bool readFile(const std::string& ns, Namespace& out) {
 }
 
 bool writeFile(const std::string& ns, const Namespace& n) {
-  const std::string dir = compat::configDir();
-  if (!mkdirs(dir)) return false;
   std::ostringstream o;
   for (const auto& [k, e] : n) {
     switch (e.type) {
@@ -102,20 +100,7 @@ bool writeFile(const std::string& ns, const Namespace& n) {
       case Type::Str: o << "str " << k << ' ' << escape(e.str) << '\n'; break;
     }
   }
-  const std::string text = o.str(), path = pathOf(ns), tmp = path + ".tmp";
-  const int fd = ::open(tmp.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0600);
-  if (fd < 0) return false;
-  bool ok = ::fchmod(fd, 0600) == 0;
-  for (size_t done = 0; ok && done < text.size();) {
-    const ssize_t w = ::write(fd, text.data() + done, text.size() - done);
-    if (w <= 0) ok = false;
-    else done += size_t(w);
-  }
-  ok = ::fsync(fd) == 0 && ok;
-  ok = ::close(fd) == 0 && ok;
-  if (ok) ok = ::rename(tmp.c_str(), path.c_str()) == 0;
-  if (!ok) ::unlink(tmp.c_str());
-  return ok;
+  return compat::writeConfigFile(ns, o.str());
 }
 
 // The namespace, read from its file on first use; nullptr if it has none.
@@ -134,6 +119,24 @@ std::string compat::configDir() {
   if (const char* x = std::getenv("XDG_CONFIG_HOME"); x && *x) return std::string(x) + "/monster-cyberspace";
   const char* home = std::getenv("HOME");
   return std::string(home && *home ? home : ".") + "/.config/monster-cyberspace";
+}
+
+bool compat::writeConfigFile(const std::string& name, const std::string& bytes) {
+  if (!mkdirs(compat::configDir())) return false;
+  const std::string path = pathOf(name), tmp = path + ".tmp";
+  const int fd = ::open(tmp.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0600);
+  if (fd < 0) return false;
+  bool ok = ::fchmod(fd, 0600) == 0;
+  for (size_t done = 0; ok && done < bytes.size();) {
+    const ssize_t w = ::write(fd, bytes.data() + done, bytes.size() - done);
+    if (w <= 0) ok = false;
+    else done += size_t(w);
+  }
+  ok = ::fsync(fd) == 0 && ok;
+  ok = ::close(fd) == 0 && ok;
+  if (ok) ok = ::rename(tmp.c_str(), path.c_str()) == 0;
+  if (!ok) ::unlink(tmp.c_str());
+  return ok;
 }
 
 void compat::preferencesForget() {

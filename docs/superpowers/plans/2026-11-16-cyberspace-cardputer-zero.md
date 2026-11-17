@@ -100,11 +100,11 @@ Tasks 1, 2, 4–7 do not depend on it and may start first.
 
 **Interfaces:** the existing headers in `src/net/`, `src/app/`, `src/store/`, `src/sys/`, unchanged (spec §4.2).
 
-- [ ] **Step 1: Write the failing tests:** SSE events from a loopback server reach `onEvent` in order, and `stop()` returns within 2 s while the server keeps the stream open; mascot save/load round trip and an empty file loads as defaults.
-- [ ] **Step 2: Run** `ctest --preset sim`. Expected: failures.
-- [ ] **Step 3: Implement.** libcurl: no verbose, no URL in logs (the SSE URL carries the token), system CA bundle, the same timeouts and body cap as the ESP files.
-- [ ] **Step 4: Run** `ctest --preset sim`. Expected: all pass.
-- [ ] **Step 5: Commit** `git commit -s -m "Linux HTTPS, SSE, Wi-Fi status, clock and mascot file"`
+- [x] **Step 1: Write the failing tests:** SSE events from a loopback server reach `onEvent` in order, and `stop()` returns within 2 s while the server keeps the stream open; mascot save/load round trip and an empty file loads as defaults.
+- [x] **Step 2: Run** `ctest --preset sim`. Expected: failures.
+- [x] **Step 3: Implement.** libcurl: no verbose, no URL in logs (the SSE URL carries the token), system CA bundle, the same timeouts and body cap as the ESP files.
+- [x] **Step 4: Run** `ctest --preset sim`. Expected: all pass.
+- [x] **Step 5: Commit** `git commit -s -m "Linux HTTPS, SSE, Wi-Fi status, clock and mascot file"`
 
 ### Task 5: `RC_FEAT_WIFI_MGMT`
 

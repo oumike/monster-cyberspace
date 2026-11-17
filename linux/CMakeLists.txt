@@ -82,15 +82,23 @@ else()
   list(APPEND HAL_SOURCES "${REPO}/src/hal/cardputer_zero/board_cardputer_zero.cpp")
 endif()
 
-# One executable from object files, not archives, so the HAL's strong
-# definitions win over board_defaults.cpp's weak ones.
-add_executable(monster-cyberspace
-  ${CORE_SOURCES}
-  ${LVUI_SOURCES}
-  ${HAL_SOURCES}
-  "${qrcode_SOURCE_DIR}/src/qrcode.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/replace/main.cpp")
-target_include_directories(monster-cyberspace PRIVATE
+# The Linux versions of src/ files that talk to ESP-IDF (spec section 4.2),
+# built instead of them, and the portable src/ files they need.
+set(REPLACE_SOURCES
+  replace/net/https_client.cpp
+  replace/net/sse_client.cpp
+  replace/net/tls_alloc.cpp
+  replace/net/wifi_mgr.cpp
+  replace/app/time_service.cpp
+  replace/app/restart.cpp
+  replace/store/nvs_migrate.cpp
+  replace/store/mascot_store.cpp
+  replace/sys/mem.cpp
+  "${REPO}/src/app/queues.cpp"
+  "${REPO}/src/store/settings.cpp")
+find_package(CURL REQUIRED)
+
+set(MC_INCLUDES
   "${CMAKE_CURRENT_SOURCE_DIR}/replace"
   "${REPO}/src"
   "${REPO}/src/ui/fonts"
@@ -98,7 +106,22 @@ target_include_directories(monster-cyberspace PRIVATE
   "${REPO}/lib/lvui/src"
   "${arduinojson_SOURCE_DIR}/src"
   "${qrcode_SOURCE_DIR}/src")
-target_link_libraries(monster-cyberspace PRIVATE lvgl mc_compat)
+
+# lib/core once, for the app and the tests below.
+add_library(mc_core OBJECT ${CORE_SOURCES} "${qrcode_SOURCE_DIR}/src/qrcode.c")
+target_include_directories(mc_core PUBLIC ${MC_INCLUDES})
+target_link_libraries(mc_core PUBLIC mc_compat)
+
+# One executable from object files, not archives, so the HAL's strong
+# definitions win over board_defaults.cpp's weak ones.
+add_executable(monster-cyberspace
+  $<TARGET_OBJECTS:mc_core>
+  ${LVUI_SOURCES}
+  ${HAL_SOURCES}
+  ${REPLACE_SOURCES}
+  "${CMAKE_CURRENT_SOURCE_DIR}/replace/main.cpp")
+target_include_directories(monster-cyberspace PRIVATE ${MC_INCLUDES})
+target_link_libraries(monster-cyberspace PRIVATE lvgl mc_compat CURL::libcurl)
 
 if(MC_BOARD STREQUAL "sim")
   find_package(PkgConfig REQUIRED)
@@ -111,5 +134,14 @@ enable_testing()
 foreach(t preferences fs rtos)
   add_executable(test_${t} tests/test_${t}.cpp)
   target_link_libraries(test_${t} PRIVATE mc_compat)
+  add_test(NAME ${t} COMMAND test_${t})
+endforeach()
+
+# The replacements' tests, each with the replacement it covers.
+add_executable(test_sse_local tests/test_sse_local.cpp replace/net/sse_client.cpp)
+add_executable(test_mascot_file tests/test_mascot_file.cpp replace/store/mascot_store.cpp
+  "${REPO}/src/app/queues.cpp")
+foreach(t sse_local mascot_file)
+  target_link_libraries(test_${t} PRIVATE mc_core CURL::libcurl)
   add_test(NAME ${t} COMMAND test_${t})
 endforeach()

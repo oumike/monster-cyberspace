@@ -160,7 +160,7 @@ The CMake build compiles these instead of the `src/` file of the same name:
 | `net/sse_client.cpp` | libcurl on its own `std::thread`, feeding the same `SseParser`; `stop()` aborts through the progress callback and joins (2 s cap) |
 | `net/tls_alloc.cpp` | no-op (`usePsram`), `peakBytes` 0 |
 | `net/wifi_mgr.cpp` | read-only: `mode()` always Station; `connected()` true when a non-loopback interface has IPv4 and a default route; `ssid()`/`rssiBars()` from wireless extensions / `/proc/net/wireless`; `ip()` from `getifaddrs`; scan, setup AP and `setNetworks` do nothing |
-| `app/time_service.cpp` | the system clock. Applies the zone (`setenv("TZ")`, `tzset`) as today; the snapshot lines say "system" for the source. No SNTP, GPS or RTC code |
+| `app/time_service.cpp` | the system clock. Applies the zone (`setenv("TZ")`, `tzset`) as today; the snapshot lines say "system" for the source. No SNTP, GPS or RTC code, and the demo build sets no fake time (that would change the host clock) |
 | `app/restart.cpp` | after the delay, `execv("/proc/self/exe", argv)` (a fresh start, as a reboot would give) |
 | `store/nvs_migrate.cpp` | no-op |
 | `store/mascot_store.cpp` | the same encoded blob as the partition, in `~/.config/monster-cyberspace/mascot.bin`; still posts `EvtType::MascotChanged` |

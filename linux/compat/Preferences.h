@@ -46,6 +46,9 @@ class Preferences {
 namespace compat {
 // The directory the namespaces live in.
 std::string configDir();
+// Writes `name` in configDir() whole or not at all (a temporary file, fsync,
+// rename), creating the directory 0700 and the file 0600.
+bool writeConfigFile(const std::string& name, const std::string& bytes);
 // Drops the in-memory namespaces so the next begin() reads the files (tests).
 void preferencesForget();
 }  // namespace compat

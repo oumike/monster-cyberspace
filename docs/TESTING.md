@@ -706,7 +706,7 @@ is open.
 The probes' answers are in the spec's §11 (read over SSH on 2026-11-17):
 
 - [x] Framebuffer: `cat /proc/fb` lists `fb_st7789v`; `fbset -i -fb /dev/fbN` for it gives 320x170 and the depth (16 or 32); the launcher's user can open it *(it is `panel-mipi-dbid` on `/dev/fb0`, also `/dev/fb_lcd`; 16 bpp; `root:video` 0660)*
-- [ ] Keyboard codes (`evtest` isn't installed; there is no `modifier_state` file): `evtest` on `/dev/input/by-path/platform-3f804000.i2c-event`: letters, digits, the `sym` layer and the `fn` layer send what spec §2 says; note what a one-shot and a locked shift, `fn` + U/I, `fn` + H, `fn` + S/D and the media keys send
+- [x] Keyboard codes (`evtest` isn't installed; there is no `modifier_state` file): `evtest` on `/dev/input/by-path/platform-3f804000.i2c-event`: letters, digits, the `sym` layer and the `fn` layer send what spec §2 says; note what a one-shot and a locked shift, `fn` + U/I, `fn` + H, `fn` + S/D and the media keys send *(covered by the app's Keys item below, 2026-11-17)*
 - [x] `ls /sys/class/backlight /sys/class/power_supply`: the names and `max_brightness` *(`backlight`, 0–100; `bq27220-0`)*
 - [x] `aplay -l`: the default PCM plays through the speaker *(no: ALSA's default is HDMI and PipeWire owns the ES8389, so the beep goes through PulseAudio)*
 - [x] `cat /etc/os-release` and `ldd --version`: Debian trixie and its glibc, as the build container *(trixie, glibc 2.41)*
@@ -714,19 +714,19 @@ The probes' answers are in the spec's §11 (read over SSH on 2026-11-17):
 
 Then the app:
 
-- [ ] Install: `sudo apt install ./monster-cyberspace-cardputer-zero-vX.Y.Z_arm64.deb` pulls in nothing unexpected; **Monster for Cyberspace** shows in the launcher within a few seconds, with its icon
-- [ ] Start: full screen (320x170, nothing of the launcher's showing), colours right, not mirrored, nothing cut off (the UI is inset 2 px from the sides and top)
-- [ ] Keys: every key types the right character with `shift` held, one-shot and locked, and with `sym`; `fn` + F X Z C are arrows, `fn` + L/M Up/Down, `fn` + K Home, `fn` + 1…7 F1…F7 and `fn` + 0 / `fn` + H the key help; Enter selects; Tab opens menus; Ctrl tapped alone opens the actions (then the emoji tray) while typing and the menu elsewhere; Backspace deletes, repeats when held, then goes back; held arrows repeat
-- [ ] Esc: a short press goes back; holding it a second quits to the launcher, which redraws its home; the launcher's own long Esc also ends the app (no kill needed)
-- [ ] First start (nothing saved): no setup AP and no Wi-Fi screen; setup offers Log in on this device and Restore backup; Settings' wi-fi line shows the network and address
-- [ ] Sign-in and the live checklist below, on this build
-- [ ] Beep: a mention beeps; `fn` + S/D change its volume, mute silences it
-- [ ] Battery: Settings shows a sensible percentage; the charging state follows the USB cable
-- [ ] Backlight: Brightness in Settings changes it; `fn` + U/I step it; the screen timeout turns it off and a key brings it back (that key does nothing else); after quitting, the launcher has its brightness back
-- [ ] Web config: off at first; the setup screen offers Web config page and shows `http://<address>:8765` once it is on; Settings → Web config page refuses to switch on without a page password; with one, `http://<address>:8765` loads after `admin` and the password, shows no Wi-Fi section, and saving works; switching it off stops the page
-- [ ] Backup: Back up to ~/monster-cyberspace writes a file in `~/monster-cyberspace/backups/` readable by its owner only (0600); Restore from ~/monster-cyberspace… lists and restores it
-- [ ] Relaunch keeps the settings and the sign-in; Restart app in Settings comes back; factory reset clears the settings and keeps the backups
-- [ ] Remove: `sudo apt remove monster-cyberspace` drops it from the launcher and leaves `~/.config/monster-cyberspace` and the backups
+- [x] Install: `sudo apt install ./monster-cyberspace-cardputer-zero-vX.Y.Z_arm64.deb` pulls in nothing unexpected; **Monster for Cyberspace** shows in the launcher within a few seconds, with its icon
+- [x] Start: full screen (320x170, nothing of the launcher's showing), colours right, not mirrored, nothing cut off (the UI is inset 2 px from the sides and top)
+- [x] Keys: every key types the right character with `shift` held, one-shot and locked, and with `sym`; `fn` + F X Z C are arrows, `fn` + L/M Up/Down, `fn` + K Home, `fn` + 1…7 F1…F7 and `fn` + 0 / `fn` + H the key help; Enter selects; Tab opens menus; Ctrl tapped alone opens the actions (then the emoji tray) while typing and the menu elsewhere; Backspace deletes, repeats when held, then goes back; held arrows repeat
+- [x] Esc: a short press goes back; holding it a second quits to the launcher, which redraws its home; the launcher's own long Esc also ends the app (no kill needed)
+- [x] First start (nothing saved): no setup AP and no Wi-Fi screen; setup offers Log in on this device and Restore backup; Settings' wi-fi line shows the network and address
+- [x] Sign-in and the live checklist below, on this build
+- [x] Beep: a mention beeps; `fn` + S/D change its volume, mute silences it
+- [x] Battery: Settings shows a sensible percentage; the charging state follows the USB cable
+- [x] Backlight: Brightness in Settings changes it; `fn` + U/I step it; the screen timeout turns it off and a key brings it back (that key does nothing else); after quitting, the launcher has its brightness back
+- [x] Web config: off at first; the setup screen offers Web config page and shows `http://<address>:8765` once it is on; Settings → Web config page refuses to switch on without a page password; with one, `http://<address>:8765` loads after `admin` and the password, shows no Wi-Fi section, and saving works; switching it off stops the page
+- [x] Backup: Back up to ~/monster-cyberspace writes a file in `~/monster-cyberspace/backups/` readable by its owner only (0600); Restore from ~/monster-cyberspace… lists and restores it
+- [x] Relaunch keeps the settings and the sign-in; Restart app in Settings comes back; factory reset clears the settings and keeps the backups
+- [x] Remove: `sudo apt remove monster-cyberspace` drops it from the launcher and leaves `~/.config/monster-cyberspace` and the backups
 
 **GPS time, RTC and time zone (`m9`):**
 

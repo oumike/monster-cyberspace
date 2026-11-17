@@ -14,7 +14,7 @@ development-only target, left out of releases, CI and the native tests. The M5St
 the LilyGO T-Display P4 (ESP32-P4, AMOLED). The Tanmatsu (ESP32-P4,
 keyboard) runs on hardware and is released and in the flasher. The M5Stack
 CardputerZero (Raspberry Pi CM0, Linux) is the first Linux port: an app for
-its launcher, packaged as a `.deb`, built, not yet tried on hardware. More
+its launcher, packaged as a `.deb`, and runs on hardware. More
 boards and Cyberspace features come later.
 
 - **Design spec:** `docs/superpowers/specs/2026-10-25-cyberspace-m9-circ-design.md`
@@ -509,12 +509,13 @@ each group's **More…** opening a paged list (`src/screens/search.cpp`,
 `SearchMore`/`CloseSearch` on `FeedWorker`). Only a key press searches; no
 device-side limiter (user decision). Its hardware check in docs/TESTING.md is open.
 The CardputerZero Linux port was added on 2026-11-16 (plan
-`docs/superpowers/plans/2026-11-16-cyberspace-cardputer-zero.md`, Tasks 1–9;
-not tried on hardware): every feature but OTA, an aarch64 `.deb` for M5's
+`docs/superpowers/plans/2026-11-16-cyberspace-cardputer-zero.md`, all 10
+tasks): every feature but OTA, an aarch64 `.deb` for M5's
 APPLaunch launcher (binary in `/usr/share/APPLaunch/bin/`, no maintainer
 scripts), `release.sh`'s `LINUX_TARGETS`, `release.yml`'s `linux` job and
 `.github/workflows/linux.yml`. The simulator's demo build is the only way an
-agent runs the app. Task 10, the hardware check in docs/TESTING.md, is open.
+agent runs the app. Task 10, its hardware check in docs/TESTING.md, passed
+on the device on 2026-11-17.
 The native suite is green: 854/854
 (`pio test -e native`), and so is the LVGL one: 88/88 (`pio test -e
 native_lv`, and built lean). `scripts/build-upload-monitor.sh -B` builds all

@@ -168,4 +168,4 @@ Tasks 1, 2, 4–7 do not depend on it and may start first.
 ### Task 10: Hardware check (human)
 
 - [x] Read-only probes over SSH (2026-11-17), answers in spec §11. *Fix-up: the beep goes through PulseAudio (ALSA's default is HDMI), and the panel is found as `/dev/fb_lcd` or `panel-mipi-dbid`.*
-- [ ] Install the `.deb` on the device when the user says to, then work through the "CardputerZero" item in `docs/TESTING.md` and the live checklist. Fix-ups go in their own commits.
+- [x] Install the `.deb` on the device when the user says to, then work through the "CardputerZero" item in `docs/TESTING.md` and the live checklist. Fix-ups go in their own commits. *Done 2026-11-17: every app item passed on the device.*

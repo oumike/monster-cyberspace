@@ -19,6 +19,23 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 get_filename_component(REPO "${CMAKE_CURRENT_SOURCE_DIR}/.." ABSOLUTE)
 
+# The version, from the VERSION file as the firmware's (tools/set_app_version.py):
+# "v2.3.2+abc1234" builds as RC_VERSION "2.3.2+abc1234"; release files are
+# named by the tag without the +build part, as release.sh names the others.
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${REPO}/VERSION")
+set(MC_VERSION "")
+if(EXISTS "${REPO}/VERSION")
+  file(READ "${REPO}/VERSION" MC_VERSION)
+  string(STRIP "${MC_VERSION}" MC_VERSION)
+  string(REGEX REPLACE "^v" "" MC_VERSION "${MC_VERSION}")
+endif()
+if(MC_VERSION)
+  add_compile_definitions(RC_VERSION="${MC_VERSION}")
+else()
+  set(MC_VERSION "0.1.0")
+endif()
+string(REGEX REPLACE "\\+.*$" "" MC_FILE_TAG "v${MC_VERSION}")
+
 # Dependencies, pinned exactly as in platformio.ini. SOURCE_SUBDIR points
 # nowhere so their own CMake files stay out; the sources are listed below.
 include(FetchContent)
@@ -181,3 +198,32 @@ foreach(t sse_local mascot_file)
   target_link_libraries(test_${t} PRIVATE mc_core CURL::libcurl)
   add_test(NAME ${t} COMMAND test_${t})
 endforeach()
+
+# The CardputerZero package (spec section 9): cpack -G DEB in build/cp0 gives
+# monster-cyberspace-cardputer-zero-<tag>_arm64.deb, laid out for APPLaunch.
+# Its watcher sees the .desktop come and go within 3 s, so no maintainer
+# scripts.
+if(MC_BOARD STREQUAL "cp0")
+  install(TARGETS monster-cyberspace RUNTIME DESTINATION share/APPLaunch/bin)
+  install(FILES packaging/monster-cyberspace.desktop DESTINATION share/APPLaunch/applications)
+  install(FILES packaging/icon.png DESTINATION share/APPLaunch/share/images
+    RENAME monster-cyberspace.png)
+  install(FILES "${REPO}/LICENSE" DESTINATION share/doc/monster-cyberspace RENAME copyright)
+
+  set(CPACK_GENERATOR DEB)
+  set(CPACK_PACKAGE_NAME monster-cyberspace)
+  set(CPACK_PACKAGE_VERSION "${MC_VERSION}")
+  set(CPACK_PACKAGE_FILE_NAME "monster-cyberspace-cardputer-zero-${MC_FILE_TAG}_arm64")
+  set(CPACK_PACKAGING_INSTALL_PREFIX /usr)
+  set(CPACK_PACKAGE_CONTACT "oumike <https://github.com/oumike/monster-cyberspace>")
+  set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Monster for Cyberspace: a cyberspace.online client")
+  set(CPACK_DEBIAN_PACKAGE_DESCRIPTION
+    "A client for cyberspace.online, the text-only social network: cIRC rooms,\nC-Mail, the Feed, Guilds, People, Notes and more, for the M5Stack\nCardputerZero's launcher.")
+  set(CPACK_DEBIAN_PACKAGE_SECTION APPLaunch)
+  set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE arm64)
+  set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "https://github.com/oumike/monster-cyberspace")
+  # Trixie renamed both for the 64-bit time_t move; older names as fallbacks.
+  set(CPACK_DEBIAN_PACKAGE_DEPENDS "libcurl4t64 | libcurl4, libasound2t64 | libasound2")
+  set(CPACK_STRIP_FILES ON)
+  include(CPack)
+endif()

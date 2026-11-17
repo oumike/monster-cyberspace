@@ -34,6 +34,14 @@ NO_OTA_ENVS=(
     cardputer_adv
 )
 
+# Linux boards, not PlatformIO envs: each ships a .deb built by
+# scripts/build-cardputer-zero.sh --deb in Docker (arm64), with no OTA image
+# and no flasher entry. A release cut by release.yml builds them in its
+# linux job on an arm64 runner and attaches them after the tag is pushed.
+LINUX_TARGETS=(
+    cardputer_zero
+)
+
 # Every release image is merged with this esptool. esptool 5 renamed merge_bin
 # and its flags, so an unpinned upgrade could quietly change a factory image's
 # layout. The release workflow pins the same version.
@@ -64,6 +72,7 @@ env_label() {
         cardputer_adv) echo "M5Stack Cardputer ADV" ;;
         tdisplay_p4) echo "LilyGO T-Display P4" ;;
         tanmatsu)    echo "Nicolai Electronics Tanmatsu" ;;
+        cardputer_zero) echo "M5Stack CardputerZero" ;;
         *)           echo "$1" ;;
     esac
 }
@@ -112,6 +121,13 @@ validate_release_targets() {
             failed=true
         fi
         printf '  %-13s -> monster-cyberspace-%s-<tag>.bin\n' "$env_name" "$out_name"
+    done
+    for env_name in "${LINUX_TARGETS[@]}"; do
+        if [[ ! -x "scripts/build-$(env_out_name "$env_name").sh" ]]; then
+            echo "  ERROR: Linux target '$env_name' has no scripts/build-$(env_out_name "$env_name").sh" >&2
+            failed=true
+        fi
+        printf '  %-13s -> monster-cyberspace-%s-<tag>_arm64.deb (Linux)\n' "$env_name" "$(env_out_name "$env_name")"
     done
     for e in "${NO_OTA_ENVS[@]}"; do
         case " ${RELEASE_ENVS[*]} " in
@@ -305,6 +321,32 @@ verify_assets() {
     [[ -x dist/flash.sh ]] || { echo "Error: dist/flash.sh missing" >&2; return 1; }
 }
 
+# dist/monster-cyberspace-<board>-<tag>_arm64.deb for each LINUX_TARGETS
+# board. Needs Docker (Docker Desktop on a Mac).
+build_linux_targets() {
+    local tag="$1" target deb args=( --deb )
+    shift
+    [[ $# -gt 0 ]] || return 0
+    if ! docker info >/dev/null 2>&1; then
+        echo "Error: Docker is needed to build $* (start Docker Desktop, or leave them out with --only)." >&2
+        return 1
+    fi
+    [[ "$NO_CLEAN" == true ]] || args+=( --clean )
+    for target in "$@"; do
+        echo "==> $(env_label "$target") [$target]"
+        case "$target" in
+            cardputer_zero) scripts/build-cardputer-zero.sh "${args[@]}" ;;
+            *) echo "Error: no build for Linux target $target" >&2; return 1 ;;
+        esac
+        deb="dist/monster-cyberspace-$(env_out_name "$target")-${tag}_arm64.deb"
+        if [[ ! -s "$deb" ]]; then
+            echo "Error: missing or empty release asset: $deb" >&2
+            return 1
+        fi
+        echo "  OK $target: $(basename "$deb")"
+    done
+}
+
 # BUILD-INFO.txt says which build someone was given; SHA256SUMS is for
 # wherever the images end up.
 write_build_info() {
@@ -322,11 +364,10 @@ write_build_info() {
             printf '%s\n' "$dirty" | sed 's/^/  /'
         fi
     } > dist/BUILD-INFO.txt
-    if command -v shasum >/dev/null 2>&1; then
-        (cd dist && shasum -a 256 -- *.bin) > dist/SHA256SUMS
-    else
-        (cd dist && sha256sum -- *.bin) > dist/SHA256SUMS
-    fi
+    local sum=sha256sum
+    command -v shasum >/dev/null 2>&1 && sum="shasum -a 256"
+    # *.bin and *.deb, whichever there are.
+    (cd dist && for f in *.bin *.deb; do [[ -e "$f" ]] && $sum -- "$f"; done; true) > dist/SHA256SUMS
 }
 
 # ── Flags ────────────────────────────────────────────────────────────────────
@@ -399,7 +440,7 @@ ${b}RELEASE OPTIONS${r}
 ${b}DIST-ONLY OPTIONS${r}
   --only ENVS             Build just these boards, comma-separated (may be
                           repeated; built in release order).
-                          Boards: ${RELEASE_ENVS[*]}
+                          Boards: ${RELEASE_ENVS[*]} ${LINUX_TARGETS[*]}
   --version V             Name the images after V instead (e.g. 0.2.0+test).
                           File names drop the +metadata, as on a release.
   --no-clean              As above.
@@ -412,6 +453,8 @@ ${b}OUTPUT${r} (dist/)
                                                  not install an unsigned image)
   monster-cyberspace-<board>-vX.Y.Z.elf          symbols for decoding crashes (not published)
   Boards with OTA off (${NO_OTA_ENVS[*]}) get the factory .bin and .elf only.
+  monster-cyberspace-<board>-vX.Y.Z_arm64.deb    Linux boards (${LINUX_TARGETS[*]}): the
+                                                 package, built in Docker
   flash.sh  BUILD-INFO.txt  SHA256SUMS
 
 ${b}EXAMPLES${r}
@@ -516,14 +559,16 @@ fi
 # ── --dist-only ──────────────────────────────────────────────────────────────
 if [[ "$MODE" == dist ]]; then
     DIST_ENVS=()
+    DIST_LINUX=()
     if [[ -z "$ONLY_ARG" ]]; then
         DIST_ENVS=( "${RELEASE_ENVS[@]}" )
+        DIST_LINUX=( "${LINUX_TARGETS[@]}" )
     else
         IFS=',' read -r -a requested <<< "$ONLY_ARG"
         for want in "${requested[@]}"; do
-            case " ${RELEASE_ENVS[*]} " in
+            case " ${RELEASE_ENVS[*]} ${LINUX_TARGETS[*]} " in
                 *" $want "*) ;;
-                *) echo "--only: '$want' is not a release environment. Choose from: ${RELEASE_ENVS[*]}" >&2; exit 1 ;;
+                *) echo "--only: '$want' is not a release environment. Choose from: ${RELEASE_ENVS[*]} ${LINUX_TARGETS[*]}" >&2; exit 1 ;;
             esac
         done
         for env_name in "${RELEASE_ENVS[@]}"; do
@@ -531,7 +576,14 @@ if [[ "$MODE" == dist ]]; then
                 if [[ "$want" == "$env_name" ]]; then DIST_ENVS+=( "$env_name" ); break; fi
             done
         done
+        for env_name in "${LINUX_TARGETS[@]}"; do
+            for want in "${requested[@]}"; do
+                if [[ "$want" == "$env_name" ]]; then DIST_LINUX+=( "$env_name" ); break; fi
+            done
+        done
     fi
+    # Bash 3.2 calls an empty array unbound under set -u.
+    ALL_DIST=( ${DIST_ENVS[@]+"${DIST_ENVS[@]}"} ${DIST_LINUX[@]+"${DIST_LINUX[@]}"} )
 
     # Read before VERSION is touched, so the run's own edit never counts.
     dirty="$(git status --porcelain)"
@@ -563,7 +615,7 @@ if [[ "$MODE" == dist ]]; then
     echo "  Files:    monster-cyberspace-<board>-$FILE_TAG.bin"
     echo "  Commit:   $(git rev-parse --short HEAD) ($(git rev-parse --abbrev-ref HEAD))"
     if [[ -n "$dirty" ]]; then echo "  Uncommitted changes, built in:"; printf '%s\n' "$dirty" | sed 's/^/    /'; fi
-    echo "  Boards:   ${DIST_ENVS[*]}"
+    echo "  Boards:   ${ALL_DIST[*]}"
     if [[ "$SIGN_ASSETS" == true ]]; then echo "  Signing:  $SIGNING_KEY"
     else echo "  Signing:  none ($SIGNING_KEY is not here, so no .sig files)"; fi
     echo "  Output:   dist/, replaced"
@@ -581,18 +633,21 @@ if [[ "$MODE" == dist ]]; then
     trap 'cp -p "$DIST_TMP/VERSION" VERSION; rm -rf "$DIST_TMP"' EXIT
     echo "$DIST_TAG" > VERSION
 
-    build_release_envs "${DIST_ENVS[@]}"
+    if [[ ${#DIST_ENVS[@]} -gt 0 ]]; then build_release_envs "${DIST_ENVS[@]}"; fi
     echo ""
     echo "Merging factory images..."
     rm -rf dist
     mkdir -p dist
-    merge_assets "$FILE_TAG" "${DIST_ENVS[@]}"
-    verify_assets "$FILE_TAG" "${DIST_ENVS[@]}"
-    write_build_info "$DIST_TAG" "$dirty" "${DIST_ENVS[@]}"
+    if [[ ${#DIST_ENVS[@]} -gt 0 ]]; then
+        merge_assets "$FILE_TAG" "${DIST_ENVS[@]}"
+        verify_assets "$FILE_TAG" "${DIST_ENVS[@]}"
+    fi
+    build_linux_targets "$FILE_TAG" ${DIST_LINUX[@]+"${DIST_LINUX[@]}"}
+    write_build_info "$DIST_TAG" "$dirty" "${ALL_DIST[@]}"
     echo ""
     ls -lh dist/
     echo ""
-    echo "dist/ holds $DIST_TAG for ${#DIST_ENVS[@]} board(s). Nothing was committed, tagged or published."
+    echo "dist/ holds $DIST_TAG for ${#ALL_DIST[@]} board(s). Nothing was committed, tagged or published."
     exit 0
 fi
 
@@ -702,7 +757,12 @@ rm -rf dist
 mkdir -p dist
 merge_assets "$TAG" "${RELEASE_ENVS[@]}"
 verify_assets "$TAG" "${RELEASE_ENVS[@]}"
-write_build_info "$TAG" "" "${RELEASE_ENVS[@]}"
+RELEASE_LINUX=()
+if [[ "${GITHUB_ACTIONS:-}" != "true" ]]; then
+    RELEASE_LINUX=( "${LINUX_TARGETS[@]}" )
+    build_linux_targets "$TAG" "${RELEASE_LINUX[@]}"
+fi
+write_build_info "$TAG" "" "${RELEASE_ENVS[@]}" ${RELEASE_LINUX[@]+"${RELEASE_LINUX[@]}"}
 
 # [skip ci]: this tree was just built, so build.yml building it again on the
 # push would tell us nothing.
@@ -721,7 +781,9 @@ NOTES_ARGS=( --generate-notes )
 if [[ "$USE_COMMITTED_NOTES" == true ]]; then NOTES_ARGS=( --notes-file RELEASE_NOTES.md ); fi
 
 # The .elf files stay out of the release; the workflow archives them.
+RELEASE_DEBS=()
+if compgen -G "dist/*.deb" >/dev/null; then RELEASE_DEBS=( dist/*.deb ); fi
 gh release create "$TAG" --title "monster-cyberspace $TAG" "${NOTES_ARGS[@]}" \
-    dist/*.bin dist/*.sig dist/SHA256SUMS dist/flash.sh
+    dist/*.bin dist/*.sig dist/SHA256SUMS dist/flash.sh ${RELEASE_DEBS[@]+"${RELEASE_DEBS[@]}"}
 echo "Release $TAG published."
 gh release view "$TAG" --json url -q .url

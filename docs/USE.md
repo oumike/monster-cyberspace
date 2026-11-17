@@ -11,9 +11,13 @@ and microSD; see Cyber Deck Plus below), and the Xteink X4
 the M5Stack Cardputer ADV (keyboard; no Guilds; see Cardputer ADV
 below), and the LilyGO T-Display P4 (touch, in portrait or landscape, or
 landscape with its keyboard expansion; see T-Display P4 below), and the
-Tanmatsu (keyboard, landscape; see Tanmatsu below). Key names in this guide are the M9's.
+Tanmatsu (keyboard, landscape; see Tanmatsu below), and the M5Stack
+CardputerZero (a Linux handheld: an app for its launcher, not firmware; see
+CardputerZero below). Key names in this guide are the M9's.
 
 ## First setup
+
+(The CardputerZero has its own steps; see CardputerZero below.)
 
 1. Power on. With no Wi-Fi saved, the device starts its setup access point,
    **`Monster-Cyberspace-M9-Setup`** (`…-WioL2-Setup` on the Wio Tracker L2,
@@ -488,6 +492,57 @@ comes from NTP), a microSD slot for backups and a speaker for beeps. Updates
 are a USB install from the flasher page. The setup AP is
 **`Monster-Cyberspace-Cardputer`** (the name is too long for `-Setup`). The
 serial console is the USB-C port.
+
+## CardputerZero
+
+The M5Stack CardputerZero runs Linux, so Monster is an app for its launcher
+rather than firmware, and it has every feature but over-the-air updates. Not
+yet tried on hardware.
+
+**Install:** download `monster-cyberspace-cardputer-zero-vX.Y.Z_arm64.deb`
+from the [latest release](https://github.com/oumike/monster-cyberspace/releases/latest),
+copy it to the device (over SSH, for example `scp`), and on the device run
+`sudo apt install ./monster-cyberspace-cardputer-zero-vX.Y.Z_arm64.deb`.
+**Monster for Cyberspace** appears in the launcher within a few seconds.
+Updating is the same with a newer `.deb`; `sudo apt remove monster-cyberspace`
+uninstalls it and keeps your settings and backups.
+
+**First start:** the device's own Wi-Fi (set up in the launcher) is used, so
+there is no setup access point and no Wi-Fi screen; Settings' wi-fi line shows
+the network and address Linux reports. Setup goes straight to **Log in on
+this device**, or **Restore backup**.
+
+| Key | Action |
+|---|---|
+| Keys | Type. `shift`, `sym` and `fn` work as everywhere on the device: hold, tap once for the next key, tap twice to lock |
+| `fn` + F X Z C | Up, Down, Left, Right (the arrows printed on those keys) |
+| `fn` + L / M | Up / Down (Page Up and Page Down) |
+| `fn` + K | Home |
+| `fn` + 1 … 7 | F1 Home, F2 messages, F3 C-Mail, F4 Feed, F5 Guilds, F6 Profile, F7 Settings |
+| `fn` + 0 or `fn` + H | Key help (F10) |
+| Enter | Select (send, in a room) |
+| Tab | Menus; Post in the composer |
+| Backspace | Deletes while there's text to delete; otherwise Back. Hold it to repeat |
+| Esc | Back. **Hold it for a second** to quit to the launcher |
+| `fn` + U / I | Screen darker / brighter |
+| `fn` + S / D | Beep volume down / up |
+
+The screen is 320×170 and stays landscape; Compact and Comfortable text sizes
+are offered. Quitting from the launcher (its long Esc) closes the app cleanly
+too. **Restart app** in Settings restarts it.
+
+**Web config** is off until you turn it on: Settings → **Web config page**,
+set a page password (8 to 63 characters), then switch it on. The screen shows
+`http://<address>:8080` and a QR code; sign in as `admin` with that password.
+It runs only while the switch is on and has no Wi-Fi section.
+
+**Files:** settings live in `~/.config/monster-cyberspace/` and backups in
+`~/monster-cyberspace/backups/` (Settings → **Back up to ~/monster-cyberspace**
+and **Restore from ~/monster-cyberspace…**). Backups hold your passwords and
+refresh token, so they are readable by your user only; copy them off over SSH
+or download one from web config. Factory reset clears the settings, not the
+backups. Time comes from Linux (NTP and the RTC); set the time zone in
+Settings as on the other boards.
 
 ## CrowPanel
 

@@ -155,15 +155,15 @@ Tasks 1, 2, 4–7 do not depend on it and may start first.
 ### Task 9: Packaging, release, CI and docs
 
 **Files:**
-- Create: `linux/packaging/monster-cyberspace.desktop`, `linux/packaging/icon.png` (from the existing app art), `linux/packaging/postinst`, `postrm`, CPack settings in `linux/CMakeLists.txt`, `.github/workflows/linux.yml`
+- Create: `linux/packaging/monster-cyberspace.desktop`, `linux/packaging/icon.png` (from the existing app art), CPack settings (no `postinst`/`postrm`, see Step 1) in `linux/CMakeLists.txt`, `.github/workflows/linux.yml`
 - Modify: `scripts/release.sh` (`LINUX_TARGETS`), `site/` (download note, not a flasher entry), `docs/BUILD.md`, `docs/USE.md`, `docs/TESTING.md` (open hardware check, spec §10), `AGENTS.md` (board paragraph, commands, progress), `README.md` (board list), `platformio.ini` header comment unchanged
 
-- [ ] **Step 1: Run** `scripts/build-cardputer-zero.sh --deb`. Expected: `dist/monster-cyberspace-cardputer-zero-<version>_arm64.deb`; `dpkg-deb -c` lists `/usr/share/APPLaunch/bin/monster-cyberspace`, the `.desktop` and `share/images/monster-cyberspace.png`; `dpkg-deb -I` shows `Section: APPLaunch`, `Architecture: arm64`, `Depends: libcurl4, libasound2`, and the `postinst`/`postrm` that restart `APPLaunch.service`.
-- [ ] **Step 2:** `release.sh --dist-only` builds and stages it next to the ESP images; no OTA manifest entry; `node --test site/*.test.mjs` passes.
-- [ ] **Step 3:** CI workflow (arm64 device build + package artifact; host simulator build + CTest).
-- [ ] **Step 4:** Docs, including the install steps (`sudo apt install ./…deb`) and the long-Esc exit.
-- [ ] **Step 5: Run** `python3 tools/pr_guidelines.py origin/main HEAD`. Expected: pass.
-- [ ] **Step 6: Commit** `git commit -s -m "CardputerZero: package, release, CI and docs"`
+- [x] **Step 1: Run** `scripts/build-cardputer-zero.sh --deb`. Expected: `dist/monster-cyberspace-cardputer-zero-<version>_arm64.deb`; `dpkg-deb -c` lists `/usr/share/APPLaunch/bin/monster-cyberspace`, the `.desktop` and `share/images/monster-cyberspace.png`; `dpkg-deb -I` shows `Section: APPLaunch`, `Architecture: arm64`, `Depends: libcurl4, libasound2`, and the `postinst`/`postrm` that restart `APPLaunch.service`. *Done, with three changes (spec §9): no `postinst`/`postrm` (M5's packaging guide: APPLaunch is a user service that rescans `applications/` every few seconds); `Depends: libcurl4t64 | libcurl4, libasound2t64 | libasound2` (trixie's t64 names); the file is `…-v2.3.2_arm64.deb`, the tag form of the ESP assets. The icon is drawn by `linux/packaging/make_icon.py` (100×100, the stock icons' size), and `LICENSE` ships as the copyright file. `apt install` in a clean trixie arm64 container resolved the dependencies, `ldd` found everything, and removal left nothing.*
+- [x] **Step 2:** `release.sh --dist-only` builds and stages it next to the ESP images; no OTA manifest entry; `node --test site/*.test.mjs` passes. *Done: `--dist-only --only cardputer_zero --no-clean` staged the deb with `SHA256SUMS` and `BUILD-INFO.txt`; `--check-targets` lists it; a local release attaches it, and in `release.yml` a `linux` job builds it from the tag on `ubuntu-24.04-arm` and uploads it and its `SHA256SUMS` line. The site has a download note; site tests 7/7.*
+- [x] **Step 3:** CI workflow (arm64 device build + package artifact; host simulator build + CTest). *Done: `.github/workflows/linux.yml`; the simulator job's steps built and passed ctest 6/6 in an `ubuntu:24.04` container locally.*
+- [x] **Step 4:** Docs, including the install steps (`sudo apt install ./…deb`) and the long-Esc exit. *Done: BUILD.md, USE.md, TESTING.md (the CardputerZero hardware check and the CTest suite), AGENTS.md, README.md, spec §9.*
+- [x] **Step 5: Run** `python3 tools/pr_guidelines.py origin/main HEAD`. Expected: pass.
+- [x] **Step 6: Commit** `git commit -s -m "CardputerZero: package, release, CI and docs"`
 
 ### Task 10: Hardware check (human)
 

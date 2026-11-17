@@ -18,6 +18,14 @@ These cover the portable logic in `lib/core` (`native`) and the LVGL UI in
 
 They never touch the network.
 
+The CardputerZero's Linux layer has its own CTest suite (`linux/tests/`: the
+`Preferences`, file system, FreeRTOS, mascot file and `esp_http_server`
+shims, and the SSE client against a local server; loopback only):
+
+```sh
+cd linux && cmake --preset sim && cmake --build --preset sim && ctest --preset sim
+```
+
 ## Open hardware checks
 
 These were built without flashing and still need a run on the device. The
@@ -692,6 +700,33 @@ is open.
 - [ ] RTC: the time set by NTP survives a power cycle with Wi-Fi off
 - [ ] SD (FAT32 card, 4-bit): Back up to SD card, then Restore from SD card…, both work
 - [ ] Back to the launcher: reinstalling it from Nicolai Electronics' web installer brings the Tanmatsu launcher back
+
+**CardputerZero (`scripts/build-cardputer-zero.sh --deb`; spec 2026-11-16 §10–§11):**
+
+First write the probes' answers back into the spec's §11:
+
+- [ ] Framebuffer: `cat /proc/fb` lists `fb_st7789v`; `fbset -i -fb /dev/fbN` for it gives 320x170 and the depth (16 or 32); the launcher's user can open it
+- [ ] Keyboard codes: `evtest` on `/dev/input/by-path/platform-3f804000.i2c-event`, next to `cat /sys/bus/i2c/devices/1-0034/modifier_state`: letters, digits, the `sym` layer and the `fn` layer send what spec §2 says; note what a one-shot and a locked shift, `fn` + U/I, `fn` + H, `fn` + S/D and the media keys send
+- [ ] `ls /sys/class/backlight /sys/class/power_supply`: the names and `max_brightness`
+- [ ] `aplay -l`: the default PCM plays through the speaker
+- [ ] `cat /etc/os-release` and `ldd --version`: Debian trixie and its glibc, as the build container
+- [ ] `ps -o user= -p <pid>` while the app runs: which user the launcher runs it as (its `~/.config` holds the settings)
+
+Then the app:
+
+- [ ] Install: `sudo apt install ./monster-cyberspace-cardputer-zero-vX.Y.Z_arm64.deb` pulls in nothing unexpected; **Monster for Cyberspace** shows in the launcher within a few seconds, with its icon
+- [ ] Start: full screen (320x170, nothing of the launcher's showing), colours right, not mirrored, nothing cut off
+- [ ] Keys: every key types the right character with `shift` held, one-shot and locked, and with `sym`; `fn` + F X Z C are arrows, `fn` + L/M Up/Down, `fn` + K Home, `fn` + 1…7 F1…F7 and `fn` + 0 / `fn` + H the key help; Enter selects; Tab opens menus; Backspace deletes, repeats when held, then goes back; held arrows repeat
+- [ ] Esc: a short press goes back; holding it a second quits to the launcher, which redraws its home; the launcher's own long Esc also ends the app (no kill needed)
+- [ ] First start (nothing saved): no setup AP and no Wi-Fi screen; setup offers Log in on this device and Restore backup; Settings' wi-fi line shows the network and address
+- [ ] Sign-in and the live checklist below, on this build
+- [ ] Beep: a mention beeps; `fn` + S/D change its volume, mute silences it
+- [ ] Battery: Settings shows a sensible percentage; the charging state follows the USB cable
+- [ ] Backlight: Brightness in Settings changes it; `fn` + U/I step it; the screen timeout turns it off and a key brings it back (that key does nothing else); after quitting, the launcher has its brightness back
+- [ ] Web config: off at first; Settings → Web config page refuses to switch on without a page password; with one, `http://<address>:8080` loads after `admin` and the password, shows no Wi-Fi section, and saving works; switching it off stops the page
+- [ ] Backup: Back up to ~/monster-cyberspace writes a file in `~/monster-cyberspace/backups/` readable by its owner only (0600); Restore from ~/monster-cyberspace… lists and restores it
+- [ ] Relaunch keeps the settings and the sign-in; Restart app in Settings comes back; factory reset clears the settings and keeps the backups
+- [ ] Remove: `sudo apt remove monster-cyberspace` drops it from the launcher and leaves `~/.config/monster-cyberspace` and the backups
 
 **GPS time, RTC and time zone (`m9`):**
 

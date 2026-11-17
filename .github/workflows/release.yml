@@ -48,6 +48,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     environment: release
+    outputs:
+      tag: ${{ steps.cut.outputs.tag }}
 
     steps:
       - name: Checkout
@@ -152,3 +154,36 @@ jobs:
       - name: Remove the signing key from the workspace
         if: always()
         run: rm -f ota_signing_key.pem
+
+  linux:
+    # The Linux packages (scripts/release.sh LINUX_TARGETS) build on an arm64
+    # runner in the Debian trixie container, after the release exists, from the
+    # tag it pushed. No signing key here: a .deb is not an OTA image.
+    name: Linux packages
+    needs: release
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout the release tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.release.outputs.tag }}
+
+      - name: Build the CardputerZero package
+        run: scripts/build-cardputer-zero.sh --deb --clean
+
+      - name: Attach it to the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.release.outputs.tag }}
+        run: |
+          set -euo pipefail
+          deb="dist/monster-cyberspace-cardputer-zero-${TAG}_arm64.deb"
+          test -s "$deb"
+          gh release upload "$TAG" "$deb" --clobber
+          # SHA256SUMS was published by the release job; add the package's line.
+          mkdir -p sums
+          gh release download "$TAG" -p SHA256SUMS -D sums --clobber
+          (cd dist && sha256sum -- "$(basename "$deb")") >> sums/SHA256SUMS
+          gh release upload "$TAG" sums/SHA256SUMS --clobber

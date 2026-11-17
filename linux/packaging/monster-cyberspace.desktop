@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+[Desktop Entry]
+Name=Monster for Cyberspace
+Exec=/usr/share/APPLaunch/bin/monster-cyberspace
+Terminal=false
+Icon=share/images/monster-cyberspace.png
+Type=Application

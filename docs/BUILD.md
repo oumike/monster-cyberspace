@@ -166,6 +166,54 @@ PLATFORMIO_BUILD_DIR=.pio/demo PLATFORMIO_BUILD_FLAGS=-DRC_FAKE_API=1 pio run -e
 scripts/screenshot.py /dev/cu.wchusbserial10 --scale 2 --name home
 ```
 
+## CardputerZero (Linux)
+
+The M5Stack CardputerZero is a Raspberry Pi CM0 running Linux, so it gets a
+program, not a firmware image: an aarch64 executable packaged as a `.deb` for
+its launcher (APPLaunch). It is built with CMake from `linux/`, which compiles
+`lib/core`, `lib/lvui` and `src/` through small shims for the Arduino and
+ESP-IDF calls (`linux/compat/`), Linux versions of the ESP-only files
+(`linux/replace/`), and the device HAL `src/hal/cardputer_zero/` (or the SDL2
+simulator's, `src/hal/linux_sim/`). Spec:
+`docs/superpowers/specs/2026-11-16-cyberspace-cardputer-zero-design.md`. Not
+yet tried on hardware.
+
+The device build runs in a Debian trixie arm64 container
+(`linux/docker/Dockerfile`, pinned digest), so it needs Docker; Apple Silicon
+runs it natively. The build tree stays in `linux/build/`, inside the project.
+
+```sh
+scripts/build-cardputer-zero.sh           # the device binary: linux/build/cp0/monster-cyberspace
+scripts/build-cardputer-zero.sh --deb     # the same, packaged: dist/monster-cyberspace-cardputer-zero-vX.Y.Z_arm64.deb
+scripts/build-cardputer-zero.sh --sim     # the SDL2 simulator on this machine: linux/build/sim/monster-cyberspace
+scripts/build-cardputer-zero.sh --sim --fake  # the simulator's demo build (RC_FAKE_API; never release)
+cd linux && cmake --preset sim && cmake --build --preset sim && ctest --preset sim  # the simulator and the compat tests by hand
+```
+
+`--clean` starts from an empty build directory. The simulator needs CMake
+3.25+, Ninja, pkg-config, SDL2, curl and Python 3 (MacPorts or Homebrew on
+macOS; `cmake ninja-build pkg-config libsdl2-dev libcurl4-openssl-dev` on
+Debian or Ubuntu). It shows the 320x170 screen at 3x (`MONSTER_SIM_SCALE`
+changes it); Left Alt is the CardputerZero's `fn`. `MONSTER_SIM_SHOT=file.bmp`
+saves the last frame on exit and `MONSTER_SIM_BEEP=1` logs beeps.
+`MONSTER_CONFIG_DIR` and `MONSTER_DATA_DIR` move the settings
+(`~/.config/monster-cyberspace`) and the backups (`~/monster-cyberspace`).
+On the device, `LV_LINUX_FBDEV_DEVICE` and `MONSTER_KEYBOARD_DEVICE` override
+the framebuffer and the keyboard. Agents run only the demo build, which never
+touches the network.
+
+The package (`linux/CMakeLists.txt`, CPack) installs the binary in
+`/usr/share/APPLaunch/bin/`, `linux/packaging/monster-cyberspace.desktop` in
+`/usr/share/APPLaunch/applications/` and the icon (`linux/packaging/icon.png`,
+redrawn by `python3 linux/packaging/make_icon.py`) in
+`/usr/share/APPLaunch/share/images/`. Its version is `VERSION`'s, and it
+depends on libcurl and ALSA. It has no maintainer scripts: the launcher
+notices new apps on its own. Installing it is in `docs/USE.md`.
+
+`.github/workflows/linux.yml` builds and packages it on an arm64 runner, runs
+the compat tests there and in the simulator on `ubuntu-24.04`, and keeps the
+`.deb` as an artifact.
+
 ## Releases
 
 Ported from platy-aprs, with its OTA signing.
@@ -186,7 +234,13 @@ scripts/release.sh --from-main -y              # release origin/main as it is on
 settings), `-ota.bin` (the app image devices download), `-ota.bin.sig` (its
 signature) and `.elf` (symbols), plus `flash.sh`, `BUILD-INFO.txt` and `SHA256SUMS`.
 Envs in `NO_OTA_ENVS` (`cardputer_adv`, built with `RC_FEAT_OTA=0`) get the
-factory image and `.elf` only; `--check-targets` checks they set the flag. A dist-only build
+factory image and `.elf` only; `--check-targets` checks they set the flag.
+Linux boards (`LINUX_TARGETS`: `cardputer_zero`) get
+`monster-cyberspace-cardputer-zero-vX.Y.Z_arm64.deb`, built through
+`scripts/build-cardputer-zero.sh --deb` (so `--dist-only` needs Docker running;
+`--only m9,...` without them skips it). In a release, `release.yml`'s `linux`
+job builds it from the new tag on an arm64 runner, attaches it and adds it to
+`SHA256SUMS`; the flasher doesn't list it. A dist-only build
 is versioned from `VERSION`, with `+<commit>` (and `.custom` for uncommitted
 changes) unless it is the tagged release commit.
 

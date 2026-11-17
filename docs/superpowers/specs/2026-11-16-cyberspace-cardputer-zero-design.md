@@ -344,23 +344,42 @@ there stops the server after the reply. Tested by `linux/tests/test_httpd.cpp`.
 - **Simulator build:** `cmake --preset sim` on the host (macOS: SDL2 and curl
   from MacPorts or Homebrew).
 - **Package:** CPack DEB,
-  `monster-cyberspace-cardputer-zero-<version>_arm64.deb` (release naming as
-  the other boards), package name `monster-cyberspace`, `Section:
-  APPLaunch`, `Architecture: arm64`, laid out as M5's Template app does:
+  `monster-cyberspace-cardputer-zero-vX.Y.Z_arm64.deb` (the tag form, as the
+  other boards' assets; `scripts/build-cardputer-zero.sh --deb` copies it to
+  `dist/`), package name `monster-cyberspace`, version `X.Y.Z` from
+  `VERSION` (the same source as `tools/set_app_version.py`; it also sets
+  `RC_VERSION`), `Section: APPLaunch`, `Architecture: arm64`, `Depends:
+  libcurl4t64 | libcurl4, libasound2t64 | libasound2` (trixie renamed both in
+  the 64-bit `time_t` transition), laid out as M5's Template app does:
   the binary at `/usr/share/APPLaunch/bin/monster-cyberspace` (no wrapper
   script: it takes no arguments), `/usr/share/APPLaunch/applications/monster-cyberspace.desktop`
   (`Exec` the binary's absolute path, `Icon=share/images/monster-cyberspace.png`,
-  `Terminal=false`) and the icon. `postinst` and `postrm` run
-  `systemctl restart APPLaunch.service` (if it exists) so the launcher
-  lists or drops the app. No systemd unit of our own and no conffiles. The version comes from the same source as `tools/set_app_version.py`.
-- **Release:** `scripts/release.sh` gains a `LINUX_TARGETS` list. It builds
-  the `.deb` and attaches it, but writes no OTA manifest (the OTA check is
-  ESP-only), and the flasher doesn't list the board, since it can't flash a
-  Linux device. The site gets a short "CardputerZero: download the .deb"
-  note. Release versions are still the user's choice.
-- **CI:** a `cardputer-zero` job on `ubuntu-24.04-arm` runs the device build
-  and the package step, and uploads the `.deb` as an artifact; a second job
-  builds the simulator on `ubuntu-latest`. The PlatformIO jobs are unchanged.
+  `Terminal=false`), the 100×100 icon (`linux/packaging/make_icon.py`, the
+  size of the stock icons) and `LICENSE` as
+  `/usr/share/doc/monster-cyberspace/copyright`. **No maintainer scripts**
+  (changed from the first draft's `postinst`/`postrm`): M5's packaging
+  guide shows APPLaunch rescans `applications/` every few seconds, and it
+  is a *user* service, so a root `systemctl restart APPLaunch.service` from
+  `postinst` would miss it anyway. No systemd unit of our own and no
+  conffiles. A clean trixie arm64 container installs it with `apt install`
+  (dependencies resolved, nothing missing in `ldd`) and removes it cleanly.
+- **Release:** `scripts/release.sh` gains a `LINUX_TARGETS` list
+  (`cardputer_zero`). `--dist-only` (and `--only cardputer_zero`) builds the
+  `.deb` through the wrapper, which needs Docker; `SHA256SUMS` and
+  `BUILD-INFO.txt` cover it. A release from the maintainer's machine attaches
+  it to `gh release create`; in `release.yml` (the usual path) the ESP job
+  publishes and a following `linux` job on `ubuntu-24.04-arm` builds the
+  `.deb` from the tag, uploads it and appends its line to `SHA256SUMS`. No
+  OTA manifest (the OTA check is ESP-only), and the flasher doesn't list the
+  board (`pages.yml` only takes `.bin` assets): the site has a short
+  "CardputerZero: download the .deb" note. Release versions are still the
+  user's choice.
+- **CI:** `.github/workflows/linux.yml`: a `cardputer-zero` job on
+  `ubuntu-24.04-arm` runs the device build, the package step and the compat
+  tests in the container, and uploads the `.deb` as an artifact; a
+  `simulator` job builds the simulator and runs the compat tests on
+  `ubuntu-24.04` (checked locally in an `ubuntu:24.04` container). The
+  PlatformIO jobs are unchanged.
 - **Install:** copy the `.deb` to the device (SSH/ADB) and run
   `sudo apt install ./monster-cyberspace-…_arm64.deb`.
   `docs/USE.md` and `docs/BUILD.md` describe this.

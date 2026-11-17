@@ -12,7 +12,9 @@ its contributor). The Xteink X4
 development-only target, left out of releases, CI and the native tests. The M5Stack Cardputer ADV
 (8 MB, no PSRAM, no Guilds) is built, not yet tried on hardware, and so is
 the LilyGO T-Display P4 (ESP32-P4, AMOLED). The Tanmatsu (ESP32-P4,
-keyboard) runs on hardware and is released and in the flasher. More
+keyboard) runs on hardware and is released and in the flasher. The M5Stack
+CardputerZero (Raspberry Pi CM0, Linux) is the first Linux port: an app for
+its launcher, packaged as a `.deb`, built, not yet tried on hardware. More
 boards and Cyberspace features come later.
 
 - **Design spec:** `docs/superpowers/specs/2026-10-25-cyberspace-m9-circ-design.md`
@@ -54,7 +56,7 @@ boards and Cyberspace features come later.
   plan `docs/superpowers/plans/2026-11-10-cyberspace-profiles-notes.md`.
 - **Search (issue #9 item 1):** spec
   `docs/superpowers/specs/2026-11-13-cyberspace-search-design.md`.
-- **CardputerZero (Linux port, not built yet):** spec
+- **CardputerZero (Linux port):** spec
   `docs/superpowers/specs/2026-11-16-cyberspace-cardputer-zero-design.md`,
   plan `docs/superpowers/plans/2026-11-16-cyberspace-cardputer-zero.md`.
 - **Fluffy Generator (custom mascot):** spec
@@ -125,6 +127,9 @@ scripts/screenshot.py PORT [--watch]  # PNG screenshots over the serial console 
 # demo build for screenshots, no network (never release): docs/BUILD.md "Screenshots"
 PLATFORMIO_BUILD_DIR=.pio/demo PLATFORMIO_BUILD_FLAGS=-DRC_FAKE_API=1 pio run -e mesh_deck
 scripts/release.sh --dist-only       # release images into dist/; releasing itself is the user's call (docs/BUILD.md)
+scripts/build-cardputer-zero.sh [--deb]   # CardputerZero (aarch64, Docker container); --deb packages it into dist/
+scripts/build-cardputer-zero.sh --sim --fake  # its SDL2 simulator, demo build (the only way an agent runs it)
+cd linux && cmake --preset sim && cmake --build --preset sim && ctest --preset sim  # Linux compat tests
 ```
 
 ## Layout
@@ -308,6 +313,25 @@ restarted through the coprocessor before `hostedSetPins`. ES8156 speaker
 (`audio_es8156`, own task, amplifier on only around a beep), SD_MMC 4-bit,
 no GPS. `board::functionKeys()` gives the F10 help its own table. Released
 and in the flasher since 2026-11-04.
+`linux/` is the Linux build (CMake, `CMakePresets.json`: `cp0` for the
+M5Stack CardputerZero, `sim` for the SDL2 desktop simulator). It compiles
+`lib/core`, `lib/lvui` and `src/` unchanged except a few `RC_LINUX` guards,
+through shims for the Arduino, FreeRTOS and ESP-IDF calls the app makes
+(`linux/compat/`: `Preferences` as files in `~/.config/monster-cyberspace`,
+`fs::FS` rooted at `~/monster-cyberspace` and mounted at
+`/monster-cyberspace`, `esp_http_server` on port 8080) and Linux versions of
+the ESP-only files (`linux/replace/`: `main()`, curl HTTPS and SSE, Wi-Fi
+status, clock, mascot file). Its CTest suite is `linux/tests/`.
+`RC_FEAT_WIFI_MGMT=0` drops the setup AP and Wi-Fi screens, and
+`RC_WEB_OPT_IN=1` makes web config an opt-in with a required password
+(`src/screens/web_config.cpp`). `src/hal/cardputer_zero/` is the device HAL
+(fbdev, raw evdev without a grab so the launcher sees a long Esc, battery and
+backlight sysfs, ALSA beep); `src/hal/linux_sim/` the simulator's; both build
+`flags_cardputer_zero.cpp` and use `lib/core`'s `input/keymap_cardputer_zero`.
+`scripts/build-cardputer-zero.sh` builds the device in a Debian trixie arm64
+container (`linux/docker/Dockerfile`; `--deb` packages it with CPack into
+`dist/`), or the simulator with `--sim`. Never copy the repo into a container
+(`.pio-core` alone fills the disk): bind-mount it.
 Touch: `ui_task` reads one sample a frame for LVGL's pointer and for
 `lib/core`'s edge swipes (`input/gestures`: Back, Options). The views hit-test
 their own rows and buttons and queue the same `KeyEvent`s the grid's tap map
@@ -484,6 +508,13 @@ each group's **More…** opening a paged list (`src/screens/search.cpp`,
 `lib/core/src/search/`, `src/store/locked_search`, `CmdType::Search`/
 `SearchMore`/`CloseSearch` on `FeedWorker`). Only a key press searches; no
 device-side limiter (user decision). Its hardware check in docs/TESTING.md is open.
+The CardputerZero Linux port was added on 2026-11-16 (plan
+`docs/superpowers/plans/2026-11-16-cyberspace-cardputer-zero.md`, Tasks 1–9;
+not tried on hardware): every feature but OTA, an aarch64 `.deb` for M5's
+APPLaunch launcher (binary in `/usr/share/APPLaunch/bin/`, no maintainer
+scripts), `release.sh`'s `LINUX_TARGETS`, `release.yml`'s `linux` job and
+`.github/workflows/linux.yml`. The simulator's demo build is the only way an
+agent runs the app. Task 10, the hardware check in docs/TESTING.md, is open.
 The native suite is green: 854/854
 (`pio test -e native`), and so is the LVGL one: 88/88 (`pio test -e
 native_lv`, and built lean). `scripts/build-upload-monitor.sh -B` builds all

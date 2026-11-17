@@ -1,0 +1,82 @@
+name: Linux
+
+# The Linux builds (docs/superpowers/specs/2026-11-16-cyberspace-cardputer-zero-design.md
+# section 9): the M5Stack CardputerZero package on an arm64 runner, in the
+# same Debian trixie container as scripts/build-cardputer-zero.sh, and the
+# SDL2 simulator with the compat layer's tests. A breakage check like
+# build.yml: it publishes nothing (release.yml attaches release packages).
+
+on:
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - 'docs/**'
+      - 'README.md'
+      - 'AGENTS.md'
+      - 'CONTRIBUTING.md'
+      - 'RELEASE_NOTES.md'
+      - '.gitignore'
+      - 'site/**'
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+concurrency:
+  group: linux-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  cardputer-zero:
+    name: CardputerZero package (arm64)
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build and package
+        run: scripts/build-cardputer-zero.sh --deb
+
+      - name: Compat tests
+        run: >
+          docker run --rm --platform linux/arm64
+          --user "$(id -u):$(id -g)" -e HOME=/tmp
+          -v "$PWD:/work" -w /work/linux
+          monster-cyberspace-cp0-build
+          ctest --test-dir build/cp0 --output-on-failure
+
+      - name: Upload the package
+        uses: actions/upload-artifact@v4
+        with:
+          name: monster-cyberspace-cardputer-zero
+          path: dist/*.deb
+          retention-days: 14
+
+  simulator:
+    name: Simulator and compat tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            cmake ninja-build pkg-config libsdl2-dev libcurl4-openssl-dev
+
+      - name: Build
+        working-directory: linux
+        run: |
+          cmake --preset sim
+          cmake --build --preset sim
+
+      - name: Compat tests
+        working-directory: linux
+        run: ctest --preset sim

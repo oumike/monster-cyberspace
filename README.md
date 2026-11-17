@@ -5,6 +5,8 @@ a retro text-only social network. It runs on the Elecrow ThinkNode M9, with
 builds for the Seeed Wio Tracker L2, the LilyGO T-Deck Plus, the Elecrow
 CrowPanel Advance 3.5" and 5.0", the LilyGO T-LoRa Pager and the LilyGO T-Deck Pro (not yet tried on hardware), and offers cIRC chat (milestone 1), C-Mail private messages (milestone 2), and a
 web config page served by the device. No phone app or companion is needed.
+The M5Stack CardputerZero, a Linux handheld, gets an app for its launcher
+instead of firmware (not yet tried on hardware).
 
 The monster on the boot screen and screensaver is Fluffy, the project's mascot.
 
@@ -39,6 +41,11 @@ Wi-Fi, sign-in and preferences: they live past the end of the image.
 
 After that, updates come over the air (Settings → Firmware, or web config). The
 `-ota.bin` files are for that and are not flashed by hand.
+
+**CardputerZero:** download `monster-cyberspace-cardputer-zero-<version>_arm64.deb`
+from [Releases](../../releases), copy it to the device and run
+`sudo apt install ./monster-cyberspace-cardputer-zero-<version>_arm64.deb`; it
+appears in the launcher ([details](docs/USE.md#cardputerzero)).
 
 ## Docs
 

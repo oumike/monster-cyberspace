@@ -24,6 +24,9 @@ LoginFormScreen loginForm;
 #if RC_FEAT_WIFI_MGMT
 WifiScreen wifiScreen;
 #endif
+#if RC_WEB_OPT_IN
+WebConfigScreen webConfig;
+#endif
 // Each feature's screens exist only when it is built (feature_flags.h).
 #if RC_FEAT_CMAIL
 CmailListScreen cmailList;
@@ -100,6 +103,9 @@ Screen* lookup(Id id) {
     case Id::Settings: return &settingsScreen;
 #if RC_FEAT_WIFI_MGMT
     case Id::Wifi: return &wifiScreen;
+#endif
+#if RC_WEB_OPT_IN
+    case Id::WebConfig: return &webConfig;
 #endif
 #if RC_FEAT_CMAIL
     case Id::CmailList: return &cmailList;

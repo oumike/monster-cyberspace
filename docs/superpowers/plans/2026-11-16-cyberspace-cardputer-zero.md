@@ -134,12 +134,12 @@ Tasks 1, 2, 4–7 do not depend on it and may start first.
 - Modify: `src/web/web_server.cpp` (port 8080 and the password requirement when `board::webConfigOptIn()`), `src/screens/settings.cpp` ("Web config page" item, URL and QR), `src/store/settings.cpp`, `lib/core/src/config/settings_model.h` (`webConfig`, NVS `webcfg`), `lib/core/src/config/backup_yaml.cpp` (`webConfig`)
 - Test: `linux/tests/test_httpd.cpp` (routes, Basic auth 401, query parsing, chunked send, request body), `test/test_backup_yaml/` (the new key round-trips; an old file without it keeps off)
 
-- [ ] **Step 1: Write the failing tests.**
-- [ ] **Step 2: Run** `ctest --preset sim && nice pio test -e native`. Expected: failures.
-- [ ] **Step 3: Implement** the shim (the `httpd_*` set listed in spec §4.1, one thread, loopback in tests) and the opt-in.
-- [ ] **Step 4: Run** the tests, then the simulator: turning the item on without a password is refused; with one, `curl -u admin:<pw> http://127.0.0.1:8080/` returns the page and no password gets 401.
-- [ ] **Step 5: Run** `nice pio run -e m9`. Expected: ESP web config unchanged (always on, port 80).
-- [ ] **Step 6: Commit** `git commit -s -m "Web config as an opt-in on Linux, through an esp_http_server shim"`
+- [x] **Step 1: Write the failing tests.** (Done: `linux/tests/test_httpd.cpp`. The backup half already exists: `test_missing_keys_keep_current` keeps `webConfig` from an old file, and the round trip covers the key.)
+- [x] **Step 2: Run** `ctest --preset sim && nice pio test -e native`. Expected: failures. (Done: a link failure.)
+- [x] **Step 3: Implement** the shim (the `httpd_*` set listed in spec §4.1, one thread, loopback in tests) and the opt-in. (Done: a compile-time `RC_WEB_OPT_IN` instead of `board::webConfigOptIn()`, so ESP images don't change (spec §6), and a `WebConfigScreen` for the password and the switch.)
+- [x] **Step 4: Run** the tests, then the simulator: turning the item on without a password is refused; with one, `curl -u admin:<pw> http://127.0.0.1:8080/` returns the page and no password gets 401. (Done in the demo sim: refused without a password, 401 with none or a wrong one, 200 with it, nothing once off. The QR code needs 15 rows; the 320x170 panel has 14, so it shows only on bigger windows.)
+- [x] **Step 5: Run** `nice pio run -e m9`. Expected: ESP web config unchanged (always on, port 80). (Done: RAM 72,116 B and flash 3,170,454 B, the same as before.)
+- [x] **Step 6: Commit** `git commit -s -m "Web config as an opt-in on Linux, through an esp_http_server shim"`
 
 ### Task 8: The device HAL (after Task 0)
 

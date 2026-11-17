@@ -253,6 +253,40 @@ class SettingsScreen : public Screen {
   lvui::TreeViews<Views> v_;
 };
 
+#if RC_WEB_OPT_IN
+// Web config where it is an opt-in (Linux): on or off, the page password
+// (required before it turns on), and the address with a QR code while on.
+class WebConfigScreen : public Screen {
+ public:
+  void enter(const std::string&) override;
+  void leave() override;
+  void onKey(const KeyEvent&) override;
+  void build(lv_obj_t* root) override;
+  void update(int64_t nowMs) override;
+  bool acceptsText() const override { return true; }
+  bool consumesBackspace() const override { return !password_.text().empty(); }
+
+ private:
+  void select();
+  void turn(bool on);
+  void sync();
+  InputLine password_;
+  InputLine mask_;  // the password as dots, for the LVGL field
+  bool hasPassword_ = false;
+  std::string note_;
+  bool noteIsError_ = false;
+  struct Views {
+    SyncGate<2> gate_;  // the update check, fresh with each tree
+    lvui::TopBar status_;
+    lvui::CellText text_;
+    lvui::InputField passwordView_;
+    lvui::QrBox qr_;
+    lvui::HintBar hint_;
+  };
+  lvui::TreeViews<Views> v_;
+};
+#endif
+
 // Wi-Fi on the device: scan, join (with a password, or a name typed for a
 // hidden network), and Connect / New password / Forget on saved ones. Its
 // arg "setup" comes from the setup screen, which Back and a join return to.

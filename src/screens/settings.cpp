@@ -27,6 +27,9 @@
 #include "ui/kb_light.h"
 #include "ui/notify_light.h"
 #include "ui/screen_timeout.h"
+#if RC_WEB_OPT_IN
+#include "web/web_server.h"
+#endif
 
 namespace rc {
 
@@ -718,8 +721,12 @@ void SettingsScreen::activate(int item) {
       break;
     }
     case kWebConfig:
+#if RC_WEB_OPT_IN
+      router::go(router::Id::WebConfig);
+#else
       app().cfg.webConfig = !app().cfg.webConfig;
       settings::saveWebConfig(app().cfg.webConfig);
+#endif
       break;
 #if RC_FEAT_WIFI_MGMT
     case kWifi:
@@ -864,8 +871,12 @@ std::vector<ListItem> itemRows(const std::vector<Item>& items, bool buttons, boo
         rows.push_back(ListItem{U"Wake every", wakeLabel(a.cfg.wakeMins)});
         break;
       case kWebConfig:
+#if RC_WEB_OPT_IN
+        rows.push_back(ListItem{U"Web config page", a.cfg.webConfig ? U"on" : U"off"});
+#else
         rows.push_back(ListItem{U"Web config", a.cfg.webConfig ? U"on" : U"off", ItemTone::Normal,
                                 a.cfg.webConfig});
+#endif
         break;
       case kWifi:
         rows.push_back(ListItem{U"Wi-Fi", wifiUp() ? utf8ToU32(wifiSsid()) : U"not connected"});
@@ -924,7 +935,14 @@ std::vector<StatusField> statusFields(const Theme& t, bool ap, const timesvc::Sn
   };
   field("account", a.user.empty() ? "not signed in" : "@" + a.user, t.fg);
   field("wi-fi", wifiUp() ? wifiSsid() + "  " + wifiIp() : "not connected", t.fg);
+#if RC_WEB_OPT_IN
+  field("config", !a.cfg.webConfig ? std::string("off")
+                  : wifiUp()       ? "http://" + wifiIp() + ":" + std::to_string(web::kPort)
+                                   : std::string("on, no network"),
+        t.fg);
+#else
   field("config", "http://monster-cyberspace.local", t.fg);
+#endif
   int bat = batteryShown();
   field("battery", bat < 0 ? "unknown" : std::to_string(bat) + "%", t.fg);
   field("setup AP", ap ? "on" : "off", ap ? t.selectBg : t.fg);

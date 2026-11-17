@@ -41,8 +41,10 @@ FetchContent_MakeAvailable(lvgl arduinojson qrcode)
 # LVGL, two screen trees) apply. lv_conf.h takes LVGL's allocator from libc
 # for RC_LINUX.
 # No OTA (the launcher's packages update it) and no Wi-Fi management (Linux
-# owns Wi-Fi); every other feature is on.
-set(MC_DEFS RC_LINUX=1 BOARD_HAS_PSRAM=1 LV_CONF_INCLUDE_SIMPLE RC_FEAT_OTA=0 RC_FEAT_WIFI_MGMT=0)
+# owns Wi-Fi); every other feature is on. Web config is an opt-in on port
+# 8080 that needs a page password (spec section 7).
+set(MC_DEFS RC_LINUX=1 BOARD_HAS_PSRAM=1 LV_CONF_INCLUDE_SIMPLE RC_FEAT_OTA=0 RC_FEAT_WIFI_MGMT=0
+  RC_WEB_OPT_IN=1)
 if(MC_BOARD STREQUAL "sim")
   list(APPEND MC_DEFS BOARD_LINUX_SIM=1)
 elseif(MC_BOARD STREQUAL "cp0")
@@ -69,7 +71,8 @@ add_library(mc_compat STATIC
   compat/arduino_compat.cpp
   compat/freertos_compat.cpp
   compat/preferences.cpp
-  compat/fs_compat.cpp)
+  compat/fs_compat.cpp
+  compat/httpd_compat.cpp)
 target_include_directories(mc_compat PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/compat")
 target_compile_definitions(mc_compat PUBLIC ${MC_DEFS})
 find_package(Threads REQUIRED)
@@ -95,8 +98,7 @@ set(REPLACE_SOURCES
   replace/app/restart.cpp
   replace/store/nvs_migrate.cpp
   replace/store/mascot_store.cpp
-  replace/sys/mem.cpp
-  replace/web/web_server.cpp)
+  replace/sys/mem.cpp)
 find_package(CURL REQUIRED)
 
 # The rest of src/: everything but the files replaced above, main.cpp (the
@@ -157,7 +159,7 @@ endif()
 
 # ctest --preset sim: the compat layer's own tests.
 enable_testing()
-foreach(t preferences fs rtos)
+foreach(t preferences fs rtos httpd)
   add_executable(test_${t} tests/test_${t}.cpp)
   target_link_libraries(test_${t} PRIVATE mc_compat)
   add_test(NAME ${t} COMMAND test_${t})

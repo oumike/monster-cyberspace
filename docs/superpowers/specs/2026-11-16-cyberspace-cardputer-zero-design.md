@@ -274,11 +274,17 @@ Kept small, each behind a flag that every ESP env leaves at today's value:
   web config's Wi-Fi section. Setup at first boot then goes straight to
   sign-in. The Settings "wi-fi" status line stays: it shows the SSID and IP
   that Linux reports.
-- **`board::webConfigOptIn()`** (new, default false; true on Linux). When it
-  is true, web config does not start at boot. Settings gets a "Web config
-  page" item (off by default, NVS `webcfg`, backup `webConfig`). It can only
-  be turned on once a page password is set, and it shows `http://<ip>:8080`
-  and a QR code. Turning it off stops the server.
+- **`RC_WEB_OPT_IN`** (new in `feature_flags.h`, default 0; 1 on Linux). It
+  was first planned as a `board::webConfigOptIn()` function; a compile-time
+  flag keeps ESP images unchanged. With it, web config does not start at
+  boot: `webConfig` defaults to off (NVS `webcfg`, backup `webConfig`), and
+  Settings' "Web config page" item opens a `WebConfigScreen`
+  (`src/screens/web_config.cpp`). There a masked field sets the page
+  password (8 to 63 printable characters); the page can only be turned on
+  once one is set. While on, it shows `http://<ip>:8080`, the user name
+  `admin` and a QR code. Turning it off stops the server (`web::apply()`).
+  The page itself hides the switch that turns the password off, and its own
+  web config switch reads "Serve it on port 8080".
 - **`RC_LINUX` guards** only where a shim would be misleading: `main.cpp`
   (compiled out; the replacement has `main()`), the `[mem]` lines (they
   print RSS instead of internal heap), and Settings' "Turn setup AP on" and
@@ -299,6 +305,12 @@ route already requires the page password (Basic auth). On Linux the server
 also refuses to start without one, so it is never open. No captive portal or
 mDNS. Backup download and upload, the mascot editor, and Settings work as
 today. The Wi-Fi section and the X4-only compose box stay hidden.
+
+The shim (`linux/compat/esp_http_server.h`, `httpd_compat.cpp`) is one
+accept thread serving one request per connection (`Connection: close`),
+exact path matches, chunked replies and ESP-IDF's undecoded query values.
+Saving settings on the page calls `web::apply()`, so turning web config off
+there stops the server after the reply. Tested by `linux/tests/test_httpd.cpp`.
 
 ## 8. Files, backups and settings
 

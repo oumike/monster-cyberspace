@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "config/phrases.h"
+#include "feature_flags.h"
 #include "ui/brightness.h"
 #include "ui/led_level.h"
 #include "ui/notice_text.h"
@@ -66,7 +67,8 @@ struct Settings {
   // Canned replies for boards that can't type (config/phrases.h).
   std::vector<std::string> phrases = defaultPhrases();
   // Serve web config on the joined network; the setup AP always serves it.
-  bool webConfig = true;
+  // Off by default where it is an opt-in (RC_WEB_OPT_IN).
+  bool webConfig = !RC_WEB_OPT_IN;
   // Boards that sleep on battery (power/power_policy.h): idle seconds before
   // sleeping, and minutes between refresh wakes (0: only a button wakes it).
   uint32_t idleSecs = 300;

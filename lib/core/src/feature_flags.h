@@ -56,6 +56,12 @@
 #define RC_FEAT_WIFI_MGMT 1
 #endif
 
+// Web config as an opt-in (Linux): the page is served on port 8080 only
+// while Settings' "Web config page" is on, and only with a page password.
+// 0 (ESP): always served on port 80, the password optional.
+#ifndef RC_WEB_OPT_IN
+#define RC_WEB_OPT_IN 0
+#endif
 // Shared by several features: the entry lists, the Entry screen and the
 // network side that loads them serve the Feed, guild threads and a user's
 // posts; the Composer writes Feed posts and guild threads.

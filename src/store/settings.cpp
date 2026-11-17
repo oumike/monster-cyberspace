@@ -99,7 +99,7 @@ void load(rc::Settings& s) {
   s.rotation = rc::rotationFromIndex(p.getUChar("rot", board::defaultRotation()));
   s.lastRoom = getStr(p, "room", s.lastRoom);
   if (p.isKey("phrases")) s.phrases = rc::splitPhrases(getStr(p, "phrases", ""));
-  s.webConfig = p.getBool("webcfg", true);
+  s.webConfig = p.getBool("webcfg", !RC_WEB_OPT_IN);
   s.idleSecs = p.getUInt("idlesecs", 300);
   if (!rc::validIdleSecs(s.idleSecs)) s.idleSecs = 300;
   s.wakeMins = p.getUInt("wakemins", 15);

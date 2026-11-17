@@ -85,6 +85,7 @@ enum class Id {
   Program,        // a program's source; arg = id, or "id@N" for release N
   Search,         // search people, entries and replies (Home)
   SearchList,     // one group of the last search, paged; arg = its type
+  WebConfig,      // web config's switch and page password (RC_WEB_OPT_IN)
 };
 
 struct Place {

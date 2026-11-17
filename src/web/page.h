@@ -188,6 +188,22 @@ async function call(method,url,body){
 }
 )JS"
 
+// Web config as an opt-in (RC_WEB_OPT_IN, Linux): served on port 8080 only
+// while the device's Settings turn it on, and never without a page password.
+#if RC_WEB_OPT_IN
+#define RC_WEBCFG_HTML R"HTML( Serve it on port 8080</label><span class="note">Off, it stops at once; turn it back on from the device's Settings.</span>)HTML"
+#define RC_WEBCFG_OFF_JS R"JS(Stop serving this page? Turn it back on from the device\'s Settings.)JS"
+#define RC_PAGEOFF_HIDDEN_JS "true"
+#else
+#define RC_WEBCFG_HTML R"HTML( Serve it on the joined Wi-Fi</label><span class="note">The setup AP always serves it.</span>)HTML"
+#define RC_WEBCFG_OFF_JS R"JS(Stop serving this page on this network? Turn it back on from the device\'s Settings or the setup AP.)JS"
+#define RC_PAGEOFF_HIDDEN_JS "!s.pagePasswordSet"
+#endif
+#if RC_WEB_OPT_IN
+#define RC_SECURITY_NOTE_HTML R"HTML(<p>This page is plain HTTP on your network, so it always asks for the page password; anyone on the network can still watch what crosses it. A backup holds the sign-in token and every password, so anyone who can open this page can take them. Turn it off in the device's Settings when you are done.</p>)HTML"
+#else
+#define RC_SECURITY_NOTE_HTML R"HTML(<p>This page is plain HTTP on your network, so set a page password on shared networks. The setup AP is open unless it has a password, so anyone in radio range can join it while it runs: with no saved Wi-Fi, when turned on in the device's Settings, or after the saved networks fail for 5 minutes. Anything typed on it, Wi-Fi and Cyberspace passwords included, crosses that link unencrypted. A backup holds the sign-in token and every password, so anyone who can open this page can take them.</p>)HTML"
+#endif
 // Wi-Fi management (RC_FEAT_WIFI_MGMT): the saved networks, setup mode's zone,
 // and the setup-AP password. Boards whose OS owns Wi-Fi leave them out.
 #if RC_FEAT_WIFI_MGMT
@@ -345,8 +361,8 @@ static const char kPage[] = R"HTML(<!doctype html>
 <div class="row"><label for="pagepw">Page password</label><input id="pagepw" type="password" autocomplete="new-password">
 <span class="note"><span id="pagestate"></span> User name <b>admin</b>.</span>
 <label class="check note" id="pageoffrow" hidden><input id="pageoff" type="checkbox"> Turn the page password off</label></div>
-)HTML" RC_AP_PW_HTML R"HTML(<div class="row"><span>This page</span><label class="check"><input id="webcfg" type="checkbox"> Serve it on the joined Wi-Fi</label><span class="note">The setup AP always serves it.</span></div>
-<p>This page is plain HTTP on your network, so set a page password on shared networks. The setup AP is open unless it has a password, so anyone in radio range can join it while it runs: with no saved Wi-Fi, when turned on in the device's Settings, or after the saved networks fail for 5 minutes. Anything typed on it, Wi-Fi and Cyberspace passwords included, crosses that link unencrypted. A backup holds the sign-in token and every password, so anyone who can open this page can take them.</p>
+)HTML" RC_AP_PW_HTML R"HTML(<div class="row"><span>This page</span><label class="check"><input id="webcfg" type="checkbox">)HTML" RC_WEBCFG_HTML R"HTML(</div>
+)HTML" RC_SECURITY_NOTE_HTML R"HTML(
 </section>
 
 <section id="backup" data-name="Backup">
@@ -446,7 +462,7 @@ $('pageoff').onchange=()=>{$('pagepw').disabled=$('pageoff').checked;mark();};
 async function save(){
   const ch=changed();if(!ch.length||saving)return;
   const b={};for(const f of ch)f.put(b);
-  if(b.prefs&&b.prefs.webConfig===false&&!setupMode&&!confirm('Stop serving this page on this network? Turn it back on from the device\'s Settings or the setup AP.'))return;
+  if(b.prefs&&b.prefs.webConfig===false&&!setupMode&&!confirm(')JS" RC_WEBCFG_OFF_JS R"JS('))return;
   if(b.security&&b.security.pagePassword===''&&$('pageoff').checked&&!confirm('Turn the page password off? Anyone on this network can then open this page.'))return;
   saving=true;notice={text:'Saving…'};mark();
   const r=await call('POST','/api/settings',b);
@@ -481,7 +497,7 @@ async function load(){
 )JS" RC_WIFI_SAVED_JS R"JS(  $('acct').textContent=s.signedIn?'Signed in as '+(s.email||'?')+'.':'Not signed in.';
   if(!$('email').value&&s.email)$('email').value=s.email;
   $('pagestate').textContent=s.pagePasswordSet?'Set; type a new one to change it.':'Off.';
-)JS" RC_AP_PW_STATE_JS R"JS(  $('pageoffrow').hidden=!s.pagePasswordSet;)JS" RC_AP_PW_ROW_JS R"JS(
+)JS" RC_AP_PW_STATE_JS R"JS(  $('pageoffrow').hidden=)JS" RC_PAGEOFF_HIDDEN_JS R"JS(;)JS" RC_AP_PW_ROW_JS R"JS(
 }
 
 // ---- time zones ----

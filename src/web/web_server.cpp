@@ -7,6 +7,9 @@
 
 #include <algorithm>
 #include <cstdlib>
+#if RC_WEB_OPT_IN
+#include <mutex>
+#endif
 #include <string>
 #include <vector>
 
@@ -62,6 +65,10 @@ constexpr size_t kMaxSettingsBody = 8192;
 constexpr int kLoginWaitMs = 20000;
 
 httpd_handle_t server = nullptr;
+#if RC_WEB_OPT_IN
+// begin, stop and apply run on the UI thread and in request handlers.
+std::recursive_mutex serverMu;
+#endif
 
 void wipe(std::string& s) {
   std::fill(s.begin(), s.end(), '\0');
@@ -809,6 +816,9 @@ std::string parseSecurity(JsonVariantConst doc, const Settings& s, std::string& 
   if (doc["apPassword"].is<const char*>()) ap = doc["apPassword"].as<const char*>();
   if (page.size() > 63 || !printable(page)) return "Page password: up to 63 printable characters";
   if (!rc::validApPassword(ap)) return "Setup-AP password: 8-63 printable characters, or empty for an open AP";
+#if RC_WEB_OPT_IN
+  if (page.empty()) return "Page password: this device serves the page only with one";
+#endif
   return "";
 }
 
@@ -824,7 +834,11 @@ esp_err_t postPrefs(httpd_req_t* req) {
   wipe(s.apPassword);
   if (!err.empty()) return fail(req, "400 Bad Request", err);
   applyPrefs(c, s);
-  return okReply(req, "Saved");
+  const esp_err_t r = okReply(req, "Saved");
+#if RC_WEB_OPT_IN
+  apply();
+#endif
+  return r;
 }
 
 esp_err_t postPhrases(httpd_req_t* req) {
@@ -966,7 +980,12 @@ esp_err_t postSettings(httpd_req_t* req) {
   }
 #endif
   if (hasPrefs) applyPrefs(prefs, s);
-  return okReply(req, apChanged ? "Saved. The setup-AP password applies the next time setup mode runs." : "Saved");
+  const esp_err_t r =
+      okReply(req, apChanged ? "Saved. The setup-AP password applies the next time setup mode runs." : "Saved");
+#if RC_WEB_OPT_IN
+  apply();
+#endif
+  return r;
 }
 
 #if RC_FEAT_OTA
@@ -1116,9 +1135,23 @@ esp_err_t postBackupSdDelete(httpd_req_t* req) {
 }  // namespace
 
 void begin() {
+#if RC_WEB_OPT_IN
+  std::lock_guard<std::recursive_mutex> lock(serverMu);
   if (server) return;
+  {
+    Settings s = current();
+    const bool wanted = s.webConfig && !s.pagePassword.empty();
+    wipe(s.pagePassword);
+    wipe(s.apPassword);
+    if (!wanted) return;
+  }
+  constexpr int port = kPort;
+#else
+  if (server) return;
+  constexpr int port = 80;
+#endif
   httpd_config_t cfg = HTTPD_DEFAULT_CONFIG();
-  cfg.server_port = 80;
+  cfg.server_port = port;
   cfg.max_uri_handlers = 36;
   cfg.stack_size = 8192;
   cfg.core_id = 0;
@@ -1181,13 +1214,40 @@ void begin() {
     u.handler = r.fn;
     httpd_register_uri_handler(server, &u);
   }
+#if RC_WEB_OPT_IN
+  Serial.println("[web] listening on port 8080");
+#else
   Serial.println("[web] listening on port 80");
+#endif
 }
 
 void stop() {
+#if RC_WEB_OPT_IN
+  std::lock_guard<std::recursive_mutex> lock(serverMu);
+#endif
   if (!server) return;
   httpd_stop(server);
   server = nullptr;
+#if RC_WEB_OPT_IN
+  Serial.println("[web] stopped");
+#endif
 }
+
+#if RC_WEB_OPT_IN
+void apply() {
+  std::lock_guard<std::recursive_mutex> lock(serverMu);
+  Settings s = current();
+  const bool wanted = s.webConfig && !s.pagePassword.empty();
+  wipe(s.pagePassword);
+  wipe(s.apPassword);
+  if (wanted) begin();
+  else stop();
+}
+
+bool running() {
+  std::lock_guard<std::recursive_mutex> lock(serverMu);
+  return server != nullptr;
+}
+#endif
 
 }  // namespace web

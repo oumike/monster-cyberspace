@@ -10,6 +10,7 @@
 #include <mutex>
 #include <vector>
 
+#include "app/net_worker.h"
 #include "app/queues.h"
 #include "chat/chat_source.h"
 #include "feature_flags.h"
@@ -648,6 +649,18 @@ FakeChatSource& fake() {
 ChatSource& chatSource() { return fake(); }
 
 void startChatSource(const Settings&) { fake().start(); }
+
+// What the web page asks the network worker: live and signed in, and a login
+// from the page never finishes (there is no account to sign in to).
+namespace networker {
+int connState() { return 2; }
+int authState() { return 1; }
+uint32_t beginLogin() { return 0; }
+bool waitLogin(uint32_t, int, LoginResult& out) {
+  out = LoginResult{false, 1, "Demo build: nothing to sign in to"};
+  return false;
+}
+}  // namespace networker
 
 }  // namespace rc
 

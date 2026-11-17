@@ -30,7 +30,7 @@ size_t memLen = 0;
 uint32_t lineLen = 0;  // bytes per framebuffer row
 int fbW = 0, fbH = 0, bpp = 0;
 fb_bitfield red{}, green{}, blue{};
-std::vector<uint16_t> kept(size_t(kW) * kH);  // the last frame, for fbDark(false)
+std::vector<uint16_t> kept(size_t(kUiW) * kUiH);  // the last frame, for fbDark(false)
 bool dark = false;
 
 // The panel's node: $LV_LINUX_FBDEV_DEVICE, else the device's /dev/fb_lcd
@@ -63,23 +63,33 @@ uint32_t expand(uint16_t p) {
   return put(r8, red) | put(g8, green) | put(b8, blue);
 }
 
-// Rows [y0, y1) of src (kW wide) onto the panel, or black when src is null.
+void putPixel(uint8_t* row, int x, uint16_t p) {
+  if (bpp == 16)
+    reinterpret_cast<uint16_t*>(row)[x] = p;
+  else
+    reinterpret_cast<uint32_t*>(row)[x] = expand(p);
+}
+
+// Panel rows [y0, y1) from src (kUiW x kUiH, drawn kInsetX/kInsetY in, the
+// margin repeating its edge pixels), or black when src is null.
 void blit(const uint16_t* src, int y0, int y1) {
   const int w = std::min(kW, fbW);
+  y0 = std::max(y0, 0);
   y1 = std::min(y1, fbH);
   for (int y = y0; y < y1; ++y) {
     uint8_t* row = mem + size_t(y) * lineLen;
-    const uint16_t* in = src ? src + size_t(y) * kW : nullptr;
-    if (bpp == 16) {
-      if (in)
-        std::memcpy(row, in, size_t(w) * 2);
-      else
-        std::memset(row, 0, size_t(w) * 2);
-    } else {
-      uint32_t* out = reinterpret_cast<uint32_t*>(row);
-      for (int x = 0; x < w; ++x) out[x] = in ? expand(in[x]) : 0;
+    if (!src) {
+      std::memset(row, 0, size_t(w) * size_t(bpp / 8));
+      continue;
     }
+    const uint16_t* in = src + size_t(std::clamp(y - kInsetY, 0, kUiH - 1)) * kUiW;
+    for (int x = 0; x < w; ++x) putPixel(row, x, in[std::clamp(x - kInsetX, 0, kUiW - 1)]);
   }
+}
+
+// The panel rows a frame's rows [y0, y1) reach, the margin included at the ends.
+void blitUi(const uint16_t* src, int y0, int y1) {
+  blit(src, y0 == 0 ? 0 : y0 + kInsetY, y1 >= kUiH ? kH : y1 + kInsetY);
 }
 
 }  // namespace
@@ -127,11 +137,11 @@ bool fbOpen() {
 void fbPush(const uint16_t* frame, int y0, int y1) {
   if (!frame) return;
   y0 = std::max(y0, 0);
-  y1 = std::min(y1, kH);
+  y1 = std::min(y1, kUiH);
   if (y1 <= y0) return;
   std::lock_guard<std::mutex> lock(mu);
-  std::memcpy(&kept[size_t(y0) * kW], frame + size_t(y0) * kW, size_t(y1 - y0) * kW * 2);
-  if (mem && !dark) blit(frame, y0, y1);
+  std::memcpy(&kept[size_t(y0) * kUiW], frame + size_t(y0) * kUiW, size_t(y1 - y0) * kUiW * 2);
+  if (mem && !dark) blitUi(frame, y0, y1);
 }
 
 void fbDark(bool on) {
@@ -142,7 +152,7 @@ void fbDark(bool on) {
   if (on)
     blit(nullptr, 0, fbH);
   else
-    blit(kept.data(), 0, kH);
+    blitUi(kept.data(), 0, kUiH);
 }
 
 void fbClose() {

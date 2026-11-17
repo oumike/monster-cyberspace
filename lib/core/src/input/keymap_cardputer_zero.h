@@ -57,7 +57,7 @@ constexpr FunctionKey kCardputerZeroFunctionKeys[] = {
     {U"F3", U"c-mail", Action::OpenCmail},      {U"F4", U"feed", Action::OpenFeed},
     {U"F5", U"guilds", Action::OpenMap},        {U"F6", U"profile", Action::OpenProfile},
     {U"F7", U"settings", Action::OpenSettings}, {U"F10", U"navigational help", Action::KeysHelp},
-    {U"Tab", U"menus, post", Action::Palette},
+    {U"Ctrl", U"actions, emoji", Action::Emoji}, {U"Tab", U"menus, post", Action::Palette},
 };
 constexpr size_t kCardputerZeroFunctionKeyCount = std::size(kCardputerZeroFunctionKeys);
 
@@ -69,7 +69,10 @@ constexpr size_t kCardputerZeroFunctionKeyCount = std::size(kCardputerZeroFuncti
 // the system keymap file through loadSymMap), whatever Shift says. The fn
 // layer arrives mapped (arrows, Home, F-keys …); should a raw key come with
 // fn active (the simulator's Left Alt), the keymap applies the printed fn
-// layer itself. Esc is Back on release, or quits once held kZeroQuitHoldMs;
+// layer itself. Ctrl tapped alone is the M9's Ctrl (Action::Emoji: the
+// actions, then the emoji tray, while typing; the palette elsewhere); keys
+// pressed while it is held type nothing. Esc is Back on release, or quits
+// once held kZeroQuitHoldMs;
 // Enter Select, Tab the palette, Home Home, PgUp/PgDn Up/Down, Delete
 // Backspace, Help (fn+H) and F10 the help.
 class CardputerZeroKeys {
@@ -99,6 +102,7 @@ class CardputerZeroKeys {
   SymEntry sym_[kSymMax];
   size_t symCount_ = 0;
   bool leftShift_ = false, rightShift_ = false, fn_ = false;
+  bool ctrl_ = false, ctrlUsed_ = false;  // Ctrl held; another key pressed with it
   bool escDown_ = false;
   uint32_t escMs_ = 0;
   bool quit_ = false;

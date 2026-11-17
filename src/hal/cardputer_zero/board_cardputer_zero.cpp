@@ -56,8 +56,8 @@ void begin() {
   cp0::inputBegin();
 }
 
-int panelWidth() { return cp0::kW; }
-int panelHeight() { return cp0::kH; }
+int panelWidth() { return cp0::kUiW; }
+int panelHeight() { return cp0::kUiH; }
 void pushRows(const uint16_t* frame, int y0, int y1) { cp0::fbPush(frame, y0, y1); }
 
 void backlight(bool on) {

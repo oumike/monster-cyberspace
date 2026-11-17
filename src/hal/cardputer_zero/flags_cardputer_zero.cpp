@@ -36,6 +36,8 @@ const rc::FunctionKey* functionKeys(size_t& count) {
   return rc::kCardputerZeroFunctionKeys;
 }
 bool hasKeys() { return true; }
+// Ctrl tapped alone, as the M9's: the actions, then the emoji tray.
+bool emojiKeyOpensActions() { return true; }
 bool backspaceIsBack() { return true; }
 bool anyInputWakes() { return true; }
 bool doubleTapWakes() { return false; }

@@ -261,6 +261,24 @@ void test_modifiers_unknown_and_releases_send_nothing() {
   TEST_ASSERT_FALSE(release(fresh, kA, 0));
 }
 
+void test_ctrl_tapped_alone_opens_actions() {
+  CardputerZeroKeys k;
+  KeyEvent e;
+  TEST_ASSERT_FALSE(press(k, kLeftCtrl, 0, e));
+  TEST_ASSERT_TRUE(k.feed(ZeroKeyIn{kLeftCtrl, 0, 50, 0}, e));
+  expectAction(Action::Emoji, e.action);
+}
+
+void test_ctrl_with_a_key_types_nothing_and_opens_nothing() {
+  CardputerZeroKeys k;
+  KeyEvent e;
+  TEST_ASSERT_FALSE(press(k, kLeftCtrl, 0, e));
+  TEST_ASSERT_FALSE(press(k, kC, 10, e));
+  release(k, kC, 20);
+  TEST_ASSERT_FALSE(k.feed(ZeroKeyIn{kLeftCtrl, 0, 30, 0}, e));
+  expectChar('c', tap(k, kC));
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_letters_and_digits);
@@ -279,5 +297,7 @@ int main() {
   RUN_TEST(test_arrows_and_backspace_repeat);
   RUN_TEST(test_system_keys);
   RUN_TEST(test_modifiers_unknown_and_releases_send_nothing);
+  RUN_TEST(test_ctrl_tapped_alone_opens_actions);
+  RUN_TEST(test_ctrl_with_a_key_types_nothing_and_opens_nothing);
   return UNITY_END();
 }

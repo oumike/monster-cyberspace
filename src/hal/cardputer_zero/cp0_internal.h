@@ -7,15 +7,22 @@
 
 namespace cp0 {
 
-constexpr int kW = 320;
+constexpr int kW = 320;  // the panel
 constexpr int kH = 170;
+// The UI is drawn this far in from each edge, which the case's bezel covers;
+// the margin repeats the frame's edge pixels.
+constexpr int kInsetX = 6;
+constexpr int kInsetY = 5;
+constexpr int kUiW = kW - 2 * kInsetX;  // board::panelWidth()
+constexpr int kUiH = kH - 2 * kInsetY;  // board::panelHeight()
 
 uint32_t nowMs();
 
 // fb_cardputer_zero.cpp: the panel's framebuffer. fbOpen picks the node
-// (LV_LINUX_FBDEV_DEVICE, else fb_st7789v from /proc/fb, else /dev/fb0) and
-// maps it; false if none opens. fbPush copies rows [y0, y1) of an RGB565
-// kW x kH frame, converting to the node's depth. While fbDark, pushes only
+// (LV_LINUX_FBDEV_DEVICE, else /dev/fb_lcd, else panel-mipi-dbid or
+// fb_st7789v from /proc/fb, else /dev/fb0) and maps it; false if none opens.
+// fbPush copies rows [y0, y1) of an RGB565 kUiW x kUiH frame inset on the
+// panel, converting to the node's depth. While fbDark, pushes only
 // update the kept copy and the panel stays black; fbDark(false) shows it.
 bool fbOpen();
 void fbPush(const uint16_t* frame, int y0, int y1);

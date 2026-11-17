@@ -209,7 +209,7 @@ bool CardputerZeroKeys::press(const ZeroKeyIn& in, KeyEvent& out) {
     }
     return true;
   }
-  if (fn) return false;
+  if (fn || ctrl_) return false;
   char32_t c = symChar(in.code);
   if (!c) {
     const Pair p = usChar(in.code);
@@ -228,8 +228,21 @@ bool CardputerZeroKeys::feed(const ZeroKeyIn& in, KeyEvent& out) {
     case kLeftShift: if (!down && !up) return false; leftShift_ = down; return false;
     case kRightShift: if (!down && !up) return false; rightShift_ = down; return false;
     case kFn: if (!down && !up) return false; fn_ = down; return false;
+    case kLeftCtrl:
+      if (down && !ctrl_) {
+        ctrl_ = true;
+        ctrlUsed_ = false;
+      } else if (up && ctrl_) {
+        ctrl_ = false;
+        if (!ctrlUsed_) {
+          out = make(Action::Emoji);
+          return true;
+        }
+      }
+      return false;
     default: break;
   }
+  if (ctrl_ && down) ctrlUsed_ = true;
   if (in.code == kEsc) {
     if (down && !escDown_) {
       escDown_ = true;

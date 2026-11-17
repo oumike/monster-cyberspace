@@ -187,8 +187,10 @@ Fonts stay the compiled-in Terminus cells, so FreeType is not needed.
   else the `/dev/fbN` named `panel-mipi-dbid` or `fb_st7789v` in
   `/proc/fb`, else `/dev/fb0`; reads
   `FBIOGET_VSCREENINFO`, and `mmap`s it.
-  `panelWidth/Height` are 320×170 (taken from the framebuffer, checked
-  against those numbers). `pushRows` converts lvui's RGB565 frame rows into
+  The panel is 320×170 (checked against the framebuffer); the UI is drawn
+  6 px in from the sides and 5 px from top and bottom, which the case
+  covers (found on the device), so `panelWidth/Height` are 308×160 and the
+  margin repeats the frame's edge pixels. `pushRows` converts lvui's RGB565 frame rows into
   the framebuffer's format: 16 bpp is copied, 32 bpp (XRGB8888, the Template's
   `LV_COLOR_DEPTH 32`) is expanded. lvui keeps drawing a whole RGB565 frame
   in direct mode, as on PSRAM boards, so nothing in lvui changes.
@@ -220,6 +222,10 @@ Fonts stay the compiled-in Terminus cells, so FreeType is not needed.
     applies the printed fn layer itself: `F/X/Z/C` arrows, `K` Home, `L/M`
     Up/Down, `1…0` F1…F10, `H` help, `U/I` and `S/D` the system keys;
   - Enter/OK to Select; Tab to the palette (menus, the composer's Post);
+    Ctrl tapped alone is the M9's Ctrl (`Action::Emoji`,
+    `emojiKeyOpensActions()`: the actions, then the emoji tray, while
+    typing; the palette elsewhere), and keys pressed while it is held type
+    nothing (the hints say "ctrl", so it had to work);
     Backspace erases, and Back when nothing takes it (`backspaceIsBack()`);
   - held arrows and Backspace repeat after 500 ms, every 70 ms, timed by the
     keymap (`poll`); the kernel's repeat events are ignored, as the launcher

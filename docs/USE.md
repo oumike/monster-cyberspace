@@ -521,13 +521,15 @@ this device**, or **Restore backup**.
 | `fn` + 1 … 7 | F1 Home, F2 messages, F3 C-Mail, F4 Feed, F5 Guilds, F6 Profile, F7 Settings |
 | `fn` + 0 or `fn` + H | Key help (F10) |
 | Enter | Select (send, in a room) |
+| Ctrl (tapped alone) | As the M9's Ctrl: while typing, the actions, then the emoji tray; elsewhere, the menu |
 | Tab | Menus; Post in the composer |
 | Backspace | Deletes while there's text to delete; otherwise Back. Hold it to repeat |
 | Esc | Back. **Hold it for a second** to quit to the launcher |
 | `fn` + U / I | Screen darker / brighter |
 | `fn` + S / D | Beep volume down / up |
 
-The screen is 320×170 and stays landscape; Compact and Comfortable text sizes
+The screen is 320×170 and stays landscape, the app drawn a few pixels in from
+the edges the case covers; Compact and Comfortable text sizes
 are offered. Quitting from the launcher (its long Esc) closes the app cleanly
 too. **Restart app** in Settings restarts it.
 

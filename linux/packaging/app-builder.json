@@ -1,0 +1,42 @@
+{
+  "package_name": "monster-cyberspace",
+  "app_name": "Monster for Cyberspace",
+  "bin_name": "monster-cyberspace",
+  "description": "A client for cyberspace.online, the text-only social network",
+  "store": {
+    "summary": "A client for cyberspace.online, the retro text-only social network",
+    "description": "Chat in cIRC rooms, read and send C-Mail, follow the Feed, Guilds, People and Notes on cyberspace.online, all from the CardputerZero's keyboard. Uses the device's Wi-Fi. Sign in with your cyberspace.online account; settings and backups stay on the device.",
+    "categories": ["Radio & Comms"],
+    "screenshots": [
+      "store/screenshots/home.png",
+      "store/screenshots/room.png",
+      "store/screenshots/conv.png",
+      "store/screenshots/feed.png",
+      "store/screenshots/entry.png"
+    ],
+    "icon": "store/icon.png",
+    "license": "GPL-3.0-or-later",
+    "source_repo": "https://github.com/oumike/monster-cyberspace",
+    "author": { "github": "oumike", "display_name": "oumike" },
+    "share_code": "MOCY",
+    "permissions": {
+      "camera": false,
+      "microphone": false,
+      "imu": false,
+      "network": true,
+      "additional_hardware": false,
+      "background_service": false,
+      "external_display": false
+    },
+    "locales": {
+      "zh-CN": {
+        "title": "Monster for Cyberspace",
+        "summary": "cyberspace.online 客户端，复古纯文字社交网络"
+      },
+      "ja": {
+        "title": "Monster for Cyberspace",
+        "summary": "レトロなテキスト専用SNS、cyberspace.online のクライアント"
+      }
+    }
+  }
+}

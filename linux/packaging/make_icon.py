@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Draws icon.png, the CardputerZero launcher's 100x100 icon: the monster as
-# 20x20 pixel art at 5x on the terminal green of the Default theme. Standard
-# library only; run it again after changing ART.
+# 20x20 pixel art at 5x on the terminal green of the Default theme, and
+# store/icon.png, the app store's 256x256 one (12x, 8 px clear border).
+# Standard library only; run it again after changing ART.
 import os
 import struct
 import zlib
@@ -36,7 +37,6 @@ COLOURS = {
     "@": (0, 0, 0, 255),
     "w": (255, 255, 255, 255),
 }
-SCALE = 5
 
 
 def chunk(kind, data):
@@ -52,15 +52,23 @@ def png(rows, w, h):
             + chunk(b"IEND", b""))
 
 
-def main():
-    rows = []
+def draw(scale, border, out):
+    side = len(ART[0]) * scale + 2 * border
+    clear = [COLOURS["."]] * side
+    rows = [clear] * border
     for line in ART:
-        row = [COLOURS[ch] for ch in line for _ in range(SCALE)]
-        rows += [row] * SCALE
-    out = os.path.join(os.path.dirname(os.path.abspath(__file__)), "icon.png")
+        row = [COLOURS[ch] for ch in line for _ in range(scale)]
+        rows += [[COLOURS["."]] * border + row + [COLOURS["."]] * border] * scale
+    rows += [clear] * border
     with open(out, "wb") as fh:
-        fh.write(png(rows, len(rows[0]), len(rows)))
+        fh.write(png(rows, side, side))
     print(out)
+
+
+def main():
+    here = os.path.dirname(os.path.abspath(__file__))
+    draw(5, 0, os.path.join(here, "icon.png"))
+    draw(12, 8, os.path.join(here, "store", "icon.png"))
 
 
 if __name__ == "__main__":

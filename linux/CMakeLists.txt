@@ -215,7 +215,8 @@ if(MC_BOARD STREQUAL "cp0")
   set(CPACK_PACKAGE_VERSION "${MC_VERSION}")
   set(CPACK_PACKAGE_FILE_NAME "monster-cyberspace-cardputer-zero-${MC_FILE_TAG}_arm64")
   set(CPACK_PACKAGING_INSTALL_PREFIX /usr)
-  set(CPACK_PACKAGE_CONTACT "oumike <https://github.com/oumike/monster-cyberspace>")
+  # The store matches this email to the publisher's GitHub account.
+  set(CPACK_PACKAGE_CONTACT "oumike <michael.cojocari@gmail.com>")
   set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Monster for Cyberspace: a cyberspace.online client")
   set(CPACK_DEBIAN_PACKAGE_DESCRIPTION
     "A client for cyberspace.online, the text-only social network: cIRC rooms,\nC-Mail, the Feed, Guilds, People, Notes and more, for the M5Stack\nCardputerZero's launcher.")

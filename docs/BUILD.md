@@ -214,6 +214,34 @@ notices new apps on its own. Installing it is in `docs/USE.md`.
 the compat tests there and in the simulator on `ubuntu-24.04`, and keeps the
 `.deb` as an artifact.
 
+### The CardputerZero app store
+
+The on-device Application Store lists apps from
+[CardputerZero/packages](https://github.com/CardputerZero/packages). They are
+submitted with `czdev` from
+[CardputerZero/AppBuilder](https://github.com/CardputerZero/AppBuilder) (its
+`docs/APP_BUILDER_JSON.md` describes the listing). Our listing is
+`linux/packaging/app-builder.json`; it points at the store icon
+(`linux/packaging/store/icon.png`, 256x256, drawn by `make_icon.py` with the
+launcher icon) and 320x170 screenshots in `linux/packaging/store/screenshots/`,
+taken from the simulator's demo build with `MONSTER_SIM_SHOT` and console
+`key` commands. The version comes from the `.deb`, so publish a new `VERSION`.
+The store matches the `.deb`'s Maintainer email (`CPACK_PACKAGE_CONTACT`) to
+the publisher's GitHub account.
+
+```sh
+scripts/build-cardputer-zero.sh --deb
+cd linux/packaging
+czdev login                                     # GitHub device flow, once
+czdev publish --deb ../../dist/monster-cyberspace-cardputer-zero-vX.Y.Z_arm64.deb
+```
+
+`czdev publish` checks the listing with the store's own policy, uploads the
+`.deb` to a release on your fork of CardputerZero/packages and opens a pull
+request with the metadata. A first release waits until a short video of the
+app on a real device is posted in that pull request; later versions merge once
+the checks pass. Publishing is the maintainer's call, never an agent's.
+
 ## Releases
 
 Ported from platy-aprs, with its OTA signing.

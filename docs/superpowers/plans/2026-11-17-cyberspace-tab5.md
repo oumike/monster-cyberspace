@@ -57,7 +57,7 @@ says so. Commit once per task (`git commit -s`, a "Tested:" line).
 
 ## Task 6: Verify
 
-- [ ] `pio test -e native`, `pio test -e native_lv`,
+- [x] `pio test -e native`, `pio test -e native_lv`,
       `scripts/build-upload-monitor.sh -B`, `node --test site/*.test.mjs`,
       `python3 tools/pr_guidelines.py origin/main HEAD`.
 

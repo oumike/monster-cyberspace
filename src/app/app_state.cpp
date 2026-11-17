@@ -3,6 +3,8 @@
 #include <esp_timer.h>
 #include <sys/time.h>
 
+#include <atomic>
+
 
 #include "hal/board.h"
 #if !RC_UI_GRID
@@ -15,6 +17,13 @@
 #include "ui/widgets/status_bar.h"
 
 namespace rc {
+
+namespace {
+std::atomic<bool> quitting{false};
+}  // namespace
+
+void requestQuit() { quitting = true; }
+bool quitRequested() { return quitting; }
 
 AppState& app() {
   static AppState a;

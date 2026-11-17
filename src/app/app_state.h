@@ -69,6 +69,11 @@ std::string setupApSsid();
 bool setupApHasPassword();
 int wifiBars();
 
+// Quitting to the CardputerZero's launcher (a long Esc, SIGTERM): the UI task
+// stops at its next frame and main() ends the process. Never asked on ESP.
+void requestQuit();
+bool quitRequested();
+
 // A local-time "HH:MM", or "--:--" before SNTP has set the clock.
 std::string clockText();
 int64_t nowEpochMs();

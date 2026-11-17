@@ -21,7 +21,7 @@ uint32_t crc32Update(uint32_t crc, const uint8_t* data, size_t n);
 
 // Collects console input into lines and recognises commands: "screenshot",
 // and for the demo build (RC_FAKE_API) only, "key <name>" (up, select, back,
-// home, palette...; see screenshot.cpp) and "type <text>".
+// home, palette, settings, help...; see screenshot.cpp) and "type <text>".
 class SerialCommand {
  public:
   enum Result { None, Screenshot, Key, Type };

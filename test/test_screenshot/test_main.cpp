@@ -66,11 +66,13 @@ void test_command_line() {
 void test_key_and_type_commands() {
   SerialCommand c;
   const char* names[] = {"up", "down", "left", "right", "select", "back", "home", "palette", "options",
-                         "backspace", "symbols", "emoji", "circ", "cmail", "feed", "screenoff"};
+                         "backspace", "symbols", "emoji", "circ", "cmail", "feed", "screenoff",
+                         "settings", "help"};
   const Action acts[] = {Action::Up, Action::Down, Action::Left, Action::Right, Action::Select,
                          Action::Back, Action::OpenHome, Action::Palette, Action::Options,
                          Action::Backspace, Action::Symbols, Action::Emoji, Action::OpenCirc,
-                         Action::OpenCmail, Action::OpenFeed, Action::ScreenOff};
+                         Action::OpenCmail, Action::OpenFeed, Action::ScreenOff,
+                         Action::OpenSettings, Action::KeysHelp};
   for (size_t i = 0; i < sizeof(acts) / sizeof(acts[0]); ++i) {
     std::string line = std::string("key ") + names[i] + "\n";
     SerialCommand::Result r = SerialCommand::None;

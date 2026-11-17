@@ -40,7 +40,7 @@ constexpr KeyName kKeys[] = {
     {"home", Action::OpenHome},   {"palette", Action::Palette},   {"options", Action::Options},
     {"backspace", Action::Backspace}, {"symbols", Action::Symbols}, {"emoji", Action::Emoji},
     {"circ", Action::OpenCirc},   {"cmail", Action::OpenCmail},   {"feed", Action::OpenFeed},
-    {"screenoff", Action::ScreenOff},
+    {"screenoff", Action::ScreenOff}, {"settings", Action::OpenSettings}, {"help", Action::KeysHelp},
 };
 
 }  // namespace

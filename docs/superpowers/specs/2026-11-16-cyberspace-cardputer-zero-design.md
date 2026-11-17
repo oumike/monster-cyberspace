@@ -165,10 +165,10 @@ The CMake build compiles these instead of the `src/` file of the same name:
 | `store/nvs_migrate.cpp` | no-op |
 | `store/mascot_store.cpp` | the same encoded blob as the partition, in `~/.config/monster-cyberspace/mascot.bin`; still posts `EvtType::MascotChanged` |
 | `sys/mem.cpp` | `malloc`/`calloc` |
-| `src/main.cpp` | a `main()` that runs today's `setup()` steps (minus `nvsmigrate` and OTA), then waits for the quit flag (§5; `SIGINT` and `SIGTERM` set it too, §2.1), stops the workers, and returns 0 |
+| `src/main.cpp` | a `main()` that runs today's `setup()` steps (minus `nvsmigrate` and OTA), then waits for the quit flag (§5; `SIGINT` and `SIGTERM` set it too, §2.1), waits up to 1 s for the UI task to stop drawing, lets go of the display and exits 0 with `_exit`: the workers have no stop and may be blocked in a request, and every save is already a whole file (§4.1) |
 
-`app/ota_service.cpp` and `app/power_service.cpp` are not built
-(`RC_FEAT_OTA=0`, and `sleepsOnBattery()` is false).
+`app/ota_service.cpp` is not built (`RC_FEAT_OTA=0`). `app/power_service.cpp`
+is built but does nothing, since `sleepsOnBattery()` is false.
 
 ### 4.3 Dependencies
 

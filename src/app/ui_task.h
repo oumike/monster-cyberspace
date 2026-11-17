@@ -12,6 +12,10 @@ namespace rc::ui {
 
 // Starts the UI task on core 1 (16 KB stack, every 33 ms).
 void start();
+#if RC_LINUX
+// The UI task has seen quitRequested() and stopped drawing.
+bool stopped();
+#endif
 // Switches the text size, saves it and redraws everything.
 void setTextSize(TextSize s);
 // Sets and saves the chat style; the logs lay out again on their next frame.

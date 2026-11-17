@@ -40,7 +40,9 @@ FetchContent_MakeAvailable(lvgl arduinojson qrcode)
 # BOARD_HAS_PSRAM: plenty of RAM, so the PSRAM paths (a whole frame, the full
 # LVGL, two screen trees) apply. lv_conf.h takes LVGL's allocator from libc
 # for RC_LINUX.
-set(MC_DEFS RC_LINUX=1 BOARD_HAS_PSRAM=1 LV_CONF_INCLUDE_SIMPLE)
+# No OTA (the launcher's packages update it) and no Wi-Fi management (Linux
+# owns Wi-Fi); every other feature is on.
+set(MC_DEFS RC_LINUX=1 BOARD_HAS_PSRAM=1 LV_CONF_INCLUDE_SIMPLE RC_FEAT_OTA=0 RC_FEAT_WIFI_MGMT=0)
 if(MC_BOARD STREQUAL "sim")
   list(APPEND MC_DEFS BOARD_LINUX_SIM=1)
 elseif(MC_BOARD STREQUAL "cp0")
@@ -94,9 +96,31 @@ set(REPLACE_SOURCES
   replace/store/nvs_migrate.cpp
   replace/store/mascot_store.cpp
   replace/sys/mem.cpp
-  "${REPO}/src/app/queues.cpp"
-  "${REPO}/src/store/settings.cpp")
+  replace/web/web_server.cpp)
 find_package(CURL REQUIRED)
+
+# The rest of src/: everything but the files replaced above, main.cpp (the
+# replacement has main()), the X4's grid UI, other boards' HALs and OTA. The
+# power service is built but idle: sleepsOnBattery() is false.
+file(GLOB_RECURSE APP_SOURCES CONFIGURE_DEPENDS "${REPO}/src/*.cpp")
+list(FILTER APP_SOURCES EXCLUDE REGEX "/src/(grid_ui|hal)/")
+foreach(r ${REPLACE_SOURCES})
+  string(REGEX REPLACE "^replace/" "${REPO}/src/" orig "${r}")
+  list(REMOVE_ITEM APP_SOURCES "${orig}")
+endforeach()
+list(REMOVE_ITEM APP_SOURCES
+  "${REPO}/src/main.cpp"
+  "${REPO}/src/app/ota_service.cpp")
+
+# Spell check's dictionary, generated from dict/en.txt as the PlatformIO
+# builds do (tools/gen_spell_dict.py).
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+add_custom_command(
+  OUTPUT "${REPO}/src/spell_dict_en.h"
+  COMMAND Python3::Interpreter "${REPO}/tools/gen_spell_dict.py"
+  DEPENDS "${REPO}/dict/en.txt" "${REPO}/tools/gen_spell_dict.py"
+  COMMENT "Generating src/spell_dict_en.h")
+add_custom_target(spell_dict DEPENDS "${REPO}/src/spell_dict_en.h")
 
 set(MC_INCLUDES
   "${CMAKE_CURRENT_SOURCE_DIR}/replace"
@@ -119,7 +143,9 @@ add_executable(monster-cyberspace
   ${LVUI_SOURCES}
   ${HAL_SOURCES}
   ${REPLACE_SOURCES}
+  ${APP_SOURCES}
   "${CMAKE_CURRENT_SOURCE_DIR}/replace/main.cpp")
+add_dependencies(monster-cyberspace spell_dict)
 target_include_directories(monster-cyberspace PRIVATE ${MC_INCLUDES})
 target_link_libraries(monster-cyberspace PRIVATE lvgl mc_compat CURL::libcurl)
 

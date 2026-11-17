@@ -5,6 +5,7 @@
 #include <lvgl.h>
 
 #include <algorithm>
+#include <atomic>
 #include <iterator>
 #include <memory>
 #include <mutex>
@@ -70,6 +71,9 @@
 namespace rc::ui {
 
 namespace {
+#if RC_LINUX
+std::atomic<bool> uiStopped{false};
+#endif
 
 constexpr uint32_t kFrameMs = 33;
 constexpr int64_t kSaverMs = 10000;
@@ -1258,6 +1262,9 @@ void taskMain(void*) {
   router::Id beforeScreen = router::current();
   Power beforePower = power;
   for (;;) {
+#if RC_LINUX
+    if (quitRequested()) break;
+#endif
     uint32_t start = millis();
 #if RC_LOW_MEM
     logMemory(start);
@@ -1404,9 +1411,16 @@ void taskMain(void*) {
     uint32_t spent = millis() - start;
     vTaskDelay(pdMS_TO_TICKS(spent < kFrameMs ? kFrameMs - spent : 1));
   }
+#if RC_LINUX
+  uiStopped = true;
+#endif
 }
 
 }  // namespace
+
+#if RC_LINUX
+bool stopped() { return uiStopped; }
+#endif
 
 void start() {
   symbols.setEmoji(RC_FEAT_EMOJI != 0);

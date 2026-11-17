@@ -122,10 +122,10 @@ Tasks 1, 2, 4–7 do not depend on it and may start first.
 **Files:**
 - Modify: `linux/CMakeLists.txt` (all of `src/` minus replaced files, `src/grid_ui/`, `src/hal/<other boards>/`, `app/ota_service.cpp`, `app/power_service.cpp`), `linux/replace/main.cpp` (real `setup()` sequence), `src/app/app_state.{h,cpp}` (`requestQuit`/`quitRequested`), `src/app/ui_task.cpp` (check quit each frame), `src/hal/board.h` + `board_defaults.cpp` (`webConfigOptIn`, `backupPlaceName`), RC_LINUX guards per spec §6.
 
-- [ ] **Step 1:** Build with `scripts/build-cardputer-zero.sh --sim --fake`; fix each compile error with a shim or a guard per spec §6 (never by editing screen logic).
-- [ ] **Step 2: Run** the simulator (demo build): splash → Home → a room → type and send → C-Mail → Feed → Settings → F10 help → long Esc. Expected: each screen draws at 320×170 and the process exits 0 within 3 s of the long Esc.
-- [ ] **Step 3: Run** `nice pio test -e native && nice pio test -e native_lv && scripts/build-upload-monitor.sh -B`. Expected: green (X4 only from a path without spaces).
-- [ ] **Step 4: Commit** `git commit -s -m "Run the whole app on the Linux simulator"`
+- [x] **Step 1:** Build with `scripts/build-cardputer-zero.sh --sim --fake`; fix each compile error with a shim or a guard per spec §6 (never by editing screen logic). (Done: web config is a stand-in that serves nothing until Task 7, `linux/replace/web/web_server.cpp`; `power_service.cpp` builds as is. `webConfigOptIn` and `backupPlaceName` move to Tasks 7 and 8, where they are used.)
+- [x] **Step 2: Run** the simulator (demo build): splash → Home → a room → type and send → C-Mail → Feed → Settings → F10 help → long Esc. Expected: each screen draws at 320×170 and the process exits 0 within 3 s of the long Esc. (Done through the demo console, which gained `key settings` and `key help`: every screen drew at 320×170, and SIGTERM exits 0 in 0.5 s. Holding Esc in the window is still to be tried by hand.)
+- [x] **Step 3: Run** `nice pio test -e native && nice pio test -e native_lv && scripts/build-upload-monitor.sh -B`. Expected: green (X4 only from a path without spaces). (Done: native and native_lv green; m9, wio_l2, tdeck and crowpanel35 built, the other envs skipped at the user's call; the CardputerZero container build and its ctest pass.)
+- [x] **Step 4: Commit** `git commit -s -m "Run the whole app on the Linux simulator"`
 
 ### Task 7: Web config opt-in and the `esp_http_server` shim
 

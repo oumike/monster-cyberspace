@@ -158,7 +158,7 @@ The README's screenshots come from the demo build: `RC_FAKE_API` swaps the
 network for scripted rooms, C-Mail and Feed with made-up users, a fixed clock,
 and no Wi-Fi, so it never touches the Cyberspace API. It also takes
 `key <name>` (up, down, left, right, select, back, home, palette, options,
-backspace, symbols, emoji, circ, cmail, feed, screenoff) and `type <text>` on
+backspace, symbols, emoji, circ, cmail, feed, screenoff, settings, help) and `type <text>` on
 the console, so screens can be driven from a script. Never release it:
 
 ```sh

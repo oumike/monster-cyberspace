@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 
 #include "input/function_keys.h"
 #include "input/key_event.h"
@@ -184,5 +185,9 @@ bool rtcWrite(int64_t epochUtc);
 bool hasSdSlot();
 fs::FS* sdMount();
 void sdUnmount();
+// Where backups go, as Settings names it: "SD card" (the default), or a
+// folder on boards whose sdMount is a directory (the CardputerZero).
+const char* backupPlaceName();
+inline bool backupOnCard() { return std::strcmp(backupPlaceName(), "SD card") == 0; }
 
 }  // namespace board

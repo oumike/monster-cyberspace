@@ -84,7 +84,9 @@ set(HAL_SOURCES
 if(MC_BOARD STREQUAL "sim")
   list(APPEND HAL_SOURCES "${REPO}/src/hal/linux_sim/board_linux_sim.cpp")
 else()
-  list(APPEND HAL_SOURCES "${REPO}/src/hal/cardputer_zero/board_cardputer_zero.cpp")
+  foreach(f board fb input power audio)
+    list(APPEND HAL_SOURCES "${REPO}/src/hal/cardputer_zero/${f}_cardputer_zero.cpp")
+  endforeach()
 endif()
 
 # The Linux versions of src/ files that talk to ESP-IDF (spec section 4.2),
@@ -151,11 +153,17 @@ add_dependencies(monster-cyberspace spell_dict)
 target_include_directories(monster-cyberspace PRIVATE ${MC_INCLUDES})
 target_link_libraries(monster-cyberspace PRIVATE lvgl mc_compat CURL::libcurl)
 
+find_package(PkgConfig REQUIRED)
 if(MC_BOARD STREQUAL "sim")
-  find_package(PkgConfig REQUIRED)
   pkg_check_modules(SDL2 REQUIRED IMPORTED_TARGET sdl2)
   target_link_libraries(monster-cyberspace PRIVATE PkgConfig::SDL2)
+else()
+  pkg_check_modules(ALSA REQUIRED IMPORTED_TARGET alsa)
+  target_link_libraries(monster-cyberspace PRIVATE PkgConfig::ALSA)
 endif()
+# The HALs are ours: hold them to -Wall -Wextra.
+file(GLOB HAL_OWN "${REPO}/src/hal/cardputer_zero/*.cpp" "${REPO}/src/hal/linux_sim/*.cpp")
+set_source_files_properties(${HAL_OWN} PROPERTIES COMPILE_OPTIONS "-Wall;-Wextra")
 
 # ctest --preset sim: the compat layer's own tests.
 enable_testing()

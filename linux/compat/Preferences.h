@@ -46,6 +46,10 @@ class Preferences {
 namespace compat {
 // The directory the namespaces live in.
 std::string configDir();
+// Where backups go (MONSTER_DATA_DIR, else ~/monster-cyberspace), and the
+// directories it takes, made 0700. False if they can't be.
+std::string dataDir();
+bool makeDirs(const std::string& dir);
 // Writes `name` in configDir() whole or not at all (a temporary file, fsync,
 // rename), creating the directory 0700 and the file 0600.
 bool writeConfigFile(const std::string& name, const std::string& bytes);

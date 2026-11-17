@@ -239,8 +239,10 @@ Fonts stay the compiled-in Terminus cells, so FreeType is not needed.
   false when absent.
 - **Backlight:** `backlight`/`backlightLevel` write the backlight sysfs
   `brightness` (scaled to `max_brightness`). The screensaver and screen-off
-  keep working. If there is no sysfs node, screen-off paints black and
-  `backlight` is a no-op.
+  keep working, and the launcher's brightness is restored on exit. If there is
+  no sysfs node, dark (off, sleep or level 0) paints the framebuffer black and
+  light re-draws the last frame. The brightness keys step the level by 32
+  (floor 16) from the last one set; the next Brightness setting replaces it.
 - **Sound:** `beep` writes a short square wave to ALSA's default PCM on its
   own thread; `setVolume` scales it. `hasSound` and `hasVolume` are true.
 - **Clock:** `rtcRead/rtcWrite` return false (Linux owns the RTC).
@@ -318,11 +320,15 @@ there stops the server after the reply. Tested by `linux/tests/test_httpd.cpp`.
   shim), mode 0600, directory 0700.
 - Mascot: `~/.config/monster-cyberspace/mascot.bin`.
 - Backups: `hasSdSlot()` is true and `sdMount()` returns an `fs::FS` rooted at
-  `~/monster-cyberspace/` (created on first use, 0700), so backups land in
-  `~/monster-cyberspace/backups/` as they land in `/backups/` on SD today.
-  The user can copy them off over SSH, ADB or the web page. The Settings
-  wording says "Save backup" without "to SD" on this board, using a new
-  `board::backupPlaceName()` that defaults to "SD card".
+  `~/monster-cyberspace/` (`MONSTER_DATA_DIR` overrides it; created on first
+  use, 0700), so backups land in `~/monster-cyberspace/backups/` (files 0600,
+  as they hold passwords) as they land in `/monster-cyberspace/backups/` on SD:
+  the `fs::FS` shim is mounted at that path and reaches nothing else. The user can copy them off over SSH, ADB or the
+  web page. A new `board::backupPlaceName()` (default "SD card") names the
+  place: Settings reads "Back up to ~/monster-cyberspace" and "Restore from
+  ~/monster-cyberspace…", Setup "Restore backup", the picker "No backups in
+  ~/monster-cyberspace", and web config "Save a backup in ~/monster-cyberspace".
+  ESP boards keep their SD wording (`board::backupOnCard()`).
 - Factory reset deletes the config directory's files (not backups) and
   restarts the app.
 

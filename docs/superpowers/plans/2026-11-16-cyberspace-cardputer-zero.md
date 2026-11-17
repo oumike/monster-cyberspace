@@ -146,11 +146,11 @@ Tasks 1, 2, 4–7 do not depend on it and may start first.
 **Files:**
 - Create: `src/hal/cardputer_zero/board_cardputer_zero.cpp`, `fb_cardputer_zero.cpp`, `input_cardputer_zero.cpp`, `power_cardputer_zero.cpp`, `audio_cardputer_zero.cpp`
 
-- [ ] **Step 1:** Framebuffer: pick the node (spec §5: `LV_LINUX_FBDEV_DEVICE`, `/proc/fb`'s `fb_st7789v`, `/dev/fb0`), `FBIOGET_VSCREENINFO`, `mmap`, 16/32 bpp `pushRows`; black on exit.
-- [ ] **Step 2:** Keyboard reader thread (no grab, raw evdev) into `CardputerZeroKeys`; device path per spec §5; `modifier_state` read on each press; the `sym` table from `/usr/share/keymaps/tca8418_keypad_m5stack_keymap.map`; `SIGINT`/`SIGTERM` set the quit flag.
-- [ ] **Step 3:** Battery and backlight sysfs; ALSA beep thread; every flag per spec §5.
-- [ ] **Step 4: Run** `scripts/build-cardputer-zero.sh`. Expected: aarch64 binary, no warnings from the new files.
-- [ ] **Step 5: Commit** `git commit -s -m "CardputerZero HAL: framebuffer, keyboard, battery, backlight, beep"`
+- [x] **Step 1:** Framebuffer: pick the node (spec §5: `LV_LINUX_FBDEV_DEVICE`, `/proc/fb`'s `fb_st7789v`, `/dev/fb0`), `FBIOGET_VSCREENINFO`, `mmap`, 16/32 bpp `pushRows`; black on exit.
+- [x] **Step 2:** Keyboard reader thread (no grab, raw evdev) into `CardputerZeroKeys`; device path per spec §5; `modifier_state` read on each press; the `sym` table from `/usr/share/keymaps/tca8418_keypad_m5stack_keymap.map`; `SIGINT`/`SIGTERM` set the quit flag.
+- [x] **Step 3:** Battery and backlight sysfs; ALSA beep thread; every flag per spec §5.
+- [x] **Step 4: Run** `scripts/build-cardputer-zero.sh`. Expected: aarch64 binary, no warnings from the new files. *Done: no warnings with `-Wall -Wextra` on the HAL files; links `libasound.so.2` and `libcurl.so.4`; container ctest passes. Backups go to `~/monster-cyberspace` through `sdMount` (spec §8). Not run on hardware yet (Task 10).*
+- [x] **Step 5: Commit** `git commit -s -m "CardputerZero HAL: framebuffer, keyboard, battery, backlight, beep"`
 
 ### Task 9: Packaging, release, CI and docs
 

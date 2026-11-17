@@ -9,6 +9,7 @@
 #include "screens/lv_draw.h"
 #include "screens/screens.h"
 #include "store/backup_store.h"
+#include "util/utf8.h"
 #include "ui/button_grid.h"
 
 namespace rc {
@@ -22,7 +23,7 @@ void SetupScreen::enter(const std::string&) {
     std::vector<backupstore::FileInfo> files;
     const backupstore::Result r = backupstore::listSd(files);
     if (r.ok && !files.empty()) {
-      items.push_back(ListItem{U"Restore from SD card", U""});
+      items.push_back(ListItem{U"Restore from " + utf8ToU32(board::backupPlaceName()), U""});
       hasRestore_ = true;
     }
   }
@@ -139,7 +140,8 @@ void SetupScreen::sync() {
     std::vector<ListItem> items;
     if (RC_FEAT_WIFI_MGMT) items.push_back(ListItem{U"Join Wi-Fi", U""});
     items.push_back(ListItem{U"Log in on device", U""});
-    if (hasRestore_) items.push_back(ListItem{U"Restore from SD", U""});
+    if (hasRestore_)
+      items.push_back(ListItem{board::backupOnCard() ? U"Restore from SD" : U"Restore backup", U""});
     pad_.sync(v_->padView_, items, top, bottom, false, columns);
     syncHint(v_->hint_, U"tap to select");
     return;

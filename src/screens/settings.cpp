@@ -903,10 +903,10 @@ std::vector<ListItem> itemRows(const std::vector<Item>& items, bool buttons, boo
                                 a.cfg.autoUpdate});
         break;
       case kBackup:
-        rows.push_back(ListItem{U"Back up to SD card", U""});
+        rows.push_back(ListItem{U"Back up to " + widen(board::backupPlaceName()), U""});
         break;
       case kRestore:
-        rows.push_back(ListItem{U"Restore from SD card\u2026", U""});
+        rows.push_back(ListItem{U"Restore from " + widen(board::backupPlaceName()) + U"\u2026", U""});
         break;
       case kLogout:
         rows.push_back(ListItem{U"Log out", U""});

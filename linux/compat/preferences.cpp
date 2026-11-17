@@ -121,6 +121,14 @@ std::string compat::configDir() {
   return std::string(home && *home ? home : ".") + "/.config/monster-cyberspace";
 }
 
+std::string compat::dataDir() {
+  if (const char* d = std::getenv("MONSTER_DATA_DIR"); d && *d) return d;
+  const char* home = std::getenv("HOME");
+  return std::string(home && *home ? home : ".") + "/monster-cyberspace";
+}
+
+bool compat::makeDirs(const std::string& dir) { return mkdirs(dir); }
+
 bool compat::writeConfigFile(const std::string& name, const std::string& bytes) {
   if (!mkdirs(compat::configDir())) return false;
   const std::string path = pathOf(name), tmp = path + ".tmp";

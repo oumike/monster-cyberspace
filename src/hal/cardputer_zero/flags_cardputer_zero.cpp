@@ -3,6 +3,11 @@
 // builds this file too, so both show the same UI.
 #if defined(BOARD_CARDPUTER_ZERO) || defined(BOARD_LINUX_SIM)
 
+#include <FS.h>
+#include <Preferences.h>
+
+#include <memory>
+
 #include "hal/board.h"
 #include "input/keymap_cardputer_zero.h"
 
@@ -41,15 +46,25 @@ bool eink() { return false; }
 // 320x170: Large (10x18 cells) leaves too few rows.
 bool hasLargeText() { return false; }
 
-// Linux owns the clock; there is no GPS or SD slot (backups go to a file).
+// Linux owns the clock; there is no GPS.
 bool hasGps() { return false; }
 void gpsPower(bool) {}
 size_t gpsRead(uint8_t*, size_t) { return 0; }
 bool rtcRead(int64_t&) { return false; }
 bool rtcWrite(int64_t) { return false; }
-bool hasSdSlot() { return false; }
-fs::FS* sdMount() { return nullptr; }
+
+// No SD slot: backups go where the backup store's SD paths point, a folder
+// in the home directory (spec section 8), made on first use.
+bool hasSdSlot() { return true; }
+fs::FS* sdMount() {
+  static std::unique_ptr<fs::FS> dir;
+  const std::string root = compat::dataDir();
+  if (!compat::makeDirs(root)) return nullptr;
+  if (!dir || dir->root() != root) dir = std::make_unique<fs::FS>(root, "/monster-cyberspace");
+  return dir.get();
+}
 void sdUnmount() {}
+const char* backupPlaceName() { return "~/monster-cyberspace"; }
 
 }  // namespace board
 

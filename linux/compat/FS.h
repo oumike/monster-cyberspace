@@ -48,6 +48,9 @@ class File {
 class FS {
  public:
   explicit FS(std::string root) : root_(std::move(root)) {}
+  // Only paths at or under `mount` (e.g. "/monster-cyberspace") are
+  // reachable; `mount` itself is the root.
+  FS(std::string root, std::string mount) : root_(std::move(root)), mount_(std::move(mount)) {}
   const std::string& root() const { return root_; }
 
   File open(const char* path, const char* mode = FILE_READ, bool create = false);
@@ -59,6 +62,7 @@ class FS {
  private:
   bool hostPath(const char* path, std::string& out) const;
   std::string root_;
+  std::string mount_;
 };
 
 }  // namespace fs

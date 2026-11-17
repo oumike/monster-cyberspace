@@ -7,6 +7,7 @@
 namespace board {
 
 __attribute__((weak)) bool hasSound() { return true; }
+__attribute__((weak)) const char* backupPlaceName() { return "SD card"; }
 __attribute__((weak)) bool hasVolume() { return false; }
 __attribute__((weak)) void setVolume(uint8_t) {}
 __attribute__((weak)) bool canType() { return true; }

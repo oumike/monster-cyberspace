@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include <FS.h>
 #include <dirent.h>
+#include <fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -76,7 +77,13 @@ void File::close() {
 
 bool FS::hostPath(const char* path, std::string& out) const {
   if (!path || path[0] != '/') return false;
-  const std::string p(path);
+  std::string p(path);
+  if (!mount_.empty()) {
+    if (p.compare(0, mount_.size(), mount_) != 0) return false;
+    p.erase(0, mount_.size());
+    if (p.empty()) p = "/";
+    if (p[0] != '/') return false;
+  }
   for (size_t i = 0; i < p.size();) {
     const size_t j = p.find('/', i + 1);
     const std::string part = p.substr(i + 1, (j == std::string::npos ? p.size() : j) - i - 1);
@@ -105,7 +112,14 @@ File FS::open(const char* path, const char* mode, bool) {
     return f;
   }
   const char* m = reading ? "rb" : mode[0] == 'a' ? "ab" : "wb";
-  f.f_ = std::fopen(full.c_str(), m);
+  if (reading) {
+    f.f_ = std::fopen(full.c_str(), m);
+  } else {
+    // New files are 0600, since backups hold passwords.
+    const int fd = ::open(full.c_str(), O_WRONLY | O_CREAT | (mode[0] == 'a' ? O_APPEND : O_TRUNC),
+                          0600);
+    if (fd >= 0 && !(f.f_ = ::fdopen(fd, m))) ::close(fd);
+  }
   return f;
 }
 

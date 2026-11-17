@@ -24,7 +24,9 @@ bool BackupPicker::open() {
     return false;
   }
   if (files_.empty()) {
-    ui::banner("No backups on the SD card", false);
+    ui::banner(board::backupOnCard() ? std::string("No backups on the SD card")
+                                     : std::string("No backups in ") + board::backupPlaceName(),
+               false);
     return false;
   }
   std::vector<ListItem> rows;
@@ -163,13 +165,13 @@ void BackupPicker::sync() {
       pad_.sync(v_->padView_, rows, top + 1, bottom, false);
       syncHint(v_->hint_, U"\u25CF confirm  back: cancel", U"tap: confirm  back: cancel");
     } else {
-      lvui::setText(v_->title_, U"restore from SD");
+      lvui::setText(v_->title_, board::backupOnCard() ? U"restore from SD" : U"restore backup");
       pad_.sync(v_->padView_, list_.items(), top + 1, bottom, true, 1);
       syncHint(v_->hint_, U"\u2191\u2193 pick  \u25CF restore  back: cancel", U"tap to restore  back: cancel");
     }
     return;
   }
-  lvui::setText(v_->title_, U"restore from SD");
+  lvui::setText(v_->title_, board::backupOnCard() ? U"restore from SD" : U"restore backup");
   if (confirming_) {
     v_->confirmView_.setPlace(OverlayPlace::Bottom, bottom * c.h, 0, top * c.h);
     v_->confirmView_.sync(confirmBox_);

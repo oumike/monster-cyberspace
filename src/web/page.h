@@ -204,6 +204,12 @@ async function call(method,url,body){
 #else
 #define RC_SECURITY_NOTE_HTML R"HTML(<p>This page is plain HTTP on your network, so set a page password on shared networks. The setup AP is open unless it has a password, so anyone in radio range can join it while it runs: with no saved Wi-Fi, when turned on in the device's Settings, or after the saved networks fail for 5 minutes. Anything typed on it, Wi-Fi and Cyberspace passwords included, crosses that link unencrypted. A backup holds the sign-in token and every password, so anyone who can open this page can take them.</p>)HTML"
 #endif
+// Where a backup saved on the device goes (board::backupPlaceName).
+#if RC_LINUX
+#define RC_SAVE_BACKUP_HTML "Save a backup in ~/monster-cyberspace"
+#else
+#define RC_SAVE_BACKUP_HTML "Save a backup to the SD card"
+#endif
 // Wi-Fi management (RC_FEAT_WIFI_MGMT): the saved networks, setup mode's zone,
 // and the setup-AP password. Boards whose OS owns Wi-Fi leave them out.
 #if RC_FEAT_WIFI_MGMT
@@ -371,7 +377,7 @@ static const char kPage[] = R"HTML(<!doctype html>
 <div class="acts"><a class="btn" href="/api/backup" download>Download backup</a></div>
 <div class="row"><label for="restorefile">Restore</label><input id="restorefile" type="file" accept=".yaml"></div>
 <div id="sdblock" hidden>
-<div class="acts"><button type="button" id="savesd">Save a backup to the SD card</button></div>
+<div class="acts"><button type="button" id="savesd">)HTML" RC_SAVE_BACKUP_HTML R"HTML(</button></div>
 <ul class="list" id="sdfiles"></ul>
 </div>
 <div id="backupmsg" class="msg"></div>

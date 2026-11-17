@@ -325,6 +325,7 @@ esp_err_t getStatus(httpd_req_t* req) {
   return sendJson(req, d);
 }
 
+#if RC_FEAT_WIFI_MGMT
 esp_err_t getScan(httpd_req_t* req) {
   if (!authorized(req)) return ESP_OK;
   JsonDocument d;
@@ -381,6 +382,7 @@ esp_err_t deleteWifi(httpd_req_t* req) {
   return okReply(req, s.wifi.empty() ? "Removed. With no networks saved, the next restart opens setup mode."
                                      : "Removed.");
 }
+#endif
 
 esp_err_t postLogin(httpd_req_t* req) {
   if (!authorized(req)) return ESP_OK;
@@ -466,7 +468,7 @@ esp_err_t getPrefs(httpd_req_t* req) {
   if (board::hasKbLight()) d["kbLight"] = rc::kbLightKey(s.kbLight);
   if (board::hasLedLevel()) d["ledLevel"] = rc::ledLevelKey(s.ledLevel);
   if (board::hasPowerLight()) d["powerLight"] = rc::ledColorKey(s.powerLight);
-  if (board::hasWifiLight()) {
+  if (RC_FEAT_WIFI_MGMT && board::hasWifiLight()) {
     d["wifiJoined"] = rc::ledColorKey(s.wifiJoined);
     d["wifiSetup"] = rc::ledColorKey(s.wifiSetup);
     d["wifiLooking"] = rc::ledColorKey(s.wifiLooking);
@@ -713,7 +715,7 @@ void applyPrefs(const PrefsChange& c, const Settings& s) {
       l.wifiSetup != s.wifiSetup || l.wifiLooking != s.wifiLooking) {
     if (board::hasLedLevel()) cfg.ledLevel = l.ledLevel;
     if (board::hasPowerLight()) cfg.powerLight = l.powerLight;
-    if (board::hasWifiLight()) {
+    if (RC_FEAT_WIFI_MGMT && board::hasWifiLight()) {
       cfg.wifiJoined = l.wifiJoined;
       cfg.wifiSetup = l.wifiSetup;
       cfg.wifiLooking = l.wifiLooking;
@@ -1138,9 +1140,11 @@ void begin() {
       {"/api/compose", HTTP_GET, getCompose},
       {"/api/compose", HTTP_POST, postCompose},
       {"/api/status", HTTP_GET, getStatus},
+#if RC_FEAT_WIFI_MGMT
       {"/api/wifi/scan", HTTP_GET, getScan},
       {"/api/wifi", HTTP_POST, postWifi},
       {"/api/wifi", HTTP_DELETE, deleteWifi},
+#endif
       {"/api/login", HTTP_POST, postLogin},
       {"/api/logout", HTTP_POST, postLogout},
       {"/api/resend", HTTP_POST, postResend},

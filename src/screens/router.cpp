@@ -21,7 +21,9 @@ RoomScreen room;
 SettingsScreen settingsScreen;
 ComingSoonScreen comingSoon;
 LoginFormScreen loginForm;
+#if RC_FEAT_WIFI_MGMT
 WifiScreen wifiScreen;
+#endif
 // Each feature's screens exist only when it is built (feature_flags.h).
 #if RC_FEAT_CMAIL
 CmailListScreen cmailList;
@@ -96,7 +98,9 @@ Screen* lookup(Id id) {
     case Id::ComingSoon: return &comingSoon;
     case Id::LoginForm: return &loginForm;
     case Id::Settings: return &settingsScreen;
+#if RC_FEAT_WIFI_MGMT
     case Id::Wifi: return &wifiScreen;
+#endif
 #if RC_FEAT_CMAIL
     case Id::CmailList: return &cmailList;
     case Id::Conversation: return &conversation;
@@ -323,7 +327,7 @@ Id bootTarget() {
   return Id::Home;
 #else
   const Settings& c = app().cfg;
-  if (c.wifi.empty() || c.refreshToken.empty()) return Id::Setup;
+  if ((RC_FEAT_WIFI_MGMT && c.wifi.empty()) || c.refreshToken.empty()) return Id::Setup;
   return Id::Home;
 #endif
 }

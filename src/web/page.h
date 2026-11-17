@@ -188,6 +188,72 @@ async function call(method,url,body){
 }
 )JS"
 
+// Wi-Fi management (RC_FEAT_WIFI_MGMT): the saved networks, setup mode's zone,
+// and the setup-AP password. Boards whose OS owns Wi-Fi leave them out.
+#if RC_FEAT_WIFI_MGMT
+#define RC_WIFI_HTML R"HTML(<section id="wifi" data-name="Wi-Fi">
+<h2>Wi-Fi</h2>
+<p>Saved networks, up to 5, tried in this order.</p>
+<ul class="list" id="saved"></ul>
+<div class="row"><label for="ssid">Network</label><div><input id="ssid" autocomplete="off">
+<div class="acts"><button type="button" id="scanbtn">Scan for networks</button><select id="ssidpick" hidden></select></div></div></div>
+<div class="row"><label for="wpass">Password</label><input id="wpass" type="password" autocomplete="off" placeholder="empty for an open network"></div>
+<div class="row" id="wtzrow" hidden><label for="wtz">Time zone</label><select id="wtz"></select></div>
+<div class="acts"><button type="button" id="addwifi">Add network</button></div>
+<div id="wifimsg" class="msg"></div>
+</section>
+
+)HTML"
+#define RC_AP_PW_HTML R"HTML(<div class="row"><label for="appw">Setup-AP password</label><input id="appw" type="password" autocomplete="new-password">
+<span class="note"><span id="apstate"></span> WPA2, 8 to 63 characters. It applies the next time setup mode runs.</span>
+<label class="check note" id="apopenrow" hidden><input id="apopen" type="checkbox"> Make the setup AP open</label></div>
+)HTML"
+#define RC_AP_PW_FIELD_JS R"JS(  {ids:['appw','apopen'],label:'Setup-AP password',put:b=>{(b.security=b.security||{}).apPassword=$('apopen').checked?'':$('appw').value;}},
+)JS"
+#define RC_AP_PW_INPUT_JS R"JS($('apopen').onchange=()=>{$('appw').disabled=$('apopen').checked;mark();};
+function clearSecrets(){for(const id of ['pagepw','appw'])$(id).value='',$(id).disabled=false;$('pageoff').checked=$('apopen').checked=false;}
+)JS"
+#define RC_WIFI_TZROW_JS R"JS($('wtzrow').hidden=!setupMode;)JS"
+#define RC_WIFI_SAVED_JS R"JS(  const ul=$('saved');ul.innerHTML='';
+  if(!s.saved.length){const li=document.createElement('li');li.textContent='No saved networks yet.';li.className='none';ul.appendChild(li);}
+  s.saved.forEach((n,i)=>{const li=document.createElement('li'),sp=document.createElement('span'),b=document.createElement('button');
+    sp.textContent=(i+1)+'. '+n;b.type='button';b.textContent='Remove';
+    b.onclick=async()=>{if(!confirm('Remove '+n+'?'))return;show('wifimsg',await call('DELETE','/api/wifi?ssid='+encodeURIComponent(n)));load();};
+    li.append(sp,b);ul.appendChild(li);});
+)JS"
+#define RC_AP_PW_STATE_JS R"JS(  $('apstate').textContent=s.apPasswordSet?'Set; type a new one to change it.':'Open.';
+)JS"
+#define RC_AP_PW_ROW_JS R"JS($('apopenrow').hidden=!s.apPasswordSet;)JS"
+#define RC_WIFI_ZONES_JS R"JS(fillZones($('wtz'),true);)JS"
+#define RC_WIFI_PREFS_JS R"JS(  // Setup mode keeps a zone already set; only the factory default takes the browser's.
+  savedTzName=p.tzName;const keep=$('wtz').querySelector('option[value=""]');
+  if(keep)keep.textContent='Keep current ('+p.tz+')';
+  const bz=browserZone();$('wtz').value=p.tz==='UTC0'&&listed(bz)?bz:listed(p.tzName)?p.tzName:p.tz==='UTC0'?'Etc/UTC':'';)JS"
+#define RC_WIFI_ACTIONS_JS R"JS($('scanbtn').onclick=async()=>{const b=$('scanbtn');b.disabled=true;b.textContent='Scanning…';const r=await call('GET','/api/wifi/scan');
+  const sel=$('ssidpick'),n=(r.networks||[]);sel.innerHTML='<option value="">'+n.length+' found: pick one</option>';
+  for(const x of n){const o=document.createElement('option');o.value=o.textContent=x;sel.appendChild(o);}
+  sel.hidden=false;b.disabled=false;b.textContent='Scan again';};
+$('ssidpick').onchange=()=>{if($('ssidpick').value)$('ssid').value=$('ssidpick').value;};
+$('addwifi').onclick=async()=>{
+  // In setup mode the zone is saved first: saving the network restarts the device.
+  if(setupMode&&$('wtz').value&&$('wtz').value!==savedTzName){const z=await call('POST','/api/prefs',{tzName:$('wtz').value});if(!z.ok){show('wifimsg',z);return;}}
+  const r=await call('POST','/api/wifi',{ssid:$('ssid').value,password:$('wpass').value});show('wifimsg',r);if(r.ok)$('wpass').value='';setTimeout(load,800);};
+)JS"
+#else
+#define RC_WIFI_HTML ""
+#define RC_AP_PW_HTML ""
+#define RC_AP_PW_FIELD_JS ""
+#define RC_AP_PW_INPUT_JS R"JS(function clearSecrets(){$('pagepw').value='';$('pagepw').disabled=false;$('pageoff').checked=false;}
+)JS"
+#define RC_WIFI_TZROW_JS ""
+#define RC_WIFI_SAVED_JS ""
+#define RC_AP_PW_STATE_JS ""
+#define RC_AP_PW_ROW_JS ""
+#define RC_WIFI_ZONES_JS ""
+#define RC_WIFI_PREFS_JS ""
+#define RC_WIFI_ACTIONS_JS ""
+#endif
+
 static const char kSendPage[] = R"HTML(<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -217,19 +283,7 @@ static const char kPage[] = R"HTML(<!doctype html>
 <dl id="statuslist"><dt>device</dt><dd>loading&hellip;</dd></dl>
 </section>
 
-<section id="wifi" data-name="Wi-Fi">
-<h2>Wi-Fi</h2>
-<p>Saved networks, up to 5, tried in this order.</p>
-<ul class="list" id="saved"></ul>
-<div class="row"><label for="ssid">Network</label><div><input id="ssid" autocomplete="off">
-<div class="acts"><button type="button" id="scanbtn">Scan for networks</button><select id="ssidpick" hidden></select></div></div></div>
-<div class="row"><label for="wpass">Password</label><input id="wpass" type="password" autocomplete="off" placeholder="empty for an open network"></div>
-<div class="row" id="wtzrow" hidden><label for="wtz">Time zone</label><select id="wtz"></select></div>
-<div class="acts"><button type="button" id="addwifi">Add network</button></div>
-<div id="wifimsg" class="msg"></div>
-</section>
-
-<section id="account" data-name="Account">
+)HTML" RC_WIFI_HTML R"HTML(<section id="account" data-name="Account">
 <h2>Cyberspace account</h2>
 <p id="acct"></p>
 <div class="row"><label for="email">Email</label><input id="email" type="email" autocomplete="username"></div>
@@ -291,10 +345,7 @@ static const char kPage[] = R"HTML(<!doctype html>
 <div class="row"><label for="pagepw">Page password</label><input id="pagepw" type="password" autocomplete="new-password">
 <span class="note"><span id="pagestate"></span> User name <b>admin</b>.</span>
 <label class="check note" id="pageoffrow" hidden><input id="pageoff" type="checkbox"> Turn the page password off</label></div>
-<div class="row"><label for="appw">Setup-AP password</label><input id="appw" type="password" autocomplete="new-password">
-<span class="note"><span id="apstate"></span> WPA2, 8 to 63 characters. It applies the next time setup mode runs.</span>
-<label class="check note" id="apopenrow" hidden><input id="apopen" type="checkbox"> Make the setup AP open</label></div>
-<div class="row"><span>This page</span><label class="check"><input id="webcfg" type="checkbox"> Serve it on the joined Wi-Fi</label><span class="note">The setup AP always serves it.</span></div>
+)HTML" RC_AP_PW_HTML R"HTML(<div class="row"><span>This page</span><label class="check"><input id="webcfg" type="checkbox"> Serve it on the joined Wi-Fi</label><span class="note">The setup AP always serves it.</span></div>
 <p>This page is plain HTTP on your network, so set a page password on shared networks. The setup AP is open unless it has a password, so anyone in radio range can join it while it runs: with no saved Wi-Fi, when turned on in the device's Settings, or after the saved networks fail for 5 minutes. Anything typed on it, Wi-Fi and Cyberspace passwords included, crosses that link unencrypted. A backup holds the sign-in token and every password, so anyone who can open this page can take them.</p>
 </section>
 
@@ -370,8 +421,7 @@ const F=[
   {ids:['tzpick','tz'],label:'Time zone',put:b=>{P(b).tzName=$('tzpick').value;P(b).tz=$('tz').value;}},
   {ids:['ntp'],label:'NTP server',put:b=>{P(b).ntpServer=$('ntp').value;}},
   {ids:['pagepw','pageoff'],label:'Page password',put:b=>{(b.security=b.security||{}).pagePassword=$('pageoff').checked?'':$('pagepw').value;}},
-  {ids:['appw','apopen'],label:'Setup-AP password',put:b=>{(b.security=b.security||{}).apPassword=$('apopen').checked?'':$('appw').value;}},
-  {ids:['webcfg'],label:'Serve this page',put:b=>{P(b).webConfig=$('webcfg').checked;}},
+)JS" RC_AP_PW_FIELD_JS R"JS(  {ids:['webcfg'],label:'Serve this page',put:b=>{P(b).webConfig=$('webcfg').checked;}},
 ];
 const loaders=[()=>loadZones().then(loadPrefs)];
 const val=f=>f.ids.map(id=>{const e=$(id);return !e?'':e.type==='checkbox'?e.checked:e.value;}).join('\u0001');
@@ -392,9 +442,7 @@ function mark(){
 const edited=e=>{if(!e.target.closest('main'))return;if(!saving)notice=null;mark();};
 document.addEventListener('input',edited);document.addEventListener('change',edited);
 $('pageoff').onchange=()=>{$('pagepw').disabled=$('pageoff').checked;mark();};
-$('apopen').onchange=()=>{$('appw').disabled=$('apopen').checked;mark();};
-function clearSecrets(){for(const id of ['pagepw','appw'])$(id).value='',$(id).disabled=false;$('pageoff').checked=$('apopen').checked=false;}
-async function reloadAll(){ready=false;await Promise.all(loaders.map(l=>l()));baseline();}
+)JS" RC_AP_PW_INPUT_JS R"JS(async function reloadAll(){ready=false;await Promise.all(loaders.map(l=>l()));baseline();}
 async function save(){
   const ch=changed();if(!ch.length||saving)return;
   const b={};for(const f of ch)f.put(b);
@@ -420,7 +468,7 @@ function buildNav(){const nav=$('nav');nav.innerHTML='';if(spy)spy.disconnect();
 // ---- status, polled ----
 async function load(){
   const s=await call('GET','/api/status');if(s.version===undefined){$('topst').textContent='no answer from the device';return;}
-  setupMode=s.mode==='setup';$('wtzrow').hidden=!setupMode;
+  setupMode=s.mode==='setup';)JS" RC_WIFI_TZROW_JS R"JS(
   const bars=s.ssid?' wi-fi '+s.rssiBars+'/4':' no wi-fi';
   $('topst').textContent=s.board+' v'+s.version+'  '+(conn[s.conn]||'')+' '+bars+(s.battery<0?'':'  '+s.battery+'%');
   const rows=[['firmware','v'+s.version+' on '+s.board],['mode',setupMode?'setup (AP '+s.apSsid+')':'joined to Wi-Fi'],
@@ -430,17 +478,10 @@ async function load(){
     ['gps',s.gps||'none'],['time',s.time||'not set'],['zone',s.zone||'none']];
   const dl=$('statuslist');dl.innerHTML='';
   for(const[k,v]of rows){const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=k;dd.textContent=v;dl.append(dt,dd);}
-  const ul=$('saved');ul.innerHTML='';
-  if(!s.saved.length){const li=document.createElement('li');li.textContent='No saved networks yet.';li.className='none';ul.appendChild(li);}
-  s.saved.forEach((n,i)=>{const li=document.createElement('li'),sp=document.createElement('span'),b=document.createElement('button');
-    sp.textContent=(i+1)+'. '+n;b.type='button';b.textContent='Remove';
-    b.onclick=async()=>{if(!confirm('Remove '+n+'?'))return;show('wifimsg',await call('DELETE','/api/wifi?ssid='+encodeURIComponent(n)));load();};
-    li.append(sp,b);ul.appendChild(li);});
-  $('acct').textContent=s.signedIn?'Signed in as '+(s.email||'?')+'.':'Not signed in.';
+)JS" RC_WIFI_SAVED_JS R"JS(  $('acct').textContent=s.signedIn?'Signed in as '+(s.email||'?')+'.':'Not signed in.';
   if(!$('email').value&&s.email)$('email').value=s.email;
   $('pagestate').textContent=s.pagePasswordSet?'Set; type a new one to change it.':'Off.';
-  $('apstate').textContent=s.apPasswordSet?'Set; type a new one to change it.':'Open.';
-  $('pageoffrow').hidden=!s.pagePasswordSet;$('apopenrow').hidden=!s.apPasswordSet;
+)JS" RC_AP_PW_STATE_JS R"JS(  $('pageoffrow').hidden=!s.pagePasswordSet;)JS" RC_AP_PW_ROW_JS R"JS(
 }
 
 // ---- time zones ----
@@ -453,7 +494,7 @@ function browserZone(){try{const n=Intl.DateTimeFormat().resolvedOptions().timeZ
 function fillZones(sel,custom){sel.innerHTML='';
   for(const z of zones){const o=document.createElement('option');o.value=z.iana;o.textContent=z.label+' ('+z.iana+')';sel.appendChild(o);}
   if(custom){const o=document.createElement('option');o.value='';o.textContent='Custom (POSIX TZ)';sel.appendChild(o);}}
-async function loadZones(){if(zones.length)return;const r=await call('GET','/api/zones');zones=Array.isArray(r)?r:[];fillZones($('tzpick'),true);fillZones($('wtz'),true);}
+async function loadZones(){if(zones.length)return;const r=await call('GET','/api/zones');zones=Array.isArray(r)?r:[];fillZones($('tzpick'),true);)JS" RC_WIFI_ZONES_JS R"JS(}
 function tzCustom(){const n=$('tzpick').value;$('tzrow').hidden=n!=='';const z=zones.find(z=>z.iana===n);if(z)$('tz').value=z.posix;}
 $('tzpick').addEventListener('change',tzCustom);
 
@@ -490,22 +531,10 @@ async function loadPrefs(){const p=await call('GET','/api/prefs');if(p.tz===unde
   if(showRow('phraseblock',!!p.phrases))$('phrases').value=p.phrases.join('\n');
   if(showRow('powerblock',p.idleSecs!==undefined)){$('idle').value=String(p.idleSecs);$('wake').value=String(p.wakeMins);}
   $('tz').value=p.tz;$('tzpick').value=listed(p.tzName)?p.tzName:'';tzCustom();$('ntp').value=p.ntpServer;
-  // Setup mode keeps a zone already set; only the factory default takes the browser's.
-  savedTzName=p.tzName;const keep=$('wtz').querySelector('option[value=""]');
-  if(keep)keep.textContent='Keep current ('+p.tz+')';
-  const bz=browserZone();$('wtz').value=p.tz==='UTC0'&&listed(bz)?bz:listed(p.tzName)?p.tzName:p.tz==='UTC0'?'Etc/UTC':'';}
+)JS" RC_WIFI_PREFS_JS R"JS(}
 
 // ---- actions: each its own button, sent at once ----
-$('scanbtn').onclick=async()=>{const b=$('scanbtn');b.disabled=true;b.textContent='Scanning…';const r=await call('GET','/api/wifi/scan');
-  const sel=$('ssidpick'),n=(r.networks||[]);sel.innerHTML='<option value="">'+n.length+' found: pick one</option>';
-  for(const x of n){const o=document.createElement('option');o.value=o.textContent=x;sel.appendChild(o);}
-  sel.hidden=false;b.disabled=false;b.textContent='Scan again';};
-$('ssidpick').onchange=()=>{if($('ssidpick').value)$('ssid').value=$('ssidpick').value;};
-$('addwifi').onclick=async()=>{
-  // In setup mode the zone is saved first: saving the network restarts the device.
-  if(setupMode&&$('wtz').value&&$('wtz').value!==savedTzName){const z=await call('POST','/api/prefs',{tzName:$('wtz').value});if(!z.ok){show('wifimsg',z);return;}}
-  const r=await call('POST','/api/wifi',{ssid:$('ssid').value,password:$('wpass').value});show('wifimsg',r);if(r.ok)$('wpass').value='';setTimeout(load,800);};
-$('signin').onclick=async()=>{$('acctmsg').textContent='Signing in…';$('acctmsg').className='msg';
+)JS" RC_WIFI_ACTIONS_JS R"JS($('signin').onclick=async()=>{$('acctmsg').textContent='Signing in…';$('acctmsg').className='msg';
   const r=await call('POST','/api/login',{email:$('email').value,password:$('cpass').value});$('cpass').value='';show('acctmsg',r);load();};
 $('signout').onclick=async()=>{show('acctmsg',await call('POST','/api/logout',{}));setTimeout(load,800);};
 $('resend').onclick=async()=>{show('acctmsg',await call('POST','/api/resend',{}));};

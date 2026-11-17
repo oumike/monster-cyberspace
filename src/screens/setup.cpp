@@ -3,6 +3,7 @@
 
 #include "app/app_state.h"
 #include "app/ui_task.h"
+#include "feature_flags.h"
 #include "hal/board.h"
 #include "net/wifi_mgr.h"
 #include "screens/lv_draw.h"
@@ -13,8 +14,9 @@
 namespace rc {
 
 void SetupScreen::enter(const std::string&) {
-  std::vector<ListItem> items{ListItem{U"Join Wi-Fi on this device", U""},
-                              ListItem{U"Log in on this device", U""}};
+  std::vector<ListItem> items;
+  if (RC_FEAT_WIFI_MGMT) items.push_back(ListItem{U"Join Wi-Fi on this device", U""});
+  items.push_back(ListItem{U"Log in on this device", U""});
   hasRestore_ = false;
   if (board::hasSdSlot()) {
     std::vector<backupstore::FileInfo> files;
@@ -31,9 +33,14 @@ void SetupScreen::enter(const std::string&) {
 }
 
 void SetupScreen::activate(int i) {
-  if (i < 2 && ui::typingElsewhere("Join Wi-Fi and sign in")) return;
+  // Without Wi-Fi management there is no Join item: the rest move up one.
+  if (!RC_FEAT_WIFI_MGMT) ++i;
+  if (i < 2 && ui::typingElsewhere(RC_FEAT_WIFI_MGMT ? "Join Wi-Fi and sign in" : "Sign in")) return;
+#if RC_FEAT_WIFI_MGMT
   if (i == 0) router::go(router::Id::Wifi, "setup");
-  else if (i == 1) router::go(router::Id::LoginForm);
+  else
+#endif
+  if (i == 1) router::go(router::Id::LoginForm);
   else if (i == 2 && hasRestore_) picker_.open();
 }
 
@@ -106,7 +113,7 @@ void SetupScreen::sync() {
     else if (r < top) v_->text_.line(col, r++, s, fg);
     else ++r;
   };
-#if !RC_FAKE_API
+#if !RC_FAKE_API && RC_FEAT_WIFI_MGMT
   if (wifimgr::mode() == wifimgr::Mode::Setup) {
     line(1, "Join this Wi-Fi network:", t.fg);
     line(3, wifimgr::apSsid(), t.selectBg);
@@ -122,13 +129,16 @@ void SetupScreen::sync() {
     line(3, "http://" + wifiIp(), t.selectBg);
     ++r;
   }
-  if (!app().cfg.wifi.empty() && app().auth != 1 && app().auth != 2) {
+  const bool online = RC_FEAT_WIFI_MGMT ? !app().cfg.wifi.empty() : wifiUp();
+  if (online && app().auth != 1 && app().auth != 2) {
     line(1, "Sign in at monster-cyberspace.local", t.fg);
     line(1, "or on this device.", t.fg);
   }
   v_->text_.end();
   if (buttons_) {
-    std::vector<ListItem> items{ListItem{U"Join Wi-Fi", U""}, ListItem{U"Log in on device", U""}};
+    std::vector<ListItem> items;
+    if (RC_FEAT_WIFI_MGMT) items.push_back(ListItem{U"Join Wi-Fi", U""});
+    items.push_back(ListItem{U"Log in on device", U""});
     if (hasRestore_) items.push_back(ListItem{U"Restore from SD", U""});
     pad_.sync(v_->padView_, items, top, bottom, false, columns);
     syncHint(v_->hint_, U"tap to select");

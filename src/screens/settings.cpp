@@ -108,7 +108,7 @@ std::vector<Item> menuItems() {
   if (board::hasKbLight()) v.push_back(kKbLight);
   if (board::hasLedLevel()) v.push_back(kLedLevel);
   if (board::hasPowerLight()) v.push_back(kPowerLight);
-  if (board::hasWifiLight()) {
+  if (RC_FEAT_WIFI_MGMT && board::hasWifiLight()) {
     v.push_back(kWifiJoined);
     v.push_back(kWifiSetup);
     v.push_back(kWifiLooking);
@@ -132,7 +132,7 @@ std::vector<Item> menuItems() {
   }
   v.push_back(kWifi);
   v.push_back(kWebConfig);
-  v.push_back(kSetupAp);
+  if (RC_FEAT_WIFI_MGMT) v.push_back(kSetupAp);
   v.push_back(kFirmware);
   if (RC_FEAT_OTA) v.push_back(kAutoUpdate);
   if (board::hasSdSlot()) {
@@ -721,6 +721,7 @@ void SettingsScreen::activate(int item) {
       app().cfg.webConfig = !app().cfg.webConfig;
       settings::saveWebConfig(app().cfg.webConfig);
       break;
+#if RC_FEAT_WIFI_MGMT
     case kWifi:
       router::go(router::Id::Wifi);
       break;
@@ -730,6 +731,7 @@ void SettingsScreen::activate(int item) {
       chatSource().command(c);
       break;
     }
+#endif
     case kFirmware: {
 #if RC_FEAT_OTA
       const ota::Status st = ota::status();

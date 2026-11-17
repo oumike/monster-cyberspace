@@ -50,6 +50,11 @@
 #ifndef RC_FEAT_MASCOT
 #define RC_FEAT_MASCOT 1
 #endif
+// Wi-Fi management on the device: the setup AP, the Wi-Fi screen, saved
+// networks and the Wi-Fi lights. 0 where the OS owns the network (Linux).
+#ifndef RC_FEAT_WIFI_MGMT
+#define RC_FEAT_WIFI_MGMT 1
+#endif
 
 // Shared by several features: the entry lists, the Entry screen and the
 // network side that loads them serve the Feed, guild threads and a user's

@@ -1,3 +1,6 @@
+#include "feature_flags.h"
+
+#if RC_FEAT_WIFI_MGMT
 #include <algorithm>
 
 #include "app/app_state.h"
@@ -316,3 +319,5 @@ void WifiScreen::sync() {
 }
 
 }  // namespace rc
+
+#endif  // RC_FEAT_WIFI_MGMT

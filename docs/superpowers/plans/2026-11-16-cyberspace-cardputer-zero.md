@@ -112,10 +112,10 @@ Tasks 1, 2, 4–7 do not depend on it and may start first.
 - Modify: `lib/core/src/feature_flags.h`, `src/screens/settings.cpp`, `src/screens/setup.cpp`, `src/screens/wifi.cpp` (whole body under the flag), `src/screens/router.cpp`, `src/app/net_worker.cpp`, `src/web/web_server.cpp`, `src/web/page.h`
 - Test: extend the relevant `lib/core` test if the Settings row list lives there; otherwise a grep step.
 
-- [ ] **Step 1:** Add `RC_FEAT_WIFI_MGMT` (default 1). Guard the setup AP, the Wi-Fi screen and its routes, network editing, the Wi-Fi LED rows, setup's Wi-Fi step and web config's Wi-Fi section.
-- [ ] **Step 2: Grep check:** `grep -rn 'Id::Wifi\|setSetupAp\|scanDetailed\|setNetworks' src` shows every hit guarded.
-- [ ] **Step 3: Run** `nice pio test -e native && nice pio test -e native_lv && nice pio run -e m9 && nice pio run -e cardputer_adv`. Expected: green, the same sizes as before the change.
-- [ ] **Step 4: Commit** `git commit -s -m "RC_FEAT_WIFI_MGMT: compile out Wi-Fi management for boards whose OS owns it"`
+- [x] **Step 1:** Add `RC_FEAT_WIFI_MGMT` (default 1). Guard the setup AP, the Wi-Fi screen and its routes, network editing, the Wi-Fi LED rows, setup's Wi-Fi step and web config's Wi-Fi section.
+- [x] **Step 2: Grep check:** `grep -rn 'Id::Wifi\|setSetupAp\|scanDetailed\|setNetworks' src` shows every hit guarded.
+- [x] **Step 3: Run** `nice pio test -e native && nice pio test -e native_lv && nice pio run -e m9 && nice pio run -e cardputer_adv`. Expected: green, the same sizes as before the change. (Done: RAM unchanged; flash 128 B smaller on the m9 and 124 B on the ADV, from `setup.cpp` building its lists with `push_back`. The config page bytes are identical. With the flag at 0 the m9 builds too.)
+- [x] **Step 4: Commit** `git commit -s -m "RC_FEAT_WIFI_MGMT: compile out Wi-Fi management for boards whose OS owns it"`
 
 ### Task 6: The whole app on the simulator
 

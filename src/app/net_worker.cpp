@@ -83,6 +83,7 @@ void post(EvtType t, int code = 0, const std::string& text = "", bool ok = true)
   postEvent(Event{t, text, code, ok});
 }
 
+#if RC_FEAT_WIFI_MGMT
 // ---- the device's Wi-Fi screen ----
 
 std::string gJoining;  // the network a WifiJoin is trying
@@ -126,6 +127,7 @@ void pollJoin() {
   if (r > 0) post(EvtType::WifiState, 1, gJoining);
   else post(EvtType::WifiState, -1, "Couldn't join " + gJoining + ": check the password", false);
 }
+#endif
 
 // Web logins wait here for the worker to finish the Login command.
 std::mutex loginMu;
@@ -876,6 +878,7 @@ class Worker {
         feed_.markOpen();
         break;
 #endif
+#if RC_FEAT_WIFI_MGMT
       case CmdType::SetupAp:
         wifimgr::setSetupAp(c.n != 0);
         return;
@@ -884,6 +887,7 @@ class Worker {
       case CmdType::WifiForget:
         wifiCommand(c);
         return;
+#endif
       case CmdType::Logout:
         closeRoom();
         signOutWorkers();
@@ -1009,7 +1013,9 @@ class Worker {
 
   void tick() {
     wifimgr::reconnectWithBackoff();
+#if RC_FEAT_WIFI_MGMT
     pollJoin();
+#endif
     int64_t now = mono();
     saveReadMarks(now);
 

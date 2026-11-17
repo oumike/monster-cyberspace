@@ -43,10 +43,10 @@ says so. Commit once per task (`git commit -s`, a "Tested:" line).
 
 ## Task 4: Scripts, CI, release, flasher
 
-- [ ] `.github/workflows/build.yml`, `scripts/build-upload-monitor.sh`
+- [x] `.github/workflows/build.yml`, `scripts/build-upload-monitor.sh`
       (`--tab5`, `-B`), `scripts/release.sh` (env list, bootloader 0x2000),
       `scripts/pages-site.sh` and `site/` board list; site tests.
-- [ ] Commit "Tab5: CI, release and flasher".
+- [x] Commit "Tab5: CI, release and flasher".
 
 ## Task 5: Docs
 

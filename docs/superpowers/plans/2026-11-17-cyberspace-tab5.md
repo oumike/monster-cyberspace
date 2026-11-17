@@ -9,17 +9,17 @@ says so. Commit once per task (`git commit -s`, a "Tested:" line).
 
 ## Task 1: Key map (`lib/core/src/input/keymap_tab5`)
 
-- [ ] Write `test/test_tab5_input/test_main.cpp`: letters, digits, the Sym
+- [x] Write `test/test_tab5_input/test_main.cpp`: letters, digits, the Sym
       layer (held and tapped alone), Aa tap (one-shot), double tap (Caps Lock,
       letters only), hold; Aa as Shift on second-layer keys; Esc, Enter, Tab,
       Backspace and del with repeat, arrows with repeat; Ctrl tapped alone vs
       Ctrl+key; Alt+1…7 and Alt+0; Alt+letter types nothing; releases make
       nothing; an event byte decoded (bit 7, row, column).
-- [ ] Run `pio test -e native -f test_tab5_input`: fails (no header).
-- [ ] Implement `Tab5Keys` (`key(event, ms)`, `poll(ms)`, `capsLock()`,
+- [x] Run `pio test -e native -f test_tab5_input`: fails (no header).
+- [x] Implement `Tab5Keys` (`key(event, ms)`, `poll(ms)`, `capsLock()`,
       `shiftPending()`) and `kTab5FunctionKeys`.
-- [ ] Run it green, then the whole native suite.
-- [ ] Commit "Tab5: key map".
+- [x] Run it green, then the whole native suite.
+- [x] Commit "Tab5: key map".
 
 ## Task 2: Battery percentage (`lib/core/src/power/tab5_battery`)
 

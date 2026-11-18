@@ -29,9 +29,9 @@ using namespace tab5;
 namespace s2x = rc::scale2x;
 
 // Landscape; with the keyboard fitted the board stays at the landscape
-// rotation that sits upright above it. Tune both on hardware.
+// rotation that sits upright above it (2, checked on hardware 2026-11-17).
 constexpr uint8_t kDefaultRotation = 0;
-constexpr uint8_t kKeyboardRotation = 0;
+constexpr uint8_t kKeyboardRotation = 2;
 uint8_t rotation = kDefaultRotation;  // the UI sets the saved one
 
 // The keyboard, found once at boot (it is fitted with the power off).

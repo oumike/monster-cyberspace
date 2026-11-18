@@ -13,6 +13,9 @@ namespace tab5::touch {
 // The expanders set up first (TP_RST released). Returns the panel the touch
 // controller belongs to.
 panel::Kind detect();
+// Once the panel is up (the ST7123/ST7121 are TDDI): reads the controller's
+// info as M5's drivers do before the first report.
+void start();
 // True while a finger is down; x, y in the native 720x1280 portrait frame.
 bool read(int16_t& x, int16_t& y);
 

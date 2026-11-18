@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Bring-up in the order M5GFX's Panel_DSI does it (LDO, DSI bus, DBI IO, DPI
 // panel, the panel's init lists, MADCTL and COLMOD, then the video stream),
-// with its timings for each of the Tab5's three panels.
+// with its timings, for the ST7123 and ILI9881C. The ST7121 is brought up as
+// M5's M5Tab5-Keyboard-UserDemo does (components/m5_tab5_component, drivers
+// lcd_st7121): its timings, SWRESET first, 5 ms after each command, and no
+// MADCTL or COLMOD. Its touch runs off the panel's scan (TDDI).
 #if defined(BOARD_TAB5)
 
 #include "hal/tab5/panel_tab5.h"
@@ -26,6 +29,7 @@ struct Timing {
   uint16_t hsync, hbp, hfp, vsync, vbp, vfp;
   const init::InitList* lists;
   size_t listCount;
+  bool m5Demo;  // the ST7121's bring-up from M5's Tab5 UserDemo
 };
 
 template <size_t N>
@@ -33,10 +37,12 @@ constexpr size_t count(const init::InitList (&)[N]) {
   return N;
 }
 
-constexpr Timing kSt7123 = {1040, 80, 2, 40, 40, 2, 8, 220, init::kSt7123, count(init::kSt7123)};
-constexpr Timing kSt7121 = {900, 70, 2, 40, 40, 20, 24, 200, init::kSt7121, count(init::kSt7121)};
+constexpr Timing kSt7123 = {1040, 80, 2,  40, 40, 2, 8, 220, init::kSt7123, count(init::kSt7123),
+                            false};
+constexpr Timing kSt7121 = {965, 70, 2,  40, 40, 20, 24, 200, init::kSt7121, count(init::kSt7121),
+                            true};
 constexpr Timing kIli9881c = {1040, 80, 40, 140, 40, 4, 20, 20, init::kIli9881c,
-                              count(init::kIli9881c)};
+                              count(init::kIli9881c), false};
 
 esp_ldo_channel_handle_t ldo = nullptr;
 esp_lcd_panel_handle_t handle = nullptr;
@@ -55,10 +61,11 @@ bool send(uint8_t cmd, const uint8_t* data, size_t n) {
   return esp_lcd_panel_io_tx_param(dbi, cmd, n ? data : nullptr, n) == ESP_OK;
 }
 
-bool sendList(const uint8_t* p) {
+bool sendList(const uint8_t* p, uint32_t gapMs) {
   while (*p) {
     const uint8_t len = *p++;
     if (!send(p[0], p + 1, len - 1)) return false;
+    if (gapMs) delay(gapMs);
     p += len;
   }
   return true;
@@ -118,12 +125,16 @@ bool begin(Kind kind) {
   dpiCfg.flags.use_dma2d = true;
   if (esp_lcd_new_panel_dpi(bus, &dpiCfg, &handle) != ESP_OK) return fail("DPI panel");
 
+  if (t.m5Demo) {
+    if (!send(LCD_CMD_SWRESET, nullptr, 0)) return fail("SWRESET");
+    delay(120);
+  }
   for (size_t i = 0; i < t.listCount; ++i) {
-    if (!sendList(t.lists[i].cmds)) return fail("init list");
+    if (!sendList(t.lists[i].cmds, t.m5Demo ? 5 : 0)) return fail("init list");
     if (t.lists[i].delayMs) delay(t.lists[i].delayMs);
   }
   const uint8_t madctl = 0x00, colmod = 0x55;
-  if (!send(LCD_CMD_MADCTL, &madctl, 1) || !send(LCD_CMD_COLMOD, &colmod, 1))
+  if (!t.m5Demo && (!send(LCD_CMD_MADCTL, &madctl, 1) || !send(LCD_CMD_COLMOD, &colmod, 1)))
     return fail("MADCTL/COLMOD");
   if (esp_lcd_panel_init(handle) != ESP_OK) return fail("DPI init");
 
@@ -147,19 +158,6 @@ void flush(int y0, int y1) {
   esp_cache_msync(reinterpret_cast<uint8_t*>(fb) + size_t(y0) * kRowBytes,
                   size_t(y1 - y0) * kRowBytes,
                   ESP_CACHE_MSYNC_FLAG_DIR_C2M | ESP_CACHE_MSYNC_FLAG_UNALIGNED);
-}
-
-// The DPI panel has no sleep of its own: DCS through the DBI IO.
-void sleep(bool s) {
-  if (!dbi) return;
-  if (s) {
-    send(LCD_CMD_DISPOFF, nullptr, 0);
-    send(LCD_CMD_SLPIN, nullptr, 0);
-  } else {
-    send(LCD_CMD_SLPOUT, nullptr, 0);
-    delay(120);
-    send(LCD_CMD_DISPON, nullptr, 0);
-  }
 }
 
 void backlight(uint8_t level) { ledcWrite(BACKLIGHT, level * kBacklightMax / 255); }

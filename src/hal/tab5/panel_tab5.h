@@ -17,7 +17,6 @@ bool begin(Kind kind);
 uint16_t* frame();
 // Native rows [y0, y1) written since the last flush.
 void flush(int y0, int y1);
-void sleep(bool sleep);
 // Backlight PWM, 0 off .. 255 full.
 void backlight(uint8_t level);
 

@@ -47,13 +47,26 @@ bool write(uint8_t addr, uint8_t reg, uint8_t v) {
 
 bool begin() {
   if (!mutex) mutex = xSemaphoreCreateMutex();
+  // M5's Tab5 UserDemo (bsp_reset_tp, which the factory firmware runs): the
+  // panel and touch held in reset 100 ms with TP_INT pulled high (its
+  // gpio_reset_pin), then 100 ms for the controller to start. Without it the
+  // ST7121's touch reports one stuck point.
+  pinMode(TOUCH_INT, INPUT_PULLUP);
+  constexpr uint8_t kResets = uint8_t(1u << EXP1_LCD_RST | 1u << EXP1_TP_RST);
+  Init held[] = {kInit[0], kInit[1]};
+  held[0].out &= uint8_t(~kResets);
+  held[0].dir |= kResets;
   bool ok = true;
-  for (const Init& e : kInit) {
+  for (const Init& e : held) {
     // Levels first, then the direction, so no output starts at the wrong one.
     ok = write(e.addr, kRegOut, e.out) && write(e.addr, kRegHiZ, e.hiZ) &&
          write(e.addr, kRegPullSel, e.pull) && write(e.addr, kRegPullEn, e.pull) &&
          write(e.addr, kRegDir, e.dir) && ok;
   }
+  delay(100);
+  ok = write(EXP1_ADDR, kRegDir, kInit[0].dir) && write(EXP1_ADDR, kRegOut, kInit[0].out) && ok;
+  delay(100);
+  pinMode(TOUCH_INT, INPUT);
   if (!ok) Serial.println("[tab5] IO expander init failed");
   return ok;
 }

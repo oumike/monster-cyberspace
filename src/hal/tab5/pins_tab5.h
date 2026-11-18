@@ -12,7 +12,7 @@ namespace tab5 {
 
 // System I2C: expanders, INA226, RTC, codec, touch.
 constexpr int I2C_SDA = 31, I2C_SCL = 32;
-constexpr uint32_t I2C_HZ = 400000;
+constexpr uint32_t I2C_HZ = 100000;  // as the factory firmware (CONFIG_BSP_I2C_CLK_SPEED_HZ)
 
 // PI4IOE5V6408 expanders.
 constexpr uint8_t EXP1_ADDR = 0x43, EXP2_ADDR = 0x44;

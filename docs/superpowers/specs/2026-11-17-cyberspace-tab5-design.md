@@ -29,7 +29,7 @@ The user's unit: ESP32-P4 revision v1.3 (esptool), the ST7123 panel.
 | Part | Detail |
 |---|---|
 | SoC | ESP32-P4 v1.x (`esp32p4_es` SDK profile, as the Tanmatsu), 16 MB flash, 32 MB PSRAM, bootloader at 0x2000 |
-| System I2C | Wire, SDA 31, SCL 32, 400 kHz: expanders 0x43/0x44, INA226 0x41, RTC 0x32, ES8388 0x10, ES7210 0x40 (unused), touch 0x55 (ST7123/ST7121) or 0x14/0x5D (GT911), BMI270 (unused) |
+| System I2C | Wire, SDA 31, SCL 32, 100 kHz (as the factory firmware): expanders 0x43/0x44, INA226 0x41, RTC 0x32, ES8388 0x10, ES7210 0x40 (unused), touch 0x55 (ST7123/ST7121) or 0x14/0x5D (GT911), BMI270 (unused) |
 | Expander 0x43 (PI4IOE5V6408) | P0 antenna select (low internal), P1 speaker amp, P2 5 V out (Grove, M-Bus, Ext.Port), P4 LCD reset, P5 touch reset, P6 camera reset, P7 headphone detect (in) |
 | Expander 0x44 | P0 C6 power, P3 USB-A 5 V, P4 power-off pulse, P5 charge-current step (low 1 A), P6 charge status (in), P7 charger enable |
 | Display | 720x1280 portrait native, RGB565 over MIPI-DSI, 2 lanes. DSI PHY LDO channel 3 at 2500 mV. Backlight GPIO22 (LEDC PWM). Three panels: ST7123 (integrated touch), ST7121 (integrated touch), ILI9881C (+ GT911) |
@@ -58,8 +58,14 @@ The user's unit: ESP32-P4 revision v1.3 (esptool), the ST7123 panel.
   (0x55, 16-bit register 0x0000): 3 is ST7123, 1 ST7121, anything else
   ST7123.
 - Timings, as M5GFX (hsync/hbp/hfp, vsync/vbp/vfp; DPI clock; lane rate):
-  ST7123 2/40/40, 2/8/220, 80 MHz, 1040 Mbps; ST7121 2/40/40, 20/24/200,
-  70 MHz, 900 Mbps; ILI9881C 40/140/40, 4/20/20, 80 MHz, 1040 Mbps.
+  ST7123 2/40/40, 2/8/220, 80 MHz, 1040 Mbps; ILI9881C 40/140/40, 4/20/20,
+  80 MHz, 1040 Mbps. The ST7121 as M5's Tab5 UserDemo (the factory
+  firmware): 2/40/40, 20/24/200, 70 MHz, 965 Mbps, SWRESET and 120 ms
+  first, 5 ms after each command, no MADCTL or COLMOD.
+- **Reset** (the UserDemo's `bsp_reset_tp`): touch INT pulled high, LCD_RST
+  and TP_RST held low 100 ms, released, then 100 ms before the probe.
+- **Screen off** drives the backlight only: the ST7123/ST7121 are TDDI, and
+  in SLPIN their touch stops scanning, so a double tap could not wake it.
 - **2x, four rotations:** the UI is drawn at 2x through `ui/scale2x`, a
   360x640 portrait or 640x360 landscape logical panel (80x22 cells of 8x16
   text). Without the keyboard any of four rotations (`canRotate()`), default
@@ -73,7 +79,10 @@ The user's unit: ESP32-P4 revision v1.3 (esptool), the ST7123 panel.
 ## 4. Touch
 
 `touch_tab5.cpp`: the ST7123/ST7121 report as M5GFX's `Touch_ST7123` reads
-them; the GT911 through the shared `gt911` driver. Raw coordinates are the
+them, read once the panel is up: the info first, then each poll ADV info,
+MAX_TOUCHES and every slot's 7 bytes (10 on the ST7121). A shorter read
+leaves the report latched: the first touch stays down for good (found on
+hardware, 2026-11-17). The GT911 through the shared `gt911` driver. Raw coordinates are the
 native 720x1280 portrait frame, mapped through `scale2x` for the rotation as
 on the T-Display P4. One touch point is enough.
 

@@ -132,8 +132,7 @@ void begin() {
   installFullRestart();
   Wire.begin(I2C_SDA, I2C_SCL, I2C_HZ);
   Wire.setTimeOut(20);  // touch is polled every frame: a stuck read must not stall the UI
-  io::begin();
-  delay(50);  // the panel and touch out of reset
+  io::begin();  // ends with the panel and touch out of reset
   const panel::Kind kind = touch::detect();
   Serial.printf("[tab5] panel %s\n", panel::kindName(kind));
   wifiCoprocessor();
@@ -141,6 +140,7 @@ void begin() {
     panel::backlight(255);
   else
     Serial.println("[tab5] no panel");
+  touch::start();
   kbFitted = keyboard::detect();
   if (kbFitted) rotation = kKeyboardRotation;
   audio::begin();
@@ -203,9 +203,11 @@ bool canRotate() { return !kbFitted; }
 
 void backlight(bool on) { backlightLevel(on ? 255 : 0); }
 void backlightLevel(uint8_t level) { panel::backlight(level); }
+// The backlight only, as M5's own Tab5 apps: the ST7121/ST7123 are TDDI, and
+// in SLPIN their touch stops scanning, so a tap could no longer wake it.
 void displaySleep(bool sleep) {
   flushPending();
-  panel::sleep(sleep);
+  panel::backlight(sleep ? 0 : 255);
 }
 
 bool pollKey(rc::KeyEvent& key) {

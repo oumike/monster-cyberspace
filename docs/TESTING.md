@@ -705,7 +705,7 @@ is open.
 
 **Tab5 (`tab5`; spec 2026-11-17 §9):**
 
-- [ ] Boots: the USB log shows `[boot] … on Tab5` and `[tab5] panel ST7123` (or ST7121, ILI9881C), with no `[tab5] no panel`
+- [x] Boots: the USB log shows `[boot] … on Tab5` and `[tab5] panel ST7123` (or ST7121, ILI9881C), with no `[tab5] no panel`
 - [ ] Panel: lights at boot, upright, colours right (no red/blue swap), nothing cut off, every logical pixel a clean 2x2 block, in all four rotations (Settings → Orientation, without the keyboard); landscape by default; if it stays dark or rolls, note the panel and try its timings in `panel_tab5.cpp`
 - [ ] Touch: taps land under the finger in each rotation; the docked on-screen keyboard types without the keyboard; a double tap wakes a dark screen
 - [ ] Brightness: each Settings → Brightness step changes the backlight; screen off and on comes back lit

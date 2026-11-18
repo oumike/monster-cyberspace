@@ -15,8 +15,8 @@ the LilyGO T-Display P4 (ESP32-P4, AMOLED). The Tanmatsu (ESP32-P4,
 keyboard) runs on hardware and is released and in the flasher. The M5Stack
 CardputerZero (Raspberry Pi CM0, Linux) is the first Linux port: an app for
 its launcher, packaged as a `.deb`, and runs on hardware. The M5Stack Tab5
-(ESP32-P4, touch, optional Tab5 Keyboard) boots on hardware, with display
-and touch working; the rest of its check is open. More
+(ESP32-P4, touch, optional Tab5 Keyboard) runs on hardware (ST7121
+panel; its hardware check passed). More
 boards and Cyberspace features come later.
 
 - **Design spec:** `docs/superpowers/specs/2026-10-25-cyberspace-m9-circ-design.md`
@@ -409,7 +409,7 @@ The Attaky Mesh Deck HAL (env `mesh_deck`) and the notification light were
 added on 2026-10-29 (flashed: it boots and finds touch, gauge and keyboard;
 the panel, touch mapping, keys and LEDs await the hardware check).
 **Still open:** the unticked items under "Open hardware checks" in
-`docs/TESTING.md` (themes, device Settings, touch UI, LVGL UI, Wio L2, T-Deck Plus, CrowPanels, Pager, T-Deck Pro, Mesh Deck, Cyber Deck Plus, Cardputer ADV, T-Display P4, Tanmatsu, Tab5, GPS time, API
+`docs/TESTING.md` (themes, device Settings, touch UI, LVGL UI, Wio L2, T-Deck Plus, CrowPanels, Pager, T-Deck Pro, Mesh Deck, Cyber Deck Plus, Cardputer ADV, T-Display P4, Tanmatsu, GPS time, API
 assumptions, settings backup, OTA, Fluffy Generator), then the human live checklist on the `m9` build.
 CI (`.github/workflows/build.yml`) runs on GitHub.
 OTA updates were added on 2026-10-28 (built without flashing): signed images
@@ -547,8 +547,8 @@ flashing): released and in the flasher from the start. On 2026-11-17 a unit
 with the ST7121 panel booted, drew and took touch in all four rotations, after
 fixes: the touch report read in full (every slot, else it stays latched), a
 factory-style touch reset, system I2C at 100 kHz, the ST7121 at 965 Mbps with
-SWRESET first, and screen off driving the backlight only. The rest of its
-hardware check in docs/TESTING.md is open.
+SWRESET first, and screen off driving the backlight only. Its whole
+hardware check in docs/TESTING.md passed on 2026-11-18.
 The native suite is green: 874/874
 (`pio test -e native`), and so is the LVGL one: 88/88 (`pio test -e
 native_lv`, and built lean). `scripts/build-upload-monitor.sh -B` builds all

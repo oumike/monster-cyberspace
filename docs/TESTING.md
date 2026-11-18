@@ -170,7 +170,7 @@ soon, wherever the board has them.
       pressed; turning the screen redraws everything at the new size.
 - [ ] Tanmatsu (`tanmatsu`): landscape at 2x: every screen and Back, each
       theme, each text size; keyboard and function keys as on `main`.
-- [ ] Tab5 (`tab5`): each rotation at 2x and landscape with the keyboard:
+- [x] Tab5 (`tab5`): each rotation at 2x and landscape with the keyboard:
       every screen and Back, each theme, each text size.
 - [ ] Touch status bar (touch boards lacking a keyboard or keys, such as the
       Wio L2 and the CrowPanels): the bar is 1.5 rows tall in the bigger font with its
@@ -707,25 +707,24 @@ is open.
 
 **Tab5 (`tab5`; spec 2026-11-17 §9):**
 
-On a Tab5 with the ST7121 panel (2026-11-17): it boots, the panel draws,
-taps land right in all four rotations, `‹` is easy to hit, and with the
-keyboard the screen sits upright above it (`kKeyboardRotation` 2); setup
-through web config over the setup AP worked. The rest of each item is open.
+Checked on a Tab5 with the ST7121 panel and the Tab5 Keyboard
+(2026-11-17/18): every item below passed. The ST7123 and ILI9881C panels
+are untried.
 
 - [x] Boots: the USB log shows `[boot] … on Tab5` and `[tab5] panel ST7123` (or ST7121, ILI9881C), with no `[tab5] no panel`
-- [ ] Panel: lights at boot, upright, colours right (no red/blue swap), nothing cut off, every logical pixel a clean 2x2 block, in all four rotations (Settings → Orientation, without the keyboard); landscape by default; if it stays dark or rolls, note the panel and try its timings in `panel_tab5.cpp`
-- [ ] Touch: taps land under the finger in each rotation; the docked on-screen keyboard types without the keyboard; a double tap wakes a dark screen
-- [ ] Brightness: each Settings → Brightness step changes the backlight; screen off and on comes back lit
-- [ ] Restart: Settings → Restart, an OTA install and web config's restart bring the panel back lit (the log shows `[tab5] restarted (full reset)`)
-- [ ] Wi-Fi through the C6 (M5Stack's ESP-Hosted image): the log shows the host and slave versions and the link up; Settings → Wi-Fi scans and joins; web config loads; the setup AP is named `Monster-Cyberspace-Tab5` and `http://192.168.4.1` loads. If the link never comes up, note the log
-- [ ] Keyboard (fitted with the power off): found at boot; the screen locks to landscape above it, right way up (else change `kKeyboardRotation` in `board_tab5.cpp`) and Orientation is hidden; every key types its character; Sym held and tapped gives the second layer; Aa tapped (one capital, LED 0 dim), tapped twice (Caps Lock, LED 0 bright) and held; arrows, Backspace and del repeat; Backspace deletes, then goes back; Esc back; Enter selects; Tab opens Post / Discard in New entry and the commands elsewhere, hints saying "tab"
-- [ ] Keyboard: Alt+1…7 open Home, messages (again: the room list), C-Mail, Feed, Guilds, your profile and Settings from any screen; Alt+0 shows the Tab5's key table; Ctrl tapped alone opens the emoji tray while typing and the palette elsewhere; Ctrl or Alt held with a key types nothing; any key wakes a dark screen
-- [ ] Keyboard LEDs: LED 1 blinks for the last room and mentions in their colours; Light timeout and Off work; both LEDs are dark otherwise
-- [ ] Speaker: with Alert sound on, a mention and a C-Mail beep through the ES8388, clean, with no hiss between beeps; the Alert sound slider changes the loudness
-- [ ] Battery (with the battery pack): Settings shows a sensible percentage; the charging state follows the USB cable (else tune the shunt threshold in `peripherals_tab5.cpp`); without the pack it shows no percentage
-- [ ] RTC: the time set by NTP survives a power cycle with Wi-Fi off
-- [ ] SD (FAT32 card, 4-bit, mounted through ESP-IDF): Back up to SD card, then Restore from SD card…, both work
-- [ ] Flasher: picking M5Stack Tab5 installs the factory image (ESP32-P4, bootloader at 0x2000) and it boots; a reflash without erase keeps the settings; an OTA update installs
+- [x] Panel: lights at boot, upright, colours right (no red/blue swap), nothing cut off, every logical pixel a clean 2x2 block, in all four rotations (Settings → Orientation, without the keyboard); landscape by default; if it stays dark or rolls, note the panel and try its timings in `panel_tab5.cpp`
+- [x] Touch: taps land under the finger in each rotation; the docked on-screen keyboard types without the keyboard; a double tap wakes a dark screen
+- [x] Brightness: each Settings → Brightness step changes the backlight; screen off and on comes back lit
+- [x] Restart: Settings → Restart, an OTA install and web config's restart bring the panel back lit (the log shows `[tab5] restarted (full reset)`)
+- [x] Wi-Fi through the C6 (M5Stack's ESP-Hosted image): the log shows the host and slave versions and the link up; Settings → Wi-Fi scans and joins; web config loads; the setup AP is named `Monster-Cyberspace-Tab5` and `http://192.168.4.1` loads. If the link never comes up, note the log
+- [x] Keyboard (fitted with the power off): found at boot; the screen locks to landscape above it, right way up (else change `kKeyboardRotation` in `board_tab5.cpp`) and Orientation is hidden; every key types its character; Sym held and tapped gives the second layer; Aa tapped (one capital, LED 0 dim), tapped twice (Caps Lock, LED 0 bright) and held; arrows, Backspace and del repeat; Backspace deletes, then goes back; Esc back; Enter selects; Tab opens Post / Discard in New entry and the commands elsewhere, hints saying "tab"
+- [x] Keyboard: Alt+1…7 open Home, messages (again: the room list), C-Mail, Feed, Guilds, your profile and Settings from any screen; Alt+0 shows the Tab5's key table; Ctrl tapped alone opens the emoji tray while typing and the palette elsewhere; Ctrl or Alt held with a key types nothing; any key wakes a dark screen
+- [x] Keyboard LEDs: LED 1 blinks for the last room and mentions in their colours; Light timeout and Off work; both LEDs are dark otherwise
+- [x] Speaker: with Alert sound on, a mention and a C-Mail beep through the ES8388, clean, with no hiss between beeps; the Alert sound slider changes the loudness
+- [x] Battery (with the battery pack): Settings shows a sensible percentage; the charging state follows the USB cable (else tune the shunt threshold in `peripherals_tab5.cpp`); without the pack it shows no percentage
+- [x] RTC: the time set by NTP survives a power cycle with Wi-Fi off
+- [x] SD (FAT32 card, 4-bit, mounted through ESP-IDF): Back up to SD card, then Restore from SD card…, both work
+- [x] Flasher: picking M5Stack Tab5 installs the factory image (ESP32-P4, bootloader at 0x2000) and it boots; a reflash without erase keeps the settings; an OTA update installs
 
 **CardputerZero (`scripts/build-cardputer-zero.sh --deb`; spec 2026-11-16 §10–§11):**
 

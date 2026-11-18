@@ -156,6 +156,10 @@ bool fixedTextSize(rc::TextSize& out);
 // False on a panel too small for Large text (the Wio Tracker L2): Large is
 // not offered and becomes Comfortable. Default true.
 bool hasLargeText();
+// A small, dense touch panel (the Tab5's 5" 720x1280 at 2x): the touch status
+// bar is 2 rows tall instead of 1.5, and stays with a keyboard fitted.
+// Default false.
+bool tallTouchBar();
 // Battery volts, 0 when unknown. Default 0.
 float batteryVolts();
 // Deep sleep: wakes on the board's wake button, or after timerUs (0: no

@@ -150,9 +150,11 @@ TextSize wantedSize() {
 }
 
 // The taller touch status bar (lvui::Header), as the grid's touchHeader: on
-// touch boards without both a keyboard and keys, except on the splash.
+// touch boards without both a keyboard and keys, or with tallTouchBar, except
+// on the splash.
 bool wantHeader() {
-  return board::hasTouch() && (!board::hasKeyboard() || !board::hasKeys()) &&
+  return board::hasTouch() &&
+         (board::tallTouchBar() || !board::hasKeyboard() || !board::hasKeys()) &&
          router::current() != router::Id::Splash;
 }
 // Whether the root and its layers were last laid out with the header.
@@ -280,7 +282,7 @@ void relayout(TextSize ts) {
   shownSize = ts;
   needResize = false;
   shownHeader = wantHeader();
-  const lvui::Header hd = shownHeader ? lvui::touchHeader(ts) : lvui::Header{};
+  const lvui::Header hd = shownHeader ? lvui::touchHeader(ts, board::tallTouchBar()) : lvui::Header{};
   lvui::setHeader(hd);
   const lv_font_t* f = lvui::font(ts);
   lv_obj_set_style_text_font(lv_screen_active(), f, LV_PART_MAIN);

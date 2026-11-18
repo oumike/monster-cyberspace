@@ -240,6 +240,8 @@ bool doubleTapWakes() { return true; }
 const char32_t* menuKeyName() { return kbFitted ? U"tab" : U"ctrl"; }
 bool upDownOnly() { return false; }
 bool sideNav() { return false; }
+// About 4 mm at 1.5 rows on this panel: Back was hard to hit.
+bool tallTouchBar() { return true; }
 void textEntry(bool) {}
 bool eink() { return false; }
 

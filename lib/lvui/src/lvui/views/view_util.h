@@ -85,8 +85,9 @@ struct Header {
   int px = 0, extra = 0;
   const lv_font_t* font = nullptr;
 };
-// The header for text size s: rc::touchHeader's height, font(s, true).
-Header touchHeader(rc::TextSize s);
+// The header for text size s: rc::touchHeader's height, or 2 rows when tall,
+// font(s, true).
+Header touchHeader(rc::TextSize s, bool tall = false);
 // Set before a screen is built (ScreenHost pads the new root by it).
 void setHeader(const Header& h);
 const Header& header();

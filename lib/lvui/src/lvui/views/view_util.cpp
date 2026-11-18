@@ -173,9 +173,9 @@ void addTap(lv_obj_t* obj, Tappable* v) {
 
 lv_point_t tapPoint() { return {press().x, press().y}; }
 
-Header touchHeader(rc::TextSize s) {
+Header touchHeader(rc::TextSize s, bool tall) {
   Header h;
-  h.px = rc::touchHeader(0, s).px;
+  h.px = tall ? 2 * rc::cellSize(s).h : rc::touchHeader(0, s).px;
   h.extra = std::max(0, h.px - rc::cellSize(s).h);
   h.font = font(s, true);
   return h;

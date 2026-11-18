@@ -70,8 +70,8 @@ The user's unit: ESP32-P4 revision v1.3 (esptool), the ST7123 panel.
   360x640 portrait or 640x360 landscape logical panel (80x22 cells of 8x16
   text). Without the keyboard any of four rotations (`canRotate()`), default
   landscape; with the keyboard fitted it locks to the landscape rotation that
-  sits upright above it (`kKeyboardRotation`, tuned on hardware).
-  `defaultRotation()` is that landscape rotation too.
+  sits upright above it (`kKeyboardRotation`: 2, checked on hardware
+  2026-11-17). `defaultRotation()` is landscape 0.
 - Backlight: GPIO22, LEDC 12-bit at 5 kHz; `backlightLevel` maps 0–255.
 - A software restart becomes a full system reset through the RTC watchdog,
   as on the other P4 boards (a CPU reset leaves the DSI host half set up).
@@ -130,6 +130,9 @@ from the firmware's `user_keyboard_handle.c` (`key_value_map`,
 `Ctrl`, `Tab`). With the keyboard: `hasKeyboard`, `hasKeys`,
 `backspaceIsBack` and `anyInputWakes` are true. Without it the Tab5 is a touch
 board like the CrowPanels (docked on-screen keyboard, double tap wakes).
+On this dense 5" panel the touch status bar is 2 rows tall instead of 1.5,
+with or without the keyboard (`board::tallTouchBar()`, 2026-11-17: at 1.5
+rows Back was hard to hit).
 
 **Keyboard LEDs** (custom mode, register 0x11 = 1, brightness 0x03): LED 0
 shows Caps Lock (white) or a pending Aa (dim white); LED 1 is the
@@ -172,7 +175,7 @@ firmware never flashes the C6. M5's restore guide
 - `boards/tab5.json` (from `tanmatsu.json`, `esp32p4_es`), env `tab5`
   (`BOARD_TAB5`, `partitions_16mb.csv`), `board::name()` "Tab5",
   `board::otaSlug()` "tab5".
-- CI builds it; `scripts/build-upload-monitor.sh` takes `--tab5`/`-5`… (a free
+- CI builds it; `scripts/build-upload-monitor.sh` takes `--tab5`/`-b` (a free
   letter); `-B` includes it.
 - **Released and in the flasher from the start** (user decision):
   `scripts/release.sh`'s env list (bootloader at 0x2000 as the other P4s),

@@ -1,13 +1,15 @@
 # Monster for Cyberspace
 
 Standalone ESP32 firmware client for [cyberspace.online](https://cyberspace.online),
-a retro text-only social network. It runs on the Elecrow ThinkNode M9, with
-builds for the Seeed Wio Tracker L2, the LilyGO T-Deck Plus, the Elecrow
-CrowPanel Advance 3.5" and 5.0", the LilyGO T-LoRa Pager and the LilyGO T-Deck Pro (not yet tried on hardware), and offers cIRC chat (milestone 1), C-Mail private messages (milestone 2), and a
-web config page served by the device. No phone app or companion is needed.
-The M5Stack CardputerZero, a Linux handheld, gets an app for its launcher
-instead of firmware. The M5Stack Tab5, with or without its keyboard, has a
-build too (not yet tried on hardware).
+a retro text-only social network. It runs on the Elecrow ThinkNode M9 and the
+Tanmatsu, with builds for the Seeed Wio Tracker L2, the LilyGO T-Deck Plus,
+the Elecrow CrowPanel Advance 3.5" and 5.0", the LilyGO T-LoRa Pager, the
+LilyGO T-Deck Pro, the Attaky Mesh Deck and Cyber Deck Plus, the M5Stack
+Cardputer ADV, the LilyGO T-Display P4 and the M5Stack Tab5 (most not yet
+fully checked on hardware). It offers cIRC chat, C-Mail private messages, the
+Feed, Guilds, profiles and a web config page served by the device. No phone
+app or companion is needed. The M5Stack CardputerZero, a Linux handheld, gets
+an app for its launcher instead of firmware.
 
 The monster on the boot screen and screensaver is Fluffy, the project's mascot.
 
@@ -40,7 +42,8 @@ each release (`./flash.sh monster-cyberspace-<board>-<version>.bin /dev/ttyUSB0`
 on macOS, `/dev/cu.usbmodem*` or `/dev/cu.wchusbserial*`). Installs keep your
 Wi-Fi, sign-in and preferences: they live past the end of the image.
 
-After that, updates come over the air (Settings → Firmware, or web config). The
+After that, updates come over the air (Settings → Firmware, or web config;
+not on the Cardputer ADV, which updates from the flasher). The
 `-ota.bin` files are for that and are not flashed by hand.
 
 **CardputerZero:** download `monster-cyberspace-cardputer-zero-<version>_arm64.deb`

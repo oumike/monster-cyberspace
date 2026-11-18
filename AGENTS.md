@@ -15,8 +15,8 @@ the LilyGO T-Display P4 (ESP32-P4, AMOLED). The Tanmatsu (ESP32-P4,
 keyboard) runs on hardware and is released and in the flasher. The M5Stack
 CardputerZero (Raspberry Pi CM0, Linux) is the first Linux port: an app for
 its launcher, packaged as a `.deb`, and runs on hardware. The M5Stack Tab5
-(ESP32-P4, touch, optional Tab5 Keyboard) is built, not yet tried on
-hardware. More
+(ESP32-P4, touch, optional Tab5 Keyboard) boots on hardware, with display
+and touch working; the rest of its check is open. More
 boards and Cyberspace features come later.
 
 - **Design spec:** `docs/superpowers/specs/2026-10-25-cyberspace-m9-circ-design.md`
@@ -328,8 +328,8 @@ started from M5GFX's init lists (`panel_tab5`, `panel_tab5_init.h`), drawn at
 0x55 or the shared `gt911`. The Tab5 Keyboard on Wire1 0/1 at 0x6D
 (`keyboard_tab5`, Normal mode: one byte per key change; `Tab5Keys` in
 `input/keymap_tab5` applies Aa, Sym, Ctrl and Alt+digit F-keys), found at
-boot: it locks the rotation to landscape and turns on `hasKeyboard`, `hasKeys`
-and `backspaceIsBack`; its LED 0 shows Aa, LED 1 is the notification light.
+boot: it locks the rotation to landscape (rotation 2, `kKeyboardRotation`)
+and turns on `hasKeyboard`, `hasKeys` and `backspaceIsBack`; its LED 0 shows Aa, LED 1 is the notification light.
 Without it the Tab5 is a touch board (double tap wakes). ES8388 speaker
 (`audio_es8388`), INA226 battery (`rc::tab5BatteryPercent`), RX8130 RTC
 (remapped to the PCF8563 layout), SD through ESP-IDF with LDO 4, no GPS.
@@ -360,7 +360,10 @@ their own rows and buttons and queue the same `KeyEvent`s the grid's tap map
 gave; `ui_task` runs them through `handleKey` after `lv_timer_handler`, and
 docks the `Keyboard` (the `Osk` layouts) below a screen that takes text, whose
 root shrinks above it. On touch boards without a keyboard or keys the status
-bar is 1.5 rows tall in the big font (`lvui::touchHeader`). `ui/tap_map` and
+bar is 1.5 rows tall in the big font (`lvui::touchHeader`); where
+`board::tallTouchBar()` (the Tab5) it is 2 rows tall and stays with a
+keyboard fitted (`lvui::touchHeader(ts, tall)`). On every touch board `‹`
+covers the title up to the status icons and `⋯` covers the icons. `ui/tap_map` and
 `input/touch_resolve` stay in `lib/core` for `src/grid_ui/`. Boards without
 touch make no pointer.
 
@@ -540,8 +543,12 @@ agent runs the app. Task 10, its hardware check in docs/TESTING.md, passed
 on the device on 2026-11-17.
 The M5Stack Tab5 (env `tab5`) was added on 2026-11-17 (plan
 `docs/superpowers/plans/2026-11-17-cyberspace-tab5.md`; built without
-flashing): released and in the flasher from the start. Its hardware check
-in docs/TESTING.md is open.
+flashing): released and in the flasher from the start. On 2026-11-17 a unit
+with the ST7121 panel booted, drew and took touch in all four rotations, after
+fixes: the touch report read in full (every slot, else it stays latched), a
+factory-style touch reset, system I2C at 100 kHz, the ST7121 at 965 Mbps with
+SWRESET first, and screen off driving the backlight only. The rest of its
+hardware check in docs/TESTING.md is open.
 The native suite is green: 874/874
 (`pio test -e native`), and so is the LVGL one: 88/88 (`pio test -e
 native_lv`, and built lean). `scripts/build-upload-monitor.sh -B` builds all

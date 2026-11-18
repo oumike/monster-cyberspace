@@ -7,16 +7,17 @@
   into `.pio-core/`, kept apart from the shared `~/.platformio`.
 - A USB data cable. The ThinkNode M9's console runs through its USB-to-UART
   bridge at 115200 baud, and so do the CrowPanels', the Mesh Deck's and the Cyber Deck Plus's (a CH340); the Wio Tracker
-  L2's, the T-Deck Plus's and the Cardputer ADV's run through the ESP32-S3's
-  own USB, the Xteink X4's through the ESP32-C3's, and the T-Display P4's
-  through the ESP32-P4's.
+  L2's, the T-Deck Plus's, the Pager's, the T-Deck Pro's and the Cardputer
+  ADV's run through the ESP32-S3's own USB, the Xteink X4's through the
+  ESP32-C3's, and the T-Display P4's, the Tanmatsu's and the Tab5's through
+  the ESP32-P4's.
 
 ## Environments
 
 | Env | What it builds |
 |---|---|
 | `m9` | The firmware for the Elecrow ThinkNode M9 |
-| `wio_l2` | The firmware for the Seeed Wio Tracker L2 (touch UI; not yet tried on hardware) |
+| `wio_l2` | The firmware for the Seeed Wio Tracker L2 (touch UI; boots on hardware, most checks still open) |
 | `tdeck` | The firmware for the LilyGO T-Deck Plus (keyboard, trackball, touch; not yet tried on hardware) |
 | `crowpanel35` | The firmware for the Elecrow CrowPanel Advance 3.5" (touch only; not yet tried on hardware) |
 | `crowpanel50` | The firmware for the Elecrow CrowPanel Advance 5.0" (touch only; not yet tried on hardware) |
@@ -28,7 +29,7 @@
 | `cardputer_adv` | The firmware for the M5Stack Cardputer ADV (ESP32-S3FN8: 8 MB flash, no PSRAM; keyboard, 240x135 panel; no Guilds, no OTA; not yet tried on hardware) |
 | `tdisplay_p4` | The firmware for the LilyGO T-Display P4 (ESP32-P4, 4.1" AMOLED drawn at 2x, touch, optional keyboard expansion, haptics; Wi-Fi through its ESP32-C6; not yet tried on hardware) |
 | `tanmatsu` | The firmware for the Tanmatsu (ESP32-P4, 480x800 panel drawn at 2x in landscape, keyboard; Wi-Fi through its ESP32-C6). Replaces the Tanmatsu launcher |
-| `tab5` | The firmware for the M5Stack Tab5 (ESP32-P4, 5" 720x1280 panel drawn at 2x, touch, optional Tab5 Keyboard; Wi-Fi through its ESP32-C6; not yet tried on hardware) |
+| `tab5` | The firmware for the M5Stack Tab5 (ESP32-P4, 5" 720x1280 panel drawn at 2x, touch, optional Tab5 Keyboard; Wi-Fi through its ESP32-C6; boots, draws and takes touch on hardware, the rest not yet checked) |
 | `native` | Host unit tests for `lib/core` |
 | `native_lv` | Host unit tests for `lib/lvui`, the LVGL UI (`test/test_lv_*`) |
 
@@ -91,13 +92,16 @@ one-off PlatformIO install error has been seen on the first run.
 ### Feature flags
 
 `lib/core/src/feature_flags.h` holds compile-time flags, each 1 unless an env sets
-`-DRC_FEAT_X=0`: `RC_FEAT_CMAIL`, `RC_FEAT_FEED`, `RC_FEAT_GUILDS`,
-`RC_FEAT_PEOPLE`, `RC_FEAT_UNREAD`, `RC_FEAT_SPELL`, `RC_FEAT_EMOJI` (off, a
-wide emoji draws `?` in its two cells), `RC_FEAT_OTA` and `RC_FEAT_MASCOT`.
-`RC_FEAT_ENTRIES` and `RC_FEAT_COMPOSER` follow from them. A feature's own
+`-DRC_FEAT_X=0`: `RC_FEAT_CIRC`, `RC_FEAT_CMAIL`, `RC_FEAT_FEED`,
+`RC_FEAT_GUILDS`, `RC_FEAT_PEOPLE`, `RC_FEAT_UNREAD`, `RC_FEAT_SPELL`,
+`RC_FEAT_EMOJI` (off, a
+wide emoji draws `?` in its two cells), `RC_FEAT_OTA`, `RC_FEAT_MASCOT` and
+`RC_FEAT_WIFI_MGMT` (0 on Linux). `RC_FEAT_NOTES` follows the Feed,
+`RC_FEAT_PROGRAMS` and `RC_FEAT_SEARCH` likewise but are 0 with `RC_LOW_MEM`,
+and `RC_FEAT_ENTRIES` and `RC_FEAT_COMPOSER` follow from them. A feature's own
 `.cpp` files wrap their body in `#if RC_FEAT_X`; Home, Settings, web config
-and backup restore leave out what is off. Only `cardputer_adv` turns any off
-(Guilds, Unread, spell, emoji, OTA and mascot). `RC_LOW_MEM` shrinks caches for boards without
+and backup restore leave out what is off. `cardputer_adv` turns off Guilds,
+spell, emoji, OTA, mascot and Notes; `x4` leaves only cIRC rooms. `RC_LOW_MEM` shrinks caches for boards without
 PSRAM (the X4, the Cardputer); `RC_MONO_CELLS` (defaults to `RC_LOW_MEM`)
 stores 1-bit cells in `lib/core`'s grid, which only the X4 draws with now; the
 Cardputer sets it to 0.
@@ -178,8 +182,8 @@ its launcher (APPLaunch). It is built with CMake from `linux/`, which compiles
 ESP-IDF calls (`linux/compat/`), Linux versions of the ESP-only files
 (`linux/replace/`), and the device HAL `src/hal/cardputer_zero/` (or the SDL2
 simulator's, `src/hal/linux_sim/`). Spec:
-`docs/superpowers/specs/2026-11-16-cyberspace-cardputer-zero-design.md`. Not
-yet tried on hardware.
+`docs/superpowers/specs/2026-11-16-cyberspace-cardputer-zero-design.md`. It
+runs on hardware (checked 2026-11-17).
 
 The device build runs in a Debian trixie arm64 container
 (`linux/docker/Dockerfile`, pinned digest), so it needs Docker; Apple Silicon
@@ -388,8 +392,8 @@ bootloader (the steps above); later ones and OTA updates don't.
 
 The Tab5's Wi-Fi is its ESP32-C6, reached over SDIO through ESP-Hosted. The
 firmware power-cycles the C6 at boot and leaves its image alone: it keeps
-M5Stack's factory ESP-Hosted image, and whether Arduino's host talks to it is
-the first hardware check (docs/TESTING.md). If the C6 has lost its image,
+M5Stack's factory ESP-Hosted image. On the first unit the setup AP came up
+through it (2026-11-17); joining a network is still to check (docs/TESTING.md). If the C6 has lost its image,
 M5Stack's guide (docs.m5stack.com, Tab5, C6 Wi-Fi restore) puts it back.
 The panel (ST7123, ST7121 or ILI9881C, by Tab5 revision) is found at boot and
 logged; their init lists in `src/hal/tab5/panel_tab5_init.h` come from M5GFX.

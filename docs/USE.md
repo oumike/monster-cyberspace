@@ -106,7 +106,8 @@ Every screen works by touch. Touch never wakes a dark screen.
   do. `⋯` at the right opens the screen's menu (the palette in a room,
   Post/Discard in the Composer); a tap anywhere on the status icons opens it.
   On boards without a keyboard the status bar is 1.5 times a row's height,
-  in a bigger font, so it's easier to tap.
+  in a bigger font, so it's easier to tap; on the Tab5 it is two rows tall,
+  with or without its keyboard.
 - **Edge swipes:** a swipe towards the centre from the left eighth of the
   screen goes back. One from the right eighth brings up options: in a room it
   slides in the who's here list (or the room menu when the list is already
@@ -115,10 +116,9 @@ Every screen works by touch. Touch never wakes a dark screen.
   outside an open menu or confirm closes it. A tap on a banner dismisses it.
 - **Scroll:** drag a list or log to move line by line; swipe up or down to
   move a page. Dragging past the end of a list stops there.
-- **Home** shows nine large tiles: unread on the top row on its own, then
-  two to a row messages, rooms, c-mail, feed, following, guilds, profile and
-  settings. On a build without some of them, **unread** takes the top row on
-  its own only when that leaves the rest filling their rows, so no tile is left
+- **Home** shows large tiles, two to a row: unread, messages, rooms, c-mail,
+  feed, following, notes, guilds, programs, profile, search and settings. On
+  a build without some of them, **unread** takes the top row on its own only when that leaves the rest filling their rows, so no tile is left
   alone at the bottom. The profile tile shows `@you` and opens your own
   profile (see [People](#people)). The unread tile shows
   how many things are unread (see [Unread](#unread)), in the accent colour
@@ -426,7 +426,8 @@ touch board like the CrowPanels: the on-screen keyboard docks below text
 fields, a double tap wakes the screen, and **Orientation** in Settings turns
 it to any of four ways (landscape by default). With the **Tab5 Keyboard**
 fitted (attach it with the power off; it is found at boot) it stays in
-landscape above the keys.
+landscape above the keys. The status bar is two rows tall, with or without
+the keyboard, so `‹` and `⋯` are easy to hit.
 
 | Key | Action |
 |---|---|
@@ -534,8 +535,7 @@ serial console is the USB-C port.
 ## CardputerZero
 
 The M5Stack CardputerZero runs Linux, so Monster is an app for its launcher
-rather than firmware, and it has every feature but over-the-air updates. Not
-yet tried on hardware.
+rather than firmware, and it has every feature but over-the-air updates.
 
 **Install:** download `monster-cyberspace-cardputer-zero-vX.Y.Z_arm64.deb`
 from the [latest release](https://github.com/oumike/monster-cyberspace/releases/latest),
@@ -1294,14 +1294,15 @@ shown without moving or opening anything.
   looking: …** (Tanmatsu) Open a box with the colours (or Off); picking one
   saves it. Green, green, blue and yellow by default.
 - **Channel light**, **Mention light**, **Feed light**, **C-Mail light** and
-  **Light timeout: …** (Mesh Deck, Cyber Deck Plus, Tanmatsu) Open a box with
+  **Light timeout: …** (Mesh Deck, Cyber Deck Plus, Tanmatsu, and the Tab5
+  with its keyboard) Open a box with
   the colours (or Off) and the timeouts; see Mesh Deck.
 - **Alert sound: on / off** (boards with a buzzer or speaker: not the Mesh
   Deck, T-Deck Pro, CrowPanels or X4) Centre switches the beep for mentions,
   C-Mail and Feed alerts and saves it, with one beep when it goes on. Also
   **Alert sound** under Lights and sound in web config. On by default. On boards
   with a speaker (Wio L2, T-Deck Plus, Pager, Cyber Deck Plus, Cardputer ADV,
-  T-Display P4, Tanmatsu) it reads **Alert sound: 60%** and opens a volume slider
+  T-Display P4, Tanmatsu, Tab5, CardputerZero) it reads **Alert sound: 60%** and opens a volume slider
   instead: Left/Right (or Up/Down, or a tap on the bar, "-" or "+") move it
   in 10% steps from Off to 100%, beeping at each level; Centre or **Set**
   keeps it, Back or **Cancel** puts the old level back. Web config shows an

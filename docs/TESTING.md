@@ -178,6 +178,8 @@ soon, wherever the board has them.
       whole bar, and with a menu open a tap on the bar closes the menu.
       Known: with a Settings slider open, a tap on the bar reaches `‹` or
       `⋯`.
+      On the Tab5 (`board::tallTouchBar()`) the bar is 2 rows tall, with
+      its keyboard fitted too.
 - [ ] On-screen keyboard (touch boards without a keyboard): a key lights as
       the finger goes down, not on release, and stays lit while held; a tap
       types once; a finger that slides on or off a key types nothing; it docks below a text field
@@ -318,7 +320,7 @@ soon, wherever the board has them.
 **Themes (`m9`):**
 
 - [x] Settings → Theme cycles Default → Black & white → White & black → Default; each redraws at once and survives a restart
-- [ ] Settings → Theme opens a box listing all 15 themes with a marker on the current one; it scrolls, picking one redraws at once and survives a restart
+- [ ] Settings → Theme opens a box listing all 19 themes with a marker on the current one; it scrolls, picking one redraws at once and survives a restart
 - [ ] Each site theme (Dark … Top8, Bubblegum Dark, Top8 Dark, Sepia Dark, C64 Dark) is readable, with per-user nick colours (only Black & white and White & black keep grey nicks), on Home, room, drawer, menus, Settings and the keyboard; the web config select offers them all
 - [ ] Web config Display → Theme changes the device at once; the select shows the saved theme on reload
 - [ ] In both mono themes: Home, room, drawer, menus, palette, Feed list, Entry, Composer, login and Settings are readable; nicks use the text colour
@@ -680,7 +682,7 @@ is open.
 - [ ] Keyboard: Settings pickers (Theme and the rest) show a cursor the arrows move; Enter sets, Esc cancels
 - [ ] Flasher: picking LilyGO T-Display P4 installs the factory image (ESP32-P4 chip family, bootloader at 0x2000) and it boots; a reflash without erase keeps the settings
 
-**Tanmatsu (`tanmatsu`, not released; flashing it replaces the launcher):**
+**Tanmatsu (`tanmatsu`; flashing it replaces the launcher):**
 
 - [ ] Boots: the USB log shows `[boot] … on Tanmatsu` and `[tanmatsu] ST7701 up 480x800`, with no `ST7701 … failed`
 - [ ] Panel: lights at boot (backlight through the coprocessor), landscape above the keys and the right way up (else change `PANEL_ROTATION` in `pins_tanmatsu.h`), colours right (no red/blue swap), nothing cut off, every logical pixel a clean 2x2 block; if the panel stays dark, try the DSI PHY LDO at 1830 mV (`DSI_LDO_MV`) as on the T-Display P4
@@ -704,6 +706,11 @@ is open.
 - [ ] Back to the launcher: reinstalling it from Nicolai Electronics' web installer brings the Tanmatsu launcher back
 
 **Tab5 (`tab5`; spec 2026-11-17 §9):**
+
+On a Tab5 with the ST7121 panel (2026-11-17): it boots, the panel draws,
+taps land right in all four rotations, `‹` is easy to hit, and with the
+keyboard the screen sits upright above it (`kKeyboardRotation` 2); setup
+through web config over the setup AP worked. The rest of each item is open.
 
 - [x] Boots: the USB log shows `[boot] … on Tab5` and `[tab5] panel ST7123` (or ST7121, ILI9881C), with no `[tab5] no panel`
 - [ ] Panel: lights at boot, upright, colours right (no red/blue swap), nothing cut off, every logical pixel a clean 2x2 block, in all four rotations (Settings → Orientation, without the keyboard); landscape by default; if it stays dark or rolls, note the panel and try its timings in `panel_tab5.cpp`

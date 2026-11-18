@@ -48,8 +48,11 @@ bool read8(uint8_t reg, uint8_t& v) {
 bool detect() {
   Wire1.begin(KB_SDA, KB_SCL, KB_HZ);
   Wire1.setTimeOut(20);
+  // An address-only probe first: a register read from an empty bus logs an
+  // I2C error.
+  Wire1.beginTransmission(KB_ADDR);
   uint8_t version = 0;
-  if (!read8(kRegVersion, version)) {
+  if (Wire1.endTransmission() != 0 || !read8(kRegVersion, version)) {
     Serial.println("[tab5] no keyboard");
     return false;
   }

@@ -553,6 +553,15 @@ void test_top_bar_texts() {
   TEST_ASSERT_FALSE(lv_obj_has_flag(bar.back(), LV_OBJ_FLAG_HIDDEN));
   lv_obj_update_layout(bar.obj());
   TEST_ASSERT_EQUAL_PTR(bar.title(), lv_obj_get_child(bar.obj(), 1));  // ‹ first
+  // Back covers the ‹ and the title up to the status icons, ⋯ the icons
+  // (15 cells: "● ▂▄·· 12:34 ⋯ ").
+  lv_area_t ba, ma;
+  lv_obj_get_coords(bar.back(), &ba);
+  lv_obj_get_coords(bar.menu(), &ma);
+  TEST_ASSERT_EQUAL(0, ba.x1);
+  TEST_ASSERT_EQUAL((40 - 15) * 8, ba.x2 + 1);
+  TEST_ASSERT_EQUAL(ba.x2 + 1, ma.x1);
+  TEST_ASSERT_EQUAL(319, ma.x2);
   tap(centre(bar.back()));
   press(centre(bar.back()), 600);
   tap(centre(bar.menu()));
@@ -1193,8 +1202,8 @@ void test_edge_swipe_from_target_emits_nothing() {
   d.title = U"Rooms";
   d.touch.on = true;
   bar.sync(d);
-  const lv_point_t back = centre(bar.back());
-  TEST_ASSERT_TRUE(back.x < 40);
+  lv_point_t back = centre(bar.back());
+  back.x = 8;  // on the ‹, by the edge
   const auto path = movePath(back, 64, 0, 13, 40);
   bool edge = false;
   const auto want = gridFixedKeys(bar.back(), Action::Back, Action::OpenHome, path, &edge);

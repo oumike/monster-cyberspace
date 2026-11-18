@@ -101,9 +101,10 @@ Every screen works by touch. Touch never wakes a dark screen.
   replies) on boards with no keys (the Wio Tracker L2 and the CrowPanels): a
   tap does nothing, so scrolling never acts by accident. Hold an item still
   for **half a second** to open its menu. A tap on a Feed row opens it.
-- **Status bar:** `‹` at the left goes back; holding it goes Home. `⋯` at the
-  right opens the screen's menu (the palette in a room, Post/Discard in the
-  Composer).
+- **Status bar:** `‹` at the left goes back; holding it goes Home. The title
+  beside it works the same, so a tap anywhere left of the status icons will
+  do. `⋯` at the right opens the screen's menu (the palette in a room,
+  Post/Discard in the Composer); a tap anywhere on the status icons opens it.
   On boards without a keyboard the status bar is 1.5 times a row's height,
   in a bigger font, so it's easier to tap.
 - **Edge swipes:** a swipe towards the centre from the left eighth of the

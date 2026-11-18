@@ -80,17 +80,20 @@ void TopBar::sync(const TopBarData& d) {
   }
   if (glyph_) setHidden(glyph_, !back);
 
+  // Big targets for small, dense panels: Back is the ‹ and the whole title up
+  // to the status icons, ⋯ the status icons; at least 4 cells each.
+  const int split = std::clamp(rightStart, 4, std::max(4, cols - 4));
   if (back && !backHit_) backHit_ = hitBox(bar_, this);
   if (backHit_) {
     setHidden(backHit_, !back);
-    lv_obj_set_size(backHit_, 4 * c.w, h);
+    lv_obj_set_size(backHit_, (menu ? split : std::max(4, cols)) * c.w, h);
     lv_obj_align(backHit_, LV_ALIGN_LEFT_MID, 0, 0);
   }
   if (menu && !menuHit_) menuHit_ = hitBox(bar_, this);
   if (menuHit_) {
     setHidden(menuHit_, !menu);
-    lv_obj_set_size(menuHit_, 4 * c.w, h);
-    lv_obj_align(menuHit_, LV_ALIGN_LEFT_MID, (cols - 4) * c.w, 0);
+    lv_obj_set_size(menuHit_, (cols - split) * c.w, h);
+    lv_obj_align(menuHit_, LV_ALIGN_LEFT_MID, split * c.w, 0);
   }
 }
 

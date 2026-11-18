@@ -105,6 +105,9 @@ Each registers its targets while drawing; nothing changes for key input.
   that line and column.
 - `StatusBar`: on touch boards, draws `‹` at the left (hidden on Home) and `⋯`
   at the right (sends `Palette`), both `Fixed`. The title is shortened to fit.
+  In the LVGL UI `‹`'s target takes in the title up to the status icons, and
+  `⋯`'s the status icons (2026-11-17: on the Tab5's dense panel 4 cells were
+  too small to hit).
 - `Banner`: a tap dismisses it.
 
 ### 4.2 New shared widgets

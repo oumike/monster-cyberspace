@@ -11,13 +11,13 @@ runs the app only as the simulator's demo build. Commit once per task
 
 ## Task 1: Window geometry (`lib/core/src/ui/window_fit`)
 
-- [ ] Tests in `test/test_window_fit`: panel size from a drawable size and a
+- [x] Tests in `test/test_window_fit`: panel size from a drawable size and a
       zoom (rounded down, never below 1x1), the centred margin, a window
       point to a panel point (inside, in the margin: clamped), zoom clamped
       to 1–3, the minimum window size, wheel notches to Up/Down counts.
-- [ ] Run `pio test -e native -f test_window_fit`: fails.
-- [ ] Implement `rc::WindowFit` and helpers; green; whole native suite.
-- [ ] Commit "Linux: window geometry".
+- [x] Run `pio test -e native -f test_window_fit`: fails.
+- [x] Implement `rc::WindowFit` and helpers; green; whole native suite.
+- [x] Commit "Linux: window geometry".
 
 ## Task 2: Zoom setting
 

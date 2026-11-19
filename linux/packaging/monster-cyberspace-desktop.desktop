@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# The Raspberry Pi desktop's menu entry: opens Monster in a window.
+[Desktop Entry]
+Name=Monster for Cyberspace
+Comment=A cyberspace.online client
+Exec=/usr/share/APPLaunch/bin/monster-cyberspace
+Icon=monster-cyberspace
+Terminal=false
+Type=Application
+Categories=Network;Chat;
+StartupWMClass=monster-cyberspace

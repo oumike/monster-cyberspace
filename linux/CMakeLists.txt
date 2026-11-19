@@ -223,6 +223,9 @@ if(MC_BOARD STREQUAL "cp0")
   install(FILES packaging/monster-cyberspace.desktop DESTINATION share/APPLaunch/applications)
   install(FILES packaging/icon.png DESTINATION share/APPLaunch/share/images
     RENAME monster-cyberspace.png)
+  install(FILES packaging/monster-cyberspace-desktop.desktop DESTINATION share/applications
+    RENAME monster-cyberspace.desktop)
+  install(FILES packaging/icon.png DESTINATION share/pixmaps RENAME monster-cyberspace.png)
   install(FILES "${REPO}/LICENSE" DESTINATION share/doc/monster-cyberspace RENAME copyright)
 
   set(CPACK_GENERATOR DEB)
@@ -239,7 +242,7 @@ if(MC_BOARD STREQUAL "cp0")
   set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE arm64)
   set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "https://github.com/oumike/monster-cyberspace")
   # Trixie renamed both for the 64-bit time_t move; older names as fallbacks.
-  set(CPACK_DEBIAN_PACKAGE_DEPENDS "libcurl4t64 | libcurl4, libasound2t64 | libasound2")
+  set(CPACK_DEBIAN_PACKAGE_DEPENDS "libcurl4t64 | libcurl4, libasound2t64 | libasound2, libsdl2-2.0-0 (>= 2.26)")
   set(CPACK_STRIP_FILES ON)
   include(CPack)
 endif()

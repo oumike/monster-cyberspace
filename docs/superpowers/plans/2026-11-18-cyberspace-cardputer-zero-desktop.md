@@ -60,10 +60,10 @@ runs the app only as the simulator's demo build. Commit once per task
 
 ## Task 5: Packaging
 
-- [ ] `packaging/monster-cyberspace-desktop.desktop` to
-      `/usr/share/applications/`, icon under hicolor; `Depends` adds
+- [x] `packaging/monster-cyberspace-desktop.desktop` to
+      `/usr/share/applications/`, icon in `/usr/share/pixmaps` (100x100, not a hicolor size); `Depends` adds
       `libsdl2-2.0-0 (>= 2.26)`.
-- [ ] `scripts/build-cardputer-zero.sh --deb` builds; `dpkg-deb -c` shows
+- [x] `scripts/build-cardputer-zero.sh --deb` builds; `dpkg-deb -c` shows
       both entries. Commit "CardputerZero: desktop menu entry".
 
 ## Task 6: Docs

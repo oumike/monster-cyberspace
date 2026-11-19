@@ -585,6 +585,30 @@ or download one from web config. Factory reset clears the settings, not the
 backups. Time comes from Linux (NTP and the RTC); set the time zone in
 Settings as on the other boards.
 
+### On a monitor (the desktop)
+
+With a monitor on its HDMI port, the CardputerZero shows a Raspberry Pi
+desktop. Start Monster from that desktop's menu (**Internet** → **Monster for
+Cyberspace**) and it opens in a window instead of on the LCD; started from
+the launcher it stays on the LCD. Only one copy runs at a time: starting a
+second does nothing.
+
+- **Window:** drag its edges to resize; a bigger window shows more text, not
+  bigger text. Maximise it as any window, or press **F11** for full screen
+  (F11 again leaves it). Closing the window quits.
+- **Zoom:** Settings → **Zoom** (1x, 2x or 3x; 2x at first), also in web
+  config, sets how big everything is drawn. It shows only in a window. Text
+  size still applies on top, and Large is offered.
+- **Mouse:** click to select or open, drag to scroll, the right button opens
+  the menu (as `⋯`), the wheel moves up and down. The pointer hides after a
+  few seconds still.
+- **Keyboard:** the CardputerZero's own keys work as in the table above while
+  the window is focused (and go back to the desktop when it isn't); a USB or
+  Bluetooth keyboard works too, with arrows, F1 to F10, Esc and Backspace as
+  the table's. `fn` + U/I do nothing (the monitor has its own brightness).
+- **Screen off:** the screen timeout and screensaver dim the window, not the
+  LCD.
+
 ## CrowPanel
 
 The CrowPanel Advance 3.5" and 5.0" work by touch alone, as described under

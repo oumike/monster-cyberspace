@@ -753,6 +753,20 @@ Then the app:
 - [x] Relaunch keeps the settings and the sign-in; Restart app in Settings comes back; factory reset clears the settings and keeps the backups
 - [x] Remove: `sudo apt remove monster-cyberspace` drops it from the launcher and leaves `~/.config/monster-cyberspace` and the backups
 
+**CardputerZero on a monitor (desktop window; spec 2026-11-18 §9):**
+
+- [ ] Install: the desktop menu shows **Monster for Cyberspace** under Internet, with its icon; APPLaunch still lists it
+- [ ] The desktop entry opens a window titled Monster for Cyberspace (`[boot] display: window`); APPLaunch's start still opens on the LCD (`[boot] display: LCD`)
+- [ ] A second start while one runs (from either) does nothing (`[boot] already running`)
+- [ ] Resizing fills the window with more text at the same size; it can't be made smaller than the LCD's screen at the current zoom
+- [ ] Settings → Zoom 1x / 2x / 3x redraws at once and is kept after a restart; web config shows Zoom; on the LCD Zoom shows in neither
+- [ ] Maximise fills the screen; F11 goes full screen and back
+- [ ] Mouse: a click selects or opens; dragging scrolls lists and logs; right click opens the menu; the wheel moves up and down; a drag starting at the window's edge doesn't go Back; the pointer hides after 3 s still
+- [ ] Built-in keyboard: every character types, including the sym layer and shifted keys, with no double keys; with the window unfocused its keys reach the desktop and not Monster
+- [ ] USB keyboard and mouse: typing, arrows, Enter, Esc, Backspace and F1–F10 work
+- [ ] Screen timeout and screensaver dim the window; a key brings it back; the LCD's backlight is untouched
+- [ ] Closing the window and a long Esc both quit cleanly
+
 **GPS time, RTC and time zone (`m9`):**
 
 - [ ] With Wi-Fi in range, `[time] NTP sync` and `[time] RTC written` appear, then `[gps] off`

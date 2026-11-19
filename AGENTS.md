@@ -63,6 +63,9 @@ boards and Cyberspace features come later.
   plan `docs/superpowers/plans/2026-11-16-cyberspace-cardputer-zero.md`.
 - **M5Stack Tab5:** spec `docs/superpowers/specs/2026-11-17-cyberspace-tab5-design.md`,
   plan `docs/superpowers/plans/2026-11-17-cyberspace-tab5.md`.
+- **CardputerZero desktop window:** spec
+  `docs/superpowers/specs/2026-11-18-cyberspace-cardputer-zero-desktop-design.md`,
+  plan `docs/superpowers/plans/2026-11-18-cyberspace-cardputer-zero-desktop.md`.
 - **Fluffy Generator (custom mascot):** spec
   `docs/superpowers/specs/2026-10-31-cyberspace-fluffy-generator-design.md`,
   plan `docs/superpowers/plans/2026-10-31-cyberspace-fluffy-generator.md`.
@@ -354,6 +357,16 @@ backlight sysfs, a PulseAudio beep with ALSA as fallback); `src/hal/linux_sim/` 
 container (`linux/docker/Dockerfile`; `--deb` packages it with CPack into
 `dist/`), or the simulator with `--sim`. Never copy the repo into a container
 (`.pio-core` alone fills the disk): bind-mount it.
+On the Raspberry Pi desktop (`WAYLAND_DISPLAY`/`DISPLAY` set, or
+`MONSTER_DISPLAY=window`) the `cp0` binary opens a resizable SDL2 window
+instead of the LCD (`src/hal/linux_sim/`: `sdl_window`, `sdl_keys`,
+`desktop_mode`, shared with the simulator): the mouse as touch
+(`board::pointerIsMouse` skips edge swipes; right click Options, wheel
+Up/Down), F11 full screen, the panel the window's size over the Zoom setting
+(`board::canZoom`/`setZoom`/`panelSizeChanged`, NVS and backup `zoom`), the
+built-in keyboard grabbed (`EVIOCGRAB`) while focused and other keyboards
+through SDL, and a lock on `~/.config/monster-cyberspace/.lock` so one copy
+runs. The `.deb` adds a desktop menu entry.
 Touch: `ui_task` reads one sample a frame for LVGL's pointer and for
 `lib/core`'s edge swipes (`input/gestures`: Back, Options). The views hit-test
 their own rows and buttons and queue the same `KeyEvent`s the grid's tap map
@@ -409,7 +422,7 @@ The Attaky Mesh Deck HAL (env `mesh_deck`) and the notification light were
 added on 2026-10-29 (flashed: it boots and finds touch, gauge and keyboard;
 the panel, touch mapping, keys and LEDs await the hardware check).
 **Still open:** the unticked items under "Open hardware checks" in
-`docs/TESTING.md` (themes, device Settings, touch UI, LVGL UI, Wio L2, T-Deck Plus, CrowPanels, Pager, T-Deck Pro, Mesh Deck, Cyber Deck Plus, Cardputer ADV, T-Display P4, Tanmatsu, GPS time, API
+`docs/TESTING.md` (themes, device Settings, touch UI, LVGL UI, Wio L2, T-Deck Plus, CrowPanels, Pager, T-Deck Pro, Mesh Deck, Cyber Deck Plus, Cardputer ADV, T-Display P4, Tanmatsu, CardputerZero desktop, GPS time, API
 assumptions, settings backup, OTA, Fluffy Generator), then the human live checklist on the `m9` build.
 CI (`.github/workflows/build.yml`) runs on GitHub.
 OTA updates were added on 2026-10-28 (built without flashing): signed images
@@ -549,8 +562,13 @@ fixes: the touch report read in full (every slot, else it stays latched), a
 factory-style touch reset, system I2C at 100 kHz, the ST7121 at 965 Mbps with
 SWRESET first, and screen off driving the backlight only. Its whole
 hardware check in docs/TESTING.md passed on 2026-11-18.
-The native suite is green: 874/874
-(`pio test -e native`), and so is the LVGL one: 88/88 (`pio test -e
+The CardputerZero desktop window was added on 2026-11-18 (spec
+`docs/superpowers/specs/2026-11-18-cyberspace-cardputer-zero-desktop-design.md`,
+plan `docs/superpowers/plans/2026-11-18-cyberspace-cardputer-zero-desktop.md`,
+all 6 tasks; built, run in the simulator, not yet tried on a monitor): its
+hardware check in docs/TESTING.md is open.
+The native suite is green: 882/882
+(`pio test -e native`), and so is the LVGL one: 89/89 (`pio test -e
 native_lv`, and built lean). `scripts/build-upload-monitor.sh -B` builds all
 fourteen firmware envs (the X4 only from a path without spaces).
 

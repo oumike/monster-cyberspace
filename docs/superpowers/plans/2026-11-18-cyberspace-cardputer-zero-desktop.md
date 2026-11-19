@@ -68,6 +68,6 @@ runs the app only as the simulator's demo build. Commit once per task
 
 ## Task 6: Docs
 
-- [ ] `docs/USE.md` (window mode, zoom, mouse, F11, keyboard),
+- [x] `docs/USE.md` (window mode, zoom, mouse, F11, keyboard),
       `docs/BUILD.md`, `docs/TESTING.md` (spec §9 as a hardware check),
       `AGENTS.md`. Commit "Docs: the CardputerZero desktop window".

@@ -201,20 +201,31 @@ cd linux && cmake --preset sim && cmake --build --preset sim && ctest --preset s
 3.25+, Ninja, pkg-config, SDL2, curl and Python 3 (MacPorts or Homebrew on
 macOS; `cmake ninja-build pkg-config libsdl2-dev libcurl4-openssl-dev` on
 Debian or Ubuntu). It shows the 320x170 screen at 3x (`MONSTER_SIM_SCALE`
-changes it); Left Alt is the CardputerZero's `fn`. `MONSTER_SIM_SHOT=file.bmp`
+changes it); Left Alt is the CardputerZero's `fn`. `MONSTER_DISPLAY=window`
+opens it as the device's desktop window instead: resizable, mouse, Zoom and
+F11 (spec `docs/superpowers/specs/2026-11-18-cyberspace-cardputer-zero-desktop-design.md`). `MONSTER_SIM_SHOT=file.bmp`
 saves the last frame on exit and `MONSTER_SIM_BEEP=1` logs beeps.
 `MONSTER_CONFIG_DIR` and `MONSTER_DATA_DIR` move the settings
 (`~/.config/monster-cyberspace`) and the backups (`~/monster-cyberspace`).
 On the device, `LV_LINUX_FBDEV_DEVICE` and `MONSTER_KEYBOARD_DEVICE` override
-the framebuffer and the keyboard. Agents run only the demo build, which never
+the framebuffer and the keyboard. The device binary picks its display at
+start: a window on the Raspberry Pi desktop when `WAYLAND_DISPLAY` or
+`DISPLAY` is set (the desktop menu), else the LCD (APPLaunch);
+`MONSTER_DISPLAY=lcd` or `=window` forces one. Both builds share the SDL2
+window code in `src/hal/linux_sim/` (`sdl_window`, `sdl_keys`,
+`desktop_mode`), and a lock on `~/.config/monster-cyberspace/.lock` keeps a
+second copy from starting. Agents run only the demo build, which never
 touches the network.
 
 The package (`linux/CMakeLists.txt`, CPack) installs the binary in
 `/usr/share/APPLaunch/bin/`, `linux/packaging/monster-cyberspace.desktop` in
 `/usr/share/APPLaunch/applications/` and the icon (`linux/packaging/icon.png`,
 redrawn by `python3 linux/packaging/make_icon.py`) in
-`/usr/share/APPLaunch/share/images/`. Its version is `VERSION`'s, and it
-depends on libcurl and ALSA. It has no maintainer scripts: the launcher
+`/usr/share/APPLaunch/share/images/`, plus the desktop's menu entry
+(`linux/packaging/monster-cyberspace-desktop.desktop`, installed as
+`/usr/share/applications/monster-cyberspace.desktop`) with the icon in
+`/usr/share/pixmaps/`. Its version is `VERSION`'s, and it depends on
+libcurl, ALSA and SDL2. It has no maintainer scripts: the launcher
 notices new apps on its own. Installing it is in `docs/USE.md`.
 
 `.github/workflows/linux.yml` builds and packages it on an arm64 runner, runs

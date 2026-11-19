@@ -134,12 +134,13 @@ screensaver and auto-dim settings still work.
 
 - A second desktop entry, `/usr/share/applications/monster-cyberspace.desktop`
   (`Categories=Network;Chat;`, `Exec=/usr/share/APPLaunch/bin/monster-cyberspace`,
-  the same icon installed under `/usr/share/icons/hicolor/256x256/apps/`),
+  the same icon installed in `/usr/share/pixmaps/`, as it is 100x100, not a
+  hicolor size),
   so the app shows in the desktop's menu under Internet.
 - The `.deb` gains `Depends: libsdl2-2.0-0 (>= 2.26)` (already installed on
   the device's image).
 - The `cp0` build links SDL2 (`pkg_check_modules`), and the Docker image
-  gains `libsdl2-dev:arm64`.
+  (native arm64) gains `libsdl2-dev`.
 
 ## 6. Unchanged
 

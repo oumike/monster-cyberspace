@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// What the CardputerZero has and hasn't. The simulator (src/hal/linux_sim/)
-// builds this file too, so both show the same UI.
+// What the CardputerZero has and hasn't, on its LCD or in a desktop window
+// (spec 2026-11-18). The simulator (src/hal/linux_sim/) builds this file too,
+// so both show the same UI.
 #if defined(BOARD_CARDPUTER_ZERO) || defined(BOARD_LINUX_SIM)
 
 #include <FS.h>
@@ -9,6 +10,8 @@
 #include <memory>
 
 #include "hal/board.h"
+#include "hal/linux_sim/desktop_mode.h"
+#include "hal/linux_sim/sdl_window.h"
 #include "input/keymap_cardputer_zero.h"
 
 namespace board {
@@ -26,8 +29,16 @@ const char* wakeHint() { return "press any key to wake"; }
 
 bool hasVolume() { return true; }
 
-bool hasTouch() { return false; }
-bool readTouch(int16_t&, int16_t&) { return false; }
+// In a window the mouse is the pointer, and the panel is the window's size
+// over the zoom.
+bool hasTouch() { return linuxhal::windowed(); }
+bool readTouch(int16_t& x, int16_t& y) { return linuxhal::windowed() && sdlwin::readPointer(x, y); }
+bool pointerIsMouse() { return linuxhal::windowed(); }
+bool canZoom() { return linuxhal::windowed(); }
+void setZoom(uint8_t zoom) {
+  if (linuxhal::windowed()) sdlwin::setZoom(zoom);
+}
+bool panelSizeChanged() { return linuxhal::windowed() && sdlwin::takePanelSize(); }
 bool canRotate() { return false; }
 void setRotation(uint8_t) {}
 bool hasKeyboard() { return true; }
@@ -45,8 +56,9 @@ bool upDownOnly() { return false; }
 bool sideNav() { return false; }
 void textEntry(bool) {}
 bool eink() { return false; }
-// 320x170: Large (10x18 cells) leaves too few rows.
-bool hasLargeText() { return false; }
+// The LCD's 320x170: Large (10x18 cells) leaves too few rows. A window is
+// at least that size times the zoom.
+bool hasLargeText() { return linuxhal::windowed(); }
 
 // Linux owns the clock; there is no GPS.
 bool hasGps() { return false; }

@@ -42,21 +42,21 @@ runs the app only as the simulator's demo build. Commit once per task
 
 ## Task 4: Window HAL
 
-- [ ] Move the simulator's SDL-to-evdev table to
+- [x] Move the simulator's SDL-to-evdev table to
       `src/hal/linux_sim/sdl_keys.{h,cpp}` (shared).
-- [ ] `src/hal/linux_sim/sdl_window.{h,cpp}`: the SDL window both builds
+- [x] `src/hal/linux_sim/sdl_window.{h,cpp}`: the SDL window both builds
       use: resizable or fixed, zoom, present with margin, mouse, wheel, F11,
       focus, close, dim; frames from the UI thread under a mutex.
-- [ ] `cp0`: mode choice (`MONSTER_DISPLAY`, `WAYLAND_DISPLAY`, `DISPLAY`),
+- [x] `cp0`: mode choice (`MONSTER_DISPLAY`, `WAYLAND_DISPLAY`, `DISPLAY`),
       the single-instance lock, window mode dispatch in `board_`; evdev
       `EVIOCGRAB` while focused, drop while unfocused; brightness keys ignored
       in window mode; flags by mode.
-- [ ] Simulator: fixed LCD-like window as today, or the resizable window with
+- [x] Simulator: fixed LCD-like window as today, or the resizable window with
       `MONSTER_DISPLAY=window`.
-- [ ] CMake links SDL2 for `cp0`; Docker image adds `libsdl2-dev:arm64`.
-- [ ] `linux/tests`: mode choice and the lock. `ctest --preset sim` green;
+- [x] CMake links SDL2 for `cp0`; Docker image adds `libsdl2-dev (native arm64)`.
+- [x] `linux/tests`: mode choice and the lock. `ctest --preset sim` green;
       sim builds and its demo runs both ways (`MONSTER_SIM_SHOT`).
-- [ ] Commit "CardputerZero: desktop window mode".
+- [x] Commit "CardputerZero: desktop window mode".
 
 ## Task 5: Packaging
 

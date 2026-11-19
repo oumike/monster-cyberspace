@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The CardputerZero's keyboard: raw evdev from the kernel's TCA8418 driver,
-// read on its own thread without a grab (the launcher must still see a long
-// Esc), through rc::CardputerZeroKeys (spec §2, §5).
+// read on its own thread without a grab on the LCD (the launcher must still
+// see a long Esc), through rc::CardputerZeroKeys (spec §2, §5). In a desktop
+// window it is grabbed while the window has focus, so the desktop doesn't
+// see the keys too (spec 2026-11-18 §4.4).
 #if defined(BOARD_CARDPUTER_ZERO)
 
 #include <dirent.h>
@@ -24,6 +26,8 @@
 
 #include "cp0_internal.h"
 #include "hal/board.h"
+#include "hal/linux_sim/desktop_mode.h"
+#include "hal/linux_sim/sdl_window.h"
 #include "input/keymap_cardputer_zero.h"
 
 namespace cp0 {
@@ -40,6 +44,7 @@ std::mutex keyMu;
 std::deque<rc::ZeroKeyIn> keyQueue;
 rc::CardputerZeroKeys keys;  // the UI thread only (pollKey)
 std::atomic<bool> quit{false};
+std::atomic<bool> focused{false};  // window mode: the window has keyboard focus
 
 bool hasKeyA(int fd) {
   unsigned long bits[(KEY_MAX + 1) / (8 * sizeof(unsigned long)) + 1] = {};
@@ -107,6 +112,8 @@ void readLoop() {
   int fd = -1;
   std::string path;
   bool told = false;
+  bool grabbed = false;
+  const bool window = linuxhal::windowed();
   while (running) {
     if (fd < 0) {
       fd = openKeyboard(path);
@@ -118,6 +125,10 @@ void readLoop() {
       }
       std::printf("[keys] %s\n", path.c_str());
       told = false;
+      grabbed = false;
+    }
+    if (window && grabbed != focused) {
+      if (::ioctl(fd, EVIOCGRAB, focused ? 1 : 0) == 0 || !focused) grabbed = focused;
     }
     pollfd p{fd, POLLIN, 0};
     const int r = ::poll(&p, 1, 100);
@@ -132,16 +143,24 @@ void readLoop() {
     }
     for (size_t i = 0; i < size_t(n) / sizeof(input_event); ++i) {
       if (ev[i].type != EV_KEY || ev[i].value > 2) continue;
+      if (window && !grabbed) continue;  // the desktop has these
       const uint8_t mods = ev[i].value == 1 ? modifierState() : 0;
       std::lock_guard<std::mutex> lock(keyMu);
       if (keyQueue.size() < 256)
         keyQueue.push_back({uint16_t(ev[i].code), uint8_t(ev[i].value), nowMs(), mods});
     }
   }
-  if (fd >= 0) ::close(fd);
+  if (fd >= 0) {
+    if (grabbed) ::ioctl(fd, EVIOCGRAB, 0);
+    ::close(fd);
+  }
 }
 
 void systemKey(rc::ZeroSystemKey k) {
+  // A monitor has its own brightness.
+  if (linuxhal::windowed() &&
+      (k == rc::ZeroSystemKey::BrightnessUp || k == rc::ZeroSystemKey::BrightnessDown))
+    return;
   switch (k) {
     case rc::ZeroSystemKey::BrightnessUp:
       board::backlightLevel(uint8_t(std::min(255, currentBacklight() + 32)));
@@ -169,6 +188,13 @@ void inputEnd() {
   if (reader.joinable()) reader.join();
 }
 
+void inputFocus(bool f) { focused = f; }
+
+void queueKey(uint16_t code, uint8_t value, uint32_t ms) {
+  std::lock_guard<std::mutex> lock(keyMu);
+  if (keyQueue.size() < 256) keyQueue.push_back({code, value, ms, 0});
+}
+
 bool escQuit() { return quit; }
 
 }  // namespace cp0
@@ -177,6 +203,7 @@ namespace board {
 
 bool pollKey(rc::KeyEvent& out) {
   using namespace cp0;
+  if (linuxhal::windowed() && sdlwin::takeKey(out)) return true;
   for (;;) {
     rc::ZeroKeyIn in;
     {

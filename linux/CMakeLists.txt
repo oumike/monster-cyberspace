@@ -95,9 +95,14 @@ target_compile_definitions(mc_compat PUBLIC ${MC_DEFS})
 find_package(Threads REQUIRED)
 target_link_libraries(mc_compat PUBLIC Threads::Threads)
 
+# Both builds draw into an SDL window: the simulator always, the device when
+# started from its desktop (spec 2026-11-18).
 set(HAL_SOURCES
   "${REPO}/src/hal/board_defaults.cpp"
-  "${REPO}/src/hal/cardputer_zero/flags_cardputer_zero.cpp")
+  "${REPO}/src/hal/cardputer_zero/flags_cardputer_zero.cpp"
+  "${REPO}/src/hal/linux_sim/desktop_mode.cpp"
+  "${REPO}/src/hal/linux_sim/sdl_keys.cpp"
+  "${REPO}/src/hal/linux_sim/sdl_window.cpp")
 if(MC_BOARD STREQUAL "sim")
   list(APPEND HAL_SOURCES "${REPO}/src/hal/linux_sim/board_linux_sim.cpp")
 else()
@@ -180,10 +185,9 @@ target_include_directories(monster-cyberspace PRIVATE ${MC_INCLUDES})
 target_link_libraries(monster-cyberspace PRIVATE lvgl mc_compat CURL::libcurl)
 
 find_package(PkgConfig REQUIRED)
-if(MC_BOARD STREQUAL "sim")
-  pkg_check_modules(SDL2 REQUIRED IMPORTED_TARGET sdl2)
-  target_link_libraries(monster-cyberspace PRIVATE PkgConfig::SDL2)
-else()
+pkg_check_modules(SDL2 REQUIRED IMPORTED_TARGET sdl2)
+target_link_libraries(monster-cyberspace PRIVATE PkgConfig::SDL2)
+if(MC_BOARD STREQUAL "cp0")
   pkg_check_modules(ALSA REQUIRED IMPORTED_TARGET alsa)
   target_link_libraries(monster-cyberspace PRIVATE PkgConfig::ALSA ${CMAKE_DL_LIBS})
 endif()
@@ -203,7 +207,9 @@ endforeach()
 add_executable(test_sse_local tests/test_sse_local.cpp replace/net/sse_client.cpp)
 add_executable(test_mascot_file tests/test_mascot_file.cpp replace/store/mascot_store.cpp
   "${REPO}/src/app/queues.cpp")
-foreach(t sse_local mascot_file)
+add_executable(test_desktop_mode tests/test_desktop_mode.cpp "${REPO}/src/hal/linux_sim/desktop_mode.cpp")
+target_include_directories(test_desktop_mode PRIVATE "${REPO}/src/hal/linux_sim")
+foreach(t sse_local mascot_file desktop_mode)
   target_link_libraries(test_${t} PRIVATE mc_core CURL::libcurl)
   add_test(NAME ${t} COMMAND test_${t})
 endforeach()

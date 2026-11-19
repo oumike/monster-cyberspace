@@ -38,9 +38,14 @@ int currentBacklight();
 void backlightWrite(uint8_t level);  // 0..255 of the node's max
 void powerEnd();                     // the launcher's brightness back
 
-// input_cardputer_zero.cpp: the evdev reader thread.
+// input_cardputer_zero.cpp: the evdev reader thread. In a desktop window
+// (linuxhal::windowed) the built-in keyboard is grabbed while the window has
+// focus (inputFocus) and its keys dropped while it hasn't; queueKey adds
+// another keyboard's key (SDL's, as an evdev code) to the same queue.
 void inputBegin();
 void inputEnd();
+void inputFocus(bool focused);
+void queueKey(uint16_t code, uint8_t value, uint32_t ms);
 bool escQuit();
 
 // audio_cardputer_zero.cpp: beeps on ALSA's default PCM, on their own thread.

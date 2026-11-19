@@ -36,9 +36,9 @@ runs the app only as the simulator's demo build. Commit once per task
 
 ## Task 3: Resize to large panels (native_lv)
 
-- [ ] `test_lv_*`: `displayResize` to 1920x1080 and back to 316x168 with a
+- [x] `test_lv_*`: `displayResize` to 1920x1080 and back to 316x168 with a
       list screen up: every row inside the panel, no crash; lean build too.
-- [ ] Fix whatever fails; commit "lvui: survive large resizes".
+- [x] Fix whatever fails; commit "lvui: survive large resizes".
 
 ## Task 4: Window HAL
 

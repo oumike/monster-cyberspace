@@ -88,9 +88,44 @@ void test_resize_rebuilds() {
   TEST_ASSERT_EQUAL(64, bands.back().y1);
 }
 
+// A desktop window (the CardputerZero's) can grow the panel to a whole
+// monitor and back to the LCD's size; the frame regrows and every row draws.
+void test_resize_to_monitor_and_back() {
+  lvui::ScreenHost host;
+  TEST_ASSERT_TRUE(host.show([](lv_obj_t* root) {
+    for (int i = 0; i < 40; ++i) {
+      lv_obj_t* l = lv_label_create(root);
+      lv_obj_set_pos(l, (i % 8) * 200, (i / 8) * 40);
+      lv_label_set_text(l, "monster");
+    }
+  }));
+  const int sizes[][2] = {{1920, 1080}, {316, 168}, {2560, 1440}, {316, 168}};
+  for (const auto& s : sizes) {
+    lvui::displayResize(s[0], s[1]);
+    TEST_ASSERT_EQUAL(s[0], lv_display_get_horizontal_resolution(disp));
+    TEST_ASSERT_EQUAL(s[1], lv_display_get_vertical_resolution(disp));
+    host.rebuild();
+    TEST_ASSERT_NOT_NULL(host.root());
+    lv_obj_update_layout(host.root());
+    TEST_ASSERT_EQUAL(s[0], lv_obj_get_width(host.root()));
+    TEST_ASSERT_EQUAL(s[1], lv_obj_get_height(host.root()));
+    bands.clear();
+    refresh();
+    TEST_ASSERT_FALSE(bands.empty());
+    int lo = s[1], hi = 0;
+    for (const Band& b : bands) {
+      if (b.y0 < lo) lo = b.y0;
+      if (b.y1 > hi) hi = b.y1;
+    }
+    TEST_ASSERT_EQUAL(0, lo);
+    TEST_ASSERT_EQUAL(s[1], hi);
+  }
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_flush_pushes_dirty_band);
   RUN_TEST(test_resize_rebuilds);
+  RUN_TEST(test_resize_to_monitor_and_back);
   return UNITY_END();
 }

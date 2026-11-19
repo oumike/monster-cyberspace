@@ -160,6 +160,16 @@ bool hasLargeText();
 // bar is 2 rows tall instead of 1.5, and stays with a keyboard fitted.
 // Default false.
 bool tallTouchBar();
+// Boards drawn into a resizable desktop window (the CardputerZero's window
+// mode, ui/window_fit.h). canZoom shows the Zoom setting; setZoom (1-3)
+// scales the panel up, and panelWidth/panelHeight follow. panelSizeChanged is
+// true once after the window or the zoom changed the panel's size; the UI
+// thread then resizes and relays out. pointerIsMouse: the touch pointer is a
+// mouse, so no edge swipes. Defaults: false, a no-op, false, false.
+bool canZoom();
+void setZoom(uint8_t zoom);
+bool panelSizeChanged();
+bool pointerIsMouse();
 // Battery volts, 0 when unknown. Default 0.
 float batteryVolts();
 // Deep sleep: wakes on the board's wake button, or after timerUs (0: no

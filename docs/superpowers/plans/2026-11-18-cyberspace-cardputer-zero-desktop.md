@@ -21,17 +21,17 @@ runs the app only as the simulator's demo build. Commit once per task
 
 ## Task 2: Zoom setting
 
-- [ ] `Settings::zoom` (default 2); NVS `zoom`; backup `zoom: 1|2|3`
+- [x] `Settings::zoom` (default 2); NVS `zoom`; backup `zoom: 1|2|3`
       (tests in `test_backup_yaml`: round trip, out of range rejected).
-- [ ] Board hooks with weak defaults in `board.h`/`board_defaults.cpp`:
+- [x] Board hooks with weak defaults in `board.h`/`board_defaults.cpp`:
       `canZoom()` false, `setZoom(uint8_t)`, `panelSizeChanged()` false,
       `pointerIsMouse()` false.
-- [ ] `ui::setZoom`; Settings' **Zoom** row (1x → 2x → 3x) and web config's
+- [x] `ui::setZoom`; Settings' **Zoom** row (1x → 2x → 3x) and web config's
       Zoom row, both only where `canZoom()`; `main`/`ui::start` apply the
       saved zoom.
-- [ ] `ui_task`: a frame where `panelSizeChanged()` runs `lvglResize()` and
+- [x] `ui_task`: a frame where `panelSizeChanged()` runs `lvglResize()` and
       the relayout; skip edge swipes where `pointerIsMouse()`.
-- [ ] Native and native_lv green; `pio run -e m9` builds; commit "Zoom
+- [x] Native and native_lv green; `pio run -e m9` builds; commit "Zoom
       setting and resizable panels".
 
 ## Task 3: Resize to large panels (native_lv)

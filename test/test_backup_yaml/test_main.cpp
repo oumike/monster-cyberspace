@@ -105,6 +105,7 @@ Settings full() {
   s.brightness = 40;
   s.theme = ThemeId::WhiteBlack;
   s.rotation = 3;
+  s.zoom = 3;
   s.lastRoom = "random";
   s.phrases = {"On my \"way\"", "👍 ok"};
   s.webConfig = false;
@@ -157,6 +158,7 @@ void expectSame(const Settings& a, const Settings& b) {
   TEST_ASSERT_EQUAL_UINT8(a.brightness, b.brightness);
   TEST_ASSERT_TRUE(a.theme == b.theme);
   TEST_ASSERT_EQUAL(a.rotation, b.rotation);
+  TEST_ASSERT_EQUAL(a.zoom, b.zoom);
   TEST_ASSERT_EQUAL_STRING(a.lastRoom.c_str(), b.lastRoom.c_str());
   TEST_ASSERT_EQUAL(a.phrases.size(), b.phrases.size());
   for (size_t i = 0; i < a.phrases.size(); i++)
@@ -313,6 +315,21 @@ void test_chat_style_round_trip() {
   TEST_ASSERT_TRUE(out.chatStyle == ChatStyle::Bubbles);
 }
 
+void test_zoom_round_trip() {
+  Settings in;
+  in.zoom = 1;
+  std::string y = backupToYaml(in, {"CardputerZero", "0.1.0", 0});
+  TEST_ASSERT_NOT_EQUAL(std::string::npos, y.find("zoom: 1"));
+  Settings out;
+  std::string err, note;
+  TEST_ASSERT_TRUE_MESSAGE(run(y, out, err, note), err.c_str());
+  TEST_ASSERT_EQUAL(1, out.zoom);
+  Settings keep;
+  keep.zoom = 3;
+  TEST_ASSERT_TRUE_MESSAGE(run(std::string(kHead) + "buzzer: false\n", keep, err, note), err.c_str());
+  TEST_ASSERT_EQUAL(3, keep.zoom);
+}
+
 void test_unread_filter_round_trip() {
   Settings in;
   in.unreadFilter = UnreadFilter::Mentions;
@@ -440,6 +457,9 @@ void test_bad_values_rejected() {
       {"chatStyle: fancy\n", "line 3: chat style: irc or bubbles"},
       {"unreadFilter: some\n", "line 3: unread filter: all or mentions"},
       {"theme: pink\n", "line 3: theme: default, bw or wb"},
+      {"zoom: 4\n", "line 3: zoom: 1, 2 or 3"},
+      {"zoom: 0\n", "line 3: zoom: 1, 2 or 3"},
+      {"zoom: big\n", "line 3: zoom: 1, 2 or 3"},
       {"kbLight: dim\n", "line 3: keyboard light: off, low, medium or high"},
       {"powerLight: dim\n",
        "line 3: power light: off, red, green, blue, yellow, cyan, magenta or white"},
@@ -621,6 +641,7 @@ int main(int, char**) {
   RUN_TEST(test_vibrate_round_trip);
   RUN_TEST(test_vibrate_missing_keeps_current);
   RUN_TEST(test_chat_style_round_trip);
+  RUN_TEST(test_zoom_round_trip);
   RUN_TEST(test_unread_filter_round_trip);
   RUN_TEST(test_chat_style_missing_keeps);
   RUN_TEST(test_missing_keys_keep_current);

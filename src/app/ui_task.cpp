@@ -57,6 +57,7 @@
 #include <vector>
 #include "ui/room_layout.h"
 #include "ui/rotation.h"
+#include "ui/window_fit.h"
 #include "ui/screen_timeout.h"
 #include "ui/splash_layout.h"
 #include "ui/theme.h"
@@ -746,6 +747,9 @@ void handleEvent(const Event& e) {
     case EvtType::RotationChanged:
       applyRotation(uint8_t(e.code));
       break;
+    case EvtType::ZoomChanged:
+      setZoom(uint8_t(e.code));
+      break;
     case EvtType::Banner:
       banner(e.text, !e.ok);
       break;
@@ -1303,7 +1307,8 @@ void taskMain(void*) {
       }
       // Edge swipes are the gesture recogniser's; LVGL's views take the rest.
       Gesture g;
-      if (!touchSwallow && gestures.feed(touch.down, touch.x, touch.y, millis(), g) &&
+      if (!touchSwallow && !board::pointerIsMouse() &&
+          gestures.feed(touch.down, touch.x, touch.y, millis(), g) &&
           (g.kind == GestureKind::EdgeBack || g.kind == GestureKind::EdgeOptions)) {
         dropTaps = true;
         if (app().cfg.tapVibrate && board::hasHaptic()) board::haptic(kTapBuzzMs);
@@ -1397,6 +1402,12 @@ void taskMain(void*) {
       lvui::applyTheme(currentTheme());
       needResize = true;
     }
+    // A desktop window resized or zoomed: the same as a rotation.
+    if (board::panelSizeChanged()) {
+      lvglResize();
+      gestures.reset();
+      needResize = true;
+    }
     // A text size, rotation or keyboard dock change: new fonts and sizes,
     // so the layers and the screen are built again (beforeBuild relays out).
     if (needResize || wantedSize() != shownSize || wantHeader() != shownHeader) router::rebuild();
@@ -1427,6 +1438,7 @@ bool stopped() { return uiStopped; }
 void start() {
   symbols.setEmoji(RC_FEAT_EMOJI != 0);
   if (board::canRotate()) board::setRotation(app().cfg.rotation);
+  if (board::canZoom()) board::setZoom(app().cfg.zoom);
   if (TextSize only; board::fixedTextSize(only)) {
     app().cfg.textSize = only;
   } else {
@@ -1464,6 +1476,13 @@ void setTextSize(TextSize s) {
   app().cfg.textSize = s;
   settings::saveUiPrefs(app().cfg);
   needResize = true;
+}
+
+void setZoom(uint8_t zoom) {
+  if (!board::canZoom()) return;
+  app().cfg.zoom = winfit::clampZoom(zoom);
+  settings::saveUiPrefs(app().cfg);
+  board::setZoom(app().cfg.zoom);
 }
 
 void setChatStyle(ChatStyle s) {

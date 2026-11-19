@@ -472,6 +472,7 @@ esp_err_t getPrefs(httpd_req_t* req) {
   d["tzName"] = s.tzName;
   d["ntpServer"] = s.ntpServer;
   if (board::canRotate()) d["rotation"] = s.rotation;
+  if (board::canZoom()) d["zoom"] = s.zoom;
   if (board::hasKbLight()) d["kbLight"] = rc::kbLightKey(s.kbLight);
   if (board::hasLedLevel()) d["ledLevel"] = rc::ledLevelKey(s.ledLevel);
   if (board::hasPowerLight()) d["powerLight"] = rc::ledColorKey(s.powerLight);
@@ -532,6 +533,7 @@ struct PrefsChange {
   uint8_t volume;
   rc::ThemeId theme;
   int rotation = -1;
+  int zoom = -1;
   uint32_t screenOnSecs;
   bool screenSaver, spellCheck, tapVibrate, alertVibrate;
   rc::ChatStyle chatStyle;
@@ -569,6 +571,12 @@ std::string parsePrefs(JsonVariantConst doc, const Settings& s, PrefsChange& c) 
     if (!doc["rotation"].is<int>() || doc["rotation"].as<int>() < 0 || doc["rotation"].as<int>() > 3)
       return "Orientation: 0 to 3";
     c.rotation = doc["rotation"].as<int>();
+  }
+  if (!doc["zoom"].isNull()) {
+    if (!doc["zoom"].is<int>() || doc["zoom"].as<int>() < rc::winfit::kZoomMin ||
+        doc["zoom"].as<int>() > rc::winfit::kZoomMax)
+      return "Zoom: 1, 2 or 3";
+    c.zoom = doc["zoom"].as<int>();
   }
   c.screenOnSecs = s.screenOnSecs;
   if (!doc["screenOnSecs"].isNull()) {
@@ -769,6 +777,8 @@ void applyPrefs(const PrefsChange& c, const Settings& s) {
     rc::postEvent(rc::Event{rc::EvtType::PrefsChanged, rc::themeKey(c.theme), static_cast<int>(c.size), c.buzzer});
   if (c.rotation >= 0 && board::canRotate() && c.rotation != s.rotation)
     rc::postEvent(rc::Event{rc::EvtType::RotationChanged, "", c.rotation, true});
+  if (c.zoom >= 0 && board::canZoom() && c.zoom != s.zoom)
+    rc::postEvent(rc::Event{rc::EvtType::ZoomChanged, "", c.zoom, true});
 }
 
 // The canned replies, ["..."]; cleaned (config/phrases.h).

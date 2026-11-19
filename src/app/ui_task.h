@@ -20,6 +20,8 @@ bool stopped();
 void setTextSize(TextSize s);
 // Sets and saves the chat style; the logs lay out again on their next frame.
 void setChatStyle(ChatStyle s);
+// The desktop window's zoom (1-3, board::canZoom), saved and applied.
+void setZoom(uint8_t zoom);
 // Sets and saves the Unread filter and hands it to the network side; Mentions
 // drops the follower, poke, bookmark and new-entry notices already listed.
 void setUnreadFilter(UnreadFilter f);

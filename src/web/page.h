@@ -322,6 +322,7 @@ static const char kPage[] = R"HTML(<!doctype html>
 <div class="row" id="chatrow" hidden><label for="chat">Chat style</label><select id="chat"><option value="irc">IRC</option><option value="bubbles">Bubbles</option></select></div>
 <div class="row" id="unrrow" hidden><label for="unr">Unread shows</label><select id="unr"><option value="all">All</option><option value="mentions">Replies &amp; mentions</option></select></div>
 <div class="row" id="rotrow" hidden><label for="rot">Orientation</label><select id="rot"><option value="0">Landscape</option><option value="2">Landscape 180</option><option value="1">Portrait</option><option value="3">Portrait 180</option></select></div>
+<div class="row" id="zoomrow" hidden><label for="zoom">Zoom</label><select id="zoom"><option value="1">1x</option><option value="2">2x</option><option value="3">3x</option></select></div>
 <div class="row" id="brightrow" hidden><label for="bright">Brightness</label><div class="range"><input id="bright" type="range" min="10" max="100" step="10"><span id="brightval"></span></div></div>
 <div class="row"><label for="scrsecs">Screen timeout</label><select id="scrsecs"><option value="15">15 s</option><option value="30">30 s</option><option value="60">1 min</option><option value="120">2 min</option><option value="300">5 min</option><option value="600">10 min</option><option value="1800">30 min</option><option value="3600">60 min</option><option value="0">Never</option></select></div>
 <div class="row"><label for="scrsaver">At timeout</label><select id="scrsaver"><option value="1">Show the screensaver</option><option value="0">Turn the screen off</option></select></div>
@@ -424,6 +425,7 @@ const F=[
   {ids:['chat'],label:'Chat style',put:b=>{P(b).chatStyle=$('chat').value;}},
   {ids:['unr'],label:'Unread shows',put:b=>{P(b).unreadFilter=$('unr').value;}},
   {ids:['rot'],label:'Orientation',put:b=>{P(b).rotation=+$('rot').value;}},
+  {ids:['zoom'],label:'Zoom',put:b=>{P(b).zoom=+$('zoom').value;}},
   {ids:['bright'],label:'Brightness',put:b=>{P(b).brightness=+$('bright').value;}},
   {ids:['scrsecs'],label:'Screen timeout',put:b=>{P(b).screenOnSecs=+$('scrsecs').value;}},
   {ids:['scrsaver'],label:'At timeout',put:b=>{P(b).screenSaver=$('scrsaver').value==='1';}},
@@ -535,6 +537,7 @@ async function loadPrefs(){const p=await call('GET','/api/prefs');if(p.tz===unde
   paintTheme();
   if(showRow('tsizerow',!!p.textSize)){$('tsize').max=p.noLarge?1:2;$('tsize').value=Math.max(0,TSIZES.indexOf(p.textSize));tsizeShow();}
   if(showRow('rotrow',p.rotation!==undefined))$('rot').value=String(p.rotation);
+  if(showRow('zoomrow',p.zoom!==undefined))$('zoom').value=String(p.zoom);
   if(showRow('brightrow',p.brightness!==undefined)){$('bright').value=p.brightness;brightShow();}
   $('scrsecs').value=String(p.screenOnSecs);$('scrsaver').value=p.screenSaver?'1':'0';
   if(showRow('chatrow',!!p.chatStyle))$('chat').value=p.chatStyle;

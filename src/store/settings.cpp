@@ -97,6 +97,7 @@ void load(rc::Settings& s) {
   s.notifyTimeoutSecs = rc::snapNotifyTimeout(p.getUShort("ledtime", 15));
   s.theme = rc::themeFromIndex(p.getUChar("theme", 0));
   s.rotation = rc::rotationFromIndex(p.getUChar("rot", board::defaultRotation()));
+  s.zoom = rc::winfit::clampZoom(p.getUChar("zoom", rc::winfit::kZoomDefault));
   s.lastRoom = getStr(p, "room", s.lastRoom);
   if (p.isKey("phrases")) s.phrases = rc::splitPhrases(getStr(p, "phrases", ""));
   s.webConfig = p.getBool("webcfg", !RC_WEB_OPT_IN);
@@ -117,6 +118,7 @@ void saveUiPrefs(const rc::Settings& s) {
   p.putUChar("vol", s.volume);
   p.putUChar("theme", static_cast<uint8_t>(s.theme));
   p.putUChar("rot", s.rotation);
+  p.putUChar("zoom", s.zoom);
   p.putUChar("kblight", static_cast<uint8_t>(s.kbLight));
   p.putUChar("ledlevel", static_cast<uint8_t>(s.ledLevel));
   p.putUChar("pwrcolor", static_cast<uint8_t>(s.powerLight));

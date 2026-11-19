@@ -60,6 +60,7 @@ enum Item {
   kUnreadFilter,
   kZone,
   kRotation,
+  kZoom,
   kBrightness,
   kScreenTimeout,
   kAtTimeout,
@@ -93,7 +94,7 @@ enum Item {
 
 // The visible menu, in order. Theme is hidden on e-paper (one theme there),
 // text size on a board with one size, orientation appears only on a board
-// that can rotate and the SD-card items
+// that can rotate, zoom only in a desktop window, and the SD-card items
 // only on a board with a slot, so item indices and the menu height follow
 // from this. Spell check and Auto-update go when their features are compiled
 // out; Firmware then just shows the version.
@@ -105,6 +106,7 @@ std::vector<Item> menuItems() {
   if (RC_FEAT_UNREAD && RC_FEAT_ENTRIES) v.push_back(kUnreadFilter);
   v.push_back(kZone);
   if (board::canRotate()) v.push_back(kRotation);
+  if (board::canZoom()) v.push_back(kZoom);
   if (!board::eink()) v.push_back(kBrightness);
   v.push_back(kScreenTimeout);
   v.push_back(kAtTimeout);
@@ -695,6 +697,9 @@ void SettingsScreen::activate(int item) {
     case kChatStyle:
       ui::setChatStyle(nextChatStyle(app().cfg.chatStyle));
       break;
+    case kZoom:
+      ui::setZoom(uint8_t(app().cfg.zoom % winfit::kZoomMax + 1));
+      break;
     case kUnreadFilter:
       ui::setUnreadFilter(nextUnreadFilter(app().cfg.unreadFilter));
       break;
@@ -807,6 +812,9 @@ std::vector<ListItem> itemRows(const std::vector<Item>& items, bool buttons, boo
         break;
       case kRotation:
         rows.push_back(ListItem{U"Orientation", widen(rotationLabel(a.cfg.rotation))});
+        break;
+      case kZoom:
+        rows.push_back(ListItem{U"Zoom", std::u32string(1, char32_t(U'0' + a.cfg.zoom)) + U"x"});
         break;
       case kScreenTimeout:
         rows.push_back(ListItem{U"Screen timeout", widen(screenTimeoutLabel(a.cfg.screenOnSecs).c_str())});

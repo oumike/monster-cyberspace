@@ -118,6 +118,7 @@ enum class EvtType {
   OlderLoaded,      // code = messages added
   PrefsChanged,     // from the web page: code = TextSize index; ok = buzzer; text = theme key
   RotationChanged,  // from the web page: code = rotation 0-3 (ui/rotation.h)
+  ZoomChanged,      // from the web page: code = zoom 1-3 (ui/window_fit.h)
   ConversationsUpdated,
   ConversationStarted,  // ok: text = conversation id; else text = error
   TypingChanged,

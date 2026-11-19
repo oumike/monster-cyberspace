@@ -65,7 +65,7 @@ struct Item {
 
 struct Staged {
   Str format, version, timezone, tzName, ntpServer, pagePassword, apPassword, textSize, chatStyle, unreadFilter, theme,
-      rotation, lastRoom, email, refreshToken, screenOnSecs, kbLight,
+      rotation, zoom, lastRoom, email, refreshToken, screenOnSecs, kbLight,
       notifyLight, notifyMention, notifyFeed, notifyCmail, notifyTimeout, idleSecs, wakeMins, volume, brightness, powerLight, wifiJoined, wifiSetup, wifiLooking, ledLevel;
   Bool drawerOpen, usersHidden, buzzer, tapVibrate, alertVibrate, autoUpdate, screenSaver, spellCheck, webConfig;
   bool hasWifi = false, hasPhrases = false;
@@ -281,6 +281,7 @@ bool parse(std::string_view yaml, Staged& st, std::string& err) {
              : key == "unreadFilter" ? &st.unreadFilter
              : key == "theme"        ? &st.theme
              : key == "rotation"     ? &st.rotation
+             : key == "zoom"         ? &st.zoom
              : key == "screenOnSecs" ? &st.screenOnSecs
              : key == "kbLight"      ? &st.kbLight
              : key == "notifyLight"  ? &st.notifyLight
@@ -428,6 +429,7 @@ std::string backupToYaml(const Settings& s, const BackupMeta& m) {
        " crypt | bubblegum | top8 | bubblegumdark | top8dark | sepiadark | c64dark\n";
   o += "rotation: " + std::to_string(s.rotation) +
        "  # 0 landscape, 1 portrait, 2 landscape 180, 3 portrait 180\n";
+  o += "zoom: " + std::to_string(s.zoom) + "  # 1 | 2 | 3: desktop window\n";
   o += std::string("drawerOpen: ") + boolStr(s.drawerOpen) + "\n";
   o += std::string("usersHidden: ") + boolStr(s.usersHidden) + "  # the docked user list in rooms\n";
   o += std::string("buzzer: ") + boolStr(s.buzzer) + "\n";
@@ -524,7 +526,7 @@ bool backupFromYaml(std::string_view yaml, Settings& inOut, std::string& err, st
       "notify light: off, red, green, blue, yellow, cyan, magenta or white";
   constexpr const char* kWifiColours =
       "wi-fi light: off, red, green, blue, yellow, cyan, magenta or white";
-  int rotation = 0, screenOnSecs = 0, notifyTimeout = 0, idleSecs = 0, wakeMins = 0, volume = 0,
+  int rotation = 0, zoom = 0, screenOnSecs = 0, notifyTimeout = 0, idleSecs = 0, wakeMins = 0, volume = 0,
       brightness = 0;
   if (st.apPassword.has && !validApPassword(st.apPassword.v)) {
     err = at(st.apPassword.line, "setup-AP password: 8-63 printable characters, or empty");
@@ -541,6 +543,8 @@ bool backupFromYaml(std::string_view yaml, Settings& inOut, std::string& err, st
     err = at(st.theme.line, "theme: default, bw or wb");
   } else if (st.rotation.has && !plainInt(st.rotation, rotation)) {
     err = at(st.rotation.line, "orientation: 0 to 3");
+  } else if (st.zoom.has && (!plainInt(st.zoom, zoom) || zoom < winfit::kZoomMin || zoom > winfit::kZoomMax)) {
+    err = at(st.zoom.line, "zoom: 1, 2 or 3");
   } else if (st.screenOnSecs.has && (!plainInt(st.screenOnSecs, screenOnSecs) || screenOnSecs < 0 ||
                                      !validScreenTimeout(uint32_t(screenOnSecs)))) {
     err = at(st.screenOnSecs.line,
@@ -613,6 +617,7 @@ bool backupFromYaml(std::string_view yaml, Settings& inOut, std::string& err, st
   if (st.unreadFilter.has) parseUnreadFilter(st.unreadFilter.v, inOut.unreadFilter);
   if (st.theme.has) inOut.theme = theme;
   if (st.rotation.has) inOut.rotation = rotationFromIndex(rotation);
+  if (st.zoom.has) inOut.zoom = uint8_t(zoom);
   if (st.drawerOpen.has) inOut.drawerOpen = st.drawerOpen.v;
   if (st.usersHidden.has) inOut.usersHidden = st.usersHidden.v;
   if (st.buzzer.has) inOut.buzzer = st.buzzer.v;

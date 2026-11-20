@@ -34,8 +34,8 @@ on 2026-10-27; the sections marked `m9_fake` passed on it before then.
 
 **Launcher (issue #14; each board in `LAUNCHER_ENVS`, a Tab5 first):**
 
-On 2026-11-20 a Tab5 under Launcher installed and booted the branch's
-app-only image, with the `[launcher]` line, "Update through Launcher" and no
+On 2026-11-20 a Tab5 and a T-Deck Plus under Launcher installed and booted
+the branch's app-only image, with the `[launcher]` line, "Update through Launcher" and no
 web Mascot section; the boxes stay open for the rest of each check.
 
 - [ ] With bmorcelli's Launcher on the board, its SD install of the release's

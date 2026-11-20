@@ -143,7 +143,9 @@ std::vector<Item> menuItems() {
   v.push_back(kWebConfig);
   if (RC_FEAT_WIFI_MGMT) v.push_back(kSetupAp);
   v.push_back(kFirmware);
-  if (RC_FEAT_OTA) v.push_back(kAutoUpdate);
+#if RC_FEAT_OTA
+  if (!ota::status().launcher) v.push_back(kAutoUpdate);
+#endif
   if (board::hasSdSlot()) {
     v.push_back(kBackup);
     v.push_back(kRestore);
@@ -768,7 +770,7 @@ void SettingsScreen::activate(int item) {
 #if RC_FEAT_OTA
       const ota::Status st = ota::status();
       if (!st.layoutOk) {
-        ui::banner("Updates need a USB install of a release first", true);
+        ui::banner(st.launcher ? "Update through Launcher" : "Updates need a USB install of a release first", true);
         break;
       }
       if (st.state == ota::State::Checking || st.state == ota::State::Installing ||

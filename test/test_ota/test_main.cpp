@@ -52,6 +52,25 @@ void test_asset_urls() {
   TEST_ASSERT_EQUAL_STRING("https://github.com/oumike/monster-cyberspace/releases/latest", kOtaLatestUrl);
 }
 
+void test_launcher_hosted() {
+  // Our 16 MB table: ota_0 and ota_1, running from either.
+  const AppSlot ours[] = {{0x10000, 0x10}, {0x650000, 0x11}};
+  TEST_ASSERT_FALSE(launcherHosted(ours, 2, 0x10000));
+  TEST_ASSERT_FALSE(launcherHosted(ours, 2, 0x650000));
+  // Our 8 MB table: one factory app, the one running.
+  const AppSlot factory[] = {{0x10000, 0x00}};
+  TEST_ASSERT_FALSE(launcherHosted(factory, 1, 0x10000));
+  // Launcher's tables: itself in test (ESP32-S3) or factory (ESP32-P4) at
+  // 0x10000, apps in OTA slots after it.
+  const AppSlot s3[] = {{0x10000, 0x20}, {0x1a0000, 0x10}, {0x520000, 0x11}};
+  TEST_ASSERT_TRUE(launcherHosted(s3, 3, 0x520000));
+  const AppSlot p4[] = {{0x10000, 0x00}, {0x1a0000, 0x10}};
+  TEST_ASSERT_TRUE(launcherHosted(p4, 2, 0x1a0000));
+  // Launcher itself running.
+  TEST_ASSERT_FALSE(launcherHosted(s3, 3, 0x10000));
+  TEST_ASSERT_FALSE(launcherHosted(nullptr, 0, 0x10000));
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_compare_versions);
@@ -59,5 +78,6 @@ int main() {
   RUN_TEST(test_tag_from_location);
   RUN_TEST(test_tag_from_location_rejects);
   RUN_TEST(test_asset_urls);
+  RUN_TEST(test_launcher_hosted);
   return UNITY_END();
 }

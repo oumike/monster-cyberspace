@@ -65,4 +65,12 @@ std::string otaAssetUrl(const std::string& slug, const std::string& tag) {
   return kDownloadBase + tag + "/" + otaAssetName(slug, tag);
 }
 
+bool launcherHosted(const AppSlot* apps, size_t n, uint32_t runningAddress) {
+  for (size_t i = 0; i < n; ++i) {
+    const bool host = apps[i].subtype == 0x00 || apps[i].subtype == 0x20;
+    if (host && apps[i].address != runningAddress) return true;
+  }
+  return false;
+}
+
 }  // namespace rc

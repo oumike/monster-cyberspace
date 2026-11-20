@@ -885,6 +885,7 @@ esp_err_t getMascot(httpd_req_t* req) {
   for (const std::string& l : rc::defaultMascotArt()) defArt.add(l);
   JsonArray defPhrases = d["defaultPhrases"].to<JsonArray>();
   for (const std::string& p : rc::defaultMascotPhrases()) defPhrases.add(p);
+  d["stored"] = mascotstore::available();
   d["customArt"] = customArt;
   d["customPhrases"] = customPhrases;
   d["presets"] = serialized(kMascotPresetsJson);
@@ -1014,6 +1015,7 @@ esp_err_t getOta(httpd_req_t* req) {
   d["error"] = st.error;
   d["percent"] = ota::percent(st);
   d["supported"] = st.layoutOk;
+  d["launcher"] = st.launcher;
   d["auto"] = rc::app().cfg.autoUpdate;
   return sendJson(req, d);
 }

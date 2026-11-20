@@ -32,6 +32,30 @@ These were built without flashing and still need a run on the device. The
 scripted fake-API builds (`m9_fake`, `wio_l2_fake`, `tdeck_fake`) were removed
 on 2026-10-27; the sections marked `m9_fake` passed on it before then.
 
+**Launcher (issue #14; each board in `LAUNCHER_ENVS`, a Tab5 first):**
+
+Passed on hardware on 2026-11-20 (a Tab5 and a T-Deck Plus first, then the
+other Launcher boards), except the flasher check below.
+
+- [x] With bmorcelli's Launcher on the board, its SD install of the release's
+  `-ota.bin` (`-app.bin` on the Cardputer ADV) succeeds, and the app boots
+  from Launcher's boot screen.
+- [x] The console prints `[launcher] installed by Launcher` and `[ota]
+  installed by Launcher`; Settings → Firmware shows the version, a press
+  says "Update through Launcher", and there is no Auto update.
+- [x] `[mascot] default (no mascot partition under Launcher)`; the splash
+  shows Fluffy; web config has no Mascot section, and Save works.
+- [x] Settings save, survive a restart and the 20 KB shared NVS holds them
+  (signed in, a few Wi-Fi networks, read marks); no `nvs` errors on the
+  console. Launcher's own settings are still there afterwards.
+- [x] Factory reset clears this firmware's settings and leaves Launcher's.
+- [x] A power cycle shows Launcher's boot screen, and a key or tap enters
+  Launcher; reinstalling a newer release keeps the settings.
+- [x] ESP32-P4s (T-Display P4, Tab5): Wi-Fi through the C6 works under
+  Launcher's bootloader.
+- [ ] Installed from the flasher (factory image), the same build still
+  offers OTA, Auto update and the Mascot section.
+
 **Slash commands (issue #9 item 6; the M9, the T-Deck Plus and a touch board):**
 
 - [ ] In a room, `/` on an empty line lists the commands with hints; `/mu`

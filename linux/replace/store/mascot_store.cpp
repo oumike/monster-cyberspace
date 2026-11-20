@@ -26,6 +26,8 @@ std::string path() { return compat::configDir() + "/" + kFile; }
 
 }  // namespace
 
+bool available() { return true; }
+
 bool load(rc::Mascot& out) {
   rc::Mascot m;
   FILE* f = std::fopen(path().c_str(), "rb");

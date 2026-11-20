@@ -22,6 +22,7 @@
 #include "hal/board.h"
 #include "net/wifi_mgr.h"
 #include "ota/ota_logic.h"
+#include "sys/launcher.h"
 
 // Arduino marks a freshly installed app valid at boot unless this says
 // otherwise; the task below does it after kValidAfterMs instead, so an update
@@ -383,8 +384,10 @@ void scheduler(void*) {
 
 void start() {
   gMtx = xSemaphoreCreateMutex();
-  gSt.layoutOk = layoutSupportsUpdate();
-  if (!gSt.layoutOk) Serial.println("[ota] flash layout not ours: updates disabled");
+  gSt.launcher = launcher::hosted();
+  gSt.layoutOk = !gSt.launcher && layoutSupportsUpdate();
+  if (gSt.launcher) Serial.println("[ota] installed by Launcher: updates go through Launcher");
+  else if (!gSt.layoutOk) Serial.println("[ota] flash layout not ours: updates disabled");
   xTaskCreatePinnedToCore(scheduler, "ota", 4096, nullptr, 1, nullptr, 0);
 }
 

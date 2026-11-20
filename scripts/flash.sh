@@ -8,7 +8,8 @@
 # this script leaves 0x9000-0xDFFF alone, so the new firmware finds them
 # there and moves them on its first boot.
 #
-# The -ota.bin files are for over-the-air updates, not for this script.
+# The -ota.bin files are for over-the-air updates and the -app.bin files for
+# Launcher, not for this script.
 #
 # Usage: ./flash.sh [--erase|-E] [monster-cyberspace-<board>-vX.Y.Z.bin] [port]
 #   --erase, -E   Erase the whole chip first (wipes the settings).
@@ -31,15 +32,15 @@ PORT=${ARGS[1]:-/dev/ttyUSB0}
 
 if [[ -z "$FIRMWARE" ]]; then
     # Fall back to the only factory image in the current directory.
-    FIRMWARE=$(ls monster-cyberspace-*.bin 2>/dev/null | grep -v -- '-ota\.bin$' | sort -V | tail -1)
+    FIRMWARE=$(ls monster-cyberspace-*.bin 2>/dev/null | grep -v -- '-\(ota\|app\)\.bin$' | sort -V | tail -1)
 fi
 
 if [[ -z "$FIRMWARE" || ! -f "$FIRMWARE" ]]; then
     echo "Usage: ./flash.sh [--erase|-E] <monster-cyberspace-<board>-vX.Y.Z.bin> [port]"
     exit 1
 fi
-if [[ "$FIRMWARE" == *-ota.bin ]]; then
-    echo "$FIRMWARE is an over-the-air image; flash the factory .bin instead." >&2
+if [[ "$FIRMWARE" == *-ota.bin || "$FIRMWARE" == *-app.bin ]]; then
+    echo "$FIRMWARE is an app-only image; flash the factory .bin instead." >&2
     exit 1
 fi
 

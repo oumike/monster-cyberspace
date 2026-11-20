@@ -100,8 +100,9 @@ a{color:var(--sel)}
 <div class="acts"><button type="button" id="mreset">Put Fluffy back</button></div>
 </section>
 )HTML"
-#define RC_MASCOT_JS R"JS(let mascotPresets=[],mascotDefault={art:[],phrases:[]};
+#define RC_MASCOT_JS R"JS(let mascotPresets=[],mascotDefault={art:[],phrases:[]},mascotOn=true;
 async function loadMascot(){const m=await call('GET','/api/mascot');if(!m.art)return;
+  if(m.stored===false){mascotOn=false;$('mascot').hidden=true;if(window.buildNav)buildNav();return;}
   mascotPresets=(m.presets&&m.presets.presets)||[];mascotDefault={art:m.defaultArt||[],phrases:m.defaultPhrases||[]};
   const sel=$('mpreset');sel.innerHTML='<option value="">Your current art</option>';
   mascotPresets.forEach((p,i)=>{const o=document.createElement('option');o.value=String(i);o.textContent=p.name;sel.appendChild(o);});
@@ -109,7 +110,7 @@ async function loadMascot(){const m=await call('GET','/api/mascot');if(!m.art)re
 $('mpreset').onchange=()=>{const p=mascotPresets[+$('mpreset').value];if($('mpreset').value!==''&&p){$('mart').value=p.art.join('\n');mark();}};
 $('mreset').onclick=()=>{$('mart').value=mascotDefault.art.join('\n');$('mphrases').value=mascotDefault.phrases.join('\n');$('mpreset').value='';mark();};
 const lines=id=>$(id).value.replace(/\r/g,'').split('\n');
-F.push({ids:['mart','mphrases'],label:'Mascot',put:b=>{b.mascot={art:lines('mart'),phrases:lines('mphrases')};}});
+F.push({ids:['mart','mphrases'],label:'Mascot',put:b=>{if(mascotOn)b.mascot={art:lines('mart'),phrases:lines('mphrases')};}});
 loaders.push(loadMascot);
 )JS"
 #else
@@ -132,7 +133,7 @@ async function loadOta(){const o=await call('GET','/api/ota');if(o.state===undef
     available:o.latest+' is available (running v'+o.version+').',
     installing:'Installing '+(o.latest||'')+(o.percent>=0?': '+o.percent+'%':'…'),
     done:'Installed. Restarting…',failed:'Running v'+o.version+'. The update failed: '+o.error}[o.state]||o.state;
-  $('otastate').textContent=o.supported?t:'Running v'+o.version+'. Updates need a USB install of a release first.';
+  $('otastate').textContent=o.supported?t:'Running v'+o.version+(o.launcher?'. Installed by Launcher: update through Launcher.':'. Updates need a USB install of a release first.');
   $('otainst').hidden=o.state!=='available';$('otainst').textContent='Install '+(o.latest||'');
   clearTimeout(otaTimer);if(o.state==='checking'||o.state==='installing')otaTimer=setTimeout(loadOta,1500);
   return o;}

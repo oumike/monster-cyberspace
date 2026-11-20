@@ -126,8 +126,9 @@ set(REPLACE_SOURCES
 find_package(CURL REQUIRED)
 
 # The rest of src/: everything but the files replaced above, main.cpp (the
-# replacement has main()), the X4's grid UI, other boards' HALs and OTA. The
-# power service is built but idle: sleepsOnBattery() is false.
+# replacement has main()), the X4's grid UI, other boards' HALs, OTA and the
+# Launcher check (ESP partition tables). The power service is built but idle:
+# sleepsOnBattery() is false.
 file(GLOB_RECURSE APP_SOURCES CONFIGURE_DEPENDS "${REPO}/src/*.cpp")
 list(FILTER APP_SOURCES EXCLUDE REGEX "/src/(grid_ui|hal)/")
 foreach(r ${REPLACE_SOURCES})
@@ -136,7 +137,8 @@ foreach(r ${REPLACE_SOURCES})
 endforeach()
 list(REMOVE_ITEM APP_SOURCES
   "${REPO}/src/main.cpp"
-  "${REPO}/src/app/ota_service.cpp")
+  "${REPO}/src/app/ota_service.cpp"
+  "${REPO}/src/sys/launcher.cpp")
 
 # Spell check's dictionary, generated from dict/en.txt as the PlatformIO
 # builds do (tools/gen_spell_dict.py).

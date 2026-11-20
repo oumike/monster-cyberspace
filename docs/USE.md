@@ -1373,10 +1373,36 @@ shown without moving or opening anything.
 If the saved networks fail for 5 minutes, the setup AP comes up by itself.
 It goes away again once Wi-Fi is back and nobody is joined to it.
 
+## Installing through Launcher
+
+On the boards [bmorcelli's Launcher](https://github.com/bmorcelli/Launcher)
+supports (ThinkNode M9, Wio Tracker L2, T-Deck Plus, CrowPanel Advance 5.0",
+T-LoRa Pager, T-Deck Pro, Cardputer ADV, T-Display P4 and Tab5), Monster for
+Cyberspace can live beside other firmware under Launcher. Install it from
+Launcher's online list once it is listed there, or copy the release's
+`monster-cyberspace-<board>-vX.Y.Z-ota.bin` (`-app.bin` on the Cardputer ADV)
+to the SD card and install it from Launcher's SD menu. Don't give Launcher the
+factory `.bin`: it would reserve far more flash than the app needs.
+
+Installed that way:
+
+- Updates come through Launcher: install the new release the same way.
+  **Settings → Firmware** says so, and there is no Auto update.
+- The mascot is always Fluffy, and web config has no Mascot section:
+  Launcher's flash layout has no room kept for a custom one.
+- To get back to Launcher, restart the device (power off and on, or reset)
+  and press a key or tap during Launcher's boot screen.
+
+Your settings are kept in flash Launcher shares, and stay through Launcher
+reinstalls. A USB install from the flasher page replaces Launcher, and this
+firmware then starts with fresh settings (restore a backup to bring them
+back).
+
 ## Firmware updates
 
 (Not on the Cardputer ADV, which has no over-the-air updates: install new
-releases from the flasher page over USB.)
+releases from the flasher page over USB. Not under Launcher either: see
+"Installing through Launcher".)
 
 The device looks for a new release 20 seconds after joining Wi-Fi and then
 once a day, straight from this project's GitHub releases over HTTPS. It only

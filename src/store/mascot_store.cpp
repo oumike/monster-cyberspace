@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "app/queues.h"
+#include "sys/launcher.h"
 
 namespace mascotstore {
 
@@ -44,8 +45,17 @@ bool fallbackFree() {
 
 }  // namespace
 
+// Under Launcher's table the fallback sector is free space Launcher may give
+// its next install: never read or write it there.
+bool available() { return partition() || !launcher::hosted(); }
+
 bool load(rc::Mascot& out) {
   const esp_partition_t* p = partition();
+  if (!p && launcher::hosted()) {
+    out = rc::Mascot{};
+    Serial.println("[mascot] default (no mascot partition under Launcher)");
+    return true;
+  }
   if (!p && !fallbackFree()) return false;
   auto* buf = static_cast<uint8_t*>(malloc(rc::kMascotBlobSize));
   if (!buf) {
@@ -78,6 +88,10 @@ bool save(const rc::Mascot& m) {
     return false;
   }
   const esp_partition_t* p = partition();
+  if (!p && launcher::hosted()) {
+    Serial.println("[mascot] save failed: no mascot partition under Launcher");
+    return false;
+  }
   if (!p && !fallbackFree()) return false;
   std::vector<uint8_t> blob = rc::encodeMascot(m);
   if (blob.size() != rc::kMascotBlobSize) return false;

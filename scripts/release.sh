@@ -35,6 +35,22 @@ NO_OTA_ENVS=(
     cardputer_adv
 )
 
+# Release envs bmorcelli's Launcher has a build for (docs/BUILD.md
+# "Launcher"). Launcher installs an app-only image and sizes its slot to it;
+# a factory image would make it reserve our whole app partition. The -ota.bin
+# is that image; NO_OTA_ENVS here get an unsigned -app.bin instead.
+LAUNCHER_ENVS=(
+    m9
+    wio_l2
+    tdeck
+    crowpanel50
+    pager
+    tdeck_pro
+    cardputer_adv
+    tdisplay_p4
+    tab5
+)
+
 # Linux boards, not PlatformIO envs: each ships a .deb built by
 # scripts/build-cardputer-zero.sh --deb in Docker (arm64), with no OTA image
 # and no flasher entry. A release cut by release.yml builds them in its
@@ -90,6 +106,8 @@ env_chip()       { case "$1" in x4) echo "esp32c3" ;; tdisplay_p4|tanmatsu|tab5)
 env_boot_offset() { case "$(env_chip "$1")" in esp32p4) echo "0x2000" ;; *) echo "0x0" ;; esac; }
 env_flash_size() { case "$1" in cardputer_adv) echo "8MB" ;; *) echo "16MB" ;; esac; }
 env_has_ota()    { case " ${NO_OTA_ENVS[*]} " in *" $1 "*) return 1 ;; *) return 0 ;; esac; }
+# A Launcher board without OTA: it ships the app alone as -app.bin.
+env_has_app_bin() { ! env_has_ota "$1" && case " ${LAUNCHER_ENVS[*]} " in *" $1 "*) true ;; *) false ;; esac; }
 # DIO in the image header boots on every QIO-capable part, and is what the
 # platy-aprs and camillia-mt images for the same boards ship with.
 env_flash_mode() { echo "dio"; }
@@ -135,6 +153,12 @@ validate_release_targets() {
         case " ${RELEASE_ENVS[*]} " in
             *" $e "*) ;;
             *) echo "  ERROR: NO_OTA_ENVS lists '$e', which is not in RELEASE_ENVS" >&2; failed=true ;;
+        esac
+    done
+    for e in "${LAUNCHER_ENVS[@]}"; do
+        case " ${RELEASE_ENVS[*]} " in
+            *" $e "*) ;;
+            *) echo "  ERROR: LAUNCHER_ENVS lists '$e', which is not in RELEASE_ENVS" >&2; failed=true ;;
         esac
     done
     # Every firmware env should be released; a new board that is not is a slip.
@@ -257,7 +281,8 @@ build_release_envs() {
 # dist/monster-cyberspace-<board>-<tag>-ota.bin      app only, what devices download
 # dist/monster-cyberspace-<board>-<tag>-ota.bin.sig  its ECDSA P-256 signature
 # dist/monster-cyberspace-<board>-<tag>.elf          symbols for crash decoding (not published)
-# NO_OTA_ENVS get the factory image and .elf only.
+# dist/monster-cyberspace-<board>-<tag>-app.bin      app only, for Launcher (env_has_app_bin)
+# NO_OTA_ENVS get the factory image and .elf only, plus -app.bin if in LAUNCHER_ENVS.
 merge_assets() {
     local tag="$1" env_name d out
     shift
@@ -272,6 +297,7 @@ merge_assets() {
             0xe000  "$d/boot_app0.bin" \
             0x10000 "$d/firmware.bin" >/dev/null
         cp "$d/firmware.elf" "$out.elf"
+        if env_has_app_bin "$env_name"; then cp "$d/firmware.bin" "$out-app.bin"; fi
         env_has_ota "$env_name" || continue
         cp "$d/firmware.bin" "$out-ota.bin"
         if [[ "$SIGN_ASSETS" == true ]]; then
@@ -295,6 +321,14 @@ verify_assets() {
             if [[ -e "$out-ota.bin" || -e "$out-ota.bin.sig" ]]; then
                 echo "Error: $env_name has OTA off but $out-ota.bin(.sig) exists" >&2
                 return 1
+            fi
+            if env_has_app_bin "$env_name"; then
+                if ! cmp -s ".pio/build/$env_name/firmware.bin" "$out-app.bin"; then
+                    echo "Error: $out-app.bin missing or not $env_name/firmware.bin" >&2
+                    return 1
+                fi
+                echo "  OK $env_name: $(basename "$out.bin"), $(basename "$out-app.bin") (no OTA)"
+                continue
             fi
             echo "  OK $env_name: $(basename "$out.bin") (no OTA)"
             continue
@@ -454,6 +488,8 @@ ${b}OUTPUT${r} (dist/)
                                                  ota_signing_key.pem here; a device will
                                                  not install an unsigned image)
   monster-cyberspace-<board>-vX.Y.Z.elf          symbols for decoding crashes (not published)
+  monster-cyberspace-<board>-vX.Y.Z-app.bin      app only, for Launcher, on Launcher boards
+                                                 with OTA off (the others use -ota.bin)
   Boards with OTA off (${NO_OTA_ENVS[*]}) get the factory .bin and .elf only.
   monster-cyberspace-<board>-vX.Y.Z_arm64.deb    Linux boards (${LINUX_TARGETS[*]}): the
                                                  package, built in Docker

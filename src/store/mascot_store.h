@@ -12,6 +12,10 @@ namespace mascotstore {
 // Logs one `[mascot]` line, never the content.
 bool load(rc::Mascot& out);
 
+// False where there is nowhere to keep one: installed by Launcher, whose
+// partition table has no `mascot` partition (the defaults show).
+bool available();
+
 // Erases and writes the sector, then posts EvtType::MascotChanged so the UI
 // task reloads. Callable from any task; never touches app state. The caller
 // validates first.

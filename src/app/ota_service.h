@@ -26,6 +26,7 @@ struct Status {
   std::string error;   // set in Failed
   size_t written = 0, total = 0;  // install progress (total 0 = unknown)
   bool layoutOk = true;           // false on a flash layout OTA must not touch
+  bool launcher = false;          // installed by Launcher: updates go through it
 };
 
 // Starts the scheduler task. Call once from setup().

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstddef>
+#include <cstdint>
 #include <string>
 
 // Portable pieces of the over-the-air update: where releases live and how
@@ -21,5 +23,17 @@ std::string tagFromLocation(const std::string& location);
 // monster-cyberspace-<slug>-<tag>-ota.bin, as scripts/release.sh names it.
 std::string otaAssetName(const std::string& slug, const std::string& tag);
 std::string otaAssetUrl(const std::string& slug, const std::string& tag);
+
+// One app partition: its flash address and ESP-IDF subtype (0x00 factory,
+// 0x10.. ota_N, 0x20 test).
+struct AppSlot {
+  uint32_t address;
+  uint8_t subtype;
+};
+
+// True when bmorcelli's Launcher installed this firmware: Launcher keeps
+// itself in a factory or test app (at 0x10000) and boots us from an OTA slot.
+// Our own tables have no test app, and a factory app only where we run from it.
+bool launcherHosted(const AppSlot* apps, size_t n, uint32_t runningAddress);
 
 }  // namespace rc

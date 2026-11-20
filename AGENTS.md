@@ -598,7 +598,15 @@ arrows by position, `buttonMove`), and
 the buttons and unread rows sit on `page_`, drawn `pageTop_` rows up: drags
 (Up/Down from the `TileGrid`, whose `bg` then covers the page, and from the
 `ListBox`, `setDragKeys`) scroll it; keys bring it back to the top.
-The native suite is green: 882/882
+Launcher support (issue #14) was added on 2026-11-19 (built without
+flashing; branch `launcher-support`, a draft PR): the firmware spots
+bmorcelli's Launcher's partition table (`launcher::hosted()`,
+`src/sys/launcher.cpp`, `rc::launcherHosted`) and then turns OTA off ("Update
+through Launcher"), keeps the default mascot and never touches the raw
+`0xCB0000` fallback; `release.sh`'s `LAUNCHER_ENVS` lists the boards, and
+the Cardputer ADV gets an `-app.bin` (docs/BUILD.md "Launcher"). Its hardware
+check in docs/TESTING.md is open.
+The native suite is green: 891/891
 (`pio test -e native`), and so is the LVGL one: 89/89 (`pio test -e
 native_lv`, and built lean). `scripts/build-upload-monitor.sh -B` builds all
 fourteen firmware envs (the X4 only from a path without spaces).

@@ -284,6 +284,8 @@ settings), `-ota.bin` (the app image devices download), `-ota.bin.sig` (its
 signature) and `.elf` (symbols), plus `flash.sh`, `BUILD-INFO.txt` and `SHA256SUMS`.
 Envs in `NO_OTA_ENVS` (`cardputer_adv`, built with `RC_FEAT_OTA=0`) get the
 factory image and `.elf` only; `--check-targets` checks they set the flag.
+Those also in `LAUNCHER_ENVS` get the app alone as `-app.bin` (unsigned) for
+Launcher (see "Launcher" below).
 Linux boards (`LINUX_TARGETS`: `cardputer_zero`) get
 `monster-cyberspace-cardputer-zero-vX.Y.Z_arm64.deb`, built through
 `scripts/build-cardputer-zero.sh --deb` (so `--dist-only` needs Docker running;
@@ -448,6 +450,54 @@ openssl ecparam -name prime256v1 -genkey -noout -out ota_signing_key.pem
 openssl ec -in ota_signing_key.pem -pubout   # paste into src/app/ota_signing_pubkey.h
 gh secret set OTA_SIGNING_KEY --env release < ota_signing_key.pem
 ```
+
+### Launcher
+
+[bmorcelli's Launcher](https://github.com/bmorcelli/Launcher) lists firmware
+per board from LauncherHub (`https://api.launcherhub.net/firmwares?category=<tag>`)
+and installs it beside itself. The boards it has a build for are
+`LAUNCHER_ENVS` in `scripts/release.sh` (issue #14):
+
+| Env | Launcher env | Category (`OTA_TAG`) | Image |
+|---|---|---|---|
+| `m9` | `elecrow-thinknode-m9` | `elecrow_thinknode_m9` | `-ota.bin` |
+| `wio_l2` | `seeedstudio-wio-tracker-l2` | `seeedstudio_wio_tracker_l2` | `-ota.bin` |
+| `tdeck` | `lilygo-t-deck-plus` | `t-deck` | `-ota.bin` |
+| `crowpanel50` | `elecrow-esp32s3-5in` | `elecrow-esp32s3-5in` | `-ota.bin` |
+| `pager` | `lilygo-t-lora-pager` | `t-lora-pager` | `-ota.bin` |
+| `tdeck_pro` | `lilygo-t-deck-pro` | `t-deck-pro` | `-ota.bin` |
+| `cardputer_adv` | `m5stack-cardputer` | `cardputer` | `-app.bin` |
+| `tdisplay_p4` | `lilygo-t-display-p4` | `t-display-p4` | `-ota.bin` |
+| `tab5` | `m5stack-tab5` | `tab5` | `-ota.bin` |
+
+Launcher has no build for the CrowPanel Advance 3.5" (its `elecrow` env is
+the older ESP32 panel), the Mesh Deck, the Cyber Deck Plus or the Tanmatsu;
+the X4 (`xteink-x4`) waits until it is released. Submit the app-only image
+from the table: Launcher sizes the app slot to it. A factory image would make
+Launcher reserve our whole first app partition (6.25 MB; the Cardputer ADV's
+7.75 MB does not fit beside Launcher at all). Listing a release is a
+submission to LauncherHub (through M5Burner, or an issue on
+bmorcelli/Launcher); nothing in this repo or its workflows does it.
+
+Under Launcher the device runs Launcher's partition table: Launcher in a
+`test` (ESP32-S3) or `factory` (ESP32-P4) app at `0x10000`, this firmware in an
+OTA slot after it, a 20 KB `nvs` at `0x9000` shared with Launcher, and no
+`mascot` or `nvs_old`. At boot `launcher::hosted()` (`src/sys/launcher.cpp`,
+deciding through `rc::launcherHosted` in `lib/core/src/ota/ota_logic`) spots
+that table, and then:
+
+- OTA is off (`ota::Status::launcher`): Settings → Firmware says "Update
+  through Launcher", Auto update is hidden, and web config's Firmware section
+  says the same.
+- The mascot is the default Fluffy (`mascotstore::available()` is false):
+  web config hides its Mascot section, and the raw `0xCB0000` fallback is
+  never read or written, since that is free space Launcher may give its next
+  install.
+- `nvs_migrate` finds no `nvs_old` and does nothing; factory reset clears
+  only this firmware's namespaces, never Launcher's.
+
+On the ESP32-P4s Launcher's own bootloader starts the app, so the `0x2000`
+offset only matters for our factory images.
 
 ## Time zones
 

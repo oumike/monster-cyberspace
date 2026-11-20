@@ -34,25 +34,24 @@ on 2026-10-27; the sections marked `m9_fake` passed on it before then.
 
 **Launcher (issue #14; each board in `LAUNCHER_ENVS`, a Tab5 first):**
 
-On 2026-11-20 a Tab5 and a T-Deck Plus under Launcher installed and booted
-the branch's app-only image, with the `[launcher]` line, "Update through Launcher" and no
-web Mascot section; the boxes stay open for the rest of each check.
+Passed on hardware on 2026-11-20 (a Tab5 and a T-Deck Plus first, then the
+other Launcher boards), except the flasher check below.
 
-- [ ] With bmorcelli's Launcher on the board, its SD install of the release's
+- [x] With bmorcelli's Launcher on the board, its SD install of the release's
   `-ota.bin` (`-app.bin` on the Cardputer ADV) succeeds, and the app boots
   from Launcher's boot screen.
-- [ ] The console prints `[launcher] installed by Launcher` and `[ota]
+- [x] The console prints `[launcher] installed by Launcher` and `[ota]
   installed by Launcher`; Settings → Firmware shows the version, a press
   says "Update through Launcher", and there is no Auto update.
-- [ ] `[mascot] default (no mascot partition under Launcher)`; the splash
+- [x] `[mascot] default (no mascot partition under Launcher)`; the splash
   shows Fluffy; web config has no Mascot section, and Save works.
-- [ ] Settings save, survive a restart and the 20 KB shared NVS holds them
+- [x] Settings save, survive a restart and the 20 KB shared NVS holds them
   (signed in, a few Wi-Fi networks, read marks); no `nvs` errors on the
   console. Launcher's own settings are still there afterwards.
-- [ ] Factory reset clears this firmware's settings and leaves Launcher's.
-- [ ] A power cycle shows Launcher's boot screen, and a key or tap enters
+- [x] Factory reset clears this firmware's settings and leaves Launcher's.
+- [x] A power cycle shows Launcher's boot screen, and a key or tap enters
   Launcher; reinstalling a newer release keeps the settings.
-- [ ] ESP32-P4s (T-Display P4, Tab5): Wi-Fi through the C6 works under
+- [x] ESP32-P4s (T-Display P4, Tab5): Wi-Fi through the C6 works under
   Launcher's bootloader.
 - [ ] Installed from the flasher (factory image), the same build still
   offers OTA, Auto update and the Mascot section.

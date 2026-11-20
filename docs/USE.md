@@ -598,8 +598,9 @@ Settings as on the other boards.
 With a monitor on its HDMI port, the CardputerZero shows a Raspberry Pi
 desktop. Start Monster from that desktop's menu (**Internet** → **Monster for
 Cyberspace**) and it opens in a window instead of on the LCD; started from
-the launcher it stays on the LCD. Only one copy runs at a time: starting a
-second does nothing.
+the launcher it stays on the LCD. The menu item appears once Monster has run
+(start it from the launcher once after installing). Only one copy runs at a
+time: starting a second does nothing.
 
 - **Window:** drag its edges to resize; a bigger window shows more text, not
   bigger text. Maximise it as any window, or press **F11** for full screen

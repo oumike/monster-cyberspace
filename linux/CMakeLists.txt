@@ -223,9 +223,12 @@ if(MC_BOARD STREQUAL "cp0")
   install(FILES packaging/monster-cyberspace.desktop DESTINATION share/APPLaunch/applications)
   install(FILES packaging/icon.png DESTINATION share/APPLaunch/share/images
     RENAME monster-cyberspace.png)
-  install(FILES packaging/monster-cyberspace-desktop.desktop DESTINATION share/applications
+  # The desktop menu entry and its icon. The store allows no files in
+  # share/applications or share/pixmaps, so they sit here and the app copies
+  # the entry into ~/.local/share/applications at each start (desktop_mode).
+  install(FILES packaging/monster-cyberspace-desktop.desktop DESTINATION share/monster-cyberspace
     RENAME monster-cyberspace.desktop)
-  install(FILES packaging/icon.png DESTINATION share/pixmaps RENAME monster-cyberspace.png)
+  install(FILES packaging/icon.png DESTINATION share/monster-cyberspace RENAME monster-cyberspace.png)
   install(FILES "${REPO}/LICENSE" DESTINATION share/doc/monster-cyberspace RENAME copyright)
 
   set(CPACK_GENERATOR DEB)

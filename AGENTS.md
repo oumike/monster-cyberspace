@@ -372,7 +372,9 @@ Up/Down), F11 full screen, the panel the window's size over the Zoom setting
 (`board::canZoom`/`setZoom`/`panelSizeChanged`, NVS and backup `zoom`), the
 built-in keyboard grabbed (`EVIOCGRAB`) while focused and other keyboards
 through SDL, and a lock on `~/.config/monster-cyberspace/.lock` so one copy
-runs. The `.deb` adds a desktop menu entry.
+runs. The `.deb` ships a desktop menu entry in `/usr/share/monster-cyberspace/`
+(the store allows nothing in `usr/share/applications`), which each start
+copies to `~/.local/share/applications` (`installMenuEntryForUser`).
 Touch: `ui_task` reads one sample a frame for LVGL's pointer and for
 `lib/core`'s edge swipes (`input/gestures`: Back, Options). The views hit-test
 their own rows and buttons and queue the same `KeyEvent`s the grid's tap map

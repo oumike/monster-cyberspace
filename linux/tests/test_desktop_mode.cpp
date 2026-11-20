@@ -4,6 +4,8 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include <fstream>
+#include <sstream>
 #include <string>
 
 #include "check.h"
@@ -44,5 +46,25 @@ int main() {
   CHECK(otherProcessGets());
   // A lock file that can't be made isn't "already running".
   CHECK_EQ(linuxhal::lockInstance("/nonexistent-dir/x/.lock"), linuxhal::kLockUnavailable);
+
+  // The menu entry: copied into a directory made for it, rewritten when the
+  // package's copy changes, and nothing when there is no package copy.
+  const std::string src = tempDir() + "/entry.desktop";
+  const std::string dst = tempDir() + "/share/applications/monster-cyberspace.desktop";
+  auto write = [](const std::string& p, const std::string& s) { std::ofstream(p) << s; };
+  auto read = [](const std::string& p) {
+    std::ostringstream ss;
+    ss << std::ifstream(p).rdbuf();
+    return ss.str();
+  };
+  write(src, "[Desktop Entry]\nName=A\n");
+  CHECK(linuxhal::installMenuEntry(src, dst));
+  CHECK(read(dst) == "[Desktop Entry]\nName=A\n");
+  CHECK(linuxhal::installMenuEntry(src, dst));
+  write(src, "[Desktop Entry]\nName=B\n");
+  CHECK(linuxhal::installMenuEntry(src, dst));
+  CHECK(read(dst) == "[Desktop Entry]\nName=B\n");
+  CHECK(!linuxhal::installMenuEntry(tempDir() + "/missing.desktop", tempDir() + "/out.desktop"));
+  CHECK(access((tempDir() + "/out.desktop").c_str(), F_OK) != 0);
   return checkResult();
 }

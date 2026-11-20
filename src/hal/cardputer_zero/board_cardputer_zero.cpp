@@ -70,6 +70,7 @@ namespace board {
 
 void begin() {
   linuxhal::lockOrExit();
+  linuxhal::installMenuEntryForUser();
   if (linuxhal::chooseDisplayMode(std::getenv("MONSTER_DISPLAY"), std::getenv("WAYLAND_DISPLAY"),
                                   std::getenv("DISPLAY")) == linuxhal::DisplayMode::Window) {
     const sdlwin::Options o{"Monster for Cyberspace", true, cp0::kW, cp0::kH, 1, 960, 510};

@@ -25,6 +25,16 @@ int lockInstance(const std::string& path);
 // "[boot] already running" and exits 0.
 void lockOrExit();
 
+// The desktop menu entry. The store allows no files in usr/share/applications,
+// so the package keeps it in /usr/share/monster-cyberspace/ and each start
+// copies it to the user's applications directory. Copies src to dst (making
+// dst's directory) unless dst already holds the same text; true when dst
+// then matches src.
+bool installMenuEntry(const std::string& src, const std::string& dst);
+// installMenuEntry from the package's copy to
+// ${XDG_DATA_HOME:-~/.local/share}/applications/monster-cyberspace.desktop.
+void installMenuEntryForUser();
+
 // The mode the board runs in, set by its begin(); the shared flags ask it.
 bool windowed();
 

@@ -222,9 +222,12 @@ The package (`linux/CMakeLists.txt`, CPack) installs the binary in
 `/usr/share/APPLaunch/applications/` and the icon (`linux/packaging/icon.png`,
 redrawn by `python3 linux/packaging/make_icon.py`) in
 `/usr/share/APPLaunch/share/images/`, plus the desktop's menu entry
-(`linux/packaging/monster-cyberspace-desktop.desktop`, installed as
-`/usr/share/applications/monster-cyberspace.desktop`) with the icon in
-`/usr/share/pixmaps/`. Its version is `VERSION`'s, and it depends on
+(`linux/packaging/monster-cyberspace-desktop.desktop`) and the icon in
+`/usr/share/monster-cyberspace/`. The store allows no files in
+`/usr/share/applications/` or `/usr/share/pixmaps/`, so each start copies the
+entry to `~/.local/share/applications/` (`installMenuEntryForUser` in
+`src/hal/linux_sim/desktop_mode`); its `TryExec` hides it once the package
+is removed. Its version is `VERSION`'s, and it depends on
 libcurl, ALSA and SDL2. It has no maintainer scripts: the launcher
 notices new apps on its own. Installing it is in `docs/USE.md`.
 

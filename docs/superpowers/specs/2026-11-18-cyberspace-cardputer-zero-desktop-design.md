@@ -137,6 +137,11 @@ screensaver and auto-dim settings still work.
   the same icon installed in `/usr/share/pixmaps/`, as it is 100x100, not a
   hicolor size),
   so the app shows in the desktop's menu under Internet.
+  Changed for 2.5.1: the CardputerZero store allows no files in
+  `/usr/share/applications/` or `/usr/share/pixmaps/`, so the entry and icon
+  install in `/usr/share/monster-cyberspace/` and the app copies the entry to
+  `~/.local/share/applications/` at each start (`TryExec` hides it after
+  removal).
 - The `.deb` gains `Depends: libsdl2-2.0-0 (>= 2.26)` (already installed on
   the device's image).
 - The `cp0` build links SDL2 (`pkg_check_modules`), and the Docker image

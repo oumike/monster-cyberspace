@@ -803,6 +803,27 @@ void test_list_box_window_drag_steps_selection() {
   TEST_ASSERT_EQUAL(15, lv.selected());
 }
 
+void test_list_box_drag_keys_send_up_down() {
+  // Home's unread rows on a page that scrolls: drags send Up/Down, taps
+  // still open a row.
+  rc::ListView lv;
+  lv.setItems(numberedItems(30));
+  lvui::ListBox box;
+  box.create(lv_screen_active());
+  box.setDragKeys(true);
+  placeListBox(box);
+  box.sync(lv);
+  liveList = &lv;
+  play(fingerPath({40, 16 + 6 * 16 + 8}, -3 * 16, 12, 60), box, lv);
+  TEST_ASSERT_EQUAL(3, keys.size());
+  for (const rc::KeyEvent& k : keys) TEST_ASSERT_EQUAL(int(Action::Down), int(k.action));
+  TEST_ASSERT_EQUAL(0, lv.selected());
+  keys.clear();
+  play(fingerPath({40, 16 + 4 * 16 + 8}, 0, 0, 40), box, lv);
+  TEST_ASSERT_EQUAL(1, keys.size());
+  assertActivate(keys[0], 4, ListId::Main, Action::Select);
+}
+
 void test_list_box_drag_names_its_list() {
   // A non-Main list (an overlay's Menu): the same keys as the grid's tap map
   // with that list id, tap, drag and flick.
@@ -1305,6 +1326,7 @@ int main() {
   RUN_TEST(test_drawer_rows_and_close);
   RUN_TEST(test_list_box_window_draws_list_view_rows);
   RUN_TEST(test_list_box_window_drag_steps_selection);
+  RUN_TEST(test_list_box_drag_keys_send_up_down);
   RUN_TEST(test_list_box_drag_names_its_list);
   RUN_TEST(test_overlay_bar_column_is_backdrop);
   RUN_TEST(test_touch_header_rows_match_grid);

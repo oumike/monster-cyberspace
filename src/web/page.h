@@ -424,7 +424,7 @@ const F=[
   {ids:['tsize'],label:'Text size',put:b=>{P(b).textSize=TSIZES[+$('tsize').value];}},
   {ids:['chat'],label:'Chat style',put:b=>{P(b).chatStyle=$('chat').value;}},
   {ids:['unr'],label:'Unread shows',put:b=>{P(b).unreadFilter=$('unr').value;}},
-  {ids:['rot'],label:'Orientation',put:b=>{P(b).rotation=+$('rot').value;}},
+  {ids:['rot'],label:'Orientation',put:b=>{const v=$('rot').value;if($('rot').options[0].value==='auto')P(b).autoRotate=v==='auto';if(v!=='auto')P(b).rotation=+v;}},
   {ids:['zoom'],label:'Zoom',put:b=>{P(b).zoom=+$('zoom').value;}},
   {ids:['bright'],label:'Brightness',put:b=>{P(b).brightness=+$('bright').value;}},
   {ids:['scrsecs'],label:'Screen timeout',put:b=>{P(b).screenOnSecs=+$('scrsecs').value;}},
@@ -536,7 +536,7 @@ async function loadPrefs(){const p=await call('GET','/api/prefs');if(p.tz===unde
     for(const t of themes){const o=document.createElement('option');o.value=t.key;o.textContent=t.label;sel.appendChild(o);}sel.value=p.theme;}
   paintTheme();
   if(showRow('tsizerow',!!p.textSize)){$('tsize').max=p.noLarge?1:2;$('tsize').value=Math.max(0,TSIZES.indexOf(p.textSize));tsizeShow();}
-  if(showRow('rotrow',p.rotation!==undefined))$('rot').value=String(p.rotation);
+  if(showRow('rotrow',p.rotation!==undefined)){const r=$('rot');if(p.autoRotate!==undefined&&r.options[0].value!=='auto')r.add(new Option('Auto','auto'),0);r.value=p.autoRotate?'auto':String(p.rotation);}
   if(showRow('zoomrow',p.zoom!==undefined))$('zoom').value=String(p.zoom);
   if(showRow('brightrow',p.brightness!==undefined)){$('bright').value=p.brightness;brightShow();}
   $('scrsecs').value=String(p.screenOnSecs);$('scrsaver').value=p.screenSaver?'1':'0';

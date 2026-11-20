@@ -105,6 +105,7 @@ Settings full() {
   s.brightness = 40;
   s.theme = ThemeId::WhiteBlack;
   s.rotation = 3;
+  s.autoRotate = false;
   s.zoom = 3;
   s.lastRoom = "random";
   s.phrases = {"On my \"way\"", "👍 ok"};
@@ -137,6 +138,7 @@ void expectSame(const Settings& a, const Settings& b) {
   TEST_ASSERT_EQUAL(a.drawerOpen, b.drawerOpen);
   TEST_ASSERT_EQUAL(a.usersHidden, b.usersHidden);
   TEST_ASSERT_EQUAL(a.buzzer, b.buzzer);
+  TEST_ASSERT_EQUAL(a.autoRotate, b.autoRotate);
   TEST_ASSERT_EQUAL(a.tapVibrate, b.tapVibrate);
   TEST_ASSERT_EQUAL(a.alertVibrate, b.alertVibrate);
   TEST_ASSERT_EQUAL(a.autoUpdate, b.autoUpdate);

@@ -23,9 +23,10 @@ struct ButtonGrid {
   int visibleRows = 0, totalRows = 0;  // button rows that fit, and in all
 };
 // height: each button's rows, outline included (kButtonRows for one line of
-// text, one more for each extra line).
+// text, one more for each extra line). below: rows under each button, before
+// the blank row, for text drawn outside it.
 ButtonGrid buttonGrid(int cols, int top, int bottom, int count, int columns, int scrollRow,
-                      int height = kButtonRows);
+                      int height = kButtonRows, int below = 0);
 
 // The most columns, up to count, whose buttons in a `cols` wide grid (as
 // buttonGrid lays them out) fit a label `longest` cells long inside their

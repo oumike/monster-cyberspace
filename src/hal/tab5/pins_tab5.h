@@ -40,6 +40,14 @@ constexpr uint8_t INA226_ADDR = 0x41;
 constexpr uint8_t RTC_ADDR = 0x32;  // RX8130CE
 constexpr uint8_t CODEC_ADDR = 0x10;  // ES8388
 
+// BMI270 accelerometer (0x68, or 0x69 as M5Unified also tries). Its axes in
+// the native portrait panel's: gravity x = IMU_SX * raw[IMU_AX] and so on,
+// raw being what the chip reads. Signs checked on hardware 2026-11-19
+// (negated, every way came out upside down).
+constexpr uint8_t IMU_ADDR = 0x68, IMU_ADDR_ALT = 0x69;
+constexpr int IMU_AX = 0, IMU_AY = 1;
+constexpr int IMU_SX = 1, IMU_SY = 1, IMU_SZ = -1;
+
 // ES8388 speaker, NS4150B amplifier on EXP1_SPK_AMP.
 constexpr int I2S_MCLK = 30, I2S_BCK = 27, I2S_WS = 29, I2S_DOUT = 26;
 

@@ -15,27 +15,28 @@
 
 namespace lvui {
 
-// Home's tile layout for a panel, as HomeScreen::render picks it: gapped
-// tiles on big rows, then normal rows, then touching; failing those one
-// scrolling column (gapped while it shows three tiles). lay.tiles is empty
-// when nothing fits.
+// Home's layout for a panel: edge-anchored buttons (rc::homeButtons, labels
+// up to labelCells long) in big cells, then normal ones; failing those one
+// scrolling column of tiles (rc::homeColumn, gapped while it shows three).
+// Both btns.rects and lay.tiles are empty when nothing fits. spanFirst:
+// as rc::homeButtons'.
 struct HomeFit {
-  rc::HomeLayout lay;
+  rc::HomeButtons btns;
+  rc::HomeLayout lay;  // the column, when column
   bool big = false, column = false;
   rc::TextSize ts = rc::TextSize::Comfortable;
-  rc::CellSize cell{0, 0};  // the tile rows' cell (big or normal)
+  rc::CellSize cell{0, 0};  // the buttons' or tiles' cell (big or normal)
 };
 HomeFit homeFit(int panelW, int areaPx, int gridRows, rc::TextSize ts, int count, int percent,
-                bool spanFirst);
+                int labelCells, bool spanFirst = false);
 
-// A Home tile's text: the label (the accent when unread) and the dim line
-// under or beside it.
+// A Home button's label; unread: something waits there, and the button is
+// highlighted (filled in the selection colour, or a 2 px outline on
+// outlined themes).
 struct HomeTileInfo {
-  std::u32string label, sub;
+  std::u32string label;
   bool unread = false;
-  bool operator==(const HomeTileInfo& o) const {
-    return unread == o.unread && label == o.label && sub == o.sub;
-  }
+  bool operator==(const HomeTileInfo& o) const { return unread == o.unread && label == o.label; }
 };
 
 // Outlined boxes of text in px, laid out by the grid models (Home's tiles,
@@ -62,6 +63,9 @@ class TileGrid : public RowGestures::Rows {
     // The cursor's second box (px inside the tile), w 0 for none.
     int ix = 0, iy = 0, iw = 0, ih = 0;
     std::vector<Text> texts;
+    bool filled = false;  // bg fill instead of the theme's bg
+    uint16_t fill = 0;
+    uint8_t edgeW = 1;  // the outline's width in px
   };
 
   TileGrid() = default;
@@ -78,22 +82,25 @@ class TileGrid : public RowGestures::Rows {
   void syncTiles(const std::vector<Tile>& tiles, const lv_font_t* font, int shownRows,
                  lv_area_t bg = {0, 0, -1, -1});
 
-  // Home's tiles from fit (homeFit), from item first on: row1Px is where grid
-  // row 1 (the pad above the tiles) starts. selected -1: no cursor. arrows:
-  // ▲/▼ on a column's outline where more tiles lie beyond (e-paper).
+  // Home's buttons from fit (homeFit), from item first on (the column): row1Px
+  // is where the area under the status bar starts. selected -1: no cursor.
+  // arrows: ▲/▼ on a column's outline where more tiles lie beyond (e-paper).
+  // bg: as syncTiles' (a page that scrolls takes drags off the buttons too).
   void syncHome(const HomeFit& fit, int row1Px, const std::vector<HomeTileInfo>& infos, int first,
-                int selected, bool arrows = false);
+                int selected, bool arrows = false, lv_area_t bg = {0, 0, -1, -1});
 
   // ButtonPad's buttons in b (rc::buttonGrid over grid rows [top, bottom),
   // row top at topPx): the label (error, marker accent or fg), `right` dim
   // at the right (keepRight: split the room), the detail dim under it.
+  // valueBelow: `right` dim on the row under the button instead (b laid out
+  // with below 1), where a tap picks the item too.
   // selected -1: no cursor. The scroll bar down the last column from
   // rc::drawScrollBar's total/visible/first.
   struct Scroll {
     int total = 0, visible = 0, first = 0;
   };
   void syncButtons(const rc::ButtonGrid& b, const std::vector<rc::ListItem>& items, int selected,
-                   bool keepRight, int top, int bottom, int topPx, Scroll scroll);
+                   bool keepRight, int top, int bottom, int topPx, Scroll scroll, bool valueBelow = false);
 
   lv_obj_t* obj() const { return root_; }
   int count() const { return shown_; }
@@ -129,11 +136,13 @@ class TileGrid : public RowGestures::Rows {
   bool cursor_ = false;
   HomeFit fit_;
   int row1_ = 0, first_ = 0, sel_ = -1;
+  lv_area_t homeBg_{0, 0, -1, -1};
   bool arrows_ = false;
   std::vector<HomeTileInfo> infos_;
   rc::ButtonGrid grid_;
   std::vector<rc::ListItem> items_;
   bool keepRight_ = false;
+  bool valueBelow_ = false;
   int top_ = 0, bottom_ = 0, topPx_ = 0;
   Scroll scroll_;
 };

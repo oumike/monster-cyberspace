@@ -15,12 +15,12 @@ int buttonColumnsFor(int cols, int count, int longest) {
 }
 
 ButtonGrid buttonGrid(int cols, int top, int bottom, int count, int columns, int scrollRow,
-                      int height) {
+                      int height, int below) {
   ButtonGrid out;
   columns = std::max(1, columns);
   const int width = (cols - 1) / columns - 1;  // a blank column before each, and after the last
   height = std::max(height, kButtonRows);
-  const int pitch = height + 1;
+  const int pitch = height + std::max(0, below) + 1;
   const int visibleRows = std::max(0, (bottom - top + 1) / pitch);
   if (width < 3 || visibleRows == 0 || count <= 0) return out;
   const int totalRows = (count + columns - 1) / columns;

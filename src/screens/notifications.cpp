@@ -80,15 +80,13 @@ void NotificationsScreen::askMarkAll() {
                U"Mark all read");
 }
 
-void NotificationsScreen::open(int row) {
-  if (row == 0 && !items_.empty()) return askMarkAll();
-  const int index = row - 1;
-  if (index < 0 || index >= int(items_.size())) return;
-  const UnreadItem it = items_[index];
+std::u32string unreadLine(const UnreadItem& it) { return utf8ToU32(std::string(tag(it.kind)) + it.text); }
+
+void openUnread(const UnreadItem& it, router::Id from) {
   using router::Id;
   switch (it.kind) {
     case UnreadKind::Cmail:
-      router::goFrom(Id::Notifications, Id::Conversation, it.target);
+      router::goFrom(from, Id::Conversation, it.target);
       break;
     case UnreadKind::Mention: {
       // A mention without a room opens the last one; it is read once seen here.
@@ -101,11 +99,11 @@ void NotificationsScreen::open(int row) {
       }
       app().cfg.lastRoom = slug;
       settings::saveUiPrefs(app().cfg);
-      router::goFrom(Id::Notifications, Id::Room, slug);
+      router::goFrom(from, Id::Room, slug);
       break;
     }
     case UnreadKind::Feed:
-      router::goFrom(Id::Notifications, Id::Entry, it.target);
+      router::goFrom(from, Id::Entry, it.target);
       break;
     case UnreadKind::People: {
       // Read once opened, as an entry's notice is when Entry opens it.
@@ -117,6 +115,14 @@ void NotificationsScreen::open(int row) {
       break;
     }
   }
+}
+
+void NotificationsScreen::open(int row) {
+  if (row == 0 && !items_.empty()) return askMarkAll();
+  const int index = row - 1;
+  if (index < 0 || index >= int(items_.size())) return;
+  const UnreadItem it = items_[index];  // a copy: opening may change items_
+  openUnread(it, router::Id::Notifications);
 }
 
 void NotificationsScreen::onKey(const KeyEvent& k) {
@@ -190,7 +196,7 @@ void NotificationsScreen::refreshRows(int64_t nowMs) {
       rows_.push_back(ListItem{marking_ ? U"marking all read\u2026" : U"\u2713 Mark all read", U""});
     for (const auto& it : items_) {
       std::u32string right = it.kind == UnreadKind::Cmail ? utf8ToU32(std::to_string(it.count)) : U"";
-      ListItem row{utf8ToU32(std::string(tag(it.kind)) + it.text), std::move(right), ItemTone::Normal, true};
+      ListItem row{unreadLine(it), std::move(right), ItemTone::Normal, true};
       // Buttons put the text on a line of its own under the kind.
       if (buttons_) {
         row.label = utf8ToU32(kindName(it.kind));

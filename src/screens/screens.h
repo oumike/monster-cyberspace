@@ -137,7 +137,13 @@ class HomeScreen : public Screen {
  private:
   void openItem(int item);
   void sync();
+  // Home's status lines with the unread rows under them (status_lines.h),
+  // from row `row` of the page (rows counted as on the screen with the page
+  // at its top) up to `end`, drawn `shift` rows up. Returns the row after.
+  int syncAside(int col, int row, int width, int end, int shift);
   ListView menu_;
+  ListView unread_;  // the unread rows under the status lines (ListId::Aside)
+  std::vector<UnreadItem> unreadItems_;  // as drawn in unread_
   int tileSel_ = 0;      // selected tile (touch boards)
   bool tileMode_ = false;  // set each sync: tiles shown this frame
   bool tileHidden_ = false;  // touch hides the tile cursor until an arrow or Select
@@ -146,6 +152,10 @@ class HomeScreen : public Screen {
   // a whole tile.
   bool column_ = false;
   int colTop_ = 0, colVisible_ = 1, colStride_ = 3, colCarry_ = 0;
+  // Buttons with the status and unread rows under them can be taller than
+  // the screen: the page then scrolls, pageTop_ rows up (at most pageMax_).
+  int pageTop_ = 0, pageMax_ = 0;
+  std::vector<rc::PxRect> btnRects_;  // the buttons with a centred one, as last laid out (arrow keys)
   // The views, on the heap only while their tree is up (lvui/tree_views.h).
   // The objects held here go with them: a tree thrown away gives back the
   // old tree's.
@@ -155,7 +165,9 @@ class HomeScreen : public Screen {
     lvui::TopBar status_;
     lvui::CellText text_;
     lvui::ListBox menuView_;
+    lv_obj_t* page_ = nullptr;  // clips the buttons and unread rows below the status bar
     lvui::TileGrid tilesView_;
+    lvui::ListBox unreadView_;
     lvui::HintBar hint_;
   };
   lvui::TreeViews<Views> v_;
@@ -735,6 +747,11 @@ std::vector<UnreadItem> gatherUnread();
 // unreadTotal(gatherUnread()) without copying anything: Home shows it every
 // frame, and the Unread screen rebuilds its rows only when it changes.
 int countUnread();
+// Opens what an Unread row names (a conversation, room, entry or profile);
+// Back from it returns to `from`. Unread's rows and Home's list share it.
+void openUnread(const UnreadItem& it, router::Id from);
+// An Unread row's line: its kind's tag, then its text.
+std::u32string unreadLine(const UnreadItem& it);
 
 // Unread: unread C-Mail conversations, cIRC mentions and Feed/guild notices
 // together, newest first (ui/unread_inbox.h). Back from what it opens comes

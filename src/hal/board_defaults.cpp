@@ -17,6 +17,7 @@ __attribute__((weak)) bool sleepsOnBattery() { return false; }
 __attribute__((weak)) bool fixedTextSize(rc::TextSize&) { return false; }
 __attribute__((weak)) bool hasLargeText() { return true; }
 __attribute__((weak)) bool tallTouchBar() { return false; }
+__attribute__((weak)) bool homeStatus() { return false; }
 __attribute__((weak)) bool canZoom() { return false; }
 __attribute__((weak)) void setZoom(uint8_t) {}
 __attribute__((weak)) bool panelSizeChanged() { return false; }
@@ -29,6 +30,8 @@ __attribute__((weak)) bool setRedraw(void (*)()) { return false; }
 __attribute__((weak)) bool hasHaptic() { return false; }
 __attribute__((weak)) void haptic(int) {}
 __attribute__((weak)) uint8_t defaultRotation() { return 0; }
+__attribute__((weak)) bool hasTilt() { return false; }
+__attribute__((weak)) bool readTilt(float&, float&, float&) { return false; }
 __attribute__((weak)) bool hasPowerLight() { return false; }
 __attribute__((weak)) void powerLight(uint8_t) {}
 __attribute__((weak)) bool hasCmailLight() { return false; }

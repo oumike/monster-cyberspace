@@ -236,6 +236,7 @@ bool pollKey(rc::KeyEvent& key) {
 const char* wakeHint() { return "press the bottom side button to wake"; }
 
 bool hasTouch() { return false; }
+bool homeStatus() { return true; }
 bool readTouch(int16_t&, int16_t&) { return false; }
 
 bool hasKeyboard() { return true; }

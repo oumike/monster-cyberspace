@@ -43,6 +43,8 @@ class RowGestures {
   void attach(lv_obj_t* obj, Rows* rows, rc::ListId list, bool holdToAct = true, bool wraps = false);
   // The list later keys name, after attach.
   void setList(rc::ListId list) { list_ = list; }
+  // Whether drags and swipes step a wrapping list or send Up/Down (see above).
+  void setWraps(bool on) { wraps_ = on; }
 
  private:
   static void eventCb(lv_event_t* e);

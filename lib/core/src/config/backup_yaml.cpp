@@ -67,7 +67,7 @@ struct Staged {
   Str format, version, timezone, tzName, ntpServer, pagePassword, apPassword, textSize, chatStyle, unreadFilter, theme,
       rotation, zoom, lastRoom, email, refreshToken, screenOnSecs, kbLight,
       notifyLight, notifyMention, notifyFeed, notifyCmail, notifyTimeout, idleSecs, wakeMins, volume, brightness, powerLight, wifiJoined, wifiSetup, wifiLooking, ledLevel;
-  Bool drawerOpen, usersHidden, buzzer, tapVibrate, alertVibrate, autoUpdate, screenSaver, spellCheck, webConfig;
+  Bool drawerOpen, usersHidden, buzzer, autoRotate, tapVibrate, alertVibrate, autoUpdate, screenSaver, spellCheck, webConfig;
   bool hasWifi = false, hasPhrases = false;
   std::vector<Item> wifi;
   std::vector<std::string> phrases;
@@ -302,7 +302,7 @@ bool parse(std::string_view yaml, Staged& st, std::string& err) {
                                      : nullptr;
     Str ignored;
     bool isBool = key == "drawerOpen" || key == "usersHidden" || key == "buzzer" || key == "tapVibrate" ||
-                  key == "alertVibrate" || key == "autoUpdate" ||
+                  key == "autoRotate" || key == "alertVibrate" || key == "autoUpdate" ||
                   key == "screenSaver" || key == "spellCheck" || key == "webConfig";
     bool known = s || isBool;
     if (key == "board" || key == "firmware" || key == "created") {
@@ -316,6 +316,7 @@ bool parse(std::string_view yaml, Staged& st, std::string& err) {
       }
       if (isBool) {
         Bool& dst = key == "buzzer"         ? st.buzzer
+                    : key == "autoRotate"   ? st.autoRotate
                     : key == "tapVibrate"   ? st.tapVibrate
                     : key == "alertVibrate" ? st.alertVibrate
                     : key == "autoUpdate"   ? st.autoUpdate
@@ -429,6 +430,7 @@ std::string backupToYaml(const Settings& s, const BackupMeta& m) {
        " crypt | bubblegum | top8 | bubblegumdark | top8dark | sepiadark | c64dark\n";
   o += "rotation: " + std::to_string(s.rotation) +
        "  # 0 landscape, 1 portrait, 2 landscape 180, 3 portrait 180\n";
+  o += std::string("autoRotate: ") + boolStr(s.autoRotate) + "  # follow the accelerometer, where there is one\n";
   o += "zoom: " + std::to_string(s.zoom) + "  # 1 | 2 | 3: desktop window\n";
   o += std::string("drawerOpen: ") + boolStr(s.drawerOpen) + "\n";
   o += std::string("usersHidden: ") + boolStr(s.usersHidden) + "  # the docked user list in rooms\n";
@@ -622,6 +624,7 @@ bool backupFromYaml(std::string_view yaml, Settings& inOut, std::string& err, st
   if (st.usersHidden.has) inOut.usersHidden = st.usersHidden.v;
   if (st.buzzer.has) inOut.buzzer = st.buzzer.v;
   if (st.volume.has) inOut.volume = uint8_t(volume);
+  if (st.autoRotate.has) inOut.autoRotate = st.autoRotate.v;
   if (st.tapVibrate.has) inOut.tapVibrate = st.tapVibrate.v;
   if (st.alertVibrate.has) inOut.alertVibrate = st.alertVibrate.v;
   // A board built without a feature ignores its setting.

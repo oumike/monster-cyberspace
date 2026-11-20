@@ -116,18 +116,20 @@ Every screen works by touch. Touch never wakes a dark screen.
   outside an open menu or confirm closes it. A tap on a banner dismisses it.
 - **Scroll:** drag a list or log to move line by line; swipe up or down to
   move a page. Dragging past the end of a list stops there.
-- **Home** shows large tiles, two to a row: unread, messages, rooms, c-mail,
-  feed, following, notes, guilds, programs, profile, search and settings. On
-  a build without some of them, **unread** takes the top row on its own only when that leaves the rest filling their rows, so no tile is left
-  alone at the bottom. The profile tile shows `@you` and opens your own
-  profile (see [People](#people)). The unread tile shows
-  how many things are unread (see [Unread](#unread)), in the accent colour
-  while there are any. The messages tile shows the last room, or how many
-  mentions are unread (in the accent colour) while there are any. If two
-  columns don't fit (a short screen at a large text size), the tiles stand in
-  one column of wide buttons that scrolls: drag it, or use Up and Down. They fill about 90% of the space below the status bar, centred
-  and spaced apart, with their labels in a larger font. The selected tile has
-  a highlighted outline.
+- **Home** shows buttons in two columns: unread, messages, rooms, c-mail,
+  feed, following, notes, guilds, programs, profile, search and settings.
+  The left column's buttons touch the left edge of the screen, with their
+  labels on the right; the right column's touch the right edge, with their
+  labels on the left. Every button is the same size, just wide enough for
+  the longest label, and they stack from the top with a small gap; where
+  the screen has room they are taller, with more space above and below the
+  label. A button
+  with something waiting (unread, mentions in messages, c-mail, feed) is
+  filled in the theme's highlight colour (on e-paper, a thicker outline).
+  The profile button opens your own profile (see [People](#people)). If two
+  columns don't fit (a short screen at a large text size), the buttons stand
+  in one column of wide tiles that scrolls: drag it, or use Up and Down. The
+  selected button has a highlighted outline.
 
 **Keyboard.** Tapping a text field docks a keyboard at the bottom; the screen
 above it gets shorter. Picking Reply in a chat message's, feed entry's or
@@ -159,6 +161,12 @@ insert it (the tray stays open), and tap outside the tray to close it.
 turns the screen: Landscape, Landscape 180, Portrait or Portrait 180. It
 applies at once and is kept across restarts and in backups. In portrait, long
 lines on the Settings and Setup screens wrap.
+
+On boards with an accelerometer (the M5Stack Tab5 and the LilyGO T-Display P4, each without its keyboard) the
+list starts with **Auto**, the default: the screen turns to whichever way up
+you hold the device, after it has stayed that way for half a second, and
+keeps its way while the device lies flat. Picking any of the four fixed
+orientations locks the screen there until you pick Auto again.
 
 ## T-Deck Plus
 
@@ -627,7 +635,7 @@ Touch above, but with no buttons:
   how many are online (the name in the accent colour when unread). Tap one to
   open it; drag up or down to scroll.
 - **Settings:** the actions are buttons in the same grid, each showing its
-  current value at the right (Setup AP shows on or off; tap to switch), under
+  current value dim under it (Setup AP shows on or off; tap to switch), under
   the same status lines as other boards (account, Wi-Fi, battery, time),
   which scroll away with the buttons. Its pickers (theme, time
   zone, orientation, timeouts, lights, sleep and wake) and its confirms (log
@@ -1079,8 +1087,7 @@ new followers, pokes, bookmarks of your posts and new entries by people you
 follow.
 Open it from Home on every board: it is the second item in the Home list,
 after Messages (`Unread  N`, marked while N is above 0), and the first of
-the Home tiles on touch boards (full-width when the tile count leaves it a row
-of its own). The status bar shows the
+the Home buttons on touch boards. The status bar shows the
 total; with nothing waiting it says "nothing unread". A C-Mail conversation
 counts once however many messages wait in it, here and on Home's C-Mail
 item, as on the website's C-Mail badge.
@@ -1279,10 +1286,18 @@ choose erase): use **Put Fluffy back** in web config instead.
 **Home** → **Settings** shows the account, the Wi-Fi network and IP, the web
 config address, the battery, the setup AP state and the gps, time and zone
 lines (see Time and time zone), with ten actions, plus Orientation on a
-touch board and two more on a board with an SD card slot:
+touch board and two more on a board with an SD card slot. On the Tab5, the
+Tanmatsu and the Wio Tracker L2, and on the T-Display P4 and the CrowPanels
+in landscape, those status lines are on Home instead (between or below the
+buttons, or beside the menu) and Settings shows only its actions. When they
+sit below the buttons, Fluffy fills the space between the two columns if it
+fits. Under the status lines a line divides them from what Unread lists; tap
+a row to open it. There Home has no Unread button: Messages spans the whole top
+row, with C-Mail and Rooms under it, and the page scrolls by dragging when it is taller than the
+screen:
 
 On a touch board the actions are a grid of buttons, each with its current
-value at the right. On the T-Deck Plus and the Mesh Deck the arrows move a
+value dim under it. On the T-Deck Plus and the Mesh Deck the arrows move a
 highlighted outline between them and Select opens one; Left from the first
 column, or Back, returns Home. Dragging or tapping hides the outline (on the
 Home tiles too); the next arrow or Select brings it back on the first button

@@ -14,6 +14,7 @@
 #include "hal/board.h"
 #include "hal/tdisplay_p4/haptic_aw86224.h"
 #include "hal/tdisplay_p4/i2c1_tdisplay_p4.h"
+#include "hal/tdisplay_p4/imu_tdisplay_p4.h"
 #include "hal/tdisplay_p4/io_xl9535.h"
 #include "hal/tdisplay_p4/keyboard_tdisplay_p4.h"
 #include "hal/tdisplay_p4/panel_rm69a10.h"
@@ -36,6 +37,7 @@ constexpr uint8_t kKeyboardRotation = 2;  // landscape, upright above the keys
 // The keyboard expansion, found once at boot (it is fitted with the power
 // off). With it the board stays at rotation 2, landscape above the keys.
 bool kbFitted = false;
+bool imuFound = false;
 rc::TdisplayP4Keys keys;
 bool ledsShown = false;
 
@@ -197,6 +199,11 @@ void begin() {
   audio.tryLock = audioBusTake;
   es8311::begin(audio);
   tdp4::haptic::begin();
+  if (!kbFitted) {  // the keyboard locks the rotation
+    const imu::Chip c = imu::begin();
+    imuFound = c != imu::Chip::None;
+    Serial.printf("[tdp4] IMU: %s\n", imu::chipName(c));
+  }
 }
 
 const char* name() { return "TDisplayP4"; }
@@ -255,6 +262,16 @@ void setRotation(uint8_t r) {
 }
 
 bool canRotate() { return !kbFitted; }
+bool hasTilt() { return imuFound; }
+
+bool readTilt(float& gx, float& gy, float& gz) {
+  int16_t raw[3];
+  if (!imuFound || !imu::read(raw)) return false;
+  gx = float(IMU_SX * raw[IMU_AX]);
+  gy = float(IMU_SY * raw[IMU_AY]);
+  gz = float(IMU_SZ * raw[2]);
+  return true;
+}
 
 void backlight(bool on) { backlightLevel(on ? 255 : 0); }
 void backlightLevel(uint8_t level) { panel::brightness(level); }
@@ -271,6 +288,7 @@ bool pollKey(rc::KeyEvent& key) {
 const char* wakeHint() { return "press the side button to wake"; }
 
 bool hasTouch() { return true; }
+bool homeStatus() { return panelWidth() > panelHeight(); }  // landscape only
 
 bool readTouch(int16_t& x, int16_t& y) {
   int16_t rx, ry;

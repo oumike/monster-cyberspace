@@ -667,6 +667,7 @@ is open.
 - [ ] Wi-Fi through the C6 (ESP-Hosted 2.12.13 image, docs/BUILD.md): Settings → Wi-Fi scans and joins; web config loads; the setup AP is named `Monster-Cyberspace-TDisplayP4` and `http://192.168.4.1` loads; a P4 OTA install leaves Wi-Fi working
 - [ ] Keyboard expansion fitted with the power off: the log shows `[tdp4] keyboard expansion found`; the screen is landscape above the keys and the right way up (rotation 2); Settings and web config show no Orientation; a cursor is drawn and no on-screen keyboard docks
 - [ ] Keyboard removed with the power off: `no keyboard expansion`, and the orientation saved before comes back
+- [ ] Auto orientation (without the keyboard): the log shows `[tdp4] IMU: ICM20948` (or `QMI8658`) at boot; Settings → Orientation lists Auto first and shows Auto by default; held in each of the four ways, the screen turns upright within about half a second (the log shows `[tilt] g x y z: <rotation>`); lying flat or at a diagonal it stays put; picking a fixed orientation locks it, and Auto follows the tilt again; with the keyboard fitted there is no `IMU` line and it stays landscape. If a way comes out wrong, flip `IMU_SX`/`IMU_SY` (or swap `IMU_AX`/`IMU_AY`) in `pins_tdisplay_p4.h`
 - [ ] Keys: every key types the right character, with Shift, Sym and Caps Lock (Caps Lock lights the keyboard's LEDs); modifiers lapse after 1.5 s; arrows move and repeat; Backspace deletes, repeats, then goes back; Esc and Alt + Backspace go back; Enter selects; Tab opens the palette; the emoji key opens the tray while typing
 - [ ] Keyboard light: F11 steps Low, Medium, High, Off (Medium on first boot); Settings → Keyboard light matches; the keys go dark with the screen and come back when it wakes
 - [ ] Keyboard with an SD card fitted: keys still work while the slot is unpowered between backups (SD power off, GPIO45 is the keyboard's SCL), and after a backup and a restore
@@ -708,11 +709,12 @@ is open.
 **Tab5 (`tab5`; spec 2026-11-17 §9):**
 
 Checked on a Tab5 with the ST7121 panel and the Tab5 Keyboard
-(2026-11-17/18): every item below passed. The ST7123 and ILI9881C panels
-are untried.
+(2026-11-17/18): every item below passed but Auto orientation, added
+later. The ST7123 and ILI9881C panels are untried.
 
 - [x] Boots: the USB log shows `[boot] … on Tab5` and `[tab5] panel ST7123` (or ST7121, ILI9881C), with no `[tab5] no panel`
 - [x] Panel: lights at boot, upright, colours right (no red/blue swap), nothing cut off, every logical pixel a clean 2x2 block, in all four rotations (Settings → Orientation, without the keyboard); landscape by default; if it stays dark or rolls, note the panel and try its timings in `panel_tab5.cpp`
+- [ ] Auto orientation (without the keyboard): the log shows `[tab5] imu: BMI270 at 0x68` (or 0x69) at boot; Settings → Orientation lists Auto first and shows Auto by default; held in each of the four ways, the screen turns upright within about half a second (the log shows `[tilt] g x y z: <rotation>`); lying flat or held at a diagonal it stays put; picking Landscape (or any fixed one) locks it, and Auto follows the tilt again; web config's Orientation offers Auto too; with the keyboard fitted there is no `imu` line and it stays landscape. If a way comes out wrong, flip `IMU_SX`/`IMU_SY` (or swap `IMU_AX`/`IMU_AY`) in `pins_tab5.h`
 - [x] Touch: taps land under the finger in each rotation; the docked on-screen keyboard types without the keyboard; a double tap wakes a dark screen
 - [x] Brightness: each Settings → Brightness step changes the backlight; screen off and on comes back lit
 - [x] Restart: Settings → Restart, an OTA install and web config's restart bring the panel back lit (the log shows `[tab5] restarted (full reset)`)

@@ -21,7 +21,8 @@ enum class Action {
 };
 
 // A list a touch Row target belongs to.
-enum class ListId : uint8_t { Main, Menu, Drawer, Log };
+// Aside: a second list beside a screen's main one (Home's unread rows).
+enum class ListId : uint8_t { Main, Menu, Drawer, Log, Aside };
 
 struct KeyEvent {
   Action action = Action::None;

@@ -68,7 +68,7 @@ int ButtonPad::key(const KeyEvent& k) {
     }
     return -1;
   }
-  const int kPitch = height_ + 1;
+  const int kPitch = height_ + (valueBelow_ ? 1 : 0) + 1;
   switch (k.action) {
     case Action::Up:
       if (scroll_ == 0 && shift_ > 0) {
@@ -116,7 +116,7 @@ ButtonGrid ButtonPad::layout(int gridCols, const std::vector<ListItem>& items, i
   header_ = std::max(0, header);
   // A header too tall to leave room for one button row scrolls away too.
   auto needsShift = [&](int shift) {
-    const ButtonGrid g = buttonGrid(gridCols, top + header_ - shift, bottom, n, cols, 0, height_);
+    const ButtonGrid g = buttonGrid(gridCols, top + header_ - shift, bottom, n, cols, 0, height_, valueBelow_ ? 1 : 0);
     return g.maxScroll > 0 || (n > 0 && g.visibleRows == 0);
   };
   int maxShift = 0;
@@ -125,7 +125,8 @@ ButtonGrid ButtonPad::layout(int gridCols, const std::vector<ListItem>& items, i
   shift_ = std::min(std::max(0, shift_), maxShift);
   if (shift_ < maxShift) scroll_ = 0;
   auto grid = [&] {
-    return buttonGrid(gridCols, top + std::max(0, header) - shift_, bottom, n, cols, scroll_, height_);
+    return buttonGrid(gridCols, top + std::max(0, header) - shift_, bottom, n, cols, scroll_, height_,
+                      valueBelow_ ? 1 : 0);
   };
   const bool showCursor = cursor_ && !hidden_;
   // On the first row the header comes back too, as far as it fits.
@@ -160,12 +161,13 @@ void ButtonPad::sync(lvui::TileGrid& v, const std::vector<ListItem>& items, int 
   const ButtonGrid b = layout(lv_obj_get_width(parent) / c.w, items, top, bottom, cols, header);
   lvui::TileGrid::Scroll scroll;
   if (header > 0) {
-    const int pitch = height_ + 1;
+    const int pitch = height_ + (valueBelow_ ? 1 : 0) + 1;
     scroll = {header + b.totalRows * pitch, bottom - top, shift_ + b.scrollRow * pitch};
   } else {
     scroll = {b.totalRows, b.visibleRows, b.scrollRow};
   }
-  v.syncButtons(b, items, cursor_ && !hidden_ ? selected_ : -1, keepRight, top, bottom, top * c.h, scroll);
+  v.syncButtons(b, items, cursor_ && !hidden_ ? selected_ : -1, keepRight, top, bottom, top * c.h, scroll,
+                valueBelow_);
 }
 
 }  // namespace rc

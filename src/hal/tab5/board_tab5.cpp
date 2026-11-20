@@ -14,6 +14,7 @@
 
 #include "hal/board.h"
 #include "hal/tab5/audio_es8388.h"
+#include "hal/tab5/imu_tab5.h"
 #include "hal/tab5/io_tab5.h"
 #include "hal/tab5/keyboard_tab5.h"
 #include "hal/tab5/panel_tab5.h"
@@ -36,6 +37,7 @@ uint8_t rotation = kDefaultRotation;  // the UI sets the saved one
 
 // The keyboard, found once at boot (it is fitted with the power off).
 bool kbFitted = false;
+bool imuFound = false;
 rc::Tab5Keys keys;
 
 // esp_restart() on the P4 is a CPU reset that leaves the MIPI-DSI host half
@@ -143,6 +145,7 @@ void begin() {
   touch::start();
   kbFitted = keyboard::detect();
   if (kbFitted) rotation = kKeyboardRotation;
+  imuFound = !kbFitted && imu::begin();  // the keyboard locks the rotation
   audio::begin();
 }
 
@@ -201,6 +204,17 @@ void setRotation(uint8_t r) {
 
 bool canRotate() { return !kbFitted; }
 
+bool hasTilt() { return imuFound; }
+
+bool readTilt(float& gx, float& gy, float& gz) {
+  int16_t raw[3];
+  if (!imuFound || !imu::read(raw)) return false;
+  gx = float(IMU_SX * raw[IMU_AX]);
+  gy = float(IMU_SY * raw[IMU_AY]);
+  gz = float(IMU_SZ * raw[2]);
+  return true;
+}
+
 void backlight(bool on) { backlightLevel(on ? 255 : 0); }
 void backlightLevel(uint8_t level) { panel::backlight(level); }
 // The backlight only, as M5's own Tab5 apps: the ST7121/ST7123 are TDDI, and
@@ -242,6 +256,7 @@ bool upDownOnly() { return false; }
 bool sideNav() { return false; }
 // About 4 mm at 1.5 rows on this panel: Back was hard to hit.
 bool tallTouchBar() { return true; }
+bool homeStatus() { return true; }
 void textEntry(bool) {}
 bool eink() { return false; }
 

@@ -60,6 +60,7 @@ struct Settings {
   uint16_t notifyTimeoutSecs = 15;
   ThemeId theme = ThemeId::Default;
   uint8_t rotation = 0;  // touch boards: see ui/rotation.h
+  bool autoRotate = true;  // boards with an accelerometer: follow it (board::hasTilt)
   uint8_t zoom = winfit::kZoomDefault;  // boards drawn into a desktop window (board::canZoom)
   std::string lastRoom = "cyberspace";
   // tz is the POSIX string applied; tzName its IANA name from the zone list,

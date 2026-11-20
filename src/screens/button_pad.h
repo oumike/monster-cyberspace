@@ -30,6 +30,9 @@ class ButtonPad {
   // taps, ui::fromTouch) hides the cursor and scrolls as without one; the
   // next arrow or Select only brings it back, on the first button shown.
   void setCursor(bool on) { cursor_ = on; }
+  // Each item's `right` text goes dim on its own row under its button, not
+  // inside it; the blank row between button rows comes after it.
+  void setValueBelow(bool on) { valueBelow_ = on; }
   // A tap on a button returns its index; anything else -1.
   int key(const KeyEvent& k);
   // The cursor is in the first column, where Left leaves the grid.
@@ -59,6 +62,7 @@ class ButtonPad {
                     int header);
 
   int height_ = kButtonRows;
+  bool valueBelow_ = false;
   int scroll_ = 0;
   int dragSteps_ = 0;
   int shift_ = 0;

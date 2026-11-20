@@ -1410,6 +1410,69 @@ void test_home_column() {
   TEST_ASSERT_EQUAL(0, homeColumn(320, 40, 4, large, 7, 90).tiles.size());
 }
 
+// Issue #13: one-line buttons, the left column against the left edge and the
+// right against the right, 6 px between rows, all one size.
+void test_home_buttons_edges() {
+  // 9 labels of up to 9 cells of 10x18: 90 + 10 = 100 wide, 18 + 10 = 28 tall.
+  HomeButtons b = homeButtons(320, 200, CellSize{10, 18}, 9, 9);
+  TEST_ASSERT_EQUAL(9, b.rects.size());
+  for (const PxRect& r : b.rects) {
+    TEST_ASSERT_EQUAL(100, r.w);
+    TEST_ASSERT_EQUAL(28, r.h);
+  }
+  TEST_ASSERT_EQUAL(0, b.rects[0].x);
+  TEST_ASSERT_EQUAL(220, b.rects[1].x);  // 320 - 100
+  TEST_ASSERT_EQUAL(6, b.rects[0].y);
+  TEST_ASSERT_EQUAL(6, b.rects[1].y);
+  TEST_ASSERT_EQUAL(40, b.rects[2].y);   // 6 + 28 + 6
+  TEST_ASSERT_EQUAL(0, b.rects[8].x);    // the odd one out stays left
+  TEST_ASSERT_EQUAL(142, b.rects[8].y);  // 6 + 4 * 34
+  // Five rows need 5 * 34 = 170 px; the columns need 2 * 100 + 6 px across.
+  TEST_ASSERT_EQUAL(9, homeButtons(320, 170, CellSize{10, 18}, 9, 9).rects.size());
+  TEST_ASSERT_EQUAL(0, homeButtons(320, 169, CellSize{10, 18}, 9, 9).rects.size());
+  TEST_ASSERT_EQUAL(9, homeButtons(206, 200, CellSize{10, 18}, 9, 9).rects.size());
+  TEST_ASSERT_EQUAL(0, homeButtons(205, 200, CellSize{10, 18}, 9, 9).rects.size());
+  TEST_ASSERT_EQUAL(0, homeButtons(320, 200, CellSize{10, 18}, 0, 9).rects.size());
+  // Double padding above and below: 18 + 2 * 9 = 36 tall, the width unchanged.
+  b = homeButtons(320, 300, CellSize{10, 18}, 9, 9, 2 * kHomePadPx);
+  TEST_ASSERT_EQUAL(9, b.rects.size());
+  TEST_ASSERT_EQUAL(100, b.rects[0].w);
+  TEST_ASSERT_EQUAL(36, b.rects[0].h);
+  TEST_ASSERT_EQUAL(48, b.rects[2].y);  // 6 + 36 + 6
+}
+
+void test_home_buttons_span_first() {
+  // 10 buttons 100 wide, 28 tall: the first across the top, then 5 rows.
+  HomeButtons b = homeButtons(320, 210, CellSize{10, 18}, 10, 9, kHomePadPx, true);
+  TEST_ASSERT_EQUAL(10, b.rects.size());
+  TEST_ASSERT_EQUAL(0, b.rects[0].x);
+  TEST_ASSERT_EQUAL(320, b.rects[0].w);
+  TEST_ASSERT_EQUAL(6, b.rects[0].y);
+  TEST_ASSERT_EQUAL(0, b.side[0]);
+  TEST_ASSERT_EQUAL(220, b.rects[1].x);  // odd items on the right
+  TEST_ASSERT_EQUAL(100, b.rects[1].w);
+  TEST_ASSERT_EQUAL(40, b.rects[1].y);
+  TEST_ASSERT_EQUAL(0, b.rects[2].x);
+  TEST_ASSERT_EQUAL(40, b.rects[2].y);
+  TEST_ASSERT_EQUAL(176, b.rects[9].y);  // row 5: 6 + 5 * 34
+  TEST_ASSERT_EQUAL(1, b.side[9]);
+  // Rows that don't fit: nothing.
+  TEST_ASSERT_EQUAL(0, homeButtons(320, 203, CellSize{10, 18}, 10, 9, kHomePadPx, true).rects.size());
+}
+
+void test_button_move_by_place() {
+  const HomeButtons b = homeButtons(320, 210, CellSize{10, 18}, 10, 9, kHomePadPx, true);
+  TEST_ASSERT_EQUAL(0, buttonMove(b.rects, 0, Action::Right));
+  TEST_ASSERT_EQUAL(0, buttonMove(b.rects, 0, Action::Up));
+  TEST_ASSERT_EQUAL(1, buttonMove(b.rects, 2, Action::Right));
+  TEST_ASSERT_EQUAL(2, buttonMove(b.rects, 1, Action::Left));
+  TEST_ASSERT_EQUAL(0, buttonMove(b.rects, 2, Action::Up));
+  TEST_ASSERT_EQUAL(0, buttonMove(b.rects, 1, Action::Up));
+  TEST_ASSERT_EQUAL(4, buttonMove(b.rects, 2, Action::Down));
+  TEST_ASSERT_EQUAL(3, buttonMove(b.rects, 1, Action::Down));
+  TEST_ASSERT_EQUAL(9, buttonMove(b.rects, 9, Action::Down));
+}
+
 void test_tile_span_centre() {
   // 208 px between the status bar and the hint, 18 px rows, 90%: 187 px is
   // 10 rows (180 px), leaving 14 px above and 14 below.
@@ -2128,6 +2191,9 @@ int main() {
   RUN_TEST(test_home_layout_without_gaps);
   RUN_TEST(test_home_layout_span_first);
   RUN_TEST(test_home_column);
+  RUN_TEST(test_home_buttons_edges);
+  RUN_TEST(test_home_buttons_span_first);
+  RUN_TEST(test_button_move_by_place);
   RUN_TEST(test_tile_span_centre);
   RUN_TEST(test_tile_move);
   RUN_TEST(test_tile_move_span_first);

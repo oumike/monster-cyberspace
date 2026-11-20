@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <utility>
 #include <vector>
 
@@ -39,6 +40,34 @@ HomeLayout homeLayout(int panelW, int areaPx, int gridRows, CellSize cell, int c
 // and is empty when not even one fits or a tile would be under 10 cols wide.
 HomeLayout homeColumn(int panelW, int areaPx, int gridRows, CellSize cell, int count,
                       int percent, bool gaps = true);
+
+// A rectangle in px.
+struct PxRect {
+  int x, y, w, h;
+};
+
+// Home's buttons on a touch board: `count` one-line buttons in two columns,
+// row-major, stacked from the top of an areaPx-tall area with kHomeGapPx
+// above each row. Every button is the same size: the longest label
+// (labelCells cells) plus kHomePadPx and a 1 px outline on each side, and a
+// cell high plus padY (kHomePadPx, or double it where there is room) and the
+// outline above and below. The left column's buttons touch the panel's left
+// edge, the right column's its right edge. rects is empty when the columns
+// would come closer than kHomeGapPx or the rows don't fit areaPx.
+// spanFirst: the first button takes the top row alone, as wide as the
+// panel, and the rest pair up in the columns under it (odd items right).
+// side: each button's column, -1 left, 0 across, 1 right.
+constexpr int kHomeGapPx = 6;
+constexpr int kHomePadPx = 4;
+struct HomeButtons {
+  std::vector<PxRect> rects;
+  std::vector<int8_t> side;
+};
+HomeButtons homeButtons(int panelW, int areaPx, CellSize cell, int count, int labelCells,
+                        int padY = kHomePadPx, bool spanFirst = false);
+// The arrow keys between home buttons by where they lie: Up/Down to the
+// nearest button above/below, Left/Right to the nearest in the same row.
+int buttonMove(const std::vector<PxRect>& rects, int selected, Action a);
 
 // How many cells of unitPx make `percent` of an areaPx span (rounded, never
 // more than fit), and the padding before them that centres them; the rest,

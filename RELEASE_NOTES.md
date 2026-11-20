@@ -1,11 +1,12 @@
 ### Monster for Cyberspace (next release)
 
-### New boards
+### New
 
-- **M5Stack Tab5**, with or without the Tab5 Keyboard, in the browser flasher. It boots, draws and takes touch on a unit with the ST7121 panel; the ST7123 and ILI9881C panels, and most of the rest, are not yet tried on hardware. Wi-Fi goes through its ESP32-C6's factory image.
-- **M5Stack CardputerZero** (Linux): an app for its launcher, as `monster-cyberspace-cardputer-zero-v2.4.0_arm64.deb` on this release. Install it with `sudo apt install ./monster-cyberspace-cardputer-zero-v2.4.0_arm64.deb`. It has every feature but over-the-air updates, and runs on hardware.
+- **Auto orientation** on the M5Stack Tab5 and the LilyGO T-Display P4 (each without its keyboard): the screen turns to whichever way up you hold the device. Settings → Orientation (and web config) lists Auto first, the default; picking a fixed orientation locks it there.
+- **CardputerZero on the Raspberry Pi desktop:** started from the desktop, Monster opens a resizable window (mouse, wheel, right click for Options, F11 full screen) with a Zoom setting, and a desktop menu entry. From the launcher it stays on the LCD.
 
 ### Changes
 
-- Touch boards: the status bar's `‹` now answers a tap anywhere on the title, and `⋯` anywhere on the status icons, so both are easier to hit.
-- Signing in from the web config page while the device shows setup now leaves setup for Home.
+- Touch Home: two columns of same-size buttons against the screen edges, taller where there is room; a button with something waiting is filled in the highlight colour (#13).
+- On the Tab5, the Tanmatsu and the Wio Tracker L2, and on the T-Display P4 and the CrowPanels in landscape, Home shows the status lines (or Fluffy where they don't fit beside the buttons), and under them what Unread lists. There Home has no Unread button, Messages spans the top row, and the page scrolls by dragging.
+- Touch Settings: each setting's current value now shows dim under its button instead of inside it.

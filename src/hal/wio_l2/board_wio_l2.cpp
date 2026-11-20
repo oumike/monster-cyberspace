@@ -227,6 +227,7 @@ void setVolume(uint8_t pct) { es8311::setVolume(pct); }
 const char* wakeHint() { return "hold Wake to wake"; }
 
 bool hasTouch() { return gt911::present(); }
+bool homeStatus() { return true; }
 bool hasKeyboard() { return false; }
 // Its two buttons only stand in; it counts as touch-only (no cursor).
 bool hasKeys() { return false; }

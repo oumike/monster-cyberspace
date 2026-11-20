@@ -1,6 +1,7 @@
 #include "ui/home_tiles.h"
 
 #include <algorithm>
+#include <cstdlib>
 
 namespace rc {
 
@@ -69,6 +70,90 @@ HomeLayout homeColumn(int panelW, int areaPx, int gridRows, CellSize cell, int c
     out.tiles.push_back(TileRect{0, r0, across - 1, r0 + h - 1});
   }
   return out;
+}
+
+HomeButtons homeButtons(int panelW, int areaPx, CellSize cell, int count, int labelCells, int padY,
+                        bool spanFirst) {
+  HomeButtons out;
+  if (count <= 0 || cell.w <= 0 || cell.h <= 0 || labelCells <= 0) return out;
+  const int inset = kHomePadPx + 1;
+  const int w = labelCells * cell.w + 2 * inset;
+  const int h = cell.h + 2 * (padY + 1);
+  if (2 * w + kHomeGapPx > panelW) return out;
+  spanFirst = spanFirst && count > 1;
+  // Item i's row and side; a first item alone across the top row leaves the
+  // rest to pair up under it, odd ones on the right.
+  auto place = [&](int i, int& row, int8_t& side) {
+    if (spanFirst && i == 0) {
+      row = 0;
+      side = 0;
+    } else if (spanFirst) {
+      row = 1 + (i - 1) / 2;
+      side = i % 2 == 0 ? -1 : 1;
+    } else {
+      row = i / 2;
+      side = i % 2 == 0 ? -1 : 1;
+    }
+  };
+  int rows = 0;
+  for (int i = 0; i < count; ++i) {
+    int row;
+    int8_t side;
+    place(i, row, side);
+    rows = std::max(rows, row + 1);
+  }
+  if (rows * (h + kHomeGapPx) > areaPx) return out;
+  out.rects.reserve(count);
+  out.side.reserve(count);
+  for (int i = 0; i < count; ++i) {
+    int row;
+    int8_t side;
+    place(i, row, side);
+    const int x = side > 0 ? panelW - w : 0;
+    out.rects.push_back(PxRect{x, kHomeGapPx + row * (h + kHomeGapPx), side == 0 ? panelW : w, h});
+    out.side.push_back(side);
+  }
+  return out;
+}
+
+int buttonMove(const std::vector<PxRect>& rects, int selected, Action a) {
+  if (selected < 0 || selected >= int(rects.size())) return selected;
+  const PxRect& s = rects[selected];
+  const int sx = s.x + s.w / 2, sy = s.y + s.h / 2;
+  int best = selected;
+  long bestD = 0;
+  for (int i = 0; i < int(rects.size()); ++i) {
+    if (i == selected) continue;
+    const PxRect& r = rects[i];
+    const int dx = r.x + r.w / 2 - sx, dy = r.y + r.h / 2 - sy;
+    const bool sameRow = r.y < s.y + s.h && s.y < r.y + r.h;
+    long d;
+    switch (a) {
+      case Action::Up:
+        if (dy >= 0 || sameRow) continue;
+        d = long(-dy) * 4096 + std::abs(dx);
+        break;
+      case Action::Down:
+        if (dy <= 0 || sameRow) continue;
+        d = long(dy) * 4096 + std::abs(dx);
+        break;
+      case Action::Left:
+        if (dx >= 0 || !sameRow) continue;
+        d = -dx;
+        break;
+      case Action::Right:
+        if (dx <= 0 || !sameRow) continue;
+        d = dx;
+        break;
+      default:
+        return selected;
+    }
+    if (best == selected || d < bestD) {
+      best = i;
+      bestD = d;
+    }
+  }
+  return best;
 }
 
 TileSpan tileSpan(int areaPx, int unitPx, int percent) {

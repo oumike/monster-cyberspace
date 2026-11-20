@@ -87,6 +87,7 @@ void beep(int, int) {}
 const char* wakeHint() { return "double-tap to wake"; }
 
 bool hasTouch() { return gt911::present(); }
+bool homeStatus() { return panelWidth() > panelHeight(); }  // landscape only
 bool hasKeyboard() { return false; }
 bool hasKeys() { return false; }
 bool backspaceIsBack() { return false; }

@@ -10,8 +10,9 @@ namespace lvui {
 
 namespace {
 
-void setBorder(lv_obj_t* obj, uint16_t rgb565) {
-  if (lv_obj_get_style_border_width(obj, LV_PART_MAIN) != 1) lv_obj_set_style_border_width(obj, 1, LV_PART_MAIN);
+void setBorder(lv_obj_t* obj, uint16_t rgb565, int width = 1) {
+  if (lv_obj_get_style_border_width(obj, LV_PART_MAIN) != width)
+    lv_obj_set_style_border_width(obj, width, LV_PART_MAIN);
   const lv_color_t c = color(rgb565);
   if (!lv_color_eq(lv_obj_get_style_border_color(obj, LV_PART_MAIN), c))
     lv_obj_set_style_border_color(obj, c, LV_PART_MAIN);
@@ -29,8 +30,15 @@ bool sameRects(const std::vector<rc::TileRect>& a, const std::vector<rc::TileRec
   return true;
 }
 
+bool samePx(const std::vector<rc::PxRect>& a, const std::vector<rc::PxRect>& b) {
+  if (a.size() != b.size()) return false;
+  for (size_t i = 0; i < a.size(); ++i)
+    if (a[i].x != b[i].x || a[i].y != b[i].y || a[i].w != b[i].w || a[i].h != b[i].h) return false;
+  return true;
+}
+
 bool sameFit(const HomeFit& a, const HomeFit& b) {
-  return a.big == b.big && a.column == b.column && a.ts == b.ts && a.cell.w == b.cell.w &&
+  return samePx(a.btns.rects, b.btns.rects) && a.btns.side == b.btns.side && a.big == b.big && a.column == b.column && a.ts == b.ts && a.cell.w == b.cell.w &&
          a.cell.h == b.cell.h && a.lay.shiftPx == b.lay.shiftPx && a.lay.lastRow == b.lay.lastRow &&
          a.lay.pads == b.lay.pads && sameRects(a.lay.tiles, b.lay.tiles);
 }
@@ -47,16 +55,15 @@ bool sameItems(const std::vector<rc::ListItem>& a, const std::vector<rc::ListIte
 }  // namespace
 
 HomeFit homeFit(int panelW, int areaPx, int gridRows, rc::TextSize ts, int count, int percent,
-                bool spanFirst) {
+                int labelCells, bool spanFirst) {
   HomeFit f;
   f.ts = ts;
-  // Gapped tiles first, big then normal rows; touching tiles only when no
-  // gapped layout fits.
-  for (bool gaps : {true, false}) {
-    for (bool big : {true, false}) {
-      const rc::CellSize cell = big ? rc::bigCellSize(ts) : rc::cellSize(ts);
-      f.lay = rc::homeLayout(panelW, areaPx, gridRows, cell, count, percent, gaps, spanFirst);
-      if (!f.lay.tiles.empty()) {
+  // Bigger panels get double the padding above and below each label.
+  for (bool big : {true, false}) {
+    const rc::CellSize cell = big ? rc::bigCellSize(ts) : rc::cellSize(ts);
+    for (int padY : {2 * rc::kHomePadPx, rc::kHomePadPx}) {
+      f.btns = rc::homeButtons(panelW, areaPx, cell, count, labelCells, padY, spanFirst);
+      if (!f.btns.rects.empty()) {
         f.big = big;
         f.cell = cell;
         return f;
@@ -114,8 +121,8 @@ void TileGrid::syncTiles(const std::vector<Tile>& tiles, const lv_font_t* font, 
     const Tile& s = tiles[i];
     setHidden(o.box, false);
     place(o.box, s.x, s.y, s.w, s.h);
-    setBgColor(o.box, t.bg);
-    setBorder(o.box, s.edge);
+    setBgColor(o.box, s.filled ? s.fill : t.bg);
+    setBorder(o.box, s.edge, s.edgeW);
     if (lv_obj_get_style_text_font(o.box, LV_PART_MAIN) != f) lv_obj_set_style_text_font(o.box, f, LV_PART_MAIN);
     bool added = false;
     while (o.labels.size() < s.texts.size()) {
@@ -151,11 +158,13 @@ void TileGrid::syncTiles(const std::vector<Tile>& tiles, const lv_font_t* font, 
 }
 
 void TileGrid::syncHome(const HomeFit& fit, int row1Px, const std::vector<HomeTileInfo>& infos, int first,
-                        int selected, bool arrows) {
+                        int selected, bool arrows, lv_area_t bg) {
   const bool cursor = rc::cursorShown();
+  const bool sameBg = bg.x1 == homeBg_.x1 && bg.y1 == homeBg_.y1 && bg.x2 == homeBg_.x2 && bg.y2 == homeBg_.y2;
   if (mode_ == Mode::Home && theme_ == themeSerial() && cursor == cursor_ && row1Px == row1_ &&
-      first == first_ && selected == sel_ && arrows == arrows_ && sameFit(fit, fit_) && infos == infos_)
+      first == first_ && selected == sel_ && arrows == arrows_ && sameBg && sameFit(fit, fit_) && infos == infos_)
     return;
+  homeBg_ = bg;
   mode_ = Mode::Home;
   theme_ = themeSerial();
   cursor_ = cursor;
@@ -180,41 +189,55 @@ void TileGrid::syncHome(const HomeFit& fit, int row1Px, const std::vector<HomeTi
     }
     return y;
   };
+  // Unread: filled in the selection colour (the cursor then outlined in fg),
+  // or on outlined themes a 2 px outline; the cursor's second box goes inside it.
+  auto styled = [&](Tile& tile, const HomeTileInfo& it, bool sel) -> uint16_t {
+    const bool fill = it.unread && !t.outlined;
+    tile.filled = fill;
+    tile.fill = t.selectBg;
+    tile.edgeW = it.unread && t.outlined ? 2 : 1;
+    tile.edge = sel && cursor ? (fill ? t.fg : t.selectBg) : (fill ? t.selectBg : t.dim);
+    if (sel && cursor && t.outlined && tile.w > 2 * (tile.edgeW + 1) && tile.h > 2 * (tile.edgeW + 1)) {
+      tile.ix = tile.iy = tile.edgeW + 1;
+      tile.iw = tile.w - 2 * tile.ix;
+      tile.ih = tile.h - 2 * tile.iy;
+    }
+    return fill ? t.selectFg : t.fg;
+  };
   const int count = static_cast<int>(infos.size());
   std::vector<Tile> tiles;
   int rows = 0;
-  for (int slot = 0; slot < static_cast<int>(lay.tiles.size()) && first + slot < count; ++slot) {
+  if (!fit.btns.rects.empty()) {
+    // Edge-anchored buttons: the left column's text against its inner (right)
+    // edge, the right column's against its inner (left) edge; a spanning one's centred.
+    const int inset = rc::kHomePadPx + 1;
+    for (int i = 0; i < static_cast<int>(fit.btns.rects.size()) && i < count; ++i) {
+      const rc::PxRect& r = fit.btns.rects[i];
+      const HomeTileInfo& it = infos[i];
+      Tile tile{r.x, row1Px + r.y, r.w, r.h, i, 0};
+      const uint16_t fg = styled(tile, it, i == selected);
+      const int tw = std::min(static_cast<int>(it.label.size()) * cw, r.w - 2 * inset);
+      // Labels are placed inside the outline, so its width comes off.
+      const int side = i < static_cast<int>(fit.btns.side.size()) ? fit.btns.side[i] : (i % 2 == 0 ? -1 : 1);
+      const int x = (side < 0 ? r.w - inset - tw : side > 0 ? inset : (r.w - tw) / 2) - tile.edgeW;
+      tile.texts.push_back(Text{x, (r.h - fit.cell.h) / 2 - tile.edgeW, tw, it.label, fg});
+      tiles.push_back(std::move(tile));
+    }
+    rows = (static_cast<int>(tiles.size()) + 1) / 2;
+  }
+  for (int slot = 0; fit.btns.rects.empty() && slot < static_cast<int>(lay.tiles.size()) && first + slot < count;
+       ++slot) {
     const int i = first + slot;
     const rc::TileRect& r = lay.tiles[slot];
     const HomeTileInfo& it = infos[i];
-    const bool sel = i == selected;
     const int y0 = rowY(r.r0);
-    Tile tile{lay.shiftPx + r.c0 * cw, y0, (r.c1 - r.c0 + 1) * cw, rowY(r.r1 + 1) - y0, i,
-              sel && cursor ? t.selectBg : t.dim};
+    Tile tile{lay.shiftPx + r.c0 * cw, y0, (r.c1 - r.c0 + 1) * cw, rowY(r.r1 + 1) - y0, i, 0};
+    const uint16_t fg = styled(tile, it, i == selected);
     const int mid = (r.r0 + r.r1) / 2;
     const int inW = r.c1 - r.c0 - 1;
-    const int ls = static_cast<int>(it.label.size()), ss = static_cast<int>(it.sub.size());
-    // A wide column tile has room for the sub line beside the label.
-    const bool beside = fit.column && ss > 0 && mid + 1 > r.r1 - 1 && ls + 2 + ss <= inW;
-    const int lineW = beside ? ls + 2 + ss : ls;
-    const int lw = std::min(ls, inW);
-    const int lc = r.c0 + 1 + std::max(0, (inW - std::min(lineW, inW)) / 2);
-    auto at = [&](int col, int row, int w, const std::u32string& s, uint16_t fg) {
-      tile.texts.push_back(Text{(col - r.c0) * cw, rowY(row) - y0, w * cw, s, fg});
-    };
-    at(lc, mid, lw, it.label, it.unread ? t.selectBg : t.fg);
-    if (beside) at(lc + lw + 2, mid, ss, it.sub, t.dim);
-    if (!beside && ss > 0 && mid + 1 <= r.r1 - 1) {
-      const int sw = std::min(ss, inW);
-      at(r.c0 + 1 + std::max(0, (inW - sw) / 2), mid + 1, sw, it.sub, t.dim);
-    }
-    // Outlined themes have one ink for both outlines: the cursor is a second box.
-    if (sel && cursor && t.outlined && r.r1 - r.r0 >= 2 && r.c1 - r.c0 >= 2) {
-      tile.ix = cw;
-      tile.iy = rowY(r.r0 + 1) - y0;
-      tile.iw = (r.c1 - r.c0 - 1) * cw;
-      tile.ih = rowY(r.r1) - rowY(r.r0 + 1);
-    }
+    const int lw = std::min(static_cast<int>(it.label.size()), inW);
+    const int lc = r.c0 + 1 + std::max(0, (inW - lw) / 2);
+    tile.texts.push_back(Text{(lc - r.c0) * cw, rowY(mid) - y0, lw * cw, it.label, fg});
     rows += fit.column ? r.r1 - r.r0 + 1 : 1;
     tiles.push_back(std::move(tile));
   }
@@ -229,14 +252,14 @@ void TileGrid::syncHome(const HomeFit& fit, int row1Px, const std::vector<HomeTi
                                         t.fg, true, t.bg});
   }
   bar_.sync(0, cellOf(root_), 0, 0, 0, 0);
-  syncTiles(tiles, font(fit.ts, fit.big), rows);
+  syncTiles(tiles, font(fit.ts, fit.big), rows, bg);
 }
 
 void TileGrid::syncButtons(const rc::ButtonGrid& b, const std::vector<rc::ListItem>& items, int selected,
-                           bool keepRight, int top, int bottom, int topPx, Scroll scroll) {
+                           bool keepRight, int top, int bottom, int topPx, Scroll scroll, bool valueBelow) {
   const bool cursor = rc::cursorShown();
   if (mode_ == Mode::Buttons && theme_ == themeSerial() && cursor == cursor_ && selected == sel_ &&
-      keepRight == keepRight_ && top == top_ && bottom == bottom_ && topPx == topPx_ &&
+      keepRight == keepRight_ && valueBelow == valueBelow_ && top == top_ && bottom == bottom_ && topPx == topPx_ &&
       scroll.total == scroll_.total && scroll.visible == scroll_.visible && scroll.first == scroll_.first &&
       b.first == grid_.first && sameRects(b.rects, grid_.rects) && sameItems(items, items_))
     return;
@@ -245,6 +268,7 @@ void TileGrid::syncButtons(const rc::ButtonGrid& b, const std::vector<rc::ListIt
   cursor_ = cursor;
   sel_ = selected;
   keepRight_ = keepRight;
+  valueBelow_ = valueBelow;
   top_ = top;
   bottom_ = bottom;
   topPx_ = topPx;
@@ -268,7 +292,7 @@ void TileGrid::syncButtons(const rc::ButtonGrid& b, const std::vector<rc::ListIt
     const int mid = r.r0 + 1;  // the label row; a detail goes under it
     const int inW = r.c1 - r.c0 - 1;
     const int lw = static_cast<int>(it.label.size());
-    int rw = static_cast<int>(it.right.size());
+    int rw = valueBelow ? 0 : static_cast<int>(it.right.size());
     if (rw > 0 && lw + 1 + rw > inW)
       rw = keepRight ? std::max(0, inW - 1 - std::min(lw, std::max(inW - 1 - rw, (inW - 1) / 2))) : 0;
     auto at = [&](int col, int row, int w, const std::u32string& s, uint16_t fg) {
@@ -286,6 +310,14 @@ void TileGrid::syncButtons(const rc::ButtonGrid& b, const std::vector<rc::ListIt
       tile.ih = (r.r1 - r.r0 - 1) * c.h;
     }
     tiles.push_back(std::move(tile));
+    // The value under the button, unframed; a tap on it picks the item too.
+    if (valueBelow && !it.right.empty()) {
+      const int bw = r.c1 - r.c0 + 1;
+      Tile value{r.c0 * c.w, rowY(r.r1 + 1), bw * c.w, c.h, i, t.bg};
+      value.edgeW = 0;
+      value.texts.push_back(Text{c.w, 0, (bw - 2) * c.w, rc::oneLine(it.right, bw - 2), t.dim});
+      tiles.push_back(std::move(value));
+    }
   }
   const int w = lv_obj_get_width(lv_obj_get_parent(root_));
   const int cols = w / c.w;

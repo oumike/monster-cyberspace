@@ -330,33 +330,40 @@ void test_symbols_emit_char() {
   TEST_ASSERT_TRUE(keys[0].action == Action::Back);
 }
 
-// With Unread first and an odd count, Unread's tile spans both columns and
-// the rest go two to a row; taps emit Home's row keys.
-void test_home_tiles_span_first() {
-  std::vector<rc::HomeItem> items = rc::homeItems(rc::Features{true, true, true, true, true});
-  if (items.size() % 2 == 0) items.pop_back();
-  TEST_ASSERT_TRUE(rc::homeSpanFirst(items));
-  const int n = int(items.size());
-  const lvui::HomeFit fit = lvui::homeFit(320, 28 * 16, 30, rc::TextSize::Comfortable, n, 90, true);
-  TEST_ASSERT_EQUAL(n, int(fit.lay.tiles.size()));
+// Issue #13: Home's buttons are one size, the left column against the left
+// edge with its text on the right, the right column the mirror; unread fills
+// a button in the selection colour; taps emit Home's row keys.
+void test_home_buttons() {
+  const int n = 5;
+  const lvui::HomeFit fit = lvui::homeFit(320, 28 * 16, 30, rc::TextSize::Comfortable, n, 90, 8);
+  TEST_ASSERT_FALSE(fit.column);
+  TEST_ASSERT_EQUAL(n, int(fit.btns.rects.size()));
   std::vector<lvui::HomeTileInfo> infos;
-  for (int i = 0; i < n; ++i) infos.push_back({U"tile" + rc::utf8ToU32(std::to_string(i)), U"", i == 0});
+  for (int i = 0; i < n; ++i) infos.push_back({U"tile" + rc::utf8ToU32(std::to_string(i)), i == 0});
   lvui::TileGrid grid;
   grid.create(lv_screen_active());
+  lv_obj_set_size(grid.obj(), 320, 30 * 16);
   grid.syncHome(fit, 16, infos, 0, 1);
   TEST_ASSERT_EQUAL(n, grid.count());
   const lv_area_t t0 = coords(grid.tile(0)), t1 = coords(grid.tile(1)), t2 = coords(grid.tile(2));
-  TEST_ASSERT_EQUAL(t0.x1, t1.x1);
-  TEST_ASSERT_EQUAL(t0.x2, t2.x2);
-  TEST_ASSERT_EQUAL(t1.y1, t2.y1);
-  TEST_ASSERT_TRUE(t1.x2 < t2.x1);
-  TEST_ASSERT_TRUE(t1.y1 > t0.y2);
+  TEST_ASSERT_EQUAL(0, t0.x1);
+  TEST_ASSERT_EQUAL(319, t1.x2);
+  TEST_ASSERT_EQUAL(t0.y1, t1.y1);
+  TEST_ASSERT_EQUAL(lv_area_get_width(&t0), lv_area_get_width(&t1));
+  TEST_ASSERT_EQUAL(lv_area_get_height(&t0), lv_area_get_height(&t2));
+  TEST_ASSERT_EQUAL(rc::kHomeGapPx, t2.y1 - t0.y2 - 1);
+  // Text against the inner edge: 4 px of padding inside the 1 px outline.
+  const lv_area_t l0 = coords(grid.label(0, 0)), l1 = coords(grid.label(1, 0));
+  TEST_ASSERT_EQUAL(t0.x2 - rc::kHomePadPx - 1, l0.x2);
+  TEST_ASSERT_EQUAL(t1.x1 + rc::kHomePadPx + 1, l1.x1);
   const rc::Theme& t = rc::defaultTheme();
   TEST_ASSERT_EQUAL_STRING("tile0", text(grid.label(0, 0)));
-  TEST_ASSERT_EQUAL_HEX16(t.selectBg, rgb565(lv_obj_get_style_text_color(grid.label(0, 0), LV_PART_MAIN)));
+  TEST_ASSERT_EQUAL_HEX16(t.selectBg, rgb565(lv_obj_get_style_bg_color(grid.tile(0), LV_PART_MAIN)));
+  TEST_ASSERT_EQUAL_HEX16(t.selectFg, rgb565(lv_obj_get_style_text_color(grid.label(0, 0), LV_PART_MAIN)));
+  TEST_ASSERT_EQUAL_HEX16(t.bg, rgb565(lv_obj_get_style_bg_color(grid.tile(1), LV_PART_MAIN)));
   TEST_ASSERT_EQUAL_HEX16(t.fg, rgb565(lv_obj_get_style_text_color(grid.label(1, 0), LV_PART_MAIN)));
   TEST_ASSERT_EQUAL_HEX16(t.selectBg, rgb565(lv_obj_get_style_border_color(grid.tile(1), LV_PART_MAIN)));
-  TEST_ASSERT_EQUAL_HEX16(t.dim, rgb565(lv_obj_get_style_border_color(grid.tile(0), LV_PART_MAIN)));
+  TEST_ASSERT_EQUAL_HEX16(t.dim, rgb565(lv_obj_get_style_border_color(grid.tile(2), LV_PART_MAIN)));
 
   tap(centre(grid.tile(2)));
   TEST_ASSERT_EQUAL(1, keys.size());
@@ -568,7 +575,7 @@ int main() {
   RUN_TEST(test_osk_slide_types_nothing);
   RUN_TEST(test_osk_spans_the_width);
   RUN_TEST(test_symbols_emit_char);
-  RUN_TEST(test_home_tiles_span_first);
+  RUN_TEST(test_home_buttons);
   RUN_TEST(test_spell_emit);
   RUN_TEST(test_overlay_confirm_buttons);
   RUN_TEST(test_overlay_confirm_after_list);

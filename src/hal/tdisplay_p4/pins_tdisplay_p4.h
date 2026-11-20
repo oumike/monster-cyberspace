@@ -50,6 +50,13 @@ constexpr uint8_t RTC_ADDR = 0x51;    // PCF8563
 // expansion on 46/45.
 constexpr int AUDIO_SDA = 20, AUDIO_SCL = 21;
 constexpr uint8_t CODEC_ADDR = 0x18, HAPTIC_ADDR = 0x58;
+// Accelerometer on the same route: an ICM20948 (0x68/0x69) or, on later
+// boards, a QMI8658 (0x6A/0x6B). Its axes in the native portrait panel's:
+// gravity x = IMU_SX * raw[IMU_AX] and so on. The chip sits a quarter turn
+// from the panel (checked on hardware 2026-11-19: raw x, y read panel y, -x).
+constexpr uint8_t ICM_ADDR = 0x68, ICM_ADDR_ALT = 0x69, QMI_ADDR = 0x6A, QMI_ADDR_ALT = 0x6B;
+constexpr int IMU_AX = 1, IMU_AY = 0;
+constexpr int IMU_SX = -1, IMU_SY = 1, IMU_SZ = 1;
 constexpr int I2S_MCLK = 13, I2S_BCK = 12, I2S_WS = 9, I2S_DOUT = 10;
 constexpr int KB_SDA = 46, KB_SCL = 45, KB_INT = 48, KB_BL = 47;
 constexpr uint8_t KB_ADDR = 0x34, KB_EXP_ADDR = 0x20;

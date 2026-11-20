@@ -292,7 +292,9 @@ TCA8418 on Wire1 46/45, found once in `board::begin()`; `TdisplayP4Keys` in
 `input/keymap_tdisplay_p4`, F11 steps the light, `Action::KbLightStep`,
 `nextKbLight`), the ES8311 speaker through the Wio's `es8311` driver (44.1 kHz,
 `wire`/`tryLock` config) and the AW86224 haptic driver (`haptic_aw86224`, on
-its own task) taking turns on Wire1 20/21 (`i2c1_tdisplay_p4`), GPS, PCF8563
+its own task) and the accelerometer (`imu_tdisplay_p4`: ICM20948, or QMI8658 on
+later boards; Auto orientation as the Tab5's, without the keyboard) taking
+turns on Wire1 20/21 (`i2c1_tdisplay_p4`), GPS, PCF8563
 RTC, BQ27220 gauge and 4-bit SD mounted with ESP-IDF's
 `esp_vfs_fat_sdmmc_mount` (Arduino `SD_MMC` drives GPIO45, the keyboard's SCL)
 in `peripherals_tdisplay_p4.cpp`. Rotation 1, portrait, is its first-boot
@@ -336,6 +338,10 @@ and turns on `hasKeyboard`, `hasKeys` and `backspaceIsBack`; its LED 0 shows Aa,
 Without it the Tab5 is a touch board (double tap wakes). ES8388 speaker
 (`audio_es8388`), INA226 battery (`rc::tab5BatteryPercent`), RX8130 RTC
 (remapped to the PCF8563 layout), SD through ESP-IDF with LDO 4, no GPS.
+A BMI270 accelerometer (`imu_tab5`, Bosch's config blob in `bmi270_config.h`,
+BSD-3-Clause) gives `board::hasTilt`/`readTilt` without the keyboard:
+Orientation's Auto (setting `autoRotate`, NVS `autorot`, default on) turns
+the panel through `ui/tilt_rotate` in `ui_task`; a fixed pick locks it.
 Wi-Fi is the C6's factory ESP-Hosted image, power-cycled before
 `hostedSetPins`; restarts go through the RTC watchdog as on the other P4s.
 `linux/` is the Linux build (CMake, `CMakePresets.json`: `cp0` for the
@@ -567,6 +573,29 @@ The CardputerZero desktop window was added on 2026-11-18 (spec
 plan `docs/superpowers/plans/2026-11-18-cyberspace-cardputer-zero-desktop.md`,
 all 6 tasks; built, run in the simulator, not yet tried on a monitor): its
 hardware check in docs/TESTING.md is open.
+Home's touch layout changed on 2026-11-19 (issue #13; built for the Tab5):
+two columns of one-line buttons, one size (`rc::homeButtons`, in px), the
+left against the left edge with right-aligned text and the right mirrored,
+6 px apart, with double the padding above and below the label where
+that still fits (`padY`, tried first by `lvui::homeFit`); no count lines, and a button with something unread is filled in
+`selectBg` (a 2 px outline on outlined themes). Unread no longer spans a row
+there (`homeSpanFirst` and `homeLayout` stay for `src/grid_ui/`); the
+scrolling column (`homeColumn`) is still the fallback.
+Settings' status lines (`src/screens/status_lines.{h,cpp}`: `statusFields`,
+`layoutStatus`) move to Home where `board::homeStatus()` (default false; the
+Tab5, Tanmatsu and Wio L2, and the T-Display P4 and CrowPanels in
+landscape): between the button columns, below them where the middle is
+under 24 cells (Fluffy, `drawMascot`, then fills the middle if it fits), or
+right of the fields and menu in list mode. Settings then leaves them out
+(`homeShowsStatus()`), so they are never in both. Under them a `─` divider
+and the Unread rows (`HomeScreen::syncAside`, a `ListBox` with
+`ListId::Aside`; a tap opens the item through `openUnread`, shared with
+`NotificationsScreen`). There `tiles()` and `listItems()` drop Unread, Messages
+spans the top row (`homeButtons` `spanFirst`, `HomeButtons::side`;
+arrows by position, `buttonMove`), and
+the buttons and unread rows sit on `page_`, drawn `pageTop_` rows up: drags
+(Up/Down from the `TileGrid`, whose `bg` then covers the page, and from the
+`ListBox`, `setDragKeys`) scroll it; keys bring it back to the top.
 The native suite is green: 882/882
 (`pio test -e native`), and so is the LVGL one: 89/89 (`pio test -e
 native_lv`, and built lean). `scripts/build-upload-monitor.sh -B` builds all

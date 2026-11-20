@@ -472,6 +472,7 @@ esp_err_t getPrefs(httpd_req_t* req) {
   d["tzName"] = s.tzName;
   d["ntpServer"] = s.ntpServer;
   if (board::canRotate()) d["rotation"] = s.rotation;
+  if (board::canRotate() && board::hasTilt()) d["autoRotate"] = s.autoRotate;
   if (board::canZoom()) d["zoom"] = s.zoom;
   if (board::hasKbLight()) d["kbLight"] = rc::kbLightKey(s.kbLight);
   if (board::hasLedLevel()) d["ledLevel"] = rc::ledLevelKey(s.ledLevel);
@@ -533,6 +534,7 @@ struct PrefsChange {
   uint8_t volume;
   rc::ThemeId theme;
   int rotation = -1;
+  bool autoRotate;
   int zoom = -1;
   uint32_t screenOnSecs;
   bool screenSaver, spellCheck, tapVibrate, alertVibrate;
@@ -596,6 +598,7 @@ std::string parsePrefs(JsonVariantConst doc, const Settings& s, PrefsChange& c) 
       (!doc["unreadFilter"].is<const char*>() ||
        !rc::parseUnreadFilter(doc["unreadFilter"].as<const char*>(), c.unreadFilter)))
     return "Unread shows: all or mentions";
+  c.autoRotate = doc["autoRotate"].is<bool>() ? doc["autoRotate"].as<bool>() : s.autoRotate;
   c.tapVibrate = doc["tapVibrate"].is<bool>() ? doc["tapVibrate"].as<bool>() : s.tapVibrate;
   c.alertVibrate = doc["alertVibrate"].is<bool>() ? doc["alertVibrate"].as<bool>() : s.alertVibrate;
   c.kbLight = s.kbLight;
@@ -775,6 +778,8 @@ void applyPrefs(const PrefsChange& c, const Settings& s) {
   // The UI task owns text size, theme and buzzer; it applies and saves them.
   if (c.uiPrefs)
     rc::postEvent(rc::Event{rc::EvtType::PrefsChanged, rc::themeKey(c.theme), static_cast<int>(c.size), c.buzzer});
+  if (board::canRotate() && board::hasTilt() && c.autoRotate != s.autoRotate)
+    rc::postEvent(rc::Event{rc::EvtType::AutoRotateChanged, "", 0, c.autoRotate});
   if (c.rotation >= 0 && board::canRotate() && c.rotation != s.rotation)
     rc::postEvent(rc::Event{rc::EvtType::RotationChanged, "", c.rotation, true});
   if (c.zoom >= 0 && board::canZoom() && c.zoom != s.zoom)

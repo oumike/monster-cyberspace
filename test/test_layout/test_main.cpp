@@ -1020,6 +1020,16 @@ void test_button_grid_taller_buttons() {
   TEST_ASSERT_EQUAL(4, b.maxScroll);
 }
 
+void test_button_grid_rows_below() {
+  // A value row under each 3-row button, then the blank row: a pitch of 5.
+  ButtonGrid b = buttonGrid(53, 2, 19, 7, 1, 0, kButtonRows, 1);
+  TEST_ASSERT_EQUAL(3, int(b.rects.size()));
+  TEST_ASSERT_EQUAL(2, b.rects[0].r0);
+  TEST_ASSERT_EQUAL(4, b.rects[0].r1);  // the button only, not its value row
+  TEST_ASSERT_EQUAL(7, b.rects[1].r0);
+  TEST_ASSERT_EQUAL(4, b.maxScroll);
+}
+
 void test_one_line_blurb() {
   TEST_ASSERT_TRUE(oneLine(U"hi there", 10) == U"hi there");
   // Line breaks and runs of spaces fold to one space; ends trimmed.
@@ -1366,6 +1376,7 @@ void test_bubbles_reply_meta_keeps_time() {
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_button_grid_taller_buttons);
+  RUN_TEST(test_button_grid_rows_below);
   RUN_TEST(test_button_columns_fit);
   RUN_TEST(test_one_line_blurb);
   RUN_TEST(test_grid_dims);

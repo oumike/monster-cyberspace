@@ -17,6 +17,7 @@
 #include "screens/lv_draw.h"
 #include "ui/wrap.h"
 #include "screens/screens.h"
+#include "screens/status_lines.h"
 #include "store/backup_store.h"
 #include "store/settings.h"
 #include "power/power_policy.h"
@@ -44,6 +45,9 @@ std::u32string volumeLabel(uint8_t pct) {
   for (char ch : std::to_string(pct)) s += char32_t(ch);
   return s + U"%";
 }
+
+// Orientation offers Auto: an accelerometer and a panel free to turn.
+bool autoRotateChoice() { return board::hasTilt() && board::canRotate(); }
 
 // A source with a light of its own is named after that light.
 std::u32string feedLightLabel() {
@@ -281,6 +285,15 @@ void SettingsScreen::confirmKey(const KeyEvent& k) {
 
 void SettingsScreen::applyChoice(Confirm c, int i) {
   if (c == Confirm::Rotation) {
+    // With an accelerometer Auto comes first; a fixed choice locks it there.
+    if (autoRotateChoice()) {
+      if (i == 0) {
+        ui::setAutoRotate(true);
+        return;
+      }
+      --i;
+      if (i >= 0 && i < 4) ui::setAutoRotate(false);
+    }
     if (i >= 0 && i < 4) ui::setRotation(kRotationOrder[i]);
     return;
   }
@@ -581,11 +594,18 @@ void SettingsScreen::activate(int item) {
     case kRotation: {
       std::vector<ListItem> rows;
       int sel = 0;
+      const bool hasAuto = autoRotateChoice();
+      const bool isAuto = hasAuto && app().cfg.autoRotate;
+      if (hasAuto) {
+        ListItem it{U"Auto", U""};
+        it.marker = isAuto;
+        rows.push_back(std::move(it));
+      }
       for (int i = 0; i < 4; ++i) {
         ListItem it{widen(rotationLabel(kRotationOrder[i])), U""};
-        if (kRotationOrder[i] == app().cfg.rotation) {
+        if (!isAuto && kRotationOrder[i] == app().cfg.rotation) {
           it.marker = true;
-          sel = i;
+          sel = int(rows.size());
         }
         rows.push_back(std::move(it));
       }
@@ -788,7 +808,7 @@ void SettingsScreen::activate(int item) {
 namespace {
 
 // Each item as a label and its current value; lines join them, buttons put
-// the value at the right.
+// the value under the button.
 std::vector<ListItem> itemRows(const std::vector<Item>& items, bool buttons, bool ap,
                                const timesvc::Snapshot& ts) {
   const AppState& a = app();
@@ -811,7 +831,9 @@ std::vector<ListItem> itemRows(const std::vector<Item>& items, bool buttons, boo
         rows.push_back(ListItem{U"Time zone", widen(zoneLabel(ts.tzName))});
         break;
       case kRotation:
-        rows.push_back(ListItem{U"Orientation", widen(rotationLabel(a.cfg.rotation))});
+        rows.push_back(ListItem{U"Orientation", autoRotateChoice() && a.cfg.autoRotate
+                                                    ? std::u32string(U"Auto")
+                                                    : widen(rotationLabel(a.cfg.rotation))});
         break;
       case kZoom:
         rows.push_back(ListItem{U"Zoom", std::u32string(1, char32_t(U'0' + a.cfg.zoom)) + U"x"});
@@ -928,67 +950,10 @@ std::vector<ListItem> itemRows(const std::vector<Item>& items, bool buttons, boo
   return rows;
 }
 
-struct StatusField {
-  const char* label;
-  std::string value;
-  uint16_t fg;
-};
-
-// The status lines' labels, values and colours.
-std::vector<StatusField> statusFields(const Theme& t, bool ap, const timesvc::Snapshot& ts) {
-  const AppState& a = app();
-  std::vector<StatusField> f;
-  auto field = [&](const char* label, const std::string& value, uint16_t fg) {
-    f.push_back(StatusField{label, value, fg});
-  };
-  field("account", a.user.empty() ? "not signed in" : "@" + a.user, t.fg);
-  field("wi-fi", wifiUp() ? wifiSsid() + "  " + wifiIp() : "not connected", t.fg);
-#if RC_WEB_OPT_IN
-  field("config", !a.cfg.webConfig ? std::string("off")
-                  : wifiUp()       ? "http://" + wifiIp() + ":" + std::to_string(web::kPort)
-                                   : std::string("on, no network"),
-        t.fg);
-#else
-  field("config", "http://monster-cyberspace.local", t.fg);
-#endif
-  int bat = batteryShown();
-  field("battery", bat < 0 ? "unknown" : std::to_string(bat) + "%", t.fg);
-  field("setup AP", ap ? "on" : "off", ap ? t.selectBg : t.fg);
-  if (ap) {
-    field("", setupApSsid(), t.selectBg);
-    field("", setupApHasPassword() ? "password required" : "open network", t.dim);
-    field("", "http://192.168.4.1", t.selectBg);
-  }
-  field("gps", ts.gps, t.fg);
-  field("time", ts.time, t.fg);
-  field("zone", ts.zone, t.fg);
-  return f;
-}
-
-// The status lines from row 1, put(row, label, line, fg) for each line only
-// above row `end`, `shift` rows already off the top (label: on a value's
-// first line, else null). Returns the rows they take.
-// On a narrow grid a value too long for its row continues on the next rows.
-template <typename Put>
-int layoutStatus(const std::vector<StatusField>& fields, bool narrow, int valueW, int shift, int end, Put put) {
-  int r = 1;
-  for (const StatusField& f : fields) {
-    const std::vector<std::u32string> lines =
-        narrow ? wrapText(utf8ToU32(f.value), valueW, valueW)
-               : std::vector<std::u32string>{utf8ToU32(f.value)};
-    for (size_t i = 0; i < lines.size(); ++i, ++r) {
-      const int row = r - shift;
-      if (row < 1 || row >= end) continue;
-      put(row, i == 0 ? f.label : nullptr, lines[i], f.fg);
-    }
-  }
-  return r - 1;
-}
-
 // The menu sits at the bottom and scrolls, so the account, Wi-Fi and
-// config lines above it always have room.
+// config lines above it always have room (none where Home shows them).
 int menuTopRow(int bottom, int nItems) {
-  constexpr int kStatusRows = 3;
+  const int kStatusRows = homeShowsStatus() ? 0 : 3;
   const int menuRows = std::clamp(bottom - 1 - kStatusRows, std::min(nItems, 4), nItems);
   return bottom - menuRows;
 }
@@ -1111,18 +1076,20 @@ void SettingsScreen::sync() {
   const int menuTop = menuTopRow(bottom, nItems);
   const bool narrow = narrowGrid(v_->text_);
   const int valueW = cols - 11 - (buttons_ ? 1 : 0);  // clear of the scroll bar
-  const std::vector<StatusField> fields = statusFields(t, ap, ts);
+  const std::vector<StatusField> fields =
+      homeShowsStatus() ? std::vector<StatusField>{} : statusFields(t, ap, ts);
   auto put = [&](int row, const char* label, const std::u32string& line, uint16_t fg) {
     if (label && *label) v_->text_.line(1, row, std::string_view(label), t.dim);
     v_->text_.line(11, row, line, fg, valueW);
   };
   v_->text_.begin();
   if (buttons_) {
-    const int header = layoutStatus(fields, narrow, valueW, 0, 0, put) + 1;  // and a blank row
+    const int header = fields.empty() ? 0 : layoutStatus(fields, narrow, valueW, 0, 0, put) + 1;  // and a blank row
     // As many columns as keep 16 cells inside a button (as Setup's).
     int columns = ButtonPad::columns();
     while (columns > 1 && (cols - 1) / columns - 3 < 16) --columns;
-    // A value that doesn't fit beside its label is left off.
+    // Each value goes dim under its button.
+    pad_.setValueBelow(true);
     pad_.sync(v_->padView_, rows, 1, bottom, false, columns, header);
     layoutStatus(fields, narrow, valueW, pad_.headerShift(), bottom, put);
   } else {

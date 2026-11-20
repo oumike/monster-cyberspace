@@ -63,6 +63,7 @@
 #include "ui/theme.h"
 #include "ui/wifi_light.h"
 #include "ui/widgets/banner.h"
+#include "ui/tilt_rotate.h"
 #include "ui/widgets/osk.h"
 #include "ui/widgets/overlay.h"
 #include "ui/widgets/canned_picker.h"
@@ -393,6 +394,32 @@ void applyRotation(uint8_t r) {
   lvglResize();
   gestures.reset();
   needResize = true;
+}
+
+// Orientation Auto: the accelerometer, read every kTiltMs, turns the panel
+// once a new rotation has held (ui/tilt_rotate). Lit screens only.
+constexpr uint32_t kTiltMs = 100;
+TiltRotator tilt;
+uint32_t lastTilt = 0;
+
+void followTilt(uint32_t now) {
+  if (!app().cfg.autoRotate || !board::hasTilt() || !board::canRotate() || power != Power::On) return;
+  if (now - lastTilt < kTiltMs) return;
+  lastTilt = now;
+  float gx, gy, gz;
+  if (!board::readTilt(gx, gy, gz)) return;
+  const int before = tilt.settled();
+  const int r = tilt.update(gx, gy, gz, now);
+  if (r < 0 || r == before) return;
+  Serial.printf("[tilt] g %.0f %.0f %.0f: %s\n", gx, gy, gz, rotationLabel(uint8_t(r)));
+  if (r != app().cfg.rotation) applyRotation(uint8_t(r));
+}
+
+void applyAutoRotate(bool on) {
+  if (!board::hasTilt() || !board::canRotate()) return;
+  app().cfg.autoRotate = on;
+  settings::saveUiPrefs(app().cfg);
+  tilt.reset();  // Auto again: take the device's tilt anew
 }
 
 // The lit level at the brightness setting (or the slider's preview), sent
@@ -746,6 +773,9 @@ void handleEvent(const Event& e) {
     }
     case EvtType::RotationChanged:
       applyRotation(uint8_t(e.code));
+      break;
+    case EvtType::AutoRotateChanged:
+      applyAutoRotate(e.ok);
       break;
     case EvtType::ZoomChanged:
       setZoom(uint8_t(e.code));
@@ -1402,6 +1432,7 @@ void taskMain(void*) {
       lvui::applyTheme(currentTheme());
       needResize = true;
     }
+    followTilt(now);
     // A desktop window resized or zoomed: the same as a rotation.
     if (board::panelSizeChanged()) {
       lvglResize();
@@ -1516,6 +1547,8 @@ std::u32string textSizeItem() { return U"Text size: " + textSizeLabel(nextSize(a
 void cycleTextSize() { setTextSize(nextSize(app().cfg.textSize)); }
 
 void setRotation(uint8_t r) { applyRotation(r); }
+
+void setAutoRotate(bool on) { applyAutoRotate(on); }
 
 bool fromTouch() { return touchKey; }
 

@@ -102,6 +102,12 @@ bool readTouch(int16_t& x, int16_t& y);
 // panelWidth/panelHeight follow (rotation r as in ui/rotation.h). A no-op on
 // boards that can't rotate.
 bool canRotate();
+// An accelerometer that turns the panel when Orientation is Auto. hasTilt:
+// the board found one (default false). readTilt gives gravity in the native
+// panel's axes (x right, y down, z out of the screen; ui/tilt_rotate), any
+// unit; false when there is no reading.
+bool hasTilt();
+bool readTilt(float& gx, float& gy, float& gz);
 // A physical keyboard (the on-screen one is shown only without it).
 bool hasKeyboard();
 // Any keys or buttons that move a selection (keyboard, d-pad, trackball,
@@ -160,6 +166,10 @@ bool hasLargeText();
 // bar is 2 rows tall instead of 1.5, and stays with a keyboard fitted.
 // Default false.
 bool tallTouchBar();
+// Home shows the device's status lines (account, Wi-Fi, config, battery,
+// setup AP, GPS, time, zone) in its middle in the current orientation, and
+// Settings leaves them out; else they stay in Settings. Default false.
+bool homeStatus();
 // Boards drawn into a resizable desktop window (the CardputerZero's window
 // mode, ui/window_fit.h). canZoom shows the Zoom setting; setZoom (1-3)
 // scales the panel up, and panelWidth/panelHeight follow. panelSizeChanged is

@@ -74,6 +74,9 @@ and the emoji are rendered from Noto Emoji under the same licence
 The spell-check word list ([dict/en.txt](dict/en.txt)) is from
 [hermitdave/FrequencyWords](https://github.com/hermitdave/FrequencyWords)
 under CC-BY-SA-4.0.
+The Tab5's BMI270 configuration file ([src/hal/tab5/bmi270_config.h](src/hal/tab5/bmi270_config.h))
+is from Bosch Sensortec's [BMI270_SensorAPI](https://github.com/boschsensortec/BMI270_SensorAPI)
+under BSD-3-Clause.
 The cyberspace.online theme colours were taken from the site's palettes as
 listed in [z0mbieparade/cyberspace-atmospheric-modulator](https://github.com/z0mbieparade/cyberspace-atmospheric-modulator).
 Cyberspace itself is a separate service with its own terms; this project is not

@@ -42,6 +42,9 @@ class ListBox : public RowGestures::Rows, public Painter {
   void create(lv_obj_t* parent);
   // The list its rows' keys name (rc::ListView::setListId). Default Main.
   void setListId(rc::ListId id);
+  // Drags and swipes send Up/Down (a page that scrolls the box with it)
+  // rather than step the selection.
+  void setDragKeys(bool on) { touch_.setWraps(!on); }
   // A tap or long press on the box but on no row (the bar column, below
   // the last row) emits Back, as an overlay's backdrop under its list does.
   void setMissBack(bool on) { missBack_ = on; }

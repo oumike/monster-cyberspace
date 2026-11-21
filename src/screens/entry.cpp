@@ -91,7 +91,7 @@ void EntryScreen::open() {
   log_.follow();
   view_ = View::None;
   reasonMode_ = false;
-  loaded_ = hidden_ = revealed_ = sending_ = moreAsked_ = false;
+  loaded_ = hidden_ = revealed_ = sending_ = moreAsked_ = closed_ = false;
   title_.clear();
   authors_.clear();
   dirty_ = true;
@@ -163,7 +163,7 @@ void EntryScreen::typingKey(const KeyEvent& k) {
   if (spell_.key(k, input_)) return;
   switch (k.action) {
     case Action::Char:
-      if (sending_) break;
+      if (sending_ || repliesOff()) break;
       input_.insert(k.ch);
 #if RC_FEAT_SPELL
       spell_.typed(input_, spell::english(), app().cfg.spellCheck);
@@ -346,6 +346,7 @@ void EntryScreen::openEntryMenu() {
     e.author = p->author;
     e.slug = p->slug;
     e.deleted = p->deleted;
+    e.repliesDisabled = p->repliesDisabled;
     editable = entryEditable(*p);
     marked = !s.store.bookmarkIdFor(postId_).empty();
     watching = s.store.watching();
@@ -361,7 +362,7 @@ void EntryScreen::openEntryMenu() {
     items.push_back(ListItem{label, U"", tone});
     menuKeys_.push_back(key);
   };
-  if (!e.deleted) add(U"Reply", "reply");
+  if (!e.deleted && !e.repliesDisabled) add(U"Reply", "reply");
   if (editable) add(U"Edit", "edit");
   add(marked ? U"Unbookmark" : U"Bookmark", marked ? "unbookmark" : "bookmark");
   add(watching ? U"Unwatch" : U"Watch", watching ? "unwatch" : "watch");
@@ -404,7 +405,7 @@ void EntryScreen::openReplyMenu(const std::string& replyId) {
     items.push_back(ListItem{label, U"", tone});
     menuKeys_.push_back(key);
   };
-  if (!deleted) add(U"Reply", "reply");
+  if (!deleted && !closed_) add(U"Reply", "reply");
   if (editable && editReplyId_.empty()) add(U"Edit", "edit");
   add(marked ? U"Unbookmark" : U"Bookmark", marked ? "unbookmark" : "bookmark");
   add(U"Show link", "link");
@@ -579,6 +580,7 @@ void EntryScreen::rebuild(int cols, int logRows, const Theme& t) {
     if (!e || e->id != postId_) return;
     present = true;
     hidden_ = !e->deleted && (!e->contentWarning.empty() || e->nsfw);
+    closed_ = e->repliesDisabled;
     title_ = utf8ToU32(e->title.empty() ? "@" + e->author : e->title);
     EntryLayoutOptions o;
     o.cols = cols;
@@ -671,12 +673,15 @@ void EntryScreen::hints(const std::string& reply, bool offline, const char32_t*&
     hint = touch = U"loading replies\u2026";
   } else if (offline) {
     hint = touch = U"offline: reading only";
-  } else if (!reply.empty()) {
+  } else if (!reply.empty() && !closed_) {
     hint = U"type to answer  \u25CF reply menu  back: unselect";
     touch = U"type to answer  \u2039 unselect";
   } else if (hidden_ && !revealed_) {
     hint = U"\u25CF reveal  \u2191\u2193 scroll";
     touch = U"tap to reveal  tap a reply for actions";
+  } else if (closed_) {
+    hint = U"replies are off  \u25CF menu  \u2191\u2193 scroll";
+    touch = U"replies are off  tap a reply for actions";
   } else if (!log_.following()) {
     hint = U"\u25CF send / menu  \u2191\u2193 scroll  back: unselect";
     touch = U"tap the line to type  tap a reply for actions";
@@ -779,7 +784,7 @@ void EntryScreen::sync(int64_t nowMs) {
   v_->menuView_.setPlace(OverlayPlace::BottomRight, logBottom * c.h, nav * c.w, c.h);
   v_->menuView_.sync(box_);
 
-  input_.setDisabled(offline || view_ != View::None || sending_ || !loaded_);
+  input_.setDisabled(offline || view_ != View::None || sending_ || !loaded_ || repliesOff());
   input_.setEmojiButton(RC_FEAT_EMOJI != 0);
   placeCells(v_->inputView_.obj(), 0, inputRow, cols, inputRow + 1);
   v_->inputView_.sync(input_, reasonMode_ ? U"reason> " : U"> ");

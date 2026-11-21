@@ -12,6 +12,7 @@ struct Entry {
   int64_t createdMs = -1;
   int replies = 0;
   bool isPublic = false, nsfw = false, deleted = false, edited = false, truncated = false;
+  bool repliesDisabled = false;  // nobody can reply, the author included
 };
 
 struct Reply {

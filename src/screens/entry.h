@@ -42,7 +42,7 @@ class EntryScreen : public Screen {
   void update(int64_t nowMs) override;
   bool hasOverlay() const override;
   void closeOverlays() override;
-  bool acceptsText() const override { return view_ == View::None; }
+  bool acceptsText() const override { return view_ == View::None && !repliesOff(); }
   bool consumesBackspace() const override {
     return view_ == View::None && !input_.text().empty();
   }
@@ -59,6 +59,8 @@ class EntryScreen : public Screen {
   void select();
   void send();
   void sendEdit();     // the reply being edited (editReplyId_)
+  // Replies are off and the input line holds no reply edit or report reason.
+  bool repliesOff() const { return closed_ && editReplyId_.empty() && !reasonMode_; }
   void stopEditing();  // restores the input from before Edit
   void editTarget();   // Edit picked in a menu
   void openMenu(Menu m, std::u32string title, std::vector<ListItem> items);
@@ -103,6 +105,7 @@ class EntryScreen : public Screen {
   bool loaded_ = false;       // the entry is in the store
   bool hidden_ = false;       // a CW/NSFW body not yet revealed
   bool revealed_ = false;
+  bool closed_ = false;       // the entry has repliesDisabled
   bool sending_ = false;      // a reply waits for FeedWriteDone
   std::string editReplyId_;   // set: input_ holds this reply's new text
   std::u32string editSavedInput_;  // what the line held before Edit (savedInput_ is reason mode's)

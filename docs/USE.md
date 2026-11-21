@@ -775,6 +775,8 @@ Feed alerts; with one waiting, **Feed** opens its entry instead of the list.
 - **Reply:** type, then Centre or Enter. With a reply selected, you answer it
   and `↳ @name` shows above the input line; otherwise you answer the entry.
   Nothing is retried: a failed reply stays in the line.
+- An entry its author published with replies turned off shows
+  "replies are off": the input line takes nothing and no menu offers Reply.
 - **Entry menu** (Centre on an empty line, or Tab, which opens it with text
   in the line too): Reply, Bookmark/Unbookmark,
   Watch/Unwatch, Show link (text and a QR code), Edit (see below), Delete… on

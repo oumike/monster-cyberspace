@@ -42,6 +42,7 @@ void test_parse_feed_page() {
   TEST_ASSERT_TRUE(e.nsfw);
   TEST_ASSERT_EQUAL_STRING("spiders", e.contentWarning.c_str());
   TEST_ASSERT_FALSE(e.edited);
+  TEST_ASSERT_FALSE(e.repliesDisabled);
   TEST_ASSERT_EQUAL_STRING("synths", v[2].guildSlug.c_str());
 
   v.clear();
@@ -56,6 +57,7 @@ void test_parse_entry_attachments_and_edit() {
   TEST_ASSERT_TRUE(parseEntry(fx::kEntry, e));
   TEST_ASSERT_EQUAL_STRING("p5", e.id.c_str());
   TEST_ASSERT_TRUE(e.edited);
+  TEST_ASSERT_TRUE(e.repliesDisabled);
   TEST_ASSERT_FALSE(e.truncated);
   TEST_ASSERT_EQUAL(2, (int)e.attachments.size());
   TEST_ASSERT_EQUAL_STRING("[song] Boards \xE2\x80\x93 Roygbiv", e.attachments[0].c_str());

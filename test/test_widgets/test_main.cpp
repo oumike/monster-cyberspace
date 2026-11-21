@@ -446,7 +446,7 @@ void test_banner_expires() {
 
 void test_palette_lists_commands() {
   const auto& p = paletteEntries();
-  TEST_ASSERT_EQUAL(30, p.size());
+  TEST_ASSERT_EQUAL(32, p.size());
   TEST_ASSERT_EQUAL_STRING("/me ", u32ToUtf8(p[0].insert).c_str());
   TEST_ASSERT_EQUAL_STRING("/help ", u32ToUtf8(p.back().insert).c_str());
   for (const auto& e : p) TEST_ASSERT_FALSE(e.hint.empty());
@@ -454,9 +454,11 @@ void test_palette_lists_commands() {
 
 void test_palette_cmail_drops_circ_only() {
   const auto& p = paletteEntries(PaletteKind::Cmail);
-  bool art = false, muted = false, localtime = false, me = false;
+  bool art = false, muted = false, localtime = false, me = false, spin = false, tarot = false;
   for (const auto& e : p) {
     std::string s = u32ToUtf8(e.insert);
+    spin |= s == "/spin ";
+    tarot |= s == "/tarot ";
     art |= s == "/art ";
     muted |= s == "/muted ";
     localtime |= s == "/localtime ";
@@ -466,12 +468,14 @@ void test_palette_cmail_drops_circ_only() {
   TEST_ASSERT_FALSE(muted);
   TEST_ASSERT_FALSE(localtime);
   TEST_ASSERT_TRUE(me);
+  TEST_ASSERT_TRUE(spin);
+  TEST_ASSERT_TRUE(tarot);
   TEST_ASSERT_EQUAL(int(paletteEntries().size()) - 6, int(p.size()));
 }
 
 void test_palette_matches_prefix() {
   auto all = paletteMatches(PaletteKind::Circ, U"/");
-  TEST_ASSERT_EQUAL(30, all.size());
+  TEST_ASSERT_EQUAL(32, all.size());
   auto mu = paletteMatches(PaletteKind::Circ, U"/MU");
   TEST_ASSERT_EQUAL(2, mu.size());
   TEST_ASSERT_EQUAL_STRING("/mute", u32ToUtf8(mu[0]->label).c_str());

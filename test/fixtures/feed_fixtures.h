@@ -17,7 +17,7 @@ static const char* kFeedLast = R"({"data":[
 
 static const char* kEntry = R"({"data":{
   "postId":"p5","authorId":"u2","authorUsername":"genghis_khan","content":"listen to this","title":"Tune","slug":"tune",
-  "repliesCount":1,"bookmarksCount":0,"isPublic":true,"deleted":false,
+  "repliesCount":1,"bookmarksCount":0,"isPublic":true,"deleted":false,"repliesDisabled":true,
   "createdAt":"2026-03-27T10:12:01.516Z","editedAt":"2026-03-27T11:00:00.000Z",
   "attachments":[{"type":"audio","src":"https://bunker.cyberspace.online/a.mp3","artist":"Boards","title":"Roygbiv"},{"type":"image","src":"https://bunker.cyberspace.online/i.png"}]
 }})";

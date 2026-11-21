@@ -80,6 +80,7 @@ void fillEntry(JsonVariantConst d, Entry& e) {
   e.nsfw = d["isNSFW"].as<bool>();
   e.deleted = d["deleted"].as<bool>();
   e.edited = !d["editedAt"].isNull();
+  e.repliesDisabled = d["repliesDisabled"].as<bool>();
 }
 
 void fillReply(JsonVariantConst d, Reply& r) {

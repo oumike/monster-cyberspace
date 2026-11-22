@@ -14,7 +14,8 @@ namespace lvui {
 // cell of travel (finger up: Down), a swipe a screen less one line. A
 // wrapping list (rc::EntryList, TapMap::setList wraps) steps as the
 // resolver's stepList does: one {Activate, item, list, then None} to the
-// clamped item, nothing when it doesn't move.
+// clamped item, nothing when it doesn't move, except toward later from the
+// last item, which is sent again so the screen can page in more.
 class RowGestures {
  public:
   // What lies under the finger: the item at a point, -1 for none (a divider,

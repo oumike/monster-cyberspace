@@ -2,5 +2,5 @@
 
 ### Changes
 
-- Entries whose author turned replies off no longer offer Reply: the input line stays empty and the hint says "replies are off" (cyberspace.online API 0.9.4).
-- The slash-command list in rooms and C-Mail now includes `/spin` (spin the bottle) and `/tarot` (pull a card).
+- Touch: the Feed loads older entries again. Dragging below a short list (a first page that doesn't fill a portrait screen) now scrolls, and dragging at the last entry asks for the next page, as Down does on a keyboard. Guild lists and Topics scroll the same way.
+- The Feed skips past pages of older entries that come back empty (the server leaves out other guilds' threads), up to three at a time.

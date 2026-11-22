@@ -40,6 +40,8 @@ class EntryListBox : public RowGestures::Rows {
   const ScrollBarView& scrollBar() const { return bar_; }
 
   int itemAt(lv_point_t p) const override;
+  // The blank below a short list takes drags too (a tap there is index -1).
+  bool onRows(lv_point_t p) const override;
   int shownItems() const override { return shown_; }
   int selectedItem() const override;
   int itemCount() const override;

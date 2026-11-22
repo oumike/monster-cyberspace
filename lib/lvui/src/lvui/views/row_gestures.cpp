@@ -48,8 +48,11 @@ void RowGestures::act(const rc::Gesture& g) {
   auto steps = [&](int n, bool towardLater) {
     if (wraps_) {
       const int sel = rows_->selectedItem();
-      const int idx = std::min(std::max(sel + (towardLater ? n : -n), 0), rows_->itemCount() - 1);
-      if (idx == sel) return;
+      const int last = rows_->itemCount() - 1;
+      const int idx = std::min(std::max(sel + (towardLater ? n : -n), 0), last);
+      // Past the last item it is sent again: that is where screens page in
+      // more, and touch has no Down to ask once the selection sits there.
+      if (idx == sel && !(towardLater && sel == last)) return;
       rc::KeyEvent e = rowKey(list_, idx, false);
       e.then = rc::Action::None;
       emit(e);

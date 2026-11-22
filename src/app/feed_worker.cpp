@@ -30,7 +30,8 @@ namespace rc {
 namespace {
 
 constexpr int64_t kRefreshMs = 120000;
-constexpr int kFeedLimit = 10, kReplyLimit = 20, kBookmarkMapLimit = 50, kBookmarkMapPages = 4;
+constexpr int kFeedLimit = 10, kReplyLimit = 20, kBookmarkMapLimit = 50, kBookmarkMapPages = 4,
+              kFeedFollowPages = 3;
 constexpr int kSideLimit = 10;
 #if RC_LOW_MEM
 constexpr size_t kMaxTopics = 60;
@@ -299,16 +300,29 @@ void FeedWorker::more() {
     post(EvtType::FeedUpdated);
     return;
   }
-  std::vector<Entry> page;
-  std::string next;
+  // A page can come back short or empty (guild threads are filtered out) with
+  // a cursor still set: follow it a few pages, or nothing new would show.
   setLoading(true);
-  ApiError e = fetchList(kFeedLimit, [&](int limit) {
-    page.clear();
-    return api_.feed(cursor, limit, page, next);
-  });
+  for (int i = 0; i < kFeedFollowPages && !cursor.empty(); ++i) {
+    std::vector<Entry> page;
+    std::string next;
+    ApiError e = fetchList(kFeedLimit, [&](int limit) {
+      page.clear();
+      return api_.feed(cursor, limit, page, next);
+    });
+    if (!e.ok()) {
+      fail(e);
+      break;
+    }
+    bool grew = lockedFeed().with([&](FeedState& s) {
+      size_t before = s.store.feed().size();
+      s.store.appendPage(std::move(page), next);
+      return s.store.feed().size() > before;
+    });
+    if (grew) break;
+    cursor = next;
+  }
   setLoading(false);
-  if (e.ok()) lockedFeed().with([&](FeedState& s) { s.store.appendPage(std::move(page), next); });
-  else fail(e);
   post(EvtType::FeedUpdated);
 }
 

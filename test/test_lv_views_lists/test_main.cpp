@@ -698,6 +698,24 @@ void test_entry_list_drag_steps_selection() {
   TEST_ASSERT_EQUAL(1, el.selected());
 }
 
+void test_entry_list_drag_past_last_resends_it() {
+  rc::EntryList el;
+  el.setRows(tenEntries());
+  el.setSelected(9);
+  lvui::EntryListBox box;
+  box.create(lv_screen_active());
+  placeEntryBox(box);
+  box.sync(el);
+  liveModel = &el;
+  // On the last entry a drag toward later sends it again (the screen pages
+  // in more there); toward earlier it steps as usual.
+  play(fingerPath({40, 16 + 8 * 16 + 8}, -2 * 16, 8, 60), box, el);
+  TEST_ASSERT_EQUAL(2, keys.size());
+  assertActivate(keys[0], 9, ListId::Main, Action::None);
+  assertActivate(keys[1], 9, ListId::Main, Action::None);
+  TEST_ASSERT_EQUAL(9, el.selected());
+}
+
 void test_entry_list_swipe_pages() {
   rc::EntryList el;
   el.setRows(tenEntries());
@@ -1321,6 +1339,7 @@ int main() {
   RUN_TEST(test_banner_shows_and_hides);
   RUN_TEST(test_entry_list_rows_and_tap);
   RUN_TEST(test_entry_list_drag_steps_selection);
+  RUN_TEST(test_entry_list_drag_past_last_resends_it);
   RUN_TEST(test_entry_list_swipe_pages);
   RUN_TEST(test_entry_list_draws_its_window_without_scrolling);
   RUN_TEST(test_drawer_rows_and_close);

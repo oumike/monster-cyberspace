@@ -95,6 +95,13 @@ int EntryListBox::itemAt(lv_point_t p) const {
   return rows_[k].entry;
 }
 
+bool EntryListBox::onRows(lv_point_t p) const {
+  if (shown_ <= 0) return false;
+  lv_area_t a;
+  lv_obj_get_content_coords(box_, &a);
+  return p.x >= a.x1 && p.x <= a.x2 && p.y >= a.y1 && p.y <= a.y2;
+}
+
 int EntryListBox::selectedItem() const { return model_ ? model_->selected() : -1; }
 
 int EntryListBox::itemCount() const { return model_ ? static_cast<int>(model_->size()) : 0; }

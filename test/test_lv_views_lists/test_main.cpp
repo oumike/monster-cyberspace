@@ -716,6 +716,29 @@ void test_entry_list_drag_past_last_resends_it() {
   TEST_ASSERT_EQUAL(9, el.selected());
 }
 
+void test_entry_list_short_drags_below_rows() {
+  rc::EntryList el;
+  std::vector<rc::FeedRow> rows = tenEntries();
+  rows.resize(3);
+  el.setRows(rows);
+  lvui::EntryListBox box;
+  box.create(lv_screen_active());
+  placeEntryBox(box);
+  box.sync(el);
+  liveModel = &el;
+  // Three entries fill 6 of 13 rows: a drag in the blank below still steps.
+  play(fingerPath({40, 16 + 11 * 16 + 8}, -3 * 16, 12, 60), box, el);
+  TEST_ASSERT_EQUAL(3, keys.size());
+  assertActivate(keys[0], 1, ListId::Main, Action::None);
+  assertActivate(keys[1], 2, ListId::Main, Action::None);
+  assertActivate(keys[2], 2, ListId::Main, Action::None);
+  // A tap there names no entry.
+  keys.clear();
+  tap({40, 16 + 11 * 16 + 8});
+  TEST_ASSERT_EQUAL(1, keys.size());
+  TEST_ASSERT_EQUAL(-1, keys[0].index);
+}
+
 void test_entry_list_swipe_pages() {
   rc::EntryList el;
   el.setRows(tenEntries());
@@ -1340,6 +1363,7 @@ int main() {
   RUN_TEST(test_entry_list_rows_and_tap);
   RUN_TEST(test_entry_list_drag_steps_selection);
   RUN_TEST(test_entry_list_drag_past_last_resends_it);
+  RUN_TEST(test_entry_list_short_drags_below_rows);
   RUN_TEST(test_entry_list_swipe_pages);
   RUN_TEST(test_entry_list_draws_its_window_without_scrolling);
   RUN_TEST(test_drawer_rows_and_close);

@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <cstdio>
 #include <iterator>
 #include <memory>
 #include <mutex>
@@ -211,6 +212,16 @@ struct Help {
   lvui::CellText text;
 };
 
+// While the quit key is held (board::quitHold): a box over the area with a
+// bar that fills toward quitting and the seconds left. A tap of the key
+// stays clear of it: it shows after kQuitShowMs.
+struct QuitHold {
+  lv_obj_t* frame = nullptr;
+  lvui::CellText text;
+  int filled = -1, tenths = -1;  // what it shows, to redraw only on a change
+};
+constexpr uint32_t kQuitShowMs = 150;
+
 // What the UI task draws over every screen, on lv_layer_top(): in `area`
 // (the screen above the keyboard) the emoji tray, the canned picker, F10's
 // keys and the banner, in that order from the bottom (the canned picker
@@ -224,6 +235,7 @@ struct Layers {
   std::unique_ptr<lvui::SymbolBox> symbols;
   std::unique_ptr<lvui::MenuOverlay> canned;
   std::unique_ptr<Help> help;
+  std::unique_ptr<QuitHold> quit;
   lvui::Banner banner;
   lv_obj_t* oskBox = nullptr;
   std::unique_ptr<lvui::Keyboard> keyboard;
@@ -668,6 +680,57 @@ void drop(std::unique_ptr<T>& part, lv_obj_t* obj) {
   part.reset();
 }
 
+// The quit hold's box, while the key is held past kQuitShowMs; made as it
+// shows, deleted as the key comes up.
+void syncQuit() {
+  Layers& L = *layers;
+  uint32_t held = 0, total = 0;
+  const bool shown =
+      power == Power::On && board::quitHold(held, total) && total > 0 && held >= kQuitShowMs;
+  if (!shown) {
+    if (L.quit) drop(L.quit, L.quit->frame);
+    return;
+  }
+  const int w = std::max(1, std::min(L.cols - 2, 28));
+  const int pad = L.rows >= 4 ? 1 : 0, h = std::min(L.rows, 2 + 2 * pad);
+  const Theme& t = currentTheme();
+  if (!L.quit) {
+    L.quit = std::make_unique<QuitHold>();
+    QuitHold& Q = *L.quit;
+    Q.frame = lvui::plainBox(L.area);
+    lvui::addStyle(Q.frame, lvui::Role::Screen);
+    lv_obj_set_style_border_color(Q.frame, lvui::color(t.dim), LV_PART_MAIN);
+    lv_obj_set_style_border_width(Q.frame, 1, LV_PART_MAIN);
+    lv_obj_set_style_border_post(Q.frame, true, LV_PART_MAIN);
+    const lvui::Cell c = L.cell;
+    lvui::place(Q.frame, std::max(0, (L.cols - w) / 2) * c.w, std::max(0, (L.rows - h) / 2) * c.h,
+                w * c.w, h * c.h);
+    Q.text.create(Q.frame);
+  }
+  QuitHold& Q = *L.quit;
+  held = std::min(held, total);
+  // "0.6s" and a space after the bar, inside a two-cell margin each side.
+  const int barCols = std::max(1, w - 4 - 5);
+  const int filled = int(uint64_t(barCols) * held / total);
+  const int tenths = int((total - held + 99) / 100);
+  if (filled == Q.filled && tenths == Q.tenths) return;
+  Q.filled = filled;
+  Q.tenths = tenths;
+  char secs[12];
+  std::snprintf(secs, sizeof secs, "%d.%ds", tenths / 10, tenths % 10);
+  Q.text.begin();
+  Q.text.line(2, pad, std::u32string_view(U"keep holding to quit"), t.fg, w - 4);
+  if (h > 1) {
+    const int row = pad + 1;
+    if (filled > 0) Q.text.line(2, row, std::u32string(size_t(filled), U'\u2588'), t.selectBg, filled);
+    if (filled < barCols)
+      Q.text.line(2 + filled, row, std::u32string(size_t(barCols - filled), U'\u2591'), t.dim,
+                  barCols - filled);
+    Q.text.line(2 + barCols + 1, row, std::string_view(secs), t.fg, 4);
+  }
+  Q.text.end();
+}
+
 // Everything over the screen, from its models. The tray, the picker and the
 // keys are made as they open and deleted as they close; with too little
 // memory to make one, it closes again and "Out of memory" shows.
@@ -709,6 +772,7 @@ void syncLayers(int64_t now) {
     drop(L.help, L.help->box);
   }
   L.banner.sync(topBanner, now);
+  syncQuit();
   if (L.oskBox) lvui::setHidden(L.oskBox, !(on && oskShown));
   if (on && oskShown && L.keyboard) L.keyboard->sync(osk, shownSize);
   syncSaver(now);

@@ -180,6 +180,9 @@ bool canZoom();
 void setZoom(uint8_t zoom);
 bool panelSizeChanged();
 bool pointerIsMouse();
+// A key held to quit the app (the CardputerZero's Esc): true while it is
+// held, with how long so far and how long it takes. Default false.
+bool quitHold(uint32_t& heldMs, uint32_t& totalMs);
 // Battery volts, 0 when unknown. Default 0.
 float batteryVolts();
 // Deep sleep: wakes on the board's wake button, or after timerUs (0: no

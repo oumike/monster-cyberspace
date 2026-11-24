@@ -22,6 +22,7 @@ __attribute__((weak)) bool canZoom() { return false; }
 __attribute__((weak)) void setZoom(uint8_t) {}
 __attribute__((weak)) bool panelSizeChanged() { return false; }
 __attribute__((weak)) bool pointerIsMouse() { return false; }
+__attribute__((weak)) bool quitHold(uint32_t&, uint32_t&) { return false; }
 __attribute__((weak)) float batteryVolts() { return 0.0f; }
 __attribute__((weak)) void deepSleep(uint64_t) {}
 __attribute__((weak)) bool wokeByTimer() { return false; }

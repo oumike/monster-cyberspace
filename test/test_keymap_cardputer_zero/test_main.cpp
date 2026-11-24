@@ -184,11 +184,11 @@ void test_long_esc_quits() {
   CardputerZeroKeys k;
   KeyEvent e;
   press(k, kEsc, 0, e);
-  TEST_ASSERT_FALSE(k.poll(999, e));
+  TEST_ASSERT_FALSE(k.poll(kZeroQuitHoldMs - 1, e));
   TEST_ASSERT_FALSE(k.quitRequested());
-  TEST_ASSERT_FALSE(k.poll(1000, e));
+  TEST_ASSERT_FALSE(k.poll(kZeroQuitHoldMs, e));
   TEST_ASSERT_TRUE(k.quitRequested());
-  TEST_ASSERT_FALSE(k.feed(ZeroKeyIn{kEsc, 0, 1200, 0}, e));
+  TEST_ASSERT_FALSE(k.feed(ZeroKeyIn{kEsc, 0, kZeroQuitHoldMs + 200, 0}, e));
   TEST_ASSERT_TRUE(k.quitRequested());
 }
 
@@ -197,8 +197,22 @@ void test_long_esc_seen_on_release() {
   CardputerZeroKeys k;
   KeyEvent e;
   press(k, kEsc, 0, e);
-  TEST_ASSERT_FALSE(k.feed(ZeroKeyIn{kEsc, 0, 1500, 0}, e));
+  TEST_ASSERT_FALSE(k.feed(ZeroKeyIn{kEsc, 0, kZeroQuitHoldMs + 500, 0}, e));
   TEST_ASSERT_TRUE(k.quitRequested());
+}
+
+void test_esc_held_ms() {
+  CardputerZeroKeys k;
+  KeyEvent e;
+  TEST_ASSERT_EQUAL_UINT32(0, k.escHeldMs(100));
+  press(k, kEsc, 100, e);
+  TEST_ASSERT_EQUAL_UINT32(600, k.escHeldMs(700));
+  k.poll(100 + kZeroQuitHoldMs, e);  // the hold quits: nothing left to show
+  TEST_ASSERT_EQUAL_UINT32(0, k.escHeldMs(100 + kZeroQuitHoldMs));
+  CardputerZeroKeys tapped;
+  press(tapped, kEsc, 0, e);
+  tapped.feed(ZeroKeyIn{kEsc, 0, 300, 0}, e);
+  TEST_ASSERT_EQUAL_UINT32(0, tapped.escHeldMs(400));
 }
 
 void test_arrows_and_backspace_repeat() {
@@ -294,6 +308,7 @@ int main() {
   RUN_TEST(test_short_esc_is_back);
   RUN_TEST(test_long_esc_quits);
   RUN_TEST(test_long_esc_seen_on_release);
+  RUN_TEST(test_esc_held_ms);
   RUN_TEST(test_arrows_and_backspace_repeat);
   RUN_TEST(test_system_keys);
   RUN_TEST(test_modifiers_unknown_and_releases_send_nothing);

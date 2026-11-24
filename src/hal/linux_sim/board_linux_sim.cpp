@@ -114,6 +114,12 @@ bool pollKey(rc::KeyEvent& out) {
   return got;
 }
 
+bool quitHold(uint32_t& heldMs, uint32_t& totalMs) {
+  heldMs = keys.escHeldMs(sdlwin::nowMs());
+  totalMs = rc::kZeroQuitHoldMs;
+  return heldMs > 0;
+}
+
 int batteryPercent() { return 80; }
 bool externalPower() { return false; }
 

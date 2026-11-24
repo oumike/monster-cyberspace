@@ -570,7 +570,7 @@ this device**, or **Restore backup**.
 | Ctrl (tapped alone) | As the M9's Ctrl: while typing, the actions, then the emoji tray; elsewhere, the menu |
 | Tab | Menus; Post in the composer |
 | Backspace | Deletes while there's text to delete; otherwise Back. Hold it to repeat |
-| Esc | Back. **Hold it for a second** to quit to the launcher |
+| Esc | Back. **Hold it for three seconds** to quit to the launcher (a bar fills, with the seconds left) |
 | `fn` + U / I | Screen darker / brighter |
 | `fn` + S / D | Beep volume down / up |
 

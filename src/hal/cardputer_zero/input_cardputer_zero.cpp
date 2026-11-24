@@ -222,6 +222,12 @@ bool pollKey(rc::KeyEvent& out) {
   return got;
 }
 
+bool quitHold(uint32_t& heldMs, uint32_t& totalMs) {
+  heldMs = cp0::keys.escHeldMs(cp0::nowMs());
+  totalMs = rc::kZeroQuitHoldMs;
+  return heldMs > 0;
+}
+
 }  // namespace board
 
 #endif

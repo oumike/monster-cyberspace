@@ -35,7 +35,7 @@ enum : uint16_t {
 // Held arrows and Backspace repeat after kZeroRepeatDelayMs, every kZeroRepeatMs;
 // the keymap times them and ignores the kernel's own repeats. Esc held
 // kZeroQuitHoldMs quits to the launcher.
-constexpr uint32_t kZeroRepeatDelayMs = 500, kZeroRepeatMs = 70, kZeroQuitHoldMs = 1000;
+constexpr uint32_t kZeroRepeatDelayMs = 500, kZeroRepeatMs = 70, kZeroQuitHoldMs = 3000;
 
 // ZeroKeyIn::mods: the modes /sys/bus/i2c/devices/1-0034/modifier_state
 // reports (one-shot and locked shift may never arrive as KEY_LEFTSHIFT).
@@ -83,6 +83,9 @@ class CardputerZeroKeys {
   // A held key's repeat, and the Esc hold timer; true and out set on a repeat.
   bool poll(uint32_t ms, KeyEvent& out);
   bool quitRequested() const { return quit_; }
+  // How long Esc has been held at ms, toward kZeroQuitHoldMs; 0 when it is
+  // up or the hold already quit.
+  uint32_t escHeldMs(uint32_t ms) const { return escDown_ && !quit_ ? ms - escMs_ : 0; }
   // The last brightness or volume key, once.
   ZeroSystemKey takeSystemKey();
   // Replaces the sym table with tca8418_keypad_m5stack_keymap.map's

@@ -84,7 +84,7 @@ void test_fn_backspace_is_home() {
 
 void test_modifiers_alone_send_nothing() {
   CardputerKeys k;
-  for (uint8_t m : {kFn, kShift, kCtrl, kOpt, kAlt}) {
+  for (uint8_t m : {kFn, kShift, kOpt, kAlt}) {
     expectAction(k.key(m, true, 0), Action::None);
     expectAction(k.key(m, false, 10), Action::None);
   }
@@ -114,7 +114,7 @@ struct KeyRow {
 
 constexpr KeyRow kAllKeys[] = {
     {1, 0, 0, Action::Up},         {2, 0, 0, Action::None},  // ` (Esc: leaves the field), Tab
-    {3, 0, 0, Action::None},       {4, 0, 0, Action::None},  // Fn, Ctrl
+    {3, 0, 0, Action::None},       {4, 0, 0, Action::Palette},  // Fn, Ctrl
     {5, '1', '!', Action::Char},   {6, 'q', 'Q', Action::Char},
     {7, 0, 0, Action::None},       {8, 0, 0, Action::None},  // Shift, Opt
     {11, '2', '@', Action::Char},  {12, 'w', 'W', Action::Char},
@@ -173,6 +173,17 @@ void test_unwired_numbers_send_nothing() {
     expectAction(k.key(static_cast<uint8_t>(n), true, 0), Action::None);
     expectAction(k.key(static_cast<uint8_t>(n), false, 0), Action::None);
   }
+}
+
+// Ctrl is the menu key the hints name ("ctrl post", "ctrl cmds"): the Composer's
+// Post, a list's commands, a room's menu. It works while typing too.
+void test_ctrl_opens_menu() {
+  CardputerKeys k;
+  k.setTextActive(true);
+  expectAction(k.key(kCtrl, true, 0), Action::Palette);
+  expectAction(k.key(kCtrl, false, 10), Action::None);
+  k.setTextActive(false);
+  expectAction(k.key(kCtrl, true, 20), Action::Palette);
 }
 
 void test_tab_sends_nothing() {
@@ -235,6 +246,7 @@ int main() {
   RUN_TEST(test_release_sends_nothing);
   RUN_TEST(test_whole_key_table);
   RUN_TEST(test_unwired_numbers_send_nothing);
+  RUN_TEST(test_ctrl_opens_menu);
   RUN_TEST(test_tab_sends_nothing);
   RUN_TEST(test_no_text_field_plain_keys_navigate);
   RUN_TEST(test_esc_leaves_text_field_then_typing_returns);

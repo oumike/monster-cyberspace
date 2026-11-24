@@ -59,6 +59,7 @@ KeyEvent CardputerKeys::key(uint8_t keyNum, bool pressed, uint32_t ms) {
     return action(Action::Backspace);
   }
   if (c == kEnter) return action(Action::Select);
+  if (c == kCtrl) return action(Action::Palette);
   const bool typing = textActive_ && !leftText_;
   if (c == '`') {
     if (!typing) return action(Action::Back);

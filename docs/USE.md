@@ -529,8 +529,9 @@ lists what it has.
 | `` ` `` (Esc) | In a text field: leaves it for the screen (in a room, the newest message), so the plain arrows work; any other key types again. Elsewhere: Back |
 | Backspace | Deletes while there's text to delete; otherwise Back. Hold it to repeat |
 | Fn + Backspace | Home |
+| Ctrl | The screen's commands: Post in the Composer, a list's or room's menu |
 
-Ctrl, Opt, Alt and Tab do nothing. **Screen off:** after the screen timeout;
+Opt, Alt and Tab do nothing. **Screen off:** after the screen timeout;
 any key wakes it, and that key does nothing else.
 
 Text is always Compact (6×12, a 40×11 grid), so Settings and web config have

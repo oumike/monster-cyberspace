@@ -662,7 +662,7 @@ is open.
 - [ ] Boots: the USB-CDC log shows `[boot] Monster for Cyberspace … on Cardputer` and no TCA8418 or ES8311 errors
 - [ ] Panel: landscape, upright, not mirrored, colours right, nothing cut off at any edge (`PANEL_MADCTL` 0x60, column offset 40, row offset 53, inverted); colour themes show in colour (`RC_MONO_CELLS=0`)
 - [ ] Panel push speed with no PSRAM: scrolling a room and moving through lists redraw without visible tearing or lag (frames go out a strip of rows at a time)
-- [ ] Keyboard map: every key types the right character, with Shift held; Fn + `;` `.` `,` `/` are Up, Down, Left, Right; `` ` `` is Back; Enter selects; Backspace deletes and repeats when held, then goes back; Fn + Backspace goes Home; Fn, Ctrl, Opt, Alt and Tab alone type nothing
+- [ ] Keyboard map: every key types the right character, with Shift held; Fn + `;` `.` `,` `/` are Up, Down, Left, Right; `` ` `` is Back; Enter selects; Backspace deletes and repeats when held, then goes back; Fn + Backspace goes Home; Ctrl opens the screen's commands (the Composer's Post…, the Feed's and a room's menus); Fn, Opt, Alt and Tab alone type nothing
 - [ ] Backlight: on at boot; off after the screen timeout and back on with any key (that key does nothing else)
 - [ ] Battery %: Settings shows a sensible value; the charging state follows the USB cable
 - [ ] Beep: a mention beeps through the speaker (ES8311 clocked from BCLK, no MCLK line: reg 0x01 = 0xB5, 0x02 = 0x18); if silent or distorted, log the codec's register reads

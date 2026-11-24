@@ -686,7 +686,8 @@ The keyboard always types into the input line at the bottom.
   the list docks.
 - **Scroll:** Up/Down highlight messages. Up at the top loads older history.
   Down past the newest message returns you to typing.
-- **Message menu:** Centre on a highlighted message. It has Reply (`@name `),
+- **Message menu:** Centre on a highlighted message (with the input line
+  empty; with text typed, Centre sends it), or tap the message. It has Reply (`@name `),
   Reveal (spoilers),
   Show full (long or art messages), Show link (as text and a QR code), Delete
   (your own, with confirmation) and Report (with confirmation and an optional

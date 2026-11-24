@@ -253,7 +253,10 @@ void RoomScreen::typingKey(const KeyEvent& k) {
     case Action::Activate:
       if (k.target == uint8_t(ListId::Log)) {
         if (drawer) setDrawer(false);
-        if (log_.selectMessage(k.index)) onKey(KeyEvent{k.then});
+        if (!log_.selectMessage(k.index)) break;
+        // A tap on a message opens its menu even with text typed.
+        if (k.then == Action::Select) openMessageMenu();
+        else onKey(KeyEvent{k.then});
       } else if (k.target == uint8_t(ListId::Drawer)) {
         if (k.index == Drawer::kCloseIndex) {
           setUsersHidden(true);
@@ -272,10 +275,12 @@ void RoomScreen::typingKey(const KeyEvent& k) {
       if (drawer) {
         std::string who = drawer_.selectedUsername();
         if (!who.empty()) openPersonMenu(who);
+      } else if (!input_.text().empty()) {
+        // Typed text goes out even if the log was scrolled (a wheel or Up).
+        log_.follow();
+        send();
       } else if (!log_.following()) {
         openMessageMenu();
-      } else if (!input_.text().empty()) {
-        send();
       } else if (!board::canType()) {
         ui::showKeyboard();  // the canned replies
       } else {

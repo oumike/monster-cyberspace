@@ -1464,6 +1464,32 @@ void test_home_buttons_span_first() {
   TEST_ASSERT_EQUAL(0, homeButtons(320, 203, CellSize{10, 18}, 10, 9, kHomePadPx, true).rects.size());
 }
 
+// With nothing between the columns, the buttons widen to meet kHomeGapPx
+// apart; a spanning button and the rows stay as they were.
+void test_home_buttons_widen() {
+  HomeButtons b = homeButtons(320, 210, CellSize{10, 18}, 10, 9, kHomePadPx, true);
+  widenHomeButtons(b, 320);
+  TEST_ASSERT_EQUAL(0, b.rects[0].x);
+  TEST_ASSERT_EQUAL(320, b.rects[0].w);
+  TEST_ASSERT_EQUAL(0, b.rects[2].x);
+  TEST_ASSERT_EQUAL(157, b.rects[2].w);  // (320 - 6) / 2
+  TEST_ASSERT_EQUAL(163, b.rects[1].x);  // 320 - 157
+  TEST_ASSERT_EQUAL(157, b.rects[1].w);
+  TEST_ASSERT_EQUAL(40, b.rects[1].y);
+  TEST_ASSERT_EQUAL(28, b.rects[1].h);
+  // An odd panel width leaves the extra pixel in the gap.
+  b = homeButtons(321, 200, CellSize{10, 18}, 9, 9);
+  widenHomeButtons(b, 321);
+  TEST_ASSERT_EQUAL(157, b.rects[0].w);
+  TEST_ASSERT_EQUAL(164, b.rects[1].x);
+  TEST_ASSERT_EQUAL(157, b.rects[8].w);
+  // Never narrower than homeButtons made them.
+  b = homeButtons(206, 200, CellSize{10, 18}, 9, 9);
+  widenHomeButtons(b, 206);
+  TEST_ASSERT_EQUAL(100, b.rects[0].w);
+  TEST_ASSERT_EQUAL(106, b.rects[1].x);
+}
+
 void test_button_move_by_place() {
   const HomeButtons b = homeButtons(320, 210, CellSize{10, 18}, 10, 9, kHomePadPx, true);
   TEST_ASSERT_EQUAL(0, buttonMove(b.rects, 0, Action::Right));
@@ -2197,6 +2223,7 @@ int main() {
   RUN_TEST(test_home_column);
   RUN_TEST(test_home_buttons_edges);
   RUN_TEST(test_home_buttons_span_first);
+  RUN_TEST(test_home_buttons_widen);
   RUN_TEST(test_button_move_by_place);
   RUN_TEST(test_tile_span_centre);
   RUN_TEST(test_tile_move);

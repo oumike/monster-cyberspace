@@ -65,6 +65,11 @@ struct HomeButtons {
 };
 HomeButtons homeButtons(int panelW, int areaPx, CellSize cell, int count, int labelCells,
                         int padY = kHomePadPx, bool spanFirst = false);
+// With nothing between the columns: widens the left and right buttons to
+// meet kHomeGapPx apart in the middle of a panelW-wide panel, the left still
+// against the left edge and the right against the right. Spanning buttons
+// and the rows are left alone.
+void widenHomeButtons(HomeButtons& b, int panelW);
 // The arrow keys between home buttons by where they lie: Up/Down to the
 // nearest button above/below, Left/Right to the nearest in the same row.
 int buttonMove(const std::vector<PxRect>& rects, int selected, Action a);

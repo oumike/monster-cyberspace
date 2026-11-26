@@ -116,6 +116,16 @@ HomeButtons homeButtons(int panelW, int areaPx, CellSize cell, int count, int la
   return out;
 }
 
+void widenHomeButtons(HomeButtons& b, int panelW) {
+  const int w = (panelW - kHomeGapPx) / 2;
+  for (size_t i = 0; i < b.rects.size() && i < b.side.size(); ++i) {
+    PxRect& r = b.rects[i];
+    if (b.side[i] == 0 || r.w >= w) continue;
+    r.w = w;
+    r.x = b.side[i] > 0 ? panelW - w : 0;
+  }
+}
+
 int buttonMove(const std::vector<PxRect>& rects, int selected, Action a) {
   if (selected < 0 || selected >= int(rects.size())) return selected;
   const PxRect& s = rects[selected];

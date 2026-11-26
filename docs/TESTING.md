@@ -56,6 +56,11 @@ other Launcher boards), except the flasher check below.
 - [ ] Installed from the flasher (factory image), the same build still
   offers OTA, Auto update and the Mascot section.
 
+**Home buttons meet in an empty middle (touch boards; a CrowPanel in portrait and the Tab5):**
+
+- [ ] Where Home's middle holds nothing (no status lines and no room for Fluffy: a portrait CrowPanel or T-Display P4, the Mesh Deck), the two button columns stretch to a small gap apart, labels still against the inner edges; taps and the arrows still pick the right button
+- [ ] Where the status lines or Fluffy fit between the columns (the Tab5, Tanmatsu, a landscape CrowPanel), the buttons stay as narrow as the longest label
+
 **Slash commands (issue #9 item 6; the M9, the T-Deck Plus and a touch board):**
 
 - [ ] In a room, `/` on an empty line lists the commands with hints; `/mu`

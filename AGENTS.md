@@ -588,7 +588,9 @@ Settings' status lines (`src/screens/status_lines.{h,cpp}`: `statusFields`,
 Tab5, Tanmatsu and Wio L2, and the T-Display P4 and CrowPanels in
 landscape): between the button columns, below them where the middle is
 under 24 cells (Fluffy, `drawMascot`, then fills the middle if it fits), or
-right of the fields and menu in list mode. Settings then leaves them out
+right of the fields and menu in list mode. When the middle holds neither
+(no `homeStatus`, or no room for Fluffy) `rc::widenHomeButtons` stretches the
+side buttons to meet `kHomeGapPx` apart. Settings then leaves them out
 (`homeShowsStatus()`), so they are never in both. Under them a `─` divider
 and the Unread rows (`HomeScreen::syncAside`, a `ListBox` with
 `ListId::Aside`; a tap opens the item through `openUnread`, shared with

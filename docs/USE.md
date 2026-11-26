@@ -123,7 +123,9 @@ Every screen works by touch. Touch never wakes a dark screen.
   labels on the left. Every button is the same size, just wide enough for
   the longest label, and they stack from the top with a small gap; where
   the screen has room they are taller, with more space above and below the
-  label. A button
+  label. When nothing sits between the columns (no status lines, and no room
+  for Fluffy), the buttons stretch toward the middle until the two columns
+  are a small gap apart. A button
   with something waiting (unread, mentions in messages, c-mail, feed) is
   filled in the theme's highlight colour (on e-paper, a thicker outline).
   The profile button opens your own profile (see [People](#people)). If two

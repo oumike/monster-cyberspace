@@ -459,15 +459,29 @@ int drawStatus(const PageText& text, const Theme& t, int col, int row, int width
   return std::min(n, end - row);
 }
 
-// Fluffy (or the custom mascot) centred in a box of width x height cells
-// from (col, row), when it fits.
-void drawMascot(const PageText& text, const Theme& t, int col, int row, int width, int height) {
+// Fluffy, or the custom mascot when one is set.
+const std::vector<std::string>& mascotArt() {
   const std::vector<std::string>& custom = app().mascot.art;
   const bool own = std::any_of(custom.begin(), custom.end(),
                                [](const std::string& l) { return l.find_first_not_of(' ') != std::string::npos; });
-  const std::vector<std::string>& art = own ? custom : defaultMascotArt();
+  return own ? custom : defaultMascotArt();
+}
+
+int mascotWidth(const std::vector<std::string>& art) {
   int w = 0;
   for (const std::string& l : art) w = std::max(w, int(utf8ToU32(l).size()));
+  return w;
+}
+
+bool mascotFits(int width, int height) {
+  const std::vector<std::string>& art = mascotArt();
+  return mascotWidth(art) <= width && int(art.size()) <= height;
+}
+
+// The mascot centred in a box of width x height cells from (col, row), when it fits.
+void drawMascot(const PageText& text, const Theme& t, int col, int row, int width, int height) {
+  const std::vector<std::string>& art = mascotArt();
+  const int w = mascotWidth(art);
   const int h = int(art.size());
   if (w > width || h > height) return;
   const int c0 = col + (width - w) / 2, r0 = row + (height - h) / 2;
@@ -551,8 +565,10 @@ void HomeScreen::sync() {
   if (tileMode_) {
     // The status lines between the button columns, or below the buttons
     // where the middle is too narrow.
-    // Fluffy takes a middle too narrow for them.
+    // Fluffy takes a middle too narrow for them. With neither there, the
+    // buttons widen to meet in the middle (rc::widenHomeButtons).
     const bool aside = homeShowsStatus() && !fit.btns.rects.empty();
+    if (!aside) rc::widenHomeButtons(fit.btns, panelW);
     if (aside) {
       const int bw = fit.btns.rects.back().w;  // a column's; the first may span
       const int left = (bw + rc::kHomeGapPx + c.w - 1) / c.w;
@@ -566,14 +582,18 @@ void HomeScreen::sync() {
           top = std::max(top, (c.h + r.y + r.h + rc::kHomeGapPx + c.h - 1) / c.h);
       }
       const int below = (1 * c.h + lowest + rc::kHomeGapPx + c.h - 1) / c.h;
+      const bool statusMid = right - left >= 24;
+      const bool mascotMid = !statusMid && mascotFits(right - left, below - top);
+      if (!statusMid && !mascotMid) rc::widenHomeButtons(fit.btns, panelW);
       // Laid out in full, drawn pageTop_ rows up; again if that was past the end.
       constexpr int kNoEnd = 1 << 16;
       for (int pass = 0; pass < 2; ++pass) {
         int end = below;
-        if (right - left >= 24) {
+        if (statusMid) {
           end = std::max(end, syncAside(left, top, right - left, kNoEnd, pageTop_));
         } else {
-          drawMascot(PageText{v_->text_, pageTop_, 1, bottom}, t, left, top, right - left, below - top);
+          if (mascotMid)
+            drawMascot(PageText{v_->text_, pageTop_, 1, bottom}, t, left, top, right - left, below - top);
           end = std::max(end, syncAside(1, below, v_->text_.cols() - 2, kNoEnd, pageTop_));
         }
         pageMax_ = std::max(0, end - bottom);
@@ -586,6 +606,7 @@ void HomeScreen::sync() {
       lvui::setHidden(v_->unreadView_.obj(), true);
     }
     v_->text_.end();
+    if (!btnRects_.empty()) btnRects_ = fit.btns.rects;  // as widened
     syncStatus(v_->status_, a.user.empty() ? std::u32string(U"home") : utf8ToU32("@" + a.user), -1);
     int first = 0;
     if (column_) {

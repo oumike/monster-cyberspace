@@ -2,4 +2,5 @@
 
 ### Changes
 
-- Cardputer ADV: Ctrl now opens the screen's commands, as the hints say ("ctrl post", "ctrl cmds"). The Composer's Post… can be reached, so new Feed entries can be posted, and the Feed's and rooms' menus open too. Opt, Alt and Tab still do nothing.
+- Touch Home: when nothing sits between the two button columns (no status lines, and no room for Fluffy), the buttons stretch toward the middle until the columns are a small gap apart, instead of leaving an empty space.
+- The flasher site deploys reliably after a release again.

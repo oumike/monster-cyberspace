@@ -25,16 +25,18 @@ void test_zoom_setting_keeps_auto() {
 
 void test_auto_zoom_follows_the_window() {
   TEST_ASSERT_EQUAL(1, autoZoom(640, 340));     // the LCD's 320x170 at 2x
-  TEST_ASSERT_EQUAL(1, autoZoom(1279, 719));
-  TEST_ASSERT_EQUAL(2, autoZoom(1280, 720));
-  TEST_ASSERT_EQUAL(3, autoZoom(1920, 1080));
-  TEST_ASSERT_EQUAL(4, autoZoom(2940, 1600));   // a maximised window on a HiDPI laptop
+  TEST_ASSERT_EQUAL(1, autoZoom(1599, 899));
+  TEST_ASSERT_EQUAL(2, autoZoom(1600, 900));
+  TEST_ASSERT_EQUAL(2, autoZoom(1920, 1080));
+  TEST_ASSERT_EQUAL(3, autoZoom(2560, 1440));
+  TEST_ASSERT_EQUAL(3, autoZoom(2940, 1600));   // a maximised window on a HiDPI laptop
+  TEST_ASSERT_EQUAL(4, autoZoom(3840, 2160));
   TEST_ASSERT_EQUAL(6, autoZoom(7680, 4320));   // capped
-  TEST_ASSERT_EQUAL(2, autoZoom(3000, 800));    // the short side decides
+  TEST_ASSERT_EQUAL(1, autoZoom(3000, 800));    // the short side decides
   const Fit f = fit(1920, 1080, kZoomAuto);
-  TEST_ASSERT_EQUAL(3, f.zoom);
-  TEST_ASSERT_EQUAL(640, f.panelW);
-  TEST_ASSERT_EQUAL(360, f.panelH);
+  TEST_ASSERT_EQUAL(2, f.zoom);
+  TEST_ASSERT_EQUAL(960, f.panelW);
+  TEST_ASSERT_EQUAL(540, f.panelH);
   int w, h;
   minWindow(316, 168, kZoomAuto, w, h);
   TEST_ASSERT_EQUAL(316, w);

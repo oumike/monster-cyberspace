@@ -791,7 +791,7 @@ Then the app:
 - [ ] A second start while one runs (from either) does nothing (`[boot] already running`)
 - [ ] Resizing fills the window with more text at the same size; it can't be made smaller than the LCD's screen at the current zoom
 - [ ] Settings → Zoom Auto / 1x / 2x / 3x redraws at once and is kept after a restart; web config shows Zoom; on the LCD Zoom shows in neither
-- [ ] Zoom Auto (the default): a bigger window draws everything bigger, keeping at least 640x360 panel pixels (a 1920x1080 window is 3x); a small window drops to 1x
+- [ ] Zoom Auto (the default): a bigger window draws everything bigger, keeping at least 800x450 panel pixels (a 1920x1080 window is 2x, 2560x1440 3x); a small window drops to 1x
 - [ ] In a window Home shows the status lines and the Unread rows between its button columns (Messages across the top), and Settings no longer lists the status lines; on the LCD Home is unchanged
 - [ ] Maximise fills the screen; F11 goes full screen and back
 - [ ] Mouse: a click selects or opens; dragging scrolls lists and logs; right click opens the menu; the wheel moves up and down; a drag starting at the window's edge doesn't go Back; the pointer hides after 3 s still

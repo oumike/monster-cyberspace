@@ -611,8 +611,8 @@ time: starting a second does nothing.
   on the Tab5.
 - **Zoom:** Settings → **Zoom** (Auto, 1x, 2x or 3x; Auto at first), also in
   web config, sets how big everything is drawn. Auto draws bigger as the
-  window grows, keeping at least 640x360 of the app's pixels (3x on a
-  full-screen 1080p monitor); 1x to 3x keep the size fixed, so a bigger window
+  window grows, keeping at least 800x450 of the app's pixels (2x on a
+  full-screen 1080p monitor, 3x at 1440p); 1x to 3x keep the size fixed, so a bigger window
   shows more text. It shows only in a window. Text size still applies on
   top, and Large is offered.
 - **Mouse:** click to select or open, drag to scroll, the right button opens

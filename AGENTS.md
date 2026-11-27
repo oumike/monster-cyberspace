@@ -370,7 +370,7 @@ instead of the LCD (`src/hal/linux_sim/`: `sdl_window`, `sdl_keys`,
 (`board::pointerIsMouse` skips edge swipes; right click Options, wheel
 Up/Down), F11 full screen, the panel the window's size over the Zoom setting
 (`board::canZoom`/`setZoom`/`panelSizeChanged`, NVS and backup `zoom`; 0 is
-Auto, the default: `winfit::autoZoom` keeps at least 640x360), Home's status
+Auto, the default: `winfit::autoZoom` keeps at least 800x450), Home's status
 lines and Unread rows as the Tab5's (`board::homeStatus`), the
 built-in keyboard grabbed (`EVIOCGRAB`) while focused and other keyboards
 through SDL, and a lock on `~/.config/monster-cyberspace/.lock` so one copy

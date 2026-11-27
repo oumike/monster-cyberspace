@@ -14,8 +14,8 @@ constexpr uint8_t kZoomMax = 3;
 constexpr uint8_t kZoomDefault = kZoomAuto;
 // Auto picks the biggest whole zoom (up to kAutoZoomMax) that still leaves a
 // panel of at least kAutoPanelW x kAutoPanelH, else 1.
-constexpr int kAutoPanelW = 640;
-constexpr int kAutoPanelH = 360;
+constexpr int kAutoPanelW = 800;
+constexpr int kAutoPanelH = 450;
 constexpr int kAutoZoomMax = 6;
 constexpr int kWheelLines = 3;  // Up/Down key presses per wheel notch
 

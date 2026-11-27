@@ -575,9 +575,9 @@ std::string parsePrefs(JsonVariantConst doc, const Settings& s, PrefsChange& c) 
     c.rotation = doc["rotation"].as<int>();
   }
   if (!doc["zoom"].isNull()) {
-    if (!doc["zoom"].is<int>() || doc["zoom"].as<int>() < rc::winfit::kZoomMin ||
+    if (!doc["zoom"].is<int>() || doc["zoom"].as<int>() < rc::winfit::kZoomAuto ||
         doc["zoom"].as<int>() > rc::winfit::kZoomMax)
-      return "Zoom: 1, 2 or 3";
+      return "Zoom: 0 (auto), 1, 2 or 3";
     c.zoom = doc["zoom"].as<int>();
   }
   c.screenOnSecs = s.screenOnSecs;

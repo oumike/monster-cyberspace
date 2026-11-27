@@ -39,6 +39,9 @@ void setZoom(uint8_t zoom) {
   if (linuxhal::windowed()) sdlwin::setZoom(zoom);
 }
 bool panelSizeChanged() { return linuxhal::windowed() && sdlwin::takePanelSize(); }
+// A window has room for Home's status lines, Fluffy and Unread rows, as the
+// Tab5; the LCD's 320x170 does not.
+bool homeStatus() { return linuxhal::windowed(); }
 bool canRotate() { return false; }
 void setRotation(uint8_t) {}
 bool hasKeyboard() { return true; }

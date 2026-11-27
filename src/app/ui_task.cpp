@@ -1575,7 +1575,7 @@ void setTextSize(TextSize s) {
 
 void setZoom(uint8_t zoom) {
   if (!board::canZoom()) return;
-  app().cfg.zoom = winfit::clampZoom(zoom);
+  app().cfg.zoom = winfit::zoomSetting(zoom);
   settings::saveUiPrefs(app().cfg);
   board::setZoom(app().cfg.zoom);
 }

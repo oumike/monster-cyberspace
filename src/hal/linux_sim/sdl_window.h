@@ -41,7 +41,7 @@ void close(const char* shotPath);
 int panelWidth();
 int panelHeight();
 void push(const uint16_t* frame, int y0, int y1);
-// Resizable: the zoom (clamped to 1-3); the panel follows on the next
+// Resizable: the zoom (Auto, or clamped to 1-3); the panel follows on the next
 // takePanelSize.
 void setZoom(uint8_t zoom);
 // True once the panel's size has changed (a resize or a zoom); panelWidth and

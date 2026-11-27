@@ -720,7 +720,7 @@ void SettingsScreen::activate(int item) {
       ui::setChatStyle(nextChatStyle(app().cfg.chatStyle));
       break;
     case kZoom:
-      ui::setZoom(uint8_t(app().cfg.zoom % winfit::kZoomMax + 1));
+      ui::setZoom(uint8_t((app().cfg.zoom + 1) % (winfit::kZoomMax + 1)));  // Auto, 1x, 2x, 3x
       break;
     case kUnreadFilter:
       ui::setUnreadFilter(nextUnreadFilter(app().cfg.unreadFilter));
@@ -838,7 +838,9 @@ std::vector<ListItem> itemRows(const std::vector<Item>& items, bool buttons, boo
                                                     : widen(rotationLabel(a.cfg.rotation))});
         break;
       case kZoom:
-        rows.push_back(ListItem{U"Zoom", std::u32string(1, char32_t(U'0' + a.cfg.zoom)) + U"x"});
+        rows.push_back(ListItem{U"Zoom", a.cfg.zoom == winfit::kZoomAuto
+                                              ? std::u32string(U"Auto")
+                                              : std::u32string(1, char32_t(U'0' + a.cfg.zoom)) + U"x"});
         break;
       case kScreenTimeout:
         rows.push_back(ListItem{U"Screen timeout", widen(screenTimeoutLabel(a.cfg.screenOnSecs).c_str())});

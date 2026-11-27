@@ -17,6 +17,30 @@ void test_zoom_clamped() {
   TEST_ASSERT_EQUAL(1, clampZoom(-4));
 }
 
+void test_zoom_setting_keeps_auto() {
+  TEST_ASSERT_EQUAL(kZoomAuto, zoomSetting(0));
+  TEST_ASSERT_EQUAL(2, zoomSetting(2));
+  TEST_ASSERT_EQUAL(3, zoomSetting(9));
+}
+
+void test_auto_zoom_follows_the_window() {
+  TEST_ASSERT_EQUAL(1, autoZoom(640, 340));     // the LCD's 320x170 at 2x
+  TEST_ASSERT_EQUAL(1, autoZoom(1279, 719));
+  TEST_ASSERT_EQUAL(2, autoZoom(1280, 720));
+  TEST_ASSERT_EQUAL(3, autoZoom(1920, 1080));
+  TEST_ASSERT_EQUAL(4, autoZoom(2940, 1600));   // a maximised window on a HiDPI laptop
+  TEST_ASSERT_EQUAL(6, autoZoom(7680, 4320));   // capped
+  TEST_ASSERT_EQUAL(2, autoZoom(3000, 800));    // the short side decides
+  const Fit f = fit(1920, 1080, kZoomAuto);
+  TEST_ASSERT_EQUAL(3, f.zoom);
+  TEST_ASSERT_EQUAL(640, f.panelW);
+  TEST_ASSERT_EQUAL(360, f.panelH);
+  int w, h;
+  minWindow(316, 168, kZoomAuto, w, h);
+  TEST_ASSERT_EQUAL(316, w);
+  TEST_ASSERT_EQUAL(168, h);
+}
+
 void test_panel_rounds_down_and_centres() {
   const Fit f = fit(1001, 600, 2);
   TEST_ASSERT_EQUAL(500, f.panelW);
@@ -82,6 +106,8 @@ void test_wheel_steps() {
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_zoom_clamped);
+  RUN_TEST(test_zoom_setting_keeps_auto);
+  RUN_TEST(test_auto_zoom_follows_the_window);
   RUN_TEST(test_panel_rounds_down_and_centres);
   RUN_TEST(test_panel_never_empty);
   RUN_TEST(test_point_inside);

@@ -321,7 +321,7 @@ void push(const uint16_t* frame, int y0, int y1) {
 }
 
 void setZoom(uint8_t zoom) {
-  zoomWanted = wf::clampZoom(zoom);
+  zoomWanted = wf::zoomSetting(zoom);
   minDirty = true;
 }
 

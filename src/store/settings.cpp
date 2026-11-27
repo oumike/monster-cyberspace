@@ -98,7 +98,7 @@ void load(rc::Settings& s) {
   s.theme = rc::themeFromIndex(p.getUChar("theme", 0));
   s.rotation = rc::rotationFromIndex(p.getUChar("rot", board::defaultRotation()));
   s.autoRotate = p.getBool("autorot", true);
-  s.zoom = rc::winfit::clampZoom(p.getUChar("zoom", rc::winfit::kZoomDefault));
+  s.zoom = rc::winfit::zoomSetting(p.getUChar("zoom", rc::winfit::kZoomDefault));
   s.lastRoom = getStr(p, "room", s.lastRoom);
   if (p.isKey("phrases")) s.phrases = rc::splitPhrases(getStr(p, "phrases", ""));
   s.webConfig = p.getBool("webcfg", !RC_WEB_OPT_IN);

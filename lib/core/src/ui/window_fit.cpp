@@ -3,9 +3,15 @@
 
 namespace rc::winfit {
 
+int autoZoom(int drawW, int drawH) {
+  for (int z = kAutoZoomMax; z > 1; --z)
+    if (drawW / z >= kAutoPanelW && drawH / z >= kAutoPanelH) return z;
+  return 1;
+}
+
 Fit fit(int drawW, int drawH, int zoom) {
   Fit f;
-  f.zoom = clampZoom(zoom);
+  f.zoom = zoom == kZoomAuto ? autoZoom(drawW, drawH) : clampZoom(zoom);
   f.panelW = drawW / f.zoom > 0 ? drawW / f.zoom : 1;
   f.panelH = drawH / f.zoom > 0 ? drawH / f.zoom : 1;
   const int spareX = drawW - f.panelW * f.zoom, spareY = drawH - f.panelH * f.zoom;

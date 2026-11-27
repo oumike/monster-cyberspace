@@ -431,7 +431,7 @@ std::string backupToYaml(const Settings& s, const BackupMeta& m) {
   o += "rotation: " + std::to_string(s.rotation) +
        "  # 0 landscape, 1 portrait, 2 landscape 180, 3 portrait 180\n";
   o += std::string("autoRotate: ") + boolStr(s.autoRotate) + "  # follow the accelerometer, where there is one\n";
-  o += "zoom: " + std::to_string(s.zoom) + "  # 1 | 2 | 3: desktop window\n";
+  o += "zoom: " + std::to_string(s.zoom) + "  # 0 (auto) | 1 | 2 | 3: desktop window\n";
   o += std::string("drawerOpen: ") + boolStr(s.drawerOpen) + "\n";
   o += std::string("usersHidden: ") + boolStr(s.usersHidden) + "  # the docked user list in rooms\n";
   o += std::string("buzzer: ") + boolStr(s.buzzer) + "\n";
@@ -545,8 +545,8 @@ bool backupFromYaml(std::string_view yaml, Settings& inOut, std::string& err, st
     err = at(st.theme.line, "theme: default, bw or wb");
   } else if (st.rotation.has && !plainInt(st.rotation, rotation)) {
     err = at(st.rotation.line, "orientation: 0 to 3");
-  } else if (st.zoom.has && (!plainInt(st.zoom, zoom) || zoom < winfit::kZoomMin || zoom > winfit::kZoomMax)) {
-    err = at(st.zoom.line, "zoom: 1, 2 or 3");
+  } else if (st.zoom.has && (!plainInt(st.zoom, zoom) || zoom < winfit::kZoomAuto || zoom > winfit::kZoomMax)) {
+    err = at(st.zoom.line, "zoom: 0 (auto), 1, 2 or 3");
   } else if (st.screenOnSecs.has && (!plainInt(st.screenOnSecs, screenOnSecs) || screenOnSecs < 0 ||
                                      !validScreenTimeout(uint32_t(screenOnSecs)))) {
     err = at(st.screenOnSecs.line,
